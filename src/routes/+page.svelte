@@ -31,8 +31,8 @@
   let hoverZone = $state('none');
   let isFullscreen = $state(false);
   let fsControlsVisible = $state(true);
+  let fsHideTimer: ReturnType<typeof setTimeout> | undefined;
   let lastPinchDist = 0;
-  let fsHideTimer: ReturnType<typeof setTimeout> | null = null;
 
   let zoomLevel = $state(100);
   let translateX = $state(0);
@@ -49,9 +49,7 @@
   const mediaTransform = $derived(
     `transform: scale(${zoomLevel / 100}) translate(${translateX / (zoomLevel / 100)}px, ${translateY / (zoomLevel / 100)}px); transform-origin: 0 0;`,
   );
-
   const panCursor = $derived(zoomLevel > 100 ? (isDragging ? 'grabbing' : 'grab') : 'default');
-
   const fsCursor = $derived(!fsControlsVisible ? 'none' : panCursor);
 
   function formatTime(seconds: number): string {
@@ -62,9 +60,19 @@
   }
 
   function formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function finishLoading() {
+    clearTimeout(loadingTimer);
+    loadingTimer = setTimeout(() => {
+      loadingFadingOut = true;
+      setTimeout(() => {
+        isLoadingFile = false;
+        loadingFadingOut = false;
+      }, 400);
+    }, 400);
   }
 
   function updateProgress() {
@@ -140,8 +148,7 @@
 
   function startVolumeDrag(e: MouseEvent) {
     e.preventDefault();
-    const bar = e.currentTarget as HTMLElement;
-    const diamonds = bar.querySelectorAll('.volume-diamond');
+    const diamonds = (e.currentTarget as HTMLElement).querySelectorAll('.volume-diamond');
 
     function dragTo(clientX: number) {
       const first = diamonds[0].getBoundingClientRect();
@@ -165,7 +172,6 @@
   }
 
   async function displayFile(path: string) {
-    isLoadingFile = true;
     fileName = path.split('\\').pop() || path.split('/').pop() || path;
     const ext = path.split('.').pop()?.toLowerCase() || '';
     isVideo = videoExts.includes(ext);
@@ -185,14 +191,7 @@
     const img = e.target as HTMLImageElement;
     fileDimensions = `${img.naturalWidth} × ${img.naturalHeight}`;
     fileInfoLoading = false;
-    clearTimeout(loadingTimer);
-    loadingTimer = setTimeout(() => {
-      loadingFadingOut = true;
-      setTimeout(() => {
-        isLoadingFile = false;
-        loadingFadingOut = false;
-      }, 600);
-    }, 800);
+    if (isLoadingFile) finishLoading();
   }
 
   function onVideoLoad() {
@@ -200,21 +199,20 @@
     fileDimensions = `${videoEl.videoWidth} × ${videoEl.videoHeight}`;
     videoEl.volume = volume;
     fileInfoLoading = false;
-    clearTimeout(loadingTimer);
-    loadingTimer = setTimeout(() => {
-      isLoadingFile = false;
-    }, 800);
     progress = 0;
     currentTime = '0:00';
     duration = formatTime(videoEl.duration);
     playing = !videoEl.paused;
+    if (isLoadingFile) finishLoading();
   }
 
   async function loadFile(path: string) {
+    clearTimeout(loadingTimer);
     isLoadingFile = true;
     loadingFadingOut = false;
-    clearTimeout(loadingTimer);
+
     await displayFile(path);
+
     const sep = path.includes('\\') ? '\\' : '/';
     const folder = path.substring(0, path.lastIndexOf(sep));
     try {
@@ -247,6 +245,9 @@
     duration = '0:00';
     fileSize = '';
     fileDimensions = '';
+    isLoadingFile = false;
+    loadingFadingOut = false;
+    clearTimeout(loadingTimer);
     resetZoom();
   }
 
@@ -267,7 +268,7 @@
 
   function resetFsTimer() {
     fsControlsVisible = true;
-    if (fsHideTimer) clearTimeout(fsHideTimer);
+    clearTimeout(fsHideTimer);
     fsHideTimer = setTimeout(() => {
       fsControlsVisible = false;
     }, 1500);
@@ -286,7 +287,6 @@
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-
     const oldScale = zoomLevel / 100;
     const raw = zoomLevel * (e.deltaY > 0 ? 1 / 1.1 : 1.1);
     const newZoom = Math.max(100, Math.min(1000, zoomLevel > 100 && raw < 100 ? 100 : raw));
@@ -319,12 +319,10 @@
     const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
     const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-
     const mouseX = midX - rect.left;
     const mouseY = midY - rect.top;
     const oldScale = zoomLevel / 100;
-    const raw = zoomLevel * (dist / lastPinchDist);
-    const newZoom = Math.max(100, Math.min(1000, raw));
+    const newZoom = Math.max(100, Math.min(1000, zoomLevel * (dist / lastPinchDist)));
     const newScale = newZoom / 100;
 
     if (newZoom === 100) {
@@ -372,7 +370,6 @@
         const now = Date.now();
         const timeSinceLast = now - lastClickTime;
         lastClickTime = now;
-
         if (isVideo) {
           if (timeSinceLast < 300) {
             clearTimeout(pendingPlay);
@@ -416,7 +413,6 @@
       setVolume(volume - 0.125);
       return;
     }
-
     if (['ArrowRight', 'ArrowLeft', ' '].includes(e.key)) e.preventDefault();
 
     if (isVideo && videoEl && (hoverZone === 'video' || isFullscreen)) {
@@ -458,7 +454,6 @@
 
 <main
   class:fullscreen={isFullscreen}
-  class:loading={isLoadingFile}
   onmousemove={isFullscreen ? resetFsTimer : undefined}
   ondrop={(e) => e.preventDefault()}
   ondragover={(e) => e.preventDefault()}
@@ -648,8 +643,7 @@
                         style="--i: {i}"
                         onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
                         aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
-                      >
-                      </button>
+                      ></button>
                     {/each}
                     <span class="volume-tooltip">{muted ? '0' : Math.round(volume * 100)}%</span>
                   </div>
@@ -703,7 +697,7 @@
           <path
             d="M1 4V1H4M8 1H11V4M11 8V11H8M4 11H1V8"
             stroke="currentColor"
-            stroke-width="1.2"
+            stroke-width="0.6"
             stroke-linecap="round"
           />
         </svg>
@@ -868,8 +862,7 @@
                       style="--i: {i}"
                       onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
                       aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
-                    >
-                    </button>
+                    ></button>
                   {/each}
                   <span class="volume-tooltip">{muted ? '0' : Math.round(volume * 100)}%</span>
                 </div>
@@ -925,6 +918,7 @@
       {/if}
     </div>
   {/if}
+
   {#if isLoadingFile}
     <div class="border-sweep" class:fading={loadingFadingOut}></div>
   {/if}
@@ -1634,6 +1628,12 @@
     animation: borderSweep 1.2s linear infinite;
   }
 
+  :global(.border-sweep.fading::before) {
+    animation:
+      borderSweep 1s linear infinite,
+      sweepFade 0.5s ease-out forwards;
+  }
+
   @keyframes borderSweep {
     from {
       transform: rotate(0deg);
@@ -1641,12 +1641,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-
-  :global(.border-sweep.fading::before) {
-    animation:
-      borderSweep 1.2s linear infinite,
-      sweepFade 0.6s ease-out forwards;
   }
 
   @keyframes sweepFade {
