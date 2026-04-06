@@ -461,17 +461,42 @@
   <div class="topbar" onmousedown={startDrag} role="toolbar" tabindex="-1">
     <span class="app-name">vyu</span>
     <span class="divider">/</span>
-    <span class="filename">{fileName}</span>
+    <span class="filename tooltip-below" data-tooltip="Current file">{fileName}</span>
     {#if fileSrc}
       <span class="divider">/</span>
-      <button class="folder-btn" onclick={closeFile} aria-label="close file">⏏️</button>
+      <button
+        class="folder-btn tooltip-below"
+        data-tooltip="Close file"
+        onclick={closeFile}
+        aria-label="close file">⏏️</button
+      >
       <span class="divider">/</span>
-      <button class="folder-btn" onclick={openFileDialog} aria-label="open file">📁</button>
+      <button
+        class="folder-btn tooltip-below"
+        data-tooltip="Open file"
+        onclick={openFileDialog}
+        aria-label="open file">📁</button
+      >
     {/if}
     <div class="window-controls">
-      <button class="wc-btn minimize" onclick={minimizeWindow} aria-label="minimize">−</button>
-      <button class="wc-btn maximize" onclick={maximizeWindow} aria-label="maximize">▢</button>
-      <button class="wc-btn close" onclick={closeWindow} aria-label="close">✕</button>
+      <button
+        class="wc-btn minimize tooltip-below"
+        data-tooltip="Minimize"
+        onclick={minimizeWindow}
+        aria-label="minimize">−</button
+      >
+      <button
+        class="wc-btn maximize tooltip-below"
+        data-tooltip="Maximize"
+        onclick={maximizeWindow}
+        aria-label="maximize">▢</button
+      >
+      <button
+        class="wc-btn close tooltip-below"
+        data-tooltip="Close"
+        onclick={closeWindow}
+        aria-label="close">✕</button
+      >
     </div>
   </div>
 
@@ -672,10 +697,13 @@
   </div>
 
   <div class="bottombar">
-    <span class="file-count"
+    <span class="file-count tooltip-above" data-tooltip="File position"
       >{fileList.length > 0 ? `${currentIndex + 1} / ${fileList.length}` : '—'}</span
     >
-    <span class="file-info">
+    <span
+      class="file-info tooltip-above"
+      data-tooltip={fileDimensions ? `${fileDimensions} · ${fileSize}` : fileName}
+    >
       {#if fileDimensions && fileSize}
         {fileDimensions} · {fileSize}
       {:else if !fileInfoLoading && fileName !== 'no file open'}
@@ -685,8 +713,15 @@
       {/if}
     </span>
     <div class="bottombar-right">
-      <button class="zoom" onclick={resetZoom}>{Math.round(zoomLevel)}%</button>
-      <button class="fs-btn" onclick={toggleFullscreen} aria-label="toggle fullscreen">
+      <button class="zoom tooltip-above" data-tooltip="Reset zoom" onclick={resetZoom}
+        >{Math.round(zoomLevel)}%</button
+      >
+      <button
+        class="fs-btn tooltip-above"
+        data-tooltip="Fullscreen"
+        onclick={toggleFullscreen}
+        aria-label="toggle fullscreen"
+      >
         <svg
           width="12"
           height="12"
@@ -1650,5 +1685,42 @@
     to {
       opacity: 0;
     }
+  }
+
+  [data-tooltip] {
+    position: relative;
+    display: inline-block;
+  }
+
+  [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #aaaaaa;
+    font-size: 11px;
+    font-family: Inter, sans-serif;
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 0.5px solid #2a2a2a;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    transition-delay: 0.4s;
+    z-index: 999;
+  }
+
+  [data-tooltip].tooltip-above::after {
+    bottom: calc(100% + 6px);
+  }
+
+  [data-tooltip].tooltip-below::after {
+    top: calc(100% + 6px);
+  }
+
+  [data-tooltip]:hover::after {
+    opacity: 1;
   }
 </style>
