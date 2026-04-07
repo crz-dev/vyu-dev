@@ -13,6 +13,8 @@
   let currentIndex = $state(0);
   let fileSize = $state('');
   let fileDimensions = $state('');
+  let fileCreated = $state('');
+  let fileModified = $state('');
   let fileInfoLoading = $state(false);
   let isLoadingFile = $state(false);
   let loadingFadingOut = $state(false);
@@ -59,11 +61,29 @@
   let deleteConfirm = $state(false);
   let deletePermanently = $state(false);
   let deleteNoAsk = $state(false);
+  let propertiesOpen = $state(false);
 
   interface Timestamp {
     time: number;
   }
   let timestamps = $state<Timestamp[]>([]);
+  interface MediaProperties {
+    container?: string;
+    video_codec?: string;
+    audio_codec?: string;
+    pixel_format?: string;
+    color_space?: string;
+    color_primaries?: string;
+    color_transfer?: string;
+    bit_depth?: string;
+    frame_rate?: string;
+  }
+  let mediaProps = $state<MediaProperties | null>(null);
+  let mediaPropsLoading = $state(false);
+  let ffprobeAvailable = $state(true);
+  let ffprobeChecked = $state(false);
+  let ffmpegInstalling = $state(false);
+  let ffmpegInstallError = $state('');
   let tsTooltip = $state<{ visible: boolean; x: number; y: number; label: string }>({
     visible: false,
     x: 0,
@@ -102,6 +122,16 @@
   function formatFileSize(bytes: number): string {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function formatMetaDate(value: unknown): string {
+    if (value === null || value === undefined) return 'Unknown';
+    const asNumber = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(asNumber)) return 'Unknown';
+    const ms = asNumber < 10_000_000_000 ? asNumber * 1000 : asNumber;
+    const d = new Date(ms);
+    if (Number.isNaN(d.getTime())) return 'Unknown';
+    return d.toLocaleString();
   }
 
   function finishLoading() {
@@ -293,6 +323,8 @@
     fileSrc = convertFileSrc(path);
     fileSize = '';
     fileDimensions = '';
+    fileCreated = '';
+    fileModified = '';
     fileInfoLoading = true;
     imageRotation = 0;
     imageFlipped = false;
@@ -306,6 +338,9 @@
     try {
       const info = await stat(path);
       fileSize = formatFileSize(info.size);
+      const meta = info as Record<string, unknown>;
+      fileCreated = formatMetaDate(meta.birthtime ?? meta.birthtimeMs ?? meta.createdAt);
+      fileModified = formatMetaDate(meta.mtime ?? meta.mtimeMs ?? meta.modifiedAt);
     } catch {}
   }
 
@@ -366,6 +401,8 @@
     rawDurationSecs = 0;
     fileSize = '';
     fileDimensions = '';
+    fileCreated = '';
+    fileModified = '';
     isLoadingFile = false;
     loadingFadingOut = false;
     imageRotation = 0;
@@ -513,11 +550,22 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (contextMenu.visible || deleteConfirm) {
+    if (contextMenu.visible || deleteConfirm || propertiesOpen) {
       if (e.key === 'Escape') {
         contextMenu.visible = false;
         deleteConfirm = false;
+        propertiesOpen = false;
       }
+      return;
+    }
+    if (e.altKey && e.key === 'ArrowRight') {
+      e.preventDefault();
+      navigate(1);
+      return;
+    }
+    if (e.altKey && e.key === 'ArrowLeft') {
+      e.preventDefault();
+      navigate(-1);
       return;
     }
     if (e.key === 'f' || e.key === 'F') {
@@ -576,6 +624,66 @@
     contextMenu = { ...contextMenu, visible: false };
   }
 
+  function fileExt(): string {
+    return filePath.split('.').pop()?.toLowerCase() || '';
+  }
+
+  function parentFolder(): string {
+    const sep = filePath.includes('\\') ? '\\' : '/';
+    return filePath.includes(sep) ? filePath.substring(0, filePath.lastIndexOf(sep)) : '';
+  }
+
+  function showValue(v: string | undefined): string {
+    return v && v.trim() ? v : 'Unknown';
+  }
+
+  async function loadMediaProperties() {
+    mediaPropsLoading = true;
+    try {
+      mediaProps = (await invoke('get_media_properties', { path: filePath })) as MediaProperties;
+    } catch {
+      mediaProps = null;
+    } finally {
+      mediaPropsLoading = false;
+    }
+  }
+
+  async function refreshFfprobeAvailability() {
+    ffprobeChecked = false;
+    try {
+      ffprobeAvailable = (await invoke('check_ffprobe')) as boolean;
+    } catch {
+      ffprobeAvailable = false;
+    } finally {
+      ffprobeChecked = true;
+    }
+  }
+
+  async function installFfmpegAndWait() {
+    ffmpegInstallError = '';
+    ffmpegInstalling = true;
+    try {
+      await invoke('install_ffmpeg');
+      // Poll for ffprobe availability after installer starts.
+      const attempts = 60;
+      for (let i = 0; i < attempts; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        await refreshFfprobeAvailability();
+        if (ffprobeAvailable) {
+          await loadMediaProperties();
+          break;
+        }
+      }
+      if (!ffprobeAvailable) {
+        ffmpegInstallError = 'Install still running. Reopen Properties in a moment.';
+      }
+    } catch (e) {
+      ffmpegInstallError = e instanceof Error ? e.message : 'Failed to start FFmpeg install.';
+    } finally {
+      ffmpegInstalling = false;
+    }
+  }
+
   async function ctxCopyImage() {
     closeContextMenu();
     try {
@@ -631,6 +739,55 @@
     closeContextMenu();
     try {
       await invoke('show_in_explorer', { path: filePath });
+    } catch {}
+  }
+
+  function ctxProperties() {
+    closeContextMenu();
+    propertiesOpen = true;
+    mediaProps = null;
+    ffmpegInstallError = '';
+    void (async () => {
+      await refreshFfprobeAvailability();
+      if (ffprobeAvailable) await loadMediaProperties();
+    })();
+  }
+
+  async function propsCopyPath() {
+    try {
+      await navigator.clipboard.writeText(filePath);
+    } catch {}
+  }
+
+  async function propsOpenFolder() {
+    try {
+      await invoke('open_folder', { path: filePath });
+    } catch {}
+  }
+
+  async function propsCopyAll() {
+    const lines = [
+      `Name: ${fileName}`,
+      `Type: ${isVideo ? 'Video' : 'Image'} (${fileExt() || 'unknown'})`,
+      `Container: ${showValue(mediaProps?.container)}`,
+      `Video codec: ${showValue(mediaProps?.video_codec)}`,
+      `Audio codec: ${showValue(mediaProps?.audio_codec)}`,
+      `Pixel format: ${showValue(mediaProps?.pixel_format)}`,
+      `Color space: ${showValue(mediaProps?.color_space)}`,
+      `Color primaries: ${showValue(mediaProps?.color_primaries)}`,
+      `Color transfer: ${showValue(mediaProps?.color_transfer)}`,
+      `Bit depth: ${showValue(mediaProps?.bit_depth)}`,
+      `Frame rate: ${showValue(mediaProps?.frame_rate)}`,
+      `Dimensions: ${fileDimensions || 'Unknown'}`,
+      ...(isVideo ? [`Duration: ${durationDisplay}`] : []),
+      `Size: ${fileSize || 'Unknown'}`,
+      `Created: ${fileCreated || 'Unknown'}`,
+      `Modified: ${fileModified || 'Unknown'}`,
+      `Folder: ${parentFolder() || 'Unknown'}`,
+      `Path: ${filePath || 'Unknown'}`,
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
     } catch {}
   }
 
@@ -1442,6 +1599,17 @@
           >
           Show in explorer
         </button>
+        <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+              d="M12 10.5V16"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+          >
+          Properties
+        </button>
         <div class="ctx-sep"></div>
         <button class="ctx-item red" onclick={ctxDelete} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -1584,6 +1752,17 @@
           >
           Show in explorer
         </button>
+        <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+              d="M12 10.5V16"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+          >
+          Properties
+        </button>
         <div class="ctx-sep"></div>
         <button class="ctx-item red" onclick={ctxDelete} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -1639,6 +1818,125 @@
         <div class="delete-actions">
           <button class="delete-cancel" onclick={() => (deleteConfirm = false)}>Cancel</button>
           <button class="delete-confirm-btn" onclick={performDelete}>Delete</button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if propertiesOpen}
+    <div class="delete-overlay" role="presentation" onmousedown={(e) => e.stopPropagation()}>
+      <div class="delete-dialog props-dialog" role="dialog" aria-modal="true">
+        <p class="delete-title">Properties</p>
+        <p class="delete-subtitle">{fileName}</p>
+        <div class="props-list">
+          <div class="props-row">
+            <span class="props-k">Type</span>
+            <span class="props-v">{isVideo ? 'Video' : 'Image'} ({fileExt() || 'unknown'})</span>
+          </div>
+          <div class="props-row">
+            <span class="props-k">Dimensions</span>
+            <span class="props-v">{fileDimensions || 'Unknown'}</span>
+          </div>
+          {#if ffprobeChecked && !ffprobeAvailable}
+            <div class="ffprobe-note">
+              <p class="ffprobe-title">Advanced metadata needs FFmpeg</p>
+              <p class="ffprobe-sub">
+                To show Container, Codec, Color, and Frame Rate, install FFmpeg. Your files stay
+                local on your device and are not uploaded anywhere.
+              </p>
+              <div class="ffprobe-actions">
+                <button
+                  class="props-btn"
+                  onclick={installFfmpegAndWait}
+                  disabled={ffmpegInstalling}
+                >
+                  {ffmpegInstalling ? 'Installing FFmpeg...' : 'Install FFmpeg'}
+                </button>
+                <button
+                  class="props-btn props-btn-secondary"
+                  onclick={async () => {
+                    await refreshFfprobeAvailability();
+                    if (ffprobeAvailable) {
+                      ffmpegInstallError = '';
+                      await loadMediaProperties();
+                    }
+                  }}
+                  disabled={ffmpegInstalling}
+                >
+                  Retry detection
+                </button>
+                {#if ffmpegInstalling}
+                  <div class="ffprobe-progress"><span></span></div>
+                {/if}
+              </div>
+              {#if ffmpegInstallError}
+                <p class="ffprobe-error">{ffmpegInstallError}</p>
+              {/if}
+            </div>
+          {:else}
+            <div class="props-row">
+              <span class="props-k">Container</span>
+              <span class="props-v"
+                >{mediaPropsLoading ? 'Loading...' : showValue(mediaProps?.container)}</span
+              >
+            </div>
+            <div class="props-row">
+              <span class="props-k">Codec</span>
+              <span class="props-v">
+                {mediaPropsLoading
+                  ? 'Loading...'
+                  : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ''}`}
+              </span>
+            </div>
+            <div class="props-row">
+              <span class="props-k">Color</span>
+              <span class="props-v">
+                {mediaPropsLoading
+                  ? 'Loading...'
+                  : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ''}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ''}`}
+              </span>
+            </div>
+            {#if isVideo}
+              <div class="props-row">
+                <span class="props-k">Duration</span>
+                <span class="props-v">{durationDisplay}</span>
+              </div>
+              <div class="props-row">
+                <span class="props-k">Frame rate</span>
+                <span class="props-v"
+                  >{mediaPropsLoading ? 'Loading...' : showValue(mediaProps?.frame_rate)}</span
+                >
+              </div>
+            {/if}
+          {/if}
+          <div class="props-row">
+            <span class="props-k">Size</span>
+            <span class="props-v">{fileSize || 'Unknown'}</span>
+          </div>
+          <div class="props-row">
+            <span class="props-k">Created</span>
+            <span class="props-v">{fileCreated || 'Unknown'}</span>
+          </div>
+          <div class="props-row">
+            <span class="props-k">Modified</span>
+            <span class="props-v">{fileModified || 'Unknown'}</span>
+          </div>
+          <div class="props-row">
+            <span class="props-k">Folder</span>
+            <span class="props-v">{parentFolder() || 'Unknown'}</span>
+          </div>
+          <div class="props-row">
+            <span class="props-k">Path</span>
+            <span class="props-v">{filePath || 'Unknown'}</span>
+          </div>
+        </div>
+        <div class="props-actions">
+          <button class="props-btn" onclick={propsCopyPath}>Copy path</button>
+          <button class="props-btn" onclick={propsOpenFolder}>Open folder</button>
+          <button class="props-btn" onclick={propsCopyAll}>Copy all properties</button>
+        </div>
+        <div class="delete-actions">
+          <button class="delete-cancel" onclick={() => (propertiesOpen = false)}>Close</button>
         </div>
       </div>
     </div>
@@ -2449,6 +2747,126 @@
     flex-direction: column;
     gap: 12px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  }
+  .props-dialog {
+    width: 420px;
+    max-width: calc(100vw - 32px);
+    gap: 10px;
+  }
+  .props-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 10px;
+    background: #101010;
+  }
+  .props-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .props-k {
+    width: 86px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #666666;
+    font-family: Inter, sans-serif;
+  }
+  .props-v {
+    min-width: 0;
+    flex: 1;
+    font-size: 11px;
+    color: #bbbbbb;
+    font-family: Inter, sans-serif;
+    word-break: break-word;
+  }
+  .props-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ffprobe-note {
+    border: 0.5px solid #2a2a2a;
+    background: #121212;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ffprobe-title {
+    margin: 0;
+    font-size: 12px;
+    color: #facc15;
+    font-family: Inter, sans-serif;
+  }
+  .ffprobe-sub {
+    margin: 0;
+    font-size: 11px;
+    color: #999999;
+    font-family: Inter, sans-serif;
+    line-height: 1.4;
+  }
+  .ffprobe-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .ffprobe-progress {
+    width: 100%;
+    height: 4px;
+    background: #232323;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .ffprobe-progress span {
+    display: block;
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(90deg, rgba(250, 204, 21, 0.35), #facc15);
+    animation: ffprobeBar 1s ease-in-out infinite;
+  }
+  .ffprobe-error {
+    margin: 0;
+    font-size: 11px;
+    color: #f87171;
+    font-family: Inter, sans-serif;
+  }
+  @keyframes ffprobeBar {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(260%);
+    }
+  }
+  .props-btn {
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 0.5px solid rgba(234, 179, 8, 0.35);
+    background: rgba(234, 179, 8, 0.14);
+    color: #facc15;
+    font-size: 11px;
+    font-family: Inter, sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .props-btn:hover {
+    background: rgba(234, 179, 8, 0.24);
+  }
+  .props-btn.props-btn-secondary {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: #2f2f2f;
+    color: #a9a9a9;
+  }
+  .props-btn.props-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .props-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
   .delete-title {
     font-size: 15px;
