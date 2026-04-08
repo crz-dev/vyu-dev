@@ -30,6 +30,8 @@
   let timerShowRemaining = $state(false);
   let imageRotation = $state(0);
   let imageFlipped = $state(false);
+  let imageNaturalWidth = $state(0);
+  let imageNaturalHeight = $state(0);
 
   let volume = $state(1);
   let volumeHovered = $state(false);
@@ -95,11 +97,18 @@
   const videoExts = ['mp4', 'webm', 'mkv', 'avi', 'mov', 'wmv'];
   const allExts = [...imageExts, ...videoExts];
 
+  const isQuarterTurn = $derived(Math.abs(imageRotation % 180) === 90);
+  const rotationFitScale = $derived.by(() => {
+    if (!isQuarterTurn || imageNaturalWidth <= 0 || imageNaturalHeight <= 0) return 1;
+    const ratio = imageNaturalWidth / imageNaturalHeight;
+    return Math.min(ratio, 1 / ratio);
+  });
+  const imageScale = $derived((zoomLevel / 100) * rotationFitScale);
   const imageStyle = $derived(
-    `transform: scale(${zoomLevel / 100}) translate(${translateX / (zoomLevel / 100)}px, ${translateY / (zoomLevel / 100)}px) rotate(${imageRotation}deg) scaleX(${imageFlipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;`,
+    `transform: scale(${imageScale}) translate(${translateX / imageScale}px, ${translateY / imageScale}px) rotate(${imageRotation}deg) scaleX(${imageFlipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;`,
   );
   const videoWrapperTransform = $derived(
-    `transform: scale(${zoomLevel / 100}) translate(${translateX / (zoomLevel / 100)}px, ${translateY / (zoomLevel / 100)}px); transform-origin: 0 0;`,
+    `transform: scale(${zoomLevel / 100}) translate(${translateX / (zoomLevel / 100)}px, ${translateY / (zoomLevel / 100)}px); transform-origin: center center;`,
   );
   const panCursor = $derived(zoomLevel > 100 ? (isDragging ? 'grabbing' : 'grab') : 'default');
   const fsCursor = $derived(!fsControlsVisible ? 'none' : panCursor);
@@ -132,6 +141,11 @@
     const d = new Date(ms);
     if (Number.isNaN(d.getTime())) return 'Unknown';
     return d.toLocaleString();
+  }
+
+  function getMetaValue(obj: unknown, key: string): unknown {
+    if (!obj || typeof obj !== 'object') return undefined;
+    return (obj as Record<string, unknown>)[key];
   }
 
   function finishLoading() {
@@ -295,11 +309,13 @@
   }
 
   function removeTimestamp(time: number) {
+    tsTooltip = { ...tsTooltip, visible: false };
     timestamps = timestamps.filter((ts) => ts.time !== time);
     saveTimestamps();
   }
 
   function clearAllTimestamps() {
+    tsTooltip = { ...tsTooltip, visible: false };
     timestamps = [];
     if (filePath) localStorage.removeItem(`vyu-ts-${filePath}`);
   }
@@ -328,6 +344,8 @@
     fileInfoLoading = true;
     imageRotation = 0;
     imageFlipped = false;
+    imageNaturalWidth = 0;
+    imageNaturalHeight = 0;
     rawCurrentSecs = 0;
     rawDurationSecs = 0;
     progress = 0;
@@ -338,14 +356,23 @@
     try {
       const info = await stat(path);
       fileSize = formatFileSize(info.size);
-      const meta = info as Record<string, unknown>;
-      fileCreated = formatMetaDate(meta.birthtime ?? meta.birthtimeMs ?? meta.createdAt);
-      fileModified = formatMetaDate(meta.mtime ?? meta.mtimeMs ?? meta.modifiedAt);
+      fileCreated = formatMetaDate(
+        getMetaValue(info, 'birthtime') ??
+          getMetaValue(info, 'birthtimeMs') ??
+          getMetaValue(info, 'createdAt'),
+      );
+      fileModified = formatMetaDate(
+        getMetaValue(info, 'mtime') ??
+          getMetaValue(info, 'mtimeMs') ??
+          getMetaValue(info, 'modifiedAt'),
+      );
     } catch {}
   }
 
   function onImageLoad(e: Event) {
     const img = e.target as HTMLImageElement;
+    imageNaturalWidth = img.naturalWidth;
+    imageNaturalHeight = img.naturalHeight;
     fileDimensions = `${img.naturalWidth} × ${img.naturalHeight}`;
     fileInfoLoading = false;
     if (isLoadingFile) finishLoading();
@@ -388,6 +415,12 @@
     displayFile(fileList[currentIndex]);
   }
 
+  function navigateToEdge(first: boolean) {
+    if (fileList.length === 0) return;
+    currentIndex = first ? 0 : fileList.length - 1;
+    displayFile(fileList[currentIndex]);
+  }
+
   function closeFile() {
     filePath = '';
     fileSrc = '';
@@ -407,6 +440,8 @@
     loadingFadingOut = false;
     imageRotation = 0;
     imageFlipped = false;
+    imageNaturalWidth = 0;
+    imageNaturalHeight = 0;
     timestamps = [];
     clearTimeout(loadingTimer);
     resetZoom();
@@ -445,8 +480,8 @@
     if (!fileSrc) return;
     e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
     const oldScale = zoomLevel / 100;
     const raw = zoomLevel * (e.deltaY > 0 ? 1 / 1.1 : 1.1);
     const newZoom = Math.max(100, Math.min(1000, zoomLevel > 100 && raw < 100 ? 100 : raw));
@@ -474,8 +509,8 @@
     const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
     const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const mouseX = midX - rect.left;
-    const mouseY = midY - rect.top;
+    const mouseX = midX - rect.left - rect.width / 2;
+    const mouseY = midY - rect.top - rect.height / 2;
     const oldScale = zoomLevel / 100;
     const newZoom = Math.max(100, Math.min(1000, zoomLevel * (dist / lastPinchDist)));
     const newScale = newZoom / 100;
@@ -556,6 +591,16 @@
         deleteConfirm = false;
         propertiesOpen = false;
       }
+      return;
+    }
+    if (e.ctrlKey && e.key === 'ArrowRight') {
+      e.preventDefault();
+      navigateToEdge(false);
+      return;
+    }
+    if (e.ctrlKey && e.key === 'ArrowLeft') {
+      e.preventDefault();
+      navigateToEdge(true);
       return;
     }
     if (e.altKey && e.key === 'ArrowRight') {
@@ -664,7 +709,6 @@
     ffmpegInstalling = true;
     try {
       await invoke('install_ffmpeg');
-      // Poll for ffprobe availability after installer starts.
       const attempts = 60;
       for (let i = 0; i < attempts; i++) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -864,7 +908,11 @@
   <div class="topbar" onmousedown={startDrag} role="toolbar" tabindex="-1">
     <span class="app-name">vyu</span>
     <span class="divider">/</span>
-    <span class="filename" onmouseenter={showFilenameTooltip} onmouseleave={hideFilenameTooltip}
+    <span
+      class="filename"
+      role="presentation"
+      onmouseenter={showFilenameTooltip}
+      onmouseleave={hideFilenameTooltip}
       >{fileName}</span
     >
     {#if fileSrc}
@@ -974,6 +1022,13 @@
                     e.stopPropagation();
                     seekToTimestamp(ts.time);
                   }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      seekToTimestamp(ts.time);
+                    }
+                  }}
                   oncontextmenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1057,6 +1112,7 @@
               </button>
               <div
                 class="volume-control"
+                class:audio-off={muted || volume === 0}
                 onmouseenter={() => (volumeHovered = true)}
                 onmouseleave={handleVolumeAreaLeave}
                 onwheel={handleVolumeScroll}
@@ -1064,6 +1120,7 @@
               >
                 <button
                   class="ctrl-btn volume-btn tooltip-ctrl"
+                  class:active={!(muted || volume === 0)}
                   data-tooltip={muted || volume === 0 ? 'Unmute' : 'Mute'}
                   onclick={toggleMute}
                   aria-label={muted ? 'unmute' : 'mute'}
@@ -1123,7 +1180,7 @@
                     {#each Array(VOLUME_SEGMENTS) as _, i}
                       <button
                         class="volume-diamond"
-                        class:filled={!muted && i < Math.round(volume * VOLUME_SEGMENTS)}
+                        class:filled={i < Math.round(volume * VOLUME_SEGMENTS)}
                         class:muted-diamond={muted}
                         style="--i: {i}"
                         onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
@@ -1189,7 +1246,7 @@
   </div>
 
   <div class="bottombar">
-    <span class="file-count tooltip-above-left" data-tooltip="File position"
+    <span class="file-count tooltip-above-shift-right" data-tooltip="File position"
       >{fileList.length > 0 ? `${currentIndex + 1} / ${fileList.length}` : '—'}</span
     >
     <span class="file-info tooltip-above" data-tooltip="Resolution · File size">
@@ -1206,7 +1263,7 @@
         >{Math.round(zoomLevel)}%</button
       >
       <button
-        class="fs-btn tooltip-above"
+        class="fs-btn tooltip-above-shift-left"
         data-tooltip="Fullscreen"
         onclick={toggleFullscreen}
         aria-label="toggle fullscreen"
@@ -1279,6 +1336,13 @@
                 onclick={(e) => {
                   e.stopPropagation();
                   seekToTimestamp(ts.time);
+                }}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    seekToTimestamp(ts.time);
+                  }
                 }}
                 oncontextmenu={(e) => {
                   e.preventDefault();
@@ -1363,6 +1427,7 @@
             </button>
             <div
               class="volume-control"
+              class:audio-off={muted || volume === 0}
               onmouseenter={() => (volumeHovered = true)}
               onmouseleave={handleVolumeAreaLeave}
               onwheel={handleVolumeScroll}
@@ -1370,6 +1435,7 @@
             >
               <button
                 class="fs-ctrl-btn volume-btn tooltip-ctrl"
+                class:active={!(muted || volume === 0)}
                 data-tooltip={muted || volume === 0 ? 'Unmute' : 'Mute'}
                 onclick={toggleMute}
                 aria-label={muted ? 'unmute' : 'mute'}
@@ -1429,7 +1495,7 @@
                   {#each Array(VOLUME_SEGMENTS) as _, i}
                     <button
                       class="volume-diamond"
-                      class:filled={!muted && i < Math.round(volume * VOLUME_SEGMENTS)}
+                      class:filled={i < Math.round(volume * VOLUME_SEGMENTS)}
                       class:muted-diamond={muted}
                       style="--i: {i}"
                       onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
@@ -2187,7 +2253,7 @@
     transition: outline-color 0.5s;
   }
   .video-wrapper:hover {
-    outline-color: #444444;
+    outline-color: #7a7a7a;
   }
   .video-wrapper video {
     display: block;
@@ -2306,16 +2372,24 @@
     border: none;
     color: #cccccc;
     cursor: pointer;
-    padding: 3px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
     border-radius: 4px;
+    line-height: 0;
     transition:
       background 0.15s,
       color 0.15s;
+  }
+  .ctrl-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    margin: 0 auto;
+    flex-shrink: 0;
   }
   .ctrl-btn:hover {
     color: #ffffff;
@@ -2342,13 +2416,14 @@
   }
 
   .time-display {
-    font-size: 12px;
+    font-size: 13px;
     color: #cccccc;
     font-family: Inter, sans-serif;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 3px 7px;
+    height: 34px;
+    padding: 0 10px;
     border-radius: 4px;
     transition:
       background 0.15s,
@@ -2365,11 +2440,28 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    height: 28px;
+    height: 34px;
   }
   .volume-btn {
-    width: 26px;
-    height: 26px;
+    width: 34px;
+    height: 34px;
+    color: #555555;
+  }
+  .volume-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .volume-btn.active {
+    color: #ffffff;
+  }
+  .volume-btn:hover {
+    color: #aaaaaa;
+  }
+  .volume-btn.active:hover {
+    color: #ffffff;
+  }
+  .volume-control.audio-off .volume-diamonds {
+    opacity: 0.45;
   }
   .volume-diamonds {
     display: flex;
@@ -2389,8 +2481,8 @@
     }
   }
   .volume-diamond {
-    width: 11px;
-    height: 11px;
+    width: 13px;
+    height: 13px;
     background: none;
     border: 1px solid #555555;
     transform: rotate(45deg);
@@ -2563,11 +2655,14 @@
     border: none;
     color: #cccccc;
     cursor: pointer;
-    padding: 3px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 42px;
+    height: 42px;
     border-radius: 4px;
+    line-height: 0;
     transition:
       background 0.15s,
       color 0.15s;
@@ -2577,8 +2672,11 @@
     background: rgba(255, 255, 255, 0.1);
   }
   .fs-ctrl-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
+    display: block;
+    margin: 0 auto;
+    flex-shrink: 0;
   }
   .fs-ctrl-btn.loop-btn {
     color: #555555;
@@ -2599,18 +2697,31 @@
     color: #f5c518;
     background: rgba(245, 197, 24, 0.1);
   }
+  .fs-ctrl-btn.volume-btn {
+    color: #555555;
+  }
   .fs-ctrl-btn.volume-btn svg {
-    width: 19px;
-    height: 19px;
+    width: 24px;
+    height: 24px;
+  }
+  .fs-ctrl-btn.volume-btn.active {
+    color: #ffffff;
+  }
+  .fs-ctrl-btn.volume-btn:hover {
+    color: #aaaaaa;
+  }
+  .fs-ctrl-btn.volume-btn.active:hover {
+    color: #ffffff;
   }
   .fs-time {
-    font-size: 13px;
+    font-size: 14px;
     color: #888888;
     font-family: Inter, sans-serif;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 3px 7px;
+    height: 42px;
+    padding: 0 12px;
     border-radius: 4px;
     transition:
       background 0.15s,
@@ -3048,10 +3159,16 @@
   [data-tooltip].tooltip-above::after {
     bottom: calc(100% + 6px);
   }
-  [data-tooltip].tooltip-above-left::after {
+  [data-tooltip].tooltip-above-shift-right::after {
     bottom: calc(100% + 6px);
     left: 0;
-    transform: none;
+    transform: translateX(-10px);
+  }
+  [data-tooltip].tooltip-above-shift-left::after {
+    bottom: calc(100% + 6px);
+    left: auto;
+    right: 0;
+    transform: translateX(8px);
   }
   [data-tooltip].tooltip-below::after {
     top: calc(100% + 6px);
