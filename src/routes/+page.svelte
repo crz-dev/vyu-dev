@@ -2466,7 +2466,7 @@
   .volume-diamonds {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 5px;
     animation: volumeBarIn 0.2s ease forwards;
     cursor: pointer;
   }
