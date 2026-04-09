@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::Manager;
+use tauri::{Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 
 #[derive(serde::Serialize)]
 struct MediaProperties {
@@ -28,6 +28,72 @@ struct ClipProcessResult {
     outputs: Vec<String>,
     deleted_original: bool,
     output_dir: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SavedWindowState {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    maximized: bool,
+}
+
+const WINDOW_STATE_FILE: &str = "window-state.json";
+
+fn window_state_path(app: &tauri::AppHandle) -> Option<PathBuf> {
+    app.path().app_config_dir().ok().map(|dir| dir.join(WINDOW_STATE_FILE))
+}
+
+fn load_window_state(app: &tauri::AppHandle) -> Option<SavedWindowState> {
+    let path = window_state_path(app)?;
+    let contents = fs::read_to_string(path).ok()?;
+    serde_json::from_str(&contents).ok()
+}
+
+fn persist_window_state(window: &tauri::WebviewWindow) {
+    let Some(path) = window_state_path(&window.app_handle()) else {
+        return;
+    };
+
+    let Ok(position) = window.outer_position() else {
+        return;
+    };
+    let Ok(size) = window.outer_size() else {
+        return;
+    };
+
+    let state = SavedWindowState {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+        maximized: window.is_maximized().unwrap_or(false),
+    };
+
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+
+    if let Ok(serialized) = serde_json::to_string(&state) {
+        let _ = fs::write(path, serialized);
+    }
+}
+
+fn restore_window_state(window: &tauri::WebviewWindow) {
+    let Some(state) = load_window_state(&window.app_handle()) else {
+        return;
+    };
+
+    if state.width > 0 && state.height > 0 {
+        let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
+    }
+
+    let _ = window.set_position(Position::Physical(PhysicalPosition::new(state.x, state.y)));
+
+    if state.maximized {
+        let _ = window.maximize();
+    }
 }
 
 fn format_clip_tag(seconds: f64) -> String {
@@ -367,9 +433,22 @@ pub fn run() {
         ])
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();
+            let window = app.get_webview_window("main").unwrap();
+
+            restore_window_state(&window);
+
+            let window_for_events = window.clone();
+            window.on_window_event(move |event| {
+                if matches!(
+                    event,
+                    WindowEvent::Moved(_) | WindowEvent::Resized(_) | WindowEvent::CloseRequested { .. }
+                ) {
+                    persist_window_state(&window_for_events);
+                }
+            });
+
             if args.len() > 1 {
                 let file_path = args[1].clone();
-                let window = app.get_webview_window("main").unwrap();
                 window
                     .eval(&format!(
                         "window.__INITIAL_FILE__ = '{}'",

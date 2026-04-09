@@ -67,13 +67,16 @@
   let propertiesOpen = $state(false);
 
   interface Timestamp {
+    id: string;
     time: number;
+    title?: string;
   }
   let timestamps = $state<Timestamp[]>([]);
   interface ClipBoundary {
     id: string;
     time: number;
     kind: 'start' | 'end';
+    title?: string;
   }
   interface ClipPair {
     start: number;
@@ -126,15 +129,46 @@
     visible: boolean;
     x: number;
     y: number;
-    label: string;
+    title?: string;
+    timeLabel: string;
     tone?: 'yellow' | 'blue';
   }>({
     visible: false,
     x: 0,
     y: 0,
-    label: '',
+    title: '',
+    timeLabel: '',
     tone: 'yellow',
   });
+  let tsEditMenu = $state<{
+    visible: boolean;
+    x: number;
+    y: number;
+    targetId: string;
+    targetType: 'timestamp' | 'segment';
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    targetId: '',
+    targetType: 'timestamp',
+  });
+  interface TimestampDragRange {
+    visible: boolean;
+    start: number;
+    end: number;
+    phase: 'idle' | 'dragging' | 'converting' | 'fading';
+  }
+  let tsDragRange = $state<TimestampDragRange>({
+    visible: false,
+    start: 0,
+    end: 0,
+    phase: 'idle',
+  });
+  let tsDragHoverTimestampId = $state<string | null>(null);
+  let tsDragHoverBoundaryId = $state<string | null>(null);
+  let tsMarkerDragJustEnded = false;
+  let tsDragFadeTimer: ReturnType<typeof setTimeout> | undefined;
   let frameCopyToast = $state<{ visible: boolean; message: string; tone: 'success' | 'error' }>({
     visible: false,
     message: '',
@@ -364,7 +398,15 @@
     }
     try {
       const raw = localStorage.getItem(`vyu-ts-${filePath}`);
-      timestamps = raw ? (JSON.parse(raw) as Timestamp[]) : [];
+      const parsed = raw ? (JSON.parse(raw) as Array<Partial<Timestamp>>) : [];
+      timestamps = parsed
+        .filter((ts) => typeof ts?.time === 'number')
+        .map((ts) => ({
+          id: ts.id || `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          time: ts.time as number,
+          title: typeof ts.title === 'string' ? ts.title : '',
+        }))
+        .sort((a, b) => a.time - b.time);
     } catch {
       timestamps = [];
     }
@@ -379,20 +421,396 @@
     if (!videoEl || rawDurationSecs <= 0) return;
     const t = videoEl.currentTime;
     if (timestamps.some((ts) => Math.abs(ts.time - t) < 0.3)) return;
-    timestamps = [...timestamps, { time: t }].sort((a, b) => a.time - b.time);
+    timestamps = [
+      ...timestamps,
+      { id: `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, time: t, title: '' },
+    ].sort((a, b) => a.time - b.time);
     saveTimestamps();
   }
 
-  function removeTimestamp(time: number) {
+  function removeTimestamp(id: string) {
     tsTooltip = { ...tsTooltip, visible: false };
-    timestamps = timestamps.filter((ts) => ts.time !== time);
+    tsEditMenu = { ...tsEditMenu, visible: false };
+    timestamps = timestamps.filter((ts) => ts.id !== id);
     saveTimestamps();
   }
 
   function clearAllTimestamps() {
     tsTooltip = { ...tsTooltip, visible: false };
+    tsEditMenu = { ...tsEditMenu, visible: false };
     timestamps = [];
     if (filePath) localStorage.removeItem(`vyu-ts-${filePath}`);
+  }
+
+  function updateTimestampTitle(id: string, title: string) {
+    timestamps = timestamps.map((ts) =>
+      ts.id === id
+        ? {
+            ...ts,
+            title,
+          }
+        : ts,
+    );
+    saveTimestamps();
+  }
+
+  function updateClipBoundaryTitle(id: string, title: string) {
+    clipBoundaries = clipBoundaries.map((marker) =>
+      marker.id === id
+        ? {
+            ...marker,
+            title,
+          }
+        : marker,
+    );
+    saveClipBoundaries();
+  }
+
+  function getTimestampById(id: string): Timestamp | undefined {
+    return timestamps.find((ts) => ts.id === id);
+  }
+
+  function getClipBoundaryById(id: string): ClipBoundary | undefined {
+    return clipBoundaries.find((marker) => marker.id === id);
+  }
+
+  function getTitleEditorWidthCh(title: string): number {
+    return Math.min(26, Math.max(10, (title || '').trim().length + 2));
+  }
+
+  function showTimestampTooltip(e: MouseEvent, ts: Timestamp) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    tsTooltip = {
+      visible: true,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8,
+      title: ts.title?.trim() || '',
+      timeLabel: formatTime(ts.time),
+      tone: 'yellow',
+    };
+  }
+
+  function openTimestampEditor(e: MouseEvent, id: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const ts = getTimestampById(id);
+    if (!ts) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    tsTooltip = { ...tsTooltip, visible: false };
+    tsEditMenu = {
+      visible: true,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8,
+      targetId: id,
+      targetType: 'timestamp',
+    };
+  }
+
+  function openSegmentEditor(e: MouseEvent, id: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const marker = getClipBoundaryById(id);
+    if (!marker) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    tsTooltip = { ...tsTooltip, visible: false };
+    tsEditMenu = {
+      visible: true,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8,
+      targetId: id,
+      targetType: 'segment',
+    };
+  }
+
+  function closeTimestampEditor() {
+    tsEditMenu = { ...tsEditMenu, visible: false };
+  }
+
+  function convertTimestampToBoundary(
+    id: string,
+    kind: 'start' | 'end',
+    keepEditorOpen: boolean = false,
+  ): string | null {
+    const ts = getTimestampById(id);
+    if (!ts) return null;
+    let boundaryId = '';
+    const existing = clipBoundaries.find((m) => m.kind === kind && Math.abs(m.time - ts.time) < 0.25);
+    if (!existing) {
+      boundaryId = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      clipBoundaries = [
+        ...clipBoundaries,
+        {
+          id: boundaryId,
+          time: ts.time,
+          kind,
+          title: ts.title || '',
+        },
+      ].sort((a, b) => a.time - b.time);
+      saveClipBoundaries();
+    } else if (!existing.title && ts.title) {
+      boundaryId = existing.id;
+      updateClipBoundaryTitle(existing.id, ts.title);
+    } else {
+      boundaryId = existing.id;
+    }
+    timestamps = timestamps.filter((m) => m.id !== id);
+    saveTimestamps();
+    if (keepEditorOpen && boundaryId) {
+      tsEditMenu = {
+        ...tsEditMenu,
+        visible: true,
+        targetType: 'segment',
+        targetId: boundaryId,
+      };
+    } else {
+      closeTimestampEditor();
+    }
+    return boundaryId;
+  }
+
+  function convertTimestampPairToSegment(aId: string, bId: string) {
+    if (aId === bId) return;
+    const a = getTimestampById(aId);
+    const b = getTimestampById(bId);
+    if (!a || !b) return;
+    const [left, right] = a.time <= b.time ? [a, b] : [b, a];
+    const next = [...clipBoundaries];
+    const existingStart = next.find((m) => m.kind === 'start' && Math.abs(m.time - left.time) < 0.25);
+    if (!existingStart) {
+      next.push({
+        id: `start-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time: left.time,
+        kind: 'start',
+        title: left.title || '',
+      });
+    } else if (!existingStart.title && left.title) {
+      existingStart.title = left.title;
+    }
+    const existingEnd = next.find((m) => m.kind === 'end' && Math.abs(m.time - right.time) < 0.25);
+    if (!existingEnd) {
+      next.push({
+        id: `end-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time: right.time,
+        kind: 'end',
+        title: right.title || '',
+      });
+    } else if (!existingEnd.title && right.title) {
+      existingEnd.title = right.title;
+    }
+    clipBoundaries = next.sort((x, y) => x.time - y.time);
+    saveClipBoundaries();
+    timestamps = timestamps.filter((ts) => ts.id !== left.id && ts.id !== right.id);
+    saveTimestamps();
+    closeTimestampEditor();
+  }
+
+  function clearAllSegments() {
+    tsTooltip = { ...tsTooltip, visible: false };
+    tsEditMenu = { ...tsEditMenu, visible: false };
+    clipBoundaries = [];
+    if (filePath) localStorage.removeItem(`vyu-clips-${filePath}`);
+  }
+
+  function setClipBoundaryKind(id: string, kind: 'start' | 'end') {
+    const marker = getClipBoundaryById(id);
+    if (!marker || marker.kind === kind) return;
+    clipBoundaries = clipBoundaries.map((m) => (m.id === id ? { ...m, kind } : m)).sort((a, b) => a.time - b.time);
+    saveClipBoundaries();
+  }
+
+  function getActiveEditorTimestamp(): Timestamp | undefined {
+    if (!tsEditMenu.visible || tsEditMenu.targetType !== 'timestamp') return undefined;
+    return getTimestampById(tsEditMenu.targetId);
+  }
+
+  function getActiveEditorSegment(): ClipBoundary | undefined {
+    if (!tsEditMenu.visible || tsEditMenu.targetType !== 'segment') return undefined;
+    return getClipBoundaryById(tsEditMenu.targetId);
+  }
+
+  function getEditorTitle(): string {
+    const ts = getActiveEditorTimestamp();
+    if (ts) return ts.title || '';
+    const seg = getActiveEditorSegment();
+    if (seg) return seg.title || '';
+    return '';
+  }
+
+  function updateEditorTitle(value: string) {
+    const ts = getActiveEditorTimestamp();
+    if (ts) {
+      updateTimestampTitle(ts.id, value);
+      return;
+    }
+    const seg = getActiveEditorSegment();
+    if (seg) {
+      updateClipBoundaryTitle(seg.id, value);
+    }
+  }
+
+  function onEditorScissor(kind: 'start' | 'end') {
+    const ts = getActiveEditorTimestamp();
+    if (ts) {
+      convertTimestampToBoundary(ts.id, kind, true);
+      return;
+    }
+    const seg = getActiveEditorSegment();
+    if (seg) {
+      setClipBoundaryKind(seg.id, kind);
+    }
+  }
+
+  function getTimestampTouchTarget(
+    currentTime: number,
+    threshold: number,
+    sourceId: string,
+  ): string | null {
+    let found: Timestamp | null = null;
+    let best = Number.POSITIVE_INFINITY;
+    for (const ts of timestamps) {
+      if (ts.id === sourceId) continue;
+      const dist = Math.abs(ts.time - currentTime);
+      if (dist <= threshold && dist < best) {
+        best = dist;
+        found = ts;
+      }
+    }
+    return found?.id ?? null;
+  }
+
+  function getBoundaryTouchTarget(currentTime: number, threshold: number): string | null {
+    let found: ClipBoundary | null = null;
+    let best = Number.POSITIVE_INFINITY;
+    for (const marker of clipBoundaries) {
+      const dist = Math.abs(marker.time - currentTime);
+      if (dist <= threshold && dist < best) {
+        best = dist;
+        found = marker;
+      }
+    }
+    return found?.id ?? null;
+  }
+
+  function clearTimestampDragRange() {
+    clearTimeout(tsDragFadeTimer);
+    tsDragRange = { visible: false, start: 0, end: 0, phase: 'idle' };
+    tsDragHoverTimestampId = null;
+    tsDragHoverBoundaryId = null;
+  }
+
+  function startTimestampRangeDrag(e: MouseEvent, id: string) {
+    if (e.button !== 0 || rawDurationSecs <= 0) return;
+    const source = getTimestampById(id);
+    if (!source) return;
+    const sourceTs = source;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const markerEl = e.currentTarget as HTMLElement;
+    const bar = markerEl.closest('.progress-bar, .fs-progress') as HTMLElement | null;
+    if (!bar) return;
+    const barEl = bar;
+    closeTimestampEditor();
+    tsTooltip = { ...tsTooltip, visible: false };
+    clearTimeout(tsDragFadeTimer);
+
+    tsDragHoverTimestampId = null;
+    tsDragHoverBoundaryId = null;
+    tsDragRange = {
+      visible: true,
+      start: sourceTs.time,
+      end: sourceTs.time,
+      phase: 'dragging',
+    };
+
+    let moved = false;
+
+    function update(clientX: number) {
+      const rect = barEl.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const time = ratio * rawDurationSecs;
+      moved = moved || Math.abs(time - sourceTs.time) > 0.02;
+      tsDragRange = {
+        visible: true,
+        start: Math.min(sourceTs.time, time),
+        end: Math.max(sourceTs.time, time),
+        phase: 'dragging',
+      };
+      const touchThreshold = Math.max(0.08, (rawDurationSecs / rect.width) * 7);
+      tsDragHoverTimestampId = getTimestampTouchTarget(time, touchThreshold, sourceTs.id);
+      tsDragHoverBoundaryId = getBoundaryTouchTarget(time, touchThreshold);
+    }
+
+    function onMove(ev: MouseEvent) {
+      update(ev.clientX);
+    }
+
+    function onUp() {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+
+      if (moved) {
+        tsMarkerDragJustEnded = true;
+        setTimeout(() => {
+          tsMarkerDragJustEnded = false;
+        }, 0);
+      }
+
+      const targetTsId = tsDragHoverTimestampId;
+      if (moved && targetTsId && sourceTs.id !== targetTsId) {
+        const target = getTimestampById(targetTsId);
+        if (target) {
+          tsDragRange = {
+            visible: true,
+            start: Math.min(sourceTs.time, target.time),
+            end: Math.max(sourceTs.time, target.time),
+            phase: 'converting',
+          };
+          convertTimestampPairToSegment(sourceTs.id, targetTsId);
+          tsDragFadeTimer = setTimeout(() => {
+            clearTimestampDragRange();
+          }, 260);
+          return;
+        }
+      }
+
+      const targetBoundaryId = tsDragHoverBoundaryId;
+      if (moved && targetBoundaryId) {
+        const boundary = getClipBoundaryById(targetBoundaryId);
+        if (boundary) {
+          tsDragRange = {
+            visible: true,
+            start: Math.min(sourceTs.time, boundary.time),
+            end: Math.max(sourceTs.time, boundary.time),
+            phase: 'converting',
+          };
+          convertTimestampToBoundary(sourceTs.id, boundary.kind);
+          tsDragFadeTimer = setTimeout(() => {
+            clearTimestampDragRange();
+          }, 260);
+          return;
+        }
+      }
+
+      if (tsDragRange.visible) {
+        tsDragRange = { ...tsDragRange, phase: 'fading' };
+        tsDragFadeTimer = setTimeout(() => {
+          clearTimestampDragRange();
+        }, 140);
+      } else {
+        clearTimestampDragRange();
+      }
+    }
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
+  function getDragRangeStyle() {
+    const startPct = getTimestampPct(tsDragRange.start);
+    const endPct = getTimestampPct(tsDragRange.end);
+    return `left: ${startPct}%; width: ${Math.max(0, endPct - startPct)}%;`;
   }
 
   function seekToTimestamp(time: number) {
@@ -413,10 +831,15 @@
     }
     try {
       const raw = localStorage.getItem(`vyu-clips-${filePath}`);
-      const parsed = raw ? (JSON.parse(raw) as ClipBoundary[]) : [];
+      const parsed = raw ? (JSON.parse(raw) as Array<Partial<ClipBoundary>>) : [];
       clipBoundaries = parsed
         .filter((m) => typeof m?.time === 'number' && (m.kind === 'start' || m.kind === 'end'))
-        .map((m) => ({ ...m, id: m.id || `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}` }))
+        .map((m) => ({
+          id: m.id || `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}`,
+          time: m.time as number,
+          kind: m.kind as 'start' | 'end',
+          title: typeof m.title === 'string' ? m.title : '',
+        }))
         .sort((a, b) => a.time - b.time);
     } catch {
       clipBoundaries = [];
@@ -434,7 +857,7 @@
     if (clipBoundaries.some((m) => m.kind === kind && Math.abs(m.time - time) < 0.25)) return;
     clipBoundaries = [
       ...clipBoundaries,
-      { id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, time, kind },
+      { id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, time, kind, title: '' },
     ].sort((a, b) => a.time - b.time);
     saveClipBoundaries();
   }
@@ -463,7 +886,8 @@
           visible: true,
           x: clientX,
           y: clientY - 10,
-          label: formatTime(marker.time),
+          title: marker.title?.trim() || '',
+          timeLabel: formatTime(marker.time),
           tone: 'blue',
         };
       }
@@ -644,6 +1068,10 @@
     rawDurationSecs = 0;
     progress = 0;
     playing = false;
+    clearTimeout(tsDragFadeTimer);
+    clearTimestampDragRange();
+    tsTooltip = { ...tsTooltip, visible: false };
+    tsEditMenu = { ...tsEditMenu, visible: false };
     timestamps = [];
     clipBoundaries = [];
     resetZoom();
@@ -738,6 +1166,10 @@
     imageFlipped = false;
     imageNaturalWidth = 0;
     imageNaturalHeight = 0;
+    clearTimeout(tsDragFadeTimer);
+    clearTimestampDragRange();
+    tsTooltip = { ...tsTooltip, visible: false };
+    tsEditMenu = { ...tsEditMenu, visible: false };
     timestamps = [];
     clipBoundaries = [];
     clearTimeout(loadingTimer);
@@ -1048,7 +1480,6 @@
     if (!ctx2d) return;
     ctx2d.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
     try {
-      // Use synchronous PNG encoding to keep clipboard write in the click activation path.
       const dataUrl = canvas.toDataURL('image/png');
       const commaIdx = dataUrl.indexOf(',');
       if (commaIdx === -1) throw new Error('Could not encode frame as PNG.');
@@ -1096,6 +1527,10 @@
   function ctxClearTimestamps() {
     closeContextMenu();
     clearAllTimestamps();
+  }
+  function ctxClearSegments() {
+    closeContextMenu();
+    clearAllSegments();
   }
   function ctxStartClipHere() {
     closeContextMenu();
@@ -1203,6 +1638,20 @@
     if (tip) tip.style.opacity = '0';
   }
 
+  function handleGlobalMouseDown(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    if (contextMenu.visible && !target.closest('.context-menu')) closeContextMenu();
+    if (
+      tsEditMenu.visible &&
+      !target.closest('.ts-edit-menu') &&
+      !target.closest('.ts-marker') &&
+      !target.closest('.clip-marker') &&
+      !target.closest('.fs-clip-marker')
+    ) {
+      closeTimestampEditor();
+    }
+  }
+
   onMount(() => {
     const initial = (window as any).__INITIAL_FILE__;
     if (initial) loadFile(initial);
@@ -1221,15 +1670,14 @@
     });
 
     window.addEventListener('keydown', handleKeydown);
-    window.addEventListener('mousedown', (e) => {
-      if (contextMenu.visible && !(e.target as HTMLElement).closest('.context-menu'))
-        closeContextMenu();
-    });
+    window.addEventListener('mousedown', handleGlobalMouseDown);
 
     return () => {
       window.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('mousedown', handleGlobalMouseDown);
       clearTimeout(frameCopyToastTimer);
       clearTimeout(clipToastTimer);
+      clearTimeout(tsDragFadeTimer);
     };
   });
 </script>
@@ -1254,17 +1702,49 @@
     {#if fileSrc}
       <span class="divider">/</span>
       <button
-        class="folder-btn tooltip-below"
+        class="folder-btn close-file-btn tooltip-below"
         data-tooltip="Close file"
         onclick={closeFile}
-        aria-label="close file">⏏️</button
+        aria-label="close file"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M8 3h7l5 5v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <path d="M15 3v5h5" stroke="currentColor" stroke-width="2" />
+          <path
+            d="M11 12H4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <path
+            d="M7 9l-3 3 3 3"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button
       >
       <span class="divider">/</span>
       <button
-        class="folder-btn tooltip-below"
+        class="folder-btn open-file-btn tooltip-below"
         data-tooltip="Open file"
         onclick={openFileDialog}
-        aria-label="open file">📁</button
+        aria-label="open file"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+        </svg>
+      </button
       >
     {/if}
     <div class="window-controls">
@@ -1356,6 +1836,14 @@
                   style="left: {getTimestampPct(pair.start)}%; width: {getTimestampPct(pair.end) - getTimestampPct(pair.start)}%;"
                 ></div>
               {/each}
+              {#if tsDragRange.visible}
+                <div
+                  class="ts-drag-range"
+                  class:converting={tsDragRange.phase === 'converting'}
+                  class:fading={tsDragRange.phase === 'fading'}
+                  style={getDragRangeStyle()}
+                ></div>
+              {/if}
               {#each clipBoundaries as marker (marker.id)}
                 <div
                   class="clip-marker {marker.kind === 'start' ? 'start-marker' : 'end-marker'}"
@@ -1374,7 +1862,8 @@
                       visible: true,
                       x: rect.left + rect.width / 2,
                       y: rect.top - 8,
-                      label: formatTime(marker.time),
+                      title: marker.title?.trim() || '',
+                      timeLabel: formatTime(marker.time),
                       tone: 'blue',
                     };
                   }}
@@ -1386,6 +1875,7 @@
                     if (clipMarkerJustDragged) return;
                     seekToTimestamp(marker.time);
                   }}
+                  ondblclick={(e) => openSegmentEditor(e, marker.id)}
                   onkeydown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -1393,20 +1883,22 @@
                       seekToTimestamp(marker.time);
                     }
                   }}
-                  aria-label="{marker.kind} clip marker at {formatTime(marker.time)}"
+                  aria-label="{marker.title ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}` : `${marker.kind} clip marker at ${formatTime(marker.time)}`}"
                 ></div>
               {/each}
-              {#each timestamps as ts (ts.time)}
+              {#each timestamps as ts (ts.id)}
                 <div
                   class="ts-marker"
                   style="left: {getTimestampPct(ts.time)}%"
                   role="button"
                   tabindex="0"
-                  onmousedown={(e) => e.stopPropagation()}
+                  onmousedown={(e) => startTimestampRangeDrag(e, ts.id)}
                   onclick={(e) => {
                     e.stopPropagation();
+                    if (tsMarkerDragJustEnded) return;
                     seekToTimestamp(ts.time);
                   }}
+                  ondblclick={(e) => openTimestampEditor(e, ts.id)}
                   onkeydown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -1417,22 +1909,13 @@
                   oncontextmenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    removeTimestamp(ts.time);
+                    removeTimestamp(ts.id);
                   }}
-                  onmouseenter={(e) => {
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    tsTooltip = {
-                      visible: true,
-                      x: rect.left + rect.width / 2,
-                      y: rect.top - 8,
-                      label: formatTime(ts.time),
-                      tone: 'yellow',
-                    };
-                  }}
+                  onmouseenter={(e) => showTimestampTooltip(e, ts)}
                   onmouseleave={() => {
-                    tsTooltip = { ...tsTooltip, visible: false };
+                    if (!tsEditMenu.visible) tsTooltip = { ...tsTooltip, visible: false };
                   }}
-                  aria-label="timestamp {formatTime(ts.time)}"
+                  aria-label="timestamp {ts.title ? `${ts.title} at ${formatTime(ts.time)}` : formatTime(ts.time)}"
                 ></div>
               {/each}
             </div>
@@ -1819,6 +2302,14 @@
                 style="left: {getTimestampPct(pair.start)}%; width: {getTimestampPct(pair.end) - getTimestampPct(pair.start)}%;"
               ></div>
             {/each}
+            {#if tsDragRange.visible}
+              <div
+                class="ts-drag-range"
+                class:converting={tsDragRange.phase === 'converting'}
+                class:fading={tsDragRange.phase === 'fading'}
+                style={getDragRangeStyle()}
+              ></div>
+            {/if}
             {#each clipBoundaries as marker (marker.id)}
               <div
                 class="fs-clip-marker {marker.kind === 'start' ? 'start-marker' : 'end-marker'}"
@@ -1837,7 +2328,8 @@
                     visible: true,
                     x: rect.left + rect.width / 2,
                     y: rect.top - 8,
-                    label: formatTime(marker.time),
+                    title: marker.title?.trim() || '',
+                    timeLabel: formatTime(marker.time),
                     tone: 'blue',
                   };
                 }}
@@ -1849,6 +2341,7 @@
                   if (clipMarkerJustDragged) return;
                   seekToTimestamp(marker.time);
                 }}
+                ondblclick={(e) => openSegmentEditor(e, marker.id)}
                 onkeydown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -1856,20 +2349,22 @@
                     seekToTimestamp(marker.time);
                   }
                 }}
-                aria-label="{marker.kind} clip marker at {formatTime(marker.time)}"
+                aria-label="{marker.title ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}` : `${marker.kind} clip marker at ${formatTime(marker.time)}`}"
               ></div>
             {/each}
-            {#each timestamps as ts (ts.time)}
+            {#each timestamps as ts (ts.id)}
               <div
                 class="ts-marker"
                 style="left: {getTimestampPct(ts.time)}%"
                 role="button"
                 tabindex="0"
-                onmousedown={(e) => e.stopPropagation()}
+                onmousedown={(e) => startTimestampRangeDrag(e, ts.id)}
                 onclick={(e) => {
                   e.stopPropagation();
+                  if (tsMarkerDragJustEnded) return;
                   seekToTimestamp(ts.time);
                 }}
+                ondblclick={(e) => openTimestampEditor(e, ts.id)}
                 onkeydown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -1880,22 +2375,13 @@
                 oncontextmenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  removeTimestamp(ts.time);
+                  removeTimestamp(ts.id);
                 }}
-                onmouseenter={(e) => {
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  tsTooltip = {
-                    visible: true,
-                    x: rect.left + rect.width / 2,
-                    y: rect.top - 8,
-                    label: formatTime(ts.time),
-                    tone: 'yellow',
-                  };
-                }}
+                onmouseenter={(e) => showTimestampTooltip(e, ts)}
                 onmouseleave={() => {
-                  tsTooltip = { ...tsTooltip, visible: false };
+                  if (!tsEditMenu.visible) tsTooltip = { ...tsTooltip, visible: false };
                 }}
-                aria-label="timestamp {formatTime(ts.time)}"
+                aria-label="timestamp {ts.title ? `${ts.title} at ${formatTime(ts.time)}` : formatTime(ts.time)}"
               ></div>
             {/each}
           </div>
@@ -2359,6 +2845,19 @@
             Delete Timestamps
           </button>
         {/if}
+        {#if clipBoundaries.length > 0}
+          <button class="ctx-item red" onclick={ctxClearSegments} role="menuitem">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+                d="M8 8l8 8M16 8l-8 8"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            Delete Segments
+          </button>
+        {/if}
         <button class="ctx-item red" onclick={ctxDelete} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><polyline
@@ -2593,10 +3092,92 @@
     </div>
   {/if}
 
-  {#if tsTooltip.visible}
+  {#if tsTooltip.visible && !tsEditMenu.visible}
     <div class="ts-tooltip" class:blue={tsTooltip.tone === 'blue'} style="left: {tsTooltip.x}px; top: {tsTooltip.y}px;">
-      {tsTooltip.label}
+      {#if tsTooltip.title}
+        <span class="ts-tooltip-title">{tsTooltip.title}</span>
+      {/if}
+      <span>{tsTooltip.timeLabel}</span>
     </div>
+  {/if}
+
+  {#if tsEditMenu.visible}
+    {@const editingTimestamp = getActiveEditorTimestamp()}
+    {@const editingSegment = getActiveEditorSegment()}
+    {@const isSegmentMenu = !!editingSegment}
+    {@const currentTitle = getEditorTitle()}
+    {#if editingTimestamp || editingSegment}
+      <div
+        class="ts-edit-menu"
+        class:blue={isSegmentMenu}
+        style="left: {tsEditMenu.x}px; top: {tsEditMenu.y}px;"
+        transition:fade={{ duration: 130 }}
+      >
+        <input
+          class="ts-title-input"
+          type="text"
+          maxlength="100"
+          placeholder="Title"
+          value={currentTitle}
+          style="width: {getTitleEditorWidthCh(currentTitle)}ch;"
+          oninput={(e) => updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
+          onkeydown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              closeTimestampEditor();
+            }
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              closeTimestampEditor();
+            }
+          }}
+        />
+        <div class="ts-scissor-split" class:segment-toggle={isSegmentMenu} role="group" aria-label="segment type">
+          <button
+            class="ts-split-btn left tooltip-ctrl"
+            class:is-active={isSegmentMenu ? editingSegment?.kind === 'start' : false}
+            class:is-inactive={isSegmentMenu ? editingSegment?.kind !== 'start' : false}
+            data-tooltip="Start Clip Here"
+            onclick={(e) => {
+              e.stopPropagation();
+              onEditorScissor('start');
+            }}
+            aria-label="Start Clip Here"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+              ><circle cx="7" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle
+                cx="7"
+                cy="15.8"
+                r="2.2"
+                stroke="currentColor"
+                stroke-width="1.8"
+              /><path d="M9.5 9.6L19 5.2M9.5 14.2L19 19" stroke="currentColor" stroke-width="1.8" /></svg
+            >
+          </button>
+          <button
+            class="ts-split-btn right tooltip-ctrl"
+            class:is-active={isSegmentMenu ? editingSegment?.kind === 'end' : false}
+            class:is-inactive={isSegmentMenu ? editingSegment?.kind !== 'end' : false}
+            data-tooltip="End Clip Here"
+            onclick={(e) => {
+              e.stopPropagation();
+              onEditorScissor('end');
+            }}
+            aria-label="End Clip Here"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+              ><circle cx="17" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle
+                cx="17"
+                cy="15.8"
+                r="2.2"
+                stroke="currentColor"
+                stroke-width="1.8"
+              /><path d="M14.5 9.6L5 5.2M14.5 14.2L5 19" stroke="currentColor" stroke-width="1.8" /></svg
+            >
+          </button>
+        </div>
+      </div>
+    {/if}
   {/if}
 
   {#if volumeTooltipVisible}
@@ -2660,15 +3241,37 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 12px;
-    padding: 2px 6px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border-radius: 4px;
-    transition: background 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
     color: #666666;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .folder-btn svg {
+    width: 16px;
+    height: 16px;
   }
   .folder-btn:hover {
     background: #1a1a1a;
     color: #aaaaaa;
+  }
+  .close-file-btn {
+    color: #facc15;
+  }
+  .close-file-btn:hover {
+    color: #fde047;
+  }
+  .open-file-btn {
+    color: #facc15;
+  }
+  .open-file-btn:hover {
+    color: #fde047;
   }
   .window-controls {
     margin-left: auto;
@@ -2838,7 +3441,7 @@
     transition: outline-color 0.5s;
   }
   .video-wrapper:hover {
-    outline-color: #7a7a7a;
+    outline-color: #888888;
   }
   
   .video-wrapper video {
@@ -2933,6 +3536,33 @@
     border-right: 1px solid rgba(147, 197, 253, 0.9);
     pointer-events: none;
     z-index: 1;
+    transition:
+      background 0.22s ease,
+      border-color 0.22s ease,
+      opacity 0.22s ease;
+  }
+  .ts-drag-range {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(245, 197, 24, 0.45);
+    border-left: 1px solid rgba(245, 197, 24, 0.92);
+    border-right: 1px solid rgba(245, 197, 24, 0.92);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 1;
+    transition:
+      background 0.22s ease,
+      border-color 0.22s ease,
+      opacity 0.16s ease;
+  }
+  .ts-drag-range.converting {
+    background: rgba(59, 130, 246, 0.44);
+    border-left-color: rgba(147, 197, 253, 0.9);
+    border-right-color: rgba(147, 197, 253, 0.9);
+  }
+  .ts-drag-range.fading {
+    opacity: 0;
   }
   .clip-marker {
     position: absolute;
@@ -3006,11 +3636,148 @@
     border: 0.5px solid #f5c518;
     pointer-events: none;
     z-index: 9999;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.1;
+  }
+  .ts-tooltip-title {
+    font-weight: 600;
+    overflow-wrap: anywhere;
   }
   .ts-tooltip.blue {
     color: #60a5fa;
     border-color: #60a5fa;
+  }
+  .ts-edit-menu {
+    position: fixed;
+    transform: translate(-50%, -100%);
+    background:
+      linear-gradient(180deg, rgba(36, 36, 36, 0.95), rgba(22, 22, 22, 0.95)),
+      #1a1a1a;
+    color: #f5c518;
+    font-size: 11px;
+    font-family: Inter, sans-serif;
+    padding: 5px 6px;
+    border-radius: 7px;
+    border: 0.5px solid rgba(245, 197, 24, 0.58);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: fit-content;
+    min-width: 120px;
+    max-width: 230px;
+    box-shadow:
+      0 8px 26px rgba(0, 0, 0, 0.44),
+      0 0 0 1px rgba(245, 197, 24, 0.12) inset;
+    backdrop-filter: blur(5px);
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+  .ts-edit-menu.blue {
+    color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.58);
+    box-shadow:
+      0 8px 26px rgba(0, 0, 0, 0.44),
+      0 0 0 1px rgba(96, 165, 250, 0.18) inset;
+  }
+  .ts-title-input {
+    background: rgba(0, 0, 0, 0.16);
+    border: 0.5px solid rgba(245, 197, 24, 0.72);
+    color: #f5c518;
+    outline: none;
+    font-size: 11px;
+    padding: 4px 6px;
+    min-width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-radius: 4px;
+    text-align: center;
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+  .ts-title-input::placeholder {
+    color: rgba(245, 197, 24, 0.75);
+    text-align: center;
+  }
+  .ts-title-input:focus {
+    border-color: #f5c518;
+  }
+  .ts-edit-menu.blue .ts-title-input {
+    border-color: rgba(96, 165, 250, 0.72);
+    color: #93c5fd;
+    background: rgba(37, 99, 235, 0.13);
+  }
+  .ts-edit-menu.blue .ts-title-input::placeholder {
+    color: rgba(147, 197, 253, 0.75);
+  }
+  .ts-edit-menu.blue .ts-title-input:focus {
+    border-color: #60a5fa;
+  }
+  .ts-scissor-split {
+    display: flex;
+    border: 0.5px solid rgba(96, 165, 250, 0.75);
+    border-radius: 5px;
+    overflow: hidden;
+    background: rgba(37, 99, 235, 0.24);
+    width: 100%;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+  .ts-edit-menu.blue .ts-scissor-split {
+    border-color: rgba(96, 165, 250, 0.85);
+    background: rgba(37, 99, 235, 0.18);
+  }
+  .ts-scissor-split.segment-toggle {
+    border-color: rgba(120, 120, 120, 0.45);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .ts-split-btn {
+    border: none;
+    background: transparent;
+    color: #93c5fd;
+    flex: 1;
+    height: 24px;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+    display: inline-grid;
+    place-items: center;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+  .ts-split-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  .ts-split-btn + .ts-split-btn {
+    border-left: 0.5px solid rgba(96, 165, 250, 0.65);
+  }
+  .ts-split-btn:hover {
+    background: rgba(59, 130, 246, 0.34);
+    color: #bfdbfe;
+  }
+  .ts-split-btn.is-active {
+    background: rgba(59, 130, 246, 0.34);
+    color: #bfdbfe;
+  }
+  .ts-split-btn.is-inactive {
+    color: #808080;
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .ts-split-btn.is-inactive:hover {
+    color: #a0a0a0;
+    background: rgba(255, 255, 255, 0.06);
   }
   .vol-tooltip {
     position: fixed;
@@ -3077,7 +3844,7 @@
     color: #ffffff;
   }
   .add-ts-btn {
-    color: #555555;
+    color: #ffffff;
   }
   .add-ts-btn:hover {
     color: #f5c518;
@@ -3348,6 +4115,10 @@
     border-right: 1px solid rgba(147, 197, 253, 0.9);
     pointer-events: none;
     z-index: 1;
+    transition:
+      background 0.22s ease,
+      border-color 0.22s ease,
+      opacity 0.22s ease;
   }
   .fs-clip-marker {
     position: absolute;
@@ -3439,7 +4210,7 @@
     color: #ffffff;
   }
   .fs-ctrl-btn.add-ts-btn {
-    color: #555555;
+    color: #ffffff;
   }
   .fs-ctrl-btn.add-ts-btn:hover {
     color: #f5c518;
@@ -3605,17 +4376,17 @@
   .clip-actions {
     position: fixed;
     left: 50%;
-    bottom: 48px;
+    bottom: 38px;
     transform: translateX(-50%);
     z-index: 1100;
-    width: min(430px, calc(100vw - 24px));
-    background: rgba(17, 17, 17, 0.97);
+    width: min(398px, calc(100vw - 30px));
+    background: #111111;
     border: 0.5px solid #2a2a2a;
     border-radius: 9px;
-    padding: 7px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
     align-items: center;
   }
@@ -3628,7 +4399,7 @@
     font-family: Inter, sans-serif;
     font-size: 11px;
     font-weight: 600;
-    padding: 8px 10px;
+    padding: 7px 9px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3648,7 +4419,7 @@
     width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 5px;
+    gap: 4px;
   }
   .clip-toggle-btn {
     min-width: 0;
@@ -3658,7 +4429,7 @@
     color: #7d7d7d;
     font-family: Inter, sans-serif;
     font-size: 11px;
-    padding: 7px 6px;
+    padding: 6px 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
