@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { fade, fly } from 'svelte/transition';
-  import { convertFileSrc, invoke } from '@tauri-apps/api/core';
-  import { getCurrentWindow } from '@tauri-apps/api/window';
-  import { readDir, stat } from '@tauri-apps/plugin-fs';
-  import { open } from '@tauri-apps/plugin-dialog';
+  import { onMount } from "svelte";
+  import { fade, fly } from "svelte/transition";
+  import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { readDir, stat } from "@tauri-apps/plugin-fs";
+  import { open } from "@tauri-apps/plugin-dialog";
 
-  let filePath = $state('');
-  let fileSrc = $state('');
-  let fileName = $state('no file open');
+  let filePath = $state("");
+  let fileSrc = $state("");
+  let fileName = $state("no file open");
   let isVideo = $state(false);
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
-  let fileSize = $state('');
-  let fileDimensions = $state('');
-  let fileCreated = $state('');
-  let fileModified = $state('');
+  let fileSize = $state("");
+  let fileDimensions = $state("");
+  let fileCreated = $state("");
+  let fileModified = $state("");
   let fileInfoLoading = $state(false);
   let isLoadingFile = $state(false);
   let loadingFadingOut = $state(false);
@@ -41,7 +41,7 @@
   let volumeTooltipVisible = $state(false);
   const VOLUME_SEGMENTS = 8;
 
-  let hoverZone = $state('none');
+  let hoverZone = $state("none");
   let isFullscreen = $state(false);
   let fsControlsVisible = $state(true);
   let fsHideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -75,7 +75,7 @@
   interface ClipBoundary {
     id: string;
     time: number;
-    kind: 'start' | 'end';
+    kind: "start" | "end";
     title?: string;
   }
   interface ClipPair {
@@ -90,22 +90,25 @@
     output_dir: string;
   }
   let clipBoundaries = $state<ClipBoundary[]>([]);
-  let clipOutputDir = $state('');
+  let clipOutputDir = $state("");
   let clipDeleteOriginal = $state(false);
   let clipUseCustomPath = $state(false);
   let clipMergeSegments = $state(false);
   let clipJobRunning = $state(false);
-  let clipJobLabel = $state('');
-  let clipDeleteConfirm = $state<{ visible: boolean; mode: 'separate' | 'merge' | null }>({
+  let clipJobLabel = $state("");
+  let clipDeleteConfirm = $state<{
+    visible: boolean;
+    mode: "separate" | "merge" | null;
+  }>({
     visible: false,
     mode: null,
   });
   let clipToast = $state<{
     visible: boolean;
-    tone: 'success' | 'error';
+    tone: "success" | "error";
     message: string;
     outputDir: string;
-  }>({ visible: false, tone: 'success', message: '', outputDir: '' });
+  }>({ visible: false, tone: "success", message: "", outputDir: "" });
   let clipToastTimer: ReturnType<typeof setTimeout> | undefined;
   let clipMarkerJustDragged = false;
   interface MediaProperties {
@@ -124,65 +127,70 @@
   let ffprobeAvailable = $state(true);
   let ffprobeChecked = $state(false);
   let ffmpegInstalling = $state(false);
-  let ffmpegInstallError = $state('');
+  let ffmpegInstallError = $state("");
   let tsTooltip = $state<{
     visible: boolean;
     x: number;
     y: number;
     title?: string;
     timeLabel: string;
-    tone?: 'yellow' | 'blue';
+    tone?: "yellow" | "blue";
   }>({
     visible: false,
     x: 0,
     y: 0,
-    title: '',
-    timeLabel: '',
-    tone: 'yellow',
+    title: "",
+    timeLabel: "",
+    tone: "yellow",
   });
   let tsEditMenu = $state<{
     visible: boolean;
     x: number;
     y: number;
     targetId: string;
-    targetType: 'timestamp' | 'segment';
+    targetType: "timestamp" | "segment";
   }>({
     visible: false,
     x: 0,
     y: 0,
-    targetId: '',
-    targetType: 'timestamp',
+    targetId: "",
+    targetType: "timestamp",
   });
   interface TimestampDragRange {
     visible: boolean;
     start: number;
     end: number;
-    phase: 'idle' | 'dragging' | 'converting' | 'fading';
+    phase: "idle" | "dragging" | "converting" | "fading";
   }
   let tsDragRange = $state<TimestampDragRange>({
     visible: false,
     start: 0,
     end: 0,
-    phase: 'idle',
+    phase: "idle",
   });
   let tsDragHoverTimestampId = $state<string | null>(null);
   let tsDragHoverBoundaryId = $state<string | null>(null);
   let tsMarkerDragJustEnded = false;
   let tsDragFadeTimer: ReturnType<typeof setTimeout> | undefined;
-  let frameCopyToast = $state<{ visible: boolean; message: string; tone: 'success' | 'error' }>({
+  let frameCopyToast = $state<{
+    visible: boolean;
+    message: string;
+    tone: "success" | "error";
+  }>({
     visible: false,
-    message: '',
-    tone: 'success',
+    message: "",
+    tone: "success",
   });
   let frameCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
-  const videoExts = ['mp4', 'webm', 'mkv', 'avi', 'mov', 'wmv'];
+  const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
+  const videoExts = ["mp4", "webm", "mkv", "avi", "mov", "wmv"];
   const allExts = [...imageExts, ...videoExts];
 
   const isQuarterTurn = $derived(Math.abs(imageRotation % 180) === 90);
   const rotationFitScale = $derived.by(() => {
-    if (!isQuarterTurn || imageNaturalWidth <= 0 || imageNaturalHeight <= 0) return 1;
+    if (!isQuarterTurn || imageNaturalWidth <= 0 || imageNaturalHeight <= 0)
+      return 1;
     const ratio = imageNaturalWidth / imageNaturalHeight;
     return Math.min(ratio, 1 / ratio);
   });
@@ -193,20 +201,27 @@
   const videoWrapperTransform = $derived(
     `transform: scale(${zoomLevel / 100}) translate(${translateX / (zoomLevel / 100)}px, ${translateY / (zoomLevel / 100)}px); transform-origin: center center;`,
   );
-  const panCursor = $derived(zoomLevel > 100 ? (isDragging ? 'grabbing' : 'grab') : 'default');
-  const fsCursor = $derived(!fsControlsVisible ? 'none' : panCursor);
-  const isGifVideo = $derived(isVideo && fileExt() === 'gif');
+  const panCursor = $derived(
+    zoomLevel > 100 ? (isDragging ? "grabbing" : "grab") : "default",
+  );
+  const fsCursor = $derived(!fsControlsVisible ? "none" : panCursor);
+  const isGifVideo = $derived(isVideo && fileExt() === "gif");
   const clipPairs = $derived.by(() => {
     const sorted = [...clipBoundaries].sort((a, b) => a.time - b.time);
     const pendingStarts: ClipBoundary[] = [];
     const pairs: ClipPair[] = [];
     for (const marker of sorted) {
-      if (marker.kind === 'start') {
+      if (marker.kind === "start") {
         pendingStarts.push(marker);
       } else if (pendingStarts.length > 0) {
         const start = pendingStarts.shift()!;
         if (marker.time > start.time) {
-          pairs.push({ start: start.time, end: marker.time, startId: start.id, endId: marker.id });
+          pairs.push({
+            start: start.time,
+            end: marker.time,
+            startId: start.id,
+            endId: marker.id,
+          });
         }
       }
     }
@@ -220,13 +235,13 @@
     return `-${formatTime(rem)}`;
   }
   const durationDisplay = $derived(formatTime(rawDurationSecs));
-  const timerTooltip = $derived(timerShowRemaining ? 'Remaining' : 'Elapsed');
+  const timerTooltip = $derived(timerShowRemaining ? "Remaining" : "Elapsed");
 
   function formatTime(seconds: number): string {
-    if (!seconds || isNaN(seconds) || seconds < 0) return '0:00';
+    if (!seconds || isNaN(seconds) || seconds < 0) return "0:00";
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
+    return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
   function formatFileSize(bytes: number): string {
@@ -235,16 +250,16 @@
   }
 
   function formatMetaDate(value: unknown): string {
-    if (value === null || value === undefined) return 'Unknown';
-    const asNumber = typeof value === 'number' ? value : Number(value);
-    if (!Number.isFinite(asNumber)) return 'Unknown';
+    if (value === null || value === undefined) return "Unknown";
+    const asNumber = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(asNumber)) return "Unknown";
     const ms = asNumber < 10_000_000_000 ? asNumber * 1000 : asNumber;
     const d = new Date(ms);
-    if (Number.isNaN(d.getTime())) return 'Unknown';
+    if (Number.isNaN(d.getTime())) return "Unknown";
     return d.toLocaleString();
   }
 
-  function showFrameCopyToast(message: string, tone: 'success' | 'error') {
+  function showFrameCopyToast(message: string, tone: "success" | "error") {
     clearTimeout(frameCopyToastTimer);
     frameCopyToast = { visible: true, message, tone };
     frameCopyToastTimer = setTimeout(() => {
@@ -253,7 +268,7 @@
   }
 
   function getMetaValue(obj: unknown, key: string): unknown {
-    if (!obj || typeof obj !== 'object') return undefined;
+    if (!obj || typeof obj !== "object") return undefined;
     return (obj as Record<string, unknown>)[key];
   }
 
@@ -272,7 +287,8 @@
     if (!videoEl) return;
     rawCurrentSecs = videoEl.currentTime;
     rawDurationSecs = videoEl.duration || 0;
-    progress = rawDurationSecs > 0 ? (rawCurrentSecs / rawDurationSecs) * 100 : 0;
+    progress =
+      rawDurationSecs > 0 ? (rawCurrentSecs / rawDurationSecs) * 100 : 0;
     playing = !videoEl.paused;
   }
 
@@ -309,7 +325,10 @@
 
     function scrubTo(clientX: number) {
       const rect = bar.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
       videoEl!.currentTime = ratio * videoEl!.duration;
       rawCurrentSecs = videoEl!.currentTime;
       progress = ratio * 100;
@@ -326,13 +345,13 @@
     }
 
     function onMouseUp() {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
       if (wasPlaying) videoEl!.play();
     }
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   }
 
   function setVolume(val: number) {
@@ -342,7 +361,7 @@
       muted = volume === 0;
       videoEl.muted = muted;
     }
-    localStorage.setItem('vyu-volume', String(volume));
+    localStorage.setItem("vyu-volume", String(volume));
   }
 
   function handleVolumeScroll(e: WheelEvent) {
@@ -353,12 +372,17 @@
   function startVolumeDrag(e: MouseEvent) {
     if (e.button !== 0) return;
     e.preventDefault();
-    const diamonds = (e.currentTarget as HTMLElement).querySelectorAll('.volume-diamond');
+    const diamonds = (e.currentTarget as HTMLElement).querySelectorAll(
+      ".volume-diamond",
+    );
 
     function dragTo(clientX: number, clientY: number) {
       const first = diamonds[0].getBoundingClientRect();
       const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - first.left) / (last.right - first.left)));
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - first.left) / (last.right - first.left)),
+      );
       setVolume(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
       volumeTooltipX = clientX;
       volumeTooltipY = clientY;
@@ -371,13 +395,13 @@
       dragTo(ev.clientX, ev.clientY);
     }
     function onMouseUp() {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
       volumeTooltipVisible = false;
     }
 
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   }
 
   function handleVolumeDiamondHover(e: MouseEvent) {
@@ -400,11 +424,13 @@
       const raw = localStorage.getItem(`vyu-ts-${filePath}`);
       const parsed = raw ? (JSON.parse(raw) as Array<Partial<Timestamp>>) : [];
       timestamps = parsed
-        .filter((ts) => typeof ts?.time === 'number')
+        .filter((ts) => typeof ts?.time === "number")
         .map((ts) => ({
-          id: ts.id || `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id:
+            ts.id ||
+            `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           time: ts.time as number,
-          title: typeof ts.title === 'string' ? ts.title : '',
+          title: typeof ts.title === "string" ? ts.title : "",
         }))
         .sort((a, b) => a.time - b.time);
     } catch {
@@ -423,7 +449,11 @@
     if (timestamps.some((ts) => Math.abs(ts.time - t) < 0.3)) return;
     timestamps = [
       ...timestamps,
-      { id: `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, time: t, title: '' },
+      {
+        id: `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time: t,
+        title: "",
+      },
     ].sort((a, b) => a.time - b.time);
     saveTimestamps();
   }
@@ -475,7 +505,7 @@
   }
 
   function getTitleEditorWidthCh(title: string): number {
-    return Math.min(26, Math.max(10, (title || '').trim().length + 2));
+    return Math.min(26, Math.max(10, (title || "").trim().length + 2));
   }
 
   function showTimestampTooltip(e: MouseEvent, ts: Timestamp) {
@@ -484,9 +514,9 @@
       visible: true,
       x: rect.left + rect.width / 2,
       y: rect.top - 8,
-      title: ts.title?.trim() || '',
+      title: ts.title?.trim() || "",
       timeLabel: formatTime(ts.time),
-      tone: 'yellow',
+      tone: "yellow",
     };
   }
 
@@ -502,7 +532,7 @@
       x: rect.left + rect.width / 2,
       y: rect.top - 8,
       targetId: id,
-      targetType: 'timestamp',
+      targetType: "timestamp",
     };
   }
 
@@ -518,7 +548,7 @@
       x: rect.left + rect.width / 2,
       y: rect.top - 8,
       targetId: id,
-      targetType: 'segment',
+      targetType: "segment",
     };
   }
 
@@ -528,13 +558,15 @@
 
   function convertTimestampToBoundary(
     id: string,
-    kind: 'start' | 'end',
+    kind: "start" | "end",
     keepEditorOpen: boolean = false,
   ): string | null {
     const ts = getTimestampById(id);
     if (!ts) return null;
-    let boundaryId = '';
-    const existing = clipBoundaries.find((m) => m.kind === kind && Math.abs(m.time - ts.time) < 0.25);
+    let boundaryId = "";
+    const existing = clipBoundaries.find(
+      (m) => m.kind === kind && Math.abs(m.time - ts.time) < 0.25,
+    );
     if (!existing) {
       boundaryId = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       clipBoundaries = [
@@ -543,7 +575,7 @@
           id: boundaryId,
           time: ts.time,
           kind,
-          title: ts.title || '',
+          title: ts.title || "",
         },
       ].sort((a, b) => a.time - b.time);
       saveClipBoundaries();
@@ -559,7 +591,7 @@
       tsEditMenu = {
         ...tsEditMenu,
         visible: true,
-        targetType: 'segment',
+        targetType: "segment",
         targetId: boundaryId,
       };
     } else {
@@ -575,31 +607,37 @@
     if (!a || !b) return;
     const [left, right] = a.time <= b.time ? [a, b] : [b, a];
     const next = [...clipBoundaries];
-    const existingStart = next.find((m) => m.kind === 'start' && Math.abs(m.time - left.time) < 0.25);
+    const existingStart = next.find(
+      (m) => m.kind === "start" && Math.abs(m.time - left.time) < 0.25,
+    );
     if (!existingStart) {
       next.push({
         id: `start-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         time: left.time,
-        kind: 'start',
-        title: left.title || '',
+        kind: "start",
+        title: left.title || "",
       });
     } else if (!existingStart.title && left.title) {
       existingStart.title = left.title;
     }
-    const existingEnd = next.find((m) => m.kind === 'end' && Math.abs(m.time - right.time) < 0.25);
+    const existingEnd = next.find(
+      (m) => m.kind === "end" && Math.abs(m.time - right.time) < 0.25,
+    );
     if (!existingEnd) {
       next.push({
         id: `end-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         time: right.time,
-        kind: 'end',
-        title: right.title || '',
+        kind: "end",
+        title: right.title || "",
       });
     } else if (!existingEnd.title && right.title) {
       existingEnd.title = right.title;
     }
     clipBoundaries = next.sort((x, y) => x.time - y.time);
     saveClipBoundaries();
-    timestamps = timestamps.filter((ts) => ts.id !== left.id && ts.id !== right.id);
+    timestamps = timestamps.filter(
+      (ts) => ts.id !== left.id && ts.id !== right.id,
+    );
     saveTimestamps();
     closeTimestampEditor();
   }
@@ -611,29 +649,33 @@
     if (filePath) localStorage.removeItem(`vyu-clips-${filePath}`);
   }
 
-  function setClipBoundaryKind(id: string, kind: 'start' | 'end') {
+  function setClipBoundaryKind(id: string, kind: "start" | "end") {
     const marker = getClipBoundaryById(id);
     if (!marker || marker.kind === kind) return;
-    clipBoundaries = clipBoundaries.map((m) => (m.id === id ? { ...m, kind } : m)).sort((a, b) => a.time - b.time);
+    clipBoundaries = clipBoundaries
+      .map((m) => (m.id === id ? { ...m, kind } : m))
+      .sort((a, b) => a.time - b.time);
     saveClipBoundaries();
   }
 
   function getActiveEditorTimestamp(): Timestamp | undefined {
-    if (!tsEditMenu.visible || tsEditMenu.targetType !== 'timestamp') return undefined;
+    if (!tsEditMenu.visible || tsEditMenu.targetType !== "timestamp")
+      return undefined;
     return getTimestampById(tsEditMenu.targetId);
   }
 
   function getActiveEditorSegment(): ClipBoundary | undefined {
-    if (!tsEditMenu.visible || tsEditMenu.targetType !== 'segment') return undefined;
+    if (!tsEditMenu.visible || tsEditMenu.targetType !== "segment")
+      return undefined;
     return getClipBoundaryById(tsEditMenu.targetId);
   }
 
   function getEditorTitle(): string {
     const ts = getActiveEditorTimestamp();
-    if (ts) return ts.title || '';
+    if (ts) return ts.title || "";
     const seg = getActiveEditorSegment();
-    if (seg) return seg.title || '';
-    return '';
+    if (seg) return seg.title || "";
+    return "";
   }
 
   function updateEditorTitle(value: string) {
@@ -648,7 +690,7 @@
     }
   }
 
-  function onEditorScissor(kind: 'start' | 'end') {
+  function onEditorScissor(kind: "start" | "end") {
     const ts = getActiveEditorTimestamp();
     if (ts) {
       convertTimestampToBoundary(ts.id, kind, true);
@@ -678,7 +720,10 @@
     return found?.id ?? null;
   }
 
-  function getBoundaryTouchTarget(currentTime: number, threshold: number): string | null {
+  function getBoundaryTouchTarget(
+    currentTime: number,
+    threshold: number,
+  ): string | null {
     let found: ClipBoundary | null = null;
     let best = Number.POSITIVE_INFINITY;
     for (const marker of clipBoundaries) {
@@ -693,7 +738,7 @@
 
   function clearTimestampDragRange() {
     clearTimeout(tsDragFadeTimer);
-    tsDragRange = { visible: false, start: 0, end: 0, phase: 'idle' };
+    tsDragRange = { visible: false, start: 0, end: 0, phase: "idle" };
     tsDragHoverTimestampId = null;
     tsDragHoverBoundaryId = null;
   }
@@ -707,7 +752,9 @@
     e.stopPropagation();
 
     const markerEl = e.currentTarget as HTMLElement;
-    const bar = markerEl.closest('.progress-bar, .fs-progress') as HTMLElement | null;
+    const bar = markerEl.closest(
+      ".progress-bar, .fs-progress",
+    ) as HTMLElement | null;
     if (!bar) return;
     const barEl = bar;
     closeTimestampEditor();
@@ -720,7 +767,7 @@
       visible: true,
       start: sourceTs.time,
       end: sourceTs.time,
-      phase: 'dragging',
+      phase: "dragging",
     };
 
     let moved = false;
@@ -728,17 +775,24 @@
     function update(clientX: number) {
       const rect = barEl.getBoundingClientRect();
       if (rect.width <= 0) return;
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
       const time = ratio * rawDurationSecs;
       moved = moved || Math.abs(time - sourceTs.time) > 0.02;
       tsDragRange = {
         visible: true,
         start: Math.min(sourceTs.time, time),
         end: Math.max(sourceTs.time, time),
-        phase: 'dragging',
+        phase: "dragging",
       };
       const touchThreshold = Math.max(0.08, (rawDurationSecs / rect.width) * 7);
-      tsDragHoverTimestampId = getTimestampTouchTarget(time, touchThreshold, sourceTs.id);
+      tsDragHoverTimestampId = getTimestampTouchTarget(
+        time,
+        touchThreshold,
+        sourceTs.id,
+      );
       tsDragHoverBoundaryId = getBoundaryTouchTarget(time, touchThreshold);
     }
 
@@ -747,8 +801,8 @@
     }
 
     function onUp() {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
 
       if (moved) {
         tsMarkerDragJustEnded = true;
@@ -765,7 +819,7 @@
             visible: true,
             start: Math.min(sourceTs.time, target.time),
             end: Math.max(sourceTs.time, target.time),
-            phase: 'converting',
+            phase: "converting",
           };
           convertTimestampPairToSegment(sourceTs.id, targetTsId);
           tsDragFadeTimer = setTimeout(() => {
@@ -783,7 +837,7 @@
             visible: true,
             start: Math.min(sourceTs.time, boundary.time),
             end: Math.max(sourceTs.time, boundary.time),
-            phase: 'converting',
+            phase: "converting",
           };
           convertTimestampToBoundary(sourceTs.id, boundary.kind);
           tsDragFadeTimer = setTimeout(() => {
@@ -794,7 +848,7 @@
       }
 
       if (tsDragRange.visible) {
-        tsDragRange = { ...tsDragRange, phase: 'fading' };
+        tsDragRange = { ...tsDragRange, phase: "fading" };
         tsDragFadeTimer = setTimeout(() => {
           clearTimestampDragRange();
         }, 140);
@@ -803,8 +857,8 @@
       }
     }
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   function getDragRangeStyle() {
@@ -831,14 +885,22 @@
     }
     try {
       const raw = localStorage.getItem(`vyu-clips-${filePath}`);
-      const parsed = raw ? (JSON.parse(raw) as Array<Partial<ClipBoundary>>) : [];
+      const parsed = raw
+        ? (JSON.parse(raw) as Array<Partial<ClipBoundary>>)
+        : [];
       clipBoundaries = parsed
-        .filter((m) => typeof m?.time === 'number' && (m.kind === 'start' || m.kind === 'end'))
+        .filter(
+          (m) =>
+            typeof m?.time === "number" &&
+            (m.kind === "start" || m.kind === "end"),
+        )
         .map((m) => ({
-          id: m.id || `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}`,
+          id:
+            m.id ||
+            `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}`,
           time: m.time as number,
-          kind: m.kind as 'start' | 'end',
-          title: typeof m.title === 'string' ? m.title : '',
+          kind: m.kind as "start" | "end",
+          title: typeof m.title === "string" ? m.title : "",
         }))
         .sort((a, b) => a.time - b.time);
     } catch {
@@ -848,16 +910,29 @@
 
   function saveClipBoundaries() {
     if (!filePath) return;
-    localStorage.setItem(`vyu-clips-${filePath}`, JSON.stringify(clipBoundaries));
+    localStorage.setItem(
+      `vyu-clips-${filePath}`,
+      JSON.stringify(clipBoundaries),
+    );
   }
 
-  function addClipBoundary(kind: 'start' | 'end') {
+  function addClipBoundary(kind: "start" | "end") {
     if (!videoEl || rawDurationSecs <= 0) return;
     const time = Math.max(0, Math.min(videoEl.currentTime, rawDurationSecs));
-    if (clipBoundaries.some((m) => m.kind === kind && Math.abs(m.time - time) < 0.25)) return;
+    if (
+      clipBoundaries.some(
+        (m) => m.kind === kind && Math.abs(m.time - time) < 0.25,
+      )
+    )
+      return;
     clipBoundaries = [
       ...clipBoundaries,
-      { id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, time, kind, title: '' },
+      {
+        id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        time,
+        kind,
+        title: "",
+      },
     ].sort((a, b) => a.time - b.time);
     saveClipBoundaries();
   }
@@ -867,7 +942,9 @@
     e.preventDefault();
     e.stopPropagation();
     const markerEl = e.currentTarget as HTMLElement;
-    const bar = markerEl.closest('.progress-bar, .fs-progress') as HTMLElement | null;
+    const bar = markerEl.closest(
+      ".progress-bar, .fs-progress",
+    ) as HTMLElement | null;
     if (!bar) return;
     const barEl = bar;
 
@@ -875,7 +952,10 @@
 
     function update(clientX: number, clientY: number) {
       const rect = barEl.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
       const time = ratio * rawDurationSecs;
       clipBoundaries = clipBoundaries
         .map((m) => (m.id === id ? { ...m, time } : m))
@@ -886,9 +966,9 @@
           visible: true,
           x: clientX,
           y: clientY - 10,
-          title: marker.title?.trim() || '',
+          title: marker.title?.trim() || "",
           timeLabel: formatTime(marker.time),
-          tone: 'blue',
+          tone: "blue",
         };
       }
     }
@@ -899,8 +979,8 @@
     }
 
     function onUp() {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
       tsTooltip = { ...tsTooltip, visible: false };
       if (moved) {
         clipMarkerJustDragged = true;
@@ -911,8 +991,8 @@
       }
     }
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   function removeClipBoundary(id: string) {
@@ -922,9 +1002,12 @@
   }
 
   function persistClipPrefs() {
-    localStorage.setItem('vyu-clip-delete-original', String(clipDeleteOriginal));
-    localStorage.setItem('vyu-clip-use-custom-path', String(clipUseCustomPath));
-    localStorage.setItem('vyu-clip-merge-segments', String(clipMergeSegments));
+    localStorage.setItem(
+      "vyu-clip-delete-original",
+      String(clipDeleteOriginal),
+    );
+    localStorage.setItem("vyu-clip-use-custom-path", String(clipUseCustomPath));
+    localStorage.setItem("vyu-clip-merge-segments", String(clipMergeSegments));
   }
 
   function getClipTargetDir(): string {
@@ -933,7 +1016,7 @@
 
   function showClipToast(
     message: string,
-    tone: 'success' | 'error',
+    tone: "success" | "error",
     outputDir: string = clipOutputDir || parentFolder(),
   ) {
     clearTimeout(clipToastTimer);
@@ -949,24 +1032,25 @@
 
   function extractInvokeErrorMessage(e: unknown): string {
     if (e instanceof Error && e.message) return e.message;
-    if (typeof e === 'string' && e.trim()) return e;
-    if (e && typeof e === 'object') {
+    if (typeof e === "string" && e.trim()) return e;
+    if (e && typeof e === "object") {
       const msg = (e as { message?: unknown }).message;
-      if (typeof msg === 'string' && msg.trim()) return msg;
+      if (typeof msg === "string" && msg.trim()) return msg;
     }
     try {
       const asJson = JSON.stringify(e);
-      if (asJson && asJson !== '{}') return asJson;
+      if (asJson && asJson !== "{}") return asJson;
     } catch {}
-    return 'Failed to create clips.';
+    return "Failed to create clips.";
   }
 
-  async function runClipAction(mode: 'separate' | 'merge') {
+  async function runClipAction(mode: "separate" | "merge") {
     if (!isVideo || clipCount === 0 || clipJobRunning) return;
     clipJobRunning = true;
-    clipJobLabel = mode === 'separate' ? 'Separating clips...' : 'Merging clips...';
+    clipJobLabel =
+      mode === "separate" ? "Separating clips..." : "Merging clips...";
     try {
-      const result = (await invoke('process_video_clips', {
+      const result = (await invoke("process_video_clips", {
         path: filePath,
         outputDir: getClipTargetDir(),
         segments: sanitizeClipPairs(),
@@ -974,12 +1058,16 @@
         deleteOriginal: clipDeleteOriginal,
       })) as ClipJobResult;
       const count = result.outputs.length;
-      const noun = count === 1 ? 'clip' : 'clips';
+      const noun = count === 1 ? "clip" : "clips";
       const msg =
-        mode === 'merge'
-          ? `${count} ${noun} created${result.deleted_original ? ' and original file deleted' : ''}.`
-          : `${count} ${noun} created${result.deleted_original ? ' and original file deleted' : ''}.`;
-      showClipToast(msg, 'success', result.output_dir || clipOutputDir || parentFolder());
+        mode === "merge"
+          ? `${count} ${noun} created${result.deleted_original ? " and original file deleted" : ""}.`
+          : `${count} ${noun} created${result.deleted_original ? " and original file deleted" : ""}.`;
+      showClipToast(
+        msg,
+        "success",
+        result.output_dir || clipOutputDir || parentFolder(),
+      );
       clipBoundaries = [];
       saveClipBoundaries();
       if (result.deleted_original) {
@@ -989,7 +1077,10 @@
         closeFile();
         const remaining = prevList.filter((p) => p !== deletedPath);
         if (remaining.length > 0) {
-          const nextIndex = Math.max(0, Math.min(prevIndex, remaining.length - 1));
+          const nextIndex = Math.max(
+            0,
+            Math.min(prevIndex, remaining.length - 1),
+          );
           loadFile(remaining[nextIndex]);
         }
       } else {
@@ -997,15 +1088,15 @@
       }
     } catch (e) {
       const msg = extractInvokeErrorMessage(e);
-      showClipToast(msg, 'error');
+      showClipToast(msg, "error");
     } finally {
       clipJobRunning = false;
-      clipJobLabel = '';
+      clipJobLabel = "";
       clipDeleteConfirm = { visible: false, mode: null };
     }
   }
 
-  function requestClipAction(mode: 'separate' | 'merge') {
+  function requestClipAction(mode: "separate" | "merge") {
     if (clipDeleteOriginal) {
       clipDeleteConfirm = { visible: true, mode };
       return;
@@ -1030,7 +1121,7 @@
       return;
     }
     clipOutputDir = selected as string;
-    localStorage.setItem('vyu-clip-output-dir', clipOutputDir);
+    localStorage.setItem("vyu-clip-output-dir", clipOutputDir);
     clipUseCustomPath = true;
     persistClipPrefs();
   }
@@ -1046,19 +1137,19 @@
   }
 
   function triggerClipSegments() {
-    requestClipAction(clipMergeSegments ? 'merge' : 'separate');
+    requestClipAction(clipMergeSegments ? "merge" : "separate");
   }
 
   async function displayFile(path: string) {
     filePath = path;
-    fileName = path.split('\\').pop() || path.split('/').pop() || path;
-    const ext = path.split('.').pop()?.toLowerCase() || '';
+    fileName = path.split("\\").pop() || path.split("/").pop() || path;
+    const ext = path.split(".").pop()?.toLowerCase() || "";
     isVideo = videoExts.includes(ext);
     fileSrc = convertFileSrc(path);
-    fileSize = '';
-    fileDimensions = '';
-    fileCreated = '';
-    fileModified = '';
+    fileSize = "";
+    fileDimensions = "";
+    fileCreated = "";
+    fileModified = "";
     fileInfoLoading = true;
     imageRotation = 0;
     imageFlipped = false;
@@ -1081,14 +1172,14 @@
       const info = await stat(path);
       fileSize = formatFileSize(info.size);
       fileCreated = formatMetaDate(
-        getMetaValue(info, 'birthtime') ??
-          getMetaValue(info, 'birthtimeMs') ??
-          getMetaValue(info, 'createdAt'),
+        getMetaValue(info, "birthtime") ??
+          getMetaValue(info, "birthtimeMs") ??
+          getMetaValue(info, "createdAt"),
       );
       fileModified = formatMetaDate(
-        getMetaValue(info, 'mtime') ??
-          getMetaValue(info, 'mtimeMs') ??
-          getMetaValue(info, 'modifiedAt'),
+        getMetaValue(info, "mtime") ??
+          getMetaValue(info, "mtimeMs") ??
+          getMetaValue(info, "modifiedAt"),
       );
     } catch {}
   }
@@ -1121,12 +1212,14 @@
     isLoadingFile = true;
     loadingFadingOut = false;
     await displayFile(path);
-    const sep = path.includes('\\') ? '\\' : '/';
+    const sep = path.includes("\\") ? "\\" : "/";
     const folder = path.substring(0, path.lastIndexOf(sep));
     try {
       const entries = await readDir(folder);
       fileList = entries
-        .filter((e) => allExts.includes(e.name?.split('.').pop()?.toLowerCase() ?? ''))
+        .filter((e) =>
+          allExts.includes(e.name?.split(".").pop()?.toLowerCase() ?? ""),
+        )
         .map((e) => `${folder}${sep}${e.name}`)
         .sort();
       currentIndex = fileList.indexOf(path);
@@ -1135,7 +1228,8 @@
 
   function navigate(direction: number) {
     if (fileList.length === 0) return;
-    currentIndex = (currentIndex + direction + fileList.length) % fileList.length;
+    currentIndex =
+      (currentIndex + direction + fileList.length) % fileList.length;
     displayFile(fileList[currentIndex]);
   }
 
@@ -1146,9 +1240,9 @@
   }
 
   function closeFile() {
-    filePath = '';
-    fileSrc = '';
-    fileName = 'no file open';
+    filePath = "";
+    fileSrc = "";
+    fileName = "no file open";
     isVideo = false;
     fileList = [];
     currentIndex = 0;
@@ -1156,10 +1250,10 @@
     progress = 0;
     rawCurrentSecs = 0;
     rawDurationSecs = 0;
-    fileSize = '';
-    fileDimensions = '';
-    fileCreated = '';
-    fileModified = '';
+    fileSize = "";
+    fileDimensions = "";
+    fileCreated = "";
+    fileModified = "";
     isLoadingFile = false;
     loadingFadingOut = false;
     imageRotation = 0;
@@ -1213,7 +1307,10 @@
     const mouseY = e.clientY - rect.top - rect.height / 2;
     const oldScale = zoomLevel / 100;
     const raw = zoomLevel * (e.deltaY > 0 ? 1 / 1.1 : 1.1);
-    const newZoom = Math.max(100, Math.min(1000, zoomLevel > 100 && raw < 100 ? 100 : raw));
+    const newZoom = Math.max(
+      100,
+      Math.min(1000, zoomLevel > 100 && raw < 100 ? 100 : raw),
+    );
     const newScale = newZoom / 100;
     if (newZoom === 100) {
       translateX = 0;
@@ -1241,7 +1338,10 @@
     const mouseX = midX - rect.left - rect.width / 2;
     const mouseY = midY - rect.top - rect.height / 2;
     const oldScale = zoomLevel / 100;
-    const newZoom = Math.max(100, Math.min(1000, zoomLevel * (dist / lastPinchDist)));
+    const newZoom = Math.max(
+      100,
+      Math.min(1000, zoomLevel * (dist / lastPinchDist)),
+    );
     const newScale = newZoom / 100;
     if (newZoom === 100) {
       translateX = 0;
@@ -1262,7 +1362,7 @@
     if (e.button !== 0) return;
     if (
       (e.target as HTMLElement).closest(
-        '.video-controls, .fs-controls, .fs-topbar, .fs-nav-left, .fs-nav-right, .context-menu, .delete-overlay',
+        ".video-controls, .fs-controls, .fs-topbar, .fs-nav-left, .fs-nav-right, .context-menu, .delete-overlay",
       )
     )
       return;
@@ -1299,84 +1399,88 @@
           if (timeSinceLast < 300) toggleFullscreen();
         }
       }
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     }
 
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   async function startDrag(e: MouseEvent) {
     if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest('button, .filename')) return;
+    if ((e.target as HTMLElement).closest("button, .filename")) return;
     await getCurrentWindow().startDragging();
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if (contextMenu.visible || deleteConfirm || propertiesOpen) {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         contextMenu.visible = false;
         deleteConfirm = false;
         propertiesOpen = false;
       }
       return;
     }
-    if (e.ctrlKey && e.key === 'ArrowRight') {
+    if (e.ctrlKey && e.key === "ArrowRight") {
       e.preventDefault();
       navigateToEdge(false);
       return;
     }
-    if (e.ctrlKey && e.key === 'ArrowLeft') {
+    if (e.ctrlKey && e.key === "ArrowLeft") {
       e.preventDefault();
       navigateToEdge(true);
       return;
     }
-    if (e.altKey && e.key === 'ArrowRight') {
+    if (e.altKey && e.key === "ArrowRight") {
       e.preventDefault();
       navigate(1);
       return;
     }
-    if (e.altKey && e.key === 'ArrowLeft') {
+    if (e.altKey && e.key === "ArrowLeft") {
       e.preventDefault();
       navigate(-1);
       return;
     }
-    if (e.key === 'f' || e.key === 'F') {
+    if (e.key === "f" || e.key === "F") {
       toggleFullscreen();
       return;
     }
-    if (e.key === 'Escape' && isFullscreen) {
+    if (e.key === "Escape" && isFullscreen) {
       toggleFullscreen();
       return;
     }
-    if (e.key === 'ArrowUp') {
+    if (e.key === "ArrowUp") {
       e.preventDefault();
       setVolume(volume + 0.125);
       return;
     }
-    if (e.key === 'ArrowDown') {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
       setVolume(volume - 0.125);
       return;
     }
-    if (['ArrowRight', 'ArrowLeft', ' '].includes(e.key)) e.preventDefault();
-    if (isVideo && videoEl && (hoverZone === 'video' || isFullscreen)) {
-      if (e.key === ' ') togglePlay();
-      if (e.key === 'ArrowRight')
-        videoEl.currentTime = Math.min(videoEl.currentTime + 5, videoEl.duration);
-      if (e.key === 'ArrowLeft') videoEl.currentTime = Math.max(videoEl.currentTime - 5, 0);
+    if (["ArrowRight", "ArrowLeft", " "].includes(e.key)) e.preventDefault();
+    if (isVideo && videoEl && (hoverZone === "video" || isFullscreen)) {
+      if (e.key === " ") togglePlay();
+      if (e.key === "ArrowRight")
+        videoEl.currentTime = Math.min(
+          videoEl.currentTime + 5,
+          videoEl.duration,
+        );
+      if (e.key === "ArrowLeft")
+        videoEl.currentTime = Math.max(videoEl.currentTime - 5, 0);
     } else {
-      if (e.key === ' ' && isVideo && videoEl) togglePlay();
-      if (e.key === 'ArrowRight') navigate(1);
-      if (e.key === 'ArrowLeft') navigate(-1);
+      if (e.key === " " && isVideo && videoEl) togglePlay();
+      if (e.key === "ArrowRight") navigate(1);
+      if (e.key === "ArrowLeft") navigate(-1);
     }
   }
 
   async function openFileDialog() {
     const selected = await open({
       multiple: false,
-      filters: [{ name: 'Media', extensions: [...imageExts, ...videoExts] }],
+      filters: [{ name: "Media", extensions: [...imageExts, ...videoExts] }],
     });
     if (selected) loadFile(selected as string);
   }
@@ -1399,22 +1503,26 @@
   }
 
   function fileExt(): string {
-    return filePath.split('.').pop()?.toLowerCase() || '';
+    return filePath.split(".").pop()?.toLowerCase() || "";
   }
 
   function parentFolder(): string {
-    const sep = filePath.includes('\\') ? '\\' : '/';
-    return filePath.includes(sep) ? filePath.substring(0, filePath.lastIndexOf(sep)) : '';
+    const sep = filePath.includes("\\") ? "\\" : "/";
+    return filePath.includes(sep)
+      ? filePath.substring(0, filePath.lastIndexOf(sep))
+      : "";
   }
 
   function showValue(v: string | undefined): string {
-    return v && v.trim() ? v : 'Unknown';
+    return v && v.trim() ? v : "Unknown";
   }
 
   async function loadMediaProperties() {
     mediaPropsLoading = true;
     try {
-      mediaProps = (await invoke('get_media_properties', { path: filePath })) as MediaProperties;
+      mediaProps = (await invoke("get_media_properties", {
+        path: filePath,
+      })) as MediaProperties;
     } catch {
       mediaProps = null;
     } finally {
@@ -1425,7 +1533,7 @@
   async function refreshFfprobeAvailability() {
     ffprobeChecked = false;
     try {
-      ffprobeAvailable = (await invoke('check_ffprobe')) as boolean;
+      ffprobeAvailable = (await invoke("check_ffprobe")) as boolean;
     } catch {
       ffprobeAvailable = false;
     } finally {
@@ -1434,10 +1542,10 @@
   }
 
   async function installFfmpegAndWait() {
-    ffmpegInstallError = '';
+    ffmpegInstallError = "";
     ffmpegInstalling = true;
     try {
-      await invoke('install_ffmpeg');
+      await invoke("install_ffmpeg");
       const attempts = 60;
       for (let i = 0; i < attempts; i++) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -1448,10 +1556,12 @@
         }
       }
       if (!ffprobeAvailable) {
-        ffmpegInstallError = 'Install still running. Reopen Properties in a moment.';
+        ffmpegInstallError =
+          "Install still running. Reopen Properties in a moment.";
       }
     } catch (e) {
-      ffmpegInstallError = e instanceof Error ? e.message : 'Failed to start FFmpeg install.';
+      ffmpegInstallError =
+        e instanceof Error ? e.message : "Failed to start FFmpeg install.";
     } finally {
       ffmpegInstalling = false;
     }
@@ -1462,45 +1572,53 @@
     try {
       const response = await fetch(fileSrc);
       const blob = await response.blob();
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob }),
+      ]);
     } catch {}
   }
 
   async function ctxCopyFrame() {
     closeContextMenu();
     if (!videoEl) return;
-    if (videoEl.readyState < 2 || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
-      showFrameCopyToast('Frame not ready yet.', 'error');
+    if (
+      videoEl.readyState < 2 ||
+      videoEl.videoWidth <= 0 ||
+      videoEl.videoHeight <= 0
+    ) {
+      showFrameCopyToast("Frame not ready yet.", "error");
       return;
     }
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = videoEl.videoWidth;
     canvas.height = videoEl.videoHeight;
-    const ctx2d = canvas.getContext('2d');
+    const ctx2d = canvas.getContext("2d");
     if (!ctx2d) return;
     ctx2d.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
     try {
-      const dataUrl = canvas.toDataURL('image/png');
-      const commaIdx = dataUrl.indexOf(',');
-      if (commaIdx === -1) throw new Error('Could not encode frame as PNG.');
+      const dataUrl = canvas.toDataURL("image/png");
+      const commaIdx = dataUrl.indexOf(",");
+      if (commaIdx === -1) throw new Error("Could not encode frame as PNG.");
       const binary = atob(dataUrl.slice(commaIdx + 1));
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'image/png' });
-      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
-        throw new Error('Image clipboard API is unavailable in this runtime.');
+      const blob = new Blob([bytes], { type: "image/png" });
+      if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+        throw new Error("Image clipboard API is unavailable in this runtime.");
       }
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      showFrameCopyToast('Current frame copied as PNG.', 'success');
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blob }),
+      ]);
+      showFrameCopyToast("Current frame copied as PNG.", "success");
     } catch (err) {
-      console.error('Failed to copy current frame to clipboard:', err);
+      console.error("Failed to copy current frame to clipboard:", err);
       const message =
-        err instanceof DOMException && err.name === 'SecurityError'
-          ? 'Frame copy blocked by canvas security (cross-origin source).'
+        err instanceof DOMException && err.name === "SecurityError"
+          ? "Frame copy blocked by canvas security (cross-origin source)."
           : err instanceof Error
             ? err.message
-            : 'Could not copy frame to clipboard.';
-      showFrameCopyToast(message, 'error');
+            : "Could not copy frame to clipboard.";
+      showFrameCopyToast(message, "error");
     }
   }
 
@@ -1534,17 +1652,17 @@
   }
   function ctxStartClipHere() {
     closeContextMenu();
-    addClipBoundary('start');
+    addClipBoundary("start");
   }
   function ctxEndClipHere() {
     closeContextMenu();
-    addClipBoundary('end');
+    addClipBoundary("end");
   }
 
   async function ctxShowInExplorer() {
     closeContextMenu();
     try {
-      await invoke('show_in_explorer', { path: filePath });
+      await invoke("show_in_explorer", { path: filePath });
     } catch {}
   }
 
@@ -1552,7 +1670,7 @@
     closeContextMenu();
     propertiesOpen = true;
     mediaProps = null;
-    ffmpegInstallError = '';
+    ffmpegInstallError = "";
     void (async () => {
       await refreshFfprobeAvailability();
       if (ffprobeAvailable) await loadMediaProperties();
@@ -1567,14 +1685,14 @@
 
   async function propsOpenFolder() {
     try {
-      await invoke('open_folder', { path: filePath });
+      await invoke("open_folder", { path: filePath });
     } catch {}
   }
 
   async function propsCopyAll() {
     const lines = [
       `Name: ${fileName}`,
-      `Type: ${isVideo ? 'Video' : 'Image'} (${fileExt() || 'unknown'})`,
+      `Type: ${isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
       `Container: ${showValue(mediaProps?.container)}`,
       `Video codec: ${showValue(mediaProps?.video_codec)}`,
       `Audio codec: ${showValue(mediaProps?.audio_codec)}`,
@@ -1584,36 +1702,37 @@
       `Color transfer: ${showValue(mediaProps?.color_transfer)}`,
       `Bit depth: ${showValue(mediaProps?.bit_depth)}`,
       `Frame rate: ${showValue(mediaProps?.frame_rate)}`,
-      `Dimensions: ${fileDimensions || 'Unknown'}`,
+      `Dimensions: ${fileDimensions || "Unknown"}`,
       ...(isVideo ? [`Duration: ${durationDisplay}`] : []),
-      `Size: ${fileSize || 'Unknown'}`,
-      `Created: ${fileCreated || 'Unknown'}`,
-      `Modified: ${fileModified || 'Unknown'}`,
-      `Folder: ${parentFolder() || 'Unknown'}`,
-      `Path: ${filePath || 'Unknown'}`,
+      `Size: ${fileSize || "Unknown"}`,
+      `Created: ${fileCreated || "Unknown"}`,
+      `Modified: ${fileModified || "Unknown"}`,
+      `Folder: ${parentFolder() || "Unknown"}`,
+      `Path: ${filePath || "Unknown"}`,
     ];
     try {
-      await navigator.clipboard.writeText(lines.join('\n'));
+      await navigator.clipboard.writeText(lines.join("\n"));
     } catch {}
   }
 
   function ctxDelete() {
     closeContextMenu();
-    const noAsk = localStorage.getItem('vyu-delete-no-ask') === 'true';
+    const noAsk = localStorage.getItem("vyu-delete-no-ask") === "true";
     if (noAsk) performDelete();
     else deleteConfirm = true;
   }
 
   async function performDelete() {
     deleteConfirm = false;
-    if (deleteNoAsk) localStorage.setItem('vyu-delete-no-ask', 'true');
+    if (deleteNoAsk) localStorage.setItem("vyu-delete-no-ask", "true");
     const pathToDelete = filePath;
     const prevList = [...fileList];
     const prevIndex = currentIndex;
     closeFile();
     try {
-      if (deletePermanently) await invoke('delete_file', { path: pathToDelete });
-      else await invoke('trash_file', { path: pathToDelete });
+      if (deletePermanently)
+        await invoke("delete_file", { path: pathToDelete });
+      else await invoke("trash_file", { path: pathToDelete });
     } catch {}
     const remaining = prevList.filter((p) => p !== pathToDelete);
     if (remaining.length > 0) {
@@ -1625,28 +1744,29 @@
   function showFilenameTooltip(e: MouseEvent) {
     const el = e.currentTarget as HTMLElement;
     const rect = el.getBoundingClientRect();
-    const tip = document.getElementById('filename-tooltip');
+    const tip = document.getElementById("filename-tooltip");
     if (!tip) return;
-    tip.textContent = 'File name';
+    tip.textContent = "File name";
     tip.style.left = `${rect.left}px`;
     tip.style.top = `${rect.bottom + 6}px`;
-    tip.style.opacity = '1';
+    tip.style.opacity = "1";
   }
 
   function hideFilenameTooltip() {
-    const tip = document.getElementById('filename-tooltip');
-    if (tip) tip.style.opacity = '0';
+    const tip = document.getElementById("filename-tooltip");
+    if (tip) tip.style.opacity = "0";
   }
 
   function handleGlobalMouseDown(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    if (contextMenu.visible && !target.closest('.context-menu')) closeContextMenu();
+    if (contextMenu.visible && !target.closest(".context-menu"))
+      closeContextMenu();
     if (
       tsEditMenu.visible &&
-      !target.closest('.ts-edit-menu') &&
-      !target.closest('.ts-marker') &&
-      !target.closest('.clip-marker') &&
-      !target.closest('.fs-clip-marker')
+      !target.closest(".ts-edit-menu") &&
+      !target.closest(".ts-marker") &&
+      !target.closest(".clip-marker") &&
+      !target.closest(".fs-clip-marker")
     ) {
       closeTimestampEditor();
     }
@@ -1656,25 +1776,28 @@
     const initial = (window as any).__INITIAL_FILE__;
     if (initial) loadFile(initial);
 
-    const saved = localStorage.getItem('vyu-volume');
+    const saved = localStorage.getItem("vyu-volume");
     if (saved !== null) volume = parseFloat(saved);
-    const savedClipOutput = localStorage.getItem('vyu-clip-output-dir');
+    const savedClipOutput = localStorage.getItem("vyu-clip-output-dir");
     if (savedClipOutput) clipOutputDir = savedClipOutput;
-    clipDeleteOriginal = localStorage.getItem('vyu-clip-delete-original') === 'true';
-    clipUseCustomPath = localStorage.getItem('vyu-clip-use-custom-path') === 'true';
-    clipMergeSegments = localStorage.getItem('vyu-clip-merge-segments') === 'true';
+    clipDeleteOriginal =
+      localStorage.getItem("vyu-clip-delete-original") === "true";
+    clipUseCustomPath =
+      localStorage.getItem("vyu-clip-use-custom-path") === "true";
+    clipMergeSegments =
+      localStorage.getItem("vyu-clip-merge-segments") === "true";
 
     getCurrentWindow().onDragDropEvent((event) => {
-      if (event.payload.type === 'drop' && event.payload.paths?.length > 0)
+      if (event.payload.type === "drop" && event.payload.paths?.length > 0)
         loadFile(event.payload.paths[0]);
     });
 
-    window.addEventListener('keydown', handleKeydown);
-    window.addEventListener('mousedown', handleGlobalMouseDown);
+    window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("mousedown", handleGlobalMouseDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeydown);
-      window.removeEventListener('mousedown', handleGlobalMouseDown);
+      window.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("mousedown", handleGlobalMouseDown);
       clearTimeout(frameCopyToastTimer);
       clearTimeout(clipToastTimer);
       clearTimeout(tsDragFadeTimer);
@@ -1696,8 +1819,7 @@
       class="filename"
       role="presentation"
       onmouseenter={showFilenameTooltip}
-      onmouseleave={hideFilenameTooltip}
-      >{fileName}</span
+      onmouseleave={hideFilenameTooltip}>{fileName}</span
     >
     {#if fileSrc}
       <span class="divider">/</span>
@@ -1728,8 +1850,7 @@
             stroke-linejoin="round"
           />
         </svg>
-      </button
-      >
+      </button>
       <span class="divider">/</span>
       <button
         class="folder-btn open-file-btn tooltip-below"
@@ -1744,8 +1865,7 @@
             stroke-width="2"
           />
         </svg>
-      </button
-      >
+      </button>
     {/if}
     <div class="window-controls">
       <button
@@ -1772,17 +1892,21 @@
   <div class="content">
     <div
       class="sidebar left"
-      onmouseenter={() => (hoverZone = 'sidebar')}
-      onmouseleave={() => (hoverZone = 'none')}
+      onmouseenter={() => (hoverZone = "sidebar")}
+      onmouseleave={() => (hoverZone = "none")}
       role="presentation"
     >
-      <button class="nav-btn" onclick={() => navigate(-1)} aria-label="previous file">‹</button>
+      <button
+        class="nav-btn"
+        onclick={() => navigate(-1)}
+        aria-label="previous file">‹</button
+      >
     </div>
 
     <div
       class="viewer"
-      onmouseenter={() => (hoverZone = isVideo ? 'video' : 'sidebar')}
-      onmouseleave={() => (hoverZone = 'none')}
+      onmouseenter={() => (hoverZone = isVideo ? "video" : "sidebar")}
+      onmouseleave={() => (hoverZone = "none")}
       onwheel={handleViewerScroll}
       onmousedown={!isVideo ? startPan : undefined}
       ontouchstart={(e) => {
@@ -1794,13 +1918,18 @@
       role="presentation"
     >
       {#if fileSrc && !isVideo}
-        <img src={fileSrc} alt={fileName} onload={onImageLoad} style={imageStyle} />
+        <img
+          src={fileSrc}
+          alt={fileName}
+          onload={onImageLoad}
+          style={imageStyle}
+        />
       {:else if fileSrc && isVideo}
         <div
           class="video-wrapper"
           role="presentation"
-          onmouseenter={() => (hoverZone = 'video')}
-          onmouseleave={() => (hoverZone = 'none')}
+          onmouseenter={() => (hoverZone = "video")}
+          onmouseleave={() => (hoverZone = "none")}
           onmousedown={startPan}
           style="{videoWrapperTransform} cursor: {panCursor}"
         >
@@ -1833,20 +1962,25 @@
               {#each clipPairs as pair (`pair-${pair.startId}-${pair.endId}`)}
                 <div
                   class="clip-range"
-                  style="left: {getTimestampPct(pair.start)}%; width: {getTimestampPct(pair.end) - getTimestampPct(pair.start)}%;"
+                  style="left: {getTimestampPct(
+                    pair.start,
+                  )}%; width: {getTimestampPct(pair.end) -
+                    getTimestampPct(pair.start)}%;"
                 ></div>
               {/each}
               {#if tsDragRange.visible}
                 <div
                   class="ts-drag-range"
-                  class:converting={tsDragRange.phase === 'converting'}
-                  class:fading={tsDragRange.phase === 'fading'}
+                  class:converting={tsDragRange.phase === "converting"}
+                  class:fading={tsDragRange.phase === "fading"}
                   style={getDragRangeStyle()}
                 ></div>
               {/if}
               {#each clipBoundaries as marker (marker.id)}
                 <div
-                  class="clip-marker {marker.kind === 'start' ? 'start-marker' : 'end-marker'}"
+                  class="clip-marker {marker.kind === 'start'
+                    ? 'start-marker'
+                    : 'end-marker'}"
                   style="left: {getTimestampPct(marker.time)}%"
                   role="button"
                   tabindex="0"
@@ -1857,14 +1991,16 @@
                     removeClipBoundary(marker.id);
                   }}
                   onmouseenter={(e) => {
-                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    const rect = (
+                      e.currentTarget as HTMLElement
+                    ).getBoundingClientRect();
                     tsTooltip = {
                       visible: true,
                       x: rect.left + rect.width / 2,
                       y: rect.top - 8,
-                      title: marker.title?.trim() || '',
+                      title: marker.title?.trim() || "",
                       timeLabel: formatTime(marker.time),
-                      tone: 'blue',
+                      tone: "blue",
                     };
                   }}
                   onmouseleave={() => {
@@ -1877,13 +2013,15 @@
                   }}
                   ondblclick={(e) => openSegmentEditor(e, marker.id)}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       e.stopPropagation();
                       seekToTimestamp(marker.time);
                     }
                   }}
-                  aria-label="{marker.title ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}` : `${marker.kind} clip marker at ${formatTime(marker.time)}`}"
+                  aria-label={marker.title
+                    ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}`
+                    : `${marker.kind} clip marker at ${formatTime(marker.time)}`}
                 ></div>
               {/each}
               {#each timestamps as ts (ts.id)}
@@ -1900,7 +2038,7 @@
                   }}
                   ondblclick={(e) => openTimestampEditor(e, ts.id)}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       e.stopPropagation();
                       seekToTimestamp(ts.time);
@@ -1913,22 +2051,32 @@
                   }}
                   onmouseenter={(e) => showTimestampTooltip(e, ts)}
                   onmouseleave={() => {
-                    if (!tsEditMenu.visible) tsTooltip = { ...tsTooltip, visible: false };
+                    if (!tsEditMenu.visible)
+                      tsTooltip = { ...tsTooltip, visible: false };
                   }}
-                  aria-label="timestamp {ts.title ? `${ts.title} at ${formatTime(ts.time)}` : formatTime(ts.time)}"
+                  aria-label="timestamp {ts.title
+                    ? `${ts.title} at ${formatTime(ts.time)}`
+                    : formatTime(ts.time)}"
                 ></div>
               {/each}
             </div>
             <div class="controls-row" class:hide-for-gif={isGifVideo}>
               <button
                 class="ctrl-btn tooltip-ctrl"
-                data-tooltip={playing ? 'Pause' : 'Play'}
+                data-tooltip={playing ? "Pause" : "Play"}
                 onclick={togglePlay}
-                aria-label={playing ? 'pause' : 'play'}
+                aria-label={playing ? "pause" : "play"}
               >
                 {#if playing}
                   <svg width="15" height="15" viewBox="0 0 16 16" fill="none"
-                    ><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor" /><rect
+                    ><rect
+                      x="3"
+                      y="2"
+                      width="3.5"
+                      height="12"
+                      rx="1"
+                      fill="currentColor"
+                    /><rect
                       x="9.5"
                       y="2"
                       width="3.5"
@@ -1990,13 +2138,16 @@
                 <button
                   class="ctrl-btn volume-btn tooltip-ctrl"
                   class:active={!(muted || volume === 0)}
-                  data-tooltip={muted || volume === 0 ? 'Unmute' : 'Mute'}
+                  data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
                   onclick={toggleMute}
-                  aria-label={muted ? 'unmute' : 'mute'}
+                  aria-label={muted ? "unmute" : "mute"}
                 >
                   {#if muted || volume === 0}
                     <svg width="15" height="15" viewBox="0 0 18 18" fill="none"
-                      ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line
+                      ><path
+                        d="M9 4L5 7H2V11H5L9 14V4Z"
+                        fill="currentColor"
+                      /><line
                         x1="12"
                         y1="6"
                         x2="16"
@@ -2016,7 +2167,10 @@
                     >
                   {:else if volume < 0.5}
                     <svg width="15" height="15" viewBox="0 0 18 18" fill="none"
-                      ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                      ><path
+                        d="M9 4L5 7H2V11H5L9 14V4Z"
+                        fill="currentColor"
+                      /><path
                         d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
                         stroke="currentColor"
                         stroke-width="1.5"
@@ -2025,7 +2179,10 @@
                     >
                   {:else}
                     <svg width="15" height="15" viewBox="0 0 18 18" fill="none"
-                      ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                      ><path
+                        d="M9 4L5 7H2V11H5L9 14V4Z"
+                        fill="currentColor"
+                      /><path
                         d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
                         stroke="currentColor"
                         stroke-width="1.5"
@@ -2053,7 +2210,9 @@
                         class:muted-diamond={muted}
                         style="--i: {i}"
                         onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
-                        aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
+                        aria-label="set volume {Math.round(
+                          ((i + 1) / VOLUME_SEGMENTS) * 100,
+                        )}%"
                       ></button>
                     {/each}
                   </div>
@@ -2067,7 +2226,13 @@
                 aria-label="add timestamp"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                  ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+                  ><circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /><path
                     d="M12 7v5l3 3"
                     stroke="currentColor"
                     stroke-width="2"
@@ -2097,13 +2262,20 @@
             {#if isGifVideo}
               <button
                 class="ctrl-btn gif-center-btn tooltip-ctrl"
-                data-tooltip={playing ? 'Pause GIF' : 'Play GIF'}
+                data-tooltip={playing ? "Pause GIF" : "Play GIF"}
                 onclick={togglePlay}
-                aria-label={playing ? 'pause gif' : 'play gif'}
+                aria-label={playing ? "pause gif" : "play gif"}
               >
                 {#if playing}
                   <svg width="18" height="18" viewBox="0 0 16 16" fill="none"
-                    ><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor" /><rect
+                    ><rect
+                      x="3"
+                      y="2"
+                      width="3.5"
+                      height="12"
+                      rx="1"
+                      fill="currentColor"
+                    /><rect
                       x="9.5"
                       y="2"
                       width="3.5"
@@ -2131,30 +2303,38 @@
 
     <div
       class="sidebar right"
-      onmouseenter={() => (hoverZone = 'sidebar')}
-      onmouseleave={() => (hoverZone = 'none')}
+      onmouseenter={() => (hoverZone = "sidebar")}
+      onmouseleave={() => (hoverZone = "none")}
       role="presentation"
     >
-      <button class="nav-btn" onclick={() => navigate(1)} aria-label="next file">›</button>
+      <button class="nav-btn" onclick={() => navigate(1)} aria-label="next file"
+        >›</button
+      >
     </div>
   </div>
 
   <div class="bottombar">
-    <span class="file-count tooltip-above-shift-right" data-tooltip="File position"
-      >{fileList.length > 0 ? `${currentIndex + 1} / ${fileList.length}` : '—'}</span
+    <span
+      class="file-count tooltip-above-shift-right"
+      data-tooltip="File position"
+      >{fileList.length > 0
+        ? `${currentIndex + 1} / ${fileList.length}`
+        : "—"}</span
     >
     <span class="file-info tooltip-above" data-tooltip="Resolution · File size">
       {#if fileDimensions && fileSize}
         {fileDimensions} · {fileSize}
-      {:else if !fileInfoLoading && fileName !== 'no file open'}
+      {:else if !fileInfoLoading && fileName !== "no file open"}
         {fileName}
       {:else if !fileSrc}
         no file open
       {/if}
     </span>
     <div class="bottombar-right">
-      <button class="zoom tooltip-above" data-tooltip="Reset zoom" onclick={resetZoom}
-        >{Math.round(zoomLevel)}%</button
+      <button
+        class="zoom tooltip-above"
+        data-tooltip="Reset zoom"
+        onclick={resetZoom}>{Math.round(zoomLevel)}%</button
       >
       <button
         class="fs-btn tooltip-above-shift-left"
@@ -2175,16 +2355,33 @@
   </div>
 
   {#if isVideo && clipCount > 0}
-    <div class="clip-actions" transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}>
-      <button class="clip-main-btn" onclick={triggerClipSegments} disabled={clipJobRunning}>
+    <div
+      class="clip-actions"
+      transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}
+    >
+      <button
+        class="clip-main-btn"
+        onclick={triggerClipSegments}
+        disabled={clipJobRunning}
+      >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          ><circle cx="6.5" cy="8" r="2.5" stroke="currentColor" stroke-width="2" /><circle
+          ><circle
+            cx="6.5"
+            cy="8"
+            r="2.5"
+            stroke="currentColor"
+            stroke-width="2"
+          /><circle
             cx="6.5"
             cy="16"
             r="2.5"
             stroke="currentColor"
             stroke-width="2"
-          /><path d="M9 9.5L20 4M9 14.5L20 20" stroke="currentColor" stroke-width="2" /></svg
+          /><path
+            d="M9 9.5L20 4M9 14.5L20 20"
+            stroke="currentColor"
+            stroke-width="2"
+          /></svg
         >
         <span>Clip Segments</span>
       </button>
@@ -2208,8 +2405,8 @@
         <button
           class="clip-toggle-btn yellow tooltip-above"
           class:is-on={clipUseCustomPath}
-          data-tooltip={getClipTargetDir() || 'No output path'}
-          title={getClipTargetDir() || 'No output path'}
+          data-tooltip={getClipTargetDir() || "No output path"}
+          title={getClipTargetDir() || "No output path"}
           onclick={toggleClipPathSelection}
           disabled={clipJobRunning}
         >
@@ -2266,17 +2463,36 @@
       <div class="fs-topbar">
         <span class="fs-filename">{fileName}</span>
         <div class="fs-window-controls">
-          <button class="fs-wc-btn" onclick={minimizeWindow} aria-label="minimize">−</button>
-          <button class="fs-wc-btn" onclick={maximizeWindow} aria-label="maximize">▢</button>
-          <button class="fs-wc-btn close" onclick={closeWindow} aria-label="close">✕</button>
+          <button
+            class="fs-wc-btn"
+            onclick={minimizeWindow}
+            aria-label="minimize">−</button
+          >
+          <button
+            class="fs-wc-btn"
+            onclick={maximizeWindow}
+            aria-label="maximize">▢</button
+          >
+          <button
+            class="fs-wc-btn close"
+            onclick={closeWindow}
+            aria-label="close">✕</button
+          >
         </div>
       </div>
       <div class="fs-nav-left">
-        <button class="fs-nav-btn" onclick={() => navigate(-1)} aria-label="previous file">‹</button
+        <button
+          class="fs-nav-btn"
+          onclick={() => navigate(-1)}
+          aria-label="previous file">‹</button
         >
       </div>
       <div class="fs-nav-right">
-        <button class="fs-nav-btn" onclick={() => navigate(1)} aria-label="next file">›</button>
+        <button
+          class="fs-nav-btn"
+          onclick={() => navigate(1)}
+          aria-label="next file">›</button
+        >
       </div>
 
       {#if isVideo && videoEl}
@@ -2299,20 +2515,25 @@
             {#each clipPairs as pair (`fspair-${pair.startId}-${pair.endId}`)}
               <div
                 class="fs-clip-range"
-                style="left: {getTimestampPct(pair.start)}%; width: {getTimestampPct(pair.end) - getTimestampPct(pair.start)}%;"
+                style="left: {getTimestampPct(
+                  pair.start,
+                )}%; width: {getTimestampPct(pair.end) -
+                  getTimestampPct(pair.start)}%;"
               ></div>
             {/each}
             {#if tsDragRange.visible}
               <div
                 class="ts-drag-range"
-                class:converting={tsDragRange.phase === 'converting'}
-                class:fading={tsDragRange.phase === 'fading'}
+                class:converting={tsDragRange.phase === "converting"}
+                class:fading={tsDragRange.phase === "fading"}
                 style={getDragRangeStyle()}
               ></div>
             {/if}
             {#each clipBoundaries as marker (marker.id)}
               <div
-                class="fs-clip-marker {marker.kind === 'start' ? 'start-marker' : 'end-marker'}"
+                class="fs-clip-marker {marker.kind === 'start'
+                  ? 'start-marker'
+                  : 'end-marker'}"
                 style="left: {getTimestampPct(marker.time)}%"
                 role="button"
                 tabindex="0"
@@ -2323,14 +2544,16 @@
                   removeClipBoundary(marker.id);
                 }}
                 onmouseenter={(e) => {
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
                   tsTooltip = {
                     visible: true,
                     x: rect.left + rect.width / 2,
                     y: rect.top - 8,
-                    title: marker.title?.trim() || '',
+                    title: marker.title?.trim() || "",
                     timeLabel: formatTime(marker.time),
-                    tone: 'blue',
+                    tone: "blue",
                   };
                 }}
                 onmouseleave={() => {
@@ -2343,13 +2566,15 @@
                 }}
                 ondblclick={(e) => openSegmentEditor(e, marker.id)}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     e.stopPropagation();
                     seekToTimestamp(marker.time);
                   }
                 }}
-                aria-label="{marker.title ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}` : `${marker.kind} clip marker at ${formatTime(marker.time)}`}"
+                aria-label={marker.title
+                  ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}`
+                  : `${marker.kind} clip marker at ${formatTime(marker.time)}`}
               ></div>
             {/each}
             {#each timestamps as ts (ts.id)}
@@ -2366,7 +2591,7 @@
                 }}
                 ondblclick={(e) => openTimestampEditor(e, ts.id)}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
+                  if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     e.stopPropagation();
                     seekToTimestamp(ts.time);
@@ -2379,22 +2604,32 @@
                 }}
                 onmouseenter={(e) => showTimestampTooltip(e, ts)}
                 onmouseleave={() => {
-                  if (!tsEditMenu.visible) tsTooltip = { ...tsTooltip, visible: false };
+                  if (!tsEditMenu.visible)
+                    tsTooltip = { ...tsTooltip, visible: false };
                 }}
-                aria-label="timestamp {ts.title ? `${ts.title} at ${formatTime(ts.time)}` : formatTime(ts.time)}"
+                aria-label="timestamp {ts.title
+                  ? `${ts.title} at ${formatTime(ts.time)}`
+                  : formatTime(ts.time)}"
               ></div>
             {/each}
           </div>
           <div class="fs-controls-row" class:hide-for-gif={isGifVideo}>
             <button
               class="fs-ctrl-btn tooltip-ctrl"
-              data-tooltip={playing ? 'Pause' : 'Play'}
+              data-tooltip={playing ? "Pause" : "Play"}
               onclick={togglePlay}
-              aria-label={playing ? 'pause' : 'play'}
+              aria-label={playing ? "pause" : "play"}
             >
               {#if playing}
                 <svg width="18" height="18" viewBox="0 0 16 16" fill="none"
-                  ><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor" /><rect
+                  ><rect
+                    x="3"
+                    y="2"
+                    width="3.5"
+                    height="12"
+                    rx="1"
+                    fill="currentColor"
+                  /><rect
                     x="9.5"
                     y="2"
                     width="3.5"
@@ -2456,13 +2691,16 @@
               <button
                 class="fs-ctrl-btn volume-btn tooltip-ctrl"
                 class:active={!(muted || volume === 0)}
-                data-tooltip={muted || volume === 0 ? 'Unmute' : 'Mute'}
+                data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
                 onclick={toggleMute}
-                aria-label={muted ? 'unmute' : 'mute'}
+                aria-label={muted ? "unmute" : "mute"}
               >
                 {#if muted || volume === 0}
                   <svg width="19" height="19" viewBox="0 0 18 18" fill="none"
-                    ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line
+                    ><path
+                      d="M9 4L5 7H2V11H5L9 14V4Z"
+                      fill="currentColor"
+                    /><line
                       x1="12"
                       y1="6"
                       x2="16"
@@ -2482,7 +2720,10 @@
                   >
                 {:else if volume < 0.5}
                   <svg width="19" height="19" viewBox="0 0 18 18" fill="none"
-                    ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                    ><path
+                      d="M9 4L5 7H2V11H5L9 14V4Z"
+                      fill="currentColor"
+                    /><path
                       d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
                       stroke="currentColor"
                       stroke-width="1.5"
@@ -2491,7 +2732,10 @@
                   >
                 {:else}
                   <svg width="19" height="19" viewBox="0 0 18 18" fill="none"
-                    ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                    ><path
+                      d="M9 4L5 7H2V11H5L9 14V4Z"
+                      fill="currentColor"
+                    /><path
                       d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
                       stroke="currentColor"
                       stroke-width="1.5"
@@ -2519,7 +2763,9 @@
                       class:muted-diamond={muted}
                       style="--i: {i}"
                       onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
-                      aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
+                      aria-label="set volume {Math.round(
+                        ((i + 1) / VOLUME_SEGMENTS) * 100,
+                      )}%"
                     ></button>
                   {/each}
                 </div>
@@ -2533,7 +2779,13 @@
               aria-label="add timestamp"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+                ><circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                /><path
                   d="M12 7v5l3 3"
                   stroke="currentColor"
                   stroke-width="2"
@@ -2560,7 +2812,11 @@
               {currentTimeDisplay()} / {durationDisplay}
             </button>
             <div class="fs-right">
-              <button class="fs-ctrl-btn" onclick={toggleFullscreen} aria-label="exit fullscreen">
+              <button
+                class="fs-ctrl-btn"
+                onclick={toggleFullscreen}
+                aria-label="exit fullscreen"
+              >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
                   ><path
                     d="M4 1H1V4M8 1H11V4M11 8V11H8M4 11H1V8"
@@ -2575,13 +2831,20 @@
           {#if isGifVideo}
             <button
               class="fs-ctrl-btn fs-gif-center-btn tooltip-ctrl"
-              data-tooltip={playing ? 'Pause GIF' : 'Play GIF'}
+              data-tooltip={playing ? "Pause GIF" : "Play GIF"}
               onclick={togglePlay}
-              aria-label={playing ? 'pause gif' : 'play gif'}
+              aria-label={playing ? "pause gif" : "play gif"}
             >
               {#if playing}
                 <svg width="20" height="20" viewBox="0 0 16 16" fill="none"
-                  ><rect x="3" y="2" width="3.5" height="12" rx="1" fill="currentColor" /><rect
+                  ><rect
+                    x="3"
+                    y="2"
+                    width="3.5"
+                    height="12"
+                    rx="1"
+                    fill="currentColor"
+                  /><rect
                     x="9.5"
                     y="2"
                     width="3.5"
@@ -2602,10 +2865,16 @@
         <div class="fs-controls image-only">
           <div class="fs-controls-row">
             <span class="fs-time"
-              >{fileList.length > 0 ? `${currentIndex + 1} / ${fileList.length}` : ''}</span
+              >{fileList.length > 0
+                ? `${currentIndex + 1} / ${fileList.length}`
+                : ""}</span
             >
             <div class="fs-right">
-              <button class="fs-ctrl-btn" onclick={toggleFullscreen} aria-label="exit fullscreen">
+              <button
+                class="fs-ctrl-btn"
+                onclick={toggleFullscreen}
+                aria-label="exit fullscreen"
+              >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
                   ><path
                     d="M4 1H1V4M8 1H11V4M11 8V11H8M4 11H1V8"
@@ -2627,7 +2896,11 @@
   {/if}
 
   {#if contextMenu.visible}
-    <div class="context-menu" style="left: {contextMenu.x}px; top: {contextMenu.y}px;" role="menu">
+    <div
+      class="context-menu"
+      style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
+      role="menu"
+    >
       {#if !isVideo}
         <button class="ctx-item green" onclick={ctxCopyImage} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -2700,7 +2973,11 @@
           Flip horizontal
         </button>
         <div class="ctx-sep"></div>
-        <button class="ctx-item yellow" onclick={ctxShowInExplorer} role="menuitem">
+        <button
+          class="ctx-item yellow"
+          onclick={ctxShowInExplorer}
+          role="menuitem"
+        >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><path
               d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
@@ -2712,7 +2989,13 @@
         </button>
         <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+            ><circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+            /><path
               d="M12 10.5V16"
               stroke="currentColor"
               stroke-width="2"
@@ -2785,32 +3068,60 @@
           Copy file path
         </button>
         <div class="ctx-sep"></div>
-        <button class="ctx-item blue" onclick={ctxStartClipHere} role="menuitem">
+        <button
+          class="ctx-item blue"
+          onclick={ctxStartClipHere}
+          role="menuitem"
+        >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle cx="7" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle
+            ><circle
+              cx="7"
+              cy="8"
+              r="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            /><circle
               cx="7"
               cy="15.8"
               r="2.2"
               stroke="currentColor"
               stroke-width="1.8"
-            /><path d="M9.5 9.6L19 5.2M9.5 14.2L19 19" stroke="currentColor" stroke-width="1.8" /></svg
+            /><path
+              d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
+              stroke="currentColor"
+              stroke-width="1.8"
+            /></svg
           >
           Start Clip Here
         </button>
         <button class="ctx-item blue" onclick={ctxEndClipHere} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle cx="17" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle
+            ><circle
+              cx="17"
+              cy="8"
+              r="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            /><circle
               cx="17"
               cy="15.8"
               r="2.2"
               stroke="currentColor"
               stroke-width="1.8"
-            /><path d="M14.5 9.6L5 5.2M14.5 14.2L5 19" stroke="currentColor" stroke-width="1.8" /></svg
+            /><path
+              d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
+              stroke="currentColor"
+              stroke-width="1.8"
+            /></svg
           >
           End Clip Here
         </button>
         <div class="ctx-sep"></div>
-        <button class="ctx-item yellow" onclick={ctxShowInExplorer} role="menuitem">
+        <button
+          class="ctx-item yellow"
+          onclick={ctxShowInExplorer}
+          role="menuitem"
+        >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><path
               d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
@@ -2822,7 +3133,13 @@
         </button>
         <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+            ><circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+            /><path
               d="M12 10.5V16"
               stroke="currentColor"
               stroke-width="2"
@@ -2833,9 +3150,19 @@
         </button>
         <div class="ctx-sep"></div>
         {#if timestamps.length > 0}
-          <button class="ctx-item red" onclick={ctxClearTimestamps} role="menuitem">
+          <button
+            class="ctx-item red"
+            onclick={ctxClearTimestamps}
+            role="menuitem"
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+              ><circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+              /><path
                 d="M9 9l6 6M15 9l-6 6"
                 stroke="currentColor"
                 stroke-width="2"
@@ -2846,9 +3173,19 @@
           </button>
         {/if}
         {#if clipBoundaries.length > 0}
-          <button class="ctx-item red" onclick={ctxClearSegments} role="menuitem">
+          <button
+            class="ctx-item red"
+            onclick={ctxClearSegments}
+            role="menuitem"
+          >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
+              ><circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+              /><path
                 d="M8 8l8 8M16 8l-8 8"
                 stroke="currentColor"
                 stroke-width="2"
@@ -2889,25 +3226,32 @@
   {/if}
 
   {#if frameCopyToast.visible}
-    <div class="copy-toast" class:error={frameCopyToast.tone === 'error'} role="status" aria-live="polite">
+    <div
+      class="copy-toast"
+      class:error={frameCopyToast.tone === "error"}
+      role="status"
+      aria-live="polite"
+    >
       {frameCopyToast.message}
     </div>
   {/if}
   {#if clipToast.visible}
     <div
       class="clip-toast"
-      class:error={clipToast.tone === 'error'}
+      class:error={clipToast.tone === "error"}
       role="status"
       aria-live="polite"
       transition:fade={{ duration: 220 }}
     >
       <span>{clipToast.message}</span>
-      {#if clipToast.tone === 'success'}
+      {#if clipToast.tone === "success"}
         <button
           class="clip-toast-folder"
           onclick={async () => {
             try {
-              await invoke('open_directory', { path: clipToast.outputDir || clipOutputDir || parentFolder() });
+              await invoke("open_directory", {
+                path: clipToast.outputDir || clipOutputDir || parentFolder(),
+              });
             } catch {}
           }}
           aria-label="open output folder"
@@ -2925,12 +3269,18 @@
   {/if}
 
   {#if clipDeleteConfirm.visible}
-    <div class="delete-overlay" role="presentation" onmousedown={(e) => e.stopPropagation()}>
+    <div
+      class="delete-overlay"
+      role="presentation"
+      onmousedown={(e) => e.stopPropagation()}
+    >
       <div class="delete-dialog" role="dialog" aria-modal="true">
         <p class="delete-title">Delete original after export?</p>
         <p class="delete-subtitle">{fileName}</p>
         <div class="delete-actions">
-          <button class="delete-cancel" onclick={() => (clipDeleteConfirm = { visible: false, mode: null })}
+          <button
+            class="delete-cancel"
+            onclick={() => (clipDeleteConfirm = { visible: false, mode: null })}
             >Cancel</button
           >
           <button
@@ -2945,7 +3295,11 @@
   {/if}
 
   {#if deleteConfirm}
-    <div class="delete-overlay" role="presentation" onmousedown={(e) => e.stopPropagation()}>
+    <div
+      class="delete-overlay"
+      role="presentation"
+      onmousedown={(e) => e.stopPropagation()}
+    >
       <div class="delete-dialog" role="dialog" aria-modal="true">
         <p class="delete-title">Delete file?</p>
         <p class="delete-subtitle">{fileName}</p>
@@ -2966,33 +3320,44 @@
           </label>
         </div>
         <div class="delete-actions">
-          <button class="delete-cancel" onclick={() => (deleteConfirm = false)}>Cancel</button>
-          <button class="delete-confirm-btn" onclick={performDelete}>Delete</button>
+          <button class="delete-cancel" onclick={() => (deleteConfirm = false)}
+            >Cancel</button
+          >
+          <button class="delete-confirm-btn" onclick={performDelete}
+            >Delete</button
+          >
         </div>
       </div>
     </div>
   {/if}
 
   {#if propertiesOpen}
-    <div class="delete-overlay" role="presentation" onmousedown={(e) => e.stopPropagation()}>
+    <div
+      class="delete-overlay"
+      role="presentation"
+      onmousedown={(e) => e.stopPropagation()}
+    >
       <div class="delete-dialog props-dialog" role="dialog" aria-modal="true">
         <p class="delete-title">Properties</p>
         <p class="delete-subtitle">{fileName}</p>
         <div class="props-list">
           <div class="props-row">
             <span class="props-k">Type</span>
-            <span class="props-v">{isVideo ? 'Video' : 'Image'} ({fileExt() || 'unknown'})</span>
+            <span class="props-v"
+              >{isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
+            >
           </div>
           <div class="props-row">
             <span class="props-k">Dimensions</span>
-            <span class="props-v">{fileDimensions || 'Unknown'}</span>
+            <span class="props-v">{fileDimensions || "Unknown"}</span>
           </div>
           {#if ffprobeChecked && !ffprobeAvailable}
             <div class="ffprobe-note">
               <p class="ffprobe-title">Advanced metadata needs FFmpeg</p>
               <p class="ffprobe-sub">
-                To show Container, Codec, Color, and Frame Rate, install FFmpeg. Your files stay
-                local on your device and are not uploaded anywhere.
+                To show Container, Codec, Color, and Frame Rate, install FFmpeg.
+                Your files stay local on your device and are not uploaded
+                anywhere.
               </p>
               <div class="ffprobe-actions">
                 <button
@@ -3000,14 +3365,14 @@
                   onclick={installFfmpegAndWait}
                   disabled={ffmpegInstalling}
                 >
-                  {ffmpegInstalling ? 'Installing FFmpeg...' : 'Install FFmpeg'}
+                  {ffmpegInstalling ? "Installing FFmpeg..." : "Install FFmpeg"}
                 </button>
                 <button
                   class="props-btn props-btn-secondary"
                   onclick={async () => {
                     await refreshFfprobeAvailability();
                     if (ffprobeAvailable) {
-                      ffmpegInstallError = '';
+                      ffmpegInstallError = "";
                       await loadMediaProperties();
                     }
                   }}
@@ -3027,23 +3392,25 @@
             <div class="props-row">
               <span class="props-k">Container</span>
               <span class="props-v"
-                >{mediaPropsLoading ? 'Loading...' : showValue(mediaProps?.container)}</span
+                >{mediaPropsLoading
+                  ? "Loading..."
+                  : showValue(mediaProps?.container)}</span
               >
             </div>
             <div class="props-row">
               <span class="props-k">Codec</span>
               <span class="props-v">
                 {mediaPropsLoading
-                  ? 'Loading...'
-                  : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ''}`}
+                  ? "Loading..."
+                  : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`}
               </span>
             </div>
             <div class="props-row">
               <span class="props-k">Color</span>
               <span class="props-v">
                 {mediaPropsLoading
-                  ? 'Loading...'
-                  : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ''}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ''}`}
+                  ? "Loading..."
+                  : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`}
               </span>
             </div>
             {#if isVideo}
@@ -3054,46 +3421,58 @@
               <div class="props-row">
                 <span class="props-k">Frame rate</span>
                 <span class="props-v"
-                  >{mediaPropsLoading ? 'Loading...' : showValue(mediaProps?.frame_rate)}</span
+                  >{mediaPropsLoading
+                    ? "Loading..."
+                    : showValue(mediaProps?.frame_rate)}</span
                 >
               </div>
             {/if}
           {/if}
           <div class="props-row">
             <span class="props-k">Size</span>
-            <span class="props-v">{fileSize || 'Unknown'}</span>
+            <span class="props-v">{fileSize || "Unknown"}</span>
           </div>
           <div class="props-row">
             <span class="props-k">Created</span>
-            <span class="props-v">{fileCreated || 'Unknown'}</span>
+            <span class="props-v">{fileCreated || "Unknown"}</span>
           </div>
           <div class="props-row">
             <span class="props-k">Modified</span>
-            <span class="props-v">{fileModified || 'Unknown'}</span>
+            <span class="props-v">{fileModified || "Unknown"}</span>
           </div>
           <div class="props-row">
             <span class="props-k">Folder</span>
-            <span class="props-v">{parentFolder() || 'Unknown'}</span>
+            <span class="props-v">{parentFolder() || "Unknown"}</span>
           </div>
           <div class="props-row">
             <span class="props-k">Path</span>
-            <span class="props-v">{filePath || 'Unknown'}</span>
+            <span class="props-v">{filePath || "Unknown"}</span>
           </div>
         </div>
         <div class="props-actions">
           <button class="props-btn" onclick={propsCopyPath}>Copy path</button>
-          <button class="props-btn" onclick={propsOpenFolder}>Open folder</button>
-          <button class="props-btn" onclick={propsCopyAll}>Copy all properties</button>
+          <button class="props-btn" onclick={propsOpenFolder}
+            >Open folder</button
+          >
+          <button class="props-btn" onclick={propsCopyAll}
+            >Copy all properties</button
+          >
         </div>
         <div class="delete-actions">
-          <button class="delete-cancel" onclick={() => (propertiesOpen = false)}>Close</button>
+          <button class="delete-cancel" onclick={() => (propertiesOpen = false)}
+            >Close</button
+          >
         </div>
       </div>
     </div>
   {/if}
 
   {#if tsTooltip.visible && !tsEditMenu.visible}
-    <div class="ts-tooltip" class:blue={tsTooltip.tone === 'blue'} style="left: {tsTooltip.x}px; top: {tsTooltip.y}px;">
+    <div
+      class="ts-tooltip"
+      class:blue={tsTooltip.tone === "blue"}
+      style="left: {tsTooltip.x}px; top: {tsTooltip.y}px;"
+    >
       {#if tsTooltip.title}
         <span class="ts-tooltip-title">{tsTooltip.title}</span>
       {/if}
@@ -3120,59 +3499,93 @@
           placeholder="Title"
           value={currentTitle}
           style="width: {getTitleEditorWidthCh(currentTitle)}ch;"
-          oninput={(e) => updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
+          oninput={(e) =>
+            updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
           onkeydown={(e) => {
-            if (e.key === 'Escape') {
+            if (e.key === "Escape") {
               e.preventDefault();
               closeTimestampEditor();
             }
-            if (e.key === 'Enter') {
+            if (e.key === "Enter") {
               e.preventDefault();
               closeTimestampEditor();
             }
           }}
         />
-        <div class="ts-scissor-split" class:segment-toggle={isSegmentMenu} role="group" aria-label="segment type">
+        <div
+          class="ts-scissor-split"
+          class:segment-toggle={isSegmentMenu}
+          role="group"
+          aria-label="segment type"
+        >
           <button
             class="ts-split-btn left tooltip-ctrl"
-            class:is-active={isSegmentMenu ? editingSegment?.kind === 'start' : false}
-            class:is-inactive={isSegmentMenu ? editingSegment?.kind !== 'start' : false}
+            class:is-active={isSegmentMenu
+              ? editingSegment?.kind === "start"
+              : false}
+            class:is-inactive={isSegmentMenu
+              ? editingSegment?.kind !== "start"
+              : false}
             data-tooltip="Start Clip Here"
             onclick={(e) => {
               e.stopPropagation();
-              onEditorScissor('start');
+              onEditorScissor("start");
             }}
             aria-label="Start Clip Here"
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-              ><circle cx="7" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle
+              ><circle
+                cx="7"
+                cy="8"
+                r="2.2"
+                stroke="currentColor"
+                stroke-width="1.8"
+              /><circle
                 cx="7"
                 cy="15.8"
                 r="2.2"
                 stroke="currentColor"
                 stroke-width="1.8"
-              /><path d="M9.5 9.6L19 5.2M9.5 14.2L19 19" stroke="currentColor" stroke-width="1.8" /></svg
+              /><path
+                d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
+                stroke="currentColor"
+                stroke-width="1.8"
+              /></svg
             >
           </button>
           <button
             class="ts-split-btn right tooltip-ctrl"
-            class:is-active={isSegmentMenu ? editingSegment?.kind === 'end' : false}
-            class:is-inactive={isSegmentMenu ? editingSegment?.kind !== 'end' : false}
+            class:is-active={isSegmentMenu
+              ? editingSegment?.kind === "end"
+              : false}
+            class:is-inactive={isSegmentMenu
+              ? editingSegment?.kind !== "end"
+              : false}
             data-tooltip="End Clip Here"
             onclick={(e) => {
               e.stopPropagation();
-              onEditorScissor('end');
+              onEditorScissor("end");
             }}
             aria-label="End Clip Here"
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-              ><circle cx="17" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle
+              ><circle
+                cx="17"
+                cy="8"
+                r="2.2"
+                stroke="currentColor"
+                stroke-width="1.8"
+              /><circle
                 cx="17"
                 cy="15.8"
                 r="2.2"
                 stroke="currentColor"
                 stroke-width="1.8"
-              /><path d="M14.5 9.6L5 5.2M14.5 14.2L5 19" stroke="currentColor" stroke-width="1.8" /></svg
+              /><path
+                d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
+                stroke="currentColor"
+                stroke-width="1.8"
+              /></svg
             >
           </button>
         </div>
@@ -3181,8 +3594,11 @@
   {/if}
 
   {#if volumeTooltipVisible}
-    <div class="vol-tooltip" style="left: {volumeTooltipX}px; top: {volumeTooltipY - 32}px;">
-      {muted ? '0' : Math.round(volume * 100)}%
+    <div
+      class="vol-tooltip"
+      style="left: {volumeTooltipX}px; top: {volumeTooltipY - 32}px;"
+    >
+      {muted ? "0" : Math.round(volume * 100)}%
     </div>
   {/if}
 
@@ -3443,7 +3859,7 @@
   .video-wrapper:hover {
     outline-color: #888888;
   }
-  
+
   .video-wrapper video {
     display: block;
     max-width: calc(100vw - 96px - 32px);
@@ -3583,7 +3999,7 @@
   .clip-marker.start-marker::after,
   .clip-marker.end-marker::before,
   .clip-marker.end-marker::after {
-    content: '';
+    content: "";
     position: absolute;
     width: 5px;
     height: 1.5px;
@@ -4139,7 +4555,7 @@
   .fs-clip-marker.start-marker::after,
   .fs-clip-marker.end-marker::before,
   .fs-clip-marker.end-marker::after {
-    content: '';
+    content: "";
     position: absolute;
     width: 5px;
     height: 1.5px;
@@ -4794,7 +5210,7 @@
     padding: 3px;
   }
   :global(.border-sweep::before) {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
