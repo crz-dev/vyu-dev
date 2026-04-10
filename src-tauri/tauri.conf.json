@@ -18,7 +18,9 @@
         "minWidth": 400,
         "minHeight": 300,
         "dragDropEnabled": true,
-        "decorations": false
+        "decorations": false,
+        "resizable": true,
+        "center": true
       }
     ],
     "security": {
@@ -43,12 +45,14 @@
       {
         "ext": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"],
         "name": "Image",
-        "description": "Image files"
+        "description": "Image files",
+        "role": "Viewer"
       },
       {
         "ext": ["mp4", "webm", "mkv", "avi", "mov", "wmv"],
         "name": "Video",
-        "description": "Video files"
+        "description": "Video files",
+        "role": "Viewer"
       }
     ]
   }
