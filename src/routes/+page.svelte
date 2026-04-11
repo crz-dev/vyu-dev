@@ -6,6 +6,22 @@
   import { readDir, stat } from "@tauri-apps/plugin-fs";
   import { open } from "@tauri-apps/plugin-dialog";
 
+  import {
+    IMAGE_EXTS,
+    VIDEO_EXTS,
+    ALL_EXTS,
+    VOLUME_SEGMENTS,
+  } from "$lib/constants";
+  import type {
+    CtxMenu,
+    Timestamp,
+    ClipBoundary,
+    ClipPair,
+    ClipJobResult,
+    MediaProperties,
+    TimestampDragRange,
+  } from "$lib/types";
+
   let filePath = $state("");
   let fileSrc = $state("");
   let fileName = $state("no file open");
@@ -39,7 +55,6 @@
   let volumeTooltipX = $state(0);
   let volumeTooltipY = $state(0);
   let volumeTooltipVisible = $state(false);
-  const VOLUME_SEGMENTS = 8;
 
   let hoverZone = $state("none");
   let isFullscreen = $state(false);
@@ -55,40 +70,14 @@
   let lastLeftClickTime = 0;
   let pendingPlay: ReturnType<typeof setTimeout> | undefined;
 
-  interface CtxMenu {
-    x: number;
-    y: number;
-    visible: boolean;
-  }
   let contextMenu = $state<CtxMenu>({ x: 0, y: 0, visible: false });
   let deleteConfirm = $state(false);
   let deletePermanently = $state(false);
   let deleteNoAsk = $state(false);
   let propertiesOpen = $state(false);
 
-  interface Timestamp {
-    id: string;
-    time: number;
-    title?: string;
-  }
   let timestamps = $state<Timestamp[]>([]);
-  interface ClipBoundary {
-    id: string;
-    time: number;
-    kind: "start" | "end";
-    title?: string;
-  }
-  interface ClipPair {
-    start: number;
-    end: number;
-    startId: string;
-    endId: string;
-  }
-  interface ClipJobResult {
-    outputs: string[];
-    deleted_original: boolean;
-    output_dir: string;
-  }
+
   let clipBoundaries = $state<ClipBoundary[]>([]);
   let clipOutputDir = $state("");
   let clipDeleteOriginal = $state(false);
@@ -111,17 +100,6 @@
   }>({ visible: false, tone: "success", message: "", outputDir: "" });
   let clipToastTimer: ReturnType<typeof setTimeout> | undefined;
   let clipMarkerJustDragged = false;
-  interface MediaProperties {
-    container?: string;
-    video_codec?: string;
-    audio_codec?: string;
-    pixel_format?: string;
-    color_space?: string;
-    color_primaries?: string;
-    color_transfer?: string;
-    bit_depth?: string;
-    frame_rate?: string;
-  }
   let mediaProps = $state<MediaProperties | null>(null);
   let mediaPropsLoading = $state(false);
   let ffprobeAvailable = $state(true);
@@ -156,12 +134,6 @@
     targetId: "",
     targetType: "timestamp",
   });
-  interface TimestampDragRange {
-    visible: boolean;
-    start: number;
-    end: number;
-    phase: "idle" | "dragging" | "converting" | "fading";
-  }
   let tsDragRange = $state<TimestampDragRange>({
     visible: false,
     start: 0,
@@ -182,10 +154,6 @@
     tone: "success",
   });
   let frameCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
-
-  const imageExts = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"];
-  const videoExts = ["mp4", "webm", "mkv", "avi", "mov", "wmv"];
-  const allExts = [...imageExts, ...videoExts];
 
   const isQuarterTurn = $derived(Math.abs(imageRotation % 180) === 90);
   const rotationFitScale = $derived.by(() => {
@@ -1144,7 +1112,7 @@
     filePath = path;
     fileName = path.split("\\").pop() || path.split("/").pop() || path;
     const ext = path.split(".").pop()?.toLowerCase() || "";
-    isVideo = videoExts.includes(ext);
+    isVideo = VIDEO_EXTS.includes(ext);
     fileSrc = convertFileSrc(path);
     fileSize = "";
     fileDimensions = "";
@@ -1218,7 +1186,7 @@
       const entries = await readDir(folder);
       fileList = entries
         .filter((e) =>
-          allExts.includes(e.name?.split(".").pop()?.toLowerCase() ?? ""),
+          ALL_EXTS.includes(e.name?.split(".").pop()?.toLowerCase() ?? ""),
         )
         .map((e) => `${folder}${sep}${e.name}`)
         .sort();
@@ -1480,7 +1448,7 @@
   async function openFileDialog() {
     const selected = await open({
       multiple: false,
-      filters: [{ name: "Media", extensions: [...imageExts, ...videoExts] }],
+      filters: [{ name: "Media", extensions: [...IMAGE_EXTS, ...VIDEO_EXTS] }],
     });
     if (selected) loadFile(selected as string);
   }
