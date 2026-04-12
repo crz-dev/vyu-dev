@@ -49,6 +49,13 @@
     invokeOpenDirectory,
   } from "$lib/services/mediaTools";
 
+  import {
+    copyImageToClipboard,
+    copyFrameToClipboard,
+    copyPathToClipboard,
+    copyAllPropertiesToClipboard,
+  } from "$lib/services/clipboard";
+
   let filePath = $state("");
   let fileSrc = $state("");
   let fileName = $state("no file open");
@@ -1512,45 +1519,15 @@
   async function ctxCopyImage() {
     closeContextMenu();
     try {
-      const response = await fetch(fileSrc);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ]);
+      await copyImageToClipboard(fileSrc);
     } catch {}
   }
 
   async function ctxCopyFrame() {
     closeContextMenu();
     if (!videoEl) return;
-    if (
-      videoEl.readyState < 2 ||
-      videoEl.videoWidth <= 0 ||
-      videoEl.videoHeight <= 0
-    ) {
-      showFrameCopyToast("Frame not ready yet.", "error");
-      return;
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = videoEl.videoWidth;
-    canvas.height = videoEl.videoHeight;
-    const ctx2d = canvas.getContext("2d");
-    if (!ctx2d) return;
-    ctx2d.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
     try {
-      const dataUrl = canvas.toDataURL("image/png");
-      const commaIdx = dataUrl.indexOf(",");
-      if (commaIdx === -1) throw new Error("Could not encode frame as PNG.");
-      const binary = atob(dataUrl.slice(commaIdx + 1));
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "image/png" });
-      if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
-        throw new Error("Image clipboard API is unavailable in this runtime.");
-      }
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
+      await copyFrameToClipboard(videoEl);
       showFrameCopyToast("Current frame copied as PNG.", "success");
     } catch (err) {
       console.error("Failed to copy current frame to clipboard:", err);
@@ -1566,7 +1543,7 @@
 
   function ctxCopyPath() {
     closeContextMenu();
-    navigator.clipboard.writeText(filePath);
+    copyPathToClipboard(filePath);
   }
   function ctxRotate() {
     closeContextMenu();
@@ -1621,7 +1598,7 @@
 
   async function propsCopyPath() {
     try {
-      await navigator.clipboard.writeText(filePath);
+      await copyPathToClipboard(filePath);
     } catch {}
   }
 
@@ -1632,28 +1609,20 @@
   }
 
   async function propsCopyAll() {
-    const lines = [
-      `Name: ${fileName}`,
-      `Type: ${isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
-      `Container: ${showValue(mediaProps?.container)}`,
-      `Video codec: ${showValue(mediaProps?.video_codec)}`,
-      `Audio codec: ${showValue(mediaProps?.audio_codec)}`,
-      `Pixel format: ${showValue(mediaProps?.pixel_format)}`,
-      `Color space: ${showValue(mediaProps?.color_space)}`,
-      `Color primaries: ${showValue(mediaProps?.color_primaries)}`,
-      `Color transfer: ${showValue(mediaProps?.color_transfer)}`,
-      `Bit depth: ${showValue(mediaProps?.bit_depth)}`,
-      `Frame rate: ${showValue(mediaProps?.frame_rate)}`,
-      `Dimensions: ${fileDimensions || "Unknown"}`,
-      ...(isVideo ? [`Duration: ${durationDisplay}`] : []),
-      `Size: ${fileSize || "Unknown"}`,
-      `Created: ${fileCreated || "Unknown"}`,
-      `Modified: ${fileModified || "Unknown"}`,
-      `Folder: ${parentFolder() || "Unknown"}`,
-      `Path: ${filePath || "Unknown"}`,
-    ];
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await copyAllPropertiesToClipboard(
+        fileName,
+        filePath,
+        isVideo,
+        fileExt(),
+        fileDimensions,
+        fileSize,
+        fileCreated,
+        fileModified,
+        durationDisplay,
+        parentFolder(),
+        mediaProps,
+      );
     } catch {}
   }
 
