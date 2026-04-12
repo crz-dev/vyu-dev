@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
-  import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+  import { convertFileSrc } from "@tauri-apps/api/core";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { readDir, stat } from "@tauri-apps/plugin-fs";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -36,6 +36,18 @@
     writeClipBoundaries,
     eraseClipBoundaries,
   } from "$lib/services/storage";
+
+  import {
+    invokeGetMediaProperties,
+    invokeCheckFfprobe,
+    invokeInstallFfmpeg,
+    invokeProcessVideoClips,
+    invokeDeleteFile,
+    invokeTrashFile,
+    invokeShowInExplorer,
+    invokeOpenFolder,
+    invokeOpenDirectory,
+  } from "$lib/services/mediaTools";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -982,13 +994,13 @@
     clipJobLabel =
       mode === "separate" ? "Separating clips..." : "Merging clips...";
     try {
-      const result = (await invoke("process_video_clips", {
-        path: filePath,
-        outputDir: getClipTargetDir(),
-        segments: sanitizeClipPairs(),
+      const result = await invokeProcessVideoClips(
+        filePath,
+        getClipTargetDir(),
+        sanitizeClipPairs(),
         mode,
-        deleteOriginal: clipDeleteOriginal,
-      })) as ClipJobResult;
+        clipDeleteOriginal,
+      );
       const count = result.outputs.length;
       const noun = count === 1 ? "clip" : "clips";
       const msg =
@@ -1452,9 +1464,7 @@
   async function loadMediaProperties() {
     mediaPropsLoading = true;
     try {
-      mediaProps = (await invoke("get_media_properties", {
-        path: filePath,
-      })) as MediaProperties;
+      mediaProps = await invokeGetMediaProperties(filePath);
     } catch {
       mediaProps = null;
     } finally {
@@ -1465,7 +1475,7 @@
   async function refreshFfprobeAvailability() {
     ffprobeChecked = false;
     try {
-      ffprobeAvailable = (await invoke("check_ffprobe")) as boolean;
+      ffprobeAvailable = await invokeCheckFfprobe();
     } catch {
       ffprobeAvailable = false;
     } finally {
@@ -1477,7 +1487,7 @@
     ffmpegInstallError = "";
     ffmpegInstalling = true;
     try {
-      await invoke("install_ffmpeg");
+      await invokeInstallFfmpeg();
       const attempts = 60;
       for (let i = 0; i < attempts; i++) {
         await new Promise((r) => setTimeout(r, 2000));
@@ -1594,7 +1604,7 @@
   async function ctxShowInExplorer() {
     closeContextMenu();
     try {
-      await invoke("show_in_explorer", { path: filePath });
+      await invokeShowInExplorer(filePath);
     } catch {}
   }
 
@@ -1617,7 +1627,7 @@
 
   async function propsOpenFolder() {
     try {
-      await invoke("open_folder", { path: filePath });
+      await invokeOpenFolder(filePath);
     } catch {}
   }
 
@@ -1662,9 +1672,8 @@
     const prevIndex = currentIndex;
     closeFile();
     try {
-      if (deletePermanently)
-        await invoke("delete_file", { path: pathToDelete });
-      else await invoke("trash_file", { path: pathToDelete });
+      if (deletePermanently) await invokeDeleteFile(pathToDelete);
+      else await invokeTrashFile(pathToDelete);
     } catch {}
     const remaining = prevList.filter((p) => p !== pathToDelete);
     if (remaining.length > 0) {
@@ -3177,9 +3186,9 @@
           class="clip-toast-folder"
           onclick={async () => {
             try {
-              await invoke("open_directory", {
-                path: clipToast.outputDir || clipOutputDir || parentFolder(),
-              });
+              await invokeOpenDirectory(
+                clipToast.outputDir || clipOutputDir || parentFolder(),
+              );
             } catch {}
           }}
           aria-label="open output folder"
