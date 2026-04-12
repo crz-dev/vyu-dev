@@ -3,7 +3,7 @@
   import { fade, fly } from "svelte/transition";
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { readDir, stat } from "@tauri-apps/plugin-fs";
+  import { stat } from "@tauri-apps/plugin-fs";
   import { open } from "@tauri-apps/plugin-dialog";
 
   import {
@@ -55,6 +55,13 @@
     copyPathToClipboard,
     copyAllPropertiesToClipboard,
   } from "$lib/services/clipboard";
+
+  import {
+    readMediaFilesInFolder,
+    getParentFolder,
+    getFileExt,
+    getFileName,
+  } from "$lib/services/files";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -1093,7 +1100,7 @@
 
   async function displayFile(path: string) {
     filePath = path;
-    fileName = path.split("\\").pop() || path.split("/").pop() || path;
+    fileName = getFileName(path);
     const ext = path.split(".").pop()?.toLowerCase() || "";
     isVideo = VIDEO_EXTS.includes(ext);
     fileSrc = convertFileSrc(path);
@@ -1163,16 +1170,8 @@
     isLoadingFile = true;
     loadingFadingOut = false;
     await displayFile(path);
-    const sep = path.includes("\\") ? "\\" : "/";
-    const folder = path.substring(0, path.lastIndexOf(sep));
     try {
-      const entries = await readDir(folder);
-      fileList = entries
-        .filter((e) =>
-          ALL_EXTS.includes(e.name?.split(".").pop()?.toLowerCase() ?? ""),
-        )
-        .map((e) => `${folder}${sep}${e.name}`)
-        .sort();
+      fileList = await readMediaFilesInFolder(path);
       currentIndex = fileList.indexOf(path);
     } catch {}
   }
@@ -1454,14 +1453,11 @@
   }
 
   function fileExt(): string {
-    return filePath.split(".").pop()?.toLowerCase() || "";
+    return getFileExt(filePath);
   }
 
   function parentFolder(): string {
-    const sep = filePath.includes("\\") ? "\\" : "/";
-    return filePath.includes(sep)
-      ? filePath.substring(0, filePath.lastIndexOf(sep))
-      : "";
+    return getParentFolder(filePath);
   }
 
   function showValue(v: string | undefined): string {
