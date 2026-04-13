@@ -4224,16 +4224,6 @@
     animation: volumeBarIn 0.2s ease forwards;
     cursor: pointer;
   }
-  @keyframes volumeBarIn {
-    from {
-      opacity: 0;
-      transform: translateX(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
   .volume-diamond {
     width: 13px;
     height: 13px;
@@ -4250,16 +4240,6 @@
     animation: diamondSpin 0.25s ease forwards;
     animation-delay: calc(var(--i) * 0.03s);
     opacity: 0;
-  }
-  @keyframes diamondSpin {
-    from {
-      opacity: 0;
-      transform: rotate(0deg) scale(0.3);
-    }
-    to {
-      opacity: 1;
-      transform: rotate(45deg) scale(1);
-    }
   }
   .volume-diamond.filled {
     background: #ffffff;
@@ -4809,14 +4789,6 @@
     background: linear-gradient(90deg, rgba(59, 130, 246, 0.35), #60a5fa);
     animation: clipJobAnim 1s ease-in-out infinite;
   }
-  @keyframes clipJobAnim {
-    from {
-      transform: translateX(-100%);
-    }
-    to {
-      transform: translateX(280%);
-    }
-  }
   .clip-toast {
     position: fixed;
     right: 16px;
@@ -4962,14 +4934,6 @@
     font-size: 11px;
     color: #f87171;
     font-family: Inter, sans-serif;
-  }
-  @keyframes ffprobeBar {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(260%);
-    }
   }
   .props-btn {
     padding: 6px 10px;
@@ -5134,23 +5098,6 @@
       borderSweep 1s linear infinite,
       sweepFade 0.5s ease-out forwards;
   }
-  @keyframes borderSweep {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @keyframes sweepFade {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
   [data-tooltip] {
     position: relative;
     display: inline-block;
