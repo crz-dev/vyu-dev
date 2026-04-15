@@ -65,6 +65,8 @@
 
   import { createPlaybackActions } from "$lib/core/playback.svelte";
 
+  import { createTimeline } from "$lib/core/timeline.svelte";
+
   let filePath = $state("");
   let fileSrc = $state("");
   let fileName = $state("no file open");
@@ -79,10 +81,10 @@
   let isLoadingFile = $state(false);
   let loadingFadingOut = $state(false);
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
-
   let videoEl = $state<HTMLVideoElement | null>(null);
 
   const playback = createPlaybackActions(() => videoEl);
+  const timeline = createTimeline();
 
   let playing = $state(false);
   let muted = $state(false);
@@ -433,25 +435,14 @@
   }
 
   function addTimestamp() {
-    if (!videoEl || rawDurationSecs <= 0) return;
-    const t = videoEl.currentTime;
-    if (timestamps.some((ts) => Math.abs(ts.time - t) < 0.3)) return;
-    timestamps = [
-      ...timestamps,
-      {
-        id: `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        time: t,
-        title: "",
-      },
-    ].sort((a, b) => a.time - b.time);
-    saveTimestamps();
+    timeline.addTimestamp(rawCurrentSecs, timestamps, (v) => (timestamps = v));
   }
 
   function removeTimestamp(id: string) {
     tsTooltip = { ...tsTooltip, visible: false };
     tsEditMenu = { ...tsEditMenu, visible: false };
-    timestamps = timestamps.filter((ts) => ts.id !== id);
-    saveTimestamps();
+
+    timeline.removeTimestamp(id, timestamps, (v) => (timestamps = v));
   }
 
   function clearAllTimestamps() {
@@ -856,11 +847,8 @@
     return `left: ${startPct}%; width: ${Math.max(0, endPct - startPct)}%;`;
   }
 
-  function seekToTimestamp(time: number) {
-    if (!videoEl) return;
-    videoEl.currentTime = time;
-    rawCurrentSecs = time;
-    progress = rawDurationSecs > 0 ? (time / rawDurationSecs) * 100 : 0;
+  function seekToTimestamp(i: number) {
+    timeline.seekToTimestamp(i, timestamps, videoEl);
   }
 
   function getTimestampPct(time: number): number {
