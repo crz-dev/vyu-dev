@@ -195,6 +195,22 @@
   transform: translate(-50%, -50%) rotate(45deg) scale(1.4);
 }
 
+.resume-marker {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: #4ade80;
+  transform: translate(-50%, -50%) rotate(45deg);
+  cursor: pointer;
+  z-index: 2;
+  border: 1px solid rgba(134, 239, 172, 0.75);
+  transition: transform 0.15s;
+}
+.resume-marker:hover {
+  transform: translate(-50%, -50%) rotate(45deg) scale(1.4);
+}
+
 .controls-row {
   display: flex;
   align-items: center;

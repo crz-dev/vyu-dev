@@ -118,3 +118,21 @@ export function writeClipBoundaries(
 export function eraseClipBoundaries(filePath: string): void {
   if (filePath) localStorage.removeItem(`vyu-clips-${filePath}`);
 }
+
+export function loadResumePoint(filePath: string): number | null {
+  if (!filePath) return null;
+  const raw = localStorage.getItem(`vyu-resume-${filePath}`);
+  if (raw === null) return null;
+  const val = parseFloat(raw);
+  return isFinite(val) ? val : null;
+}
+
+export function saveResumePoint(filePath: string, time: number): void {
+  if (!filePath) return;
+  localStorage.setItem(`vyu-resume-${filePath}`, String(time));
+}
+
+export function eraseResumePoint(filePath: string): void {
+  if (!filePath) return;
+  localStorage.removeItem(`vyu-resume-${filePath}`);
+}

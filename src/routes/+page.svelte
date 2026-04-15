@@ -5,6 +5,9 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { stat } from "@tauri-apps/plugin-fs";
   import { open } from "@tauri-apps/plugin-dialog";
+  import { createPlaybackActions } from "$lib/core/playback.svelte";
+  import { createTimeline } from "$lib/core/timeline.svelte";
+  import { createClips } from "$lib/core/clips.svelte";
 
   import {
     IMAGE_EXTS,
@@ -35,6 +38,9 @@
     readClipBoundaries,
     writeClipBoundaries,
     eraseClipBoundaries,
+    loadResumePoint,
+    saveResumePoint,
+    eraseResumePoint,
   } from "$lib/services/storage";
 
   import {
@@ -62,10 +68,6 @@
     getFileExt,
     getFileName,
   } from "$lib/services/files";
-
-  import { createPlaybackActions } from "$lib/core/playback.svelte";
-  import { createTimeline } from "$lib/core/timeline.svelte";
-  import { createClips } from "$lib/core/clips.svelte";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -125,6 +127,8 @@
   let deleteNoAsk = $state(false);
   let propertiesOpen = $state(false);
 
+  let resumePoint = $state<number | null>(null);
+  let resumeTooltipVisible = $state(false);
   let timestamps = $state<Timestamp[]>([]);
 
   let clipBoundaries = $state<ClipBoundary[]>([]);
@@ -161,7 +165,7 @@
     y: number;
     title?: string;
     timeLabel: string;
-    tone?: "yellow" | "blue";
+    tone?: "yellow" | "blue" | "green";
   }>({
     visible: false,
     x: 0,
@@ -838,6 +842,23 @@
     return rawDurationSecs > 0 ? (time / rawDurationSecs) * 100 : 0;
   }
 
+  function loadResumePointForFile() {
+    resumePoint = loadResumePoint(filePath);
+  }
+
+  function removeResumePoint() {
+    tsTooltip = { ...tsTooltip, visible: false };
+    resumeTooltipVisible = false;
+    resumePoint = null;
+    eraseResumePoint(filePath);
+  }
+
+  function seekToResumePoint() {
+    if (videoEl && resumePoint !== null) {
+      videoEl.currentTime = resumePoint;
+    }
+  }
+
   function loadClipBoundaries() {
     clipBoundaries = readClipBoundaries(filePath);
   }
@@ -1093,6 +1114,7 @@
     resetZoom();
     if (isVideo) loadTimestamps();
     if (isVideo) loadClipBoundaries();
+    if (isVideo) loadResumePointForFile();
     try {
       const info = await stat(path);
       fileSize = formatFileSize(info.size);
@@ -1183,6 +1205,8 @@
     tsEditMenu = { ...tsEditMenu, visible: false };
     timestamps = [];
     clipBoundaries = [];
+    resumePoint = null;
+    resumeTooltipVisible = false;
     clearTimeout(loadingTimer);
     resetZoom();
   }
@@ -1656,6 +1680,17 @@
     clipUseCustomPath = prefs.useCustomPath;
     clipMergeSegments = prefs.mergeSegments;
 
+    window.addEventListener("beforeunload", () => {
+      if (isVideo && filePath && rawCurrentSecs > 0 && rawDurationSecs > 0) {
+        const nearEnd = rawCurrentSecs >= rawDurationSecs - 1.5;
+        if (!nearEnd) {
+          saveResumePoint(filePath, rawCurrentSecs);
+        } else {
+          eraseResumePoint(filePath);
+        }
+      }
+    });
+
     getCurrentWindow().onDragDropEvent((event) => {
       if (event.payload.type === "drop" && event.payload.paths?.length > 0)
         loadFile(event.payload.paths[0]);
@@ -1928,6 +1963,51 @@
                     : formatTime(ts.time)}"
                 ></div>
               {/each}
+              {#if resumePoint !== null}
+                <div
+                  class="resume-marker"
+                  style="left: {getTimestampPct(resumePoint)}%"
+                  role="button"
+                  tabindex="0"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    tsTooltip = { ...tsTooltip, visible: false };
+                    seekToResumePoint();
+                    removeResumePoint();
+                  }}
+                  oncontextmenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    tsTooltip = { ...tsTooltip, visible: false };
+                    removeResumePoint();
+                  }}
+                  onmouseenter={(e) => {
+                    const rect = (
+                      e.currentTarget as HTMLElement
+                    ).getBoundingClientRect();
+                    tsTooltip = {
+                      visible: true,
+                      x: rect.left + rect.width / 2,
+                      y: rect.top - 8,
+                      title: "Resume",
+                      timeLabel: formatTime(resumePoint!),
+                      tone: "green",
+                    };
+                    resumeTooltipVisible = true;
+                  }}
+                  onmouseleave={() => {
+                    tsTooltip = { ...tsTooltip, visible: false };
+                    resumeTooltipVisible = false;
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      seekToResumePoint();
+                    }
+                  }}
+                  aria-label="Resume at {formatTime(resumePoint)}"
+                ></div>
+              {/if}
             </div>
             <div class="controls-row" class:hide-for-gif={isGifVideo}>
               <button
@@ -2390,6 +2470,51 @@
                   getTimestampPct(pair.start)}%;"
               ></div>
             {/each}
+            {#if resumePoint !== null}
+              <div
+                class="resume-marker"
+                style="left: {getTimestampPct(resumePoint)}%"
+                role="button"
+                tabindex="0"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  tsTooltip = { ...tsTooltip, visible: false };
+                  seekToResumePoint();
+                  removeResumePoint();
+                }}
+                oncontextmenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  tsTooltip = { ...tsTooltip, visible: false };
+                  removeResumePoint();
+                }}
+                onmouseenter={(e) => {
+                  const rect = (
+                    e.currentTarget as HTMLElement
+                  ).getBoundingClientRect();
+                  tsTooltip = {
+                    visible: true,
+                    x: rect.left + rect.width / 2,
+                    y: rect.top - 8,
+                    title: "Resume",
+                    timeLabel: formatTime(resumePoint!),
+                    tone: "green",
+                  };
+                  resumeTooltipVisible = true;
+                }}
+                onmouseleave={() => {
+                  tsTooltip = { ...tsTooltip, visible: false };
+                  resumeTooltipVisible = false;
+                }}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    seekToResumePoint();
+                  }
+                }}
+                aria-label="Resume at {formatTime(resumePoint)}"
+              ></div>
+            {/if}
             {#if tsDragRange.visible}
               <div
                 class="ts-drag-range"
@@ -3340,6 +3465,7 @@
     <div
       class="ts-tooltip"
       class:blue={tsTooltip.tone === "blue"}
+      class:green={tsTooltip.tone === "green"}
       style="left: {tsTooltip.x}px; top: {tsTooltip.y}px;"
     >
       {#if tsTooltip.title}
