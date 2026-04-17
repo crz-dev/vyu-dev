@@ -214,6 +214,12 @@ fn delete_file(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
+    std::fs::rename(&old_path, &new_path)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn trash_file(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
@@ -429,7 +435,8 @@ pub fn run() {
             get_media_properties,
             check_ffprobe,
             install_ffmpeg,
-            process_video_clips
+            process_video_clips,
+            rename_file,
         ])
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();

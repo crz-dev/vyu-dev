@@ -262,13 +262,17 @@
     const ratio = imageNaturalWidth / imageNaturalHeight;
     return Math.min(ratio, 1 / ratio);
   });
-  const imageScale = $derived((viewer.state.zoomLevel / 100) * rotationFitScale);
+  const imageScale = $derived(
+    (viewer.state.zoomLevel / 100) * rotationFitScale,
+  );
   const imageStyle = $derived(
     `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${imageRotation}deg) scaleX(${imageFlipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;`,
   );
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const panCursor = $derived(viewer.getPanCursor());
-  const fsCursor = $derived(!viewer.state.fsControlsVisible ? "none" : panCursor);
+  const fsCursor = $derived(
+    !viewer.state.fsControlsVisible ? "none" : panCursor,
+  );
   const isGifVideo = $derived(isVideo && fileExt() === "gif");
   const clipPairs = $derived.by(() => {
     return clips.computePairs(clipBoundaries);
@@ -464,12 +468,22 @@
   }
 
   function updateTimestampTitle(id: string, title: string) {
-    timeline.updateTimestampTitle(id, title, timestamps, (v) => (timestamps = v));
+    timeline.updateTimestampTitle(
+      id,
+      title,
+      timestamps,
+      (v) => (timestamps = v),
+    );
     saveTimestamps();
   }
 
   function updateClipBoundaryTitle(id: string, title: string) {
-    clips.updateBoundaryTitle(id, title, clipBoundaries, (v) => (clipBoundaries = v));
+    clips.updateBoundaryTitle(
+      id,
+      title,
+      clipBoundaries,
+      (v) => (clipBoundaries = v),
+    );
     saveClipBoundaries();
   }
 
@@ -664,7 +678,12 @@
   function setClipBoundaryKind(id: string, kind: "start" | "end") {
     const marker = getClipBoundaryById(id);
     if (!marker || marker.kind === kind) return;
-    clips.setBoundaryKind(id, kind, clipBoundaries, (v) => (clipBoundaries = v));
+    clips.setBoundaryKind(
+      id,
+      kind,
+      clipBoundaries,
+      (v) => (clipBoundaries = v),
+    );
     saveClipBoundaries();
   }
 
@@ -726,7 +745,9 @@
     currentTime: number,
     threshold: number,
   ): string | null {
-    return clips.findTouchTarget(clipBoundaries, currentTime, threshold)?.id ?? null;
+    return (
+      clips.findTouchTarget(clipBoundaries, currentTime, threshold)?.id ?? null
+    );
   }
 
   function clearTimestampDragRange() {
@@ -855,7 +876,10 @@
   }
 
   function getDragRangeStyle() {
-    const startPct = timeline.getTimestampPct(tsDragRange.start, rawDurationSecs);
+    const startPct = timeline.getTimestampPct(
+      tsDragRange.start,
+      rawDurationSecs,
+    );
     const endPct = timeline.getTimestampPct(tsDragRange.end, rawDurationSecs);
     return `left: ${startPct}%; width: ${Math.max(0, endPct - startPct)}%;`;
   }
@@ -1216,7 +1240,8 @@
   }
 
   const configuredKeydown = setupKeybinds({
-    areDialogsOpen: () => contextMenu.visible || deleteConfirm || propertiesOpen,
+    areDialogsOpen: () =>
+      contextMenu.visible || deleteConfirm || propertiesOpen,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -1440,7 +1465,11 @@
 
   function showFilenameTooltip(e: MouseEvent) {
     const el = e.currentTarget as HTMLElement;
-    showFloatingTooltip("filename-tooltip", el.getBoundingClientRect(), "File name");
+    showFloatingTooltip(
+      "filename-tooltip",
+      el.getBoundingClientRect(),
+      "File name",
+    );
   }
 
   function hideFilenameTooltip() {
@@ -1512,14 +1541,18 @@
   <AppMenu
     {fileName}
     {fileSrc}
-    startDrag={startDrag}
-    showFilenameTooltip={showFilenameTooltip}
-    hideFilenameTooltip={hideFilenameTooltip}
-    closeFile={closeFile}
-    openFileDialog={openFileDialog}
-    minimizeWindow={minimizeWindow}
-    maximizeWindow={maximizeWindow}
-    closeWindow={closeWindow}
+    {filePath}
+    onRenamed={async (newPath) => {
+      await loadFile(newPath);
+    }}
+    {startDrag}
+    {showFilenameTooltip}
+    {hideFilenameTooltip}
+    {closeFile}
+    {openFileDialog}
+    {minimizeWindow}
+    {maximizeWindow}
+    {closeWindow}
   />
 
   <div class="content">
@@ -1589,24 +1622,24 @@
               {clipMarkerJustDragged}
               {tsMarkerDragJustEnded}
               tsEditMenuVisible={tsEditMenu.visible}
-              startScrubbing={startScrubbing}
-              getTimestampPct={getTimestampPct}
-              getDragRangeStyle={getDragRangeStyle}
-              startClipMarkerDrag={startClipMarkerDrag}
-              removeClipBoundary={removeClipBoundary}
-              showClipBoundaryTooltip={showClipBoundaryTooltip}
-              hideTsTooltip={hideTsTooltip}
-              seekToTimestamp={seekToTimestamp}
-              openSegmentEditor={openSegmentEditor}
-              startTimestampRangeDrag={startTimestampRangeDrag}
-              removeTimestamp={removeTimestamp}
-              showTimestampTooltip={showTimestampTooltip}
-              openTimestampEditor={openTimestampEditor}
-              showResumeTooltip={showResumeTooltip}
-              hideResumeTooltip={hideResumeTooltip}
-              seekToResumePoint={seekToResumePoint}
-              removeResumePoint={removeResumePoint}
-              formatTime={formatTime}
+              {startScrubbing}
+              {getTimestampPct}
+              {getDragRangeStyle}
+              {startClipMarkerDrag}
+              {removeClipBoundary}
+              {showClipBoundaryTooltip}
+              {hideTsTooltip}
+              {seekToTimestamp}
+              {openSegmentEditor}
+              {startTimestampRangeDrag}
+              {removeTimestamp}
+              {showTimestampTooltip}
+              {openTimestampEditor}
+              {showResumeTooltip}
+              {hideResumeTooltip}
+              {seekToResumePoint}
+              {removeResumePoint}
+              {formatTime}
             />
             <PlaybackControls
               fullscreen={false}
@@ -1617,21 +1650,21 @@
               {volume}
               {volumeHovered}
               volumeSegments={VOLUME_SEGMENTS}
-              togglePlay={togglePlay}
-              toggleLoop={toggleLoop}
-              toggleMute={toggleMute}
-              showVolumeOverlay={showVolumeOverlay}
-              handleVolumeAreaLeave={handleVolumeAreaLeave}
-              handleVolumeScroll={handleVolumeScroll}
-              startVolumeDrag={startVolumeDrag}
-              handleVolumeDiamondHover={handleVolumeDiamondHover}
-              setVolume={setVolume}
-              addTimestamp={addTimestamp}
-              toggleTimer={toggleTimer}
-              currentTimeDisplay={currentTimeDisplay}
-              durationDisplay={durationDisplay}
-              timerTooltip={timerTooltip}
-              toggleFullscreen={toggleFullscreen}
+              {togglePlay}
+              {toggleLoop}
+              {toggleMute}
+              {showVolumeOverlay}
+              {handleVolumeAreaLeave}
+              {handleVolumeScroll}
+              {startVolumeDrag}
+              {handleVolumeDiamondHover}
+              {setVolume}
+              {addTimestamp}
+              {toggleTimer}
+              {currentTimeDisplay}
+              {durationDisplay}
+              {timerTooltip}
+              {toggleFullscreen}
             />
           </div>
         </div>
@@ -1664,19 +1697,19 @@
     {fileName}
     {fileSrc}
     zoomLevel={viewer.state.zoomLevel}
-    resetZoom={resetZoom}
-    toggleFullscreen={toggleFullscreen}
+    {resetZoom}
+    {toggleFullscreen}
     {isVideo}
     {clipCount}
-    triggerClipSegments={triggerClipSegments}
+    {triggerClipSegments}
     {clipJobRunning}
     {clipDeleteOriginal}
     {clipUseCustomPath}
     {clipMergeSegments}
-    getClipTargetDir={getClipTargetDir}
-    toggleClipDeleteOriginal={toggleClipDeleteOriginal}
-    toggleClipPathSelection={toggleClipPathSelection}
-    toggleClipMergeSegments={toggleClipMergeSegments}
+    {getClipTargetDir}
+    {toggleClipDeleteOriginal}
+    {toggleClipPathSelection}
+    {toggleClipMergeSegments}
     {clipJobLabel}
   />
 
@@ -1744,24 +1777,24 @@
             {clipMarkerJustDragged}
             {tsMarkerDragJustEnded}
             tsEditMenuVisible={tsEditMenu.visible}
-            startScrubbing={startScrubbing}
-            getTimestampPct={getTimestampPct}
-            getDragRangeStyle={getDragRangeStyle}
-            startClipMarkerDrag={startClipMarkerDrag}
-            removeClipBoundary={removeClipBoundary}
-            showClipBoundaryTooltip={showClipBoundaryTooltip}
-            hideTsTooltip={hideTsTooltip}
-            seekToTimestamp={seekToTimestamp}
-            openSegmentEditor={openSegmentEditor}
-            startTimestampRangeDrag={startTimestampRangeDrag}
-            removeTimestamp={removeTimestamp}
-            showTimestampTooltip={showTimestampTooltip}
-            openTimestampEditor={openTimestampEditor}
-            showResumeTooltip={showResumeTooltip}
-            hideResumeTooltip={hideResumeTooltip}
-            seekToResumePoint={seekToResumePoint}
-            removeResumePoint={removeResumePoint}
-            formatTime={formatTime}
+            {startScrubbing}
+            {getTimestampPct}
+            {getDragRangeStyle}
+            {startClipMarkerDrag}
+            {removeClipBoundary}
+            {showClipBoundaryTooltip}
+            {hideTsTooltip}
+            {seekToTimestamp}
+            {openSegmentEditor}
+            {startTimestampRangeDrag}
+            {removeTimestamp}
+            {showTimestampTooltip}
+            {openTimestampEditor}
+            {showResumeTooltip}
+            {hideResumeTooltip}
+            {seekToResumePoint}
+            {removeResumePoint}
+            {formatTime}
           />
           <PlaybackControls
             fullscreen={true}
@@ -1772,21 +1805,21 @@
             {volume}
             {volumeHovered}
             volumeSegments={VOLUME_SEGMENTS}
-            togglePlay={togglePlay}
-            toggleLoop={toggleLoop}
-            toggleMute={toggleMute}
-            showVolumeOverlay={showVolumeOverlay}
-            handleVolumeAreaLeave={handleVolumeAreaLeave}
-            handleVolumeScroll={handleVolumeScroll}
-            startVolumeDrag={startVolumeDrag}
-            handleVolumeDiamondHover={handleVolumeDiamondHover}
-            setVolume={setVolume}
-            addTimestamp={addTimestamp}
-            toggleTimer={toggleTimer}
-            currentTimeDisplay={currentTimeDisplay}
-            durationDisplay={durationDisplay}
-            timerTooltip={timerTooltip}
-            toggleFullscreen={toggleFullscreen}
+            {togglePlay}
+            {toggleLoop}
+            {toggleMute}
+            {showVolumeOverlay}
+            {handleVolumeAreaLeave}
+            {handleVolumeScroll}
+            {startVolumeDrag}
+            {handleVolumeDiamondHover}
+            {setVolume}
+            {addTimestamp}
+            {toggleTimer}
+            {currentTimeDisplay}
+            {durationDisplay}
+            {timerTooltip}
+            {toggleFullscreen}
           />
         </div>
       {:else}
@@ -1831,20 +1864,20 @@
     {frameCopyToast}
     {clipToast}
     {clipOutputDir}
-    parentFolder={parentFolder}
-    invokeOpenDirectory={invokeOpenDirectory}
-    ctxCopyImage={ctxCopyImage}
-    ctxCopyFrame={ctxCopyFrame}
-    ctxCopyPath={ctxCopyPath}
-    ctxRotate={ctxRotate}
-    ctxFlip={ctxFlip}
-    ctxStartClipHere={ctxStartClipHere}
-    ctxEndClipHere={ctxEndClipHere}
-    ctxShowInExplorer={ctxShowInExplorer}
-    ctxProperties={ctxProperties}
-    ctxDelete={ctxDelete}
-    ctxClearTimestamps={ctxClearTimestamps}
-    ctxClearSegments={ctxClearSegments}
+    {parentFolder}
+    {invokeOpenDirectory}
+    {ctxCopyImage}
+    {ctxCopyFrame}
+    {ctxCopyPath}
+    {ctxRotate}
+    {ctxFlip}
+    {ctxStartClipHere}
+    {ctxEndClipHere}
+    {ctxShowInExplorer}
+    {ctxProperties}
+    {ctxDelete}
+    {ctxClearTimestamps}
+    {ctxClearSegments}
     {clipDeleteConfirm}
     {deleteConfirm}
     {propertiesOpen}
@@ -1873,7 +1906,8 @@
     {propsCopyAll}
     {performDelete}
     {runClipAction}
-    closeClipDeleteConfirm={() => (clipDeleteConfirm = { visible: false, mode: null })}
+    closeClipDeleteConfirm={() =>
+      (clipDeleteConfirm = { visible: false, mode: null })}
     closeDeleteConfirm={() => (deleteConfirm = false)}
     closeProperties={() => (propertiesOpen = false)}
     updateDeleteNoAsk={(v) => (deleteNoAsk = v)}
@@ -1881,7 +1915,7 @@
   />
 
   <Tooltip
-    tsTooltip={tsTooltip}
+    {tsTooltip}
     tsEditMenuVisible={tsEditMenu.visible}
     {volumeTooltipVisible}
     {volumeTooltipX}
@@ -1892,9 +1926,9 @@
     editingTimestamp={getActiveEditorTimestamp()}
     editingSegment={getActiveEditorSegment()}
     currentTitle={getEditorTitle()}
-    getTitleEditorWidthCh={getTitleEditorWidthCh}
-    updateEditorTitle={updateEditorTitle}
-    closeTimestampEditor={closeTimestampEditor}
-    onEditorScissor={onEditorScissor}
+    {getTitleEditorWidthCh}
+    {updateEditorTitle}
+    {closeTimestampEditor}
+    {onEditorScissor}
   />
 </main>

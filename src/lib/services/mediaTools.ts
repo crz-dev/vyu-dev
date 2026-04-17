@@ -50,3 +50,10 @@ export async function invokeOpenFolder(path: string): Promise<void> {
 export async function invokeOpenDirectory(path: string): Promise<void> {
   return invoke("open_directory", { path });
 }
+
+export async function invokeRenameFile(
+  oldPath: string,
+  newPath: string,
+): Promise<void> {
+  return invoke("rename_file", { oldPath, newPath });
+}

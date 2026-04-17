@@ -42,6 +42,31 @@ main {
   pointer-events: auto;
   cursor: default;
 }
+.filename-btn {
+  background: none;
+  border: none;
+  cursor: text;
+  text-align: left;
+}
+.filename-btn:hover {
+  color: #ffffff;
+}
+.filename-input {
+  font-size: 12px;
+  color: #ffffff;
+  font-family: Inter, sans-serif;
+  background: rgba(255, 255, 255, 0.07);
+  border: 0.5px solid #444444;
+  border-radius: 4px;
+  padding: 1px 6px;
+  max-width: 300px;
+  min-width: 80px;
+  outline: none;
+  height: 22px;
+}
+.filename-input:focus {
+  border-color: #666666;
+}
 .folder-btn {
   background: none;
   border: none;

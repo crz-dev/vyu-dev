@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { invokeRenameFile } from "$lib/services/mediaTools";
+
   let {
     fileName,
     fileSrc,
+    filePath,
+    onRenamed,
     startDrag,
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -13,6 +17,8 @@
   }: {
     fileName: string;
     fileSrc: string;
+    filePath: string;
+    onRenamed: (newPath: string) => void;
     startDrag: (e: MouseEvent) => void;
     showFilenameTooltip: (e: MouseEvent) => void;
     hideFilenameTooltip: () => void;
@@ -22,17 +28,75 @@
     maximizeWindow: () => void;
     closeWindow: () => void;
   } = $props();
+
+  let editing = $state(false);
+  let editValue = $state("");
+  let inputEl = $state<HTMLInputElement | null>(null);
+
+  function startEditing() {
+    editValue = fileName;
+    editing = true;
+    setTimeout(() => {
+      if (!inputEl) return;
+      inputEl.focus();
+      const dotIndex = editValue.lastIndexOf(".");
+      inputEl.setSelectionRange(0, dotIndex > 0 ? dotIndex : editValue.length);
+    }, 0);
+  }
+
+  async function commitRename() {
+    editing = false;
+    const newName = editValue.trim();
+    if (!newName || newName === fileName || !filePath) return;
+    const sep = filePath.includes("\\") ? "\\" : "/";
+    const dir = filePath.substring(0, filePath.lastIndexOf(sep));
+    const newPath = `${dir}${sep}${newName}`;
+    try {
+      await invokeRenameFile(filePath, newPath);
+      onRenamed(newPath);
+    } catch (e) {
+      console.error("Rename failed:", e);
+    }
+  }
+
+  function cancelEdit() {
+    editing = false;
+  }
 </script>
 
 <div class="topbar" onmousedown={startDrag} role="toolbar" tabindex="-1">
   <span class="app-name">vyu</span>
   <span class="divider">/</span>
-  <span
-    class="filename"
-    role="presentation"
-    onmouseenter={showFilenameTooltip}
-    onmouseleave={hideFilenameTooltip}>{fileName}</span
-  >
+  {#if editing}
+    <input
+      bind:this={inputEl}
+      bind:value={editValue}
+      class="filename-input"
+      type="text"
+      onkeydown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitRename();
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          cancelEdit();
+        }
+      }}
+      onblur={commitRename}
+      onmousedown={(e) => e.stopPropagation()}
+      aria-label="Rename file"
+    />
+  {:else}
+    <button
+      class="filename filename-btn"
+      onmouseenter={showFilenameTooltip}
+      onmouseleave={hideFilenameTooltip}
+      onclick={fileSrc ? startEditing : undefined}
+      data-tooltip={fileSrc ? "Rename file" : undefined}
+      aria-label="Rename file">{fileName}</button
+    >
+  {/if}
   {#if fileSrc}
     <span class="divider">/</span>
     <button
