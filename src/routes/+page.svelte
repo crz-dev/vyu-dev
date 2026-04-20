@@ -1902,6 +1902,11 @@
             {showSpeedOverlay}
             {handleSpeedAreaLeave}
             {handleSpeedScroll}
+            {speedTooltipVisible}
+            {speedTooltipX}
+            {speedTooltipY}
+            {handleSpeedDiamondHover}
+            {startSpeedDrag}
             {addTimestamp}
             {toggleTimer}
             {currentTimeDisplay}
