@@ -237,21 +237,59 @@
         aria-label="playback speed"
         style="color: #ffffff;"
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
+        {#if playbackSpeed < 1}
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
             stroke="currentColor"
-            stroke-width="2"
-          />
-          <path
-            d="M12 7v5l3 3"
-            stroke="currentColor"
-            stroke-width="2"
+            stroke-width="1.5"
             stroke-linecap="round"
-          />
-        </svg>
+            stroke-linejoin="round"
+          >
+            <ellipse cx="10" cy="14" rx="6" ry="4" />
+            <path d="M4 14 Q2 10 5 8 Q8 6 10 8" />
+            <path d="M16 14 Q19 12 20 9 Q18 7 16 9" />
+            <circle cx="20" cy="8" r="1" fill="currentColor" stroke="none" />
+            <path d="M7 18 L7 20 M13 18 L13 20" />
+            <path d="M4 12 Q2 11 1 9" />
+          </svg>
+        {:else if playbackSpeed > 1}
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <ellipse cx="9" cy="14" rx="6" ry="3.5" />
+            <path d="M3 14 Q1 10 4 8 Q7 5 10 7 Q13 5 17 6 Q20 7 21 5" />
+            <path d="M21 5 Q23 4 23 7 Q22 9 20 8" />
+            <circle cx="21" cy="5" r="1" fill="currentColor" stroke="none" />
+            <path d="M6 17.5 L5 20 M12 17.5 L13 20" />
+            <path d="M15 8 Q17 11 16 14" />
+          </svg>
+        {:else}
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <path
+              d="M12 7v5l3 3"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        {/if}
       </button>
       {#if speedHovered}
         <div
@@ -260,11 +298,16 @@
           onmousemove={handleSpeedDiamondHover}
           role="presentation"
         >
-          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as step, i}
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as step, i}
+            {@const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]}
+            {@const selectedIdx = steps.indexOf(playbackSpeed)}
+            {@const dist = Math.abs(i - selectedIdx)}
             <button
               class="speed-diamond"
               class:filled={playbackSpeed === step}
               class:active={playbackSpeed >= step}
+              class:near-1={dist === 1}
+              class:near-2={dist >= 2}
               style="--i: {i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
@@ -279,30 +322,15 @@
       onclick={addTimestamp}
       aria-label="add timestamp"
     >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-        ><circle
-          cx="12"
-          cy="12"
-          r="9"
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M4 16 L12 6 L20 16"
           stroke="currentColor"
-          stroke-width="2"
-        /><path
-          d="M12 7v5l3 3"
-          stroke="currentColor"
-          stroke-width="2"
+          stroke-width="2.2"
           stroke-linecap="round"
-        /><path
-          d="M18.5 3.5L20 2"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        /><path
-          d="M12 3V1"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        /></svg
-      >
+          stroke-linejoin="round"
+        />
+      </svg>
     </button>
     <button
       class="time-display tooltip-ctrl"
@@ -510,21 +538,59 @@
         aria-label="playback speed"
         style="color: #ffffff;"
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
+        {#if playbackSpeed < 1}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
             stroke="currentColor"
-            stroke-width="2"
-          />
-          <path
-            d="M12 7v5l3 3"
-            stroke="currentColor"
-            stroke-width="2"
+            stroke-width="1.5"
             stroke-linecap="round"
-          />
-        </svg>
+            stroke-linejoin="round"
+          >
+            <ellipse cx="10" cy="14" rx="6" ry="4" />
+            <path d="M4 14 Q2 10 5 8 Q8 6 10 8" />
+            <path d="M16 14 Q19 12 20 9 Q18 7 16 9" />
+            <circle cx="20" cy="8" r="1" fill="currentColor" stroke="none" />
+            <path d="M7 18 L7 20 M13 18 L13 20" />
+            <path d="M4 12 Q2 11 1 9" />
+          </svg>
+        {:else if playbackSpeed > 1}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <ellipse cx="9" cy="14" rx="6" ry="3.5" />
+            <path d="M3 14 Q1 10 4 8 Q7 5 10 7 Q13 5 17 6 Q20 7 21 5" />
+            <path d="M21 5 Q23 4 23 7 Q22 9 20 8" />
+            <circle cx="21" cy="5" r="1" fill="currentColor" stroke="none" />
+            <path d="M6 17.5 L5 20 M12 17.5 L13 20" />
+            <path d="M15 8 Q17 11 16 14" />
+          </svg>
+        {:else}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <path
+              d="M12 7v5l3 3"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        {/if}
       </button>
       {#if speedHovered}
         <div
@@ -533,11 +599,16 @@
           onmousemove={handleSpeedDiamondHover}
           role="presentation"
         >
-          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as step, i}
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as step, i}
+            {@const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]}
+            {@const selectedIdx = steps.indexOf(playbackSpeed)}
+            {@const dist = Math.abs(i - selectedIdx)}
             <button
               class="speed-diamond"
               class:filled={playbackSpeed === step}
               class:active={playbackSpeed >= step}
+              class:near-1={dist === 1}
+              class:near-2={dist >= 2}
               style="--i: {i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
@@ -552,30 +623,15 @@
       onclick={addTimestamp}
       aria-label="add timestamp"
     >
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-        ><circle
-          cx="12"
-          cy="12"
-          r="9"
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M4 16 L12 6 L20 16"
           stroke="currentColor"
-          stroke-width="2"
-        /><path
-          d="M12 7v5l3 3"
-          stroke="currentColor"
-          stroke-width="2"
+          stroke-width="2.2"
           stroke-linecap="round"
-        /><path
-          d="M18.5 3.5L20 2"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        /><path
-          d="M12 3V1"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        /></svg
-      >
+          stroke-linejoin="round"
+        />
+      </svg>
     </button>
     <button
       class="fs-time tooltip-ctrl"

@@ -480,7 +480,7 @@
     function dragTo(clientX: number, clientY: number) {
       const first = diamonds[0].getBoundingClientRect();
       const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-      const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+      const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
       const ratio = Math.max(
         0,
         Math.min(1, (clientX - first.left) / (last.right - first.left)),
@@ -510,7 +510,10 @@
   function handleSpeedScroll(e: WheelEvent) {
     e.preventDefault();
     const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
-    const idx = steps.indexOf(playbackSpeed);
+    const cur = steps.reduce((a, b) =>
+      Math.abs(b - playbackSpeed) < Math.abs(a - playbackSpeed) ? b : a,
+    );
+    const idx = steps.indexOf(cur);
     const next =
       e.deltaY > 0 ? Math.max(0, idx - 1) : Math.min(steps.length - 1, idx + 1);
     setPlaybackSpeed(steps[next]);

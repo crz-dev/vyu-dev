@@ -720,7 +720,7 @@
   flex-direction: row;
   align-items: center;
   gap: 5px;
-  animation: volumeBarIn 0.2s ease forwards;
+  animation: speedBarIn 0.2s ease forwards;
   cursor: pointer;
   order: -1;
 }
@@ -734,19 +734,31 @@
   padding: 0;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    transform 0.12s ease,
+    opacity 0.15s ease;
   flex-shrink: 0;
   animation: diamondSpin 0.25s ease forwards;
   animation-delay: calc(var(--i) * 0.03s);
   opacity: 0;
 }
 .speed-diamond.active {
-  border-color: #888888;
+  border-color: calc-fade;
 }
 .speed-diamond.filled {
   background: #ffffff;
   border-color: #ffffff;
 }
-.speed-diamond:hover {
+.speed-diamond.near-1 {
+  opacity: 0.55;
+}
+.speed-diamond.near-2 {
+  opacity: 0.3;
+}
+.speed-diamond:not(.filled):hover {
   border-color: #aaaaaa;
+  transform: rotate(45deg) scale(1.35);
+}
+.speed-diamond.filled:hover {
+  transform: rotate(45deg) scale(1.35);
 }
