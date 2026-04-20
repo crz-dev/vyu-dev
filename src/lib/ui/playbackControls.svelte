@@ -23,6 +23,11 @@
     showSpeedOverlay,
     handleSpeedAreaLeave,
     handleSpeedScroll,
+    speedTooltipVisible,
+    speedTooltipX,
+    speedTooltipY,
+    handleSpeedDiamondHover,
+    startSpeedDrag,
     addTimestamp,
     toggleTimer,
     currentTimeDisplay,
@@ -53,6 +58,11 @@
     showSpeedOverlay: () => void;
     handleSpeedAreaLeave: () => void;
     handleSpeedScroll: (e: WheelEvent) => void;
+    speedTooltipVisible: boolean;
+    speedTooltipX: number;
+    speedTooltipY: number;
+    handleSpeedDiamondHover: (e: MouseEvent) => void;
+    startSpeedDrag: (e: MouseEvent) => void;
     addTimestamp: () => void;
     toggleTimer: () => void;
     currentTimeDisplay: () => string;
@@ -220,9 +230,37 @@
       onwheel={handleSpeedScroll}
       role="presentation"
     >
+      <button
+        class="ctrl-btn speed-btn tooltip-ctrl"
+        class:active={playbackSpeed !== 1}
+        data-tooltip="Playback speed"
+        aria-label="playback speed"
+        style="color: #ffffff;"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <path
+            d="M12 7v5l3 3"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
       {#if speedHovered}
-        <div class="speed-diamonds" role="presentation">
-          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as step, i}
+        <div
+          class="speed-diamonds"
+          onmousedown={startSpeedDrag}
+          onmousemove={handleSpeedDiamondHover}
+          role="presentation"
+        >
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as step, i}
             <button
               class="speed-diamond"
               class:filled={playbackSpeed === step}
@@ -234,14 +272,6 @@
           {/each}
         </div>
       {/if}
-      <button
-        class="ctrl-btn speed-btn tooltip-ctrl"
-        class:active={playbackSpeed !== 1}
-        data-tooltip="Playback speed"
-        aria-label="playback speed"
-      >
-        {playbackSpeed}×
-      </button>
     </div>
     <button
       class="ctrl-btn add-ts-btn tooltip-ctrl"
@@ -473,9 +503,37 @@
       onwheel={handleSpeedScroll}
       role="presentation"
     >
+      <button
+        class="fs-ctrl-btn speed-btn tooltip-ctrl"
+        class:active={playbackSpeed !== 1}
+        data-tooltip="Playback speed"
+        aria-label="playback speed"
+        style="color: #ffffff;"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <path
+            d="M12 7v5l3 3"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
       {#if speedHovered}
-        <div class="speed-diamonds" role="presentation">
-          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as step, i}
+        <div
+          class="speed-diamonds"
+          onmousedown={startSpeedDrag}
+          onmousemove={handleSpeedDiamondHover}
+          role="presentation"
+        >
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as step, i}
             <button
               class="speed-diamond"
               class:filled={playbackSpeed === step}
@@ -487,14 +545,6 @@
           {/each}
         </div>
       {/if}
-      <button
-        class="fs-ctrl-btn speed-btn tooltip-ctrl"
-        class:active={playbackSpeed !== 1}
-        data-tooltip="Playback speed"
-        aria-label="playback speed"
-      >
-        {playbackSpeed}×
-      </button>
     </div>
     <button
       class="fs-ctrl-btn add-ts-btn tooltip-ctrl"

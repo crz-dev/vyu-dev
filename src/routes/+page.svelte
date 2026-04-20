@@ -165,6 +165,9 @@
   let volumeTooltipX = $state(0);
   let volumeTooltipY = $state(0);
   let volumeTooltipVisible = $state(false);
+  let speedTooltipX = $state(0);
+  let speedTooltipY = $state(0);
+  let speedTooltipVisible = $state(false);
   let hoverZone = $state("none");
   let dragStart = $state({ x: 0, y: 0, tx: 0, ty: 0 });
   let lastLeftClickTime = 0;
@@ -457,7 +460,51 @@
   }
 
   function handleSpeedAreaLeave() {
+    speedTooltipVisible = false;
     speedHovered = false;
+  }
+
+  function handleSpeedDiamondHover(e: MouseEvent) {
+    speedTooltipX = e.clientX;
+    speedTooltipY = e.clientY;
+    speedTooltipVisible = true;
+  }
+
+  function startSpeedDrag(e: MouseEvent) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const diamonds = (e.currentTarget as HTMLElement).querySelectorAll(
+      ".speed-diamond",
+    );
+
+    function dragTo(clientX: number, clientY: number) {
+      const first = diamonds[0].getBoundingClientRect();
+      const last = diamonds[diamonds.length - 1].getBoundingClientRect();
+      const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - first.left) / (last.right - first.left)),
+      );
+      const idx = Math.round(ratio * (steps.length - 1));
+      setPlaybackSpeed(steps[idx]);
+      speedTooltipX = clientX;
+      speedTooltipY = clientY;
+      speedTooltipVisible = true;
+    }
+
+    dragTo(e.clientX, e.clientY);
+
+    function onMouseMove(ev: MouseEvent) {
+      dragTo(ev.clientX, ev.clientY);
+    }
+    function onMouseUp() {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      speedTooltipVisible = false;
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   }
 
   function handleSpeedScroll(e: WheelEvent) {
@@ -1689,6 +1736,11 @@
               {showSpeedOverlay}
               {handleSpeedAreaLeave}
               {handleSpeedScroll}
+              {speedTooltipVisible}
+              {speedTooltipX}
+              {speedTooltipY}
+              {handleSpeedDiamondHover}
+              {startSpeedDrag}
               {addTimestamp}
               {toggleTimer}
               {currentTimeDisplay}
@@ -1958,6 +2010,10 @@
     {volumeTooltipY}
     {muted}
     {volume}
+    {speedTooltipVisible}
+    {speedTooltipX}
+    {speedTooltipY}
+    {playbackSpeed}
     {tsEditMenu}
     editingTimestamp={getActiveEditorTimestamp()}
     editingSegment={getActiveEditorSegment()}

@@ -5,6 +5,10 @@
     volumeTooltipVisible,
     volumeTooltipX,
     volumeTooltipY,
+    speedTooltipVisible,
+    speedTooltipX,
+    speedTooltipY,
+    playbackSpeed,
     muted,
     volume,
     tsEditMenu,
@@ -28,6 +32,10 @@
     volumeTooltipVisible: boolean;
     volumeTooltipX: number;
     volumeTooltipY: number;
+    speedTooltipVisible: boolean;
+    speedTooltipX: number;
+    speedTooltipY: number;
+    playbackSpeed: number;
     muted: boolean;
     volume: number;
     tsEditMenu: {
@@ -67,6 +75,15 @@
     style="left: {volumeTooltipX}px; top: {volumeTooltipY - 32}px;"
   >
     {muted ? "0" : Math.round(volume * 100)}%
+  </div>
+{/if}
+
+{#if speedTooltipVisible}
+  <div
+    class="vol-tooltip"
+    style="left: {speedTooltipX}px; top: {speedTooltipY - 32}px;"
+  >
+    {playbackSpeed}×
   </div>
 {/if}
 

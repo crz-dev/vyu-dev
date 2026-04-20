@@ -692,7 +692,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  flex-direction: row-reverse;
+  flex-direction: row;
   gap: 4px;
   height: 34px;
 }
@@ -700,27 +700,29 @@
   font-size: 11px;
   font-family: Inter, sans-serif;
   font-weight: 600;
-  color: #555555;
-  width: auto;
-  padding: 0 6px;
-  min-width: 34px;
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  flex-shrink: 0;
 }
 .speed-btn.active {
   color: #ffffff;
 }
 .speed-btn:hover {
-  color: #aaaaaa;
+  color: #ffffff;
 }
 .speed-btn.active:hover {
   color: #ffffff;
 }
 .speed-diamonds {
   display: flex;
-  flex-direction: row-reverse;
+  flex-direction: row;
   align-items: center;
   gap: 5px;
   animation: volumeBarIn 0.2s ease forwards;
   cursor: pointer;
+  order: -1;
 }
 .speed-diamond {
   width: 13px;
