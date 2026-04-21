@@ -742,23 +742,15 @@
   animation-delay: calc(var(--i) * 0.03s);
   opacity: 0;
 }
-.speed-diamond.active {
-  border-color: calc-fade;
-}
 .speed-diamond.filled {
   background: #ffffff;
   border-color: #ffffff;
 }
-.speed-diamond.near-1 {
-  opacity: 0.55;
+.speed-diamond.grey {
+  background: none;
+  border-color: #555555;
+  opacity: 0.45;
 }
-.speed-diamond.near-2 {
-  opacity: 0.3;
-}
-.speed-diamond:not(.filled):hover {
-  border-color: #aaaaaa;
-  transform: rotate(45deg) scale(1.35);
-}
-.speed-diamond.filled:hover {
+.speed-diamond:hover {
   transform: rotate(45deg) scale(1.35);
 }

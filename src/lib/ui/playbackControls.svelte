@@ -299,16 +299,15 @@
           role="presentation"
         >
           {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as step, i}
-            {@const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]}
-            {@const selectedIdx = steps.indexOf(playbackSpeed)}
+            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].indexOf(
+              playbackSpeed,
+            )}
             {@const dist = Math.abs(i - selectedIdx)}
             <button
               class="speed-diamond"
-              class:filled={playbackSpeed === step}
-              class:active={playbackSpeed >= step}
-              class:near-1={dist === 1}
-              class:near-2={dist >= 2}
-              style="--i: {i}"
+              class:filled={dist === 0}
+              class:grey={dist === 1}
+              style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
             ></button>
@@ -600,16 +599,15 @@
           role="presentation"
         >
           {#each [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as step, i}
-            {@const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]}
-            {@const selectedIdx = steps.indexOf(playbackSpeed)}
+            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].indexOf(
+              playbackSpeed,
+            )}
             {@const dist = Math.abs(i - selectedIdx)}
             <button
               class="speed-diamond"
-              class:filled={playbackSpeed === step}
-              class:active={playbackSpeed >= step}
-              class:near-1={dist === 1}
-              class:near-2={dist >= 2}
-              style="--i: {i}"
+              class:filled={dist === 0}
+              class:grey={dist === 1}
+              style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
             ></button>
