@@ -108,7 +108,7 @@
   opacity: 1;
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
-.progress-playhead:hover,
+.video-wrapper:hover .progress-playhead:hover,
 .progress-bar:active .progress-playhead {
   transform: translate(-50%, -50%) rotate(45deg) scale(1.28);
 }
