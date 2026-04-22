@@ -74,7 +74,7 @@
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #333333;
+  background: #2a2a2a;
   border-radius: 2px;
   cursor: pointer;
   position: relative;
@@ -310,7 +310,7 @@
 .volume-btn {
   width: 34px;
   height: 34px;
-  color: #555555;
+  color: #888888;
 }
 .volume-btn svg {
   width: 20px;
@@ -339,7 +339,7 @@
   width: 13px;
   height: 13px;
   background: none;
-  border: 1px solid #555555;
+  border: 1px solid #888888;
   transform: rotate(45deg);
   cursor: pointer;
   padding: 0;
@@ -360,8 +360,8 @@
   opacity: 0.25;
 }
 .volume-diamond.muted-diamond.filled {
-  background: #666666;
-  border-color: #666666;
+  background: #888888;
+  border-color: #888888;
 }
 .volume-diamond:hover {
   border-color: #aaaaaa;
@@ -567,7 +567,7 @@
   background: rgba(255, 255, 255, 0.1);
 }
 .fs-ctrl-btn.volume-btn {
-  color: #555555;
+  color: #888888;
 }
 .fs-ctrl-btn.volume-btn svg {
   width: 24px;
@@ -661,7 +661,7 @@
   border-radius: 7px;
   border: 0.5px solid #323232;
   background: rgba(255, 255, 255, 0.055);
-  color: #7d7d7d;
+  color: #888888;
   font-family: Inter, sans-serif;
   font-size: 11px;
   padding: 6px 6px;
@@ -686,7 +686,7 @@
 .clip-toggle-btn.red.is-on {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(248, 113, 113, 0.45);
-  color: #fda4af;
+  color: #fca5a5;
 }
 .clip-toggle-btn.yellow.is-on {
   background: rgba(245, 197, 24, 0.2);
@@ -709,14 +709,14 @@
 }
 .clip-job-progress > span {
   font-size: 11px;
-  color: #9aa4b2;
+  color: #888888;
   font-family: Inter, sans-serif;
 }
 .clip-job-bar {
   width: 100%;
   height: 4px;
   border-radius: 999px;
-  background: #1f2937;
+  background: #111111;
   overflow: hidden;
 }
 .clip-job-bar span {
@@ -771,7 +771,7 @@
   width: 13px;
   height: 13px;
   background: none;
-  border: 1px solid #555555;
+  border: 1px solid #888888;
   transform: rotate(45deg);
   cursor: pointer;
   padding: 0;
@@ -791,7 +791,7 @@
 }
 .speed-diamond.grey {
   background: none;
-  border-color: #555555;
+  border-color: #888888;
   opacity: 0.45;
 }
 .speed-diamond:hover {

@@ -1,48 +1,25 @@
 :root {
-  --color-bg: #000000;
-  --color-bg-primary: #0a0a0a;
-  --color-bg-secondary: #0d0d0d;
-  --color-bg-tertiary: #111111;
-  --color-bg-elevated: #141414;
-  --color-bg-dialog: #141414;
+  --bg-base: #000000;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-elevated: #1a1a1a;
+  --bg-border: #2a2a2a;
 
-  --color-border: #1a1a1a;
-  --color-border-subtle: #222222;
-  --color-border-strong: #2a2a2a;
-  --color-border-mid: #323232;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+  --text-dim: #444444;
 
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #cccccc;
-  --color-text-muted: #888888;
-  --color-text-dim: #666666;
-  --color-text-dimmer: #555555;
-  --color-text-dimmest: #444444;
+  --yellow: #f5c518;
+  --yellow-soft: #facc15;
 
-  --color-accent-blue: #3b82f6;
-  --color-accent-blue-light: #60a5fa;
-  --color-accent-blue-lighter: #93c5fd;
-  --color-accent-blue-lightest: #bfdbfe;
-  --color-accent-blue-dimmest: #dbeafe;
+  --blue: #3b82f6;
+  --blue-light: #60a5fa;
+  --blue-lighter: #93c5fd;
 
-  --color-accent-yellow: #f5c518;
-  --color-accent-yellow-bright: #facc15;
-  --color-accent-yellow-light: #fde047;
+  --green: #4ade80;
+  --green-soft: #86efac;
 
-  --color-accent-green: #4ade80;
-  --color-accent-green-light: #86efac;
-
-  --color-accent-red: #f87171;
-  --color-accent-red-soft: #fda4af;
-
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 7px;
-  --radius-xl: 8px;
-  --radius-2xl: 10px;
-  --radius-3xl: 12px;
-  --radius-full: 999px;
-
-  --transition-fast: 0.15s;
-  --transition-base: 0.2s;
-  --transition-slow: 0.3s;
+  --red: #f87171;
+  --red-soft: #fca5a5;
 }

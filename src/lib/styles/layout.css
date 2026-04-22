@@ -12,7 +12,7 @@ main {
 .topbar {
   height: 36px;
   background: #111111;
-  border-bottom: 0.5px solid #222222;
+  border-bottom: 0.5px solid #1a1a1a;
   display: flex;
   align-items: center;
   padding: 0 16px;
@@ -65,7 +65,7 @@ main {
   height: 22px;
 }
 .filename-input:focus {
-  border-color: #666666;
+  border-color: #888888;
 }
 .folder-btn {
   background: none;
@@ -78,7 +78,7 @@ main {
   transition:
     background 0.2s,
     color 0.2s;
-  color: #666666;
+  color: #888888;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -123,7 +123,7 @@ main {
   transition:
     background 0.2s,
     color 0.2s;
-  color: #666666;
+  color: #888888;
 }
 .wc-btn:hover {
   background: #1a1a1a;
@@ -131,7 +131,7 @@ main {
 }
 .wc-btn.close:hover {
   background: #3a1a1a;
-  color: #ff6666;
+  color: #f87171;
 }
 
 .content {
@@ -168,7 +168,7 @@ main {
 }
 .nav-btn:hover {
   color: #cccccc;
-  background: #222222;
+  background: #1a1a1a;
 }
 
 .viewer {
@@ -184,7 +184,7 @@ main {
 
 .empty {
   background: none;
-  border: 1px dashed #222222;
+  border: 1px dashed #1a1a1a;
   border-radius: 8px;
   padding: 32px 48px;
   display: flex;
@@ -199,17 +199,17 @@ main {
 }
 .empty-icon {
   font-size: 24px;
-  color: #333333;
+  color: #444444;
 }
 .empty-text {
   font-size: 13px;
-  color: #333333;
+  color: #444444;
   font-family: Inter, sans-serif;
 }
 
 .bottombar {
   height: 36px;
-  background: #0d0d0d;
+  background: #111111;
   border-top: 0.5px solid #1a1a1a;
   display: flex;
   align-items: center;
@@ -332,7 +332,7 @@ main.fullscreen .video-wrapper video {
   transition:
     background 0.2s,
     color 0.2s;
-  color: #666666;
+  color: #888888;
 }
 .fs-wc-btn:hover {
   background: rgba(255, 255, 255, 0.1);
@@ -340,7 +340,7 @@ main.fullscreen .video-wrapper video {
 }
 .fs-wc-btn.close:hover {
   background: rgba(255, 0, 0, 0.2);
-  color: #ff6666;
+  color: #f87171;
 }
 .fs-nav-left,
 .fs-nav-right {
@@ -363,7 +363,7 @@ main.fullscreen .video-wrapper video {
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.5);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
-  color: #666666;
+  color: #888888;
   font-size: 24px;
   cursor: pointer;
   display: flex;
