@@ -94,7 +94,6 @@
       onmouseenter={showFilenameTooltip}
       onmouseleave={hideFilenameTooltip}
       onclick={fileSrc ? startEditing : undefined}
-      data-tooltip={fileSrc ? "Rename file" : undefined}
       aria-label="Rename file">{fileName}</button
     >
   {/if}
