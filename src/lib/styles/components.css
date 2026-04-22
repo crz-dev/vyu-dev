@@ -11,7 +11,7 @@
   transition: outline-color 0.5s;
 }
 .video-wrapper:hover {
-  outline-color: #888888;
+  outline-color: #323232;
 }
 .video-wrapper video {
   display: block;
