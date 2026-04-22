@@ -309,15 +309,7 @@ fn get_media_properties(path: String) -> Result<MediaProperties, String> {
     }
 
     let output = Command::new("ffprobe")
-        .args([
-            "-v",
-            "error",
-            "-print_format",
-            "json",
-            "-show_streams",
-            "-show_format",
-            &path,
-        ])
+        .args(["-v", "error", "-print_format", "json", "-show_streams", "-show_format", &path])
         .output()
         .map_err(|e| format!("ffprobe not available: {e}"))?;
 
@@ -325,107 +317,29 @@ fn get_media_properties(path: String) -> Result<MediaProperties, String> {
         return Err(String::from_utf8_lossy(&output.stderr).to_string());
     }
 
-    #[tauri::command]
-fn get_clipboard_file_path() -> Option<String> {
-    #[cfg(target_os = "windows")]
-    {
-        let output = Command::new("powershell")
-            .args([
-                "-NoProfile",
-                "-Command",
-                "Add-Type -Assembly PresentationCore; $files = [System.Windows.Clipboard]::GetFileDropList(); if ($files.Count -gt 0) { $files[0] }",
-            ])
-            .output()
-            .ok()?;
-        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if path.is_empty() { None } else { Some(path) }
-    }
-    #[cfg(not(target_os = "windows"))]
-    None
-}
-
     let value: serde_json::Value =
         serde_json::from_slice(&output.stdout).map_err(|e| format!("Invalid ffprobe output: {e}"))?;
 
-    let streams = value
-        .get("streams")
-        .and_then(|s| s.as_array())
-        .cloned()
-        .unwrap_or_default();
-
-    let video_stream = streams
-        .iter()
-        .find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("video"));
-    let audio_stream = streams
-        .iter()
-        .find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("audio"));
-
-    let container = value
-        .get("format")
-        .and_then(|f| f.get("format_name"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let video_codec = video_stream
-        .and_then(|s| s.get("codec_name"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let audio_codec = audio_stream
-        .and_then(|s| s.get("codec_name"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let pixel_format = video_stream
-        .and_then(|s| s.get("pix_fmt"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let color_space = video_stream
-        .and_then(|s| s.get("color_space"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let color_primaries = video_stream
-        .and_then(|s| s.get("color_primaries"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let color_transfer = video_stream
-        .and_then(|s| s.get("color_transfer"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let bit_depth = video_stream
-        .and_then(|s| s.get("bits_per_raw_sample"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
-
-    let frame_rate = video_stream
-        .and_then(|s| s.get("r_frame_rate"))
-        .and_then(|n| n.as_str())
-        .map(|s| s.to_string());
+    let streams = value.get("streams").and_then(|s| s.as_array()).cloned().unwrap_or_default();
+    let video_stream = streams.iter().find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("video"));
+    let audio_stream = streams.iter().find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("audio"));
 
     Ok(MediaProperties {
-        container,
-        video_codec,
-        audio_codec,
-        pixel_format,
-        color_space,
-        color_primaries,
-        color_transfer,
-        bit_depth,
-        frame_rate,
+        container: value.get("format").and_then(|f| f.get("format_name")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        video_codec: video_stream.and_then(|s| s.get("codec_name")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        audio_codec: audio_stream.and_then(|s| s.get("codec_name")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        pixel_format: video_stream.and_then(|s| s.get("pix_fmt")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        color_space: video_stream.and_then(|s| s.get("color_space")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        color_primaries: video_stream.and_then(|s| s.get("color_primaries")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        color_transfer: video_stream.and_then(|s| s.get("color_transfer")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        bit_depth: video_stream.and_then(|s| s.get("bits_per_raw_sample")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        frame_rate: video_stream.and_then(|s| s.get("r_frame_rate")).and_then(|n| n.as_str()).map(|s| s.to_string()),
     })
 }
 
 #[tauri::command]
 fn check_ffprobe() -> bool {
-    Command::new("ffprobe")
-        .arg("-version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
+    Command::new("ffprobe").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 #[tauri::command]
@@ -433,22 +347,13 @@ fn install_ffmpeg() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         Command::new("winget")
-            .args([
-                "install",
-                "--id",
-                "Gyan.FFmpeg",
-                "--accept-package-agreements",
-                "--accept-source-agreements",
-            ])
+            .args(["install", "--id", "Gyan.FFmpeg", "--accept-package-agreements", "--accept-source-agreements"])
             .spawn()
             .map_err(|e| format!("Failed to start FFmpeg install: {e}"))?;
         return Ok(());
     }
-
     #[cfg(not(target_os = "windows"))]
-    {
-        Err("Automatic FFmpeg install is currently only supported on Windows.".into())
-    }
+    Err("Automatic FFmpeg install is currently only supported on Windows.".into())
 }
 
 #[tauri::command]
@@ -469,9 +374,6 @@ fn get_clipboard_file_path() -> Option<String> {
     #[cfg(not(target_os = "windows"))]
     None
 }
-
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -495,27 +397,19 @@ pub fn run() {
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();
             let window = app.get_webview_window("main").unwrap();
-
             restore_window_state(&window);
-
             let window_for_events = window.clone();
             window.on_window_event(move |event| {
-                if matches!(
-                    event,
-                    WindowEvent::Moved(_) | WindowEvent::Resized(_) | WindowEvent::CloseRequested { .. }
-                ) {
+                if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_) | WindowEvent::CloseRequested { .. }) {
                     persist_window_state(&window_for_events);
                 }
             });
-
             if args.len() > 1 {
                 let file_path = args[1].clone();
-                window
-                    .eval(&format!(
-                        "window.__INITIAL_FILE__ = '{}'",
-                        file_path.replace('\'', "\\'").replace('\\', "\\\\")
-                    ))
-                    .unwrap();
+                window.eval(&format!(
+                    "window.__INITIAL_FILE__ = '{}'",
+                    file_path.replace('\'', "\\'").replace('\\', "\\\\")
+                )).unwrap();
             }
             Ok(())
         })
@@ -529,33 +423,13 @@ fn open_directory(path: String) -> Result<(), String> {
     if !p.exists() {
         return Err("Directory does not exist".into());
     }
-    let dir = if p.is_dir() {
-        p
-    } else {
-        p.parent().unwrap_or(&p).to_path_buf()
-    };
-
+    let dir = if p.is_dir() { p } else { p.parent().unwrap_or(&p).to_path_buf() };
     #[cfg(target_os = "windows")]
-    {
-        Command::new("explorer")
-            .arg(dir)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
+    { Command::new("explorer").arg(dir).spawn().map_err(|e| e.to_string())?; }
     #[cfg(target_os = "macos")]
-    {
-        Command::new("open")
-            .arg(dir)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
+    { Command::new("open").arg(dir).spawn().map_err(|e| e.to_string())?; }
     #[cfg(target_os = "linux")]
-    {
-        Command::new("xdg-open")
-            .arg(dir)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
+    { Command::new("xdg-open").arg(dir).spawn().map_err(|e| e.to_string())?; }
     Ok(())
 }
 
@@ -571,12 +445,10 @@ fn process_video_clips(
     if !input.exists() {
         return Err("Source video does not exist".into());
     }
-
     let clean_segments = sanitize_segments(segments);
     if clean_segments.is_empty() {
         return Err("No valid clip segments selected".into());
     }
-
     let out_dir = if output_dir.trim().is_empty() {
         input.parent().unwrap_or(Path::new(".")).to_path_buf()
     } else {
@@ -585,32 +457,13 @@ fn process_video_clips(
     if !out_dir.exists() {
         fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
     }
-
-    let ext = input
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("mp4")
-        .to_string();
-    let base_name = input
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("video")
-        .to_string();
-
+    let ext = input.extension().and_then(|e| e.to_str()).unwrap_or("mp4").to_string();
+    let base_name = input.file_stem().and_then(|s| s.to_str()).unwrap_or("video").to_string();
     let mut outputs: Vec<String> = Vec::new();
 
     if mode == "separate" {
         for (idx, seg) in clean_segments.iter().enumerate() {
-            let start_tag = format_clip_tag(seg.start);
-            let end_tag = format_clip_tag(seg.end);
-            let file_name = format!(
-                "{}_clip_{:02}_{}_to_{}.{}",
-                base_name,
-                idx + 1,
-                start_tag,
-                end_tag,
-                ext
-            );
+            let file_name = format!("{}_clip_{:02}_{}_to_{}.{}", base_name, idx + 1, format_clip_tag(seg.start), format_clip_tag(seg.end), ext);
             let output_path = unique_path(out_dir.join(file_name));
             ffmpeg_extract_segment(&input, &output_path, seg.start, seg.end)?;
             outputs.push(output_path.to_string_lossy().to_string());
@@ -618,22 +471,12 @@ fn process_video_clips(
     } else if mode == "merge" {
         if clean_segments.len() == 1 {
             let seg = &clean_segments[0];
-            let file_name = format!(
-                "{}_clip_{:02}_{}_to_{}.{}",
-                base_name,
-                1,
-                format_clip_tag(seg.start),
-                format_clip_tag(seg.end),
-                ext
-            );
+            let file_name = format!("{}_clip_{:02}_{}_to_{}.{}", base_name, 1, format_clip_tag(seg.start), format_clip_tag(seg.end), ext);
             let output_path = unique_path(out_dir.join(file_name));
             ffmpeg_extract_segment(&input, &output_path, seg.start, seg.end)?;
             outputs.push(output_path.to_string_lossy().to_string());
         } else {
-            let stamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_millis())
-                .unwrap_or(0);
+            let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
             let temp_dir = std::env::temp_dir().join(format!("vyu-clips-{stamp}"));
             fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed creating temp dir: {e}"))?;
             let mut temp_files: Vec<PathBuf> = Vec::new();
@@ -642,39 +485,16 @@ fn process_video_clips(
                 ffmpeg_extract_segment(&input, &temp_file, seg.start, seg.end)?;
                 temp_files.push(temp_file);
             }
-
             let list_file = temp_dir.join("concat-list.txt");
-            let list_text = temp_files
-                .iter()
-                .map(|p| {
-                    let escaped = p
-                        .to_string_lossy()
-                        .replace('\\', "/")
-                        .replace('\'', "'\\''");
-                    format!("file '{escaped}'")
-                })
-                .collect::<Vec<String>>()
-                .join("\n");
+            let list_text = temp_files.iter().map(|p| {
+                let escaped = p.to_string_lossy().replace('\\', "/").replace('\'', "'\\''");
+                format!("file '{escaped}'")
+            }).collect::<Vec<String>>().join("\n");
             fs::write(&list_file, list_text).map_err(|e| format!("Failed writing concat list: {e}"))?;
-
             let merged_name = format!("{}_clips_merged.{}", base_name, ext);
             let merged_output = unique_path(out_dir.join(merged_name));
             let merge_out = Command::new("ffmpeg")
-                .args([
-                    "-y",
-                    "-hide_banner",
-                    "-loglevel",
-                    "error",
-                    "-f",
-                    "concat",
-                    "-safe",
-                    "0",
-                    "-i",
-                    &list_file.to_string_lossy(),
-                    "-c",
-                    "copy",
-                    &merged_output.to_string_lossy(),
-                ])
+                .args(["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", &list_file.to_string_lossy(), "-c", "copy", &merged_output.to_string_lossy()])
                 .output()
                 .map_err(|e| format!("Failed to run ffmpeg merge: {e}"))?;
             if !merge_out.status.success() {
