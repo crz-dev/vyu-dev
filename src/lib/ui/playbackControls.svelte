@@ -118,7 +118,7 @@
       aria-label="loop mode"
     >
       {#if looping === "loop"}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
           <path
             d="M17 2L21 6L17 10"
             stroke="currentColor"
@@ -147,7 +147,7 @@
           />
         </svg>
       {:else if looping === "stop"}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
           <rect
             x="4"
             y="4"
@@ -159,12 +159,13 @@
           />
         </svg>
       {:else if looping === "next"}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
           <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
           <rect x="19" y="4" width="2" height="16" rx="1" fill="currentColor" />
         </svg>
       {:else}
         <svg
+          class="loop-mode-icon"
           width="14"
           height="14"
           viewBox="0 0 24 24"
@@ -174,11 +175,10 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M2 6h4l10 12h4" />
-          <path d="M2 18h4l4-5" />
-          <path d="M17 6l3 3-3 3" />
-          <path d="M17 18l3-3" />
-          <path d="M20 15l3 3-3 3" />
+          <path d="M3 7h5l9 10h4" />
+          <path d="M3 17h5l2-2.2" />
+          <path d="M17 5l4 4-4 4" />
+          <path d="M17 13l4 4-4 4" />
         </svg>
       {/if}
     </button>
@@ -281,6 +281,7 @@
       >
         {#if playbackSpeed < 1}
           <svg
+            class="speed-mode-icon"
             width="17"
             height="17"
             viewBox="0 0 24 24"
@@ -290,15 +291,18 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <ellipse cx="10" cy="14" rx="6" ry="4" />
-            <path d="M4 14 Q2 10 5 8 Q8 6 10 8" />
-            <path d="M16 14 Q19 12 20 9 Q18 7 16 9" />
-            <circle cx="20" cy="8" r="1" fill="currentColor" stroke="none" />
-            <path d="M7 18 L7 20 M13 18 L13 20" />
-            <path d="M4 12 Q2 11 1 9" />
+            <ellipse cx="10.5" cy="13.8" rx="6.2" ry="4.1" />
+            <circle cx="16.9" cy="12.8" r="1.5" />
+            <circle cx="17.2" cy="9.3" r="1.35" />
+            <circle cx="7.8" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="12.6" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <path d="M4.4 12.6q-2.1-1.6-1.8-4.3q0.3-2.5 3.1-2.7q2.2-0.2 3.9 1.3" />
+            <path d="M9.7 6.8q2-1.7 4.1-0.5q1.4 0.8 2.3 2.2" />
+            <circle cx="18.2" cy="12.5" r="0.25" fill="currentColor" stroke="none" />
           </svg>
         {:else if playbackSpeed > 1}
           <svg
+            class="speed-mode-icon"
             width="17"
             height="17"
             viewBox="0 0 24 24"
@@ -308,15 +312,23 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <ellipse cx="9" cy="14" rx="6" ry="3.5" />
-            <path d="M3 14 Q1 10 4 8 Q7 5 10 7 Q13 5 17 6 Q20 7 21 5" />
-            <path d="M21 5 Q23 4 23 7 Q22 9 20 8" />
-            <circle cx="21" cy="5" r="1" fill="currentColor" stroke="none" />
-            <path d="M6 17.5 L5 20 M12 17.5 L13 20" />
-            <path d="M15 8 Q17 11 16 14" />
+            <ellipse cx="10.2" cy="14.2" rx="6.4" ry="3.8" />
+            <circle cx="17.8" cy="11.2" r="1.7" />
+            <circle cx="20.2" cy="8.5" r="1.2" />
+            <circle cx="7.2" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="12.9" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <path d="M4 14q-2.1-3.4 1-6.4q2.7-2.5 6.6-1.4q2.2-1.3 4.5-0.4q2.3 0.9 3.5 3.2" />
+            <path d="M18.9 9.8q1.3 1.9 1 4.2" />
+            <circle cx="18.3" cy="11.2" r="0.25" fill="currentColor" stroke="none" />
           </svg>
         {:else}
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <svg
+            class="speed-mode-icon"
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle
               cx="12"
               cy="12"
@@ -460,7 +472,7 @@
       aria-label="loop mode"
     >
       {#if looping === "loop"}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <svg class="loop-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
           <path
             d="M17 2L21 6L17 10"
             stroke="currentColor"
@@ -489,7 +501,7 @@
           />
         </svg>
       {:else if looping === "stop"}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <svg class="loop-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
           <rect
             x="4"
             y="4"
@@ -501,12 +513,13 @@
           />
         </svg>
       {:else if looping === "next"}
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <svg class="loop-mode-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
           <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
           <rect x="19" y="4" width="2" height="16" rx="1" fill="currentColor" />
         </svg>
       {:else}
         <svg
+          class="loop-mode-icon"
           width="15"
           height="15"
           viewBox="0 0 24 24"
@@ -516,11 +529,10 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M2 6h4l10 12h4" />
-          <path d="M2 18h4l4-5" />
-          <path d="M17 6l3 3-3 3" />
-          <path d="M17 18l3-3" />
-          <path d="M20 15l3 3-3 3" />
+          <path d="M3 7h5l9 10h4" />
+          <path d="M3 17h5l2-2.2" />
+          <path d="M17 5l4 4-4 4" />
+          <path d="M17 13l4 4-4 4" />
         </svg>
       {/if}
     </button>
@@ -623,6 +635,7 @@
       >
         {#if playbackSpeed < 1}
           <svg
+            class="speed-mode-icon"
             width="20"
             height="20"
             viewBox="0 0 24 24"
@@ -632,15 +645,18 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <ellipse cx="10" cy="14" rx="6" ry="4" />
-            <path d="M4 14 Q2 10 5 8 Q8 6 10 8" />
-            <path d="M16 14 Q19 12 20 9 Q18 7 16 9" />
-            <circle cx="20" cy="8" r="1" fill="currentColor" stroke="none" />
-            <path d="M7 18 L7 20 M13 18 L13 20" />
-            <path d="M4 12 Q2 11 1 9" />
+            <ellipse cx="10.5" cy="13.8" rx="6.2" ry="4.1" />
+            <circle cx="16.9" cy="12.8" r="1.5" />
+            <circle cx="17.2" cy="9.3" r="1.35" />
+            <circle cx="7.8" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="12.6" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <path d="M4.4 12.6q-2.1-1.6-1.8-4.3q0.3-2.5 3.1-2.7q2.2-0.2 3.9 1.3" />
+            <path d="M9.7 6.8q2-1.7 4.1-0.5q1.4 0.8 2.3 2.2" />
+            <circle cx="18.2" cy="12.5" r="0.25" fill="currentColor" stroke="none" />
           </svg>
         {:else if playbackSpeed > 1}
           <svg
+            class="speed-mode-icon"
             width="20"
             height="20"
             viewBox="0 0 24 24"
@@ -650,15 +666,23 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <ellipse cx="9" cy="14" rx="6" ry="3.5" />
-            <path d="M3 14 Q1 10 4 8 Q7 5 10 7 Q13 5 17 6 Q20 7 21 5" />
-            <path d="M21 5 Q23 4 23 7 Q22 9 20 8" />
-            <circle cx="21" cy="5" r="1" fill="currentColor" stroke="none" />
-            <path d="M6 17.5 L5 20 M12 17.5 L13 20" />
-            <path d="M15 8 Q17 11 16 14" />
+            <ellipse cx="10.2" cy="14.2" rx="6.4" ry="3.8" />
+            <circle cx="17.8" cy="11.2" r="1.7" />
+            <circle cx="20.2" cy="8.5" r="1.2" />
+            <circle cx="7.2" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <circle cx="12.9" cy="18.2" r="0.9" fill="currentColor" stroke="none" />
+            <path d="M4 14q-2.1-3.4 1-6.4q2.7-2.5 6.6-1.4q2.2-1.3 4.5-0.4q2.3 0.9 3.5 3.2" />
+            <path d="M18.9 9.8q1.3 1.9 1 4.2" />
+            <circle cx="18.3" cy="11.2" r="0.25" fill="currentColor" stroke="none" />
           </svg>
         {:else}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <svg
+            class="speed-mode-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
             <circle
               cx="12"
               cy="12"

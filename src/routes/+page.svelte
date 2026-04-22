@@ -259,7 +259,7 @@
   let frameCopyToast = $state<{
     visible: boolean;
     message: string;
-    tone: "success" | "error";
+    tone: "success" | "error" | "info";
   }>({
     visible: false,
     message: "",
@@ -283,7 +283,7 @@
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const panCursor = $derived(viewer.getPanCursor());
   const fsCursor = $derived(
-    !viewer.state.fsControlsVisible ? "none" : panCursor,
+    !viewer.state.fsControlsVisible && !tsEditMenu.visible ? "none" : panCursor,
   );
   const isGifVideo = $derived(isVideo && fileExt() === "gif");
   const clipPairs = $derived.by(() => {
@@ -318,7 +318,10 @@
     return `${m}:${s.toString().padStart(2, "0")}`;
   }
 
-  function showFrameCopyToast(message: string, tone: "success" | "error") {
+  function showFrameCopyToast(
+    message: string,
+    tone: "success" | "error" | "info",
+  ) {
     clearTimeout(frameCopyToastTimer);
     frameCopyToast = { visible: true, message, tone };
     frameCopyToastTimer = setTimeout(() => {
@@ -813,6 +816,12 @@
     if (seg) {
       setClipBoundaryKind(seg.id, kind);
     }
+  }
+
+  function onEditorDeleteTimestamp() {
+    const ts = getActiveEditorTimestamp();
+    if (!ts) return;
+    removeTimestamp(ts.id);
   }
 
   function getTimestampTouchTarget(
@@ -1437,9 +1446,14 @@
     }
   }
 
-  function ctxCopyPath() {
+  async function ctxCopyPath() {
     closeContextMenu();
-    copyPathToClipboard(filePath);
+    try {
+      await copyPathToClipboard(filePath);
+      showFrameCopyToast("Copied file path.", "info");
+    } catch {
+      showFrameCopyToast("Failed to copy file path.", "error");
+    }
   }
   function ctxRotate() {
     closeContextMenu();
@@ -1495,7 +1509,10 @@
   async function propsCopyPath() {
     try {
       await copyPathToClipboard(filePath);
-    } catch {}
+      showFrameCopyToast("Copied file path.", "success");
+    } catch {
+      showFrameCopyToast("Failed to copy file path.", "error");
+    }
   }
 
   async function propsOpenFolder() {
@@ -1519,7 +1536,10 @@
         parentFolder(),
         mediaProps,
       );
-    } catch {}
+      showFrameCopyToast("Copied properties.", "info");
+    } catch {
+      showFrameCopyToast("Failed to copy properties.", "error");
+    }
   }
 
   function ctxDelete() {
@@ -1539,7 +1559,13 @@
     try {
       if (deletePermanently) await invokeDeleteFile(pathToDelete);
       else await invokeTrashFile(pathToDelete);
-    } catch {}
+      showFrameCopyToast(
+        deletePermanently ? "File deleted permanently." : "File moved to trash.",
+        "error",
+      );
+    } catch {
+      showFrameCopyToast("Failed to delete file.", "error");
+    }
     const remaining = prevList.filter((p) => p !== pathToDelete);
     if (remaining.length > 0) {
       const nextIndex = Math.min(prevIndex, remaining.length - 1);
@@ -1771,10 +1797,15 @@
           >
             <track kind="captions" />
           </video>
-          <div class="video-controls" class:gif-only={isGifVideo}>
+          <div
+            class="video-controls"
+            class:gif-only={isGifVideo}
+            class:editor-open={tsEditMenu.visible}
+          >
             <TimelineMarkers
               fullscreen={false}
               {progress}
+              currentTimeSecs={rawCurrentSecs}
               {isGifVideo}
               {clipPairs}
               {clipBoundaries}
@@ -1889,7 +1920,7 @@
   {#if viewer.state.isFullscreen}
     <div
       class="fs-overlay"
-      class:visible={viewer.state.fsControlsVisible}
+      class:visible={viewer.state.fsControlsVisible || tsEditMenu.visible}
       role="button"
       tabindex="0"
       onwheel={handleViewerScroll}
@@ -1941,6 +1972,7 @@
           <TimelineMarkers
             fullscreen={true}
             {progress}
+            currentTimeSecs={rawCurrentSecs}
             {isGifVideo}
             {clipPairs}
             {clipBoundaries}
@@ -2118,5 +2150,6 @@
     {updateEditorTitle}
     {closeTimestampEditor}
     {onEditorScissor}
+    {onEditorDeleteTimestamp}
   />
 </main>

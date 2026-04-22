@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { fade } from "svelte/transition";
   import type { ClipBoundary, CtxMenu, Timestamp } from "$lib/types";
 
   let {
@@ -62,7 +61,11 @@
     isVideo: boolean;
     timestamps: Timestamp[];
     clipBoundaries: ClipBoundary[];
-    frameCopyToast: { visible: boolean; message: string; tone: "success" | "error" };
+    frameCopyToast: {
+      visible: boolean;
+      message: string;
+      tone: "success" | "error" | "info";
+    };
     clipToast: {
       visible: boolean;
       tone: "success" | "error";
@@ -380,6 +383,7 @@
   <div
     class="copy-toast"
     class:error={frameCopyToast.tone === "error"}
+    class:info={frameCopyToast.tone === "info"}
     role="status"
     aria-live="polite"
   >
@@ -393,7 +397,6 @@
     class:error={clipToast.tone === "error"}
     role="status"
     aria-live="polite"
-    transition:fade={{ duration: 220 }}
   >
     <span>{clipToast.message}</span>
     {#if clipToast.tone === "success"}

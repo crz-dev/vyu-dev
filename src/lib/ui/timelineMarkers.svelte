@@ -4,6 +4,7 @@
   let {
     fullscreen = false,
     progress,
+    currentTimeSecs,
     isGifVideo,
     clipPairs,
     clipBoundaries,
@@ -34,6 +35,7 @@
   }: {
     fullscreen?: boolean;
     progress: number;
+    currentTimeSecs: number;
     isGifVideo: boolean;
     clipPairs: ClipPair[];
     clipBoundaries: ClipBoundary[];
@@ -74,13 +76,56 @@
   );
   const clipPairPrefix = $derived(fullscreen ? "fspair" : "pair");
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
+  const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
+  let showPlayheadTooltip = $state(false);
+  let playheadHovered = $state(false);
+  let isScrubbing = $state(false);
+
+  function showPlayheadTimeTooltip() {
+    showPlayheadTooltip = true;
+  }
+
+  function hidePlayheadTimeTooltip() {
+    if (isScrubbing || playheadHovered) return;
+    showPlayheadTooltip = false;
+  }
+
+  function handlePlayheadMouseEnter() {
+    playheadHovered = true;
+    showPlayheadTimeTooltip();
+  }
+
+  function handlePlayheadMouseLeave() {
+    playheadHovered = false;
+    hidePlayheadTimeTooltip();
+  }
+
+  function handleBarMouseDown(e: MouseEvent) {
+    isScrubbing = true;
+    showPlayheadTimeTooltip();
+    startScrubbing(e);
+
+    const stopScrub = () => {
+      isScrubbing = false;
+      hidePlayheadTimeTooltip();
+      window.removeEventListener("mouseup", stopScrub);
+    };
+
+    window.addEventListener("mouseup", stopScrub);
+  }
+
+  function handleBarMouseLeave() {
+    hidePlayheadTimeTooltip();
+  }
+
 </script>
 
 <div
   class={barClass}
   data-clipbar={clipBarName}
   class:hide-for-gif={isGifVideo}
-  onmousedown={startScrubbing}
+  onmousedown={handleBarMouseDown}
+  onmouseleave={handleBarMouseLeave}
   oncontextmenu={(e) => e.preventDefault()}
   role="slider"
   aria-label="video scrubber"
@@ -90,7 +135,22 @@
   tabindex="0"
 >
   <div class={fillClass} style="width: {progress}%"></div>
-  <div class={playheadClass} style="left: {progress}%"></div>
+  <div
+    class={playheadClass}
+    style="left: {progress}%"
+    onmouseenter={handlePlayheadMouseEnter}
+    onmouseleave={handlePlayheadMouseLeave}
+    role="presentation"
+    aria-hidden="true"
+  ></div>
+  {#if showPlayheadTooltip && !tsEditMenuVisible}
+    <div
+      class="ts-tooltip white scrubber-tooltip"
+      style="left: {clampedProgress}%; top: -12px;"
+    >
+      <span>{formatTime(currentTimeSecs)}</span>
+    </div>
+  {/if}
   {#each clipPairs as pair (`${clipPairPrefix}-${pair.startId}-${pair.endId}`)}
     <div
       class={clipRangeClass}

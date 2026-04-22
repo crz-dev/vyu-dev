@@ -19,6 +19,7 @@
     updateEditorTitle,
     closeTimestampEditor,
     onEditorScissor,
+    onEditorDeleteTimestamp,
   }: {
     tsTooltip: {
       visible: boolean;
@@ -52,6 +53,7 @@
     updateEditorTitle: (v: string) => void;
     closeTimestampEditor: () => void;
     onEditorScissor: (kind: "start" | "end") => void;
+    onEditorDeleteTimestamp: () => void;
   } = $props();
 </script>
 
@@ -134,12 +136,12 @@
           class:is-inactive={isSegmentMenu
             ? editingSegment?.kind !== "start"
             : false}
-          data-tooltip="Start Clip Here"
+          data-tooltip="Start clip"
           onclick={(e) => {
             e.stopPropagation();
             onEditorScissor("start");
           }}
-          aria-label="Start Clip Here"
+          aria-label="Start clip"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
             ><circle
@@ -169,12 +171,12 @@
           class:is-inactive={isSegmentMenu
             ? editingSegment?.kind !== "end"
             : false}
-          data-tooltip="End Clip Here"
+          data-tooltip="End clip"
           onclick={(e) => {
             e.stopPropagation();
             onEditorScissor("end");
           }}
-          aria-label="End Clip Here"
+          aria-label="End clip"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
             ><circle
@@ -197,6 +199,18 @@
           >
         </button>
       </div>
+      {#if !isSegmentMenu}
+        <button
+          class="ts-delete-btn"
+          onclick={(e) => {
+            e.stopPropagation();
+            onEditorDeleteTimestamp();
+          }}
+          aria-label="Delete timestamp"
+        >
+          Delete
+        </button>
+      {/if}
     </div>
   {/if}
 {/if}

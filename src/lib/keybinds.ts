@@ -15,6 +15,13 @@ export type KeybindActions = {
 
 export function setupKeybinds(actions: KeybindActions) {
   return function handleKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    const isTypingTarget =
+      !!target &&
+      (target.closest("input, textarea, [contenteditable='true']") !== null ||
+        target.isContentEditable);
+    if (isTypingTarget) return;
+
     if (actions.areDialogsOpen()) {
       if (e.key === "Escape") {
         actions.closeDialogs();
