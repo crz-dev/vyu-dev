@@ -276,8 +276,8 @@
   color: #ffffff;
 }
 .add-ts-btn:hover {
-  color: #f5c518;
-  background: rgba(245, 197, 24, 0.1);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .time-display {
@@ -815,19 +815,22 @@
 
 .ts-drop-menu {
   position: absolute;
-  bottom: calc(100% + 6px);
-  right: 0;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   background: #111111;
-  border: 0.5px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
   padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 148px;
+  gap: 3px;
+  min-width: 160px;
   z-index: 9999;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  animation: uiMenuPopIn 170ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.7),
+    0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
+  animation: tsDropMenuIn 160ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
 }
 .ts-drop-item {
   display: flex;
@@ -886,6 +889,10 @@
   border-color: rgba(248, 113, 113, 0.35);
   color: #f87171;
 }
+.ts-drop-clip-mid {
+  border-left: 0.5px solid rgba(96, 165, 250, 0.2);
+  border-right: 0.5px solid rgba(96, 165, 250, 0.2);
+}
 .ts-drop-red:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.26);
 }
@@ -909,6 +916,12 @@
   background: rgba(239, 68, 68, 0.4);
 }
 .add-ts-btn.ts-menu-open {
-  color: #f5c518;
-  background: rgba(245, 197, 24, 0.1);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.ts-drop-arrow-icon {
+  transition: transform 0.2s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+.ts-menu-open .ts-drop-arrow-icon {
+  transform: rotate(180deg);
 }

@@ -1015,6 +1015,15 @@
     saveClipBoundaries();
   }
 
+  function addClipBoundaryAt(kind: "start" | "end", time: number) {
+    if (rawDurationSecs <= 0) return;
+    const clamped = Math.max(0, Math.min(time, rawDurationSecs));
+    clips.addClipBoundary(kind, clamped, clipBoundaries, (v) => {
+      clipBoundaries = v;
+    });
+    saveClipBoundaries();
+  }
+
   function startClipMarkerDrag(e: MouseEvent, id: string) {
     if (e.button !== 0 || rawDurationSecs <= 0) return;
     e.preventDefault();
@@ -1868,6 +1877,7 @@
               {addTimestamp}
               addClipStart={() => addClipBoundary("start")}
               addClipEnd={() => addClipBoundary("end")}
+              addClipEnd5s={() => addClipBoundaryAt("end", rawCurrentSecs + 5)}
               hasMarkers={timestamps.length > 0 || clipBoundaries.length > 0}
               deleteAllMarkers={() => {
                 clearAllTimestamps();
@@ -2042,6 +2052,7 @@
             {addTimestamp}
             addClipStart={() => addClipBoundary("start")}
             addClipEnd={() => addClipBoundary("end")}
+            addClipEnd5s={() => addClipBoundaryAt("end", rawCurrentSecs + 5)}
             hasMarkers={timestamps.length > 0 || clipBoundaries.length > 0}
             deleteAllMarkers={() => {
               clearAllTimestamps();

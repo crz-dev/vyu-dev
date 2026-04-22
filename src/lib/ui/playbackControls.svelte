@@ -31,6 +31,7 @@
     addTimestamp,
     addClipStart,
     addClipEnd,
+    addClipEnd5s,
     hasMarkers,
     deleteAllMarkers,
     toggleTimer,
@@ -70,6 +71,7 @@
     addTimestamp: () => void;
     addClipStart: () => void;
     addClipEnd: () => void;
+    addClipEnd5s: () => void;
     hasMarkers: boolean;
     deleteAllMarkers: () => void;
     toggleTimer: () => void;
@@ -80,6 +82,11 @@
   } = $props();
   let tsMenuOpen = $state(false);
   let tsDeleteConfirm = $state(false);
+
+  function addClip() {
+    addClipStart();
+    addClipEnd5s();
+  }
 
   function closeTsMenu() {
     tsMenuOpen = false;
@@ -486,7 +493,13 @@
         }}
         aria-label="markers menu"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <svg
+          class="ts-drop-arrow-icon"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
           <path
             d="M4 16 L12 6 L20 16"
             stroke="currentColor"
@@ -506,15 +519,23 @@
             }}
             role="menuitem"
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-              ><path
-                d="M4 16 L12 6 L20 16"
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
                 stroke="currentColor"
-                stroke-width="2.2"
+                stroke-width="1.6"
+              />
+              <path
+                d="M12 7.5v4.8l2.8 2.8"
+                stroke="currentColor"
+                stroke-width="1.6"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-              /></svg
-            >
+              />
+              <circle cx="12" cy="12" r="0.8" fill="currentColor" />
+            </svg>
             Add Timestamp
           </button>
           <div class="ts-drop-split">
@@ -546,6 +567,38 @@
                 /></svg
               >
               Start
+            </button>
+            <button
+              class="ts-drop-half ts-drop-blue ts-drop-clip-mid"
+              onclick={() => {
+                addClipStart();
+                addClipEnd();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="6.5"
+                  cy="8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <circle
+                  cx="6.5"
+                  cy="16"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M9 9.5L20 4M9 14.5L20 20"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+              </svg>
+              Clip
             </button>
             <button
               class="ts-drop-half ts-drop-blue"
@@ -584,19 +637,32 @@
               disabled={!hasMarkers}
               role="menuitem"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                ><polyline
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <polyline
                   points="3 6 5 6 21 6"
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
-                /><path
+                />
+                <path
                   d="M19 6l-1 14H6L5 6"
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
-                /></svg
-              >
+                />
+                <path
+                  d="M10 11v6M14 11v6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M9 6V4h6v2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
               Delete Markers
             </button>
           {:else}
@@ -1048,7 +1114,13 @@
         }}
         aria-label="markers menu"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <svg
+          class="ts-drop-arrow-icon"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
           <path
             d="M4 16 L12 6 L20 16"
             stroke="currentColor"
@@ -1068,15 +1140,23 @@
             }}
             role="menuitem"
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-              ><path
-                d="M4 16 L12 6 L20 16"
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
                 stroke="currentColor"
-                stroke-width="2.2"
+                stroke-width="1.6"
+              />
+              <path
+                d="M12 7.5v4.8l2.8 2.8"
+                stroke="currentColor"
+                stroke-width="1.6"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-              /></svg
-            >
+              />
+              <circle cx="12" cy="12" r="0.8" fill="currentColor" />
+            </svg>
             Add Timestamp
           </button>
           <div class="ts-drop-split">
@@ -1108,6 +1188,38 @@
                 /></svg
               >
               Start
+            </button>
+            <button
+              class="ts-drop-half ts-drop-blue ts-drop-clip-mid"
+              onclick={() => {
+                addClipStart();
+                addClipEnd();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="6.5"
+                  cy="8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <circle
+                  cx="6.5"
+                  cy="16"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M9 9.5L20 4M9 14.5L20 20"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+              </svg>
+              Clip
             </button>
             <button
               class="ts-drop-half ts-drop-blue"
@@ -1146,19 +1258,32 @@
               disabled={!hasMarkers}
               role="menuitem"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                ><polyline
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <polyline
                   points="3 6 5 6 21 6"
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
-                /><path
+                />
+                <path
                   d="M19 6l-1 14H6L5 6"
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
-                /></svg
-              >
+                />
+                <path
+                  d="M10 11v6M14 11v6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M9 6V4h6v2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
               Delete Markers
             </button>
           {:else}
