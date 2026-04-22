@@ -438,23 +438,26 @@
         {:else}
           <svg
             class="speed-mode-icon"
-            width="17"
-            height="17"
+            width="19"
+            height="19"
             viewBox="0 0 24 24"
             fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
+            <circle cx="12" cy="13" r="7.5" />
+            <path d="M12 9.5v4l2.5 2" />
+            <path d="M10 3h4" />
+            <path d="M12 3v2" />
+            <path d="M19 5.5l-1.5 1.5" />
             <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-            <path
-              d="M12 7v5l3 3"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
+              cx="19.5"
+              cy="5"
+              r="1.2"
+              fill="currentColor"
+              stroke="none"
             />
           </svg>
         {/if}
@@ -519,22 +522,17 @@
             }}
             role="menuitem"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                stroke="currentColor"
-                stroke-width="1.6"
-              />
-              <path
-                d="M12 7.5v4.8l2.8 2.8"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <circle cx="12" cy="12" r="0.8" fill="currentColor" />
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
             </svg>
             Add Timestamp
           </button>
@@ -571,34 +569,17 @@
             <button
               class="ts-drop-half ts-drop-blue ts-drop-clip-mid"
               onclick={() => {
-                addClipStart();
-                addClipEnd();
+                addClip();
                 closeTsMenu();
               }}
               role="menuitem"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="6.5"
-                  cy="8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <circle
-                  cx="6.5"
-                  cy="16"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <path
-                  d="M9 9.5L20 4M9 14.5L20 20"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-              </svg>
-              Clip
+              <span style="font-size:10px; letter-spacing:0.5px; opacity:0.7;"
+                >‹</span
+              >Clip<span
+                style="font-size:10px; letter-spacing:0.5px; opacity:0.7;"
+                >›</span
+              >
             </button>
             <button
               class="ts-drop-half ts-drop-blue"
@@ -1059,23 +1040,26 @@
         {:else}
           <svg
             class="speed-mode-icon"
-            width="20"
-            height="20"
+            width="22"
+            height="22"
             viewBox="0 0 24 24"
             fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
+            <circle cx="12" cy="13" r="7.5" />
+            <path d="M12 9.5v4l2.5 2" />
+            <path d="M10 3h4" />
+            <path d="M12 3v2" />
+            <path d="M19 5.5l-1.5 1.5" />
             <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-            />
-            <path
-              d="M12 7v5l3 3"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
+              cx="19.5"
+              cy="5"
+              r="1.2"
+              fill="currentColor"
+              stroke="none"
             />
           </svg>
         {/if}
@@ -1140,22 +1124,17 @@
             }}
             role="menuitem"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="12"
-                cy="12"
-                r="9"
-                stroke="currentColor"
-                stroke-width="1.6"
-              />
-              <path
-                d="M12 7.5v4.8l2.8 2.8"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <circle cx="12" cy="12" r="0.8" fill="currentColor" />
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
             </svg>
             Add Timestamp
           </button>
@@ -1192,34 +1171,17 @@
             <button
               class="ts-drop-half ts-drop-blue ts-drop-clip-mid"
               onclick={() => {
-                addClipStart();
-                addClipEnd();
+                addClip();
                 closeTsMenu();
               }}
               role="menuitem"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="6.5"
-                  cy="8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <circle
-                  cx="6.5"
-                  cy="16"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <path
-                  d="M9 9.5L20 4M9 14.5L20 20"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-              </svg>
-              Clip
+              <span style="font-size:10px; letter-spacing:0.5px; opacity:0.7;"
+                >‹</span
+              >Clip<span
+                style="font-size:10px; letter-spacing:0.5px; opacity:0.7;"
+                >›</span
+              >
             </button>
             <button
               class="ts-drop-half ts-drop-blue"

@@ -563,8 +563,8 @@
   color: #ffffff;
 }
 .fs-ctrl-btn.add-ts-btn:hover {
-  color: #f5c518;
-  background: rgba(245, 197, 24, 0.1);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 .fs-ctrl-btn.volume-btn {
   color: #555555;
