@@ -325,6 +325,25 @@ fn get_media_properties(path: String) -> Result<MediaProperties, String> {
         return Err(String::from_utf8_lossy(&output.stderr).to_string());
     }
 
+    #[tauri::command]
+fn get_clipboard_file_path() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                "Add-Type -Assembly PresentationCore; $files = [System.Windows.Clipboard]::GetFileDropList(); if ($files.Count -gt 0) { $files[0] }",
+            ])
+            .output()
+            .ok()?;
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if path.is_empty() { None } else { Some(path) }
+    }
+    #[cfg(not(target_os = "windows"))]
+    None
+}
+
     let value: serde_json::Value =
         serde_json::from_slice(&output.stdout).map_err(|e| format!("Invalid ffprobe output: {e}"))?;
 
@@ -432,6 +451,28 @@ fn install_ffmpeg() -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+fn get_clipboard_file_path() -> Option<String> {
+    #[cfg(target_os = "windows")]
+    {
+        let output = Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                "Add-Type -Assembly PresentationCore; $files = [System.Windows.Clipboard]::GetFileDropList(); if ($files.Count -gt 0) { $files[0] }",
+            ])
+            .output()
+            .ok()?;
+        let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if path.is_empty() { None } else { Some(path) }
+    }
+    #[cfg(not(target_os = "windows"))]
+    None
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -449,6 +490,7 @@ pub fn run() {
             install_ffmpeg,
             process_video_clips,
             rename_file,
+            get_clipboard_file_path,
         ])
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();

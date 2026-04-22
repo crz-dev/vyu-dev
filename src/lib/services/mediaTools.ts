@@ -57,3 +57,7 @@ export async function invokeRenameFile(
 ): Promise<void> {
   return invoke("rename_file", { oldPath, newPath });
 }
+
+export async function invokeGetClipboardFilePath(): Promise<string | null> {
+  return invoke("get_clipboard_file_path");
+}

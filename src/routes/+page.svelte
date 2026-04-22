@@ -50,12 +50,15 @@
     invokeShowInExplorer,
     invokeOpenFolder,
     invokeOpenDirectory,
+    invokeGetClipboardFilePath,
   } from "$lib/services/mediaTools";
+
   import {
     detectFfprobeAvailability,
     fetchMediaProperties,
     installFfmpegWithPolling,
   } from "$lib/services/mediaSources";
+
   import {
     computeContextMenuPosition,
     hideFloatingTooltip,
@@ -1603,9 +1606,66 @@
     window.addEventListener("keydown", handleKeydown);
     window.addEventListener("mousedown", handleGlobalMouseDown);
 
+    async function handlePaste(e: ClipboardEvent) {
+      const imageItem = Array.from(e.clipboardData?.items ?? []).find(
+        (item) => item.kind === "file" && item.type.startsWith("image/"),
+      );
+      if (imageItem) {
+        const file = imageItem.getAsFile();
+        if (file) {
+          const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8 = new Uint8Array(arrayBuffer);
+          try {
+            const { tempDir } = await import("@tauri-apps/api/path");
+            const { writeFile } = await import("@tauri-apps/plugin-fs");
+            const tmp = await tempDir();
+            const dest = `${tmp}vyu-paste-${Date.now()}.${ext}`;
+            await writeFile(dest, uint8);
+            await loadFile(dest);
+          } catch (err) {
+            console.error("Failed to paste image:", err);
+          }
+        }
+        return;
+      }
+
+      try {
+        const clipboardFile = await invokeGetClipboardFilePath();
+        if (clipboardFile) {
+          const ext = clipboardFile.split(".").pop()?.toLowerCase() ?? "";
+          if ([...IMAGE_EXTS, ...VIDEO_EXTS].includes(ext)) {
+            await loadFile(clipboardFile);
+            return;
+          }
+        }
+      } catch {}
+
+      const text = e.clipboardData?.getData("text/plain")?.trim();
+      if (text) {
+        const lines = text.split(/\r?\n/).map((l) =>
+          l
+            .trim()
+            .replace(/^file:\/\/\//, "")
+            .replace(/^file:\/\//, "")
+            .replace(/%20/g, " "),
+        );
+        const match = lines.find((l) => {
+          const ext = l.split(".").pop()?.toLowerCase() ?? "";
+          return [...IMAGE_EXTS, ...VIDEO_EXTS].includes(ext);
+        });
+        if (match) {
+          await loadFile(match);
+        }
+      }
+    }
+
+    window.addEventListener("paste", handlePaste);
+
     return () => {
       window.removeEventListener("keydown", handleKeydown);
       window.removeEventListener("mousedown", handleGlobalMouseDown);
+      window.removeEventListener("paste", handlePaste);
       clearTimeout(frameCopyToastTimer);
       clearTimeout(clipToastTimer);
       clearTimeout(tsDragFadeTimer);
