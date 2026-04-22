@@ -1450,7 +1450,7 @@
     closeContextMenu();
     try {
       await copyPathToClipboard(filePath);
-      showFrameCopyToast("Copied file path.", "info");
+      showFrameCopyToast("Copied file path.", "success");
     } catch {
       showFrameCopyToast("Failed to copy file path.", "error");
     }
@@ -1509,7 +1509,7 @@
   async function propsCopyPath() {
     try {
       await copyPathToClipboard(filePath);
-      showFrameCopyToast("Copied file path.", "success");
+      showFrameCopyToast("Copied file path.", "info");
     } catch {
       showFrameCopyToast("Failed to copy file path.", "error");
     }
@@ -1560,7 +1560,9 @@
       if (deletePermanently) await invokeDeleteFile(pathToDelete);
       else await invokeTrashFile(pathToDelete);
       showFrameCopyToast(
-        deletePermanently ? "File deleted permanently." : "File moved to trash.",
+        deletePermanently
+          ? "File deleted permanently."
+          : "File moved to trash.",
         "error",
       );
     } catch {
