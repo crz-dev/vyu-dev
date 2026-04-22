@@ -29,6 +29,10 @@
     handleSpeedDiamondHover,
     startSpeedDrag,
     addTimestamp,
+    addClipStart,
+    addClipEnd,
+    hasMarkers,
+    deleteAllMarkers,
     toggleTimer,
     currentTimeDisplay,
     durationDisplay,
@@ -64,12 +68,29 @@
     handleSpeedDiamondHover: (e: MouseEvent) => void;
     startSpeedDrag: (e: MouseEvent) => void;
     addTimestamp: () => void;
+    addClipStart: () => void;
+    addClipEnd: () => void;
+    hasMarkers: boolean;
+    deleteAllMarkers: () => void;
     toggleTimer: () => void;
     currentTimeDisplay: () => string;
     durationDisplay: string;
     timerTooltip: string;
     toggleFullscreen: () => void;
   } = $props();
+  let tsMenuOpen = $state(false);
+  let tsDeleteConfirm = $state(false);
+
+  function closeTsMenu() {
+    tsMenuOpen = false;
+    tsDeleteConfirm = false;
+  }
+
+  function handleWindowMouseDown(e: MouseEvent) {
+    if (tsMenuOpen && !(e.target as HTMLElement).closest(".ts-menu-anchor")) {
+      closeTsMenu();
+    }
+  }
 </script>
 
 {#if !fullscreen}
@@ -455,22 +476,144 @@
         </div>
       {/if}
     </div>
-    <button
-      class="ctrl-btn add-ts-btn tooltip-ctrl"
-      data-tooltip="Place timestamp"
-      onclick={addTimestamp}
-      aria-label="add timestamp"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M4 16 L12 6 L20 16"
-          stroke="currentColor"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+    <div class="ts-menu-anchor" style="position:relative;">
+      <button
+        class="ctrl-btn add-ts-btn"
+        class:ts-menu-open={tsMenuOpen}
+        onclick={() => {
+          tsMenuOpen = !tsMenuOpen;
+          tsDeleteConfirm = false;
+        }}
+        aria-label="markers menu"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 16 L12 6 L20 16"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      {#if tsMenuOpen}
+        <div class="ts-drop-menu" role="menu">
+          <button
+            class="ts-drop-item ts-drop-yellow"
+            onclick={() => {
+              addTimestamp();
+              closeTsMenu();
+            }}
+            role="menuitem"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M4 16 L12 6 L20 16"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+            Add Timestamp
+          </button>
+          <div class="ts-drop-split">
+            <button
+              class="ts-drop-half ts-drop-blue"
+              onclick={() => {
+                addClipStart();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                ><circle
+                  cx="7"
+                  cy="8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><circle
+                  cx="7"
+                  cy="15.8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><path
+                  d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /></svg
+              >
+              Start
+            </button>
+            <button
+              class="ts-drop-half ts-drop-blue"
+              onclick={() => {
+                addClipEnd();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                ><circle
+                  cx="17"
+                  cy="8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><circle
+                  cx="17"
+                  cy="15.8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><path
+                  d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /></svg
+              >
+              End
+            </button>
+          </div>
+          {#if !tsDeleteConfirm}
+            <button
+              class="ts-drop-item ts-drop-red"
+              onclick={() => (tsDeleteConfirm = true)}
+              disabled={!hasMarkers}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                ><polyline
+                  points="3 6 5 6 21 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /><path
+                  d="M19 6l-1 14H6L5 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /></svg
+              >
+              Delete Markers
+            </button>
+          {:else}
+            <button
+              class="ts-drop-item ts-drop-red-confirm"
+              onclick={() => {
+                deleteAllMarkers();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              Confirm Delete
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
     <button
       class="time-display tooltip-ctrl"
       data-tooltip={timerTooltip}
@@ -895,22 +1038,144 @@
         </div>
       {/if}
     </div>
-    <button
-      class="fs-ctrl-btn add-ts-btn tooltip-ctrl"
-      data-tooltip="Place timestamp"
-      onclick={addTimestamp}
-      aria-label="add timestamp"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M4 16 L12 6 L20 16"
-          stroke="currentColor"
-          stroke-width="2.2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+    <div class="ts-menu-anchor" style="position:relative;">
+      <button
+        class="fs-ctrl-btn add-ts-btn"
+        class:ts-menu-open={tsMenuOpen}
+        onclick={() => {
+          tsMenuOpen = !tsMenuOpen;
+          tsDeleteConfirm = false;
+        }}
+        aria-label="markers menu"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 16 L12 6 L20 16"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      {#if tsMenuOpen}
+        <div class="ts-drop-menu" role="menu">
+          <button
+            class="ts-drop-item ts-drop-yellow"
+            onclick={() => {
+              addTimestamp();
+              closeTsMenu();
+            }}
+            role="menuitem"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M4 16 L12 6 L20 16"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+            Add Timestamp
+          </button>
+          <div class="ts-drop-split">
+            <button
+              class="ts-drop-half ts-drop-blue"
+              onclick={() => {
+                addClipStart();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                ><circle
+                  cx="7"
+                  cy="8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><circle
+                  cx="7"
+                  cy="15.8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><path
+                  d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /></svg
+              >
+              Start
+            </button>
+            <button
+              class="ts-drop-half ts-drop-blue"
+              onclick={() => {
+                addClipEnd();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                ><circle
+                  cx="17"
+                  cy="8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><circle
+                  cx="17"
+                  cy="15.8"
+                  r="2.2"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /><path
+                  d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                /></svg
+              >
+              End
+            </button>
+          </div>
+          {#if !tsDeleteConfirm}
+            <button
+              class="ts-drop-item ts-drop-red"
+              onclick={() => (tsDeleteConfirm = true)}
+              disabled={!hasMarkers}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                ><polyline
+                  points="3 6 5 6 21 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /><path
+                  d="M19 6l-1 14H6L5 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /></svg
+              >
+              Delete Markers
+            </button>
+          {:else}
+            <button
+              class="ts-drop-item ts-drop-red-confirm"
+              onclick={() => {
+                deleteAllMarkers();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              Confirm Delete
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
     <button
       class="fs-time tooltip-ctrl"
       data-tooltip={timerTooltip}
@@ -980,3 +1245,5 @@
     </button>
   {/if}
 {/if}
+
+<svelte:window onmousedown={handleWindowMouseDown} />

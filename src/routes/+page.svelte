@@ -1866,6 +1866,13 @@
               {handleSpeedDiamondHover}
               {startSpeedDrag}
               {addTimestamp}
+              addClipStart={() => addClipBoundary("start")}
+              addClipEnd={() => addClipBoundary("end")}
+              hasMarkers={timestamps.length > 0 || clipBoundaries.length > 0}
+              deleteAllMarkers={() => {
+                clearAllTimestamps();
+                clearAllSegments();
+              }}
               {toggleTimer}
               {currentTimeDisplay}
               {durationDisplay}
@@ -2033,6 +2040,13 @@
             {handleSpeedDiamondHover}
             {startSpeedDrag}
             {addTimestamp}
+            addClipStart={() => addClipBoundary("start")}
+            addClipEnd={() => addClipBoundary("end")}
+            hasMarkers={timestamps.length > 0 || clipBoundaries.length > 0}
+            deleteAllMarkers={() => {
+              clearAllTimestamps();
+              clearAllSegments();
+            }}
             {toggleTimer}
             {currentTimeDisplay}
             {durationDisplay}

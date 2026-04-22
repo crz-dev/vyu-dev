@@ -812,3 +812,103 @@
     transform: scale(1) translateY(0);
   }
 }
+
+.ts-drop-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: #111111;
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 148px;
+  z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  animation: uiMenuPopIn 170ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+.ts-drop-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  font-size: 11px;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.13s;
+  width: 100%;
+}
+.ts-drop-item:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.ts-drop-split {
+  display: flex;
+  gap: 4px;
+}
+.ts-drop-half {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  font-size: 11px;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.ts-drop-yellow {
+  background: rgba(245, 197, 24, 0.15);
+  border-color: rgba(245, 197, 24, 0.35);
+  color: #f5c518;
+}
+.ts-drop-yellow:hover {
+  background: rgba(245, 197, 24, 0.25);
+}
+.ts-drop-blue {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(96, 165, 250, 0.35);
+  color: #60a5fa;
+}
+.ts-drop-blue:hover {
+  background: rgba(59, 130, 246, 0.26);
+}
+.ts-drop-red {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #f87171;
+}
+.ts-drop-red:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.26);
+}
+.ts-drop-red-confirm {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(248, 113, 113, 0.6);
+  color: #fca5a5;
+  font-weight: 600;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.ts-drop-red-confirm:hover {
+  background: rgba(239, 68, 68, 0.4);
+}
+.add-ts-btn.ts-menu-open {
+  color: #f5c518;
+  background: rgba(245, 197, 24, 0.1);
+}
