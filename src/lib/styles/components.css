@@ -835,6 +835,7 @@
 .ts-drop-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   padding: 6px 9px;
   border-radius: 6px;
@@ -842,7 +843,7 @@
   font-size: 11px;
   font-family: Inter, sans-serif;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: background 0.13s;
   width: 100%;
 }

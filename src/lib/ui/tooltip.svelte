@@ -107,9 +107,8 @@
           class="ts-title-input"
           type="text"
           maxlength="100"
-          placeholder="Title"
+          placeholder="Add Title..."
           value={currentTitle}
-          style="width: {getTitleEditorWidthCh(currentTitle)}ch;"
           oninput={(e) =>
             updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
           onkeydown={(e) => {
@@ -132,7 +131,14 @@
             }}
             aria-label="Delete timestamp"
           >
-            Delete
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M6 6L18 18M18 6L6 18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
           </button>
         {/if}
       </div>

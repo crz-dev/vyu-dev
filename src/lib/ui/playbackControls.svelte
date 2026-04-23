@@ -514,28 +514,54 @@
       </button>
       {#if tsMenuOpen}
         <div class="ts-drop-menu" role="menu">
-          <button
-            class="ts-drop-item ts-drop-yellow"
-            onclick={() => {
-              addTimestamp();
-              closeTsMenu();
-            }}
-            role="menuitem"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-            </svg>
-            Add Timestamp
-          </button>
+          {#if hasMarkers}
+            {#if !tsDeleteConfirm}
+              <button
+                class="ts-drop-item ts-drop-red"
+                onclick={() => (tsDeleteConfirm = true)}
+                role="menuitem"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                  <polyline
+                    points="3 6 5 6 21 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M19 6l-1 14H6L5 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M10 11v6M14 11v6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M9 6V4h6v2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Delete Markers
+              </button>
+            {:else}
+              <button
+                class="ts-drop-item ts-drop-red-confirm"
+                onclick={() => {
+                  deleteAllMarkers();
+                  closeTsMenu();
+                }}
+                role="menuitem"
+              >
+                Confirm Delete
+              </button>
+            {/if}
+          {/if}
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
@@ -611,53 +637,28 @@
               End
             </button>
           </div>
-          {#if !tsDeleteConfirm}
-            <button
-              class="ts-drop-item ts-drop-red"
-              onclick={() => (tsDeleteConfirm = true)}
-              disabled={!hasMarkers}
-              role="menuitem"
+          <button
+            class="ts-drop-item ts-drop-yellow"
+            onclick={() => {
+              addTimestamp();
+              closeTsMenu();
+            }}
+            role="menuitem"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <polyline
-                  points="3 6 5 6 21 6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M19 6l-1 14H6L5 6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M10 11v6M14 11v6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M9 6V4h6v2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Delete Markers
-            </button>
-          {:else}
-            <button
-              class="ts-drop-item ts-drop-red-confirm"
-              onclick={() => {
-                deleteAllMarkers();
-                closeTsMenu();
-              }}
-              role="menuitem"
-            >
-              Confirm Delete
-            </button>
-          {/if}
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+            </svg>
+            Add Timestamp
+          </button>
         </div>
       {/if}
     </div>
@@ -1116,28 +1117,54 @@
       </button>
       {#if tsMenuOpen}
         <div class="ts-drop-menu" role="menu">
-          <button
-            class="ts-drop-item ts-drop-yellow"
-            onclick={() => {
-              addTimestamp();
-              closeTsMenu();
-            }}
-            role="menuitem"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-            </svg>
-            Add Timestamp
-          </button>
+          {#if hasMarkers}
+            {#if !tsDeleteConfirm}
+              <button
+                class="ts-drop-item ts-drop-red"
+                onclick={() => (tsDeleteConfirm = true)}
+                role="menuitem"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                  <polyline
+                    points="3 6 5 6 21 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M19 6l-1 14H6L5 6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M10 11v6M14 11v6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M9 6V4h6v2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Delete Markers
+              </button>
+            {:else}
+              <button
+                class="ts-drop-item ts-drop-red-confirm"
+                onclick={() => {
+                  deleteAllMarkers();
+                  closeTsMenu();
+                }}
+                role="menuitem"
+              >
+                Confirm Delete
+              </button>
+            {/if}
+          {/if}
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
@@ -1213,53 +1240,28 @@
               End
             </button>
           </div>
-          {#if !tsDeleteConfirm}
-            <button
-              class="ts-drop-item ts-drop-red"
-              onclick={() => (tsDeleteConfirm = true)}
-              disabled={!hasMarkers}
-              role="menuitem"
+          <button
+            class="ts-drop-item ts-drop-yellow"
+            onclick={() => {
+              addTimestamp();
+              closeTsMenu();
+            }}
+            role="menuitem"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <polyline
-                  points="3 6 5 6 21 6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M19 6l-1 14H6L5 6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M10 11v6M14 11v6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M9 6V4h6v2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Delete Markers
-            </button>
-          {:else}
-            <button
-              class="ts-drop-item ts-drop-red-confirm"
-              onclick={() => {
-                deleteAllMarkers();
-                closeTsMenu();
-              }}
-              role="menuitem"
-            >
-              Confirm Delete
-            </button>
-          {/if}
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+            </svg>
+            Add Timestamp
+          </button>
         </div>
       {/if}
     </div>
