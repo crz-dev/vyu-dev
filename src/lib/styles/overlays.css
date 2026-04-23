@@ -41,11 +41,11 @@
   background: rgba(59, 130, 246, 0.26);
 }
 .ctx-item.yellow {
-  background: rgba(245, 197, 24 0.15);
+  background: rgba(245, 197, 24, 0.15);
   color: #facc15;
 }
 .ctx-item.yellow:hover {
-  background: rgba(245, 197, 24 0.26);
+  background: rgba(245, 197, 24, 0.26);
 }
 .ctx-item.red {
   background: rgba(239, 68, 68, 0.15);
@@ -230,7 +230,7 @@
     color 0.2s;
 }
 .delete-cancel:hover {
-  background: #222222;
+  background: #1a1a1a;
   color: #cccccc;
 }
 .delete-confirm-btn {
@@ -290,8 +290,8 @@
 .props-btn {
   padding: 6px 10px;
   border-radius: 7px;
-  border: 0.5px solid rgba(245, 197, 24 0.35);
-  background: rgba(245, 197, 24 0.14);
+  border: 0.5px solid rgba(245, 197, 24, 0.35);
+  background: rgba(245, 197, 24, 0.14);
   color: #facc15;
   font-size: 11px;
   font-family: Inter, sans-serif;
@@ -299,7 +299,7 @@
   transition: background 0.15s;
 }
 .props-btn:hover {
-  background: rgba(245, 197, 24 0.24);
+  background: rgba(245, 197, 24, 0.24);
 }
 .props-btn.props-btn-secondary {
   background: rgba(255, 255, 255, 0.04);
@@ -564,7 +564,7 @@
   font-family: Inter, sans-serif;
   padding: 3px 8px;
   border-radius: 4px;
-  border: 0.5px solid #333333;
+  border: 0.5px solid #2a2a2a;
   pointer-events: none;
   z-index: 9999;
   white-space: nowrap;
