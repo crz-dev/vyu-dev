@@ -6,6 +6,8 @@ type ViewerState = {
   translateX: number;
   translateY: number;
   isDragging: boolean;
+  rotation: number;
+  flipped: boolean;
 };
 
 function clampZoom(value: number): number {
@@ -21,6 +23,8 @@ function createViewer() {
     translateX: 0,
     translateY: 0,
     isDragging: false,
+    rotation: 0,
+    flipped: false,
   });
 
   let fsHideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -58,6 +62,14 @@ function createViewer() {
     state.translateY = 0;
   }
 
+  function rotate() {
+    state.rotation = (state.rotation + 90) % 360;
+  }
+
+  function flip() {
+    state.flipped = !state.flipped;
+  }
+
   function getPanCursor(): "default" | "grab" | "grabbing" {
     if (state.zoomLevel <= 100) return "default";
     return state.isDragging ? "grabbing" : "grab";
@@ -66,6 +78,21 @@ function createViewer() {
   function getVideoWrapperTransform(): string {
     const scale = state.zoomLevel / 100;
     return `transform: scale(${scale}) translate(${state.translateX / scale}px, ${state.translateY / scale}px); transform-origin: center center;`;
+  }
+
+  function getVideoInnerTransform(): string {
+    const isQuarterTurn = Math.abs(state.rotation % 180) === 90;
+    let rotationFitScale = 1;
+    if (isQuarterTurn && state.videoEl) {
+      const w = state.videoEl.videoWidth;
+      const h = state.videoEl.videoHeight;
+      if (w > 0 && h > 0) {
+        const ratio = w / h;
+        rotationFitScale = Math.min(ratio, 1 / ratio);
+      }
+    }
+    const scale = (state.zoomLevel / 100) * rotationFitScale;
+    return `transform: scale(${scale}) rotate(${state.rotation}deg) scaleX(${state.flipped ? -1 : 1}); transform-origin: center center;`;
   }
 
   function handleViewerScroll(e: WheelEvent, fileSrc: string) {
@@ -125,8 +152,11 @@ function createViewer() {
     toggleFullscreen,
     resetFsTimer,
     resetZoom,
+    rotate,
+    flip,
     getPanCursor,
     getVideoWrapperTransform,
+    getVideoInnerTransform,
     handleViewerScroll,
     handleTouchZoom,
     handleTouchEnd,

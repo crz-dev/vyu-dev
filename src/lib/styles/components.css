@@ -13,7 +13,13 @@
 .video-wrapper:hover {
   outline-color: #323232;
 }
-.video-wrapper video {
+.video-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+}
+.video-inner video {
   display: block;
   max-width: calc(100vw - 96px - 32px);
   max-height: calc(100vh - 36px - 36px - 32px);

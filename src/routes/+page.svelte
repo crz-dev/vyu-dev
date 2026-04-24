@@ -124,8 +124,8 @@
     if (data.isLoadingFile !== undefined) isLoadingFile = data.isLoadingFile;
     if (data.loadingFadingOut !== undefined)
       loadingFadingOut = data.loadingFadingOut;
-    if (data.imageRotation !== undefined) imageRotation = data.imageRotation;
-    if (data.imageFlipped !== undefined) imageFlipped = data.imageFlipped;
+    if (data.imageRotation !== undefined) viewer.state.rotation = data.imageRotation;
+    if (data.imageFlipped !== undefined) viewer.state.flipped = data.imageFlipped;
     if (data.imageNaturalWidth !== undefined)
       imageNaturalWidth = data.imageNaturalWidth;
     if (data.imageNaturalHeight !== undefined)
@@ -161,8 +161,6 @@
   let rawCurrentSecs = $state(0);
   let rawDurationSecs = $state(0);
   let timerShowRemaining = $state(false);
-  let imageRotation = $state(0);
-  let imageFlipped = $state(false);
   let imageNaturalWidth = $state(0);
   let imageNaturalHeight = $state(0);
 
@@ -269,7 +267,7 @@
   });
   let frameCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const isQuarterTurn = $derived(Math.abs(imageRotation % 180) === 90);
+  const isQuarterTurn = $derived(Math.abs(viewer.state.rotation % 180) === 90);
   const rotationFitScale = $derived.by(() => {
     if (!isQuarterTurn || imageNaturalWidth <= 0 || imageNaturalHeight <= 0)
       return 1;
@@ -280,9 +278,10 @@
     (viewer.state.zoomLevel / 100) * rotationFitScale,
   );
   const imageStyle = $derived(
-    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${imageRotation}deg) scaleX(${imageFlipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;`,
+    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;`,
   );
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
+  const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
   const panCursor = $derived(viewer.getPanCursor());
   const fsCursor = $derived(
     !viewer.state.fsControlsVisible && !tsEditMenu.visible ? "none" : panCursor,
@@ -1277,6 +1276,8 @@
 
   function closeFile() {
     resumeTooltipVisible = false;
+    viewer.state.rotation = 0;
+    viewer.state.flipped = false;
     media.closeFile(setMediaState);
   }
 
@@ -1484,11 +1485,11 @@
   }
   function ctxRotate() {
     closeContextMenu();
-    imageRotation = (imageRotation + 90) % 360;
+    viewer.rotate();
   }
   function ctxFlip() {
     closeContextMenu();
-    imageFlipped = !imageFlipped;
+    viewer.flip();
   }
   function ctxToggleLoop() {
     closeContextMenu();
@@ -1795,36 +1796,38 @@
           onmousedown={startPan}
           style="{videoWrapperTransform} cursor: {panCursor}"
         >
-          <video
-            bind:this={videoEl}
-            src={fileSrc}
-            crossorigin="anonymous"
-            autoplay
-            ontimeupdate={updateProgress}
-            onloadedmetadata={onVideoLoad}
-            onended={() => {
-              if (loopMode === "stop") {
-                playing = false;
-              } else if (loopMode === "next") {
-                navigate(1);
-              } else if (loopMode === "shuffle") {
-                if (fileList.length > 1) {
-                  let idx;
-                  do {
-                    idx = Math.floor(Math.random() * fileList.length);
-                  } while (idx === currentIndex);
-                  currentIndex = media.navigate(
-                    idx - currentIndex,
-                    fileList,
-                    currentIndex,
-                    setMediaState,
-                  );
+          <div class="video-inner" style={videoInnerTransform}>
+            <video
+              bind:this={videoEl}
+              src={fileSrc}
+              crossorigin="anonymous"
+              autoplay
+              ontimeupdate={updateProgress}
+              onloadedmetadata={onVideoLoad}
+              onended={() => {
+                if (loopMode === "stop") {
+                  playing = false;
+                } else if (loopMode === "next") {
+                  navigate(1);
+                } else if (loopMode === "shuffle") {
+                  if (fileList.length > 1) {
+                    let idx;
+                    do {
+                      idx = Math.floor(Math.random() * fileList.length);
+                    } while (idx === currentIndex);
+                    currentIndex = media.navigate(
+                      idx - currentIndex,
+                      fileList,
+                      currentIndex,
+                      setMediaState,
+                    );
+                  }
                 }
-              }
-            }}
-          >
-            <track kind="captions" />
-          </video>
+              }}
+            >
+              <track kind="captions" />
+            </video>
+          </div>
           <div
             class="video-controls"
             class:gif-only={isGifVideo}
@@ -2173,7 +2176,7 @@
     updateDeletePermanently={(v) => (deletePermanently = v)}
   />
 
-  <EditMenu visible={editMenuVisible} />
+  <EditMenu visible={editMenuVisible} onRotate={() => viewer.rotate()} onFlip={() => viewer.flip()} />
 
   <Tooltip
     {tsTooltip}

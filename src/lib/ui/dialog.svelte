@@ -385,19 +385,7 @@
         Properties
       </button>
       <div class="ctx-sep"></div>
-      {#if timestamps.length > 0}
-        <button class="ctx-item red" onclick={() => ctxClearMarkers()} role="menuitem">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path
-              d="M9 9l6 6M15 9l-6 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
-          >
-          Delete Markers
-        </button>
-      {:else if clipBoundaries.length > 0}
+      {#if timestamps.length > 0 || clipBoundaries.length > 0}
         <button class="ctx-item red" onclick={() => ctxClearMarkers()} role="menuitem">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" /><path

@@ -3,8 +3,12 @@
 
   let {
     visible,
+    onRotate,
+    onFlip,
   }: {
     visible: boolean;
+    onRotate: () => void;
+    onFlip: () => void;
   } = $props();
 
   let colorRowOpen = $state(false);
@@ -27,7 +31,7 @@
         </svg>
         <span>Crop</span>
       </button>
-      <button class="edit-menu-btn yellow">
+      <button class="edit-menu-btn yellow" onclick={onRotate}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 2v6h-6"/>
           <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
@@ -36,7 +40,7 @@
         </svg>
         <span>Rotate</span>
       </button>
-      <button class="edit-menu-btn green">
+      <button class="edit-menu-btn green" onclick={onFlip}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 3v18"/>
           <path d="M16 7l4 5-4 5"/>

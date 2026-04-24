@@ -2,7 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::{Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
+use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 
 #[derive(serde::Serialize)]
 struct MediaProperties {
@@ -69,8 +69,8 @@ fn persist_window_state(window: &tauri::WebviewWindow) {
     let state = SavedWindowState {
         x,
         y,
-        width: size.width,
-        height: size.height,
+        width: size.width.max(400),
+        height: size.height.max(300),
         maximized,
     };
 
@@ -78,7 +78,7 @@ fn persist_window_state(window: &tauri::WebviewWindow) {
         let _ = fs::create_dir_all(parent);
     }
 
-    if let Ok(serialized) = serde_json::to_string(&state) {
+    if let Ok(serialized) = serde_json::to_string_pretty(&state) {
         let _ = fs::write(path, serialized);
     }
 }
@@ -88,23 +88,32 @@ fn restore_window_state(window: &tauri::WebviewWindow) {
         return;
     };
 
-    if state.width > 0 && state.height > 0 {
-        let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
-    }
-
-    if !state.maximized {
+    if state.maximized {
+        if state.width > 0 && state.height > 0 {
+            let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
+        }
         let plausible = state.x > -3840 && state.x < 7680
             && state.y > -2160 && state.y < 4320;
+        if plausible {
+            let _ = window.set_position(Position::Physical(
+                PhysicalPosition::new(state.x, state.y),
+            ));
+        }
+        let _ = window.maximize();
+    } else {
+        let valid_size = state.width >= 400 && state.height >= 300;
+        let plausible = state.x > -3840 && state.x < 7680
+            && state.y > -2160 && state.y < 4320;
+
+        if valid_size {
+            let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
+        }
 
         if plausible {
             let _ = window.set_position(Position::Physical(
                 PhysicalPosition::new(state.x, state.y),
             ));
         }
-    }
-
-    if state.maximized {
-        let _ = window.maximize();
     }
 }
 
@@ -400,9 +409,13 @@ pub fn run() {
             restore_window_state(&window);
             let window_for_events = window.clone();
             window.on_window_event(move |event| {
-                if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_) | WindowEvent::CloseRequested { .. }) {
+                if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_)) {
                     persist_window_state(&window_for_events);
                 }
+            });
+            let window_for_close = window.clone();
+            app.listen("tauri://close-requested", move |_event| {
+                persist_window_state(&window_for_close);
             });
             if args.len() > 1 {
                 let file_path = args[1].clone();
