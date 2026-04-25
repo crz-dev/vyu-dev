@@ -28,8 +28,18 @@
     const dy = (e.clientY - dragStartY) / rect.height;
 
     const minSize = 0.05;
-    const width = 1 - dragStartBounds.left - dragStartBounds.right;
-    const height = 1 - dragStartBounds.top - dragStartBounds.bottom;
+
+    if (dragging === "move") {
+      const cropWidth = 1 - dragStartBounds.left - dragStartBounds.right;
+      const cropHeight = 1 - dragStartBounds.top - dragStartBounds.bottom;
+      const newLeft = Math.max(0, Math.min(dragStartBounds.left + dx, 1 - cropWidth));
+      const newTop = Math.max(0, Math.min(dragStartBounds.top + dy, 1 - cropHeight));
+      viewer.state.cropBounds.left = newLeft;
+      viewer.state.cropBounds.top = newTop;
+      viewer.state.cropBounds.right = 1 - newLeft - cropWidth;
+      viewer.state.cropBounds.bottom = 1 - newTop - cropHeight;
+      return;
+    }
 
     switch (dragging) {
       case "tl":
@@ -76,16 +86,6 @@
           right: Math.max(0, Math.min(dragStartBounds.right - dx, 1 - dragStartBounds.left - minSize)),
         });
         break;
-      case "move":
-        const newLeft = Math.max(0, Math.min(dragStartBounds.left + dx, 1 - width));
-        const newTop = Math.max(0, Math.min(dragStartBounds.top + dy, 1 - height));
-        viewer.setCropBounds({
-          left: newLeft,
-          top: newTop,
-          right: dragStartBounds.right,
-          bottom: dragStartBounds.bottom,
-        });
-        break;
     }
   }
 
@@ -104,6 +104,10 @@
 
 {#if viewer.state.cropMode && containerEl}
   <div class="crop-overlay" role="presentation">
+    <div class="crop-dim crop-dim-top" style="height: {viewer.state.cropBounds.top * 100}%"></div>
+    <div class="crop-dim crop-dim-bottom" style="height: {viewer.state.cropBounds.bottom * 100}%"></div>
+    <div class="crop-dim crop-dim-left" style="top: {viewer.state.cropBounds.top * 100}%; bottom: {viewer.state.cropBounds.bottom * 100}%; width: {viewer.state.cropBounds.left * 100}%"></div>
+    <div class="crop-dim crop-dim-right" style="top: {viewer.state.cropBounds.top * 100}%; bottom: {viewer.state.cropBounds.bottom * 100}%; width: {viewer.state.cropBounds.right * 100}%"></div>
     <div
       class="crop-area"
       style="left: {viewer.state.cropBounds.left * 100}%; top: {viewer.state.cropBounds.top * 100}%; right: {viewer.state.cropBounds.right * 100}%; bottom: {viewer.state.cropBounds.bottom * 100}%;"
@@ -117,14 +121,14 @@
         <div class="crop-grid-line v1"></div>
         <div class="crop-grid-line v2"></div>
       </div>
-      <div class="crop-handle tl" onmousedown={(e) => handleMouseDown(e, "tl")} role="button" aria-label="Top-left corner"></div>
-      <div class="crop-handle tr" onmousedown={(e) => handleMouseDown(e, "tr")} role="button" aria-label="Top-right corner"></div>
-      <div class="crop-handle bl" onmousedown={(e) => handleMouseDown(e, "bl")} role="button" aria-label="Bottom-left corner"></div>
-      <div class="crop-handle br" onmousedown={(e) => handleMouseDown(e, "br")} role="button" aria-label="Bottom-right corner"></div>
-      <div class="crop-handle tm" onmousedown={(e) => handleMouseDown(e, "tm")} role="button" aria-label="Top edge"></div>
-      <div class="crop-handle bm" onmousedown={(e) => handleMouseDown(e, "bm")} role="button" aria-label="Bottom edge"></div>
-      <div class="crop-handle ml" onmousedown={(e) => handleMouseDown(e, "ml")} role="button" aria-label="Left edge"></div>
-      <div class="crop-handle mr" onmousedown={(e) => handleMouseDown(e, "mr")} role="button" aria-label="Right edge"></div>
+      <div class="crop-handle tl" onmousedown={(e) => handleMouseDown(e, "tl")} role="button" aria-label="Top-left corner"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle tr" onmousedown={(e) => handleMouseDown(e, "tr")} role="button" aria-label="Top-right corner"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle bl" onmousedown={(e) => handleMouseDown(e, "bl")} role="button" aria-label="Bottom-left corner"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle br" onmousedown={(e) => handleMouseDown(e, "br")} role="button" aria-label="Bottom-right corner"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle tm" onmousedown={(e) => handleMouseDown(e, "tm")} role="button" aria-label="Top edge"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle bm" onmousedown={(e) => handleMouseDown(e, "bm")} role="button" aria-label="Bottom edge"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle ml" onmousedown={(e) => handleMouseDown(e, "ml")} role="button" aria-label="Left edge"><div class="crop-handle-diamond"></div></div>
+      <div class="crop-handle mr" onmousedown={(e) => handleMouseDown(e, "mr")} role="button" aria-label="Right edge"><div class="crop-handle-diamond"></div></div>
     </div>
   </div>
 {/if}

@@ -61,3 +61,25 @@ export async function invokeRenameFile(
 export async function invokeGetClipboardFilePath(): Promise<string | null> {
   return invoke("get_clipboard_file_path");
 }
+
+export async function invokeExportCroppedMedia(
+  path: string,
+  outputPath: string,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  return invoke("export_cropped_media", {
+    path,
+    outputPath,
+    left,
+    top,
+    right,
+    bottom,
+    width,
+    height,
+  });
+}

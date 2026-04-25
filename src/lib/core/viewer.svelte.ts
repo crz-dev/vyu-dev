@@ -1,4 +1,4 @@
-type CropBounds = {
+export type CropBounds = {
   left: number;
   top: number;
   right: number;
@@ -17,8 +17,10 @@ type ViewerState = {
   flipped: boolean;
   cropMode: boolean;
   cropBounds: CropBounds;
-  cropApplied: CropBounds | null;
 };
+
+const cropMap = $state(new Map<string, CropBounds>());
+let currentFilePath = $state("");
 
 function clampZoom(value: number): number {
   return Math.max(100, Math.min(1000, value));
@@ -37,7 +39,6 @@ function createViewer() {
     flipped: false,
     cropMode: false,
     cropBounds: { left: 0, top: 0, right: 0, bottom: 0 },
-    cropApplied: null,
   });
 
   let fsHideTimer: ReturnType<typeof setTimeout> | undefined;
@@ -157,10 +158,25 @@ function createViewer() {
     lastPinchDist = 0;
   }
 
+  function setCurrentFile(path: string) {
+    currentFilePath = path;
+    const saved = cropMap.get(path);
+    if (saved) {
+      state.cropBounds = { ...saved };
+    } else {
+      state.cropBounds = { left: 0, top: 0, right: 0, bottom: 0 };
+    }
+  }
+
+  function hasCropForCurrentFile(): boolean {
+    return cropMap.has(currentFilePath);
+  }
+
   function startCropMode() {
     state.cropMode = true;
-    if (state.cropApplied) {
-      state.cropBounds = { ...state.cropApplied };
+    const saved = cropMap.get(currentFilePath);
+    if (saved) {
+      state.cropBounds = { ...saved };
     } else {
       state.cropBounds = { left: 0, top: 0, right: 0, bottom: 0 };
     }
@@ -168,14 +184,25 @@ function createViewer() {
 
   function cancelCrop() {
     state.cropMode = false;
+    const saved = cropMap.get(currentFilePath);
+    if (saved) {
+      state.cropBounds = { ...saved };
+    } else {
+      state.cropBounds = { left: 0, top: 0, right: 0, bottom: 0 };
+    }
   }
 
   function resetCrop() {
     state.cropBounds = { left: 0, top: 0, right: 0, bottom: 0 };
+    cropMap.delete(currentFilePath);
   }
 
   function applyCrop() {
-    state.cropApplied = { ...state.cropBounds };
+    if (state.cropBounds.left === 0 && state.cropBounds.top === 0 && state.cropBounds.right === 0 && state.cropBounds.bottom === 0) {
+      cropMap.delete(currentFilePath);
+    } else {
+      cropMap.set(currentFilePath, { ...state.cropBounds });
+    }
     state.cropMode = false;
   }
 
@@ -190,16 +217,11 @@ function createViewer() {
     state.cropBounds.bottom = Math.max(0, Math.min(1 - state.cropBounds.top - 0.01, state.cropBounds.bottom));
   }
 
-  function getCropClipPath(): string {
-    if (state.cropApplied && !state.cropMode) {
-      const { left, top, right, bottom } = state.cropApplied;
-      return `inset(${(top * 100).toFixed(2)}% ${(right * 100).toFixed(2)}% ${(bottom * 100).toFixed(2)}% ${(left * 100).toFixed(2)}%)`;
-    }
-    if (state.cropMode) {
-      const { left, top, right, bottom } = state.cropBounds;
-      return `inset(${(top * 100).toFixed(2)}% ${(right * 100).toFixed(2)}% ${(bottom * 100).toFixed(2)}% ${(left * 100).toFixed(2)}%)`;
-    }
-    return "";
+  function getCropBounds(): CropBounds | null {
+    if (state.cropMode) return state.cropBounds;
+    const saved = cropMap.get(currentFilePath);
+    if (saved) return saved;
+    return null;
   }
 
   return {
@@ -218,12 +240,14 @@ function createViewer() {
     handleViewerScroll,
     handleTouchZoom,
     handleTouchEnd,
+    setCurrentFile,
+    hasCropForCurrentFile,
     startCropMode,
     cancelCrop,
     resetCrop,
     applyCrop,
     setCropBounds,
-    getCropClipPath,
+    getCropBounds,
   };
 }
 

@@ -8,6 +8,8 @@
     clipBoundaries,
     frameCopyToast,
     clipToast,
+    exportToast,
+    onOpenExportedFile,
     clipOutputDir,
     parentFolder,
     invokeOpenDirectory,
@@ -71,6 +73,13 @@
       message: string;
       outputDir: string;
     };
+    exportToast: {
+      visible: boolean;
+      phase: "exporting" | "done" | "error";
+      message: string;
+      outputPath: string;
+    };
+    onOpenExportedFile: () => void;
     clipOutputDir: string;
     parentFolder: () => string;
     invokeOpenDirectory: (path: string) => Promise<void>;
@@ -426,6 +435,38 @@
           /></svg
         ></button
       >
+    {/if}
+  </div>
+{/if}
+
+{#if exportToast.visible}
+  <div
+    class="export-toast"
+    class:exporting={exportToast.phase === "exporting"}
+    class:done={exportToast.phase === "done"}
+    class:error={exportToast.phase === "error"}
+    role="status"
+    aria-live="polite"
+  >
+    <div class="export-toast-content">
+      <span>{exportToast.message}</span>
+      {#if exportToast.phase === "done"}
+        <button
+          class="export-toast-open-btn"
+          onclick={onOpenExportedFile}
+          title="Open in Vyu"
+          aria-label="Open in Vyu"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      {/if}
+    </div>
+    {#if exportToast.phase === "exporting"}
+      <div class="export-toast-progress">
+        <div class="export-toast-progress-bar"></div>
+      </div>
     {/if}
   </div>
 {/if}

@@ -366,6 +366,74 @@ fn install_ffmpeg() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn export_cropped_media(
+    path: String,
+    output_path: String,
+    left: f64,
+    top: f64,
+    right: f64,
+    bottom: f64,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Err("Source file does not exist".into());
+    }
+
+    let out_w = ((width as f64) * (1.0 - left - right)).round() as u32;
+    let out_h = ((height as f64) * (1.0 - top - bottom)).round() as u32;
+    let x = ((width as f64) * left).round() as u32;
+    let y = ((height as f64) * top).round() as u32;
+
+    if out_w == 0 || out_h == 0 {
+        return Err("Crop area is too small".into());
+    }
+
+    let output = Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            &input.to_string_lossy(),
+            "-vf",
+            &format!("crop={}:{}:{}:{}", out_w, out_h, x, y),
+            "-c:a",
+            "copy",
+            &output_path,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let fallback = Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            &input.to_string_lossy(),
+            "-vf",
+            &format!("crop={}:{}:{}:{}", out_w, out_h, x, y),
+            &output_path,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to run ffmpeg fallback: {e}"))?;
+
+    if fallback.status.success() {
+        Ok(())
+    } else {
+        Err(String::from_utf8_lossy(&fallback.stderr).trim().to_string())
+    }
+}
+
+#[tauri::command]
 fn get_clipboard_file_path() -> Option<String> {
     #[cfg(target_os = "windows")]
     {
@@ -402,6 +470,7 @@ pub fn run() {
             process_video_clips,
             rename_file,
             get_clipboard_file_path,
+            export_cropped_media,
         ])
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();

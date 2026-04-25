@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { open } from "@tauri-apps/plugin-dialog";
+  import { open, save } from "@tauri-apps/plugin-dialog";
   import { createPlaybackActions } from "$lib/core/playback.svelte";
   import { createTimeline } from "$lib/core/timeline.svelte";
   import { createClips } from "$lib/core/clips.svelte";
@@ -51,6 +51,7 @@
     invokeOpenFolder,
     invokeOpenDirectory,
     invokeGetClipboardFilePath,
+    invokeExportCroppedMedia,
   } from "$lib/services/mediaTools";
 
   import {
@@ -187,6 +188,7 @@
   let deleteNoAsk = $state(false);
   let propertiesOpen = $state(false);
   let editMenuVisible = $state(false);
+  let brightness = $state(1);
 
   let resumePoint = $state<number | null>(null);
   let resumeTooltipVisible = $state(false);
@@ -268,6 +270,12 @@
     tone: "success",
   });
   let frameCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
+  let exportToast = $state<{
+    visible: boolean;
+    phase: "exporting" | "done" | "error";
+    message: string;
+    outputPath: string;
+  }>({ visible: false, phase: "exporting", message: "", outputPath: "" });
 
   const isQuarterTurn = $derived(Math.abs(viewer.state.rotation % 180) === 90);
   const rotationFitScale = $derived.by(() => {
@@ -279,12 +287,17 @@
   const imageScale = $derived(
     (viewer.state.zoomLevel / 100) * rotationFitScale,
   );
+  const cropClipPath = $derived.by(() => {
+    const bounds = viewer.getCropBounds();
+    if (!bounds) return "";
+    return `inset(${(bounds.top * 100).toFixed(2)}% ${(bounds.right * 100).toFixed(2)}% ${(bounds.bottom * 100).toFixed(2)}% ${(bounds.left * 100).toFixed(2)}%)`;
+  });
   const imageStyle = $derived(
-    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;${viewer.getCropClipPath() ? ` clip-path: ${viewer.getCropClipPath()};` : ""}`,
+    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;${brightness !== 1 ? ` filter: brightness(${brightness});` : ""}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
   );
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
-  const videoInnerStyle = $derived(`${videoInnerTransform}${viewer.getCropClipPath() ? `; clip-path: ${viewer.getCropClipPath()}` : ""}`);
+  const videoInnerStyle = $derived(`${videoInnerTransform}${brightness !== 1 ? `; filter: brightness(${brightness})` : ""}${cropClipPath ? `; clip-path: ${cropClipPath}` : ""}`);
   const panCursor = $derived(viewer.getPanCursor());
   const fsCursor = $derived(
     !viewer.state.fsControlsVisible && !tsEditMenu.visible ? "none" : panCursor,
@@ -1258,13 +1271,19 @@
   }
 
   async function loadFile(path: string) {
+    viewer.state.cropMode = false;
     await media.loadFile(path, setMediaState, (list, index) => {
       fileList = list;
       currentIndex = index;
     });
+    viewer.setCurrentFile(path);
   }
 
   function navigate(direction: number) {
+    if (fileList.length === 0) return;
+    viewer.state.cropMode = false;
+    const next = (currentIndex + direction + fileList.length) % fileList.length;
+    viewer.setCurrentFile(fileList[next]);
     currentIndex = media.navigate(
       direction,
       fileList,
@@ -1274,6 +1293,10 @@
   }
 
   function navigateToEdge(first: boolean) {
+    if (fileList.length === 0) return;
+    viewer.state.cropMode = false;
+    const next = first ? 0 : fileList.length - 1;
+    viewer.setCurrentFile(fileList[next]);
     currentIndex = media.navigateToEdge(first, fileList, setMediaState);
   }
 
@@ -1281,6 +1304,8 @@
     resumeTooltipVisible = false;
     viewer.state.rotation = 0;
     viewer.state.flipped = false;
+    viewer.state.cropMode = false;
+    viewer.setCurrentFile("");
     media.closeFile(setMediaState);
   }
 
@@ -1517,6 +1542,107 @@
 
   function ctxEdit() {
     openEditMenu();
+  }
+
+  async function handleApplyCrop() {
+    const bounds = viewer.getCropBounds();
+    if (!bounds || (bounds.left === 0 && bounds.top === 0 && bounds.right === 0 && bounds.bottom === 0)) {
+      showFrameCopyToast("No crop applied.", "error");
+      return;
+    }
+
+    const ext = fileExt();
+    const defaultName = fileName.replace(/\.[^.]+$/, "") + "_cropped." + ext;
+
+    const outputPath = await save({
+      defaultPath: defaultName,
+      filters: isVideo
+        ? [{ name: "Video", extensions: [ext] }]
+        : [{ name: "Image", extensions: [ext] }],
+    });
+
+    if (!outputPath) return;
+
+    viewer.applyCrop();
+    exportToast = { visible: true, phase: "exporting", message: "Exporting...", outputPath };
+
+    try {
+      if (isVideo) {
+        if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
+          throw new Error("Video not ready for export.");
+        }
+        await invokeExportCroppedMedia(
+          filePath,
+          outputPath,
+          bounds.left,
+          bounds.top,
+          bounds.right,
+          bounds.bottom,
+          videoEl.videoWidth,
+          videoEl.videoHeight,
+        );
+      } else {
+        await exportCroppedImage(filePath, bounds, outputPath);
+      }
+      exportToast = { visible: true, phase: "done", message: "Exported!", outputPath };
+    } catch (err) {
+      console.error("Export failed:", err);
+      const message = err instanceof Error ? err.message : "Failed to export file.";
+      exportToast = { visible: true, phase: "error", message, outputPath };
+    }
+  }
+
+  async function openExportedFile() {
+    if (exportToast.outputPath) {
+      await loadFile(exportToast.outputPath);
+    }
+    exportToast = { ...exportToast, visible: false };
+  }
+
+  async function exportCroppedImage(filePath: string, bounds: import("$lib/core/viewer.svelte").CropBounds, outputPath: string) {
+    const { readFile } = await import("@tauri-apps/plugin-fs");
+    const bytes = await readFile(filePath);
+    const blob = new Blob([bytes]);
+    const url = URL.createObjectURL(blob);
+
+    const img = new Image();
+    img.src = url;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Failed to load image"));
+    });
+
+    URL.revokeObjectURL(url);
+
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const cropX = Math.round(bounds.left * w);
+    const cropY = Math.round(bounds.top * h);
+    const cropW = Math.round(w * (1 - bounds.left - bounds.right));
+    const cropH = Math.round(h * (1 - bounds.top - bounds.bottom));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, cropW);
+    canvas.height = Math.max(1, cropH);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not create canvas context");
+    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+    const ext = outputPath.split(".").pop()?.toLowerCase() || "png";
+    const mimeType =
+      ext === "jpg" || ext === "jpeg"
+        ? "image/jpeg"
+        : ext === "webp"
+          ? "image/webp"
+          : "image/png";
+
+    const outBlob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
+    });
+
+    const arrayBuffer = await outBlob.arrayBuffer();
+    const { writeFile } = await import("@tauri-apps/plugin-fs");
+    await writeFile(outputPath, new Uint8Array(arrayBuffer));
   }
 
   function ctxConvert() {
@@ -2134,6 +2260,8 @@
     {clipBoundaries}
     {frameCopyToast}
     {clipToast}
+    {exportToast}
+    onOpenExportedFile={openExportedFile}
     {clipOutputDir}
     {parentFolder}
     {invokeOpenDirectory}
@@ -2184,7 +2312,7 @@
     updateDeletePermanently={(v) => (deletePermanently = v)}
   />
 
-  <EditMenu visible={editMenuVisible} onRotate={() => viewer.rotate()} onFlip={() => viewer.flip()} onCrop={() => viewer.startCropMode()} cropMode={viewer.state.cropMode} />
+  <EditMenu visible={editMenuVisible} onRotate={() => viewer.rotate()} onFlip={() => viewer.flip()} onCrop={() => viewer.startCropMode()} onApply={handleApplyCrop} cropMode={viewer.state.cropMode} brightness={brightness} onBrightnessChange={(v: number) => (brightness = v)} />
 
   <Tooltip
     {tsTooltip}
