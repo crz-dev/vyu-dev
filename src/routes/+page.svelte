@@ -127,8 +127,10 @@
     if (data.isLoadingFile !== undefined) isLoadingFile = data.isLoadingFile;
     if (data.loadingFadingOut !== undefined)
       loadingFadingOut = data.loadingFadingOut;
-    if (data.imageRotation !== undefined) viewer.state.rotation = data.imageRotation;
-    if (data.imageFlipped !== undefined) viewer.state.flipped = data.imageFlipped;
+    if (data.imageRotation !== undefined)
+      viewer.state.rotation = data.imageRotation;
+    if (data.imageFlipped !== undefined)
+      viewer.state.flipped = data.imageFlipped;
     if (data.imageNaturalWidth !== undefined)
       imageNaturalWidth = data.imageNaturalWidth;
     if (data.imageNaturalHeight !== undefined)
@@ -189,6 +191,9 @@
   let propertiesOpen = $state(false);
   let editMenuVisible = $state(false);
   let brightness = $state(1);
+  let contrast = $state(1);
+  let saturation = $state(1);
+  let hue = $state(0);
 
   let resumePoint = $state<number | null>(null);
   let resumeTooltipVisible = $state(false);
@@ -292,12 +297,22 @@
     if (!bounds) return "";
     return `inset(${(bounds.top * 100).toFixed(2)}% ${(bounds.right * 100).toFixed(2)}% ${(bounds.bottom * 100).toFixed(2)}% ${(bounds.left * 100).toFixed(2)}%)`;
   });
+  const colorFilter = $derived.by(() => {
+    const parts: string[] = [];
+    if (brightness !== 1) parts.push(`brightness(${brightness})`);
+    if (contrast !== 1) parts.push(`contrast(${contrast})`);
+    if (saturation !== 1) parts.push(`saturate(${saturation})`);
+    if (hue !== 0) parts.push(`hue-rotate(${hue}deg)`);
+    return parts.length ? ` filter: ${parts.join(" ")};` : "";
+  });
   const imageStyle = $derived(
-    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;${brightness !== 1 ? ` filter: brightness(${brightness});` : ""}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
+    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
   );
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
-  const videoInnerStyle = $derived(`${videoInnerTransform}${brightness !== 1 ? `; filter: brightness(${brightness})` : ""}${cropClipPath ? `; clip-path: ${cropClipPath}` : ""}`);
+  const videoInnerStyle = $derived(
+    `${videoInnerTransform}${colorFilter}${cropClipPath ? `; clip-path: ${cropClipPath}` : ""}`,
+  );
   const panCursor = $derived(viewer.getPanCursor());
   const fsCursor = $derived(
     !viewer.state.fsControlsVisible && !tsEditMenu.visible ? "none" : panCursor,
@@ -1546,7 +1561,13 @@
 
   async function handleApplyCrop() {
     const bounds = viewer.getCropBounds();
-    if (!bounds || (bounds.left === 0 && bounds.top === 0 && bounds.right === 0 && bounds.bottom === 0)) {
+    if (
+      !bounds ||
+      (bounds.left === 0 &&
+        bounds.top === 0 &&
+        bounds.right === 0 &&
+        bounds.bottom === 0)
+    ) {
       showFrameCopyToast("No crop applied.", "error");
       return;
     }
@@ -1564,7 +1585,12 @@
     if (!outputPath) return;
 
     viewer.applyCrop();
-    exportToast = { visible: true, phase: "exporting", message: "Exporting...", outputPath };
+    exportToast = {
+      visible: true,
+      phase: "exporting",
+      message: "Exporting...",
+      outputPath,
+    };
 
     try {
       if (isVideo) {
@@ -1584,10 +1610,16 @@
       } else {
         await exportCroppedImage(filePath, bounds, outputPath);
       }
-      exportToast = { visible: true, phase: "done", message: "Exported!", outputPath };
+      exportToast = {
+        visible: true,
+        phase: "done",
+        message: "Exported!",
+        outputPath,
+      };
     } catch (err) {
       console.error("Export failed:", err);
-      const message = err instanceof Error ? err.message : "Failed to export file.";
+      const message =
+        err instanceof Error ? err.message : "Failed to export file.";
       exportToast = { visible: true, phase: "error", message, outputPath };
     }
   }
@@ -1599,7 +1631,11 @@
     exportToast = { ...exportToast, visible: false };
   }
 
-  async function exportCroppedImage(filePath: string, bounds: import("$lib/core/viewer.svelte").CropBounds, outputPath: string) {
+  async function exportCroppedImage(
+    filePath: string,
+    bounds: import("$lib/core/viewer.svelte").CropBounds,
+    outputPath: string,
+  ) {
     const { readFile } = await import("@tauri-apps/plugin-fs");
     const bytes = await readFile(filePath);
     const blob = new Blob([bytes]);
@@ -1746,8 +1782,7 @@
     const target = e.target as HTMLElement;
     if (contextMenu.visible && !target.closest(".context-menu"))
       closeContextMenu();
-    if (editMenuVisible && !target.closest(".edit-menu"))
-      closeEditMenu();
+    if (editMenuVisible && !target.closest(".edit-menu")) closeEditMenu();
     if (
       tsEditMenu.visible &&
       !target.closest(".ts-edit-menu") &&
@@ -1910,7 +1945,11 @@
       role="presentation"
     >
       {#if fileSrc && !isVideo}
-        <div class="media-container" bind:this={cropContainerEl} style="position: relative; display: inline-flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;">
+        <div
+          class="media-container"
+          bind:this={cropContainerEl}
+          style="position: relative; display: inline-flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
+        >
           <img
             src={fileSrc}
             alt={fileName}
@@ -2312,7 +2351,22 @@
     updateDeletePermanently={(v) => (deletePermanently = v)}
   />
 
-  <EditMenu visible={editMenuVisible} onRotate={() => viewer.rotate()} onFlip={() => viewer.flip()} onCrop={() => viewer.startCropMode()} onApply={handleApplyCrop} cropMode={viewer.state.cropMode} brightness={brightness} onBrightnessChange={(v: number) => (brightness = v)} />
+  <EditMenu
+    visible={editMenuVisible}
+    onRotate={() => viewer.rotate()}
+    onFlip={() => viewer.flip()}
+    onCrop={() => viewer.startCropMode()}
+    onApply={handleApplyCrop}
+    cropMode={viewer.state.cropMode}
+    {brightness}
+    onBrightnessChange={(v: number) => (brightness = v)}
+    {contrast}
+    onContrastChange={(v: number) => (contrast = v)}
+    {saturation}
+    onSaturationChange={(v: number) => (saturation = v)}
+    {hue}
+    onHueChange={(v: number) => (hue = v)}
+  />
 
   <Tooltip
     {tsTooltip}
