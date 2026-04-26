@@ -2,7 +2,11 @@
   import { onMount } from "svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open, save } from "@tauri-apps/plugin-dialog";
-  import { createPlaybackActions } from "$lib/core/playback.svelte";
+  import {
+    createPlaybackActions,
+    createPlaybackUI,
+    formatTime,
+  } from "$lib/core/playback.svelte";
   import { createTimeline } from "$lib/core/timeline.svelte";
   import { createClips } from "$lib/core/clips.svelte";
   import { setupKeybinds } from "$lib/keybinds";
@@ -18,7 +22,6 @@
     CtxMenu,
     Timestamp,
     ClipBoundary,
-    ClipPair,
     MediaProperties,
     TimestampDragRange,
   } from "$lib/types";
@@ -32,8 +35,6 @@
     saveClipPrefs,
     writeTimestamps,
     eraseTimestamps,
-    writeClipBoundaries,
-    eraseClipBoundaries,
     saveResumePoint,
     eraseResumePoint,
     loadLoopMode,
@@ -49,6 +50,7 @@
     invokeOpenDirectory,
     invokeGetClipboardFilePath,
     invokeExportCroppedMedia,
+    exportCroppedImage,
   } from "$lib/services/mediaTools";
 
   import {
@@ -103,8 +105,9 @@
   });
 
   const playback = createPlaybackActions(() => videoEl);
+  const playbackUI = createPlaybackUI(() => videoEl, () => volume, setVolume);
   const timeline = createTimeline();
-  const clips = createClips();
+  const clips = createClips(() => filePath);
 
   function setMediaState(
     data: Partial<import("$lib/core/media.svelte").MediaState>,
@@ -138,7 +141,7 @@
     if (data.progress !== undefined) progress = data.progress;
     if (data.playing !== undefined) playing = data.playing;
     if (data.timestamps !== undefined) timestamps = data.timestamps;
-    if (data.clipBoundaries !== undefined) clipBoundaries = data.clipBoundaries;
+    if (data.clipBoundaries !== undefined) clips.setBoundaries(data.clipBoundaries);
     if (data.resumePoint !== undefined) resumePoint = data.resumePoint;
   }
 
@@ -167,15 +170,6 @@
   let imageNaturalHeight = $state(0);
 
   let volume = $state(1);
-  let volumeHovered = $state(false);
-  let speedHovered = $state(false);
-  let playbackSpeed = $state(1);
-  let volumeTooltipX = $state(0);
-  let volumeTooltipY = $state(0);
-  let volumeTooltipVisible = $state(false);
-  let speedTooltipX = $state(0);
-  let speedTooltipY = $state(0);
-  let speedTooltipVisible = $state(false);
   let hoverZone = $state("none");
   let dragStart = $state({ x: 0, y: 0, tx: 0, ty: 0 });
   let lastLeftClickTime = 0;
@@ -196,7 +190,6 @@
   let resumeTooltipVisible = $state(false);
   let timestamps = $state<Timestamp[]>([]);
 
-  let clipBoundaries = $state<ClipBoundary[]>([]);
   let clipOutputDir = $state("");
   let clipDeleteOriginal = $state(false);
   let clipUseCustomPath = $state(false);
@@ -217,7 +210,6 @@
     outputDir: string;
   }>({ visible: false, tone: "success", message: "", outputDir: "" });
   let clipToastTimer: ReturnType<typeof setTimeout> | undefined;
-  let clipMarkerJustDragged = $state(false);
   let mediaProps = $state<MediaProperties | null>(null);
   let mediaPropsLoading = $state(false);
   let ffprobeAvailable = $state(true);
@@ -315,10 +307,6 @@
     !viewer.state.fsControlsVisible && !tsEditMenu.visible ? "none" : panCursor,
   );
   const isGifVideo = $derived(isVideo && fileExt() === "gif");
-  const clipPairs = $derived.by(() => {
-    return clips.computePairs(clipBoundaries);
-  });
-  const clipCount = $derived(clipPairs.length);
 
   function toggleFullscreen() {
     viewer.toggleFullscreen();
@@ -339,13 +327,6 @@
   }
   const durationDisplay = $derived(formatTime(rawDurationSecs));
   const timerTooltip = $derived(timerShowRemaining ? "Remaining" : "Elapsed");
-
-  function formatTime(seconds: number): string {
-    if (!seconds || isNaN(seconds) || seconds < 0) return "0:00";
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
 
   function showFrameCopyToast(
     message: string,
@@ -437,130 +418,6 @@
     saveVolume(volume);
   }
 
-  function handleVolumeScroll(e: WheelEvent) {
-    e.preventDefault();
-    setVolume(volume + (e.deltaY > 0 ? -0.125 : 0.125));
-  }
-
-  function startVolumeDrag(e: MouseEvent) {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    const diamonds = (e.currentTarget as HTMLElement).querySelectorAll(
-      ".volume-diamond",
-    );
-
-    function dragTo(clientX: number, clientY: number) {
-      const first = diamonds[0].getBoundingClientRect();
-      const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-      const ratio = Math.max(
-        0,
-        Math.min(1, (clientX - first.left) / (last.right - first.left)),
-      );
-      setVolume(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
-      volumeTooltipX = clientX;
-      volumeTooltipY = clientY;
-      volumeTooltipVisible = true;
-    }
-
-    dragTo(e.clientX, e.clientY);
-
-    function onMouseMove(ev: MouseEvent) {
-      dragTo(ev.clientX, ev.clientY);
-    }
-    function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      volumeTooltipVisible = false;
-    }
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }
-
-  function handleVolumeDiamondHover(e: MouseEvent) {
-    volumeTooltipX = e.clientX;
-    volumeTooltipY = e.clientY;
-    volumeTooltipVisible = true;
-  }
-
-  function showVolumeOverlay() {
-    volumeHovered = true;
-  }
-
-  function handleVolumeAreaLeave() {
-    volumeTooltipVisible = false;
-    volumeHovered = false;
-  }
-
-  function setPlaybackSpeed(val: number) {
-    playbackSpeed = val;
-    if (videoEl) videoEl.playbackRate = val;
-  }
-
-  function showSpeedOverlay() {
-    speedHovered = true;
-  }
-
-  function handleSpeedAreaLeave() {
-    speedTooltipVisible = false;
-    speedHovered = false;
-  }
-
-  function handleSpeedDiamondHover(e: MouseEvent) {
-    speedTooltipX = e.clientX;
-    speedTooltipY = e.clientY;
-    speedTooltipVisible = true;
-  }
-
-  function startSpeedDrag(e: MouseEvent) {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    const diamonds = (e.currentTarget as HTMLElement).querySelectorAll(
-      ".speed-diamond",
-    );
-
-    function dragTo(clientX: number, clientY: number) {
-      const first = diamonds[0].getBoundingClientRect();
-      const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-      const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
-      const ratio = Math.max(
-        0,
-        Math.min(1, (clientX - first.left) / (last.right - first.left)),
-      );
-      const idx = Math.round(ratio * (steps.length - 1));
-      setPlaybackSpeed(steps[idx]);
-      speedTooltipX = clientX;
-      speedTooltipY = clientY;
-      speedTooltipVisible = true;
-    }
-
-    dragTo(e.clientX, e.clientY);
-
-    function onMouseMove(ev: MouseEvent) {
-      dragTo(ev.clientX, ev.clientY);
-    }
-    function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      speedTooltipVisible = false;
-    }
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }
-
-  function handleSpeedScroll(e: WheelEvent) {
-    e.preventDefault();
-    const steps = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
-    const cur = steps.reduce((a, b) =>
-      Math.abs(b - playbackSpeed) < Math.abs(a - playbackSpeed) ? b : a,
-    );
-    const idx = steps.indexOf(cur);
-    const next =
-      e.deltaY > 0 ? Math.max(0, idx - 1) : Math.min(steps.length - 1, idx + 1);
-    setPlaybackSpeed(steps[next]);
-  }
-
   function saveTimestamps() {
     writeTimestamps(filePath, timestamps);
   }
@@ -593,22 +450,8 @@
     saveTimestamps();
   }
 
-  function updateClipBoundaryTitle(id: string, title: string) {
-    clips.updateBoundaryTitle(
-      id,
-      title,
-      clipBoundaries,
-      (v) => (clipBoundaries = v),
-    );
-    saveClipBoundaries();
-  }
-
   function getTimestampById(id: string): Timestamp | undefined {
     return timeline.getTimestampById(id, timestamps);
-  }
-
-  function getClipBoundaryById(id: string): ClipBoundary | undefined {
-    return clips.getBoundaryById(id, clipBoundaries);
   }
 
   function getTitleEditorWidthCh(title: string): number {
@@ -646,7 +489,7 @@
   function openSegmentEditor(e: MouseEvent, id: string) {
     e.preventDefault();
     e.stopPropagation();
-    const marker = getClipBoundaryById(id);
+    const marker = clips.getBoundaryById(id);
     if (!marker) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     tsTooltip = { ...tsTooltip, visible: false };
@@ -671,24 +514,25 @@
     const ts = getTimestampById(id);
     if (!ts) return null;
     let boundaryId = "";
-    const existing = clipBoundaries.find(
+    const existing = clips.clipBoundaries.find(
       (m) => m.kind === kind && Math.abs(m.time - ts.time) < 0.25,
     );
     if (!existing) {
       boundaryId = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      clipBoundaries = [
-        ...clipBoundaries,
-        {
-          id: boundaryId,
-          time: ts.time,
-          kind,
-          title: ts.title || "",
-        },
-      ].sort((a, b) => a.time - b.time);
-      saveClipBoundaries();
+      clips.setBoundaries(
+        [
+          ...clips.clipBoundaries,
+          {
+            id: boundaryId,
+            time: ts.time,
+            kind,
+            title: ts.title || "",
+          },
+        ].sort((a, b) => a.time - b.time),
+      );
     } else if (!existing.title && ts.title) {
       boundaryId = existing.id;
-      updateClipBoundaryTitle(existing.id, ts.title);
+      clips.updateBoundaryTitle(existing.id, ts.title);
     } else {
       boundaryId = existing.id;
     }
@@ -713,7 +557,7 @@
     const b = getTimestampById(bId);
     if (!a || !b) return;
     const [left, right] = a.time <= b.time ? [a, b] : [b, a];
-    const next = [...clipBoundaries];
+    const next = [...clips.clipBoundaries];
     const existingStart = next.find(
       (m) => m.kind === "start" && Math.abs(m.time - left.time) < 0.25,
     );
@@ -740,8 +584,7 @@
     } else if (!existingEnd.title && right.title) {
       existingEnd.title = right.title;
     }
-    clipBoundaries = next.sort((x, y) => x.time - y.time);
-    saveClipBoundaries();
+    clips.setBoundaries(next.sort((x, y) => x.time - y.time));
     timestamps = timestamps.filter(
       (ts) => ts.id !== left.id && ts.id !== right.id,
     );
@@ -752,8 +595,7 @@
   function clearAllSegments() {
     tsTooltip = { ...tsTooltip, visible: false };
     tsEditMenu = { ...tsEditMenu, visible: false };
-    clips.clearBoundaries((v) => (clipBoundaries = v));
-    eraseClipBoundaries(filePath);
+    clips.clearBoundaries();
   }
 
   function showClipBoundaryTooltip(e: MouseEvent, marker: ClipBoundary) {
@@ -791,18 +633,6 @@
     tsTooltip = { ...tsTooltip, visible: false };
   }
 
-  function setClipBoundaryKind(id: string, kind: "start" | "end") {
-    const marker = getClipBoundaryById(id);
-    if (!marker || marker.kind === kind) return;
-    clips.setBoundaryKind(
-      id,
-      kind,
-      clipBoundaries,
-      (v) => (clipBoundaries = v),
-    );
-    saveClipBoundaries();
-  }
-
   function getActiveEditorTimestamp(): Timestamp | undefined {
     if (!tsEditMenu.visible || tsEditMenu.targetType !== "timestamp")
       return undefined;
@@ -812,7 +642,7 @@
   function getActiveEditorSegment(): ClipBoundary | undefined {
     if (!tsEditMenu.visible || tsEditMenu.targetType !== "segment")
       return undefined;
-    return getClipBoundaryById(tsEditMenu.targetId);
+    return clips.getBoundaryById(tsEditMenu.targetId);
   }
 
   function getEditorTitle(): string {
@@ -831,7 +661,7 @@
     }
     const seg = getActiveEditorSegment();
     if (seg) {
-      updateClipBoundaryTitle(seg.id, value);
+      clips.updateBoundaryTitle(seg.id, value);
     }
   }
 
@@ -843,7 +673,7 @@
     }
     const seg = getActiveEditorSegment();
     if (seg) {
-      setClipBoundaryKind(seg.id, kind);
+      clips.setBoundaryKind(seg.id, kind);
     }
   }
 
@@ -856,7 +686,7 @@
   function onEditorDeleteSegment() {
     const seg = getActiveEditorSegment();
     if (!seg) return;
-    removeClipBoundary(seg.id);
+    clips.removeClipBoundary(seg.id);
   }
 
   function getTimestampTouchTarget(
@@ -867,15 +697,6 @@
     const found = timeline.findTouchTarget(timestamps, currentTime, threshold);
     if (!found || found.id === sourceId) return null;
     return found.id;
-  }
-
-  function getBoundaryTouchTarget(
-    currentTime: number,
-    threshold: number,
-  ): string | null {
-    return (
-      clips.findTouchTarget(clipBoundaries, currentTime, threshold)?.id ?? null
-    );
   }
 
   function clearTimestampDragRange() {
@@ -935,7 +756,7 @@
         touchThreshold,
         sourceTs.id,
       );
-      tsDragHoverBoundaryId = getBoundaryTouchTarget(time, touchThreshold);
+      tsDragHoverBoundaryId = clips.findTouchTarget(time, touchThreshold)?.id ?? null;
     }
 
     function onMove(ev: MouseEvent) {
@@ -973,7 +794,7 @@
 
       const targetBoundaryId = tsDragHoverBoundaryId;
       if (moved && targetBoundaryId) {
-        const boundary = getClipBoundaryById(targetBoundaryId);
+        const boundary = clips.getBoundaryById(targetBoundaryId);
         if (boundary) {
           tsDragRange = {
             visible: true,
@@ -1034,31 +855,6 @@
     }
   }
 
-  function saveClipBoundaries() {
-    writeClipBoundaries(filePath, clipBoundaries);
-  }
-
-  function addClipBoundary(kind: "start" | "end") {
-    if (!videoEl || rawDurationSecs <= 0) return;
-
-    const time = Math.max(0, Math.min(videoEl.currentTime, rawDurationSecs));
-
-    clips.addClipBoundary(kind, time, clipBoundaries, (v) => {
-      clipBoundaries = v;
-    });
-
-    saveClipBoundaries();
-  }
-
-  function addClipBoundaryAt(kind: "start" | "end", time: number) {
-    if (rawDurationSecs <= 0) return;
-    const clamped = Math.max(0, Math.min(time, rawDurationSecs));
-    clips.addClipBoundary(kind, clamped, clipBoundaries, (v) => {
-      clipBoundaries = v;
-    });
-    saveClipBoundaries();
-  }
-
   function startClipMarkerDrag(e: MouseEvent, id: string) {
     if (e.button !== 0 || rawDurationSecs <= 0) return;
     e.preventDefault();
@@ -1079,10 +875,12 @@
         Math.min(1, (clientX - rect.left) / rect.width),
       );
       const time = ratio * rawDurationSecs;
-      clipBoundaries = clipBoundaries
-        .map((m) => (m.id === id ? { ...m, time } : m))
-        .sort((a, b) => a.time - b.time);
-      const marker = clipBoundaries.find((m) => m.id === id);
+      clips.setBoundaries(
+        clips.clipBoundaries
+          .map((m) => (m.id === id ? { ...m, time } : m))
+          .sort((a, b) => a.time - b.time),
+      );
+      const marker = clips.clipBoundaries.find((m) => m.id === id);
       if (marker) {
         tsTooltip = {
           visible: true,
@@ -1105,27 +903,15 @@
       window.removeEventListener("mouseup", onUp);
       tsTooltip = { ...tsTooltip, visible: false };
       if (moved) {
-        clipMarkerJustDragged = true;
-        saveClipBoundaries();
+        clips.clipMarkerJustDragged = true;
         setTimeout(() => {
-          clipMarkerJustDragged = false;
+          clips.clipMarkerJustDragged = false;
         }, 0);
       }
     }
 
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-  }
-
-  function removeClipBoundary(id: string) {
-    tsTooltip = { ...tsTooltip, visible: false };
-    tsEditMenu = { ...tsEditMenu, visible: false };
-
-    clips.removeClipBoundary(id, clipBoundaries, (v) => {
-      clipBoundaries = v;
-    });
-
-    saveClipBoundaries();
   }
 
   function persistClipPrefs() {
@@ -1152,8 +938,21 @@
     }, 4200);
   }
 
+  function addClipBoundary(kind: "start" | "end") {
+    if (!videoEl || rawDurationSecs <= 0) return;
+    clips.addClipBoundary(
+      kind,
+      Math.max(0, Math.min(videoEl.currentTime, rawDurationSecs)),
+    );
+  }
+
+  function addClipBoundaryAt(kind: "start" | "end", time: number) {
+    if (rawDurationSecs <= 0) return;
+    clips.addClipBoundary(kind, Math.max(0, Math.min(time, rawDurationSecs)));
+  }
+
   function sanitizeClipPairs(): { start: number; end: number }[] {
-    return clipPairs.map((p) => ({ start: p.start, end: p.end }));
+    return clips.clipPairs.map((p) => ({ start: p.start, end: p.end }));
   }
 
   function extractInvokeErrorMessage(e: unknown): string {
@@ -1171,7 +970,7 @@
   }
 
   async function runClipAction(mode: "separate" | "merge") {
-    if (!isVideo || clipCount === 0 || clipJobRunning) return;
+    if (!isVideo || clips.clipCount === 0 || clipJobRunning) return;
     clipJobRunning = true;
     clipJobLabel =
       mode === "separate" ? "Separating clips..." : "Merging clips...";
@@ -1194,8 +993,7 @@
         "success",
         result.output_dir || clipOutputDir || parentFolder(),
       );
-      clipBoundaries = [];
-      saveClipBoundaries();
+      clips.clearBoundaries();
       if (result.deleted_original) {
         const deletedPath = filePath;
         const prevList = [...fileList];
@@ -1628,56 +1426,6 @@
     exportToast = { ...exportToast, visible: false };
   }
 
-  async function exportCroppedImage(
-    filePath: string,
-    bounds: import("$lib/core/viewer.svelte").CropBounds,
-    outputPath: string,
-  ) {
-    const { readFile } = await import("@tauri-apps/plugin-fs");
-    const bytes = await readFile(filePath);
-    const blob = new Blob([bytes]);
-    const url = URL.createObjectURL(blob);
-
-    const img = new Image();
-    img.src = url;
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Failed to load image"));
-    });
-
-    URL.revokeObjectURL(url);
-
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
-    const cropX = Math.round(bounds.left * w);
-    const cropY = Math.round(bounds.top * h);
-    const cropW = Math.round(w * (1 - bounds.left - bounds.right));
-    const cropH = Math.round(h * (1 - bounds.top - bounds.bottom));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, cropW);
-    canvas.height = Math.max(1, cropH);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Could not create canvas context");
-    ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-    const ext = outputPath.split(".").pop()?.toLowerCase() || "png";
-    const mimeType =
-      ext === "jpg" || ext === "jpeg"
-        ? "image/jpeg"
-        : ext === "webp"
-          ? "image/webp"
-          : "image/png";
-
-    const outBlob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
-    });
-
-    const arrayBuffer = await outBlob.arrayBuffer();
-    const { writeFile } = await import("@tauri-apps/plugin-fs");
-    await writeFile(outputPath, new Uint8Array(arrayBuffer));
-  }
-
   function ctxConvert() {
     closeContextMenu();
   }
@@ -2008,19 +1756,19 @@
               {progress}
               currentTimeSecs={rawCurrentSecs}
               {isGifVideo}
-              {clipPairs}
-              {clipBoundaries}
+              clipPairs={clips.clipPairs}
+              clipBoundaries={clips.clipBoundaries}
               {timestamps}
               {tsDragRange}
               {resumePoint}
-              {clipMarkerJustDragged}
+              clipMarkerJustDragged={clips.clipMarkerJustDragged}
               {tsMarkerDragJustEnded}
               tsEditMenuVisible={tsEditMenu.visible}
               {startScrubbing}
               {getTimestampPct}
               {getDragRangeStyle}
               {startClipMarkerDrag}
-              {removeClipBoundary}
+              removeClipBoundary={clips.removeClipBoundary}
               {showClipBoundaryTooltip}
               {hideTsTooltip}
               {seekToTimestamp}
@@ -2042,33 +1790,33 @@
               looping={loopMode}
               {muted}
               {volume}
-              {volumeHovered}
+              volumeHovered={playbackUI.volumeHovered}
               volumeSegments={VOLUME_SEGMENTS}
               {togglePlay}
               toggleLoop={cycleLoopMode}
               {toggleMute}
-              {showVolumeOverlay}
-              {handleVolumeAreaLeave}
-              {handleVolumeScroll}
-              {startVolumeDrag}
-              {handleVolumeDiamondHover}
+              showVolumeOverlay={playbackUI.showVolumeOverlay}
+              handleVolumeAreaLeave={playbackUI.handleVolumeAreaLeave}
+              handleVolumeScroll={playbackUI.handleVolumeScroll}
+              startVolumeDrag={playbackUI.startVolumeDrag}
+              handleVolumeDiamondHover={playbackUI.handleVolumeDiamondHover}
               {setVolume}
-              {playbackSpeed}
-              {speedHovered}
-              {setPlaybackSpeed}
-              {showSpeedOverlay}
-              {handleSpeedAreaLeave}
-              {handleSpeedScroll}
-              {speedTooltipVisible}
-              {speedTooltipX}
-              {speedTooltipY}
-              {handleSpeedDiamondHover}
-              {startSpeedDrag}
+              playbackSpeed={playbackUI.playbackSpeed}
+              speedHovered={playbackUI.speedHovered}
+              setPlaybackSpeed={playbackUI.setPlaybackSpeed}
+              showSpeedOverlay={playbackUI.showSpeedOverlay}
+              handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
+              handleSpeedScroll={playbackUI.handleSpeedScroll}
+              speedTooltipVisible={playbackUI.speedTooltipVisible}
+              speedTooltipX={playbackUI.speedTooltipX}
+              speedTooltipY={playbackUI.speedTooltipY}
+              handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
+              startSpeedDrag={playbackUI.startSpeedDrag}
               {addTimestamp}
               addClipStart={() => addClipBoundary("start")}
               addClipEnd={() => addClipBoundary("end")}
               addClipEnd5s={() => addClipBoundaryAt("end", rawCurrentSecs + 5)}
-              hasMarkers={timestamps.length > 0 || clipBoundaries.length > 0}
+              hasMarkers={timestamps.length > 0 || clips.clipBoundaries.length > 0}
               deleteAllMarkers={() => {
                 clearAllTimestamps();
                 clearAllSegments();
@@ -2113,7 +1861,7 @@
     {resetZoom}
     {toggleFullscreen}
     {isVideo}
-    {clipCount}
+    clipCount={clips.clipCount}
     {triggerClipSegments}
     {clipJobRunning}
     {clipDeleteOriginal}
@@ -2183,19 +1931,19 @@
             {progress}
             currentTimeSecs={rawCurrentSecs}
             {isGifVideo}
-            {clipPairs}
-            {clipBoundaries}
+            clipPairs={clips.clipPairs}
+            clipBoundaries={clips.clipBoundaries}
             {timestamps}
             {tsDragRange}
             {resumePoint}
-            {clipMarkerJustDragged}
+            clipMarkerJustDragged={clips.clipMarkerJustDragged}
             {tsMarkerDragJustEnded}
             tsEditMenuVisible={tsEditMenu.visible}
             {startScrubbing}
             {getTimestampPct}
             {getDragRangeStyle}
             {startClipMarkerDrag}
-            {removeClipBoundary}
+            removeClipBoundary={clips.removeClipBoundary}
             {showClipBoundaryTooltip}
             {hideTsTooltip}
             {seekToTimestamp}
@@ -2217,33 +1965,33 @@
             looping={loopMode}
             {muted}
             {volume}
-            {volumeHovered}
+            volumeHovered={playbackUI.volumeHovered}
             volumeSegments={VOLUME_SEGMENTS}
             {togglePlay}
             toggleLoop={cycleLoopMode}
             {toggleMute}
-            {showVolumeOverlay}
-            {handleVolumeAreaLeave}
-            {handleVolumeScroll}
-            {startVolumeDrag}
-            {handleVolumeDiamondHover}
+            showVolumeOverlay={playbackUI.showVolumeOverlay}
+            handleVolumeAreaLeave={playbackUI.handleVolumeAreaLeave}
+            handleVolumeScroll={playbackUI.handleVolumeScroll}
+            startVolumeDrag={playbackUI.startVolumeDrag}
+            handleVolumeDiamondHover={playbackUI.handleVolumeDiamondHover}
             {setVolume}
-            {playbackSpeed}
-            {speedHovered}
-            {setPlaybackSpeed}
-            {showSpeedOverlay}
-            {handleSpeedAreaLeave}
-            {handleSpeedScroll}
-            {speedTooltipVisible}
-            {speedTooltipX}
-            {speedTooltipY}
-            {handleSpeedDiamondHover}
-            {startSpeedDrag}
+            playbackSpeed={playbackUI.playbackSpeed}
+            speedHovered={playbackUI.speedHovered}
+            setPlaybackSpeed={playbackUI.setPlaybackSpeed}
+            showSpeedOverlay={playbackUI.showSpeedOverlay}
+            handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
+            handleSpeedScroll={playbackUI.handleSpeedScroll}
+            speedTooltipVisible={playbackUI.speedTooltipVisible}
+            speedTooltipX={playbackUI.speedTooltipX}
+            speedTooltipY={playbackUI.speedTooltipY}
+            handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
+            startSpeedDrag={playbackUI.startSpeedDrag}
             {addTimestamp}
             addClipStart={() => addClipBoundary("start")}
             addClipEnd={() => addClipBoundary("end")}
             addClipEnd5s={() => addClipBoundaryAt("end", rawCurrentSecs + 5)}
-            hasMarkers={timestamps.length > 0 || clipBoundaries.length > 0}
+            hasMarkers={timestamps.length > 0 || clips.clipBoundaries.length > 0}
             deleteAllMarkers={() => {
               clearAllTimestamps();
               clearAllSegments();
@@ -2293,7 +2041,7 @@
     {contextMenu}
     {isVideo}
     {timestamps}
-    {clipBoundaries}
+    clipBoundaries={clips.clipBoundaries}
     {frameCopyToast}
     {clipToast}
     {exportToast}
@@ -2368,15 +2116,15 @@
   <Tooltip
     {tsTooltip}
     tsEditMenuVisible={tsEditMenu.visible}
-    {volumeTooltipVisible}
-    {volumeTooltipX}
-    {volumeTooltipY}
+    volumeTooltipVisible={playbackUI.volumeTooltipVisible}
+    volumeTooltipX={playbackUI.volumeTooltipX}
+    volumeTooltipY={playbackUI.volumeTooltipY}
     {muted}
     {volume}
-    {speedTooltipVisible}
-    {speedTooltipX}
-    {speedTooltipY}
-    {playbackSpeed}
+    speedTooltipVisible={playbackUI.speedTooltipVisible}
+    speedTooltipX={playbackUI.speedTooltipX}
+    speedTooltipY={playbackUI.speedTooltipY}
+    playbackSpeed={playbackUI.playbackSpeed}
     {tsEditMenu}
     editingTimestamp={getActiveEditorTimestamp()}
     editingSegment={getActiveEditorSegment()}

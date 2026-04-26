@@ -1,6 +1,56 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { MediaProperties, ClipJobResult } from "$lib/types";
 
+export async function exportCroppedImage(
+  filePath: string,
+  bounds: { left: number; top: number; right: number; bottom: number },
+  outputPath: string,
+) {
+  const { readFile } = await import("@tauri-apps/plugin-fs");
+  const bytes = await readFile(filePath);
+  const blob = new Blob([bytes]);
+  const url = URL.createObjectURL(blob);
+
+  const img = new Image();
+  img.src = url;
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to load image"));
+  });
+
+  URL.revokeObjectURL(url);
+
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const cropX = Math.round(bounds.left * w);
+  const cropY = Math.round(bounds.top * h);
+  const cropW = Math.round(w * (1 - bounds.left - bounds.right));
+  const cropH = Math.round(h * (1 - bounds.top - bounds.bottom));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, cropW);
+  canvas.height = Math.max(1, cropH);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not create canvas context");
+  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  const ext = outputPath.split(".").pop()?.toLowerCase() || "png";
+  const mimeType =
+    ext === "jpg" || ext === "jpeg"
+      ? "image/jpeg"
+      : ext === "webp"
+        ? "image/webp"
+        : "image/png";
+
+  const outBlob = await new Promise<Blob>((resolve) => {
+    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
+  });
+
+  const arrayBuffer = await outBlob.arrayBuffer();
+  const { writeFile } = await import("@tauri-apps/plugin-fs");
+  await writeFile(outputPath, new Uint8Array(arrayBuffer));
+}
+
 export async function invokeGetMediaProperties(
   path: string,
 ): Promise<MediaProperties> {
