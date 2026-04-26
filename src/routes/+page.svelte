@@ -404,6 +404,10 @@
     const wasPlaying = !videoEl.paused;
     videoEl.pause();
 
+    let rafId = 0;
+    let pendingX = 0;
+    let pending = false;
+
     function scrubTo(clientX: number) {
       const rect = bar.getBoundingClientRect();
       const ratio = Math.max(
@@ -415,19 +419,28 @@
       progress = ratio * 100;
     }
 
+    function scheduleScrub(clientX: number) {
+      pendingX = clientX;
+      if (!pending) {
+        pending = true;
+        rafId = requestAnimationFrame(() => {
+          scrubTo(pendingX);
+          pending = false;
+        });
+      }
+    }
+
     scrubTo(e.clientX);
 
-    let lastScrub = 0;
     function onMouseMove(ev: MouseEvent) {
-      const now = Date.now();
-      if (now - lastScrub < 60) return;
-      lastScrub = now;
-      scrubTo(ev.clientX);
+      scheduleScrub(ev.clientX);
     }
 
     function onMouseUp() {
+      cancelAnimationFrame(rafId);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      scrubTo(pendingX);
       if (wasPlaying) videoEl!.play();
     }
 
@@ -1557,7 +1570,7 @@
     const target = e.target as HTMLElement;
     if (contextMenu.visible && !target.closest(".context-menu"))
       closeContextMenu();
-    if (editMenuVisible && !target.closest(".edit-menu")) closeEditMenu();
+    if (editMenuVisible && e.button === 2 && !target.closest(".edit-menu")) closeEditMenu();
     if (
       tsEditMenu.visible &&
       !target.closest(".ts-edit-menu") &&

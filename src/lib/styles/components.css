@@ -631,6 +631,9 @@
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
   align-items: center;
 }
+.clip-actions .ctx-drag {
+  width: 100%;
+}
 .clip-main-btn {
   width: 100%;
   border: 0.5px solid rgba(96, 165, 250, 0.42);
@@ -821,7 +824,7 @@
 
 .ts-drop-menu {
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 14px);
   left: 50%;
   transform: translateX(-50%);
   background: #111111;
@@ -949,6 +952,9 @@
   gap: 4px;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
   align-items: center;
+}
+.edit-menu .ctx-drag {
+  width: 100%;
 }
 .edit-menu-row {
   width: 100%;

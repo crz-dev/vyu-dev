@@ -87,6 +87,37 @@
 
 {#if isVideo && clipCount > 0}
   <div class="clip-actions" transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}>
+    <div
+      class="ctx-drag"
+      onmousedown={(e) => {
+        e.preventDefault();
+        const menu = (e.currentTarget as HTMLElement).closest(".clip-actions") as HTMLElement;
+        if (!menu) return;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const rect = menu.getBoundingClientRect();
+        const startLeft = rect.left;
+        const startTop = rect.top;
+
+        function onMouseMove(ev: MouseEvent) {
+          menu.style.left = `${startLeft + ev.clientX - startX}px`;
+          menu.style.top = `${startTop + ev.clientY - startY}px`;
+          menu.style.bottom = "auto";
+          menu.style.height = "fit-content";
+          menu.style.transform = "none";
+        }
+
+        function onMouseUp() {
+          window.removeEventListener("mousemove", onMouseMove);
+          window.removeEventListener("mouseup", onMouseUp);
+        }
+
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+      }}
+    >
+      <span class="ctx-dot" /><span class="ctx-dot" /><span class="ctx-dot" />
+    </div>
     <button class="clip-main-btn" onclick={triggerClipSegments} disabled={clipJobRunning}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
         ><circle

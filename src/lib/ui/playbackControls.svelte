@@ -416,8 +416,8 @@
           onmousemove={handleSpeedDiamondHover}
           role="presentation"
         >
-          {#each [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3] as step, i}
-            {@const selectedIdx = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3].indexOf(
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
               playbackSpeed,
             )}
             {@const dist = Math.abs(i - selectedIdx)}
@@ -425,7 +425,7 @@
               class="speed-diamond"
               class:filled={dist === 0}
               class:grey={dist === 1}
-              style="--i: {8 - i}"
+              style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
             ></button>
@@ -977,8 +977,8 @@
           onmousemove={handleSpeedDiamondHover}
           role="presentation"
         >
-          {#each [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3] as step, i}
-            {@const selectedIdx = [0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3].indexOf(
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
               playbackSpeed,
             )}
             {@const dist = Math.abs(i - selectedIdx)}
@@ -986,7 +986,7 @@
               class="speed-diamond"
               class:filled={dist === 0}
               class:grey={dist === 1}
-              style="--i: {8 - i}"
+              style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
             ></button>

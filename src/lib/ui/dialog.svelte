@@ -142,6 +142,31 @@
     style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
     role="menu"
   >
+    <div
+      class="ctx-drag"
+      onmousedown={(e) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startMenuX = contextMenu.x;
+        const startMenuY = contextMenu.y;
+
+        function onMouseMove(ev: MouseEvent) {
+          contextMenu.x = startMenuX + ev.clientX - startX;
+          contextMenu.y = startMenuY + ev.clientY - startY;
+        }
+
+        function onMouseUp() {
+          window.removeEventListener("mousemove", onMouseMove);
+          window.removeEventListener("mouseup", onMouseUp);
+        }
+
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
+      }}
+    >
+      <span class="ctx-dot" /><span class="ctx-dot" /><span class="ctx-dot" />
+    </div>
     {#if !isVideo}
       <button class="ctx-item green" onclick={ctxCopyImage} role="menuitem">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
