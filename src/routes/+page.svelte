@@ -269,6 +269,16 @@
     tone: "success",
   });
   let frameCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
+  let imageCopyToast = $state<{
+    visible: boolean;
+    message: string;
+    tone: "success" | "error" | "info";
+  }>({
+    visible: false,
+    message: "",
+    tone: "success",
+  });
+  let imageCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
   let exportToast = $state<{
     visible: boolean;
     phase: "exporting" | "done" | "error";
@@ -341,6 +351,17 @@
     frameCopyToast = { visible: true, message, tone };
     frameCopyToastTimer = setTimeout(() => {
       frameCopyToast = { ...frameCopyToast, visible: false };
+    }, 2200);
+  }
+
+  function showImageCopyToast(
+    message: string,
+    tone: "success" | "error" | "info",
+  ) {
+    clearTimeout(imageCopyToastTimer);
+    imageCopyToast = { visible: true, message, tone };
+    imageCopyToastTimer = setTimeout(() => {
+      imageCopyToast = { ...imageCopyToast, visible: false };
     }, 2200);
   }
 
@@ -1297,7 +1318,10 @@
     closeContextMenu();
     try {
       await copyImageToClipboard(fileSrc);
-    } catch {}
+      showImageCopyToast("Image copied to Clipboard.", "success");
+    } catch {
+      showImageCopyToast("Failed to copy image.", "error");
+    }
   }
 
   async function ctxCopyFrame() {
@@ -2051,6 +2075,7 @@
     {timestamps}
     clipBoundaries={clips.clipBoundaries}
     {frameCopyToast}
+    {imageCopyToast}
     {clipToast}
     {exportToast}
     onOpenExportedFile={openExportedFile}

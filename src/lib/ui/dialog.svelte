@@ -7,6 +7,7 @@
     timestamps,
     clipBoundaries,
     frameCopyToast,
+    imageCopyToast,
     clipToast,
     exportToast,
     onOpenExportedFile,
@@ -63,6 +64,11 @@
     timestamps: Timestamp[];
     clipBoundaries: ClipBoundary[];
     frameCopyToast: {
+      visible: boolean;
+      message: string;
+      tone: "success" | "error" | "info";
+    };
+    imageCopyToast: {
       visible: boolean;
       message: string;
       tone: "success" | "error" | "info";
@@ -406,6 +412,18 @@
     aria-live="polite"
   >
     {frameCopyToast.message}
+  </div>
+{/if}
+
+{#if imageCopyToast.visible}
+  <div
+    class="copy-toast"
+    class:error={imageCopyToast.tone === "error"}
+    class:info={imageCopyToast.tone === "info"}
+    role="status"
+    aria-live="polite"
+  >
+    {imageCopyToast.message}
   </div>
 {/if}
 
