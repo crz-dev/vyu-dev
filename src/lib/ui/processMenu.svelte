@@ -1,22 +1,104 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { open } from "@tauri-apps/plugin-dialog";
 
   let {
     visible,
     onClose,
+    isVideo,
+    ffprobeChecked,
+    ffprobeAvailable,
+    ffmpegInstalling,
+    ffmpegInstallError,
+    installFfmpegAndWait,
+    refreshFfprobeAvailability,
   }: {
     visible: boolean;
     onClose: () => void;
+    isVideo: boolean;
+    ffprobeChecked: boolean;
+    ffprobeAvailable: boolean;
+    ffmpegInstalling: boolean;
+    ffmpegInstallError: string;
+    installFfmpegAndWait: () => void;
+    refreshFfprobeAvailability: () => Promise<void>;
   } = $props();
+
+  let convertOpen = $state(false);
+  let activeConvertTool: "format" | "preset" | null = $state(null);
+  let activeFormat = $state<string | null>(null);
+  let activePreset = $state<string | null>(null);
+  let exportLocation = $state<string | null>(null);
+
+  const videoFormats = ["MP4", "WebM", "MKV", "GIF"];
+  const imageFormats = ["PNG", "JPG", "WebP", "GIF"];
+  const formatOptions = $derived(isVideo ? videoFormats : imageFormats);
+  const presetOptions = ["Fast", "Balanced", "Quality", "Lossless"];
+
+  const canExport = $derived(
+    !!activeFormat && !!activePreset && !!exportLocation,
+  );
+  const needsFfmpeg = $derived(ffprobeChecked && !ffprobeAvailable);
+
+  $effect(() => {
+    if (!visible) {
+      convertOpen = false;
+      activeConvertTool = null;
+      activeFormat = null;
+      activePreset = null;
+      exportLocation = null;
+    }
+  });
+
+  function toggleConvert() {
+    convertOpen = !convertOpen;
+    if (!convertOpen) {
+      activeConvertTool = null;
+    }
+  }
+
+  function toggleTool(tool: "format" | "preset") {
+    if (activeConvertTool === tool) {
+      activeConvertTool = null;
+    } else {
+      activeConvertTool = tool;
+    }
+  }
+
+  async function handleLocation() {
+    const dir = await open({ directory: true });
+    if (dir) {
+      exportLocation = dir as string;
+    }
+  }
+
+  function handleExport() {
+    if (!canExport) return;
+    // Placeholder for export action
+  }
+
+  function selectFormat(fmt: string) {
+    activeFormat = activeFormat === fmt ? null : fmt;
+  }
+
+  function selectPreset(preset: string) {
+    activePreset = activePreset === preset ? null : preset;
+  }
 </script>
 
 {#if visible}
-  <div class="process-menu" transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}>
+  <div
+    class="process-menu"
+    transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
+    onclick={() => (activeConvertTool = null)}
+  >
     <div
       class="ctx-drag"
       onmousedown={(e) => {
         e.preventDefault();
-        const menu = (e.currentTarget as HTMLElement).closest(".process-menu") as HTMLElement;
+        const menu = (e.currentTarget as HTMLElement).closest(
+          ".process-menu",
+        ) as HTMLElement;
         if (!menu) return;
         const startX = e.clientX;
         const startY = e.clientY;
@@ -39,7 +121,9 @@
         window.addEventListener("mouseup", onMouseUp);
       }}
     >
-      <span class="ctx-dot"></span><span class="ctx-dot"></span><span class="ctx-dot"></span>
+      <span class="ctx-dot"></span><span class="ctx-dot"></span><span
+        class="ctx-dot"
+      ></span>
       <button
         class="ctx-close"
         onclick={(e) => {
@@ -49,14 +133,159 @@
         onmousedown={(e) => e.stopPropagation()}
         aria-label="Close"
       >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+        >
           <path d="M18 6L6 18M6 6l12 12" />
         </svg>
       </button>
     </div>
-    <div class="edit-menu-row">
-      <button class="edit-menu-btn blue">Placeholder 1</button>
-      <button class="edit-menu-btn yellow">Placeholder 2</button>
-    </div>
+
+    {#if needsFfmpeg}
+      <div
+        class="ffprobe-note process-ffmpeg-note"
+        transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+      >
+        <p class="ffprobe-title">Conversion needs FFmpeg</p>
+        <p class="ffprobe-sub">
+          To convert or compress media files, install FFmpeg. Your files stay
+          local on your device and are not uploaded anywhere.
+        </p>
+        <div class="ffprobe-actions">
+          <button
+            class="props-btn"
+            onclick={installFfmpegAndWait}
+            disabled={ffmpegInstalling}
+          >
+            {ffmpegInstalling ? "Installing FFmpeg..." : "Install FFmpeg"}
+          </button>
+          <button
+            class="props-btn props-btn-secondary"
+            onclick={async () => {
+              await refreshFfprobeAvailability();
+            }}
+            disabled={ffmpegInstalling}
+          >
+            Retry detection
+          </button>
+          {#if ffmpegInstalling}
+            <div class="ffprobe-progress"><span></span></div>
+          {/if}
+        </div>
+        {#if ffmpegInstallError}
+          <p class="ffprobe-error">{ffmpegInstallError}</p>
+        {/if}
+      </div>
+    {:else}
+      <div class="edit-menu-row">
+        <button
+          class="edit-menu-btn blue"
+          class:active={convertOpen}
+          onclick={toggleConvert}
+        >
+          Convert
+        </button>
+        <button class="edit-menu-btn yellow">Compress</button>
+      </div>
+
+      {#if convertOpen}
+        <div
+          class="edit-menu-row"
+          transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+        >
+          <button
+            class="edit-menu-btn"
+            class:grey={!activeFormat}
+            class:blue={!!activeFormat}
+            onclick={(e) => {
+              e.stopPropagation();
+              toggleTool("format");
+            }}
+          >
+            Format
+          </button>
+          <button
+            class="edit-menu-btn"
+            class:grey={!activePreset}
+            class:blue={!!activePreset}
+            onclick={(e) => {
+              e.stopPropagation();
+              toggleTool("preset");
+            }}
+          >
+            Preset
+          </button>
+          <button
+            class="edit-menu-btn"
+            class:grey={!exportLocation}
+            class:yellow={!!exportLocation}
+            onclick={() => {
+              activeConvertTool = null;
+              handleLocation();
+            }}
+          >
+            Location
+          </button>
+          <button
+            class="edit-menu-btn"
+            class:grey={!canExport}
+            class:green={canExport}
+            disabled={!canExport}
+            onclick={() => {
+              activeConvertTool = null;
+              handleExport();
+            }}
+          >
+            Export
+          </button>
+        </div>
+
+        {#if activeConvertTool === "format"}
+          <div
+            class="edit-menu-row"
+            transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+          >
+            {#each formatOptions as opt}
+              <button
+                class="edit-menu-btn white"
+                class:inactive={activeFormat !== null && activeFormat !== opt}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  selectFormat(opt);
+                }}
+              >
+                {opt}
+              </button>
+            {/each}
+          </div>
+        {/if}
+
+        {#if activeConvertTool === "preset"}
+          <div
+            class="edit-menu-row"
+            transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+          >
+            {#each presetOptions as opt}
+              <button
+                class="edit-menu-btn white"
+                class:inactive={activePreset !== null && activePreset !== opt}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  selectPreset(opt);
+                }}
+              >
+                {opt}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      {/if}
+    {/if}
   </div>
 {/if}

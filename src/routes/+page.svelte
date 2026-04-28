@@ -1232,7 +1232,11 @@
 
   const configuredKeydown = setupKeybinds({
     areDialogsOpen: () =>
-      contextMenu.visible || deleteConfirm || propertiesOpen || editMenuVisible || processMenuVisible,
+      contextMenu.visible ||
+      deleteConfirm ||
+      propertiesOpen ||
+      editMenuVisible ||
+      processMenuVisible,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -1295,6 +1299,9 @@
   function openProcessMenu() {
     closeContextMenu();
     processMenuVisible = true;
+    if (!ffprobeChecked) {
+      void refreshFfprobeAvailability();
+    }
   }
 
   function closeProcessMenu() {
@@ -1582,8 +1589,14 @@
     const target = e.target as HTMLElement;
     if (contextMenu.visible && !target.closest(".context-menu"))
       closeContextMenu();
-    if (editMenuVisible && e.button === 2 && !target.closest(".edit-menu")) closeEditMenu();
-    if (processMenuVisible && e.button === 2 && !target.closest(".process-menu")) closeProcessMenu();
+    if (editMenuVisible && e.button === 2 && !target.closest(".edit-menu"))
+      closeEditMenu();
+    if (
+      processMenuVisible &&
+      e.button === 2 &&
+      !target.closest(".process-menu")
+    )
+      closeProcessMenu();
     if (
       tsEditMenu.visible &&
       !target.closest(".ts-edit-menu") &&
@@ -2177,6 +2190,13 @@
   <ProcessMenu
     visible={processMenuVisible}
     onClose={closeProcessMenu}
+    {isVideo}
+    {ffprobeChecked}
+    {ffprobeAvailable}
+    {ffmpegInstalling}
+    {ffmpegInstallError}
+    {installFfmpegAndWait}
+    {refreshFfprobeAvailability}
   />
 
   <Tooltip

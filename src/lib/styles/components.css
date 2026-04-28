@@ -976,6 +976,10 @@
 .process-menu .ctx-drag {
   width: 100%;
 }
+.process-ffmpeg-note {
+  width: 100%;
+  box-sizing: border-box;
+}
 .edit-menu-row {
   width: 100%;
   display: flex;
@@ -1043,6 +1047,20 @@
 .edit-menu-btn.green:hover {
   background: rgba(34, 197, 94, 0.3);
 }
+.edit-menu-btn.grey {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #999999;
+  opacity: 1;
+}
+.edit-menu-btn.grey:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.edit-menu-btn.grey.active {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #cccccc;
+}
 .edit-menu-btn.white {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.35);
@@ -1051,6 +1069,13 @@
 }
 .edit-menu-btn.white:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+.edit-menu-btn.white.inactive {
+  opacity: 0.35;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #888888;
+  cursor: default;
 }
 
 .crop-actions {
@@ -1209,7 +1234,9 @@
   pointer-events: auto;
   cursor: pointer;
   z-index: 3;
-  transition: opacity 0.2s ease, transform 0.15s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.15s ease;
 }
 
 .color-slider-track:hover .color-slider-marker {
