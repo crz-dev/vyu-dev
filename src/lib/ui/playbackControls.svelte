@@ -352,6 +352,7 @@
         data-tooltip="Playback speed"
         aria-label="playback speed"
         style="color: #ffffff;"
+        onclick={() => setPlaybackSpeed(1)}
       >
         {#if playbackSpeed < 1}
           <svg
@@ -919,6 +920,7 @@
         data-tooltip="Playback speed"
         aria-label="playback speed"
         style="color: #ffffff;"
+        onclick={() => setPlaybackSpeed(1)}
       >
         {#if playbackSpeed < 1}
           <svg

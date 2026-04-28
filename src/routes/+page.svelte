@@ -408,7 +408,7 @@
     videoEl.pause();
 
     let rafId = 0;
-    let pendingX = 0;
+    let pendingX = e.clientX;
     let pending = false;
 
     function scrubTo(clientX: number) {
