@@ -133,3 +133,17 @@ export async function invokeExportCroppedMedia(
     height,
   });
 }
+
+export async function invokeConvertMedia(
+  path: string,
+  outputDir: string,
+  format: string,
+  preset: string,
+): Promise<string> {
+  return invoke("convert_media", {
+    path,
+    outputDir,
+    format,
+    preset,
+  });
+}

@@ -1488,6 +1488,10 @@
     exportToast = { ...exportToast, visible: false };
   }
 
+  async function openConvertedFile(path: string) {
+    await loadFile(path);
+  }
+
   function ctxProcess() {
     openProcessMenu();
   }
@@ -2191,12 +2195,16 @@
     visible={processMenuVisible}
     onClose={closeProcessMenu}
     {isVideo}
+    {filePath}
+    {fileName}
     {ffprobeChecked}
     {ffprobeAvailable}
     {ffmpegInstalling}
     {ffmpegInstallError}
     {installFfmpegAndWait}
     {refreshFfprobeAvailability}
+    {openConvertedFile}
+    showInExplorer={invokeShowInExplorer}
   />
 
   <Tooltip

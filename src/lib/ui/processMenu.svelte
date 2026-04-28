@@ -1,27 +1,36 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { open } from "@tauri-apps/plugin-dialog";
+  import { invokeConvertMedia } from "$lib/services/mediaTools";
 
   let {
     visible,
     onClose,
     isVideo,
+    filePath,
+    fileName,
     ffprobeChecked,
     ffprobeAvailable,
     ffmpegInstalling,
     ffmpegInstallError,
     installFfmpegAndWait,
     refreshFfprobeAvailability,
+    openConvertedFile,
+    showInExplorer,
   }: {
     visible: boolean;
     onClose: () => void;
     isVideo: boolean;
+    filePath: string;
+    fileName: string;
     ffprobeChecked: boolean;
     ffprobeAvailable: boolean;
     ffmpegInstalling: boolean;
     ffmpegInstallError: string;
     installFfmpegAndWait: () => void;
     refreshFfprobeAvailability: () => Promise<void>;
+    openConvertedFile: (path: string) => Promise<void>;
+    showInExplorer: (path: string) => Promise<void>;
   } = $props();
 
   let convertOpen = $state(false);
@@ -29,6 +38,9 @@
   let activeFormat = $state<string | null>(null);
   let activePreset = $state<string | null>(null);
   let exportLocation = $state<string | null>(null);
+  let converting = $state(false);
+  let convertError = $state("");
+  let convertOutputPath = $state<string | null>(null);
 
   const videoFormats = ["MP4", "WebM", "MKV", "GIF"];
   const imageFormats = ["PNG", "JPG", "WebP", "GIF"];
@@ -36,9 +48,16 @@
   const presetOptions = ["Fast", "Balanced", "Quality", "Lossless"];
 
   const canExport = $derived(
-    !!activeFormat && !!activePreset && !!exportLocation,
+    !!activeFormat && !!activePreset && !!exportLocation && !converting,
   );
   const needsFfmpeg = $derived(ffprobeChecked && !ffprobeAvailable);
+
+  const outputFolder = $derived.by(() => {
+    if (!convertOutputPath) return null;
+    const sep = convertOutputPath.includes("\\") ? "\\" : "/";
+    const idx = convertOutputPath.lastIndexOf(sep);
+    return idx > 0 ? convertOutputPath.slice(0, idx) : convertOutputPath;
+  });
 
   $effect(() => {
     if (!visible) {
@@ -47,6 +66,9 @@
       activeFormat = null;
       activePreset = null;
       exportLocation = null;
+      converting = false;
+      convertError = "";
+      convertOutputPath = null;
     }
   });
 
@@ -72,9 +94,24 @@
     }
   }
 
-  function handleExport() {
-    if (!canExport) return;
-    // Placeholder for export action
+  async function handleExport() {
+    if (!canExport || !activeFormat || !activePreset || !exportLocation) return;
+    converting = true;
+    convertError = "";
+    convertOutputPath = null;
+    try {
+      const output = await invokeConvertMedia(
+        filePath,
+        exportLocation,
+        activeFormat.toLowerCase(),
+        activePreset,
+      );
+      convertOutputPath = output;
+    } catch (err) {
+      convertError = err instanceof Error ? err.message : String(err);
+    } finally {
+      converting = false;
+    }
   }
 
   function selectFormat(fmt: string) {
@@ -242,7 +279,7 @@
               handleExport();
             }}
           >
-            Export
+            {converting ? "Converting..." : "Export"}
           </button>
         </div>
 
@@ -283,6 +320,61 @@
                 {opt}
               </button>
             {/each}
+          </div>
+        {/if}
+
+        {#if converting}
+          <div class="convert-progress" transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}>
+            <span></span>
+          </div>
+        {/if}
+
+        {#if convertError}
+          <p
+            class="ffprobe-error"
+            style="margin: 0; text-align: center;"
+            transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
+          >
+            {convertError}
+          </p>
+        {/if}
+
+        {#if convertOutputPath && outputFolder}
+          <div
+            class="convert-success-row"
+            transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
+          >
+            <span class="convert-success-text">Saved to {outputFolder}</span>
+            <div class="convert-success-actions">
+              <button
+                class="convert-success-btn yellow"
+                onclick={() => {
+                  if (convertOutputPath) showInExplorer(convertOutputPath);
+                }}
+                aria-label="Show in explorer"
+                title="Show in explorer"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  ><path
+                    d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /></svg
+                >
+              </button>
+              <button
+                class="convert-success-btn green"
+                onclick={() => {
+                  if (convertOutputPath) openConvertedFile(convertOutputPath);
+                }}
+                aria-label="Open in Vyu"
+                title="Open in Vyu"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </button>
+            </div>
           </div>
         {/if}
       {/if}

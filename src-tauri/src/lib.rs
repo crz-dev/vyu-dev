@@ -471,6 +471,7 @@ pub fn run() {
             rename_file,
             get_clipboard_file_path,
             export_cropped_media,
+            convert_media,
         ])
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();
@@ -513,6 +514,143 @@ fn open_directory(path: String) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     { Command::new("xdg-open").arg(dir).spawn().map_err(|e| e.to_string())?; }
     Ok(())
+}
+
+#[tauri::command]
+fn convert_media(
+    path: String,
+    output_dir: String,
+    format: String,
+    preset: String,
+) -> Result<String, String> {
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Err("Source file does not exist".into());
+    }
+
+    let out_dir = PathBuf::from(&output_dir);
+    if !out_dir.exists() {
+        fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
+    }
+
+    let base_name = input.file_stem().and_then(|s| s.to_str()).unwrap_or("output").to_string();
+    let ext = format.to_lowercase();
+    let out_name = format!("{}_converted.{}", base_name, ext);
+    let output_path = unique_path(out_dir.join(&out_name));
+
+    let mut args: Vec<String> = vec![
+        "-y".into(),
+        "-hide_banner".into(),
+        "-loglevel".into(),
+        "error".into(),
+        "-i".into(),
+        input.to_string_lossy().to_string(),
+    ];
+
+    match ext.as_str() {
+        "mp4" => {
+            args.push("-c:v".into());
+            args.push("libx264".into());
+            args.push("-c:a".into());
+            args.push("aac".into());
+            args.push("-movflags".into());
+            args.push("+faststart".into());
+        }
+        "webm" => {
+            args.push("-c:v".into());
+            args.push("libvpx-vp9".into());
+            args.push("-c:a".into());
+            args.push("libopus".into());
+        }
+        "mkv" => {
+            args.push("-c:v".into());
+            args.push("libx264".into());
+            args.push("-c:a".into());
+            args.push("aac".into());
+        }
+        "gif" => {
+            args.push("-vf".into());
+            args.push("fps=30,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into());
+            args.push("-loop".into());
+            args.push("0".into());
+        }
+        "png" => {
+            args.push("-c:v".into());
+            args.push("png".into());
+        }
+        "jpg" | "jpeg" => {
+            args.push("-q:v".into());
+            args.push("2".into());
+        }
+        "webp" => {
+            args.push("-c:v".into());
+            args.push("libwebp".into());
+        }
+        _ => {}
+    }
+
+    if ext != "gif" && ext != "png" && ext != "jpg" && ext != "jpeg" && ext != "webp" {
+        match preset.as_str() {
+            "Fast" => {
+                args.push("-preset".into());
+                args.push("fast".into());
+                args.push("-crf".into());
+                args.push("28".into());
+            }
+            "Balanced" => {
+                args.push("-preset".into());
+                args.push("medium".into());
+                args.push("-crf".into());
+                args.push("23".into());
+            }
+            "Quality" => {
+                args.push("-preset".into());
+                args.push("slow".into());
+                args.push("-crf".into());
+                args.push("18".into());
+            }
+            "Lossless" => {
+                args.push("-preset".into());
+                args.push("veryslow".into());
+                args.push("-crf".into());
+                args.push("0".into());
+            }
+            _ => {}
+        }
+    } else if ext == "webp" {
+        match preset.as_str() {
+            "Fast" => {
+                args.push("-quality".into());
+                args.push("50".into());
+            }
+            "Balanced" => {
+                args.push("-quality".into());
+                args.push("75".into());
+            }
+            "Quality" => {
+                args.push("-quality".into());
+                args.push("90".into());
+            }
+            "Lossless" => {
+                args.push("-lossless".into());
+                args.push("1".into());
+            }
+            _ => {}
+        }
+    }
+
+    args.push(output_path.to_string_lossy().to_string());
+
+    let output = Command::new("ffmpeg")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+
+    if output.status.success() {
+        Ok(output_path.to_string_lossy().to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
 }
 
 #[tauri::command]
