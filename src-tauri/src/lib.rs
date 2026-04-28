@@ -1,4 +1,5 @@
 use std::fs;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -472,6 +473,7 @@ pub fn run() {
             get_clipboard_file_path,
             export_cropped_media,
             convert_media,
+            compress_media,
         ])
         .setup(|app| {
             let args: Vec<String> = std::env::args().collect();
@@ -651,6 +653,96 @@ fn convert_media(
     } else {
         Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
     }
+}
+
+fn add_dir_to_zip(
+    zip: &mut zip::ZipWriter<std::fs::File>,
+    base: &Path,
+    current: &Path,
+    options: zip::write::FileOptions<()>,
+) -> Result<(), String> {
+    for entry in fs::read_dir(current).map_err(|e| format!("Read dir error: {e}"))? {
+        let entry = entry.map_err(|e| format!("Dir entry error: {e}"))?;
+        let path = entry.path();
+        let rel = path.strip_prefix(base).map_err(|e| format!("Strip prefix error: {e}"))?;
+        let name = rel.to_string_lossy().replace('\\', "/");
+        if path.is_file() {
+            zip.start_file(name, options)
+                .map_err(|e| format!("Zip start file error: {e}"))?;
+            let mut file = fs::File::open(&path).map_err(|e| format!("Open file error: {e}"))?;
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf).map_err(|e| format!("Read file error: {e}"))?;
+            zip.write_all(&buf).map_err(|e| format!("Zip write error: {e}"))?;
+        } else if path.is_dir() {
+            zip.add_directory(name + "/", options)
+                .map_err(|e| format!("Zip add dir error: {e}"))?;
+            add_dir_to_zip(zip, base, &path, options)?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn compress_media(
+    path: String,
+    output_dir: String,
+    target: String,
+    preset: String,
+) -> Result<String, String> {
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Err("Source file does not exist".into());
+    }
+
+    let out_dir = PathBuf::from(&output_dir);
+    if !out_dir.exists() {
+        fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
+    }
+
+    let compression_level: i64 = match preset.as_str() {
+        "Fast" => 1,
+        "Balanced" => 5,
+        "Quality" => 8,
+        "Lossless" => 9,
+        _ => 5,
+    };
+
+    let (source_path, zip_name) = if target == "folder" {
+        let parent = input.parent().unwrap_or(&input).to_path_buf();
+        let name = parent.file_name().and_then(|s| s.to_str()).unwrap_or("archive").to_string();
+        (parent, format!("{name}.zip"))
+    } else {
+        let name = input.file_stem().and_then(|s| s.to_str()).unwrap_or("archive").to_string();
+        (input.clone(), format!("{name}.zip"))
+    };
+
+    let zip_path = unique_path(out_dir.join(&zip_name));
+    let file = fs::File::create(&zip_path).map_err(|e| format!("Failed to create zip file: {e}"))?;
+    let mut zip = zip::ZipWriter::new(file);
+
+    let options = zip::write::FileOptions::<()>::default()
+        .compression_method(zip::CompressionMethod::Deflated)
+        .compression_level(Some(compression_level));
+
+    if source_path.is_file() {
+        let name = source_path.file_name().and_then(|s| s.to_str()).unwrap_or("file");
+        zip.start_file(name, options)
+            .map_err(|e| format!("Zip start file error: {e}"))?;
+        let mut f = fs::File::open(&source_path).map_err(|e| format!("Open file error: {e}"))?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf).map_err(|e| format!("Read file error: {e}"))?;
+        zip.write_all(&buf).map_err(|e| format!("Zip write error: {e}"))?;
+    } else {
+        let name = source_path.file_name().and_then(|s| s.to_str()).unwrap_or("archive").to_string();
+        if name != "." {
+            zip.add_directory(name.clone() + "/", options)
+                .map_err(|e| format!("Zip add dir error: {e}"))?;
+        }
+        add_dir_to_zip(&mut zip, &source_path, &source_path, options)?;
+    }
+
+    zip.finish().map_err(|e| format!("Failed to finish zip: {e}"))?;
+    Ok(zip_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]

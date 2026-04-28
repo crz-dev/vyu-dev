@@ -147,3 +147,17 @@ export async function invokeConvertMedia(
     preset,
   });
 }
+
+export async function invokeCompressMedia(
+  path: string,
+  outputDir: string,
+  target: string,
+  preset: string,
+): Promise<string> {
+  return invoke("compress_media", {
+    path,
+    outputDir,
+    target,
+    preset,
+  });
+}

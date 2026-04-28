@@ -64,8 +64,11 @@ export function createMedia(
   onReset: () => void,
 ) {
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
+  let finishLoadingCalled = false;
 
   function finishLoading(set: (data: Partial<MediaState>) => void) {
+    if (finishLoadingCalled) return;
+    finishLoadingCalled = true;
     clearTimeout(loadingTimer);
     loadingTimer = setTimeout(() => {
       set({ loadingFadingOut: true });
@@ -131,6 +134,7 @@ export function createMedia(
     setFileList: (list: string[], index: number) => void,
   ) {
     clearTimeout(loadingTimer);
+    finishLoadingCalled = false;
     set({ isLoadingFile: true, loadingFadingOut: false });
     await displayFile(path, set);
     try {
@@ -164,6 +168,7 @@ export function createMedia(
 
   function closeFile(set: (data: Partial<MediaState>) => void) {
     clearTimeout(loadingTimer);
+    finishLoadingCalled = false;
     onReset();
     set({
       filePath: "",
