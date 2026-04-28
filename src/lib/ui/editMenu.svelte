@@ -17,6 +17,7 @@
     onSaturationChange,
     hue = 0,
     onHueChange,
+    onClose,
   }: {
     visible: boolean;
     onRotate: () => void;
@@ -32,6 +33,7 @@
     onSaturationChange?: (value: number) => void;
     hue?: number;
     onHueChange?: (value: number) => void;
+    onClose: () => void;
   } = $props();
 
   let colorRowOpen = $state(false);
@@ -260,6 +262,19 @@
       }}
     >
       <span class="ctx-dot" /><span class="ctx-dot" /><span class="ctx-dot" />
+      <button
+        class="ctx-close"
+        onclick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        onmousedown={(e) => e.stopPropagation()}
+        aria-label="Close"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
     </div>
     <div class="edit-menu-row">
       <button

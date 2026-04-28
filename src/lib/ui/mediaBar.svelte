@@ -1,6 +1,8 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
 
+  let dismissed = $state(false);
+
   let {
     fileListLength,
     currentIndex,
@@ -48,6 +50,10 @@
     toggleClipMergeSegments: () => void;
     clipJobLabel: string;
   } = $props();
+
+  $effect(() => {
+    if (clipCount > 0) dismissed = false;
+  });
 </script>
 
 <div class="bottombar">
@@ -85,7 +91,7 @@
   </div>
 </div>
 
-{#if isVideo && clipCount > 0}
+{#if isVideo && clipCount > 0 && !dismissed}
   <div class="clip-actions" transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}>
     <div
       class="ctx-drag"
@@ -117,6 +123,19 @@
       }}
     >
       <span class="ctx-dot" /><span class="ctx-dot" /><span class="ctx-dot" />
+      <button
+        class="ctx-close"
+        onclick={(e) => {
+          e.stopPropagation();
+          dismissed = true;
+        }}
+        onmousedown={(e) => e.stopPropagation()}
+        aria-label="Close"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
     </div>
     <button class="clip-main-btn" onclick={triggerClipSegments} disabled={clipJobRunning}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none"

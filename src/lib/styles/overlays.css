@@ -18,12 +18,13 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 4px 0 4px;
+  padding: 6px 22px 6px 4px;
   cursor: grab;
   user-select: none;
   border-radius: 6px;
   transition: background 0.12s;
   margin-bottom: 2px;
+  position: relative;
 }
 .ctx-drag:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -36,6 +37,31 @@
   height: 3px;
   border-radius: 50%;
   background: #555;
+}
+.ctx-close {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: #666;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.12s, background 0.12s;
+  z-index: 1;
+}
+.ctx-close:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
 }
 .ctx-item {
   display: flex;

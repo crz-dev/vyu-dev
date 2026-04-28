@@ -22,7 +22,7 @@
     ctxShowInExplorer,
     ctxProperties,
     ctxEdit,
-    ctxConvert,
+    ctxProcess,
     ctxDelete,
     ctxClearMarkers,
     clipDeleteConfirm,
@@ -58,6 +58,7 @@
     closeProperties,
     updateDeleteNoAsk,
     updateDeletePermanently,
+    onClose,
   }: {
     contextMenu: CtxMenu;
     isVideo: boolean;
@@ -97,7 +98,7 @@
     ctxShowInExplorer: () => void;
     ctxProperties: () => void;
     ctxEdit: () => void;
-    ctxConvert: () => void;
+    ctxProcess: () => void;
     ctxClearMarkers: () => void;
     ctxDelete: () => void;
     clipDeleteConfirm: { visible: boolean; mode: "separate" | "merge" | null };
@@ -133,6 +134,7 @@
     closeProperties: () => void;
     updateDeleteNoAsk: (v: boolean) => void;
     updateDeletePermanently: (v: boolean) => void;
+    onClose: () => void;
   } = $props();
 </script>
 
@@ -166,6 +168,19 @@
       }}
     >
       <span class="ctx-dot" /><span class="ctx-dot" /><span class="ctx-dot" />
+      <button
+        class="ctx-close"
+        onclick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        onmousedown={(e) => e.stopPropagation()}
+        aria-label="Close"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
     </div>
     {#if !isVideo}
       <button class="ctx-item green" onclick={ctxCopyImage} role="menuitem">
@@ -216,7 +231,7 @@
         >
         Edit
       </button>
-      <button class="ctx-item blue" onclick={ctxConvert} role="menuitem">
+      <button class="ctx-item blue" onclick={ctxProcess} role="menuitem">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
@@ -243,7 +258,7 @@
             stroke-linejoin="round"
           /></svg
         >
-        Convert
+        Process
       </button>
       <div class="ctx-sep"></div>
       <button class="ctx-item yellow" onclick={ctxShowInExplorer} role="menuitem">
@@ -338,7 +353,7 @@
         >
         Edit
       </button>
-      <button class="ctx-item blue" onclick={ctxConvert} role="menuitem">
+      <button class="ctx-item blue" onclick={ctxProcess} role="menuitem">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
@@ -365,7 +380,7 @@
             stroke-linejoin="round"
           /></svg
         >
-        Convert
+        Process
       </button>
       <div class="ctx-sep"></div>
       <button class="ctx-item yellow" onclick={ctxShowInExplorer} role="menuitem">

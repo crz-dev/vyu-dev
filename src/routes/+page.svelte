@@ -82,6 +82,7 @@
   import Dialog from "$lib/ui/dialog.svelte";
   import Tooltip from "$lib/ui/tooltip.svelte";
   import EditMenu from "$lib/ui/editMenu.svelte";
+  import ProcessMenu from "$lib/ui/processMenu.svelte";
   import CropOverlay from "$lib/ui/cropOverlay.svelte";
 
   let filePath = $state("");
@@ -186,6 +187,7 @@
   let deleteNoAsk = $state(false);
   let propertiesOpen = $state(false);
   let editMenuVisible = $state(false);
+  let processMenuVisible = $state(false);
   let brightness = $state(1);
   let contrast = $state(1);
   let saturation = $state(1);
@@ -1230,12 +1232,13 @@
 
   const configuredKeydown = setupKeybinds({
     areDialogsOpen: () =>
-      contextMenu.visible || deleteConfirm || propertiesOpen || editMenuVisible,
+      contextMenu.visible || deleteConfirm || propertiesOpen || editMenuVisible || processMenuVisible,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
       propertiesOpen = false;
       editMenuVisible = false;
+      processMenuVisible = false;
     },
     navigateToEdge,
     navigate,
@@ -1287,6 +1290,15 @@
 
   function closeEditMenu() {
     editMenuVisible = false;
+  }
+
+  function openProcessMenu() {
+    closeContextMenu();
+    processMenuVisible = true;
+  }
+
+  function closeProcessMenu() {
+    processMenuVisible = false;
   }
 
   function fileExt(): string {
@@ -1469,8 +1481,8 @@
     exportToast = { ...exportToast, visible: false };
   }
 
-  function ctxConvert() {
-    closeContextMenu();
+  function ctxProcess() {
+    openProcessMenu();
   }
 
   function ctxProperties() {
@@ -1571,6 +1583,7 @@
     if (contextMenu.visible && !target.closest(".context-menu"))
       closeContextMenu();
     if (editMenuVisible && e.button === 2 && !target.closest(".edit-menu")) closeEditMenu();
+    if (processMenuVisible && e.button === 2 && !target.closest(".process-menu")) closeProcessMenu();
     if (
       tsEditMenu.visible &&
       !target.closest(".ts-edit-menu") &&
@@ -2101,7 +2114,7 @@
     {ctxRotate}
     {ctxFlip}
     {ctxEdit}
-    {ctxConvert}
+    {ctxProcess}
     {ctxShowInExplorer}
     {ctxProperties}
     {ctxDelete}
@@ -2140,6 +2153,7 @@
     closeProperties={() => (propertiesOpen = false)}
     updateDeleteNoAsk={(v) => (deleteNoAsk = v)}
     updateDeletePermanently={(v) => (deletePermanently = v)}
+    onClose={closeContextMenu}
   />
 
   <EditMenu
@@ -2157,6 +2171,12 @@
     onSaturationChange={(v: number) => (saturation = v)}
     {hue}
     onHueChange={(v: number) => (hue = v)}
+    onClose={closeEditMenu}
+  />
+
+  <ProcessMenu
+    visible={processMenuVisible}
+    onClose={closeProcessMenu}
   />
 
   <Tooltip
