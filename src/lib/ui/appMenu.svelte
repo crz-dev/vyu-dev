@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invokeRenameFile } from "$lib/services/mediaTools";
+  import AppDropdownMenu from "./appDropdownMenu.svelte";
 
   let {
     fileName,
@@ -14,6 +15,9 @@
     minimizeWindow,
     maximizeWindow,
     closeWindow,
+    dropdownVisible,
+    onToggleDropdown,
+    onCloseDropdown,
   }: {
     fileName: string;
     fileSrc: string;
@@ -27,6 +31,9 @@
     minimizeWindow: () => void;
     maximizeWindow: () => void;
     closeWindow: () => void;
+    dropdownVisible: boolean;
+    onToggleDropdown: () => void;
+    onCloseDropdown: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -66,7 +73,17 @@
 </script>
 
 <div class="topbar" onmousedown={startDrag} role="toolbar" tabindex="-1">
-  <span class="app-name">vyu</span>
+  <div class="app-dropdown-anchor">
+    <button
+      class="app-name app-dropdown-toggle"
+      class:active={dropdownVisible}
+      onclick={onToggleDropdown}
+      aria-label="Open app menu"
+    >
+      vyu
+    </button>
+    <AppDropdownMenu visible={dropdownVisible} onClose={onCloseDropdown} />
+  </div>
   <span class="divider">/</span>
   {#if editing}
     <input

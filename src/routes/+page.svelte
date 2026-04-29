@@ -197,6 +197,7 @@
   let editMenuVisible = $state(false);
   let processMenuVisible = $state(false);
   let slideshowMenuVisible = $state(false);
+  let appDropdownVisible = $state(false);
   let brightness = $state(1);
   let contrast = $state(1);
   let saturation = $state(1);
@@ -1257,7 +1258,8 @@
       propertiesOpen ||
       editMenuVisible ||
       processMenuVisible ||
-      slideshowMenuVisible,
+      slideshowMenuVisible ||
+      appDropdownVisible,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -1265,6 +1267,7 @@
       editMenuVisible = false;
       processMenuVisible = false;
       slideshowMenuVisible = false;
+      appDropdownVisible = false;
     },
     navigateToEdge,
     navigate,
@@ -1666,6 +1669,13 @@
     ) {
       closeTimestampEditor();
     }
+    if (
+      appDropdownVisible &&
+      !target.closest(".app-dropdown-menu") &&
+      !target.closest(".app-dropdown-toggle")
+    ) {
+      appDropdownVisible = false;
+    }
   }
 
   onMount(() => {
@@ -1788,6 +1798,9 @@
     {minimizeWindow}
     {maximizeWindow}
     {closeWindow}
+    dropdownVisible={appDropdownVisible}
+    onToggleDropdown={() => (appDropdownVisible = !appDropdownVisible)}
+    onCloseDropdown={() => (appDropdownVisible = false)}
   />
 
   <div class="content">
