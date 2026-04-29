@@ -95,7 +95,7 @@
       />
     </div>
     <span
-      class="file-count tooltip-above-shift-right"
+      class="file-count tooltip-above"
       data-tooltip="File position"
       >{fileListLength > 0
         ? `${currentIndex + 1} / ${fileListLength}`

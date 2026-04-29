@@ -820,10 +820,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 0 4px;
   border-radius: 3px;
   transition: color 0.2s;
   line-height: 0;
+  height: 36px;
 }
 .slideshow-btn:hover {
   color: #888888;

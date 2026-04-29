@@ -25,6 +25,14 @@ export function showFloatingTooltip(
   tip.style.left = `${anchorRect.left}px`;
   tip.style.top = `${anchorRect.bottom + 6}px`;
   tip.style.opacity = "1";
+
+  // Center horizontally under anchor once rendered
+  requestAnimationFrame(() => {
+    if (!tip) return;
+    const tipRect = tip.getBoundingClientRect();
+    const centeredLeft = anchorRect.left + anchorRect.width / 2 - tipRect.width / 2;
+    tip.style.left = `${centeredLeft}px`;
+  });
 }
 
 export function hideFloatingTooltip(id: string): void {
