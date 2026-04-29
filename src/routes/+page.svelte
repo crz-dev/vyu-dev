@@ -75,6 +75,7 @@
   import { getParentFolder, getFileExt } from "$lib/services/files";
   import { createMedia } from "$lib/core/media.svelte";
   import { viewer } from "$lib/core/viewer.svelte";
+  import { slideshow } from "$lib/core/slideshow.svelte";
   import AppMenu from "$lib/ui/appMenu.svelte";
   import MediaBar from "$lib/ui/mediaBar.svelte";
   import TimelineMarkers from "$lib/ui/timelineMarkers.svelte";
@@ -113,6 +114,8 @@
   );
   const timeline = createTimeline();
   const clips = createClips(() => filePath);
+
+  slideshow.bind(() => fileList, () => currentIndex, advanceSlide, () => videoEl);
 
   function setMediaState(
     data: Partial<import("$lib/core/media.svelte").MediaState>,
@@ -1108,6 +1111,7 @@
   }
 
   async function displayFile(path: string) {
+    slideshow.stop();
     await media.displayFile(path, setMediaState);
   }
 
@@ -1115,15 +1119,22 @@
     media.onImageLoad(e, isLoadingFile, setMediaState, () =>
       media.finishLoading(setMediaState),
     );
+    if (slideshow.active) {
+      slideshow.onMediaLoaded();
+    }
   }
 
   function onVideoLoad() {
     media.onVideoLoad(isLoadingFile, setMediaState, () =>
       media.finishLoading(setMediaState),
     );
+    if (slideshow.active) {
+      slideshow.onMediaLoaded();
+    }
   }
 
   async function loadFile(path: string) {
+    slideshow.stop();
     viewer.state.cropMode = false;
     await media.loadFile(path, setMediaState, (list, index) => {
       fileList = list;
@@ -1134,6 +1145,7 @@
 
   function navigate(direction: number) {
     if (fileList.length === 0) return;
+    slideshow.stop();
     viewer.state.cropMode = false;
     const next = (currentIndex + direction + fileList.length) % fileList.length;
     viewer.setCurrentFile(fileList[next]);
@@ -1147,6 +1159,7 @@
 
   function navigateToEdge(first: boolean) {
     if (fileList.length === 0) return;
+    slideshow.stop();
     viewer.state.cropMode = false;
     const next = first ? 0 : fileList.length - 1;
     viewer.setCurrentFile(fileList[next]);
@@ -1154,6 +1167,7 @@
   }
 
   function closeFile() {
+    slideshow.stop();
     resumeTooltipVisible = false;
     viewer.state.rotation = 0;
     viewer.state.flipped = false;
@@ -1329,6 +1343,14 @@
 
   function closeSlideshowMenu() {
     slideshowMenuVisible = false;
+  }
+
+  function advanceSlide(nextIndex: number) {
+    if (fileList.length === 0) return;
+    viewer.state.cropMode = false;
+    currentIndex = nextIndex;
+    viewer.setCurrentFile(fileList[nextIndex]);
+    media.displayFile(fileList[nextIndex], setMediaState);
   }
 
   function fileExt(): string {
@@ -1797,12 +1819,15 @@
           bind:this={cropContainerEl}
           style="position: relative; display: inline-flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
         >
-          <img
-            src={fileSrc}
-            alt={fileName}
-            onload={onImageLoad}
-            style={imageStyle}
-          />
+          {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
+            <img
+              src={fileSrc}
+              alt={fileName}
+              onload={onImageLoad}
+              style={imageStyle}
+              class={slideshow.active && slideshow.transition !== "none" ? `transition-${slideshow.transition}` : ""}
+            />
+          {/key}
           <CropOverlay containerEl={cropContainerEl} />
         </div>
       {:else if fileSrc && isVideo}
@@ -1816,36 +1841,40 @@
           style="{videoWrapperTransform} cursor: {panCursor}"
         >
           <div class="video-inner" style={videoInnerStyle}>
-            <video
-              bind:this={videoEl}
-              src={fileSrc}
-              crossorigin="anonymous"
-              autoplay
-              ontimeupdate={updateProgress}
-              onloadedmetadata={onVideoLoad}
-              onended={() => {
-                if (loopMode === "stop") {
-                  playing = false;
-                } else if (loopMode === "next") {
-                  navigate(1);
-                } else if (loopMode === "shuffle") {
-                  if (fileList.length > 1) {
-                    let idx;
-                    do {
-                      idx = Math.floor(Math.random() * fileList.length);
-                    } while (idx === currentIndex);
-                    currentIndex = media.navigate(
-                      idx - currentIndex,
-                      fileList,
-                      currentIndex,
-                      setMediaState,
-                    );
+            {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
+              <video
+                bind:this={videoEl}
+                src={fileSrc}
+                crossorigin="anonymous"
+                autoplay
+                ontimeupdate={updateProgress}
+                onloadedmetadata={onVideoLoad}
+                onended={() => {
+                  if (slideshow.active) return;
+                  if (loopMode === "stop") {
+                    playing = false;
+                  } else if (loopMode === "next") {
+                    navigate(1);
+                  } else if (loopMode === "shuffle") {
+                    if (fileList.length > 1) {
+                      let idx;
+                      do {
+                        idx = Math.floor(Math.random() * fileList.length);
+                      } while (idx === currentIndex);
+                      currentIndex = media.navigate(
+                        idx - currentIndex,
+                        fileList,
+                        currentIndex,
+                        setMediaState,
+                      );
+                    }
                   }
-                }
-              }}
-            >
-              <track kind="captions" />
-            </video>
+                }}
+                class={slideshow.active && slideshow.transition !== "none" ? `transition-${slideshow.transition}` : ""}
+              >
+                <track kind="captions" />
+              </video>
+            {/key}
           </div>
           <CropOverlay containerEl={cropContainerEl} />
           <div

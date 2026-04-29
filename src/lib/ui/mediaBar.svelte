@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import SlideshowMenu from "./slideshowMenu.svelte";
+  import { slideshow } from "$lib/core/slideshow.svelte";
 
   let dismissed = $state(false);
 
@@ -68,6 +69,7 @@
     <div class="slideshow-anchor">
       <button
         class="slideshow-btn tooltip-above-shift-right"
+        class:active={slideshow.active}
         data-tooltip="Slideshow"
         onclick={toggleSlideshowMenu}
         aria-label="toggle slideshow menu"

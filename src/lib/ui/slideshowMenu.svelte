@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { slideshow } from "$lib/core/slideshow.svelte";
 
   let {
     visible,
@@ -8,11 +9,6 @@
     visible: boolean;
     onClose: () => void;
   } = $props();
-
-  let interval = $state(5);
-  let orderMode = $state<"next" | "shuffle">("next");
-  let videoMode = $state<"skip" | "full">("skip");
-  let transition = $state<"none" | "fade" | "slide">("none");
 
   let sliderHovered = $state(false);
   let trackEl: HTMLDivElement | null = $state(null);
@@ -41,7 +37,7 @@
     const x = clientX - rect.left;
     const pct = Math.max(0, Math.min(100, (x / rect.width) * 100));
     const val = pctToValue(pct);
-    interval = Math.round(Math.max(minInterval, Math.min(maxInterval, val)));
+    slideshow.intervalSec = Math.round(Math.max(minInterval, Math.min(maxInterval, val)));
   }
 
   function handleTrackPointerDown(e: PointerEvent) {
@@ -69,8 +65,8 @@
     }
   }
 
-  const scrubberPct = $derived(valueToPct(interval));
-  const displayInterval = $derived(`${interval}s`);
+  const scrubberPct = $derived(valueToPct(slideshow.intervalSec));
+  const displayInterval = $derived(`${slideshow.intervalSec}s`);
 </script>
 
 <svelte:window onmousedown={handleWindowMouseDown} />
@@ -149,7 +145,7 @@
         tabindex="0"
         aria-valuemin={minInterval}
         aria-valuemax={maxInterval}
-        aria-valuenow={interval}
+        aria-valuenow={slideshow.intervalSec}
         aria-label="Slideshow interval"
         onpointerdown={handleTrackPointerDown}
         onpointermove={handleTrackPointerMove}
@@ -166,11 +162,11 @@
             class:center-marker={markerVal === 5}
             style="left: {markerPct}%"
             onpointerdown={(e) => e.stopPropagation()}
-            onclick={() => (interval = markerVal)}
+            onclick={() => (slideshow.intervalSec = markerVal)}
             onkeydown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                interval = markerVal;
+                slideshow.intervalSec = markerVal;
               }
             }}
             role="button"
@@ -204,15 +200,15 @@
       <div class="slideshow-toggle-row">
         <button
           class="slideshow-toggle-btn"
-          class:active={orderMode === "next"}
-          onclick={() => (orderMode = "next")}
+          class:active={slideshow.order === "next"}
+          onclick={() => (slideshow.order = "next")}
         >
           Next
         </button>
         <button
           class="slideshow-toggle-btn"
-          class:active={orderMode === "shuffle"}
-          onclick={() => (orderMode = "shuffle")}
+          class:active={slideshow.order === "shuffle"}
+          onclick={() => (slideshow.order = "shuffle")}
         >
           Shuffle
         </button>
@@ -224,15 +220,15 @@
       <div class="slideshow-toggle-row">
         <button
           class="slideshow-toggle-btn"
-          class:active={videoMode === "skip"}
-          onclick={() => (videoMode = "skip")}
+          class:active={slideshow.videoMode === "skip"}
+          onclick={() => (slideshow.videoMode = "skip")}
         >
           Skip
         </button>
         <button
           class="slideshow-toggle-btn"
-          class:active={videoMode === "full"}
-          onclick={() => (videoMode = "full")}
+          class:active={slideshow.videoMode === "full"}
+          onclick={() => (slideshow.videoMode = "full")}
         >
           Full
         </button>
@@ -244,26 +240,58 @@
       <div class="slideshow-toggle-row three">
         <button
           class="slideshow-toggle-btn"
-          class:active={transition === "none"}
-          onclick={() => (transition = "none")}
+          class:active={slideshow.transition === "none"}
+          onclick={() => (slideshow.transition = "none")}
         >
           None
         </button>
         <button
           class="slideshow-toggle-btn"
-          class:active={transition === "fade"}
-          onclick={() => (transition = "fade")}
+          class:active={slideshow.transition === "fade"}
+          onclick={() => (slideshow.transition = "fade")}
         >
           Fade
         </button>
         <button
           class="slideshow-toggle-btn"
-          class:active={transition === "slide"}
-          onclick={() => (transition = "slide")}
+          class:active={slideshow.transition === "slide"}
+          onclick={() => (slideshow.transition = "slide")}
         >
           Slide
         </button>
       </div>
+    </div>
+
+    <div class="slideshow-actions" class:two={slideshow.active}>
+      {#if !slideshow.active}
+        <button
+          class="slideshow-action-btn start"
+          onclick={() => slideshow.start()}
+          in:fly={{ y: 5, duration: 150 }}
+        >
+          Start
+        </button>
+      {:else}
+        {#key slideshow.paused}
+          <button
+            class="slideshow-action-btn"
+            class:pause={!slideshow.paused}
+            class:play={slideshow.paused}
+            onclick={() =>
+              slideshow.paused ? slideshow.resume() : slideshow.pause()}
+            in:fly={{ y: 5, duration: 150 }}
+          >
+            {slideshow.paused ? "Play" : "Pause"}
+          </button>
+        {/key}
+        <button
+          class="slideshow-action-btn stop"
+          onclick={() => slideshow.stop()}
+          in:fly={{ y: 5, duration: 150 }}
+        >
+          Stop
+        </button>
+      {/if}
     </div>
   </div>
 {/if}
