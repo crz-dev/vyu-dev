@@ -10,6 +10,8 @@
   let activeSection = $state("appearance");
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
+  let isScrolling = $state(false);
+  let scrollTimeout = $state<ReturnType<typeof setTimeout> | null>(null);
 
   const sections = [
     { id: "appearance", label: "Appearance" },
@@ -22,6 +24,8 @@
 
   function scrollToSection(id: string) {
     activeSection = id;
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    isScrolling = true;
     const el = document.getElementById(`settings-section-${id}`);
     if (el && contentEl) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -30,18 +34,64 @@
         if (flashId === id) flashId = null;
       }, 900);
     }
+    scrollTimeout = setTimeout(() => {
+      isScrolling = false;
+    }, 700);
   }
 
   function handleScroll() {
-    if (!contentEl) return;
+    if (!contentEl || isScrolling) return;
+    // If near bottom, highlight last section
+    const nearBottom = contentEl.scrollTop + contentEl.clientHeight >= contentEl.scrollHeight - 8;
+    if (nearBottom) {
+      activeSection = sections[sections.length - 1].id;
+      return;
+    }
     const ids = sections.map((s) => s.id);
     for (let i = ids.length - 1; i >= 0; i--) {
       const el = document.getElementById(`settings-section-${ids[i]}`);
-      if (el && el.offsetTop <= contentEl.scrollTop + 12) {
-        activeSection = ids[i];
-        break;
+      if (el) {
+        const top = el.getBoundingClientRect().top - contentEl.getBoundingClientRect().top + contentEl.scrollTop;
+        if (top <= contentEl.scrollTop + 16) {
+          activeSection = ids[i];
+          break;
+        }
       }
     }
+  }
+
+  function exportSettings() {
+    const data = {
+      theme,
+      uiMode,
+      transition,
+      allowZoomOut,
+      alwaysShowControls,
+      volumeBoost,
+      resumePlayback,
+      defaultLoop,
+      showTimeRemaining,
+      rememberVolume,
+      autoplayNext,
+      autoSaveMarkers,
+      defaultQuality,
+      defaultFormat,
+      confirmDelete,
+      preserveMetadata,
+      gpuEncoding,
+      overwriteExisting,
+      includeSubtitles,
+      hardwareAcceleration,
+      minimizeToTray,
+      startOnLogin,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "vyu-settings.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // Appearance
@@ -492,21 +542,6 @@
             </div>
             <div class="settings-row">
               <div class="settings-label-col">
-                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear Cache</span>
-                  <span class="settings-hint">Remove temporary media data</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
                 <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <div class="settings-label-text">
                   <span class="settings-label">Check for Updates</span>
@@ -517,6 +552,21 @@
                 <button class="settings-action-btn blue">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Check
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Clear Cache</span>
+                  <span class="settings-hint">Remove temporary media data</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  Clear
                 </button>
               </div>
             </div>
@@ -623,6 +673,10 @@
       </div>
 
       <div class="delete-actions">
+        <button class="settings-action-btn" onclick={exportSettings}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Settings
+        </button>
         <button class="delete-cancel" onclick={closeSettings}>Close</button>
       </div>
     </div>
