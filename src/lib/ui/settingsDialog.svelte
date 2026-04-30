@@ -9,6 +9,7 @@
 
   let activeSection = $state("appearance");
   let contentEl = $state<HTMLDivElement | null>(null);
+  let flashId = $state<string | null>(null);
 
   const sections = [
     { id: "appearance", label: "Appearance" },
@@ -23,7 +24,11 @@
     activeSection = id;
     const el = document.getElementById(`settings-section-${id}`);
     if (el && contentEl) {
-      contentEl.scrollTo({ top: el.offsetTop - 14, behavior: "smooth" });
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      flashId = id;
+      setTimeout(() => {
+        if (flashId === id) flashId = null;
+      }, 900);
     }
   }
 
@@ -32,7 +37,7 @@
     const ids = sections.map((s) => s.id);
     for (let i = ids.length - 1; i >= 0; i--) {
       const el = document.getElementById(`settings-section-${ids[i]}`);
-      if (el && el.offsetTop <= contentEl.scrollTop + 20) {
+      if (el && el.offsetTop <= contentEl.scrollTop + 12) {
         activeSection = ids[i];
         break;
       }
@@ -114,7 +119,7 @@
 
         <div class="settings-content" bind:this={contentEl} onscroll={handleScroll}>
           <!-- Appearance -->
-          <div id="settings-section-appearance" class="settings-section">
+          <div id="settings-section-appearance" class="settings-section" class:flash={flashId === "appearance"}>
             <p class="settings-section-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
               Appearance
@@ -198,7 +203,7 @@
           </div>
 
           <!-- Playback -->
-          <div id="settings-section-playback" class="settings-section">
+          <div id="settings-section-playback" class="settings-section" class:flash={flashId === "playback"}>
             <p class="settings-section-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Playback
@@ -297,7 +302,7 @@
           </div>
 
           <!-- Editor -->
-          <div id="settings-section-editor" class="settings-section">
+          <div id="settings-section-editor" class="settings-section" class:flash={flashId === "editor"}>
             <p class="settings-section-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               Editor
@@ -382,7 +387,7 @@
           </div>
 
           <!-- Process -->
-          <div id="settings-section-process" class="settings-section">
+          <div id="settings-section-process" class="settings-section" class:flash={flashId === "process"}>
             <p class="settings-section-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="M9 15l3 3 3-3"/></svg>
               Process
@@ -435,7 +440,7 @@
           </div>
 
           <!-- System -->
-          <div id="settings-section-system" class="settings-section">
+          <div id="settings-section-system" class="settings-section" class:flash={flashId === "system"}>
             <p class="settings-section-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
               System
@@ -533,7 +538,7 @@
           </div>
 
           <!-- Actions -->
-          <div id="settings-section-actions" class="settings-section">
+          <div id="settings-section-actions" class="settings-section" class:flash={flashId === "actions"}>
             <p class="settings-section-header">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               Global Actions
