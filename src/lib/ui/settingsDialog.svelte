@@ -18,8 +18,10 @@
     { id: "playback", label: "Playback" },
     { id: "editor", label: "Editor" },
     { id: "process", label: "Process" },
+    { id: "library", label: "Library" },
     { id: "system", label: "System" },
-    { id: "actions", label: "Actions" },
+    { id: "debug", label: "Debug" },
+    { id: "danger-zone", label: "Danger Zone" },
   ];
 
   function scrollToSection(id: string) {
@@ -125,6 +127,21 @@
   let hardwareAcceleration = $state(true);
   let minimizeToTray = $state(false);
   let startOnLogin = $state(false);
+
+  // Library
+  let recentFilesLimit = $state<"10" | "25" | "50" | "100">("25");
+  let favoriteFilesEnabled = $state(true);
+  let autoScanFolders = $state(false);
+  let showThumbnails = $state(true);
+
+  // Folders
+  let editorOutputFolder = $state("~/Videos/Editor");
+  let processOutputFolder = $state("~/Videos/Exports");
+
+  // Debug
+  let experimentalFeatures = $state(false);
+  let showFpsCounter = $state(false);
+  let forceSoftwareRendering = $state(false);
 </script>
 
 {#if settingsOpen}
@@ -157,10 +174,14 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
               {:else if sec.id === "process"}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="M9 15l3 3 3-3"/></svg>
+              {:else if sec.id === "library"}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
               {:else if sec.id === "system"}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-              {:else if sec.id === "actions"}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              {:else if sec.id === "debug"}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              {:else if sec.id === "danger-zone"}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
               {/if}
               {sec.label}
             </button>
@@ -182,7 +203,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group">
+                <div class="pill-group pill-group-3">
                   <button class="pill-btn" class:active={theme === "dark"} onclick={() => (theme = "dark")}>Dark</button>
                   <button class="pill-btn" class:active={theme === "light"} onclick={() => (theme = "light")}>Light</button>
                   <button class="pill-btn" class:active={theme === "system"} onclick={() => (theme = "system")}>System</button>
@@ -198,7 +219,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group">
+                <div class="pill-group pill-group-2">
                   <button class="pill-btn" class:active={uiMode === "simple"} onclick={() => (uiMode = "simple")}>Simple</button>
                   <button class="pill-btn" class:active={uiMode === "advanced"} onclick={() => (uiMode = "advanced")}>Advanced</button>
                 </div>
@@ -213,7 +234,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group">
+                <div class="pill-group pill-group-3">
                   <button class="pill-btn" class:active={transition === "none"} onclick={() => (transition = "none")}>None</button>
                   <button class="pill-btn" class:active={transition === "fade"} onclick={() => (transition = "fade")}>Fade</button>
                   <button class="pill-btn" class:active={transition === "slide"} onclick={() => (transition = "slide")}>Slide</button>
@@ -296,7 +317,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group">
+                <div class="pill-group pill-group-4">
                   <button class="pill-btn" class:active={defaultLoop === "loop"} onclick={() => (defaultLoop = "loop")}>Loop</button>
                   <button class="pill-btn" class:active={defaultLoop === "stop"} onclick={() => (defaultLoop = "stop")}>Stop</button>
                   <button class="pill-btn" class:active={defaultLoop === "next"} onclick={() => (defaultLoop = "next")}>Next</button>
@@ -380,7 +401,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group">
+                <div class="pill-group pill-group-4">
                   <button class="pill-btn" class:active={defaultQuality === "fast"} onclick={() => (defaultQuality = "fast")}>Fast</button>
                   <button class="pill-btn" class:active={defaultQuality === "balanced"} onclick={() => (defaultQuality = "balanced")}>Balanced</button>
                   <button class="pill-btn" class:active={defaultQuality === "quality"} onclick={() => (defaultQuality = "quality")}>Quality</button>
@@ -396,7 +417,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group">
+                <div class="pill-group pill-group-4">
                   <button class="pill-btn" class:active={defaultFormat === "original"} onclick={() => (defaultFormat = "original")}>Original</button>
                   <button class="pill-btn" class:active={defaultFormat === "mp4"} onclick={() => (defaultFormat = "mp4")}>MP4</button>
                   <button class="pill-btn" class:active={defaultFormat === "webm"} onclick={() => (defaultFormat = "webm")}>WebM</button>
@@ -432,6 +453,21 @@
                   <input type="checkbox" checked={preserveMetadata} onchange={(e) => (preserveMetadata = e.currentTarget.checked)} />
                   <span class="toggle-track" class:on={preserveMetadata}><span class="toggle-thumb"></span></span>
                 </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Default Output Folder</span>
+                  <span class="settings-hint">Where edited files are saved</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn blue" style="min-width: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                  {editorOutputFolder}
+                </button>
               </div>
             </div>
           </div>
@@ -484,6 +520,91 @@
                 <label class="toggle-row">
                   <input type="checkbox" checked={includeSubtitles} onchange={(e) => (includeSubtitles = e.currentTarget.checked)} />
                   <span class="toggle-track" class:on={includeSubtitles}><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Default Output Folder</span>
+                  <span class="settings-hint">Where processed files are saved</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn blue" style="min-width: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                  {processOutputFolder}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Library -->
+          <div id="settings-section-library" class="settings-section" class:flash={flashId === "library"}>
+            <p class="settings-section-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+              Library
+            </p>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Recent Files Limit</span>
+                  <span class="settings-hint">How many recent items to remember</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <div class="pill-group pill-group-4">
+                  <button class="pill-btn" class:active={recentFilesLimit === "10"} onclick={() => (recentFilesLimit = "10")}>10</button>
+                  <button class="pill-btn" class:active={recentFilesLimit === "25"} onclick={() => (recentFilesLimit = "25")}>25</button>
+                  <button class="pill-btn" class:active={recentFilesLimit === "50"} onclick={() => (recentFilesLimit = "50")}>50</button>
+                  <button class="pill-btn" class:active={recentFilesLimit === "100"} onclick={() => (recentFilesLimit = "100")}>100</button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Enable Favorites</span>
+                  <span class="settings-hint">Pin and quickly access favorite files</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input type="checkbox" checked={favoriteFilesEnabled} onchange={(e) => (favoriteFilesEnabled = e.currentTarget.checked)} />
+                  <span class="toggle-track" class:on={favoriteFilesEnabled}><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Auto-scan Folders</span>
+                  <span class="settings-hint">Watch selected folders for new media</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input type="checkbox" checked={autoScanFolders} onchange={(e) => (autoScanFolders = e.currentTarget.checked)} />
+                  <span class="toggle-track" class:on={autoScanFolders}><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Show Thumbnails</span>
+                  <span class="settings-hint">Generate previews in library grid</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input type="checkbox" checked={showThumbnails} onchange={(e) => (showThumbnails = e.currentTarget.checked)} />
+                  <span class="toggle-track" class:on={showThumbnails}><span class="toggle-thumb"></span></span>
                 </label>
               </div>
             </div>
@@ -549,7 +670,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn blue">
+                <button class="settings-action-btn yellow">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Check
                 </button>
@@ -564,7 +685,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn red">
+                <button class="settings-action-btn yellow">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                   Clear
                 </button>
@@ -579,7 +700,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn red">
+                <button class="settings-action-btn yellow">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
                   Reset
                 </button>
@@ -587,11 +708,184 @@
             </div>
           </div>
 
-          <!-- Actions -->
-          <div id="settings-section-actions" class="settings-section" class:flash={flashId === "actions"}>
+          <!-- Debug -->
+          <div id="settings-section-debug" class="settings-section" class:flash={flashId === "debug"}>
             <p class="settings-section-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              Global Actions
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Debug
+            </p>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Logs</span>
+                  <span class="settings-hint">Application runtime logs</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn orange">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  View
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Copy Logs</span>
+                  <span class="settings-hint">Copy latest logs to clipboard</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn orange">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Export Logs</span>
+                  <span class="settings-hint">Save logs to a file</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn orange">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Clear Logs</span>
+                  <span class="settings-hint">Delete all stored log files</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn orange">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Open Webview DevTools</span>
+                  <span class="settings-hint">Inspect the app window</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn orange">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  Open
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><path d="M12 6v6l4 2"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Show FPS Counter</span>
+                  <span class="settings-hint">Display frame rate overlay</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input type="checkbox" checked={showFpsCounter} onchange={(e) => (showFpsCounter = e.currentTarget.checked)} />
+                  <span class="toggle-track" class:on={showFpsCounter}><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Experimental Features</span>
+                  <span class="settings-hint">Enable unfinished functionality</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input type="checkbox" checked={experimentalFeatures} onchange={(e) => (experimentalFeatures = e.currentTarget.checked)} />
+                  <span class="toggle-track" class:on={experimentalFeatures}><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Force Software Rendering</span>
+                  <span class="settings-hint">Disable GPU acceleration for testing</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input type="checkbox" checked={forceSoftwareRendering} onchange={(e) => (forceSoftwareRendering = e.currentTarget.checked)} />
+                  <span class="toggle-track" class:on={forceSoftwareRendering}><span class="toggle-thumb"></span></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Reinstall FFmpeg</span>
+                  <span class="settings-hint">Download and replace bundled binary</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn orange">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Reinstall
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Delete FFmpeg</span>
+                  <span class="settings-hint">Remove bundled binary</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg class="settings-row-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <div class="settings-label-text">
+                  <span class="settings-label">Uninstall</span>
+                  <span class="settings-hint">Remove vyu from your system</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button class="settings-action-btn red">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Run Uninstaller
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div id="settings-section-danger-zone" class="settings-section" class:flash={flashId === "danger-zone"}>
+            <p class="settings-section-header">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Danger Zone
             </p>
             <div class="settings-row">
               <div class="settings-label-col">
@@ -602,7 +896,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn yellow">
+                <button class="settings-action-btn red">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
                   Reset
                 </button>
@@ -617,7 +911,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn blue">
+                <button class="settings-action-btn red">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                   Clear
                 </button>
@@ -632,7 +926,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn blue">
+                <button class="settings-action-btn red">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
                   Clear
                 </button>

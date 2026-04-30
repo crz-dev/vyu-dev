@@ -1126,6 +1126,18 @@
   color: #fde047;
 }
 
+.settings-action-btn.orange {
+  border-color: rgba(251, 146, 60, 0.35);
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+}
+
+.settings-action-btn.orange:hover {
+  background: rgba(251, 146, 60, 0.22);
+  border-color: rgba(251, 146, 60, 0.5);
+  color: #fdba74;
+}
+
 .settings-dialog .toggle-track.on {
   background: #3b82f6;
 }
@@ -1135,4 +1147,146 @@
   border-top: 0.5px solid #1f1f1f;
   margin: 0;
   justify-content: space-between;
+}
+
+/* Pill group sizes */
+.pill-group.pill-group-2,
+.pill-group.pill-group-3 {
+  width: 168px;
+}
+.pill-group.pill-group-4 {
+  width: 200px;
+}
+
+/* Section header colors - Green (Appearance, Playback) */
+#settings-section-appearance .settings-section-header,
+#settings-section-playback .settings-section-header {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+#settings-section-appearance .settings-section-header svg,
+#settings-section-playback .settings-section-header svg {
+  color: #4ade80;
+}
+
+/* Section header colors - Blue (Editor, Process) */
+#settings-section-editor .settings-section-header,
+#settings-section-process .settings-section-header {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+#settings-section-editor .settings-section-header svg,
+#settings-section-process .settings-section-header svg {
+  color: #93c5fd;
+}
+
+/* Section header colors - Yellow (System, Library) */
+#settings-section-system .settings-section-header,
+#settings-section-library .settings-section-header {
+  background: rgba(245, 197, 24, 0.08);
+  border-color: rgba(245, 197, 24, 0.18);
+  color: #facc15;
+}
+#settings-section-system .settings-section-header svg,
+#settings-section-library .settings-section-header svg {
+  color: #facc15;
+}
+
+/* Section header colors - Orange (Debug) */
+#settings-section-debug .settings-section-header {
+  background: rgba(251, 146, 60, 0.08);
+  border-color: rgba(251, 146, 60, 0.18);
+  color: #fb923c;
+}
+#settings-section-debug .settings-section-header svg {
+  color: #fb923c;
+}
+
+/* Section header colors - Red (Danger Zone) */
+#settings-section-danger-zone .settings-section-header {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+}
+#settings-section-danger-zone .settings-section-header svg {
+  color: #f87171;
+}
+
+/* Section pill active colors - Green */
+#settings-section-appearance .pill-btn.active,
+#settings-section-playback .pill-btn.active {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+/* Section pill active colors - Blue */
+#settings-section-editor .pill-btn.active,
+#settings-section-process .pill-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+/* Section pill active colors - Yellow */
+#settings-section-system .pill-btn.active,
+#settings-section-library .pill-btn.active {
+  background: rgba(245, 197, 24, 0.2);
+  color: #facc15;
+}
+
+/* Section pill active colors - Orange */
+#settings-section-debug .pill-btn.active {
+  background: rgba(251, 146, 60, 0.2);
+  color: #fb923c;
+}
+
+/* Section pill active colors - Red */
+#settings-section-danger-zone .pill-btn.active {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Section toggle colors - Green */
+#settings-section-appearance .toggle-track.on,
+#settings-section-playback .toggle-track.on {
+  background: #22c55e;
+}
+
+/* Section toggle colors - Blue */
+#settings-section-editor .toggle-track.on,
+#settings-section-process .toggle-track.on {
+  background: #3b82f6;
+}
+
+/* Section toggle colors - Yellow */
+#settings-section-system .toggle-track.on,
+#settings-section-library .toggle-track.on {
+  background: #f5c518;
+}
+
+/* Section toggle colors - Orange */
+#settings-section-debug .toggle-track.on {
+  background: #fb923c;
+}
+
+/* Section toggle colors - Red */
+#settings-section-danger-zone .toggle-track.on {
+  background: #ef4444;
+}
+
+/* Export settings button matches close button */
+.settings-dialog .delete-actions .settings-action-btn {
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: 0.5px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #888888;
+  font-size: 12px;
+  gap: 6px;
+  min-width: 0;
+}
+.settings-dialog .delete-actions .settings-action-btn:hover {
+  background: #1a1a1a;
+  color: #cccccc;
 }
