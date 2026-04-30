@@ -7,11 +7,28 @@
     closeSettings: () => void;
   } = $props();
 
-  let activeSection = $state("appearance");
+  const LAST_SECTION_KEY = "vyu-settings-last-section";
+
+  let activeSection = $state(localStorage.getItem(LAST_SECTION_KEY) ?? "appearance");
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
   let isScrolling = $state(false);
   let scrollTimeout = $state<ReturnType<typeof setTimeout> | null>(null);
+
+  $effect(() => {
+    localStorage.setItem(LAST_SECTION_KEY, activeSection);
+  });
+
+  $effect(() => {
+    if (settingsOpen) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`settings-section-${activeSection}`);
+        if (el) {
+          el.scrollIntoView({ block: "start" });
+        }
+      });
+    }
+  });
 
   const sections = [
     { id: "appearance", label: "Appearance" },
@@ -60,17 +77,20 @@
       activeSection = sections[sections.length - 1].id;
       return;
     }
-    const ids = sections.map((s) => s.id);
-    for (let i = ids.length - 1; i >= 0; i--) {
-      const el = document.getElementById(`settings-section-${ids[i]}`);
+    const containerRect = contentEl.getBoundingClientRect();
+    const threshold = containerRect.top + contentEl.clientHeight * 0.35;
+    let current = sections[0].id;
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const el = document.getElementById(`settings-section-${sections[i].id}`);
       if (el) {
-        const top = el.getBoundingClientRect().top - contentEl.getBoundingClientRect().top + contentEl.scrollTop;
-        if (top <= contentEl.scrollTop + 16) {
-          activeSection = ids[i];
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= threshold) {
+          current = sections[i].id;
           break;
         }
       }
     }
+    activeSection = current;
   }
 
   function exportSettings() {
@@ -743,7 +763,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn orange">
+                <button class="settings-action-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                   View
                 </button>
@@ -758,7 +778,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn orange">
+                <button class="settings-action-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                   Copy
                 </button>
@@ -773,7 +793,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn orange">
+                <button class="settings-action-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Export
                 </button>
@@ -788,7 +808,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn orange">
+                <button class="settings-action-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                   Clear
                 </button>
@@ -803,7 +823,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn orange">
+                <button class="settings-action-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                   Open
                 </button>
@@ -863,7 +883,7 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn orange">
+                <button class="settings-action-btn">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                   Reinstall
                 </button>
