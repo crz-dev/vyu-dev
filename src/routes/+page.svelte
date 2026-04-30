@@ -739,7 +739,12 @@
   function onEditorDeleteSegment() {
     const seg = getActiveEditorSegment();
     if (!seg) return;
-    clips.removeClipBoundary(seg.id);
+    removeClipBoundary(seg.id);
+  }
+
+  function removeClipBoundary(id: string) {
+    tsTooltip = { ...tsTooltip, visible: false };
+    clips.removeClipBoundary(id);
   }
 
   function getTimestampTouchTarget(
@@ -1310,9 +1315,15 @@
   }
 
   function openContextMenu(e: MouseEvent) {
-    if (!fileSrc) return;
     e.preventDefault();
     e.stopPropagation();
+
+    const target = e.target as HTMLElement;
+    if (target.closest("button, .progress-bar, .fs-progress")) {
+      return;
+    }
+
+    if (!fileSrc) return;
     const menuW = 200;
     const menuH = isVideo ? 300 : 260;
     const { x, y } = computeContextMenuPosition(
@@ -1926,7 +1937,7 @@
               {getTimestampPct}
               {getDragRangeStyle}
               {startClipMarkerDrag}
-              removeClipBoundary={clips.removeClipBoundary}
+              {removeClipBoundary}
               {showClipBoundaryTooltip}
               {hideTsTooltip}
               {seekToTimestamp}
@@ -2105,7 +2116,7 @@
             {getTimestampPct}
             {getDragRangeStyle}
             {startClipMarkerDrag}
-            removeClipBoundary={clips.removeClipBoundary}
+            {removeClipBoundary}
             {showClipBoundaryTooltip}
             {hideTsTooltip}
             {seekToTimestamp}

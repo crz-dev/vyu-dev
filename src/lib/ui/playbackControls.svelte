@@ -440,7 +440,8 @@
     </div>
     <div class="ts-menu-anchor" style="position:relative;">
       <button
-        class="ctrl-btn add-ts-btn"
+        class="ctrl-btn add-ts-btn tooltip-ctrl"
+        data-tooltip="Marker menu"
         class:ts-menu-open={tsMenuOpen}
         onclick={() => {
           tsMenuOpen = !tsMenuOpen;
@@ -1008,7 +1009,8 @@
     </div>
     <div class="ts-menu-anchor" style="position:relative;">
       <button
-        class="fs-ctrl-btn add-ts-btn"
+        class="fs-ctrl-btn add-ts-btn tooltip-ctrl"
+        data-tooltip="Marker menu"
         class:ts-menu-open={tsMenuOpen}
         onclick={() => {
           tsMenuOpen = !tsMenuOpen;
