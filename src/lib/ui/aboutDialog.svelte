@@ -25,8 +25,11 @@
       <div class="about-content">
         <!-- Brand diamond -->
         <div class="about-brand">
-          <div class="about-logo-diamond">
-            <span class="about-logo">vyu</span>
+          <div class="about-logo-diamond-wrap">
+            <div class="about-logo-diamond"></div>
+            <div class="about-logo-diamond-content">
+              <span class="about-logo">vyu</span>
+            </div>
           </div>
           <span class="about-version">v{__APP_VERSION__}</span>
         </div>
