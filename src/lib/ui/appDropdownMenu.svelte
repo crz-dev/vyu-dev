@@ -4,11 +4,15 @@
     onClose,
     onOpenSettings,
     onOpenAccessibility,
+    onOpenHelp,
+    onOpenAbout,
   }: {
     visible: boolean;
     onClose: () => void;
     onOpenSettings: () => void;
     onOpenAccessibility: () => void;
+    onOpenHelp: () => void;
+    onOpenAbout: () => void;
   } = $props();
 
   function handleItemClick(action: string) {
@@ -17,6 +21,12 @@
     }
     if (action === "accessibility") {
       onOpenAccessibility();
+    }
+    if (action === "help") {
+      onOpenHelp();
+    }
+    if (action === "about") {
+      onOpenAbout();
     }
     onClose();
   }

@@ -87,6 +87,8 @@
   import CropOverlay from "$lib/ui/cropOverlay.svelte";
   import SettingsDialog from "$lib/ui/settingsDialog.svelte";
   import AccessibilityDialog from "$lib/ui/accessibilityDialog.svelte";
+  import HelpDialog from "$lib/ui/helpDialog.svelte";
+  import AboutDialog from "$lib/ui/aboutDialog.svelte";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -202,6 +204,8 @@
   let appDropdownVisible = $state(false);
   let settingsOpen = $state(false);
   let accessibilityOpen = $state(false);
+  let helpOpen = $state(false);
+  let aboutOpen = $state(false);
   let tsMenuOpen = $state(false);
   let brightness = $state(1);
   let contrast = $state(1);
@@ -347,6 +351,8 @@
       processMenuVisible ||
       settingsOpen ||
       accessibilityOpen ||
+      helpOpen ||
+      aboutOpen ||
       tsEditMenu.visible ||
       deleteConfirm ||
       propertiesOpen ||
@@ -1285,7 +1291,9 @@
       slideshowMenuVisible ||
       appDropdownVisible ||
       settingsOpen ||
-      accessibilityOpen,
+      accessibilityOpen ||
+      helpOpen ||
+      aboutOpen,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -1296,6 +1304,8 @@
       appDropdownVisible = false;
       settingsOpen = false;
       accessibilityOpen = false;
+      helpOpen = false;
+      aboutOpen = false;
     },
     navigateToEdge,
     navigate,
@@ -1838,6 +1848,8 @@
     onCloseDropdown={() => (appDropdownVisible = false)}
     onOpenSettings={() => (settingsOpen = true)}
     onOpenAccessibility={() => (accessibilityOpen = true)}
+    onOpenHelp={() => (helpOpen = true)}
+    onOpenAbout={() => (aboutOpen = true)}
   />
 
   <div class="content">
@@ -2331,6 +2343,8 @@
 
   <SettingsDialog {settingsOpen} closeSettings={() => (settingsOpen = false)} />
   <AccessibilityDialog {accessibilityOpen} closeAccessibility={() => (accessibilityOpen = false)} />
+  <HelpDialog {helpOpen} closeHelp={() => (helpOpen = false)} />
+  <AboutDialog {aboutOpen} closeAbout={() => (aboutOpen = false)} />
 
   <Tooltip
     {tsTooltip}
