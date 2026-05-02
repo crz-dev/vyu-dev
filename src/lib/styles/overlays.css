@@ -2258,6 +2258,36 @@
   color: #93c5fd;
 }
 
+.feedback-section-header.grey {
+  color: #d1d5db;
+  background: rgba(156, 163, 175, 0.08);
+  border-bottom-color: rgba(156, 163, 175, 0.15);
+}
+
+.feedback-section-header.grey svg {
+  color: #d1d5db;
+}
+
+.feedback-section-header.red {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border-bottom-color: rgba(239, 68, 68, 0.15);
+}
+
+.feedback-section-header.red svg {
+  color: #f87171;
+}
+
+.feedback-section-header.yellow {
+  color: #facc15;
+  background: rgba(245, 197, 24, 0.08);
+  border-bottom-color: rgba(245, 197, 24, 0.12);
+}
+
+.feedback-section-header.yellow svg {
+  color: #facc15;
+}
+
 .feedback-stars-row {
   display: flex;
   align-items: center;

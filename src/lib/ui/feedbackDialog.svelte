@@ -34,6 +34,9 @@
   type Frequency = "low" | "medium" | "high" | "";
   let frequency = $state<Frequency>("");
 
+  type Retention = "no" | "maybe" | "yes" | "";
+  let retention = $state<Retention>("");
+
   let os = $state("");
   let appVersion = $state("");
 
@@ -58,6 +61,7 @@
     improvement = "";
     focusArea = "";
     frequency = "";
+    retention = "";
     os = "";
     appVersion = "";
   }
@@ -94,7 +98,7 @@
       <div class="feedback-content" onwheel={handleWheel}>
         <!-- System & app -->
         <div class="feedback-section">
-          <div class="feedback-section-header">
+          <div class="feedback-section-header grey">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             System & app
           </div>
@@ -128,7 +132,7 @@
 
         <!-- Star ratings -->
         <div class="feedback-section">
-          <div class="feedback-section-header">
+          <div class="feedback-section-header yellow">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             Experience
           </div>
@@ -193,7 +197,7 @@
 
         <!-- Feature usefulness -->
         <div class="feedback-section">
-          <div class="feedback-section-header green">
+          <div class="feedback-section-header blue">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
             Feature Usefulness
           </div>
@@ -239,16 +243,16 @@
           </div>
         </div>
 
-        <!-- Open text -->
+        <!-- Pain points -->
         <div class="feedback-section">
-          <div class="feedback-section-header blue">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            Tell us more
+          <div class="feedback-section-header red">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M9 15a3 3 0 0 1 6 0"/></svg>
+            Pain points
           </div>
           <div class="feedback-field" class:at-limit={painPoint.length >= MAX_CHARS}>
             <div class="feedback-field-header">
               <label for="feedback-pain">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M9 15a3 3 0 0 1 6 0"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 What bothered you most?
               </label>
               <span class="feedback-char-count" class:at-limit={painPoint.length >= MAX_CHARS}>
@@ -296,6 +300,36 @@
               <span class="feedback-limit-warning">Character limit reached</span>
             {/if}
           </div>
+          <div class="feedback-field" class:at-limit={focusArea.length >= MAX_CHARS}>
+            <div class="feedback-field-header">
+              <label for="feedback-focus">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                What things do you want us to focus on?
+              </label>
+              <span class="feedback-char-count" class:at-limit={focusArea.length >= MAX_CHARS}>
+                {focusArea.length} / {MAX_CHARS}
+              </span>
+            </div>
+            <textarea
+              id="feedback-focus"
+              bind:value={focusArea}
+              placeholder="Features, workflows, anything..."
+              rows="2"
+              maxlength={MAX_CHARS}
+              onwheel={(e) => e.stopPropagation()}
+            ></textarea>
+            {#if focusArea.length >= MAX_CHARS}
+              <span class="feedback-limit-warning">Character limit reached</span>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Future & Improvements -->
+        <div class="feedback-section">
+          <div class="feedback-section-header green">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Future & Improvements
+          </div>
           <div class="feedback-field" class:at-limit={improvement.length >= MAX_CHARS}>
             <div class="feedback-field-header">
               <label for="feedback-improve">
@@ -318,27 +352,42 @@
               <span class="feedback-limit-warning">Character limit reached</span>
             {/if}
           </div>
-          <div class="feedback-field" class:at-limit={focusArea.length >= MAX_CHARS}>
+          <div class="feedback-field">
             <div class="feedback-field-header">
-              <label for="feedback-focus">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                What things do you want us to focus on?
+              <label>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+                Will you keep using this app?
               </label>
-              <span class="feedback-char-count" class:at-limit={focusArea.length >= MAX_CHARS}>
-                {focusArea.length} / {MAX_CHARS}
-              </span>
             </div>
-            <textarea
-              id="feedback-focus"
-              bind:value={focusArea}
-              placeholder="Features, workflows, anything..."
-              rows="2"
-              maxlength={MAX_CHARS}
-              onwheel={(e) => e.stopPropagation()}
-            ></textarea>
-            {#if focusArea.length >= MAX_CHARS}
-              <span class="feedback-limit-warning">Character limit reached</span>
-            {/if}
+            <div class="feedback-frequency">
+              <span class="feedback-frequency-label">Likelihood</span>
+              <div class="feedback-frequency-toggle">
+                <button
+                  class="feedback-freq-btn red"
+                  class:active={retention === "no"}
+                  onclick={() => (retention = retention === "no" ? "" : "no")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M9 15a3 3 0 0 1 6 0"/></svg>
+                  No
+                </button>
+                <button
+                  class="feedback-freq-btn"
+                  class:active={retention === "maybe"}
+                  onclick={() => (retention = retention === "maybe" ? "" : "maybe")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                  Maybe
+                </button>
+                <button
+                  class="feedback-freq-btn green"
+                  class:active={retention === "yes"}
+                  onclick={() => (retention = retention === "yes" ? "" : "yes")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+                  Yes
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
