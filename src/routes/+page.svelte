@@ -1450,7 +1450,7 @@
     closeContextMenu();
     try {
       await copyImageToClipboard(fileSrc);
-      showImageCopyToast("Image copied to Clipboard", "success");
+      showImageCopyToast("Image copied to clipboard", "success");
     } catch {
       showImageCopyToast("Failed to copy image", "error");
     }
@@ -1478,7 +1478,7 @@
     closeContextMenu();
     try {
       await copyPathToClipboard(filePath);
-      showFrameCopyToast("Copied file path", "success");
+      showFrameCopyToast("Copied file path to clipboard", "success");
     } catch {
       showFrameCopyToast("Failed to copy file path", "error");
     }
@@ -1610,7 +1610,7 @@
   async function propsCopyPath() {
     try {
       await copyPathToClipboard(filePath);
-      showFrameCopyToast("Copied file path", "info");
+      showFrameCopyToast("Copied file path to clipboard", "info");
     } catch {
       showFrameCopyToast("Failed to copy file path", "error");
     }
@@ -1637,9 +1637,18 @@
         parentFolder(),
         mediaProps,
       );
-      showFrameCopyToast("Copied all properties", "info");
+      showFrameCopyToast("Copied all properties to clipboard", "info");
     } catch {
       showFrameCopyToast("Failed to copy properties", "error");
+    }
+  }
+
+  async function copyPropValue(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      showFrameCopyToast("Property copied to clipboard", "info");
+    } catch {
+      showFrameCopyToast("Failed to copy property", "error");
     }
   }
 
@@ -2298,6 +2307,7 @@
     {propsCopyPath}
     {propsOpenFolder}
     {propsCopyAll}
+    {copyPropValue}
     {performDelete}
     {runClipAction}
     closeClipDeleteConfirm={() =>

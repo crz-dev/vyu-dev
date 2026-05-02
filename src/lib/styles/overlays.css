@@ -314,16 +314,23 @@
 .props-list {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 2px;
   border: 0.5px solid #1c1c1c;
   border-radius: 10px;
-  padding: 12px;
+  padding: 8px;
   background: #0a0a0a;
 }
 .props-row {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.props-row:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 .props-k {
   display: inline-flex;
@@ -447,6 +454,12 @@
 }
 .props-header-bar .delete-subtitle {
   margin: 0;
+}
+.props-hint {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: #555555;
+  font-family: Inter, sans-serif;
 }
 
 .props-dialog .delete-actions {

@@ -949,12 +949,19 @@
 }
 
 .slideshow-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 10px;
   font-family: Inter, sans-serif;
   color: #888888;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding-left: 2px;
+}
+.slideshow-label svg {
+  color: #555555;
+  flex-shrink: 0;
 }
 
 .slideshow-toggle-row {
