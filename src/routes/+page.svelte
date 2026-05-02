@@ -89,6 +89,7 @@
   import AccessibilityDialog from "$lib/ui/accessibilityDialog.svelte";
   import HelpDialog from "$lib/ui/helpDialog.svelte";
   import AboutDialog from "$lib/ui/aboutDialog.svelte";
+  import FeedbackDialog from "$lib/ui/feedbackDialog.svelte";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -206,6 +207,7 @@
   let accessibilityOpen = $state(false);
   let helpOpen = $state(false);
   let aboutOpen = $state(false);
+  let feedbackOpen = $state(false);
   let tsMenuOpen = $state(false);
   let brightness = $state(1);
   let contrast = $state(1);
@@ -353,6 +355,7 @@
       accessibilityOpen ||
       helpOpen ||
       aboutOpen ||
+      feedbackOpen ||
       tsEditMenu.visible ||
       deleteConfirm ||
       propertiesOpen ||
@@ -1850,6 +1853,7 @@
     onOpenAccessibility={() => (accessibilityOpen = true)}
     onOpenHelp={() => (helpOpen = true)}
     onOpenAbout={() => (aboutOpen = true)}
+    onOpenFeedback={() => (feedbackOpen = true)}
   />
 
   <div class="content">
@@ -2345,6 +2349,7 @@
   <AccessibilityDialog {accessibilityOpen} closeAccessibility={() => (accessibilityOpen = false)} />
   <HelpDialog {helpOpen} closeHelp={() => (helpOpen = false)} />
   <AboutDialog {aboutOpen} closeAbout={() => (aboutOpen = false)} />
+  <FeedbackDialog {feedbackOpen} closeFeedback={() => (feedbackOpen = false)} />
 
   <Tooltip
     {tsTooltip}

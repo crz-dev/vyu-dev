@@ -22,6 +22,7 @@
     onOpenAccessibility,
     onOpenHelp,
     onOpenAbout,
+    onOpenFeedback,
   }: {
     fileName: string;
     fileSrc: string;
@@ -42,6 +43,7 @@
     onOpenAccessibility: () => void;
     onOpenHelp: () => void;
     onOpenAbout: () => void;
+    onOpenFeedback: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -90,7 +92,7 @@
     >
       vyu
     </button>
-    <AppDropdownMenu visible={dropdownVisible} onClose={onCloseDropdown} {onOpenSettings} {onOpenAccessibility} {onOpenHelp} {onOpenAbout} />
+    <AppDropdownMenu visible={dropdownVisible} onClose={onCloseDropdown} {onOpenSettings} {onOpenAccessibility} {onOpenHelp} {onOpenAbout} {onOpenFeedback} />
   </div>
   <span class="divider">/</span>
   {#if editing}

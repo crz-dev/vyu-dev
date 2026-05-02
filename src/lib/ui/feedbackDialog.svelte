@@ -1,0 +1,257 @@
+<script lang="ts">
+  const MAX_CHARS = 200;
+
+  let {
+    feedbackOpen,
+    closeFeedback,
+  }: {
+    feedbackOpen: boolean;
+    closeFeedback: () => void;
+  } = $props();
+
+  let overall = $state(0);
+  let performance = $state(0);
+  let uiClarity = $state(0);
+
+  const features = [
+    { id: "edit", label: "Edit" },
+    { id: "markers", label: "Markers (timestamps & clips)" },
+    { id: "convert", label: "Convert" },
+    { id: "compress", label: "Compress" },
+    { id: "slideshow", label: "Slideshow" },
+    { id: "properties", label: "Properties" },
+    { id: "settings", label: "Settings & accessibility" },
+    { id: "library", label: "Library" },
+  ];
+
+  type Usefulness = "useful" | "neutral" | "not-used";
+  let featureRatings = $state<Record<string, Usefulness>>(
+    Object.fromEntries(features.map((f) => [f.id, "neutral" as Usefulness]))
+  );
+
+  let painPoint = $state("");
+  let improvement = $state("");
+
+  const atLimit = $derived(
+    painPoint.length >= MAX_CHARS || improvement.length >= MAX_CHARS
+  );
+
+  function setFeature(id: string, value: Usefulness) {
+    featureRatings = { ...featureRatings, [id]: value };
+  }
+
+  function reset() {
+    overall = 0;
+    performance = 0;
+    uiClarity = 0;
+    featureRatings = Object.fromEntries(
+      features.map((f) => [f.id, "neutral" as Usefulness])
+    );
+    painPoint = "";
+    improvement = "";
+  }
+
+  function submit() {
+    if (atLimit) return;
+    reset();
+    closeFeedback();
+  }
+
+  const starLabels = ["Poor", "Fair", "Good", "Great", "Excellent"];
+</script>
+
+{#if feedbackOpen}
+  <div
+    class="delete-overlay"
+    role="presentation"
+    onmousedown={(e) => {
+      if (e.target === e.currentTarget) closeFeedback();
+    }}
+  >
+    <div class="delete-dialog feedback-dialog" role="dialog" aria-modal="true">
+      <div class="settings-header-bar">
+        <p class="delete-title">Feedback</p>
+        <p class="delete-subtitle">Help make vyu better for everyone</p>
+      </div>
+
+      <div class="feedback-content">
+        <!-- Star ratings -->
+        <div class="feedback-section">
+          <div class="feedback-section-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            Experience
+          </div>
+          <div class="feedback-stars-row">
+            <span class="feedback-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              Overall
+            </span>
+            <div class="feedback-stars">
+              {#each [1, 2, 3, 4, 5] as n}
+                <button
+                  class="feedback-star-btn"
+                  class:filled={n <= overall}
+                  onclick={() => (overall = n)}
+                  aria-label="{n} stars"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill={n <= overall ? "currentColor" : "none"} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </button>
+              {/each}
+              <span class="feedback-star-label">{overall > 0 ? starLabels[overall - 1] : "Rate"}</span>
+            </div>
+          </div>
+          <div class="feedback-stars-row">
+            <span class="feedback-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Performance
+            </span>
+            <div class="feedback-stars">
+              {#each [1, 2, 3, 4, 5] as n}
+                <button
+                  class="feedback-star-btn"
+                  class:filled={n <= performance}
+                  onclick={() => (performance = n)}
+                  aria-label="{n} stars"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill={n <= performance ? "currentColor" : "none"} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </button>
+              {/each}
+              <span class="feedback-star-label">{performance > 0 ? starLabels[performance - 1] : "Rate"}</span>
+            </div>
+          </div>
+          <div class="feedback-stars-row">
+            <span class="feedback-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              UI Clarity
+            </span>
+            <div class="feedback-stars">
+              {#each [1, 2, 3, 4, 5] as n}
+                <button
+                  class="feedback-star-btn"
+                  class:filled={n <= uiClarity}
+                  onclick={() => (uiClarity = n)}
+                  aria-label="{n} stars"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill={n <= uiClarity ? "currentColor" : "none"} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </button>
+              {/each}
+              <span class="feedback-star-label">{uiClarity > 0 ? starLabels[uiClarity - 1] : "Rate"}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature usefulness -->
+        <div class="feedback-section">
+          <div class="feedback-section-header green">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            Feature Usefulness
+          </div>
+          <p class="feedback-hint">How useful are these features to you?</p>
+          <div class="feedback-features">
+            {#each features as f}
+              <div class="feedback-feature-row">
+                <span class="feedback-feature-name">
+                  {#if f.id === "edit"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L18.5 2.5z"/></svg>
+                  {:else if f.id === "markers"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                  {:else if f.id === "convert"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  {:else if f.id === "compress"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                  {:else if f.id === "slideshow"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  {:else if f.id === "properties"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  {:else if f.id === "settings"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                  {:else if f.id === "library"}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  {/if}
+                  {f.label}
+                </span>
+                <div class="feedback-buckets">
+                  <button
+                    class="feedback-bucket red"
+                    class:active={featureRatings[f.id] === "not-used"}
+                    onclick={() => setFeature(f.id, "not-used")}
+                  >Not used</button>
+                  <button
+                    class="feedback-bucket"
+                    class:active={featureRatings[f.id] === "neutral"}
+                    onclick={() => setFeature(f.id, "neutral")}
+                  >Neutral</button>
+                  <button
+                    class="feedback-bucket green"
+                    class:active={featureRatings[f.id] === "useful"}
+                    onclick={() => setFeature(f.id, "useful")}
+                  >Useful</button>
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Open text -->
+        <div class="feedback-section">
+          <div class="feedback-section-header blue">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Tell us more
+          </div>
+          <div class="feedback-field" class:at-limit={painPoint.length >= MAX_CHARS}>
+            <div class="feedback-field-header">
+              <label for="feedback-pain">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/><path d="M9 15a3 3 0 0 1 6 0"/></svg>
+                What bothered you most?
+              </label>
+              <span class="feedback-char-count" class:at-limit={painPoint.length >= MAX_CHARS}>
+                {painPoint.length} / {MAX_CHARS}
+              </span>
+            </div>
+            <textarea
+              id="feedback-pain"
+              bind:value={painPoint}
+              placeholder="Describe any friction or issue..."
+              rows="2"
+              maxlength={MAX_CHARS}
+              onwheel={(e) => e.stopPropagation()}
+            ></textarea>
+            {#if painPoint.length >= MAX_CHARS}
+              <span class="feedback-limit-warning">Character limit reached</span>
+            {/if}
+          </div>
+          <div class="feedback-field" class:at-limit={improvement.length >= MAX_CHARS}>
+            <div class="feedback-field-header">
+              <label for="feedback-improve">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                One thing you'd change or add
+              </label>
+              <span class="feedback-char-count" class:at-limit={improvement.length >= MAX_CHARS}>
+                {improvement.length} / {MAX_CHARS}
+              </span>
+            </div>
+            <textarea
+              id="feedback-improve"
+              bind:value={improvement}
+              placeholder="Your best idea..."
+              rows="2"
+              maxlength={MAX_CHARS}
+              onwheel={(e) => e.stopPropagation()}
+            ></textarea>
+            {#if improvement.length >= MAX_CHARS}
+              <span class="feedback-limit-warning">Character limit reached</span>
+            {/if}
+          </div>
+        </div>
+      </div>
+
+      <div class="delete-actions feedback-actions">
+        <button class="delete-cancel" onclick={closeFeedback}>Close</button>
+        <button class="settings-action-btn blue feedback-send-btn" class:faded={atLimit} disabled={atLimit} onclick={submit}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Send feedback
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

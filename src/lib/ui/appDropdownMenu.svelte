@@ -6,6 +6,7 @@
     onOpenAccessibility,
     onOpenHelp,
     onOpenAbout,
+    onOpenFeedback,
   }: {
     visible: boolean;
     onClose: () => void;
@@ -13,6 +14,7 @@
     onOpenAccessibility: () => void;
     onOpenHelp: () => void;
     onOpenAbout: () => void;
+    onOpenFeedback: () => void;
   } = $props();
 
   function handleItemClick(action: string) {
@@ -27,6 +29,9 @@
     }
     if (action === "about") {
       onOpenAbout();
+    }
+    if (action === "feedback") {
+      onOpenFeedback();
     }
     onClose();
   }
