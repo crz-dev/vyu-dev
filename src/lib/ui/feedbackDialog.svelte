@@ -19,21 +19,28 @@
     { id: "convert", label: "Convert" },
     { id: "compress", label: "Compress" },
     { id: "slideshow", label: "Slideshow" },
-    { id: "properties", label: "Properties" },
-    { id: "settings", label: "Settings & accessibility" },
     { id: "library", label: "Library" },
   ];
 
   type Usefulness = "useful" | "neutral" | "not-used";
   let featureRatings = $state<Record<string, Usefulness>>(
-    Object.fromEntries(features.map((f) => [f.id, "neutral" as Usefulness]))
+    Object.fromEntries(features.map((f) => [f.id, "neutral" as Usefulness])),
   );
 
   let painPoint = $state("");
   let improvement = $state("");
+  let focusArea = $state("");
+
+  type Frequency = "low" | "medium" | "high" | "";
+  let frequency = $state<Frequency>("");
+
+  let os = $state("");
+  let appVersion = $state("");
 
   const atLimit = $derived(
-    painPoint.length >= MAX_CHARS || improvement.length >= MAX_CHARS
+    painPoint.length >= MAX_CHARS ||
+      improvement.length >= MAX_CHARS ||
+      focusArea.length >= MAX_CHARS,
   );
 
   function setFeature(id: string, value: Usefulness) {
@@ -45,16 +52,26 @@
     performance = 0;
     uiClarity = 0;
     featureRatings = Object.fromEntries(
-      features.map((f) => [f.id, "neutral" as Usefulness])
+      features.map((f) => [f.id, "neutral" as Usefulness]),
     );
     painPoint = "";
     improvement = "";
+    focusArea = "";
+    frequency = "";
+    os = "";
+    appVersion = "";
   }
 
   function submit() {
     if (atLimit) return;
     reset();
     closeFeedback();
+  }
+
+  function handleWheel(e: WheelEvent) {
+    e.preventDefault();
+    const el = e.currentTarget as HTMLElement;
+    el.scrollTop += e.deltaY * 0.35;
   }
 
   const starLabels = ["Poor", "Fair", "Good", "Great", "Excellent"];
@@ -71,10 +88,44 @@
     <div class="delete-dialog feedback-dialog" role="dialog" aria-modal="true">
       <div class="settings-header-bar">
         <p class="delete-title">Feedback</p>
-        <p class="delete-subtitle">Help make vyu better for everyone</p>
+        <p class="delete-subtitle">Help us make vyu better for everyone</p>
       </div>
 
-      <div class="feedback-content">
+      <div class="feedback-content" onwheel={handleWheel}>
+        <!-- System & app -->
+        <div class="feedback-section">
+          <div class="feedback-section-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            System & app
+          </div>
+          <div class="feedback-user-info">
+            <div class="feedback-select-row">
+              <label for="feedback-os">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                OS
+              </label>
+              <select id="feedback-os" bind:value={os}>
+                <option value="" disabled selected>Autodetecting…</option>
+                <option value="windows">Windows</option>
+                <option value="macos">macOS</option>
+                <option value="linux">Linux</option>
+                <option value="prefer-not">Prefer not to say</option>
+              </select>
+            </div>
+            <div class="feedback-select-row">
+              <label for="feedback-version">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                Version
+              </label>
+              <select id="feedback-version" bind:value={appVersion}>
+                <option value="" disabled selected>Autodetecting…</option>
+                <option value="1.0.0">1.0.0</option>
+                <option value="prefer-not">Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <!-- Star ratings -->
         <div class="feedback-section">
           <div class="feedback-section-header">
@@ -161,10 +212,6 @@
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                   {:else if f.id === "slideshow"}
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  {:else if f.id === "properties"}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  {:else if f.id === "settings"}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
                   {:else if f.id === "library"}
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                   {/if}
@@ -216,6 +263,35 @@
               maxlength={MAX_CHARS}
               onwheel={(e) => e.stopPropagation()}
             ></textarea>
+            <div class="feedback-frequency">
+              <span class="feedback-frequency-label">Frequency</span>
+              <div class="feedback-frequency-toggle">
+                <button
+                  class="feedback-freq-btn green"
+                  class:active={frequency === "low"}
+                  onclick={() => (frequency = frequency === "low" ? "" : "low")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  Low
+                </button>
+                <button
+                  class="feedback-freq-btn"
+                  class:active={frequency === "medium"}
+                  onclick={() => (frequency = frequency === "medium" ? "" : "medium")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Medium
+                </button>
+                <button
+                  class="feedback-freq-btn red"
+                  class:active={frequency === "high"}
+                  onclick={() => (frequency = frequency === "high" ? "" : "high")}
+                >
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
+                  High
+                </button>
+              </div>
+            </div>
             {#if painPoint.length >= MAX_CHARS}
               <span class="feedback-limit-warning">Character limit reached</span>
             {/if}
@@ -242,15 +318,49 @@
               <span class="feedback-limit-warning">Character limit reached</span>
             {/if}
           </div>
+          <div class="feedback-field" class:at-limit={focusArea.length >= MAX_CHARS}>
+            <div class="feedback-field-header">
+              <label for="feedback-focus">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                What things do you want us to focus on?
+              </label>
+              <span class="feedback-char-count" class:at-limit={focusArea.length >= MAX_CHARS}>
+                {focusArea.length} / {MAX_CHARS}
+              </span>
+            </div>
+            <textarea
+              id="feedback-focus"
+              bind:value={focusArea}
+              placeholder="Features, workflows, anything..."
+              rows="2"
+              maxlength={MAX_CHARS}
+              onwheel={(e) => e.stopPropagation()}
+            ></textarea>
+            {#if focusArea.length >= MAX_CHARS}
+              <span class="feedback-limit-warning">Character limit reached</span>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="feedback-submit-wrap">
+          <button class="settings-action-btn blue feedback-send-btn" class:faded={atLimit} disabled={atLimit} onclick={submit}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Send feedback
+          </button>
+          <span class="feedback-weekly-note">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            You can only send feedback once per week.
+          </span>
         </div>
       </div>
 
-      <div class="delete-actions feedback-actions">
+      <div class="delete-actions feedback-footer">
+        <span class="feedback-privacy">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Used only to improve the app. Nothing is logged permanently or tied to your identity.
+        </span>
         <button class="delete-cancel" onclick={closeFeedback}>Close</button>
-        <button class="settings-action-btn blue feedback-send-btn" class:faded={atLimit} disabled={atLimit} onclick={submit}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-          Send feedback
-        </button>
       </div>
     </div>
   </div>
