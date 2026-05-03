@@ -165,3 +165,16 @@ export function loadLoopMode(): string {
 export function saveLoopMode(mode: string): void {
   localStorage.setItem("vyu-loop-mode", mode);
 }
+
+export function loadSliderMode(): { volume?: boolean; speed?: boolean } {
+  try {
+    const raw = localStorage.getItem("vyu-slider-mode");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveSliderMode(mode: { volume?: boolean; speed?: boolean }): void {
+  localStorage.setItem("vyu-slider-mode", JSON.stringify(mode));
+}

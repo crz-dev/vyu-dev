@@ -39,6 +39,8 @@
     eraseResumePoint,
     loadLoopMode,
     saveLoopMode,
+    loadSliderMode,
+    saveSliderMode,
     cleanupStaleStorageEntries,
   } from "$lib/services/storage";
 
@@ -216,6 +218,9 @@
   let contrast = $state(1);
   let saturation = $state(1);
   let hue = $state(0);
+
+  let volumeSliderMode = $state(false);
+  let speedSliderMode = $state(false);
 
   let resumePoint = $state<number | null>(null);
   let resumeTooltipVisible = $state(false);
@@ -504,6 +509,18 @@
     });
 
     saveVolume(volume);
+  }
+
+  function toggleVolumeSliderMode() {
+    playbackUI.toggleVolumeSliderMode();
+    volumeSliderMode = playbackUI.volumeSliderMode;
+    saveSliderMode({ volume: volumeSliderMode, speed: speedSliderMode });
+  }
+
+  function toggleSpeedSliderMode() {
+    playbackUI.toggleSpeedSliderMode();
+    speedSliderMode = playbackUI.speedSliderMode;
+    saveSliderMode({ volume: volumeSliderMode, speed: speedSliderMode });
   }
 
   function saveTimestamps() {
@@ -1761,6 +1778,10 @@
     cleanupStaleStorageEntries();
     volume = loadVolume();
     loopMode = (loadLoopMode() as LoopMode) ?? "loop";
+    const sliderPrefs = loadSliderMode();
+    volumeSliderMode = sliderPrefs.volume ?? false;
+    speedSliderMode = sliderPrefs.speed ?? false;
+    playbackUI.initSliderMode(volumeSliderMode, speedSliderMode);
     const prefs = loadClipPrefs();
     clipOutputDir = prefs.outputDir;
     clipDeleteOriginal = prefs.deleteOriginal;
@@ -2066,6 +2087,16 @@
               {timerTooltip}
               {toggleFullscreen}
               onTsMenuChange={(v) => (tsMenuOpen = v)}
+              volumeSliderMode={playbackUI.volumeSliderMode}
+              speedSliderMode={playbackUI.speedSliderMode}
+              volumeSliderValue={playbackUI.volumeSliderValue}
+              speedSliderValue={playbackUI.speedSliderValue}
+              toggleVolumeSliderMode={toggleVolumeSliderMode}
+              toggleSpeedSliderMode={toggleSpeedSliderMode}
+              startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
+              startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
+              handleVolumeSliderChange={setVolume}
+              handleSpeedSliderChange={playbackUI.handleSpeedSliderChange}
             />
           </div>
         </div>
@@ -2246,6 +2277,16 @@
             {timerTooltip}
             {toggleFullscreen}
             onTsMenuChange={(v) => (tsMenuOpen = v)}
+            volumeSliderMode={playbackUI.volumeSliderMode || volumeSliderMode}
+            speedSliderMode={playbackUI.speedSliderMode || speedSliderMode}
+            volumeSliderValue={playbackUI.volumeSliderValue}
+            speedSliderValue={playbackUI.speedSliderValue}
+            toggleVolumeSliderMode={toggleVolumeSliderMode}
+            toggleSpeedSliderMode={toggleSpeedSliderMode}
+            startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
+            startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
+            handleVolumeSliderChange={setVolume}
+            handleSpeedSliderChange={playbackUI.handleSpeedSliderChange}
           />
         </div>
       {:else}

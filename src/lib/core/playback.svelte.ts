@@ -86,6 +86,21 @@ export function createPlaybackUI(
   let speedTooltipY = $state(0);
   let speedTooltipVisible = $state(false);
 
+  let volumeSliderMode = $state(false);
+  let speedSliderMode = $state(false);
+  let volumeSliderValue = $state(1);
+  let speedSliderValue = $state(0.5);
+
+  function speedToSliderVal(speed: number): number {
+    if (speed <= 1) return 0.5 * ((speed - 0.1) / 0.9);
+    return 0.5 + 0.5 * ((speed - 1) / 2);
+  }
+
+  function sliderValToSpeed(val: number): number {
+    if (val <= 0.5) return 0.1 + 0.9 * (val / 0.5);
+    return 1 + 2 * ((val - 0.5) / 0.5);
+  }
+
   function showVolumeOverlay() {
     volumeHovered = true;
   }
@@ -143,6 +158,7 @@ export function createPlaybackUI(
 
   function setPlaybackSpeed(val: number) {
     playbackSpeed = val;
+    speedSliderValue = speedToSliderVal(val);
     const videoEl = videoElRef();
     if (videoEl) videoEl.playbackRate = val;
   }
@@ -211,6 +227,88 @@ export function createPlaybackUI(
     setPlaybackSpeed(steps[next]);
   }
 
+  function toggleVolumeSliderMode() {
+    volumeSliderMode = !volumeSliderMode;
+    if (volumeSliderMode) {
+      volumeSliderValue = getVolume();
+    }
+  }
+
+  function toggleSpeedSliderMode() {
+    speedSliderMode = !speedSliderMode;
+    if (speedSliderMode) {
+      speedSliderValue = speedToSliderVal(playbackSpeed);
+    }
+  }
+
+  function handleVolumeSliderChange(val: number) {
+    volumeSliderValue = val;
+    setVolume(val);
+  }
+
+  function handleSpeedSliderChange(val: number) {
+    speedSliderValue = val;
+    const speed = sliderValToSpeed(val);
+    playbackSpeed = speed;
+    const videoEl = videoElRef();
+    if (videoEl) videoEl.playbackRate = speed;
+  }
+
+  function initSliderMode(volume: boolean, speed: boolean) {
+    volumeSliderMode = volume;
+    speedSliderMode = speed;
+  }
+
+  function startVolumeSliderDrag(e: PointerEvent, track: HTMLDivElement) {
+    e.preventDefault();
+    track.setPointerCapture(e.pointerId);
+
+    function update(clientX: number) {
+      const rect = track.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      handleVolumeSliderChange(pct);
+    }
+
+    update(e.clientX);
+
+    function onMove(ev: PointerEvent) {
+      update(ev.clientX);
+    }
+    function onUp(ev: PointerEvent) {
+      track.releasePointerCapture(ev.pointerId);
+      track.removeEventListener("pointermove", onMove);
+      track.removeEventListener("pointerup", onUp);
+    }
+
+    track.addEventListener("pointermove", onMove);
+    track.addEventListener("pointerup", onUp);
+  }
+
+  function startSpeedSliderDrag(e: PointerEvent, track: HTMLDivElement) {
+    e.preventDefault();
+    track.setPointerCapture(e.pointerId);
+
+    function update(clientX: number) {
+      const rect = track.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      handleSpeedSliderChange(pct);
+    }
+
+    update(e.clientX);
+
+    function onMove(ev: PointerEvent) {
+      update(ev.clientX);
+    }
+    function onUp(ev: PointerEvent) {
+      track.releasePointerCapture(ev.pointerId);
+      track.removeEventListener("pointermove", onMove);
+      track.removeEventListener("pointerup", onUp);
+    }
+
+    track.addEventListener("pointermove", onMove);
+    track.addEventListener("pointerup", onUp);
+  }
+
   return {
     get volumeHovered() {
       return volumeHovered;
@@ -239,6 +337,18 @@ export function createPlaybackUI(
     get speedTooltipVisible() {
       return speedTooltipVisible;
     },
+    get volumeSliderMode() {
+      return volumeSliderMode;
+    },
+    get speedSliderMode() {
+      return speedSliderMode;
+    },
+    get volumeSliderValue() {
+      return volumeSliderValue;
+    },
+    get speedSliderValue() {
+      return speedSliderValue;
+    },
     showVolumeOverlay,
     handleVolumeAreaLeave,
     handleVolumeDiamondHover,
@@ -250,6 +360,14 @@ export function createPlaybackUI(
     handleSpeedDiamondHover,
     startSpeedDrag,
     handleSpeedScroll,
+    toggleVolumeSliderMode,
+    toggleSpeedSliderMode,
+    startVolumeSliderDrag,
+    startSpeedSliderDrag,
+    handleVolumeSliderChange,
+    handleSpeedSliderChange,
+    speedToSliderVal,
+    initSliderMode,
   };
 }
 
