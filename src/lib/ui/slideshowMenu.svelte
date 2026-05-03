@@ -66,7 +66,8 @@
     if (
       visible &&
       !pinned &&
-      !(e.target as HTMLElement).closest(".slideshow-menu")
+      !(e.target as HTMLElement).closest(".slideshow-menu") &&
+      !(e.target as HTMLElement).closest(".slideshow-btn")
     ) {
       onClose();
     }
@@ -91,6 +92,7 @@
       aria-label="Drag to move"
       onmousedown={(e) => {
         e.preventDefault();
+        e.stopPropagation();
         const menu = (e.currentTarget as HTMLElement).closest(
           ".slideshow-menu",
         ) as HTMLElement;

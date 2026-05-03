@@ -917,9 +917,9 @@
 }
 
 .slideshow-menu {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: -8px;
+  position: fixed;
+  bottom: calc(36px + 10px);
+  left: 16px;
   z-index: 1100;
   width: min(260px, calc(100vw - 24px));
   background: #111111;
