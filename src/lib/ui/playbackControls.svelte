@@ -162,6 +162,16 @@
       : 1 + 2 * ((speedSliderValue - 0.5) / 0.5);
     return speed.toFixed(2) + "x";
   });
+
+  const speedStepMarkers = [
+    { step: 0.25, pct: 8.33 },
+    { step: 0.5, pct: 22.22 },
+    { step: 0.75, pct: 36.11 },
+    { step: 1, pct: 50 },
+    { step: 1.25, pct: 56.25 },
+    { step: 2, pct: 75 },
+    { step: 3, pct: 100 },
+  ];
 </script>
 
 {#if !fullscreen}
@@ -311,6 +321,76 @@
       onwheel={handleVolumeScroll}
       role="presentation"
     >
+      <button
+        class="ctrl-btn volume-btn tooltip-ctrl"
+        class:active={!(muted || volume === 0)}
+        data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
+        onclick={toggleMute}
+        aria-label={muted ? "unmute" : "mute"}
+        oncontextmenu={handleVolumeRightClick}
+      >
+        {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
+          {#if muted || volume === 0}
+            <svg
+              class="loop-mode-icon"
+              width="15"
+              height="15"
+              viewBox="0 0 18 18"
+              fill="none"
+              ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line
+                x1="12"
+                y1="6"
+                x2="16"
+                y2="12"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /><line
+                x1="16"
+                y1="6"
+                x2="12"
+                y2="12"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /></svg
+            >
+          {:else if volume < 0.5}
+            <svg
+              class="loop-mode-icon"
+              width="15"
+              height="15"
+              viewBox="0 0 18 18"
+              fill="none"
+              ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /></svg
+            >
+          {:else}
+            <svg
+              class="loop-mode-icon"
+              width="15"
+              height="15"
+              viewBox="0 0 18 18"
+              fill="none"
+              ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /><path
+                d="M13.5 5C15.5 6.5 16.5 7.7 16.5 9C16.5 10.3 15.5 11.5 13.5 13"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /></svg
+            >
+          {/if}
+        {/key}
+      </button>
       {#if volumeSliderMode}
         <div
           class="playback-slider-track"
@@ -327,87 +407,33 @@
           oncontextmenu={handleVolumeRightClick}
         >
           <div class="playback-slider-fill" style="width: {volumeSliderValue * 100}%"></div>
+          {#each [25, 50, 75, 100] as pct}
+            <div
+              class="playback-slider-marker"
+              style="left: {pct}%"
+              onclick={() => setVolume(pct / 100)}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setVolume(pct / 100);
+                }
+              }}
+              role="button"
+              tabindex="0"
+              aria-label="Set volume to {pct}%"
+            ></div>
+          {/each}
           <div
             class="playback-slider-scrubber"
             style="left: {volumeSliderValue * 100}%"
           ></div>
+          {#if volumeSliderHovered || volumeSliderValue !== 1}
+            <div class="playback-slider-tooltip" style="left: {volumeSliderValue * 100}%">
+              <span>{volumeDisplayValue}</span>
+            </div>
+          {/if}
         </div>
-        {#if volumeSliderHovered || volumeSliderValue !== 1}
-          <div class="playback-slider-tooltip" style="left: {volumeSliderValue * 100}%">
-            <span>{volumeDisplayValue}</span>
-          </div>
-        {/if}
       {:else}
-        <button
-          class="ctrl-btn volume-btn tooltip-ctrl"
-          class:active={!(muted || volume === 0)}
-          data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
-          onclick={toggleMute}
-          aria-label={muted ? "unmute" : "mute"}
-          oncontextmenu={handleVolumeRightClick}
-        >
-          {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
-            {#if muted || volume === 0}
-              <svg
-                class="loop-mode-icon"
-                width="15"
-                height="15"
-                viewBox="0 0 18 18"
-                fill="none"
-                ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line
-                  x1="12"
-                  y1="6"
-                  x2="16"
-                  y2="12"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /><line
-                  x1="16"
-                  y1="6"
-                  x2="12"
-                  y2="12"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /></svg
-              >
-            {:else if volume < 0.5}
-              <svg
-                class="loop-mode-icon"
-                width="15"
-                height="15"
-                viewBox="0 0 18 18"
-                fill="none"
-                ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
-                  d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /></svg
-              >
-            {:else}
-              <svg
-                class="loop-mode-icon"
-                width="15"
-                height="15"
-                viewBox="0 0 18 18"
-                fill="none"
-                ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
-                  d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /><path
-                  d="M13.5 5C15.5 6.5 16.5 7.7 16.5 9C16.5 10.3 15.5 11.5 13.5 13"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /></svg
-              >
-            {/if}
-          {/key}
-        </button>
         {#if volumeHovered}
           <div
             class="volume-diamonds"
@@ -439,6 +465,75 @@
       onwheel={handleSpeedScroll}
       role="presentation"
     >
+      <button
+        class="ctrl-btn speed-btn tooltip-ctrl"
+        class:active={playbackSpeed !== 1}
+        data-tooltip="Playback speed"
+        aria-label="playback speed"
+        style="color: #ffffff;"
+        onclick={() => setPlaybackSpeed(1)}
+        oncontextmenu={handleSpeedRightClick}
+      >
+        {#if playbackSpeed < 1}
+          <svg
+            class="speed-mode-icon"
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M2 12c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
+            />
+            <path
+              d="M2 17c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
+            />
+          </svg>
+        {:else if playbackSpeed > 1}
+          <svg
+            class="speed-mode-icon"
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        {:else}
+          <svg
+            class="speed-mode-icon"
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="13" r="7.5" />
+            <path d="M12 9.5v4l2.5 2" />
+            <path d="M10 3h4" />
+            <path d="M12 3v2" />
+            <path d="M19 5.5l-1.5 1.5" />
+            <circle
+              cx="19.5"
+              cy="5"
+              r="1.2"
+              fill="currentColor"
+              stroke="none"
+            />
+          </svg>
+        {/if}
+      </button>
       {#if speedSliderMode}
         <div
           class="playback-slider-track"
@@ -455,87 +550,33 @@
           oncontextmenu={handleSpeedRightClick}
         >
           <div class="playback-slider-fill" style="width: {speedSliderValue * 100}%"></div>
-          <div class="playback-slider-marker" style="left: 50%"></div>
+          {#each speedStepMarkers as marker}
+            <div
+              class="playback-slider-marker"
+              style="left: {marker.pct}%"
+              onclick={() => setPlaybackSpeed(marker.step)}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setPlaybackSpeed(marker.step);
+                }
+              }}
+              role="button"
+              tabindex="0"
+              aria-label="Set speed to {marker.step}x"
+            ></div>
+          {/each}
           <div
             class="playback-slider-scrubber"
             style="left: {speedSliderValue * 100}%"
           ></div>
-        </div>
-        {#if speedSliderHovered || speedSliderValue !== 0.5}
-          <div class="playback-slider-tooltip" style="left: {speedSliderValue * 100}%">
-            <span>{speedDisplayValue}</span>
-          </div>
-        {/if}
-      {:else}
-        <button
-          class="ctrl-btn speed-btn tooltip-ctrl"
-          class:active={playbackSpeed !== 1}
-          data-tooltip="Playback speed"
-          aria-label="playback speed"
-          style="color: #ffffff;"
-          onclick={() => setPlaybackSpeed(1)}
-          oncontextmenu={handleSpeedRightClick}
-        >
-          {#if playbackSpeed < 1}
-            <svg
-              class="speed-mode-icon"
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M2 12c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
-              />
-              <path
-                d="M2 17c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
-              />
-            </svg>
-          {:else if playbackSpeed > 1}
-            <svg
-              class="speed-mode-icon"
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          {:else}
-            <svg
-              class="speed-mode-icon"
-              width="21"
-              height="21"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="13" r="7.5" />
-              <path d="M12 9.5v4l2.5 2" />
-              <path d="M10 3h4" />
-              <path d="M12 3v2" />
-              <path d="M19 5.5l-1.5 1.5" />
-              <circle
-                cx="19.5"
-                cy="5"
-                r="1.2"
-                fill="currentColor"
-                stroke="none"
-              />
-            </svg>
+          {#if speedSliderHovered || speedSliderValue !== 0.5}
+            <div class="playback-slider-tooltip" style="left: {speedSliderValue * 100}%">
+              <span>{speedDisplayValue}</span>
+            </div>
           {/if}
-        </button>
+        </div>
+      {:else}
         {#if speedHovered}
           <div
             class="speed-diamonds"
@@ -939,6 +980,76 @@
       onwheel={handleVolumeScroll}
       role="presentation"
     >
+      <button
+        class="fs-ctrl-btn volume-btn tooltip-ctrl"
+        class:active={!(muted || volume === 0)}
+        data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
+        onclick={toggleMute}
+        aria-label={muted ? "unmute" : "mute"}
+        oncontextmenu={handleVolumeRightClick}
+      >
+        {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
+          {#if muted || volume === 0}
+            <svg
+              class="loop-mode-icon"
+              width="19"
+              height="19"
+              viewBox="0 0 18 18"
+              fill="none"
+              ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line
+                x1="12"
+                y1="6"
+                x2="16"
+                y2="12"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /><line
+                x1="16"
+                y1="6"
+                x2="12"
+                y2="12"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /></svg
+            >
+          {:else if volume < 0.5}
+            <svg
+              class="loop-mode-icon"
+              width="19"
+              height="19"
+              viewBox="0 0 18 18"
+              fill="none"
+              ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /></svg
+            >
+          {:else}
+            <svg
+              class="loop-mode-icon"
+              width="19"
+              height="19"
+              viewBox="0 0 18 18"
+              fill="none"
+              ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
+                d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /><path
+                d="M13.5 5C15.5 6.5 16.5 7.7 16.5 9C16.5 10.3 15.5 11.5 13.5 13"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              /></svg
+            >
+          {/if}
+        {/key}
+      </button>
       {#if volumeSliderMode}
         <div
           class="playback-slider-track"
@@ -955,87 +1066,33 @@
           oncontextmenu={handleVolumeRightClick}
         >
           <div class="playback-slider-fill" style="width: {volumeSliderValue * 100}%"></div>
+          {#each [25, 50, 75, 100] as pct}
+            <div
+              class="playback-slider-marker"
+              style="left: {pct}%"
+              onclick={() => setVolume(pct / 100)}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setVolume(pct / 100);
+                }
+              }}
+              role="button"
+              tabindex="0"
+              aria-label="Set volume to {pct}%"
+            ></div>
+          {/each}
           <div
             class="playback-slider-scrubber"
             style="left: {volumeSliderValue * 100}%"
           ></div>
+          {#if volumeSliderHovered || volumeSliderValue !== 1}
+            <div class="playback-slider-tooltip" style="left: {volumeSliderValue * 100}%">
+              <span>{volumeDisplayValue}</span>
+            </div>
+          {/if}
         </div>
-        {#if volumeSliderHovered || volumeSliderValue !== 1}
-          <div class="playback-slider-tooltip" style="left: {volumeSliderValue * 100}%">
-            <span>{volumeDisplayValue}</span>
-          </div>
-        {/if}
       {:else}
-        <button
-          class="fs-ctrl-btn volume-btn tooltip-ctrl"
-          class:active={!(muted || volume === 0)}
-          data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
-          onclick={toggleMute}
-          aria-label={muted ? "unmute" : "mute"}
-          oncontextmenu={handleVolumeRightClick}
-        >
-          {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
-            {#if muted || volume === 0}
-              <svg
-                class="loop-mode-icon"
-                width="19"
-                height="19"
-                viewBox="0 0 18 18"
-                fill="none"
-                ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line
-                  x1="12"
-                  y1="6"
-                  x2="16"
-                  y2="12"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /><line
-                  x1="16"
-                  y1="6"
-                  x2="12"
-                  y2="12"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /></svg
-              >
-            {:else if volume < 0.5}
-              <svg
-                class="loop-mode-icon"
-                width="19"
-                height="19"
-                viewBox="0 0 18 18"
-                fill="none"
-                ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
-                  d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /></svg
-              >
-            {:else}
-              <svg
-                class="loop-mode-icon"
-                width="19"
-                height="19"
-                viewBox="0 0 18 18"
-                fill="none"
-                ><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path
-                  d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /><path
-                  d="M13.5 5C15.5 6.5 16.5 7.7 16.5 9C16.5 10.3 15.5 11.5 13.5 13"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                /></svg
-              >
-            {/if}
-          {/key}
-        </button>
         {#if volumeHovered}
           <div
             class="volume-diamonds"
@@ -1067,6 +1124,75 @@
       onwheel={handleSpeedScroll}
       role="presentation"
     >
+      <button
+        class="fs-ctrl-btn speed-btn tooltip-ctrl"
+        class:active={playbackSpeed !== 1}
+        data-tooltip="Playback speed"
+        aria-label="playback speed"
+        style="color: #ffffff;"
+        onclick={() => setPlaybackSpeed(1)}
+        oncontextmenu={handleSpeedRightClick}
+      >
+        {#if playbackSpeed < 1}
+          <svg
+            class="speed-mode-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M2 12c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
+            />
+            <path
+              d="M2 17c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
+            />
+          </svg>
+        {:else if playbackSpeed > 1}
+          <svg
+            class="speed-mode-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+        {:else}
+          <svg
+            class="speed-mode-icon"
+            width="25"
+            height="25"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="13" r="7.5" />
+            <path d="M12 9.5v4l2.5 2" />
+            <path d="M10 3h4" />
+            <path d="M12 3v2" />
+            <path d="M19 5.5l-1.5 1.5" />
+            <circle
+              cx="19.5"
+              cy="5"
+              r="1.2"
+              fill="currentColor"
+              stroke="none"
+            />
+          </svg>
+        {/if}
+      </button>
       {#if speedSliderMode}
         <div
           class="playback-slider-track"
@@ -1083,87 +1209,33 @@
           oncontextmenu={handleSpeedRightClick}
         >
           <div class="playback-slider-fill" style="width: {speedSliderValue * 100}%"></div>
-          <div class="playback-slider-marker" style="left: 50%"></div>
+          {#each speedStepMarkers as marker}
+            <div
+              class="playback-slider-marker"
+              style="left: {marker.pct}%"
+              onclick={() => setPlaybackSpeed(marker.step)}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setPlaybackSpeed(marker.step);
+                }
+              }}
+              role="button"
+              tabindex="0"
+              aria-label="Set speed to {marker.step}x"
+            ></div>
+          {/each}
           <div
             class="playback-slider-scrubber"
             style="left: {speedSliderValue * 100}%"
           ></div>
-        </div>
-        {#if speedSliderHovered || speedSliderValue !== 0.5}
-          <div class="playback-slider-tooltip" style="left: {speedSliderValue * 100}%">
-            <span>{speedDisplayValue}</span>
-          </div>
-        {/if}
-      {:else}
-        <button
-          class="fs-ctrl-btn speed-btn tooltip-ctrl"
-          class:active={playbackSpeed !== 1}
-          data-tooltip="Playback speed"
-          aria-label="playback speed"
-          style="color: #ffffff;"
-          onclick={() => setPlaybackSpeed(1)}
-          oncontextmenu={handleSpeedRightClick}
-        >
-          {#if playbackSpeed < 1}
-            <svg
-              class="speed-mode-icon"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M2 12c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
-              />
-              <path
-                d="M2 17c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
-              />
-            </svg>
-          {:else if playbackSpeed > 1}
-            <svg
-              class="speed-mode-icon"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          {:else}
-            <svg
-              class="speed-mode-icon"
-              width="25"
-              height="25"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="13" r="7.5" />
-              <path d="M12 9.5v4l2.5 2" />
-              <path d="M10 3h4" />
-              <path d="M12 3v2" />
-              <path d="M19 5.5l-1.5 1.5" />
-              <circle
-                cx="19.5"
-                cy="5"
-                r="1.2"
-                fill="currentColor"
-                stroke="none"
-              />
-            </svg>
+          {#if speedSliderHovered || speedSliderValue !== 0.5}
+            <div class="playback-slider-tooltip" style="left: {speedSliderValue * 100}%">
+              <span>{speedDisplayValue}</span>
+            </div>
           {/if}
-        </button>
+        </div>
+      {:else}
         {#if speedHovered}
           <div
             class="speed-diamonds"
