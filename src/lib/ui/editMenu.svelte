@@ -47,12 +47,27 @@
   let localSaturation = $state(1);
   let localHue = $state(0);
   let pinned = $state(false);
+  let rotateRowOpen = $state(false);
+  let activeRotateTool:
+    | "90-right"
+    | "90-left"
+    | "180"
+    | "custom"
+    | null = $state(null);
+  let rotateSliderHovered = $state(false);
+  let rotateTrackEl: HTMLDivElement | null = $state(null);
+  let isRotateDragging = $state(false);
+  let localRotationAngle = $state(0);
+  let flipRowOpen = $state(false);
 
   $effect(() => {
     if (!visible) {
       colorRowOpen = false;
       activeColorTool = null;
       pinned = false;
+      rotateRowOpen = false;
+      activeRotateTool = null;
+      flipRowOpen = false;
     }
   });
 
@@ -182,6 +197,72 @@
     }
   }
 
+  function toggleRotateTool(
+    tool: "90-right" | "90-left" | "180" | "custom",
+  ) {
+    if (activeRotateTool === tool) {
+      activeRotateTool = null;
+    } else {
+      activeRotateTool = tool;
+      if (tool === "90-right") {
+        viewer.rotate(90);
+      } else if (tool === "90-left") {
+        viewer.rotate(-90);
+      } else if (tool === "180") {
+        viewer.rotate(180);
+      } else if (tool === "custom") {
+        localRotationAngle = 0;
+        viewer.setRotation(0);
+      }
+    }
+  }
+
+  function updateRotationFromX(clientX: number) {
+    if (!rotateTrackEl) return;
+    const rect = rotateTrackEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const angle = Math.round(-180 + pct * 360);
+    localRotationAngle = angle;
+    viewer.setRotation(angle);
+  }
+
+  function handleRotateTrackPointerDown(e: PointerEvent) {
+    if (!rotateTrackEl) return;
+    isRotateDragging = true;
+    rotateTrackEl.setPointerCapture(e.pointerId);
+    updateRotationFromX(e.clientX);
+  }
+
+  function handleRotateTrackPointerMove(e: PointerEvent) {
+    if (!isRotateDragging || !rotateTrackEl) return;
+    e.preventDefault();
+    updateRotationFromX(e.clientX);
+  }
+
+  function handleRotateTrackPointerUp(e: PointerEvent) {
+    if (!isRotateDragging || !rotateTrackEl) return;
+    isRotateDragging = false;
+    rotateTrackEl.releasePointerCapture(e.pointerId);
+  }
+
+  function closeRotateTools() {
+    activeRotateTool = null;
+    rotateRowOpen = false;
+  }
+
+  function toggleFlip(direction: "horizontal" | "vertical") {
+    if (direction === "horizontal") {
+      viewer.flip();
+    } else {
+      viewer.flipVertical();
+    }
+  }
+
+  function closeFlipTools() {
+    flipRowOpen = false;
+  }
+
   const scrubberTooltipVisible = $derived(
     activeColorTool !== null &&
       (sliderHovered ||
@@ -235,6 +316,18 @@
       { val: 2, pct: 100 },
     ];
   });
+
+  const rotateScrubberPct = $derived(
+    ((localRotationAngle - -180) / 360) * 100,
+  );
+
+  const rotateScrubberTooltipVisible = $derived(
+    activeRotateTool === "custom" && localRotationAngle !== 0,
+  );
+
+  const rotateDisplayValue = $derived(
+    `${localRotationAngle > 0 ? "+" : ""}${localRotationAngle}°`,
+  );
 </script>
 
 {#if visible}
@@ -366,41 +459,95 @@
           <span>Crop</span>
         {/if}
       </button>
-      <button class="edit-menu-btn yellow" onclick={onRotate}>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      {#if rotateRowOpen}
+        <button
+          class="edit-menu-btn red brightness-close-btn"
+          onclick={closeRotateTools}
         >
-          <path d="M21 2v6h-6" />
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-          <path d="M3 22v-6h6" />
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-        </svg>
-        <span>Rotate</span>
-      </button>
-      <button class="edit-menu-btn green" onclick={onFlip}>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          {#key rotateRowOpen}
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="speed-mode-icon"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            <span>Close</span>
+          {/key}
+        </button>
+      {:else}
+        <button
+          class="edit-menu-btn yellow"
+          onclick={() => (rotateRowOpen = !rotateRowOpen)}
         >
-          <path d="M12 3v18" />
-          <path d="M16 7l4 5-4 5" />
-          <path d="M8 7l-4 5 4 5" />
-        </svg>
-        <span>Flip</span>
-      </button>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 2v6h-6" />
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M3 22v-6h6" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+          <span>Rotate</span>
+        </button>
+      {/if}
+      {#if flipRowOpen}
+        <button
+          class="edit-menu-btn red brightness-close-btn"
+          onclick={closeFlipTools}
+        >
+          {#key flipRowOpen}
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="speed-mode-icon"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            <span>Close</span>
+          {/key}
+        </button>
+      {:else}
+        <button
+          class="edit-menu-btn green"
+          onclick={() => (flipRowOpen = !flipRowOpen)}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 3v18" />
+            <path d="M16 7l4 5-4 5" />
+            <path d="M8 7l-4 5 4 5" />
+          </svg>
+          <span>Flip</span>
+        </button>
+      {/if}
       {#if colorRowOpen}
         <button
           class="edit-menu-btn red brightness-close-btn"
@@ -617,6 +764,204 @@
             <span>{displayValue}</span>
           </div>
         {/if}
+      </div>
+    {/if}
+
+    {#if rotateRowOpen}
+      <div
+        class="edit-menu-row"
+        transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+      >
+        <button
+          class="edit-menu-btn yellow"
+          class:active={activeRotateTool === "90-right"}
+          onclick={() => toggleRotateTool("90-right")}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 2v6h-6" />
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+          </svg>
+          <span>90 Right</span>
+        </button>
+        <button
+          class="edit-menu-btn yellow"
+          class:active={activeRotateTool === "90-left"}
+          onclick={() => toggleRotateTool("90-left")}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 2v6h6" />
+            <path d="M21 12a9 9 0 0 0-15-6.7L3 8" />
+          </svg>
+          <span>90 Left</span>
+        </button>
+        <button
+          class="edit-menu-btn yellow"
+          class:active={activeRotateTool === "180"}
+          onclick={() => toggleRotateTool("180")}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 2v6h-6" />
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M3 22v-6h6" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+          <span>180 Full</span>
+        </button>
+        <button
+          class="edit-menu-btn yellow"
+          class:active={activeRotateTool === "custom"}
+          onclick={() => toggleRotateTool("custom")}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          <span>Custom</span>
+        </button>
+      </div>
+    {/if}
+
+    {#if activeRotateTool === "custom"}
+      <div
+        class="color-slider-panel"
+        transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+      >
+        <div
+          class="color-slider-track"
+          bind:this={rotateTrackEl}
+          role="slider"
+          tabindex="0"
+          aria-valuemin="-180"
+          aria-valuemax="180"
+          aria-valuenow={localRotationAngle}
+          aria-label="Rotation angle"
+          onpointerdown={handleRotateTrackPointerDown}
+          onpointermove={handleRotateTrackPointerMove}
+          onpointerup={handleRotateTrackPointerUp}
+          onpointercancel={handleRotateTrackPointerUp}
+          onmouseenter={() => (rotateSliderHovered = true)}
+          onmouseleave={() => (rotateSliderHovered = false)}
+        >
+          <div class="color-slider-fill" style="width: {rotateScrubberPct}%"></div>
+          <div
+            class="color-slider-marker"
+            style="left: 50%"
+            onpointerdown={(e) => e.stopPropagation()}
+            onclick={() => { localRotationAngle = 0; viewer.setRotation(0); }}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                localRotationAngle = 0;
+                viewer.setRotation(0);
+              }
+            }}
+            role="button"
+            tabindex="0"
+            aria-label="Set rotation to 0"
+          ></div>
+          <div
+            class="color-slider-scrubber"
+            style="left: {rotateScrubberPct}%"
+            role="button"
+            tabindex="0"
+            aria-label="Scrubber"
+            onpointerdown={(e) => {
+              e.stopPropagation();
+              if (!rotateTrackEl) return;
+              isRotateDragging = true;
+              rotateTrackEl.setPointerCapture(e.pointerId);
+            }}
+          ></div>
+        </div>
+        {#if rotateScrubberTooltipVisible}
+          <div class="color-scrubber-tooltip" style="left: {rotateScrubberPct}%">
+            <span>{rotateDisplayValue}</span>
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    {#if flipRowOpen}
+      <div
+        class="edit-menu-row"
+        transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+      >
+        <button
+          class="edit-menu-btn green"
+          onclick={() => toggleFlip("horizontal")}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 3v18" />
+            <path d="M16 7l4 5-4 5" />
+            <path d="M8 7l-4 5 4 5" />
+          </svg>
+          <span>Horizontally</span>
+        </button>
+        <button
+          class="edit-menu-btn green"
+          onclick={() => toggleFlip("vertical")}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 12h18" />
+            <path d="M7 8l5-4 5 4" />
+            <path d="M7 16l5 4 5-4" />
+          </svg>
+          <span>Vertically</span>
+        </button>
       </div>
     {/if}
 

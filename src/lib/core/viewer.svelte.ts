@@ -15,6 +15,7 @@ type ViewerState = {
   isDragging: boolean;
   rotation: number;
   flipped: boolean;
+  flippedVertical: boolean;
   cropMode: boolean;
   cropBounds: CropBounds;
 };
@@ -37,6 +38,7 @@ function createViewer() {
     isDragging: false,
     rotation: 0,
     flipped: false,
+    flippedVertical: false,
     cropMode: false,
     cropBounds: { left: 0, top: 0, right: 0, bottom: 0 },
   });
@@ -76,12 +78,20 @@ function createViewer() {
     state.translateY = 0;
   }
 
-  function rotate() {
-    state.rotation = (state.rotation + 90) % 360;
+  function rotate(angle: number = 90) {
+    state.rotation = (state.rotation + angle) % 360;
+  }
+
+  function setRotation(angle: number) {
+    state.rotation = ((angle % 360) + 360) % 360;
   }
 
   function flip() {
     state.flipped = !state.flipped;
+  }
+
+  function flipVertical() {
+    state.flippedVertical = !state.flippedVertical;
   }
 
   function getPanCursor(): "default" | "grab" | "grabbing" {
@@ -106,7 +116,7 @@ function createViewer() {
       }
     }
     const scale = (state.zoomLevel / 100) * rotationFitScale;
-    return `transform: scale(${scale}) rotate(${state.rotation}deg) scaleX(${state.flipped ? -1 : 1}); transform-origin: center center;`;
+    return `transform: scale(${scale}) rotate(${state.rotation}deg) scaleX(${state.flipped ? -1 : 1}) scaleY(${state.flippedVertical ? -1 : 1}); transform-origin: center center;`;
   }
 
   function handleViewerScroll(e: WheelEvent, fileSrc: string) {
@@ -250,7 +260,9 @@ function createViewer() {
     resetFsTimer,
     resetZoom,
     rotate,
+    setRotation,
     flip,
+    flipVertical,
     getPanCursor,
     getVideoWrapperTransform,
     getVideoInnerTransform,
