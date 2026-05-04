@@ -306,10 +306,6 @@ main.fullscreen .media-container {
   width: 100%;
   height: 100%;
 }
-main.fullscreen .media-container img {
-  width: 100%;
-  height: 100%;
-}
 
 .fs-overlay {
   position: fixed;

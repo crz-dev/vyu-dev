@@ -121,7 +121,7 @@
     const observer = new ResizeObserver(() => {
       if (fileSrc && !isVideo && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
         if (Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5) {
-          const padding = 32;
+          const padding = viewer.state.isFullscreen ? 0 : 32;
           viewer.fitToScreen(el.clientWidth - padding, el.clientHeight - padding, imageNaturalWidth, imageNaturalHeight);
         }
       }
@@ -394,7 +394,7 @@
 
   function resetZoom() {
     if (viewerEl && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
-      const padding = 32;
+      const padding = viewer.state.isFullscreen ? 0 : 32;
       viewer.fitToScreen(viewerEl.clientWidth - padding, viewerEl.clientHeight - padding, imageNaturalWidth, imageNaturalHeight);
     } else {
       viewer.resetZoom();
@@ -1208,7 +1208,7 @@
     );
     const img = e.target as HTMLImageElement;
     if (viewerEl && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      const padding = 32;
+      const padding = viewer.state.isFullscreen ? 0 : 32;
       viewer.fitToScreen(viewerEl.clientWidth - padding, viewerEl.clientHeight - padding, img.naturalWidth, img.naturalHeight);
     }
     if (slideshow.active) {
