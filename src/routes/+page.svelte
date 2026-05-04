@@ -77,7 +77,11 @@
     copyAllPropertiesToClipboard,
   } from "$lib/services/clipboard";
 
-  import { getParentFolder, getFileExt } from "$lib/services/files";
+  import {
+    getParentFolder,
+    getFileExt,
+    clearFolderCache,
+  } from "$lib/services/files";
   import { createMedia } from "$lib/core/media.svelte";
   import { viewer } from "$lib/core/viewer.svelte";
   import { slideshow } from "$lib/core/slideshow.svelte";
@@ -1349,8 +1353,20 @@
     viewer.state.rotation = 0;
     viewer.state.flipped = false;
     viewer.state.cropMode = false;
+    viewer.state.zoomLevel = 1;
+    viewer.state.baseZoomLevel = 1;
+    viewer.state.translateX = 0;
+    viewer.state.translateY = 0;
     viewer.setCurrentFile("");
+    viewer.clearCropCache();
     media.closeFile(setMediaState);
+    brightness = 1;
+    contrast = 1;
+    saturation = 1;
+    hue = 0;
+    mediaProps = null;
+    mediaPropsLoading = false;
+    clearFolderCache();
   }
 
   async function minimizeWindow() {
@@ -1902,7 +1918,7 @@
     clipUseCustomPath = prefs.useCustomPath;
     clipMergeSegments = prefs.mergeSegments;
 
-    window.addEventListener("beforeunload", () => {
+    function saveResumeBeforeUnload() {
       if (isVideo && filePath && rawCurrentSecs > 0 && rawDurationSecs > 0) {
         const nearEnd = rawCurrentSecs >= rawDurationSecs - 1.5;
         if (!nearEnd) {
@@ -1911,12 +1927,19 @@
           eraseResumePoint(filePath);
         }
       }
-    });
+    }
 
-    getCurrentWindow().onDragDropEvent((event) => {
-      if (event.payload.type === "drop" && event.payload.paths?.length > 0)
-        loadFile(event.payload.paths[0]);
-    });
+    window.addEventListener("beforeunload", saveResumeBeforeUnload);
+
+    let unlistenDragDrop: () => void = () => {};
+    getCurrentWindow()
+      .onDragDropEvent((event) => {
+        if (event.payload.type === "drop" && event.payload.paths?.length > 0)
+          loadFile(event.payload.paths[0]);
+      })
+      .then((fn) => {
+        unlistenDragDrop = fn;
+      });
 
     window.addEventListener("keydown", handleKeydown);
     window.addEventListener("mousedown", handleGlobalMouseDown);
@@ -1986,6 +2009,8 @@
       window.removeEventListener("keydown", handleKeydown);
       window.removeEventListener("mousedown", handleGlobalMouseDown);
       window.removeEventListener("paste", handlePaste);
+      window.removeEventListener("beforeunload", saveResumeBeforeUnload);
+      unlistenDragDrop();
       clearTimeout(frameCopyToastTimer);
       clearTimeout(clipToastTimer);
       clearTimeout(tsDragFadeTimer);
@@ -2558,14 +2583,30 @@
     showInExplorer={invokeShowInExplorer}
   />
 
-  <SettingsDialog {settingsOpen} closeSettings={() => (settingsOpen = false)} />
-  <AccessibilityDialog
-    {accessibilityOpen}
-    closeAccessibility={() => (accessibilityOpen = false)}
-  />
-  <HelpDialog {helpOpen} closeHelp={() => (helpOpen = false)} />
-  <AboutDialog {aboutOpen} closeAbout={() => (aboutOpen = false)} />
-  <FeedbackDialog {feedbackOpen} closeFeedback={() => (feedbackOpen = false)} />
+  {#key settingsOpen}
+    <SettingsDialog
+      {settingsOpen}
+      closeSettings={() => (settingsOpen = false)}
+    />
+  {/key}
+  {#key accessibilityOpen}
+    <AccessibilityDialog
+      {accessibilityOpen}
+      closeAccessibility={() => (accessibilityOpen = false)}
+    />
+  {/key}
+  {#key helpOpen}
+    <HelpDialog {helpOpen} closeHelp={() => (helpOpen = false)} />
+  {/key}
+  {#key aboutOpen}
+    <AboutDialog {aboutOpen} closeAbout={() => (aboutOpen = false)} />
+  {/key}
+  {#key feedbackOpen}
+    <FeedbackDialog
+      {feedbackOpen}
+      closeFeedback={() => (feedbackOpen = false)}
+    />
+  {/key}
 
   <Tooltip
     {tsTooltip}

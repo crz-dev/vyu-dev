@@ -20,9 +20,13 @@
 
   let trackEl = $state<HTMLDivElement | null>(null);
   let animatingToIndex = $state<number | null>(null);
-  let pendingScrollRaf = $state<ReturnType<typeof requestAnimationFrame> | null>(null);
+  let pendingScrollRaf = $state<ReturnType<
+    typeof requestAnimationFrame
+  > | null>(null);
   let scrollPending = false;
-  let rafVisibilityId = $state<ReturnType<typeof requestAnimationFrame> | null>(null);
+  let rafVisibilityId = $state<ReturnType<typeof requestAnimationFrame> | null>(
+    null,
+  );
 
   const LIMIT = 10;
   const TOTAL_SLOTS = LIMIT * 2 + 1;
@@ -216,6 +220,16 @@
     };
   });
 
+  $effect(() => {
+    if (!visible) {
+      thumbnailUrls = {};
+      srcCache.clear();
+      fetchingPaths = new Set();
+      visiblePaths = new Set();
+      wantedInViewAt = new Map();
+    }
+  });
+
   function easeOutCubic(t: number): number {
     return 1 - Math.pow(1 - t, 3);
   }
@@ -335,16 +349,14 @@
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
               </div>
-            {:else}
-              {#if thumbSrc && inView}
-                <img
-                  src={thumbSrc}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  draggable="false"
-                />
-              {/if}
+            {:else if thumbSrc && inView}
+              <img
+                src={thumbSrc}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
             {/if}
           </button>
         {:else}

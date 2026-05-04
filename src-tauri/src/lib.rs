@@ -268,9 +268,84 @@ fn hash_path(path: &str) -> String {
 
 const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp"];
 const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv"];
+const FFMPEG_THUMB_TIMEOUT: Duration = Duration::from_secs(8);
+
+fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+    let mut child = Command::new("ffmpeg")
+        .args([
+            "-y", "-hide_banner", "-loglevel", "error",
+            "-ss", "1",
+            "-i", path,
+            "-vframes", "1",
+            "-vf", "scale=200:200:force_original_aspect_ratio=decrease",
+            "-q:v", "4",
+            &thumb_path.to_string_lossy(),
+        ])
+        .spawn()
+        .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
+
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => {
+                return Ok(Some(thumb_path.to_string_lossy().to_string()));
+            }
+            Ok(Some(_)) => {
+                let _ = fs::remove_file(thumb_path);
+                return Ok(None);
+            }
+            Ok(None) => {
+                if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    let _ = fs::remove_file(thumb_path);
+                    return Ok(None);
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            Err(e) => {
+                let _ = fs::remove_file(thumb_path);
+                return Err(format!("ffmpeg error: {e}"));
+            }
+        }
+    }
+}
+
+fn generate_image_thumb(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+    let img = image::open(path).map_err(|e| format!("Failed to open image: {e}"))?;
+    let (w, h) = img.dimensions();
+    let max_dim: u32 = 200;
+    let (nw, nh) = if w > h {
+        (max_dim, ((h as f64) * (max_dim as f64) / (w as f64)).round() as u32)
+    } else {
+        (((w as f64) * (max_dim as f64) / (h as f64)).round() as u32, max_dim)
+    };
+    let thumb = img.resize_exact(
+        nw.max(1),
+        nh.max(1),
+        image::imageops::FilterType::Lanczos3,
+    );
+    let mut jpeg_bytes: Vec<u8> = Vec::new();
+    let mut encoder =
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 75);
+    encoder
+        .encode(
+            thumb.as_bytes(),
+            thumb.width(),
+            thumb.height(),
+            thumb.color().into(),
+        )
+        .map_err(|e| format!("Failed to encode thumbnail: {e}"))?;
+    fs::write(thumb_path, &jpeg_bytes)
+        .map_err(|e| format!("Failed to write thumbnail: {e}"))?;
+    Ok(Some(thumb_path.to_string_lossy().to_string()))
+}
 
 #[tauri::command]
-fn generate_thumbnail(app: tauri::AppHandle, path: String) -> Result<Option<String>, String> {
+async fn generate_thumbnail(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<Option<String>, String> {
     let ext = path
         .rsplit('.')
         .next()
@@ -308,54 +383,15 @@ fn generate_thumbnail(app: tauri::AppHandle, path: String) -> Result<Option<Stri
         }
     }
 
-    if is_video {
-        let status = Command::new("ffmpeg")
-            .args([
-                "-y", "-hide_banner", "-loglevel", "error",
-                "-ss", "1",
-                "-i", &path,
-                "-vframes", "1",
-                "-vf", "scale=200:200:force_original_aspect_ratio=decrease",
-                "-q:v", "4",
-                &thumb_path.to_string_lossy(),
-            ])
-            .status();
-
-        match status {
-            Ok(s) if s.success() => {
-                return Ok(Some(thumb_path.to_string_lossy().to_string()));
-            }
-            _ => return Ok(None),
+    tauri::async_runtime::spawn_blocking(move || {
+        if is_video {
+            generate_video_frame(&path, &thumb_path)
+        } else {
+            generate_image_thumb(&path, &thumb_path)
         }
-    }
-
-    let img = image::open(&path).map_err(|e| format!("Failed to open image: {e}"))?;
-    let (w, h) = img.dimensions();
-    let max_dim: u32 = 200;
-    let (nw, nh) = if w > h {
-        (max_dim, ((h as f64) * (max_dim as f64) / (w as f64)).round() as u32)
-    } else {
-        (((w as f64) * (max_dim as f64) / (h as f64)).round() as u32, max_dim)
-    };
-    let thumb = img.resize_exact(
-        nw.max(1),
-        nh.max(1),
-        image::imageops::FilterType::Lanczos3,
-    );
-    let mut jpeg_bytes: Vec<u8> = Vec::new();
-    let mut encoder =
-        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 75);
-    encoder
-        .encode(
-            thumb.as_bytes(),
-            thumb.width(),
-            thumb.height(),
-            thumb.color().into(),
-        )
-        .map_err(|e| format!("Failed to encode thumbnail: {e}"))?;
-    fs::write(&thumb_path, &jpeg_bytes)
-        .map_err(|e| format!("Failed to write thumbnail: {e}"))?;
-    Ok(Some(thumb_path.to_string_lossy().to_string()))
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
 }
 
 fn cleanup_vyu_temp() {

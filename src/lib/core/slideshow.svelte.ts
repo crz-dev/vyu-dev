@@ -163,6 +163,7 @@ export function createSlideshow() {
     clearTimeout(timer);
     timer = undefined;
     clearVideoListener();
+    shuffledIndices = [];
   }
 
   function onMediaLoaded() {

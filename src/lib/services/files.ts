@@ -1,7 +1,16 @@
 import { readDir } from "@tauri-apps/plugin-fs";
 import { ALL_EXTS } from "$lib/constants";
 
+const FOLDER_CACHE_MAX = 50;
 const folderCache = new Map<string, string[]>();
+const folderCacheOrder: string[] = [];
+
+function evictOldestFolder() {
+  while (folderCacheOrder.length > FOLDER_CACHE_MAX) {
+    const oldest = folderCacheOrder.shift();
+    if (oldest) folderCache.delete(oldest);
+  }
+}
 
 export async function readMediaFilesInFolder(path: string): Promise<string[]> {
   const sep = path.includes("\\") ? "\\" : "/";
@@ -16,14 +25,19 @@ export async function readMediaFilesInFolder(path: string): Promise<string[]> {
     .map((e) => `${folder}${sep}${e.name}`)
     .sort();
   folderCache.set(folder, list);
+  folderCacheOrder.push(folder);
+  evictOldestFolder();
   return list;
 }
 
 export function clearFolderCache(folder?: string) {
   if (folder) {
     folderCache.delete(folder);
+    const idx = folderCacheOrder.indexOf(folder);
+    if (idx !== -1) folderCacheOrder.splice(idx, 1);
   } else {
     folderCache.clear();
+    folderCacheOrder.length = 0;
   }
 }
 

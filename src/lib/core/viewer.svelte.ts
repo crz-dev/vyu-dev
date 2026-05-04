@@ -285,6 +285,10 @@ function createViewer() {
     return null;
   }
 
+  function clearCropCache() {
+    cropMap.clear();
+  }
+
   return {
     state,
     setVideoEl,
@@ -312,6 +316,7 @@ function createViewer() {
     applyCrop,
     setCropBounds,
     getCropBounds,
+    clearCropCache,
   };
 }
 

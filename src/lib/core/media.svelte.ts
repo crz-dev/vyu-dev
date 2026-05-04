@@ -201,6 +201,7 @@ export function createMedia(
     clearTimeout(loadingTimer);
     finishLoadingCalled = false;
     releaseMediaResources();
+    statCache.clear();
     onReset();
     set({
       filePath: "",
