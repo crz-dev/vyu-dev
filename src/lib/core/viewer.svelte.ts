@@ -10,6 +10,7 @@ type ViewerState = {
   isFullscreen: boolean;
   fsControlsVisible: boolean;
   zoomLevel: number;
+  baseZoomLevel: number;
   translateX: number;
   translateY: number;
   isDragging: boolean;
@@ -23,8 +24,8 @@ type ViewerState = {
 const cropMap = $state(new Map<string, CropBounds>());
 let currentFilePath = $state("");
 
-function clampZoom(value: number): number {
-  return Math.max(100, Math.min(1000, value));
+function clampZoom(value: number, min: number): number {
+  return Math.max(min, Math.min(1000, value));
 }
 
 function createViewer() {
@@ -33,6 +34,7 @@ function createViewer() {
     isFullscreen: false,
     fsControlsVisible: true,
     zoomLevel: 100,
+    baseZoomLevel: 100,
     translateX: 0,
     translateY: 0,
     isDragging: false,
@@ -72,6 +74,20 @@ function createViewer() {
     }, 1500);
   }
 
+  function fitToScreen(containerWidth: number, containerHeight: number, imageWidth: number, imageHeight: number) {
+    if (imageWidth <= 0 || imageHeight <= 0 || containerWidth <= 0 || containerHeight <= 0) return;
+
+    const isQuarterTurn = Math.abs(state.rotation % 180) === 90;
+    const effectiveWidth = isQuarterTurn ? imageHeight : imageWidth;
+    const effectiveHeight = isQuarterTurn ? imageWidth : imageHeight;
+
+    const fitScale = Math.min(1, containerWidth / effectiveWidth, containerHeight / effectiveHeight);
+    state.baseZoomLevel = fitScale * 100;
+    state.zoomLevel = fitScale * 100;
+    state.translateX = 0;
+    state.translateY = 0;
+  }
+
   function resetZoom() {
     state.zoomLevel = 100;
     state.translateX = 0;
@@ -79,7 +95,7 @@ function createViewer() {
   }
 
   function rotate(angle: number = 90) {
-    state.rotation = (state.rotation + angle) % 360;
+    state.rotation = ((state.rotation + angle) % 360 + 360) % 360;
   }
 
   function setRotation(angle: number) {
@@ -95,7 +111,7 @@ function createViewer() {
   }
 
   function getPanCursor(): "default" | "grab" | "grabbing" {
-    if (state.zoomLevel <= 100) return "default";
+    if (state.zoomLevel <= state.baseZoomLevel) return "default";
     return state.isDragging ? "grabbing" : "grab";
   }
 
@@ -130,10 +146,10 @@ function createViewer() {
 
     const oldScale = state.zoomLevel / 100;
     const raw = state.zoomLevel * (e.deltaY > 0 ? 1 / 1.1 : 1.1);
-    const newZoom = clampZoom(state.zoomLevel > 100 && raw < 100 ? 100 : raw);
+    const newZoom = clampZoom(raw, state.baseZoomLevel);
     const newScale = newZoom / 100;
 
-    if (newZoom === 100) {
+    if (newZoom <= state.baseZoomLevel) {
       state.translateX = 0;
       state.translateY = 0;
     } else {
@@ -160,7 +176,7 @@ function createViewer() {
       return;
     }
 
-    state.zoomLevel = clampZoom(state.zoomLevel * (dist / lastPinchDist));
+    state.zoomLevel = clampZoom(state.zoomLevel * (dist / lastPinchDist), state.baseZoomLevel);
     lastPinchDist = dist;
   }
 
@@ -258,6 +274,7 @@ function createViewer() {
     setTranslation,
     toggleFullscreen,
     resetFsTimer,
+    fitToScreen,
     resetZoom,
     rotate,
     setRotation,

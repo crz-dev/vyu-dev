@@ -109,9 +109,25 @@
   let loadingFadingOut = $state(false);
   let videoEl = $state<HTMLVideoElement | null>(null);
   let cropContainerEl = $state<HTMLElement | null>(null);
+  let viewerEl = $state<HTMLElement | null>(null);
 
   $effect(() => {
     viewer.setVideoEl(videoEl);
+  });
+
+  $effect(() => {
+    if (!viewerEl) return;
+    const el = viewerEl;
+    const observer = new ResizeObserver(() => {
+      if (fileSrc && !isVideo && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
+        if (Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5) {
+          const padding = 32;
+          viewer.fitToScreen(el.clientWidth - padding, el.clientHeight - padding, imageNaturalWidth, imageNaturalHeight);
+        }
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   });
 
   const playback = createPlaybackActions(() => videoEl);
@@ -178,6 +194,7 @@
       tsTooltip = { ...tsTooltip, visible: false };
       tsEditMenu = { ...tsEditMenu, visible: false };
       resetZoom();
+      viewer.state.baseZoomLevel = 100;
     },
   );
 
@@ -341,7 +358,7 @@
     return parts.length ? ` filter: ${parts.join(" ")};` : "";
   });
   const imageStyle = $derived(
-    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}) scaleY(${viewer.state.flippedVertical ? -1 : 1}); transform-origin: center center; max-width: 100%; max-height: 100%; object-fit: contain; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
+    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${viewer.state.rotation}deg) scaleX(${viewer.state.flipped ? -1 : 1}) scaleY(${viewer.state.flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
   );
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
@@ -376,7 +393,12 @@
   }
 
   function resetZoom() {
-    viewer.resetZoom();
+    if (viewerEl && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
+      const padding = 32;
+      viewer.fitToScreen(viewerEl.clientWidth - padding, viewerEl.clientHeight - padding, imageNaturalWidth, imageNaturalHeight);
+    } else {
+      viewer.resetZoom();
+    }
   }
 
   function handleViewerScroll(e: WheelEvent) {
@@ -1184,6 +1206,11 @@
     media.onImageLoad(e, isLoadingFile, setMediaState, () =>
       media.finishLoading(setMediaState),
     );
+    const img = e.target as HTMLImageElement;
+    if (viewerEl && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      const padding = 32;
+      viewer.fitToScreen(viewerEl.clientWidth - padding, viewerEl.clientHeight - padding, img.naturalWidth, img.naturalHeight);
+    }
     if (slideshow.active) {
       slideshow.onMediaLoaded();
     }
@@ -1193,6 +1220,8 @@
     media.onVideoLoad(isLoadingFile, setMediaState, () =>
       media.finishLoading(setMediaState),
     );
+    viewer.resetZoom();
+    viewer.state.baseZoomLevel = 100;
     if (slideshow.active) {
       slideshow.onMediaLoaded();
     }
@@ -1275,7 +1304,7 @@
       const dy = ev.clientY - dragStart.y;
       if (!hasMoved && Math.sqrt(dx * dx + dy * dy) < 8) return;
       hasMoved = true;
-      if (viewer.state.zoomLevel > 100) {
+      if (viewer.state.zoomLevel > viewer.state.baseZoomLevel) {
         viewer.setTranslation(dragStart.tx + dx, dragStart.ty + dy);
       }
     }
@@ -1923,6 +1952,7 @@
 
     <div
       class="viewer"
+      bind:this={viewerEl}
       onmouseenter={() => (hoverZone = isVideo ? "video" : "sidebar")}
       onmouseleave={() => (hoverZone = "none")}
       onwheel={handleViewerScroll}
@@ -1939,7 +1969,7 @@
         <div
           class="media-container"
           bind:this={cropContainerEl}
-          style="position: relative; display: inline-flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
+          style="position: relative; display: flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
         >
           {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
             <img

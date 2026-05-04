@@ -200,8 +200,13 @@
   function toggleRotateTool(
     tool: "90-right" | "90-left" | "180" | "custom",
   ) {
-    if (activeRotateTool === tool) {
-      activeRotateTool = null;
+    if (tool === "custom") {
+      if (activeRotateTool === "custom") {
+        activeRotateTool = null;
+      } else {
+        activeRotateTool = "custom";
+        localRotationAngle = viewer.state.rotation;
+      }
     } else {
       activeRotateTool = tool;
       if (tool === "90-right") {
@@ -210,9 +215,6 @@
         viewer.rotate(-90);
       } else if (tool === "180") {
         viewer.rotate(180);
-      } else if (tool === "custom") {
-        localRotationAngle = 0;
-        viewer.setRotation(0);
       }
     }
   }
@@ -328,6 +330,12 @@
   const rotateDisplayValue = $derived(
     `${localRotationAngle > 0 ? "+" : ""}${localRotationAngle}°`,
   );
+
+  const rotateMarkers = [
+    { val: -180, pct: 0 },
+    { val: 0, pct: 50 },
+    { val: 180, pct: 100 },
+  ];
 </script>
 
 {#if visible}
@@ -879,22 +887,25 @@
           onmouseleave={() => (rotateSliderHovered = false)}
         >
           <div class="color-slider-fill" style="width: {rotateScrubberPct}%"></div>
-          <div
-            class="color-slider-marker"
-            style="left: 50%"
-            onpointerdown={(e) => e.stopPropagation()}
-            onclick={() => { localRotationAngle = 0; viewer.setRotation(0); }}
-            onkeydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                localRotationAngle = 0;
-                viewer.setRotation(0);
-              }
-            }}
-            role="button"
-            tabindex="0"
-            aria-label="Set rotation to 0"
-          ></div>
+          {#each rotateMarkers as marker}
+            <div
+              class="color-slider-marker"
+              class:center-marker={marker.val === 0}
+              style="left: {marker.pct}%"
+              onpointerdown={(e) => e.stopPropagation()}
+              onclick={() => { localRotationAngle = marker.val; viewer.setRotation(marker.val); }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  localRotationAngle = marker.val;
+                  viewer.setRotation(marker.val);
+                }
+              }}
+              role="button"
+              tabindex="0"
+              aria-label="Set rotation to {marker.val}"
+            ></div>
+          {/each}
           <div
             class="color-slider-scrubber"
             style="left: {rotateScrubberPct}%"
