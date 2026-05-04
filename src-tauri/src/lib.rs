@@ -248,7 +248,24 @@ fn delete_file(path: String) -> Result<(), String> {
 #[tauri::command]
 fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
     std::fs::rename(&old_path, &new_path)
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("Failed to rename file: {e}"))
+}
+
+#[tauri::command]
+fn copy_file(source: String, destination: String) -> Result<(), String> {
+    std::fs::copy(&source, &destination)
+        .map(|_| ())
+        .map_err(|e| format!("Failed to copy file: {e}"))
+}
+
+fn cleanup_vyu_temp() {
+    let temp_dir = std::env::temp_dir().join("Vyu-temp");
+    let _ = std::fs::remove_dir_all(&temp_dir);
+}
+
+#[tauri::command]
+fn cleanup_temp_folder() {
+    cleanup_vyu_temp();
 }
 
 #[tauri::command]
@@ -480,12 +497,16 @@ pub fn run() {
             install_ffmpeg,
             process_video_clips,
             rename_file,
+            copy_file,
+            cleanup_temp_folder,
             get_clipboard_file_path,
             export_cropped_media,
             convert_media,
             compress_media,
         ])
         .setup(|app| {
+            cleanup_vyu_temp();
+
             let args: Vec<String> = std::env::args().collect();
             let window = app.get_webview_window("main").unwrap();
 
@@ -517,6 +538,7 @@ pub fn run() {
             let skip_for_close = skip_save.clone();
             app.listen("tauri://close-requested", move |_event| {
                 persist_window_state(&window_for_close, &skip_for_close);
+                cleanup_vyu_temp();
             });
 
             if args.len() > 1 {

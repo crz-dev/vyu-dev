@@ -108,6 +108,17 @@ export async function invokeRenameFile(
   return invoke("rename_file", { oldPath, newPath });
 }
 
+export async function invokeCopyFile(
+  source: string,
+  destination: string,
+): Promise<void> {
+  return invoke("copy_file", { source, destination });
+}
+
+export async function invokeCleanupTempFolder(): Promise<void> {
+  return invoke("cleanup_temp_folder");
+}
+
 export async function invokeGetClipboardFilePath(): Promise<string | null> {
   return invoke("get_clipboard_file_path");
 }

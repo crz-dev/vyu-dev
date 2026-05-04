@@ -10,7 +10,10 @@
     imageCopyToast,
     clipToast,
     exportToast,
+    clipboardToast,
     onOpenExportedFile,
+    onSaveClipboardFile,
+    onDismissClipboardToast,
     clipOutputDir,
     parentFolder,
     invokeOpenDirectory,
@@ -87,7 +90,13 @@
       message: string;
       outputPath: string;
     };
+    clipboardToast: {
+      visible: boolean;
+      filePath: string;
+    };
     onOpenExportedFile: () => void;
+    onSaveClipboardFile: () => void;
+    onDismissClipboardToast: () => void;
     clipOutputDir: string;
     parentFolder: () => string;
     invokeOpenDirectory: (path: string) => Promise<void>;
@@ -628,6 +637,52 @@
         <div class="export-toast-progress-bar"></div>
       </div>
     {/if}
+  </div>
+{/if}
+
+{#if clipboardToast.visible}
+  <div class="clipboard-toast" role="status" aria-live="polite">
+    <span class="clipboard-toast-text">This file is from the clipboard. Save it?</span>
+    <div class="clipboard-toast-actions">
+      <button
+        class="clipboard-toast-btn save"
+        onclick={onSaveClipboardFile}
+        title="Save to folder"
+        aria-label="Save to folder"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </button>
+      <button
+        class="clipboard-toast-btn dismiss"
+        onclick={onDismissClipboardToast}
+        title="Dismiss"
+        aria-label="Dismiss"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
   </div>
 {/if}
 

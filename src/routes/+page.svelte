@@ -53,6 +53,8 @@
     invokeOpenDirectory,
     invokeGetClipboardFilePath,
     invokeExportCroppedMedia,
+    invokeCopyFile,
+    invokeCleanupTempFolder,
     exportCroppedImage,
   } from "$lib/services/mediaTools";
 
@@ -333,6 +335,10 @@
     message: string;
     outputPath: string;
   }>({ visible: false, phase: "exporting", message: "", outputPath: "" });
+  let clipboardToast = $state<{
+    visible: boolean;
+    filePath: string;
+  }>({ visible: false, filePath: "" });
 
   const isQuarterTurn = $derived(Math.abs(viewer.state.rotation % 180) === 90);
   const rotationFitScale = $derived.by(() => {
@@ -433,6 +439,29 @@
     imageCopyToastTimer = setTimeout(() => {
       imageCopyToast = { ...imageCopyToast, visible: false };
     }, 2200);
+  }
+
+  async function saveClipboardFile() {
+    if (!clipboardToast.filePath) return;
+    const ext = clipboardToast.filePath.split(".").pop()?.toLowerCase() ?? "png";
+    const defaultName = `vyu-export-${Date.now()}.${ext}`;
+    const outputPath = await save({
+      defaultPath: defaultName,
+      filters: [{ name: "Media", extensions: [ext] }],
+    });
+    if (!outputPath) return;
+    try {
+      await invokeCopyFile(clipboardToast.filePath, outputPath);
+      clipboardToast = { ...clipboardToast, visible: false };
+      showFrameCopyToast("File saved", "success");
+    } catch (err) {
+      console.error("Failed to save file:", err);
+      showFrameCopyToast("Failed to save file", "error");
+    }
+  }
+
+  function dismissClipboardToast() {
+    clipboardToast = { ...clipboardToast, visible: false };
   }
 
   function updateProgress() {
@@ -1278,6 +1307,9 @@
     await getCurrentWindow().toggleMaximize();
   }
   async function closeWindow() {
+    try {
+      await invokeCleanupTempFolder();
+    } catch {}
     await getCurrentWindow().close();
   }
 
@@ -1837,24 +1869,29 @@
     window.addEventListener("mousedown", handleGlobalMouseDown);
 
     async function handlePaste(e: ClipboardEvent) {
-      const imageItem = Array.from(e.clipboardData?.items ?? []).find(
-        (item) => item.kind === "file" && item.type.startsWith("image/"),
+      const mediaItem = Array.from(e.clipboardData?.items ?? []).find(
+        (item) =>
+          item.kind === "file" &&
+          (item.type.startsWith("image/") || item.type.startsWith("video/")),
       );
-      if (imageItem) {
-        const file = imageItem.getAsFile();
+      if (mediaItem) {
+        const file = mediaItem.getAsFile();
         if (file) {
           const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
           const arrayBuffer = await file.arrayBuffer();
           const uint8 = new Uint8Array(arrayBuffer);
           try {
-            const { tempDir } = await import("@tauri-apps/api/path");
-            const { writeFile } = await import("@tauri-apps/plugin-fs");
+            const { tempDir, join } = await import("@tauri-apps/api/path");
+            const { writeFile, mkdir } = await import("@tauri-apps/plugin-fs");
             const tmp = await tempDir();
-            const dest = `${tmp}vyu-paste-${Date.now()}.${ext}`;
+            const vyuTemp = await join(tmp, "Vyu-temp");
+            await mkdir(vyuTemp, { recursive: true });
+            const dest = await join(vyuTemp, `vyu-paste-${Date.now()}.${ext}`);
             await writeFile(dest, uint8);
             await loadFile(dest);
+            clipboardToast = { visible: true, filePath: dest };
           } catch (err) {
-            console.error("Failed to paste image:", err);
+            console.error("Failed to paste media:", err);
           }
         }
         return;
@@ -2362,7 +2399,10 @@
     {imageCopyToast}
     {clipToast}
     {exportToast}
+    {clipboardToast}
     onOpenExportedFile={openExportedFile}
+    onSaveClipboardFile={saveClipboardFile}
+    onDismissClipboardToast={dismissClipboardToast}
     {clipOutputDir}
     {parentFolder}
     {invokeOpenDirectory}
