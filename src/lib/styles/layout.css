@@ -445,7 +445,9 @@ main.fullscreen .media-container {
   color: #888888;
   font-family: Inter, sans-serif;
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 
 .fs-file-count-pill:hover {

@@ -225,7 +225,7 @@
 {#if visible}
   <div
     class="process-menu"
-    class:pinned={pinned}
+    class:pinned
     role="dialog"
     aria-label="Process menu"
     tabindex="-1"
@@ -294,7 +294,9 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
+          <path
+            d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+          />
         </svg>
       </button>
       <span class="ctx-dots">
@@ -343,9 +345,17 @@
           stroke-linejoin="round"
         >
           <path d="M4 8h16" stroke-linecap="round" />
-          <path d="M16 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round" />
+          <path
+            d="M16 4l4 4-4 4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
           <path d="M20 16H4" stroke-linecap="round" />
-          <path d="M8 20l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round" />
+          <path
+            d="M8 20l-4-4 4-4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
         </svg>
         Convert
       </button>
@@ -432,9 +442,7 @@
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path
-                d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-              />
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>
             Format

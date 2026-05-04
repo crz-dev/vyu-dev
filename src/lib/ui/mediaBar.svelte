@@ -111,9 +111,7 @@
       data-tooltip="File position"
       onclick={toggleThumbnailBar}
     >
-      {fileListLength > 0
-        ? `${currentIndex + 1} / ${fileListLength}`
-        : "—"}
+      {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
     </button>
   </div>
   <span class="file-info tooltip-above" data-tooltip="Resolution · File size">
@@ -152,7 +150,7 @@
 {#if isVideo && clipCount > 0 && !dismissed}
   <div
     class="clip-actions"
-    class:pinned={pinned}
+    class:pinned
     transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}
   >
     <div
@@ -210,7 +208,9 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
+          <path
+            d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+          />
         </svg>
       </button>
       <span class="ctx-dots">

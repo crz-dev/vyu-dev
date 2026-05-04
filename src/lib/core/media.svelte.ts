@@ -65,7 +65,18 @@ export function createMedia(
 ) {
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
   let finishLoadingCalled = false;
-  const statCache = new Map<string, { size: number; birthtime?: unknown; mtime?: unknown; createdAt?: unknown; modifiedAt?: unknown; birthtimeMs?: unknown; mtimeMs?: unknown }>();
+  const statCache = new Map<
+    string,
+    {
+      size: number;
+      birthtime?: unknown;
+      mtime?: unknown;
+      createdAt?: unknown;
+      modifiedAt?: unknown;
+      birthtimeMs?: unknown;
+      mtimeMs?: unknown;
+    }
+  >();
 
   function finishLoading(set: (data: Partial<MediaState>) => void) {
     if (finishLoadingCalled) return;

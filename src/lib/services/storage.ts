@@ -175,6 +175,9 @@ export function loadSliderMode(): { volume?: boolean; speed?: boolean } {
   }
 }
 
-export function saveSliderMode(mode: { volume?: boolean; speed?: boolean }): void {
+export function saveSliderMode(mode: {
+  volume?: boolean;
+  speed?: boolean;
+}): void {
   localStorage.setItem("vyu-slider-mode", JSON.stringify(mode));
 }

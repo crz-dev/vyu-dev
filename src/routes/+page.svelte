@@ -133,10 +133,22 @@
     if (!viewerEl) return;
     const el = viewerEl;
     const observer = new ResizeObserver(() => {
-      if (fileSrc && !isVideo && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
-        if (Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5) {
+      if (
+        fileSrc &&
+        !isVideo &&
+        imageNaturalWidth > 0 &&
+        imageNaturalHeight > 0
+      ) {
+        if (
+          Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
+        ) {
           const { width, height } = getViewerContentSize();
-          viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
+          viewer.fitToScreen(
+            width,
+            height,
+            imageNaturalWidth,
+            imageNaturalHeight,
+          );
         }
       }
     });
@@ -146,7 +158,13 @@
 
   $effect(() => {
     const _ = thumbnailBarVisible;
-    if (viewerEl && fileSrc && !isVideo && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
+    if (
+      viewerEl &&
+      fileSrc &&
+      !isVideo &&
+      imageNaturalWidth > 0 &&
+      imageNaturalHeight > 0
+    ) {
       const { width, height } = getViewerContentSize();
       viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
     }
@@ -464,7 +482,8 @@
 
   async function saveClipboardFile() {
     if (!clipboardToast.filePath) return;
-    const ext = clipboardToast.filePath.split(".").pop()?.toLowerCase() ?? "png";
+    const ext =
+      clipboardToast.filePath.split(".").pop()?.toLowerCase() ?? "png";
     const defaultName = `vyu-export-${Date.now()}.${ext}`;
     const outputPath = await save({
       defaultPath: defaultName,
@@ -2193,8 +2212,8 @@
               speedSliderMode={playbackUI.speedSliderMode}
               volumeSliderValue={playbackUI.volumeSliderValue}
               speedSliderValue={playbackUI.speedSliderValue}
-              toggleVolumeSliderMode={toggleVolumeSliderMode}
-              toggleSpeedSliderMode={toggleSpeedSliderMode}
+              {toggleVolumeSliderMode}
+              {toggleSpeedSliderMode}
               startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
               startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
               handleVolumeSliderChange={setVolume}
@@ -2253,7 +2272,7 @@
   />
 
   <ThumbnailBar
-    fileList={fileList}
+    {fileList}
     {currentIndex}
     visible={thumbnailBarVisible}
     onSelect={navigateToIndex}
@@ -2393,8 +2412,8 @@
             speedSliderMode={playbackUI.speedSliderMode || speedSliderMode}
             volumeSliderValue={playbackUI.volumeSliderValue}
             speedSliderValue={playbackUI.speedSliderValue}
-            toggleVolumeSliderMode={toggleVolumeSliderMode}
-            toggleSpeedSliderMode={toggleSpeedSliderMode}
+            {toggleVolumeSliderMode}
+            {toggleSpeedSliderMode}
             startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
             startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
             handleVolumeSliderChange={setVolume}

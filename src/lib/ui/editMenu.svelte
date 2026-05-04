@@ -48,12 +48,8 @@
   let localHue = $state(0);
   let pinned = $state(false);
   let rotateRowOpen = $state(false);
-  let activeRotateTool:
-    | "90-right"
-    | "90-left"
-    | "180"
-    | "custom"
-    | null = $state(null);
+  let activeRotateTool: "90-right" | "90-left" | "180" | "custom" | null =
+    $state(null);
   let rotateSliderHovered = $state(false);
   let rotateTrackEl: HTMLDivElement | null = $state(null);
   let isRotateDragging = $state(false);
@@ -197,9 +193,7 @@
     }
   }
 
-  function toggleRotateTool(
-    tool: "90-right" | "90-left" | "180" | "custom",
-  ) {
+  function toggleRotateTool(tool: "90-right" | "90-left" | "180" | "custom") {
     if (tool === "custom") {
       if (activeRotateTool === "custom") {
         activeRotateTool = null;
@@ -319,9 +313,7 @@
     ];
   });
 
-  const rotateScrubberPct = $derived(
-    ((localRotationAngle - -180) / 360) * 100,
-  );
+  const rotateScrubberPct = $derived(((localRotationAngle - -180) / 360) * 100);
 
   const rotateScrubberTooltipVisible = $derived(
     activeRotateTool === "custom" && localRotationAngle !== 0,
@@ -341,7 +333,7 @@
 {#if visible}
   <div
     class="edit-menu"
-    class:pinned={pinned}
+    class:pinned
     transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
   >
     <div
@@ -397,7 +389,9 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
+          <path
+            d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+          />
         </svg>
       </button>
       <span class="ctx-dots">
@@ -886,14 +880,20 @@
           onmouseenter={() => (rotateSliderHovered = true)}
           onmouseleave={() => (rotateSliderHovered = false)}
         >
-          <div class="color-slider-fill" style="width: {rotateScrubberPct}%"></div>
+          <div
+            class="color-slider-fill"
+            style="width: {rotateScrubberPct}%"
+          ></div>
           {#each rotateMarkers as marker}
             <div
               class="color-slider-marker"
               class:center-marker={marker.val === 0}
               style="left: {marker.pct}%"
               onpointerdown={(e) => e.stopPropagation()}
-              onclick={() => { localRotationAngle = marker.val; viewer.setRotation(marker.val); }}
+              onclick={() => {
+                localRotationAngle = marker.val;
+                viewer.setRotation(marker.val);
+              }}
               onkeydown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
@@ -921,7 +921,10 @@
           ></div>
         </div>
         {#if rotateScrubberTooltipVisible}
-          <div class="color-scrubber-tooltip" style="left: {rotateScrubberPct}%">
+          <div
+            class="color-scrubber-tooltip"
+            style="left: {rotateScrubberPct}%"
+          >
             <span>{rotateDisplayValue}</span>
           </div>
         {/if}

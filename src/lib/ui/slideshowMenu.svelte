@@ -82,7 +82,7 @@
 {#if visible}
   <div
     class="slideshow-menu"
-    class:pinned={pinned}
+    class:pinned
     transition:fly={{ y: 10, duration: 150, opacity: 0.08 }}
   >
     <div
@@ -140,7 +140,9 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
+          <path
+            d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+          />
         </svg>
       </button>
       <span class="ctx-dots">
@@ -190,10 +192,22 @@
     </div>
 
     <div class="slideshow-section interval-section">
-        <span class="slideshow-label">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Interval
-        </span>
+      <span class="slideshow-label">
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10" /><polyline
+            points="12 6 12 12 16 14"
+          /></svg
+        >
+        Interval
+      </span>
       <div
         class="color-slider-track"
         bind:this={trackEl}
@@ -254,7 +268,16 @@
 
     <div class="slideshow-section">
       <span class="slideshow-label">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16M4 16h16"/></svg>
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"><path d="M4 8h16M4 16h16" /></svg
+        >
         Order
       </span>
       <div class="slideshow-toggle-row">
@@ -263,7 +286,22 @@
           class:active={slideshow.order === "next"}
           onclick={() => (slideshow.order = "next")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><polygon points="5 4 15 12 5 20 5 4" /><line
+              x1="19"
+              y1="5"
+              x2="19"
+              y2="19"
+            /></svg
+          >
           Next
         </button>
         <button
@@ -271,7 +309,27 @@
           class:active={slideshow.order === "shuffle"}
           onclick={() => (slideshow.order = "shuffle")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><polyline points="16 3 21 3 21 8" /><line
+              x1="4"
+              y1="20"
+              x2="21"
+              y2="3"
+            /><polyline points="21 16 21 21 16 21" /><line
+              x1="15"
+              y1="15"
+              x2="21"
+              y2="21"
+            /><line x1="4" y1="4" x2="9" y2="9" /></svg
+          >
           Shuffle
         </button>
       </div>
@@ -280,7 +338,22 @@
 
     <div class="slideshow-section">
       <span class="slideshow-label">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line
+            x1="8"
+            y1="21"
+            x2="16"
+            y2="21"
+          /><line x1="12" y1="17" x2="12" y2="21" /></svg
+        >
         Videos
       </span>
       <div class="slideshow-toggle-row">
@@ -289,7 +362,19 @@
           class:active={slideshow.videoMode === "skip"}
           onclick={() => (slideshow.videoMode = "skip")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4"/><path d="M8 12h8"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="12" cy="12" r="10" /><path d="M12 8l4 4-4 4" /><path
+              d="M8 12h8"
+            /></svg
+          >
           Skip
         </button>
         <button
@@ -297,7 +382,19 @@
           class:active={slideshow.videoMode === "full"}
           onclick={() => (slideshow.videoMode = "full")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path
+              d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"
+            /></svg
+          >
           Full
         </button>
       </div>
@@ -306,7 +403,19 @@
 
     <div class="slideshow-section">
       <span class="slideshow-label">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 12 22 17"/><polyline points="2 12 12 7 22 12"/></svg>
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline
+            points="2 17 12 12 22 17"
+          /><polyline points="2 12 12 7 22 12" /></svg
+        >
         Transition
       </span>
       <div class="slideshow-toggle-row three">
@@ -315,7 +424,22 @@
           class:active={slideshow.transition === "none"}
           onclick={() => (slideshow.transition = "none")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><line x1="18" y1="6" x2="6" y2="18" /><line
+              x1="6"
+              y1="6"
+              x2="18"
+              y2="18"
+            /></svg
+          >
           None
         </button>
         <button
@@ -323,7 +447,19 @@
           class:active={slideshow.transition === "fade"}
           onclick={() => (slideshow.transition = "fade")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2l3.09 8.26L21 12l-8.26 3.09L12 22l-3.09-8.26L3 12l8.26-3.09z"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="12" cy="12" r="10" /><path
+              d="M12 2l3.09 8.26L21 12l-8.26 3.09L12 22l-3.09-8.26L3 12l8.26-3.09z"
+            /></svg
+          >
           Fade
         </button>
         <button
@@ -331,7 +467,19 @@
           class:active={slideshow.transition === "slide"}
           onclick={() => (slideshow.transition = "slide")}
         >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M9 12h6"/><path d="M13 8l4 4-4 4"/></svg>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><path
+              d="M9 12h6"
+            /><path d="M13 8l4 4-4 4" /></svg
+          >
           Slide
         </button>
       </div>
@@ -345,7 +493,16 @@
           onclick={() => slideshow.start()}
           in:fly={{ y: 5, duration: 150 }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg
+          >
           Start
         </button>
       {:else}
@@ -359,10 +516,35 @@
             in:fly={{ y: 5, duration: 150 }}
           >
             {#if slideshow.paused}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><polygon points="5 3 19 12 5 21 5 3" /></svg
+              >
               Play
             {:else}
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><rect x="6" y="4" width="4" height="16" /><rect
+                  x="14"
+                  y="4"
+                  width="4"
+                  height="16"
+                /></svg
+              >
               Pause
             {/if}
           </button>
@@ -372,7 +554,17 @@
           onclick={() => slideshow.stop()}
           in:fly={{ y: 5, duration: 150 }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /></svg
+          >
           Stop
         </button>
       {/if}

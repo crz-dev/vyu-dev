@@ -160,7 +160,7 @@
 {#if contextMenu.visible}
   <div
     class="context-menu"
-    class:pinned={pinned}
+    class:pinned
     style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
     role="menu"
   >
@@ -211,7 +211,9 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
+          <path
+            d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+          />
         </svg>
       </button>
       <span class="ctx-dots">
@@ -642,7 +644,9 @@
 
 {#if clipboardToast.visible}
   <div class="clipboard-toast" role="status" aria-live="polite">
-    <span class="clipboard-toast-text">This file is from the clipboard. Save it?</span>
+    <span class="clipboard-toast-text"
+      >This file is from the clipboard. Save it?</span
+    >
     <div class="clipboard-toast-actions">
       <button
         class="clipboard-toast-btn save"

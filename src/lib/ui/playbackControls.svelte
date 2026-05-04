@@ -157,9 +157,10 @@
 
   const speedDisplayValue = $derived.by(() => {
     if (!speedSliderMode) return "";
-    const speed = speedSliderValue <= 0.5
-      ? 0.1 + 0.9 * (speedSliderValue / 0.5)
-      : 1 + 2 * ((speedSliderValue - 0.5) / 0.5);
+    const speed =
+      speedSliderValue <= 0.5
+        ? 0.1 + 0.9 * (speedSliderValue / 0.5)
+        : 1 + 2 * ((speedSliderValue - 0.5) / 0.5);
     return speed.toFixed(2) + "x";
   });
 
@@ -406,7 +407,10 @@
           onmouseleave={() => (volumeSliderHovered = false)}
           oncontextmenu={handleVolumeRightClick}
         >
-          <div class="playback-slider-fill" style="width: {volumeSliderValue * 100}%"></div>
+          <div
+            class="playback-slider-fill"
+            style="width: {volumeSliderValue * 100}%"
+          ></div>
           {#each [25, 50, 75, 100] as pct}
             <div
               class="playback-slider-marker"
@@ -428,33 +432,34 @@
             style="left: {volumeSliderValue * 100}%"
           ></div>
           {#if volumeSliderHovered || volumeSliderValue !== 1}
-            <div class="playback-slider-tooltip" style="left: {volumeSliderValue * 100}%">
+            <div
+              class="playback-slider-tooltip"
+              style="left: {volumeSliderValue * 100}%"
+            >
               <span>{volumeDisplayValue}</span>
             </div>
           {/if}
         </div>
-      {:else}
-        {#if volumeHovered}
-          <div
-            class="volume-diamonds"
-            onmousedown={startVolumeDrag}
-            onmousemove={handleVolumeDiamondHover}
-            role="presentation"
-          >
-            {#each Array(volumeSegments) as _, i}
-              <button
-                class="volume-diamond"
-                class:filled={i < Math.round(volume * volumeSegments)}
-                class:muted-diamond={muted}
-                style="--i: {i}"
-                onclick={() => setVolume((i + 1) / volumeSegments)}
-                aria-label="set volume {Math.round(
-                  ((i + 1) / volumeSegments) * 100,
-                )}%"
-              ></button>
-            {/each}
-          </div>
-        {/if}
+      {:else if volumeHovered}
+        <div
+          class="volume-diamonds"
+          onmousedown={startVolumeDrag}
+          onmousemove={handleVolumeDiamondHover}
+          role="presentation"
+        >
+          {#each Array(volumeSegments) as _, i}
+            <button
+              class="volume-diamond"
+              class:filled={i < Math.round(volume * volumeSegments)}
+              class:muted-diamond={muted}
+              style="--i: {i}"
+              onclick={() => setVolume((i + 1) / volumeSegments)}
+              aria-label="set volume {Math.round(
+                ((i + 1) / volumeSegments) * 100,
+              )}%"
+            ></button>
+          {/each}
+        </div>
       {/if}
     </div>
     <div class="controls-spacer"></div>
@@ -549,7 +554,10 @@
           onmouseleave={() => (speedSliderHovered = false)}
           oncontextmenu={handleSpeedRightClick}
         >
-          <div class="playback-slider-fill" style="width: {speedSliderValue * 100}%"></div>
+          <div
+            class="playback-slider-fill"
+            style="width: {speedSliderValue * 100}%"
+          ></div>
           {#each speedStepMarkers as marker}
             <div
               class="playback-slider-marker"
@@ -571,35 +579,36 @@
             style="left: {speedSliderValue * 100}%"
           ></div>
           {#if speedSliderHovered || speedSliderValue !== 0.5}
-            <div class="playback-slider-tooltip" style="left: {speedSliderValue * 100}%">
+            <div
+              class="playback-slider-tooltip"
+              style="left: {speedSliderValue * 100}%"
+            >
               <span>{speedDisplayValue}</span>
             </div>
           {/if}
         </div>
-      {:else}
-        {#if speedHovered}
-          <div
-            class="speed-diamonds"
-            onmousedown={startSpeedDrag}
-            onmousemove={handleSpeedDiamondHover}
-            role="presentation"
-          >
-            {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-              {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
-                playbackSpeed,
-              )}
-              {@const dist = Math.abs(i - selectedIdx)}
-              <button
-                class="speed-diamond"
-                class:filled={dist === 0}
-                class:grey={dist === 1}
-                style="--i: {6 - i}"
-                onclick={() => setPlaybackSpeed(step)}
-                aria-label="set speed {step}x"
-              ></button>
-            {/each}
-          </div>
-        {/if}
+      {:else if speedHovered}
+        <div
+          class="speed-diamonds"
+          onmousedown={startSpeedDrag}
+          onmousemove={handleSpeedDiamondHover}
+          role="presentation"
+        >
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
+              playbackSpeed,
+            )}
+            {@const dist = Math.abs(i - selectedIdx)}
+            <button
+              class="speed-diamond"
+              class:filled={dist === 0}
+              class:grey={dist === 1}
+              style="--i: {6 - i}"
+              onclick={() => setPlaybackSpeed(step)}
+              aria-label="set speed {step}x"
+            ></button>
+          {/each}
+        </div>
       {/if}
     </div>
     <div class="ts-menu-anchor" style="position:relative;">
@@ -1065,7 +1074,10 @@
           onmouseleave={() => (volumeSliderHovered = false)}
           oncontextmenu={handleVolumeRightClick}
         >
-          <div class="playback-slider-fill" style="width: {volumeSliderValue * 100}%"></div>
+          <div
+            class="playback-slider-fill"
+            style="width: {volumeSliderValue * 100}%"
+          ></div>
           {#each [25, 50, 75, 100] as pct}
             <div
               class="playback-slider-marker"
@@ -1087,33 +1099,34 @@
             style="left: {volumeSliderValue * 100}%"
           ></div>
           {#if volumeSliderHovered || volumeSliderValue !== 1}
-            <div class="playback-slider-tooltip" style="left: {volumeSliderValue * 100}%">
+            <div
+              class="playback-slider-tooltip"
+              style="left: {volumeSliderValue * 100}%"
+            >
               <span>{volumeDisplayValue}</span>
             </div>
           {/if}
         </div>
-      {:else}
-        {#if volumeHovered}
-          <div
-            class="volume-diamonds"
-            onmousedown={startVolumeDrag}
-            onmousemove={handleVolumeDiamondHover}
-            role="presentation"
-          >
-            {#each Array(volumeSegments) as _, i}
-              <button
-                class="volume-diamond"
-                class:filled={i < Math.round(volume * volumeSegments)}
-                class:muted-diamond={muted}
-                style="--i: {i}"
-                onclick={() => setVolume((i + 1) / volumeSegments)}
-                aria-label="set volume {Math.round(
-                  ((i + 1) / volumeSegments) * 100,
-                )}%"
-              ></button>
-            {/each}
-          </div>
-        {/if}
+      {:else if volumeHovered}
+        <div
+          class="volume-diamonds"
+          onmousedown={startVolumeDrag}
+          onmousemove={handleVolumeDiamondHover}
+          role="presentation"
+        >
+          {#each Array(volumeSegments) as _, i}
+            <button
+              class="volume-diamond"
+              class:filled={i < Math.round(volume * volumeSegments)}
+              class:muted-diamond={muted}
+              style="--i: {i}"
+              onclick={() => setVolume((i + 1) / volumeSegments)}
+              aria-label="set volume {Math.round(
+                ((i + 1) / volumeSegments) * 100,
+              )}%"
+            ></button>
+          {/each}
+        </div>
       {/if}
     </div>
     <div class="controls-spacer"></div>
@@ -1208,7 +1221,10 @@
           onmouseleave={() => (speedSliderHovered = false)}
           oncontextmenu={handleSpeedRightClick}
         >
-          <div class="playback-slider-fill" style="width: {speedSliderValue * 100}%"></div>
+          <div
+            class="playback-slider-fill"
+            style="width: {speedSliderValue * 100}%"
+          ></div>
           {#each speedStepMarkers as marker}
             <div
               class="playback-slider-marker"
@@ -1230,35 +1246,36 @@
             style="left: {speedSliderValue * 100}%"
           ></div>
           {#if speedSliderHovered || speedSliderValue !== 0.5}
-            <div class="playback-slider-tooltip" style="left: {speedSliderValue * 100}%">
+            <div
+              class="playback-slider-tooltip"
+              style="left: {speedSliderValue * 100}%"
+            >
               <span>{speedDisplayValue}</span>
             </div>
           {/if}
         </div>
-      {:else}
-        {#if speedHovered}
-          <div
-            class="speed-diamonds"
-            onmousedown={startSpeedDrag}
-            onmousemove={handleSpeedDiamondHover}
-            role="presentation"
-          >
-            {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-              {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
-                playbackSpeed,
-              )}
-              {@const dist = Math.abs(i - selectedIdx)}
-              <button
-                class="speed-diamond"
-                class:filled={dist === 0}
-                class:grey={dist === 1}
-                style="--i: {6 - i}"
-                onclick={() => setPlaybackSpeed(step)}
-                aria-label="set speed {step}x"
-              ></button>
-            {/each}
-          </div>
-        {/if}
+      {:else if speedHovered}
+        <div
+          class="speed-diamonds"
+          onmousedown={startSpeedDrag}
+          onmousemove={handleSpeedDiamondHover}
+          role="presentation"
+        >
+          {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
+              playbackSpeed,
+            )}
+            {@const dist = Math.abs(i - selectedIdx)}
+            <button
+              class="speed-diamond"
+              class:filled={dist === 0}
+              class:grey={dist === 1}
+              style="--i: {6 - i}"
+              onclick={() => setPlaybackSpeed(step)}
+              aria-label="set speed {step}x"
+            ></button>
+          {/each}
+        </div>
       {/if}
     </div>
     <div class="ts-menu-anchor" style="position:relative;">

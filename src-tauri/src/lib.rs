@@ -1,9 +1,11 @@
 use std::fs;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use image::GenericImageView;
 use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 
 #[derive(serde::Serialize)]
@@ -258,6 +260,78 @@ fn copy_file(source: String, destination: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to copy file: {e}"))
 }
 
+fn hash_path(path: &str) -> String {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    path.hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
+}
+
+const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp"];
+
+#[tauri::command]
+fn generate_thumbnail(app: tauri::AppHandle, path: String) -> Result<Option<String>, String> {
+    let ext = path
+        .rsplit('.')
+        .next()
+        .unwrap_or("")
+        .to_lowercase();
+    if !IMAGE_EXTS_RUST.contains(&ext.as_str()) {
+        return Ok(None);
+    }
+
+    let thumb_dir = app
+        .path()
+        .app_cache_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("thumbnails");
+    let _ = fs::create_dir_all(&thumb_dir);
+
+    let hash = hash_path(&path);
+    let thumb_path = thumb_dir.join(format!("{hash}.jpg"));
+
+    if thumb_path.exists() {
+        if let (Ok(src_meta), Ok(thumb_meta)) =
+            (fs::metadata(&path), fs::metadata(&thumb_path))
+        {
+            if let (Ok(src_time), Ok(thumb_time)) =
+                (src_meta.modified(), thumb_meta.modified())
+            {
+                if thumb_time >= src_time {
+                    return Ok(Some(thumb_path.to_string_lossy().to_string()));
+                }
+            }
+        }
+    }
+
+    let img = image::open(&path).map_err(|e| format!("Failed to open image: {e}"))?;
+    let (w, h) = img.dimensions();
+    let max_dim: u32 = 200;
+    let (nw, nh) = if w > h {
+        (max_dim, ((h as f64) * (max_dim as f64) / (w as f64)).round() as u32)
+    } else {
+        (((w as f64) * (max_dim as f64) / (h as f64)).round() as u32, max_dim)
+    };
+    let thumb = img.resize_exact(
+        nw.max(1),
+        nh.max(1),
+        image::imageops::FilterType::Lanczos3,
+    );
+    let mut jpeg_bytes: Vec<u8> = Vec::new();
+    let mut encoder =
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 75);
+    encoder
+        .encode(
+            thumb.as_bytes(),
+            thumb.width(),
+            thumb.height(),
+            thumb.color().into(),
+        )
+        .map_err(|e| format!("Failed to encode thumbnail: {e}"))?;
+    fs::write(&thumb_path, &jpeg_bytes)
+        .map_err(|e| format!("Failed to write thumbnail: {e}"))?;
+    Ok(Some(thumb_path.to_string_lossy().to_string()))
+}
+
 fn cleanup_vyu_temp() {
     let temp_dir = std::env::temp_dir().join("Vyu-temp");
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -503,6 +577,7 @@ pub fn run() {
             export_cropped_media,
             convert_media,
             compress_media,
+            generate_thumbnail,
         ])
         .setup(|app| {
             cleanup_vyu_temp();

@@ -74,14 +74,29 @@ function createViewer() {
     }, 1500);
   }
 
-  function fitToScreen(containerWidth: number, containerHeight: number, imageWidth: number, imageHeight: number) {
-    if (imageWidth <= 0 || imageHeight <= 0 || containerWidth <= 0 || containerHeight <= 0) return;
+  function fitToScreen(
+    containerWidth: number,
+    containerHeight: number,
+    imageWidth: number,
+    imageHeight: number,
+  ) {
+    if (
+      imageWidth <= 0 ||
+      imageHeight <= 0 ||
+      containerWidth <= 0 ||
+      containerHeight <= 0
+    )
+      return;
 
     const isQuarterTurn = Math.abs(state.rotation % 180) === 90;
     const effectiveWidth = isQuarterTurn ? imageHeight : imageWidth;
     const effectiveHeight = isQuarterTurn ? imageWidth : imageHeight;
 
-    const fitScale = Math.min(1, containerWidth / effectiveWidth, containerHeight / effectiveHeight);
+    const fitScale = Math.min(
+      1,
+      containerWidth / effectiveWidth,
+      containerHeight / effectiveHeight,
+    );
     state.baseZoomLevel = fitScale * 100;
     state.zoomLevel = fitScale * 100;
     state.translateX = 0;
@@ -95,7 +110,7 @@ function createViewer() {
   }
 
   function rotate(angle: number = 90) {
-    state.rotation = ((state.rotation + angle) % 360 + 360) % 360;
+    state.rotation = (((state.rotation + angle) % 360) + 360) % 360;
   }
 
   function setRotation(angle: number) {
@@ -176,7 +191,10 @@ function createViewer() {
       return;
     }
 
-    state.zoomLevel = clampZoom(state.zoomLevel * (dist / lastPinchDist), state.baseZoomLevel);
+    state.zoomLevel = clampZoom(
+      state.zoomLevel * (dist / lastPinchDist),
+      state.baseZoomLevel,
+    );
     lastPinchDist = dist;
   }
 
