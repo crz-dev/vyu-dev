@@ -267,6 +267,7 @@ fn hash_path(path: &str) -> String {
 }
 
 const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp"];
+const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv"];
 
 #[tauri::command]
 fn generate_thumbnail(app: tauri::AppHandle, path: String) -> Result<Option<String>, String> {
@@ -275,7 +276,11 @@ fn generate_thumbnail(app: tauri::AppHandle, path: String) -> Result<Option<Stri
         .next()
         .unwrap_or("")
         .to_lowercase();
-    if !IMAGE_EXTS_RUST.contains(&ext.as_str()) {
+
+    let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
+
+    if !is_image && !is_video {
         return Ok(None);
     }
 
@@ -300,6 +305,27 @@ fn generate_thumbnail(app: tauri::AppHandle, path: String) -> Result<Option<Stri
                     return Ok(Some(thumb_path.to_string_lossy().to_string()));
                 }
             }
+        }
+    }
+
+    if is_video {
+        let status = Command::new("ffmpeg")
+            .args([
+                "-y", "-hide_banner", "-loglevel", "error",
+                "-ss", "1",
+                "-i", &path,
+                "-vframes", "1",
+                "-vf", "scale=200:200:force_original_aspect_ratio=decrease",
+                "-q:v", "4",
+                &thumb_path.to_string_lossy(),
+            ])
+            .status();
+
+        match status {
+            Ok(s) if s.success() => {
+                return Ok(Some(thumb_path.to_string_lossy().to_string()));
+            }
+            _ => return Ok(None),
         }
     }
 

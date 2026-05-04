@@ -20,18 +20,20 @@
 
   let trackEl = $state<HTMLDivElement | null>(null);
   let animatingToIndex = $state<number | null>(null);
-  let pendingScrollRaf = $state<ReturnType<
-    typeof requestAnimationFrame
-  > | null>(null);
+  let pendingScrollRaf = $state<ReturnType<typeof requestAnimationFrame> | null>(null);
+  let scrollPending = false;
+  let rafVisibilityId = $state<ReturnType<typeof requestAnimationFrame> | null>(null);
 
-  const LIMIT = 5;
+  const LIMIT = 10;
   const TOTAL_SLOTS = LIMIT * 2 + 1;
-  const MAX_CONCURRENT = 4;
+  const MAX_CONCURRENT = 3;
 
   const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "bmp"]);
 
   let thumbnailUrls = $state<Record<string, string>>({});
   let fetchingPaths = $state(new Set<string>());
+  let visiblePaths = $state(new Set<string>());
+  let wantedInViewAt = $state(new Map<string, number>());
   const srcCache = new Map<string, string>();
 
   function isVideo(path: string): boolean {
@@ -65,6 +67,69 @@
     }),
   );
 
+  function updateVisiblePaths() {
+    if (!trackEl) return;
+    const margin = 140;
+    const viewLeft = trackEl.scrollLeft - margin;
+    const viewRight = trackEl.scrollLeft + trackEl.clientWidth + margin;
+
+    const next = new Set<string>();
+    const now = performance.now();
+    const nextWanted = new Map(wantedInViewAt);
+
+    for (const el of trackEl.querySelectorAll("[data-path]")) {
+      const left = (el as HTMLElement).offsetLeft;
+      const right = left + (el as HTMLElement).offsetWidth;
+      const path = el.getAttribute("data-path");
+      if (!path) continue;
+      if (right >= viewLeft && left <= viewRight) {
+        next.add(path);
+        if (!nextWanted.has(path)) nextWanted.set(path, now);
+      }
+    }
+
+    for (const [p] of wantedInViewAt) {
+      if (!next.has(p)) nextWanted.delete(p);
+    }
+
+    wantedInViewAt = nextWanted;
+    visiblePaths = next;
+  }
+
+  function onTrackScroll() {
+    if (scrollPending) return;
+    scrollPending = true;
+    rafVisibilityId = requestAnimationFrame(() => {
+      scrollPending = false;
+      rafVisibilityId = null;
+      updateVisiblePaths();
+    });
+  }
+
+  $effect(() => {
+    if (!visible) return;
+
+    const _ = slots;
+
+    if (trackEl) {
+      tick().then(() => updateVisiblePaths());
+    }
+  });
+
+  $effect(() => {
+    const raf = rafVisibilityId;
+    return () => {
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
+  });
+
+  function inSlotWindow(path: string): boolean {
+    for (const slot of slots) {
+      if (slot && slot.path === path) return true;
+    }
+    return false;
+  }
+
   async function fetchOneThumbnail(path: string) {
     if (fetchingPaths.has(path)) return;
     fetchingPaths = new Set(fetchingPaths).add(path);
@@ -73,13 +138,27 @@
       const result = await invoke<string | null>("generate_thumbnail", {
         path,
       });
+
+      const enteredAt = wantedInViewAt.get(path);
+      if (enteredAt !== undefined) {
+        const spent = performance.now() - enteredAt;
+        const minDelay = enteredAt > 0 ? Math.max(0, 50 - spent) : 0;
+        if (minDelay > 0) {
+          await new Promise((r) => setTimeout(r, minDelay));
+        }
+      }
+
+      if (!inSlotWindow(path)) return;
+
       if (result) {
         thumbnailUrls = { ...thumbnailUrls, [path]: result };
-      } else {
+      } else if (!isVideo(path)) {
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
       }
     } catch {
-      thumbnailUrls = { ...thumbnailUrls, [path]: path };
+      if (inSlotWindow(path) && !isVideo(path)) {
+        thumbnailUrls = { ...thumbnailUrls, [path]: path };
+      }
     } finally {
       const next = new Set(fetchingPaths);
       next.delete(path);
@@ -93,11 +172,21 @@
     const uncached: string[] = [];
     for (const slot of slots) {
       if (!slot) continue;
-      if (!isImage(slot.path)) continue;
+      if (!isImage(slot.path) && !isVideo(slot.path)) continue;
       if (slot.path in thumbnailUrls) continue;
       if (fetchingPaths.has(slot.path)) continue;
       uncached.push(slot.path);
     }
+
+    uncached.sort((a, b) => {
+      const ia = fileList.indexOf(a);
+      const ib = fileList.indexOf(b);
+      const distA = Math.abs(ia - centerIdx);
+      const distB = Math.abs(ib - centerIdx);
+      const inViewA = visiblePaths.has(a) ? 0 : 1000;
+      const inViewB = visiblePaths.has(b) ? 0 : 1000;
+      return distA + inViewA - (distB + inViewB);
+    });
 
     const remaining = MAX_CONCURRENT - fetchingPaths.size;
     for (let j = 0; j < remaining && j < uncached.length; j++) {
@@ -185,8 +274,10 @@
     pendingScrollRaf = requestAnimationFrame(animate);
   }
 
-  function getThumbSrc(path: string): string {
-    return getSrc(thumbnailUrls[path] ?? path);
+  function getThumbSrc(path: string): string | null {
+    const thumb = thumbnailUrls[path];
+    if (!thumb) return null;
+    return getSrc(thumb);
   }
 </script>
 
@@ -195,23 +286,41 @@
     <div
       class="thumbnail-track"
       class:animating={animatingToIndex !== null}
+      onscroll={onTrackScroll}
       bind:this={trackEl}
     >
       {#each slots as slot, i (slot?.path ?? `_s${i}`)}
         {#if slot}
           {@const active = slot.index === (animatingToIndex ?? currentIndex)}
           {@const video = isVideo(slot.path)}
+          {@const inView = visiblePaths.has(slot.path)}
+          {@const thumbSrc = getThumbSrc(slot.path)}
           <button
             class="thumbnail-item"
             class:active
             class:target={slot.index === animatingToIndex}
             data-slot-active={active}
             data-slot-index={slot.index}
+            data-path={slot.path}
             onclick={() => handleClick(slot.index)}
             aria-label="Open file"
           >
             {#if video}
-              <video src={getSrc(slot.path)} muted preload="metadata"></video>
+              {#if thumbSrc}
+                <img
+                  src={thumbSrc}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
+                />
+              {:else}
+                <video
+                  src={inView ? getSrc(slot.path) : undefined}
+                  muted
+                  preload={inView ? "metadata" : "none"}
+                ></video>
+              {/if}
               <div class="thumbnail-video-icon">
                 <svg
                   width="10"
@@ -227,13 +336,15 @@
                 </svg>
               </div>
             {:else}
-              <img
-                src={getThumbSrc(slot.path)}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
+              {#if thumbSrc && inView}
+                <img
+                  src={thumbSrc}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
+                />
+              {/if}
             {/if}
           </button>
         {:else}
