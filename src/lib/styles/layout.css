@@ -186,6 +186,14 @@ main {
   box-sizing: border-box;
 }
 
+main.thumbnail-bar-open .viewer {
+  padding-bottom: 98px;
+}
+
+main.thumbnail-bar-open.fullscreen .viewer {
+  padding-bottom: 82px;
+}
+
 .empty {
   background: none;
   border: 1px dashed #1a1a1a;
@@ -319,6 +327,11 @@ main.fullscreen .video-inner video {
   height: 100%;
   object-fit: contain;
 }
+
+main.thumbnail-bar-open.fullscreen .video-inner video {
+  max-height: calc(100vh - 82px);
+}
+
 main.fullscreen .media-container {
   width: 100%;
   height: 100%;

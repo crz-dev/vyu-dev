@@ -118,19 +118,38 @@
     viewer.setVideoEl(videoEl);
   });
 
+  function getViewerContentSize(): { width: number; height: number } {
+    if (!viewerEl) return { width: 0, height: 0 };
+    const style = getComputedStyle(viewerEl);
+    const padH = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    const padV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    return {
+      width: viewerEl.clientWidth - padH,
+      height: viewerEl.clientHeight - padV,
+    };
+  }
+
   $effect(() => {
     if (!viewerEl) return;
     const el = viewerEl;
     const observer = new ResizeObserver(() => {
       if (fileSrc && !isVideo && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
         if (Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5) {
-          const padding = viewer.state.isFullscreen ? 0 : 32;
-          viewer.fitToScreen(el.clientWidth - padding, el.clientHeight - padding, imageNaturalWidth, imageNaturalHeight);
+          const { width, height } = getViewerContentSize();
+          viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
         }
       }
     });
     observer.observe(el);
     return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    const _ = thumbnailBarVisible;
+    if (viewerEl && fileSrc && !isVideo && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
+      const { width, height } = getViewerContentSize();
+      viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
+    }
   });
 
   const playback = createPlaybackActions(() => videoEl);
@@ -402,8 +421,8 @@
 
   function resetZoom() {
     if (viewerEl && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
-      const padding = viewer.state.isFullscreen ? 0 : 32;
-      viewer.fitToScreen(viewerEl.clientWidth - padding, viewerEl.clientHeight - padding, imageNaturalWidth, imageNaturalHeight);
+      const { width, height } = getViewerContentSize();
+      viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
     } else {
       viewer.resetZoom();
     }
@@ -1239,8 +1258,8 @@
     );
     const img = e.target as HTMLImageElement;
     if (viewerEl && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      const padding = viewer.state.isFullscreen ? 0 : 32;
-      viewer.fitToScreen(viewerEl.clientWidth - padding, viewerEl.clientHeight - padding, img.naturalWidth, img.naturalHeight);
+      const { width, height } = getViewerContentSize();
+      viewer.fitToScreen(width, height, img.naturalWidth, img.naturalHeight);
     }
     if (slideshow.active) {
       slideshow.onMediaLoaded();
@@ -1958,6 +1977,7 @@
 <main
   class:fullscreen={viewer.state.isFullscreen}
   class:menu-open={anyMenuOpen}
+  class:thumbnail-bar-open={thumbnailBarVisible}
   onmousemove={viewer.state.isFullscreen ? viewer.resetFsTimer : undefined}
   ondrop={(e) => e.preventDefault()}
   ondragover={(e) => e.preventDefault()}
