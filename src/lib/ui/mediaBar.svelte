@@ -38,6 +38,8 @@
     toggleSlideshowMenu,
     slideshowMenuVisible,
     closeSlideshowMenu,
+    thumbnailBarVisible,
+    toggleThumbnailBar,
   }: {
     fileListLength: number;
     currentIndex: number;
@@ -64,6 +66,8 @@
     toggleSlideshowMenu: () => void;
     slideshowMenuVisible: boolean;
     closeSlideshowMenu: () => void;
+    thumbnailBarVisible: boolean;
+    toggleThumbnailBar: () => void;
   } = $props();
 
   $effect(() => {
@@ -101,11 +105,16 @@
         onClose={closeSlideshowMenu}
       />
     </div>
-    <span class="file-count tooltip-above" data-tooltip="File position"
-      >{fileListLength > 0
-        ? `${currentIndex + 1} / ${fileListLength}`
-        : "—"}</span
+    <button
+      class="file-count tooltip-above"
+      class:active={thumbnailBarVisible}
+      data-tooltip="File position"
+      onclick={toggleThumbnailBar}
     >
+      {fileListLength > 0
+        ? `${currentIndex + 1} / ${fileListLength}`
+        : "—"}
+    </button>
   </div>
   <span class="file-info tooltip-above" data-tooltip="Resolution · File size">
     {#if fileDimensions && fileSize}

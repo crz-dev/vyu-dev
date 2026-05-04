@@ -95,6 +95,7 @@
   import HelpDialog from "$lib/ui/helpDialog.svelte";
   import AboutDialog from "$lib/ui/aboutDialog.svelte";
   import FeedbackDialog from "$lib/ui/feedbackDialog.svelte";
+  import ThumbnailBar from "$lib/ui/thumbnailBar.svelte";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -233,6 +234,7 @@
   let aboutOpen = $state(false);
   let feedbackOpen = $state(false);
   let tsMenuOpen = $state(false);
+  let thumbnailBarVisible = $state(false);
   let brightness = $state(1);
   let contrast = $state(1);
   let saturation = $state(1);
@@ -1280,6 +1282,19 @@
     );
   }
 
+  function navigateToIndex(index: number) {
+    if (fileList.length === 0 || index === currentIndex) return;
+    slideshow.stop();
+    viewer.state.cropMode = false;
+    currentIndex = index;
+    viewer.setCurrentFile(fileList[index]);
+    media.displayFile(fileList[index], setMediaState);
+  }
+
+  function toggleThumbnailBar() {
+    thumbnailBarVisible = !thumbnailBarVisible;
+  }
+
   function navigateToEdge(first: boolean) {
     if (fileList.length === 0) return;
     slideshow.stop();
@@ -2213,6 +2228,16 @@
     {toggleSlideshowMenu}
     {slideshowMenuVisible}
     {closeSlideshowMenu}
+    {thumbnailBarVisible}
+    {toggleThumbnailBar}
+  />
+
+  <ThumbnailBar
+    fileList={fileList}
+    {currentIndex}
+    visible={thumbnailBarVisible}
+    onSelect={navigateToIndex}
+    fullscreen={viewer.state.isFullscreen}
   />
 
   {#if viewer.state.isFullscreen}
@@ -2384,6 +2409,11 @@
         </div>
       {/if}
     </div>
+    {#if fileList.length > 0}
+      <button class="fs-file-count-pill" onclick={toggleThumbnailBar}>
+        {currentIndex + 1} / {fileList.length}
+      </button>
+    {/if}
   {/if}
 
   {#if isLoadingFile}
