@@ -1,5 +1,10 @@
 <script lang="ts">
-  import type { ClipBoundary, ContextMenu, MediaProperties, VideoMarker } from "$lib/shared/types";
+  import type {
+    ClipBoundary,
+    ContextMenu,
+    MediaProperties,
+    VideoMarker,
+  } from "$lib/shared/types";
 
   let {
     contextMenu,

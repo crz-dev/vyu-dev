@@ -31,14 +31,14 @@ localStorage scoped to your machine. No network requests are made, ever.
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Desktop shell | [Tauri 2](https://tauri.app) |
-| UI framework | [Svelte 5](https://svelte.dev) (runes mode) |
-| Meta-framework | [SvelteKit](https://kit.svelte.dev) (static SPA) |
-| Language | TypeScript (strict) |
-| Package manager | pnpm |
-| Video processing | FFmpeg (bundled, auto-install) |
+| Layer            | Technology                                       |
+| ---------------- | ------------------------------------------------ |
+| Desktop shell    | [Tauri 2](https://tauri.app)                     |
+| UI framework     | [Svelte 5](https://svelte.dev) (runes mode)      |
+| Meta-framework   | [SvelteKit](https://kit.svelte.dev) (static SPA) |
+| Language         | TypeScript (strict)                              |
+| Package manager  | pnpm                                             |
+| Video processing | FFmpeg (bundled, auto-install)                   |
 
 ## Getting Started
 

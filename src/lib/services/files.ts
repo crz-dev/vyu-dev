@@ -21,9 +21,7 @@ export async function readMediaFilesInFolder(path: string): Promise<string[]> {
   if (cached) return cached;
   const entries = await readDir(folder);
   const list = entries
-    .filter((e) =>
-      ALL_EXTS.includes(getFileExt(e.name ?? "")),
-    )
+    .filter((e) => ALL_EXTS.includes(getFileExt(e.name ?? "")))
     .map((e) => `${folder}${sep}${e.name}`)
     .sort();
   folderCache.set(folder, list);

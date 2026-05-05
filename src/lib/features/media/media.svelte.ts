@@ -3,7 +3,11 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
 import { VIDEO_EXTS } from "$lib/shared/constants";
-import { readMediaFilesInFolder, getFileName, getFileExt } from "$lib/services/files";
+import {
+  readMediaFilesInFolder,
+  getFileName,
+  getFileExt,
+} from "$lib/services/files";
 import {
   readTimestamps,
   readClipBoundaries,
