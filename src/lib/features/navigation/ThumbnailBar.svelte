@@ -31,7 +31,7 @@
 
   const LIMIT = 10;
   const TOTAL_SLOTS = LIMIT * 2 + 1;
-  const MAX_CONCURRENT = 3;
+  const MAX_CONCURRENT = 6;
 
   const IMAGE_EXTS_SET = new Set(IMAGE_EXTS);
 
@@ -172,16 +172,27 @@
   $effect(() => {
     if (!visible || fileList.length === 0) return;
 
-    const uncached: string[] = [];
+    const uncachedImages: string[] = [];
+    const uncachedVideos: string[] = [];
     for (const slot of slots) {
       if (!slot) continue;
       if (!isImage(slot.path) && !isVideo(slot.path)) continue;
       if (slot.path in thumbnailUrls) continue;
       if (fetchingPaths.has(slot.path)) continue;
-      uncached.push(slot.path);
+      if (isVideo(slot.path)) {
+        uncachedVideos.push(slot.path);
+      } else {
+        uncachedImages.push(slot.path);
+      }
     }
 
-    uncached.sort((a, b) => {
+    for (const path of uncachedImages) {
+      thumbnailUrls = { ...thumbnailUrls, [path]: path };
+    }
+
+    if (uncachedVideos.length === 0) return;
+
+    uncachedVideos.sort((a, b) => {
       const ia = fileList.indexOf(a);
       const ib = fileList.indexOf(b);
       const distA = Math.abs(ia - centerIdx);
@@ -192,8 +203,8 @@
     });
 
     const remaining = MAX_CONCURRENT - fetchingPaths.size;
-    for (let j = 0; j < remaining && j < uncached.length; j++) {
-      fetchOneThumbnail(uncached[j]);
+    for (let j = 0; j < remaining && j < uncachedVideos.length; j++) {
+      fetchOneThumbnail(uncachedVideos[j]);
     }
   });
 

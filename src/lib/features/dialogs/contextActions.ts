@@ -11,13 +11,13 @@ import {
 import type { ClipJobResult } from "$lib/shared/types";
 
 export async function ctxCopyImage(opts: {
-  fileSrc: string;
+  filePath: string;
   closeContextMenu: () => void;
   showImageCopyToast: (msg: string, tone: "success" | "error" | "info") => void;
 }) {
   opts.closeContextMenu();
   try {
-    await copyImageToClipboard(opts.fileSrc);
+    await copyImageToClipboard(opts.filePath);
     opts.showImageCopyToast("Image copied to clipboard", "success");
   } catch {
     opts.showImageCopyToast("Failed to copy image", "error");

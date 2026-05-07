@@ -598,6 +598,23 @@ fn export_cropped_media(
 }
 
 #[tauri::command]
+fn copy_image_to_clipboard(path: String) -> Result<(), String> {
+    let img = image::open(&path).map_err(|e| format!("Failed to open image: {e}"))?;
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let data = arboard::ImageData {
+        width: w as usize,
+        height: h as usize,
+        bytes: std::borrow::Cow::Owned(rgba.into_raw()),
+    };
+    let mut clipboard =
+        arboard::Clipboard::new().map_err(|e| format!("Failed to open clipboard: {e}"))?;
+    clipboard
+        .set_image(data)
+        .map_err(|e| format!("Failed to set clipboard image: {e}"))
+}
+
+#[tauri::command]
 fn get_clipboard_file_path() -> Option<String> {
     #[cfg(target_os = "windows")]
     {
@@ -640,6 +657,7 @@ pub fn run() {
             convert_media,
             compress_media,
             generate_thumbnail,
+            copy_image_to_clipboard,
         ])
         .setup(|app| {
             cleanup_vyu_temp();

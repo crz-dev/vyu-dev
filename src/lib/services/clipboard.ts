@@ -1,13 +1,12 @@
 import type { MediaProperties } from "$lib/shared/types";
+import { invokeCopyImageToClipboard } from "$lib/features/media/tools";
 
 export function showValue(v: string | undefined): string {
   return v && v.trim() ? v : "Unknown";
 }
 
-export async function copyImageToClipboard(fileSrc: string): Promise<void> {
-  const response = await fetch(fileSrc);
-  const blob = await response.blob();
-  await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+export async function copyImageToClipboard(filePath: string): Promise<void> {
+  await invokeCopyImageToClipboard(filePath);
 }
 
 export async function copyFrameToClipboard(

@@ -793,7 +793,7 @@
     viewer.state.cropMode = false;
     await media.loadFile(path, setMediaState, (list, index) => {
       fileList = list;
-      currentIndex = index;
+      currentIndex = index >= 0 ? index : 0;
     });
     viewer.setCurrentFile(path);
   }
@@ -1040,7 +1040,7 @@
   // ── Context menu actions ───────────────────────────────
   async function ctxCopyImageFn() {
     await ctxCopyImage({
-      fileSrc,
+      filePath,
       closeContextMenu,
       showImageCopyToast: toast.showImageCopyToast,
     });
@@ -1416,6 +1416,7 @@
       setMediaPropsLoading: (v) => (mediaPropsLoading = v),
     })}
   onRenamed={async (newPath: string) => {
+    clearFolderCache(getParentFolder(newPath));
     await loadFile(newPath);
   }}
   onSelect={navigateToIndex}
@@ -1529,16 +1530,19 @@
             style="position: relative; display: flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
           >
             {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
-              <img
-                src={fileSrc}
-                alt={fileName}
-                decoding="async"
-                onload={onImageLoad}
-                style={imageStyle}
+              <div
                 class={slideshow.active && slideshow.transition !== "none"
                   ? `transition-${slideshow.transition}`
                   : ""}
-              />
+              >
+                <img
+                  src={fileSrc}
+                  alt={fileName}
+                  decoding="async"
+                  onload={onImageLoad}
+                  style={imageStyle}
+                />
+              </div>
             {/key}
             <CropOverlay containerEl={cropContainerEl} />
           </div>
@@ -1554,15 +1558,20 @@
           >
             <div class="video-inner" style={videoInnerStyle}>
               {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
-                <video
-                  bind:this={videoEl}
-                  src={fileSrc}
-                  crossorigin="anonymous"
-                  preload="metadata"
-                  autoplay
-                  ontimeupdate={updateProgress}
-                  onloadedmetadata={onVideoLoad}
-                  onended={() => {
+                <div
+                  class={slideshow.active && slideshow.transition !== "none"
+                    ? `transition-${slideshow.transition}`
+                    : ""}
+                >
+                  <video
+                    bind:this={videoEl}
+                    src={fileSrc}
+                    crossorigin="anonymous"
+                    preload="metadata"
+                    autoplay
+                    ontimeupdate={updateProgress}
+                    onloadedmetadata={onVideoLoad}
+                    onended={() => {
                     if (slideshow.active) return;
                     if (loopMode === "stop") {
                       playing = false;
@@ -1583,12 +1592,10 @@
                       }
                     }
                   }}
-                  class={slideshow.active && slideshow.transition !== "none"
-                    ? `transition-${slideshow.transition}`
-                    : ""}
                 >
                   <track kind="captions" />
                 </video>
+                </div>
               {/key}
             </div>
             <CropOverlay containerEl={cropContainerEl} />
@@ -1852,11 +1859,6 @@
         {:else}
           <div class="fs-controls image-only">
             <div class="fs-controls-row">
-              <span class="fs-time"
-                >{fileList.length > 0
-                  ? `${currentIndex + 1} / ${fileList.length}`
-                  : ""}</span
-              >
               <div class="fs-right">
                 <button
                   class="fs-ctrl-btn"

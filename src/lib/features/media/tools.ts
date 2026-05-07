@@ -116,6 +116,12 @@ export async function invokeCopyFile(
   return invoke("copy_file", { source, destination });
 }
 
+export async function invokeCopyImageToClipboard(
+  path: string,
+): Promise<void> {
+  return invoke("copy_image_to_clipboard", { path });
+}
+
 export async function invokeCleanupTempFolder(): Promise<void> {
   return invoke("cleanup_temp_folder");
 }
