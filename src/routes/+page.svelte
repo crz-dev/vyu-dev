@@ -1878,8 +1878,9 @@
           </div>
         {/if}
         {#if fileList.length > 0}<button
-            class="fs-file-count-pill"
-            class:slideshow-active={slideshowMenuVisible}
+            class="fs-file-count-pill tooltip-above"
+            class:slideshow-active={slideshow.active}
+            data-tooltip="File position"
             onclick={toggleThumbnailBar}
             >{currentIndex + 1} / {fileList.length}</button
           >{/if}
