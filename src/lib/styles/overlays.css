@@ -1830,11 +1830,14 @@
 
 /* Help dialog */
 .help-dialog {
-  width: 620px;
+  width: 480px;
   max-width: calc(100vw - 32px);
+  max-height: min(520px, calc(100vh - 80px));
   gap: 0;
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .help-dialog .delete-actions {
@@ -1864,37 +1867,64 @@
   color: #cccccc;
 }
 
-/* Help nav active colors */
-.settings-nav-item[data-section="quick-start"].active {
+/* Help horizontal tabs */
+.help-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 0.5px solid #1f1f1f;
+  flex-shrink: 0;
+  overflow-x: auto;
+  justify-content: center;
+}
+
+.help-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #555555;
+  font-size: 11px;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.help-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #888888;
+}
+
+.help-tab-btn.active[data-section="quick-start"] {
   background: rgba(34, 197, 94, 0.12);
   color: #86efac;
 }
-.settings-nav-item[data-section="quick-start"].active::before {
-  background: #22c55e;
-}
 
-.settings-nav-item[data-section="faq"].active {
+.help-tab-btn.active[data-section="faq"] {
   background: rgba(59, 130, 246, 0.12);
   color: #93c5fd;
 }
-.settings-nav-item[data-section="faq"].active::before {
-  background: #3b82f6;
-}
 
-.settings-nav-item[data-section="tips"].active {
+.help-tab-btn.active[data-section="tips"] {
   background: rgba(245, 197, 24, 0.12);
   color: #fde047;
 }
-.settings-nav-item[data-section="tips"].active::before {
-  background: #f5c518;
-}
 
-.settings-nav-item[data-section="troubleshooting"].active {
+.help-tab-btn.active[data-section="troubleshooting"] {
   background: rgba(239, 68, 68, 0.12);
   color: #fca5a5;
 }
-.settings-nav-item[data-section="troubleshooting"].active::before {
-  background: #ef4444;
+
+.help-tab-btn.active[data-section="changelog"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cccccc;
 }
 
 /* Help section header colors - Green (Quick start) */
@@ -1935,6 +1965,16 @@
 }
 #help-section-troubleshooting .settings-section-header svg {
   color: #f87171;
+}
+
+/* Help section header colors - Grey (Changelog) */
+#help-section-changelog .settings-section-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #aaaaaa;
+}
+#help-section-changelog .settings-section-header svg {
+  color: #aaaaaa;
 }
 
 /* Help keybind button */

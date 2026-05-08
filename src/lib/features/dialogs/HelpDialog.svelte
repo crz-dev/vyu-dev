@@ -38,14 +38,8 @@
     { id: "faq", label: "FAQ" },
     { id: "tips", label: "Tips" },
     { id: "troubleshooting", label: "Troubleshooting" },
+    { id: "changelog", label: "Changelog" },
   ];
-
-  const sectionDescriptions: Record<string, string> = {
-    "quick-start": "Get up and running with vyu in seconds.",
-    faq: "Common questions about privacy and usage.",
-    tips: "Hidden features and power-user tricks.",
-    troubleshooting: "Fix common issues quickly.",
-  };
 
   function scrollToSection(id: string) {
     activeSection = id;
@@ -108,93 +102,100 @@
         <p class="delete-subtitle">Learn how to use vyu</p>
       </div>
 
-      <div class="settings-layout">
-        <nav class="settings-nav">
-          {#each sections as sec}
-            <button
-              class="settings-nav-item"
-              class:active={activeSection === sec.id}
-              data-section={sec.id}
-              onclick={() => scrollToSection(sec.id)}
-            >
-              {#if sec.id === "quick-start"}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polygon
-                    points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
-                  /></svg
-                >
-              {:else if sec.id === "faq"}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><path
-                    d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"
-                  /><line x1="12" y1="17" x2="12.01" y2="17" /></svg
-                >
-              {:else if sec.id === "tips"}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                  /></svg
-                >
-              {:else if sec.id === "troubleshooting"}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><line
-                    x1="12"
-                    y1="8"
-                    x2="12"
-                    y2="12"
-                  /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
-                >
-              {/if}
-              {sec.label}
-            </button>
-          {/each}
-          <div class="settings-nav-spacer"></div>
-          <div class="settings-nav-description">
-            {#key activeSection}
-              <p class="settings-nav-description-text">
-                {sectionDescriptions[activeSection] ?? ""}
-              </p>
-            {/key}
-          </div>
-        </nav>
+      <div class="help-tabs">
+        {#each sections as sec}
+          <button
+            class="help-tab-btn"
+            class:active={activeSection === sec.id}
+            data-section={sec.id}
+            onclick={() => scrollToSection(sec.id)}
+          >
+            {#if sec.id === "quick-start"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><polygon
+                  points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+                /></svg
+              >
+            {:else if sec.id === "faq"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path
+                  d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"
+                /><line x1="12" y1="17" x2="12.01" y2="17" /></svg
+              >
+            {:else if sec.id === "tips"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                /></svg
+              >
+            {:else if sec.id === "troubleshooting"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><line
+                  x1="12"
+                  y1="8"
+                  x2="12"
+                  y2="12"
+                /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
+              >
+            {:else if sec.id === "changelog"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path
+                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                /><path
+                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                /></svg
+              >
+            {/if}
+            {sec.label}
+          </button>
+        {/each}
+      </div>
 
-        <div
-          class="settings-content"
-          bind:this={contentEl}
-          onscroll={handleScroll}
-        >
+      <div
+        class="settings-content"
+        bind:this={contentEl}
+        onscroll={handleScroll}
+      >
           <div
             id="help-section-quick-start"
             class="settings-section"
@@ -384,8 +385,40 @@
               </div>
             </div>
           </div>
+
+          <div
+            id="help-section-changelog"
+            class="settings-section"
+            class:flash={flashId === "changelog"}
+          >
+            <p class="settings-section-header">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path
+                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                /><path
+                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                /></svg
+              >
+              Changelog
+            </p>
+            <div class="settings-row help-text-row">
+              <div class="help-text">
+                <p>
+                  <strong>Stay updated</strong> — Check back here for the latest
+                  changes, improvements, and fixes in each release.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
       <div class="delete-actions">
         <div class="settings-footer-left">
