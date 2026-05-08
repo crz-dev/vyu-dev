@@ -5,7 +5,6 @@
     MediaProperties,
     VideoMarker,
   } from "$lib/shared/types";
-  import { fly } from "svelte/transition";
 
   let {
     contextMenu,
@@ -258,7 +257,7 @@
       </button>
     </div>
     {#if !isVideo}
-      <button class="ctx-item green" onclick={ctxCopyImage} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 0 }}>
+      <button class="ctx-item green" onclick={ctxCopyImage} role="menuitem" style="animation-delay: 0ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><rect
             x="8"
@@ -277,7 +276,7 @@
         >
         Copy image
       </button>
-      <button class="ctx-item green" onclick={ctxCopyPath} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 36 }}>
+      <button class="ctx-item green" onclick={ctxCopyPath} role="menuitem" style="animation-delay: 55ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
@@ -294,7 +293,7 @@
         Copy file path
       </button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item blue" onclick={ctxEdit} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 72 }}>
+      <button class="ctx-item blue" onclick={ctxEdit} role="menuitem" style="animation-delay: 110ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
@@ -306,7 +305,7 @@
         >
         Edit
       </button>
-      <button class="ctx-item blue" onclick={ctxProcess} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 108 }}>
+      <button class="ctx-item blue" onclick={ctxProcess} role="menuitem" style="animation-delay: 165ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
@@ -340,7 +339,7 @@
         class="ctx-item yellow"
         onclick={ctxShowInExplorer}
         role="menuitem"
-        transition:fly={{ y: -12, duration: 160, delay: 144 }}
+        style="animation-delay: 220ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
@@ -351,7 +350,7 @@
         >
         Show in explorer
       </button>
-      <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 180 }}>
+      <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem" style="animation-delay: 275ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><circle
             cx="12"
@@ -369,7 +368,7 @@
         Properties
       </button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item red" onclick={ctxDelete} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 216 }}>
+      <button class="ctx-item red" onclick={ctxDelete} role="menuitem" style="animation-delay: 330ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><polyline
             points="3 6 5 6 21 6"
@@ -396,7 +395,7 @@
         Delete
       </button>
     {:else}
-      <button class="ctx-item green" onclick={ctxCopyFrame} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 0 }}>
+      <button class="ctx-item green" onclick={ctxCopyFrame} role="menuitem" style="animation-delay: 0ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><rect
             x="2"
@@ -415,7 +414,7 @@
         >
         Copy current frame
       </button>
-      <button class="ctx-item green" onclick={ctxCopyPath} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 36 }}>
+      <button class="ctx-item green" onclick={ctxCopyPath} role="menuitem" style="animation-delay: 55ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
@@ -432,7 +431,7 @@
         Copy file path
       </button>
       <div class="ctx-sep"></div>
-      <button class="ctx-item blue" onclick={ctxEdit} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 72 }}>
+      <button class="ctx-item blue" onclick={ctxEdit} role="menuitem" style="animation-delay: 110ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
@@ -444,7 +443,7 @@
         >
         Edit
       </button>
-      <button class="ctx-item blue" onclick={ctxProcess} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 108 }}>
+      <button class="ctx-item blue" onclick={ctxProcess} role="menuitem" style="animation-delay: 165ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
             d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
@@ -478,7 +477,7 @@
         class="ctx-item yellow"
         onclick={ctxShowInExplorer}
         role="menuitem"
-        transition:fly={{ y: -12, duration: 160, delay: 144 }}
+        style="animation-delay: 220ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
@@ -489,7 +488,7 @@
         >
         Show in explorer
       </button>
-      <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 180 }}>
+      <button class="ctx-item yellow" onclick={ctxProperties} role="menuitem" style="animation-delay: 275ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><circle
             cx="12"
@@ -524,7 +523,7 @@
               }
             }}
             role="menuitem"
-            transition:fly={{ y: -12, duration: 160, delay: 216 }}
+            style="animation-delay: 330ms"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               ><circle
@@ -543,7 +542,7 @@
             {deleteMarkersConfirm ? "Confirm Delete" : "Delete Markers"}
           </button>
       {/if}
-      <button class="ctx-item red" onclick={ctxDelete} role="menuitem" transition:fly={{ y: -12, duration: 160, delay: 216 }}>
+      <button class="ctx-item red" onclick={ctxDelete} role="menuitem" style="animation-delay: 330ms">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><polyline
             points="3 6 5 6 21 6"
