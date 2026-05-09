@@ -34,8 +34,8 @@
         aria-label="Undo"
       >
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -46,6 +46,7 @@
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
           <path d="M3 3v5h5" />
         </svg>
+        <span class="edit-action-label">Undo</span>
       </button>
       <button
         class="edit-action-btn red tooltip-ctrl"
@@ -55,8 +56,8 @@
         aria-label="Reset"
       >
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -70,6 +71,7 @@
           <line x1="10" y1="11" x2="10" y2="17" />
           <line x1="14" y1="11" x2="14" y2="17" />
         </svg>
+        <span class="edit-action-label">Reset</span>
       </button>
     </div>
 {:else if hasEdits && side === "right"}
@@ -85,8 +87,8 @@
         aria-label="Export"
       >
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -98,6 +100,7 @@
           <polyline points="17,8 12,3 7,8" />
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
+        <span class="edit-action-label">Export</span>
       </button>
       <button
         class="edit-action-btn green tooltip-ctrl"
@@ -107,8 +110,8 @@
         aria-label="Apply"
       >
         <svg
-          width="16"
-          height="16"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -118,6 +121,7 @@
         >
           <path d="M20 6L9 17l-5-5" />
         </svg>
+        <span class="edit-action-label">Apply</span>
       </button>
     </div>
 {/if}
