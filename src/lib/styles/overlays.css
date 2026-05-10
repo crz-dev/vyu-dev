@@ -42,7 +42,7 @@
   width: 2.5px;
   height: 2.5px;
   border-radius: 50%;
-  background: #555;
+  background: #555555;
 }
 .ctx-close {
   display: flex;
@@ -53,7 +53,7 @@
   background: transparent;
   border: none;
   border-radius: 3px;
-  color: #666;
+  color: #666666;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
@@ -74,7 +74,7 @@
   background: transparent;
   border: none;
   border-radius: 3px;
-  color: #666;
+  color: #666666;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
@@ -258,7 +258,7 @@
   gap: 10px;
   padding: 12px;
   background: #0a0a0a;
-  border: 0.5px solid #1c1c1c;
+  border: 0.5px solid #1a1a1a;
   border-radius: 10px;
 }
 .toggle-row {
@@ -349,7 +349,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  border: 0.5px solid #1c1c1c;
+  border: 0.5px solid #1a1a1a;
   border-radius: 10px;
   padding: 8px;
   background: #0a0a0a;
@@ -477,7 +477,7 @@
   align-items: center;
   gap: 10px;
   padding-bottom: 10px;
-  border-bottom: 0.5px solid #1f1f1f;
+  border-bottom: 0.5px solid #1a1a1a;
 }
 .props-header-bar svg {
   color: #facc15;
@@ -499,7 +499,7 @@
 .props-dialog .delete-actions {
   justify-content: flex-end;
   padding-top: 10px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
 }
 
 .delete-file-dialog .delete-header-bar {
@@ -507,7 +507,7 @@
   align-items: center;
   gap: 10px;
   padding-bottom: 10px;
-  border-bottom: 0.5px solid #1f1f1f;
+  border-bottom: 0.5px solid #1a1a1a;
 }
 .delete-file-dialog .delete-header-bar svg {
   color: #f87171;
@@ -1037,7 +1037,7 @@
 
 .settings-header-bar {
   padding: 18px 20px 12px;
-  border-bottom: 0.5px solid #1f1f1f;
+  border-bottom: 0.5px solid #1a1a1a;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1064,8 +1064,8 @@
   flex-direction: column;
   gap: 2px;
   padding: 12px 6px 12px 8px;
-  border-right: 0.5px solid #1f1f1f;
-  background: #0d0d0d;
+  border-right: 0.5px solid #1a1a1a;
+  background: #0a0a0a;
   overflow-y: auto;
 }
 
@@ -1132,7 +1132,7 @@
 .settings-nav-item[data-section="library"].active,
 .settings-nav-item[data-section="system"].active {
   background: rgba(245, 197, 24, 0.12);
-  color: #fde047;
+  color: #facc15;
 }
 .settings-nav-item[data-section="library"].active::before,
 .settings-nav-item[data-section="system"].active::before {
@@ -1170,7 +1170,7 @@
   padding: 8px 9px;
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.03);
-  border: 0.5px solid #1c1c1c;
+  border: 0.5px solid #1a1a1a;
   margin-top: 2px;
 }
 
@@ -1223,7 +1223,7 @@
   gap: 2px;
   scroll-margin-top: 8px;
   background: #0a0a0a;
-  border: 0.5px solid #1c1c1c;
+  border: 0.5px solid #1a1a1a;
   border-radius: 10px;
   padding: 14px;
   transition:
@@ -1235,8 +1235,8 @@
 }
 
 .settings-section:hover {
-  border-color: #252525;
-  background: #0c0c0c;
+  border-color: #222222;
+  background: #0a0a0a;
 }
 
 .settings-section::before {
@@ -1349,7 +1349,7 @@
   border: 0.5px solid #2a2a2a;
   border-radius: 7px;
   overflow: hidden;
-  background: #0d0d0d;
+  background: #0a0a0a;
 }
 
 .pill-btn {
@@ -1372,7 +1372,7 @@
 
 .pill-btn:hover {
   background: rgba(255, 255, 255, 0.04);
-  color: #999999;
+  color: #888888;
 }
 
 .pill-btn.active {
@@ -1442,7 +1442,7 @@
 .settings-action-btn.yellow:hover {
   background: rgba(245, 197, 24, 0.22);
   border-color: rgba(245, 197, 24, 0.5);
-  color: #fde047;
+  color: #facc15;
 }
 
 .settings-dialog .toggle-track.on {
@@ -1451,7 +1451,7 @@
 
 .settings-dialog .delete-actions {
   padding: 12px 20px 16px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
   margin: 0;
   justify-content: space-between;
 }
@@ -1617,7 +1617,7 @@
 
 .accessibility-dialog .delete-actions {
   padding: 12px 20px 16px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
   margin: 0;
   justify-content: space-between;
 }
@@ -1842,7 +1842,7 @@
 
 .help-dialog .delete-actions {
   padding: 12px 20px 16px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
   margin: 0;
   justify-content: space-between;
 }
@@ -1872,7 +1872,7 @@
   display: flex;
   gap: 4px;
   padding: 8px 16px;
-  border-bottom: 0.5px solid #1f1f1f;
+  border-bottom: 0.5px solid #1a1a1a;
   flex-shrink: 0;
   overflow-x: auto;
   justify-content: center;
@@ -1914,7 +1914,7 @@
 
 .help-tab-btn.active[data-section="tips"] {
   background: rgba(245, 197, 24, 0.12);
-  color: #fde047;
+  color: #facc15;
 }
 
 .help-tab-btn.active[data-section="troubleshooting"] {
@@ -1983,7 +1983,7 @@
   padding: 5px 10px;
   border-radius: 6px;
   border: 0.5px solid #2a2a2a;
-  background: #0d0d0d;
+  background: #0a0a0a;
   color: #aaaaaa;
   font-size: 11px;
   font-family: Inter, sans-serif;
@@ -2029,7 +2029,7 @@
   padding: 2px 6px;
   border-radius: 4px;
   border: 0.5px solid #2a2a2a;
-  background: #0d0d0d;
+  background: #0a0a0a;
   color: #888888;
   font-size: 10px;
   font-family: Inter, sans-serif;
@@ -2039,7 +2039,7 @@
 .keybind-reset-row {
   margin-top: 6px;
   padding-top: 10px;
-  border-top: 0.5px solid #1c1c1c;
+  border-top: 0.5px solid #1a1a1a;
 }
 
 /* About dialog */
@@ -2083,12 +2083,12 @@
   overflow: hidden;
 
   -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(#ffffff 0 0) content-box,
+    linear-gradient(#ffffff 0 0);
   -webkit-mask-composite: xor;
   mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(#ffffff 0 0) content-box,
+    linear-gradient(#ffffff 0 0);
   mask-composite: exclude;
   padding: 2px;
 }
@@ -2129,7 +2129,7 @@
   transform: rotate(-45deg);
   font-size: 18px;
   font-weight: 800;
-  color: #bbbbbb;
+  color: #aaaaaa;
   font-family: Inter, sans-serif;
   letter-spacing: -0.5px;
   line-height: 1;
@@ -2145,7 +2145,7 @@
 .about-desc {
   margin: 0;
   font-size: 12px;
-  color: #777777;
+  color: #888888;
   font-family: Inter, sans-serif;
   line-height: 1.5;
   max-width: 300px;
@@ -2157,7 +2157,7 @@
   display: flex;
   flex-direction: column;
   background: #0a0a0a;
-  border: 0.5px solid #1c1c1c;
+  border: 0.5px solid #1a1a1a;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
@@ -2246,9 +2246,9 @@
 .about-link-btn {
   padding: 5px 10px;
   border-radius: 7px;
-  border: 0.5px solid #252525;
+  border: 0.5px solid #222222;
   background: #111111;
-  color: #777777;
+  color: #888888;
   font-size: 11px;
   font-family: Inter, sans-serif;
   cursor: pointer;
@@ -2263,8 +2263,8 @@
 
 .about-link-btn:hover {
   background: #1a1a1a;
-  color: #bbbbbb;
-  border-color: #333333;
+  color: #aaaaaa;
+  border-color: #323232;
 }
 
 /* Credits */
@@ -2278,7 +2278,7 @@
 }
 
 .about-credits strong {
-  color: #777777;
+  color: #888888;
   font-weight: 600;
 }
 
@@ -2289,7 +2289,7 @@
 /* Footer */
 .about-delete-actions {
   padding: 10px 20px 14px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
   margin: 0;
   justify-content: space-between;
 }
@@ -2465,7 +2465,7 @@
   display: flex;
   flex-direction: column;
   background: #0a0a0a;
-  border: 0.5px solid #1c1c1c;
+  border: 0.5px solid #1a1a1a;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
@@ -2474,7 +2474,7 @@
 }
 
 .feedback-section:hover {
-  border-color: #252525;
+  border-color: #222222;
 }
 
 .feedback-section-header {
@@ -2555,7 +2555,7 @@
 }
 
 .feedback-stars-row + .feedback-stars-row {
-  border-top: 0.5px solid #151515;
+  border-top: 0.5px solid #111111;
 }
 
 .feedback-label {
@@ -2596,7 +2596,7 @@
 
 .feedback-star-btn:hover {
   transform: scale(1.2);
-  color: #777777;
+  color: #888888;
 }
 
 .feedback-star-btn.filled {
@@ -2604,7 +2604,7 @@
 }
 
 .feedback-star-btn.filled:hover {
-  color: #fde047;
+  color: #facc15;
 }
 
 .feedback-star-label {
@@ -2639,7 +2639,7 @@
 }
 
 .feedback-feature-row + .feedback-feature-row {
-  border-top: 0.5px solid #121212;
+  border-top: 0.5px solid #111111;
 }
 
 .feedback-feature-name {
@@ -2669,7 +2669,7 @@
 .feedback-bucket {
   padding: 3px 8px;
   border-radius: 5px;
-  border: 0.5px solid #252525;
+  border: 0.5px solid #222222;
   background: #111111;
   color: #666666;
   font-size: 10px;
@@ -2686,7 +2686,7 @@
 .feedback-bucket:hover {
   background: #1a1a1a;
   color: #888888;
-  border-color: #333333;
+  border-color: #323232;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
@@ -2723,7 +2723,7 @@
 }
 
 .feedback-field + .feedback-field {
-  border-top: 0.5px solid #151515;
+  border-top: 0.5px solid #111111;
 }
 
 .feedback-field-header {
@@ -2749,7 +2749,7 @@
 
 .feedback-field textarea {
   background: #111111;
-  border: 0.5px solid #252525;
+  border: 0.5px solid #222222;
   border-radius: 7px;
   padding: 8px 10px;
   color: #cccccc;
@@ -2815,7 +2815,7 @@
 
 .feedback-actions {
   padding: 10px 18px 14px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
   margin: 0;
   justify-content: space-between;
   flex-shrink: 0;
@@ -2874,8 +2874,8 @@
 }
 
 .feedback-select-row select:hover {
-  background: #151515;
-  border-color: #333333;
+  background: #111111;
+  border-color: #323232;
 }
 
 .feedback-select-row select:focus {
@@ -2886,7 +2886,7 @@
   display: inline-flex;
   overflow: hidden;
   border-radius: 5px;
-  border: 0.5px solid #252525;
+  border: 0.5px solid #222222;
 }
 
 .feedback-os-btn {
@@ -2917,7 +2917,7 @@
 
 .feedback-os-btn.active {
   background: rgba(255, 255, 255, 0.08);
-  color: #eeeeee;
+  color: #e5e5e5;
 }
 
 .feedback-version-actions {
@@ -2951,7 +2951,7 @@
   padding: 4px 10px;
   min-width: 135px;
   border-radius: 5px;
-  border: 0.5px solid #252525;
+  border: 0.5px solid #222222;
   background: #111111;
   color: #888888;
   font-size: 10px;
@@ -3004,7 +3004,7 @@
   display: inline-flex;
   overflow: hidden;
   border-radius: 5px;
-  border: 0.5px solid #252525;
+  border: 0.5px solid #222222;
 }
 
 .feedback-freq-btn {
@@ -3074,7 +3074,7 @@
 /* Footer */
 .feedback-footer {
   padding: 10px 18px 14px;
-  border-top: 0.5px solid #1f1f1f;
+  border-top: 0.5px solid #1a1a1a;
   margin: 0;
   justify-content: space-between;
   align-items: center;

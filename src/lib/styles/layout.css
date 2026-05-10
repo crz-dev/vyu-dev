@@ -1,7 +1,7 @@
 main {
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: #000000;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -99,13 +99,13 @@ main {
   color: #facc15;
 }
 .close-file-btn:hover {
-  color: #fde047;
+  color: #facc15;
 }
 .open-file-btn {
   color: #facc15;
 }
 .open-file-btn:hover {
-  color: #fde047;
+  color: #facc15;
 }
 .window-controls {
   margin-left: auto;
@@ -466,12 +466,12 @@ main.fullscreen .media-container {
   z-index: 200;
   overflow: hidden;
   -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(#ffffff 0 0) content-box,
+    linear-gradient(#ffffff 0 0);
   -webkit-mask-composite: xor;
   mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+    linear-gradient(#ffffff 0 0) content-box,
+    linear-gradient(#ffffff 0 0);
   mask-composite: exclude;
   padding: 3px;
 }

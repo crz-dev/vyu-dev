@@ -7,8 +7,12 @@
 
   --text-primary: #ffffff;
   --text-secondary: #cccccc;
+  --text-mid: #aaaaaa;
   --text-muted: #888888;
   --text-dim: #444444;
+
+  --bg-shimmer: #222222;
+  --border-subtle: #323232;
 
   --yellow: #f5c518;
   --yellow-soft: #facc15;
