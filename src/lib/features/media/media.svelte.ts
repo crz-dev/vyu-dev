@@ -69,7 +69,7 @@ export function createMedia(
   getVolume: () => number,
   getMuted: () => boolean,
   getLooping: () => boolean,
-  onReset: () => void,
+  onReset: (newPath?: string) => void,
 ) {
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
   let finishLoadingCalled = false;
@@ -147,7 +147,7 @@ export function createMedia(
       resumePoint: (isVideo || isAudio) ? loadResumePoint(path) : null,
     });
 
-    onReset();
+    onReset(path);
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
 

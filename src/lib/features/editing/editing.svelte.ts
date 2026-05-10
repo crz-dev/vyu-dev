@@ -76,6 +76,13 @@ function createEditingStore() {
   let _cropShouldCenter = $state(false);
   let _exportPath = $state<string | null>(null);
   let _exportError = $state<string | null>(null);
+  const sessionEdits = new Map<string, EditSnapshot>();
+
+  function saveCurrentToSession() {
+    if (filePath && getHasEdits()) {
+      sessionEdits.set(filePath, cloneSnapshot(snapshot));
+    }
+  }
 
   function pushUndo() {
     undoStack = [...undoStack, cloneSnapshot(snapshot)];
@@ -217,7 +224,24 @@ function createEditingStore() {
     _cropShouldCenter = false;
   }
 
+  function switchFile(newPath: string) {
+    saveCurrentToSession();
+    filePath = newPath;
+    const saved = sessionEdits.get(newPath);
+    if (saved) {
+      snapshot = cloneSnapshot(saved);
+    } else {
+      snapshot = defaultSnapshot();
+    }
+    undoStack = [];
+    cropMode = false;
+    _cropShouldCenter = false;
+    isApplied = false;
+    originalBackupPath = null;
+  }
+
   function cleanup() {
+    saveCurrentToSession();
     undoStack = [];
     snapshot = defaultSnapshot();
     cropMode = false;
@@ -282,6 +306,7 @@ function createEditingStore() {
     startCropMode,
     exitCropMode,
     toggleCropMode,
+    switchFile,
     setCropAspectRatio,
     setCropBounds,
     resetCrop,

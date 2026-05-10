@@ -759,14 +759,18 @@ import { invoke } from "@tauri-apps/api/core";
     () => volume,
     () => muted,
     () => loopMode === "loop",
-    () => {
+    (newPath?: string) => {
       clearTimeout(tsDragFadeTimer);
       clearTimestampDragRange();
       tsTooltip = { ...tsTooltip, visible: false };
       tsEditMenu = { ...tsEditMenu, visible: false };
       resetZoom();
       viewer.state.baseZoomLevel = 100;
-      editing.cleanup();
+      if (newPath) {
+        editing.switchFile(newPath);
+      } else {
+        editing.cleanup();
+      }
       editMenuVisible = false;
     },
   );
@@ -1133,6 +1137,8 @@ import { invoke } from "@tauri-apps/api/core";
   }
   async function handleApplyEdits() {
     if (!editing.getHasEdits() && !editing.getCropBounds()) return;
+    editMenuVisible = false;
+    editing.exitCropMode();
     try {
       editing.isApplying = true;
       await editing.backupOriginal(filePath);
