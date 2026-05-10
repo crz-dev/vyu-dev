@@ -2,6 +2,7 @@
 // media.ts:displayFile (line 129-131) on every file load/navigation.
 // Save variants called on state mutation (timestamps/clips) and beforeunload (resume).
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
+import type { LoopMode } from "$lib/shared/constants";
 
 const MAX_STALE_ENTRIES = 500;
 
@@ -166,11 +167,11 @@ export function deleteResumePoint(filePath: string): void {
   localStorage.removeItem(`vyu-resume-${filePath}`);
 }
 
-export function loadLoopMode(): string {
-  return localStorage.getItem("vyu-loop-mode") ?? "loop";
+export function loadLoopMode(): LoopMode {
+  return (localStorage.getItem("vyu-loop-mode") as LoopMode) ?? "loop";
 }
 
-export function saveLoopMode(mode: string): void {
+export function saveLoopMode(mode: LoopMode): void {
   localStorage.setItem("vyu-loop-mode", mode);
 }
 

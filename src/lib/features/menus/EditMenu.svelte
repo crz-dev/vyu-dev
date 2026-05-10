@@ -54,17 +54,8 @@
 
   $effect(() => {
     localBrightness = editing.snapshot.brightness;
-  });
-
-  $effect(() => {
     localContrast = editing.snapshot.contrast;
-  });
-
-  $effect(() => {
     localSaturation = editing.snapshot.saturation;
-  });
-
-  $effect(() => {
     localHue = editing.snapshot.hue;
   });
 

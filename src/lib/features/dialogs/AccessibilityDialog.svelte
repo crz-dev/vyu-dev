@@ -15,8 +15,8 @@
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
   let isScrolling = $state(false);
-  let scrollTimeout = $state<ReturnType<typeof setTimeout> | null>(null);
-  let flashTimeout = $state<ReturnType<typeof setTimeout> | null>(null);
+  let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+  let flashTimeout: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
     localStorage.setItem(LAST_SECTION_KEY, activeSection);

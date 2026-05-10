@@ -19,7 +19,7 @@ export interface InitState {
   loopMode: {
     get: () => LoopMode;
     set: (v: LoopMode) => void;
-    save: (v: string) => void;
+    save: (v: LoopMode) => void;
   };
   volumeSliderMode: { get: () => boolean; set: (v: boolean) => void };
   speedSliderMode: { get: () => boolean; set: (v: boolean) => void };
@@ -44,12 +44,12 @@ export interface InitState {
 
 export function setupInit(s: InitState) {
   onMount(() => {
-    const initial = (window as any).__INITIAL_FILE__;
+    const initial = window.__INITIAL_FILE__;
     if (initial) s.loadFile(initial);
 
     cleanupStaleStorageEntries();
     s.volume.set(loadVolume());
-    s.loopMode.set((loadLoopMode() as LoopMode) ?? "loop");
+    s.loopMode.set(loadLoopMode());
     const sliderPrefs = loadSliderMode();
     s.volumeSliderMode.set(sliderPrefs.volume ?? false);
     s.speedSliderMode.set(sliderPrefs.speed ?? false);
@@ -142,10 +142,12 @@ export function setupInit(s: InitState) {
           l
             .trim()
             .replace(/^file:\/\/\//, "")
-            .replace(/^file:\/\//, "")
-            .replace(/%20/g, " "),
+            .replace(/^file:\/\//, ""),
         );
-        const match = lines.find((l) => {
+        const decoded = lines.map((l) => {
+          try { return decodeURIComponent(l); } catch { return l; }
+        });
+        const match = decoded.find((l) => {
           const ext = getFileExt(l);
           return ALL_EXTS.includes(ext);
         });

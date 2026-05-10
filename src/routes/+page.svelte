@@ -313,8 +313,10 @@ import { invoke } from "@tauri-apps/api/core";
     observer.observe(el);
     return () => observer.disconnect();
   });
+  // Re-fit image when thumbnail bar visibility or rotation changes.
+  // Both values are tracked as reactive dependencies but not used in the calculation.
   $effect(() => {
-    const _ = thumbnailBarVisible;
+    void thumbnailBarVisible;
     void editing.snapshot.rotation;
     if (
       viewerEl &&
@@ -958,7 +960,11 @@ import { invoke } from "@tauri-apps/api/core";
       settingsOpen ||
       accessibilityOpen ||
       helpOpen ||
-      aboutOpen,
+      aboutOpen ||
+      feedbackOpen ||
+      tsEditMenu.visible ||
+      tsMenuOpen ||
+      clipDeleteConfirm.visible,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -971,6 +977,10 @@ import { invoke } from "@tauri-apps/api/core";
       accessibilityOpen = false;
       helpOpen = false;
       aboutOpen = false;
+      feedbackOpen = false;
+      tsEditMenu.visible = false;
+      tsMenuOpen = false;
+      clipDeleteConfirm.visible = false;
     },
     navigateToEdge,
     navigate,

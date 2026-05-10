@@ -14,8 +14,12 @@ function evictOldestFolder() {
   }
 }
 
+function detectSep(path: string): string {
+  return path.includes("\\") ? "\\" : "/";
+}
+
 export async function readMediaFilesInFolder(path: string): Promise<string[]> {
-  const sep = path.includes("\\") ? "\\" : "/";
+  const sep = detectSep(path);
   const folder = path.substring(0, path.lastIndexOf(sep));
   const cached = folderCache.get(folder);
   if (cached) return cached;
@@ -42,16 +46,19 @@ export function clearFolderCache(folder?: string): void {
 }
 
 export function getParentFolder(filePath: string): string {
-  const sep = filePath.includes("\\") ? "\\" : "/";
+  const sep = detectSep(filePath);
   return filePath.includes(sep)
     ? filePath.substring(0, filePath.lastIndexOf(sep))
     : "";
 }
 
 export function getFileExt(filePath: string): string {
-  return filePath.split(".").pop()?.toLowerCase() || "";
+  const name = getFileName(filePath);
+  const lastDot = name.lastIndexOf(".");
+  return lastDot > 0 ? name.substring(lastDot + 1).toLowerCase() : "";
 }
 
 export function getFileName(filePath: string): string {
-  return filePath.split("\\").pop()?.split("/").pop() || filePath;
+  const lastSep = Math.max(filePath.lastIndexOf("\\"), filePath.lastIndexOf("/"));
+  return lastSep >= 0 ? filePath.substring(lastSep + 1) : filePath;
 }

@@ -93,7 +93,8 @@
 
 <div
   id="filename-tooltip"
-  style="position:fixed;opacity:0;transition:opacity 0.15s ease 0.4s;background:#1a1a1a;color:#aaaaaa;font-size:11px;font-family:Inter,sans-serif;white-space:nowrap;padding:4px 8px;border-radius:4px;border:0.5px solid #2a2a2a;pointer-events:none;z-index:9999;"
+  class="filename-tooltip"
+  style="position:fixed;opacity:0;left:0;top:0;pointer-events:none;z-index:9999"
 ></div>
 
 {#if tsEditMenu.visible}

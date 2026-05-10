@@ -1,5 +1,7 @@
 // DATAFLOW: handleKeydown dispatched from +page.svelte. ArrowLeft/Right → navigate(±1).
 // Alt+Arrow → navigate. Ctrl+Arrow → navigateToEdge. Space → togglePlay.
+import { VOLUME_STEP } from "$lib/shared/constants";
+
 type KeybindActions = {
   areDialogsOpen: () => boolean;
   closeDialogs: () => void;
@@ -16,6 +18,8 @@ type KeybindActions = {
   togglePlay: () => void;
   frameStep: (direction: -1 | 1) => void;
 };
+
+const NAV_KEYS = new Set(["ArrowRight", "ArrowLeft", " "]);
 
 export function createKeybindHandler(actions: KeybindActions) {
   return function handleKeydown(e: KeyboardEvent) {
@@ -63,18 +67,17 @@ export function createKeybindHandler(actions: KeybindActions) {
     }
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      actions.setVolume(actions.getVolume() + 0.125);
+      actions.setVolume(actions.getVolume() + VOLUME_STEP);
       return;
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      actions.setVolume(actions.getVolume() - 0.125);
+      actions.setVolume(actions.getVolume() - VOLUME_STEP);
       return;
     }
 
-    if (["ArrowRight", "ArrowLeft", " "].includes(e.key)) e.preventDefault();
+    if (NAV_KEYS.has(e.key)) e.preventDefault();
 
-    const isVid = actions.isVideo();
     const isTimed = actions.isTimedMedia();
     const mediaEl = actions.getMediaEl();
 
@@ -100,6 +103,7 @@ export function createKeybindHandler(actions: KeybindActions) {
         actions.frameStep(1);
       }
     } else {
+      const isVid = actions.isVideo();
       if (e.key === " " && isTimed && mediaEl) actions.togglePlay();
       if (e.key === "ArrowRight") actions.navigate(1);
       if (e.key === "ArrowLeft") actions.navigate(-1);
