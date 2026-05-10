@@ -1,5 +1,5 @@
 // DATAFLOW: readTimestamps/readClipBoundaries/loadResumePoint called by
-// media.svelte.ts:displayFile (line 129-131) on every file load/navigation.
+// media.ts:displayFile (line 129-131) on every file load/navigation.
 // Save variants called on state mutation (timestamps/clips) and beforeunload (resume).
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
 

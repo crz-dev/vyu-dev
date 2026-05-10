@@ -8,7 +8,6 @@ import {
   copyFrameToClipboard,
   copyPathToClipboard,
 } from "$lib/services/clipboard";
-import type { ClipJobResult } from "$lib/shared/types";
 
 export async function ctxCopyImage(opts: {
   filePath: string;
@@ -67,7 +66,7 @@ export async function ctxShowInExplorer(opts: {
   opts.closeContextMenu();
   try {
     await invokeShowInExplorer(opts.filePath);
-  } catch {}
+  } catch (e) { console.error("Show in explorer failed:", e); }
 }
 
 export async function handleApplyCrop(opts: {

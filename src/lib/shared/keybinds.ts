@@ -1,6 +1,6 @@
 // DATAFLOW: handleKeydown dispatched from +page.svelte. ArrowLeft/Right → navigate(±1).
 // Alt+Arrow → navigate. Ctrl+Arrow → navigateToEdge. Space → togglePlay.
-export type KeybindActions = {
+type KeybindActions = {
   areDialogsOpen: () => boolean;
   closeDialogs: () => void;
   navigateToEdge: (left: boolean) => void;

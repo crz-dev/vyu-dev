@@ -9,7 +9,7 @@ import { invoke } from "@tauri-apps/api/core";
     createPlaybackUI,
     formatTime,
   } from "$lib/features/media/playback.svelte";
-  import { createTimeline } from "$lib/features/timeline/timeline.svelte";
+  import { createTimeline } from "$lib/features/timeline/timeline";
   import { createClips } from "$lib/features/media/clips.svelte";
   import { createKeybindHandler } from "$lib/shared/keybinds";
   import {
@@ -31,18 +31,14 @@ import { invoke } from "@tauri-apps/api/core";
     saveSkipDeleteConfirmation,
     writeTimestamps,
     deleteTimestamps,
-    saveResumePoint,
     deleteResumePoint,
     saveLoopMode,
     saveSliderMode,
-    loadClipPreferences,
     saveClipPreferences,
   } from "$lib/services/storage";
   import {
-    invokeProcessVideoClips,
     invokeDeleteFile,
     invokeTrashFile,
-    invokeShowInExplorer,
     invokeOpenFolder,
     invokeOpenDirectory,
     invokeCleanupTempFolder,
@@ -60,7 +56,7 @@ import { invoke } from "@tauri-apps/api/core";
     getFileExt,
     clearFolderCache,
   } from "$lib/services/files";
-  import { createMedia } from "$lib/features/media/media.svelte";
+  import { createMedia } from "$lib/features/media/media";
   import { viewer } from "$lib/features/viewer/viewer.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
@@ -185,8 +181,6 @@ import { invoke } from "@tauri-apps/api/core";
     end: 0,
     phase: "idle",
   });
-  let tsDragHoverTimestampId = $state<string | null>(null);
-  let tsDragHoverBoundaryId = $state<string | null>(null);
   let tsMarkerDragJustEnded = $state(false);
   let tsDragFadeTimer: ReturnType<typeof setTimeout> | undefined;
   let frameCopyToast = $state<{
@@ -611,7 +605,7 @@ import { invoke } from "@tauri-apps/api/core";
     return timeline.getTimestampPct(time, rawDurationSecs);
   }
   function startTimestampRangeDrag(e: MouseEvent, id: string) {
-    /* ... existing impl ... */
+    // planned feature — not yet implemented
   }
   function getDragRangeStyle(): string {
     if (!tsDragRange.visible) return "";
@@ -651,7 +645,7 @@ import { invoke } from "@tauri-apps/api/core";
 
   // ── Clip marker drag ───────────────────────────────────
   function startClipMarkerDrag(e: MouseEvent, id: string) {
-    /* ... */
+    // planned feature — not yet implemented
   }
 
   // ── Clip jobs ──────────────────────────────────────────
@@ -695,13 +689,10 @@ import { invoke } from "@tauri-apps/api/core";
     }
   }
   async function runClipAction(mode: "separate" | "merge") {
-    /* ... */
-  }
-  async function requestClipAction(mode: "separate" | "merge") {
-    /* ... */
+    // planned feature — not yet implemented
   }
   async function toggleClipPathSelection() {
-    /* ... */
+    // planned feature — not yet implemented
   }
   function toggleClipDeleteOriginal() {
     clipDeleteOriginal = !clipDeleteOriginal;
@@ -712,12 +703,12 @@ import { invoke } from "@tauri-apps/api/core";
     persistClipPrefs();
   }
   function triggerClipSegments() {
-    /* ... */
+    // planned feature — not yet implemented
   }
 
   // ── File loading / navigation ──────────────────────────
   function setMediaState(
-    data: Partial<import("$lib/features/media/media.svelte").MediaState>,
+    data: Partial<import("$lib/features/media/media").MediaState>,
   ) {
     if (data.filePath !== undefined) filePath = data.filePath;
     if (data.fileSrc !== undefined) fileSrc = data.fileSrc;
@@ -855,7 +846,6 @@ import { invoke } from "@tauri-apps/api/core";
     if (fileList.length === 0) return;
     slideshow.stop();
     editing.exitCropMode();
-    const next = first ? 0 : fileList.length - 1;
     currentIndex = media.navigateToEdge(first, fileList, setMediaState);
   }
   function toggleThumbnailBar() {
@@ -1430,19 +1420,12 @@ import { invoke } from "@tauri-apps/api/core";
   {fileDimensions}
   {fileSize}
   {fileInfoLoading}
-  {isGifVideo}
   {isLoadingFile}
   {loadingFadingOut}
   {anyMenuOpen}
   viewerStateIsFullscreen={viewer.state.isFullscreen}
   viewerResetFsTimer={viewer.resetFsTimer}
   viewerToggleFullscreen={toggleFullscreen}
-  viewerStateFsControlsVisible={viewer.state.fsControlsVisible}
-  onViewerScroll={handleViewerScroll}
-  onViewerPan={startPan}
-  {fsCursor}
-  viewerTouchZoom={viewer.handleTouchZoom}
-  viewerTouchEnd={viewer.handleTouchEnd}
   {thumbnailBarVisible}
   zoomLevel={viewer.state.zoomLevel}
   {resetZoom}
@@ -1547,7 +1530,6 @@ import { invoke } from "@tauri-apps/api/core";
   onUpdateDeleteNoAsk={(v: boolean) => (deleteNoAsk = v)}
   onUpdateDeletePermanently={(v: boolean) => (deletePermanently = v)}
   onCloseContextMenu={closeContextMenu}
-  onTsMenuChange={(v: boolean) => (tsMenuOpen = v)}
   {tsTooltip}
   tsEditMenuVisible={tsEditMenu.visible}
   {tsEditMenu}
@@ -1708,7 +1690,6 @@ import { invoke } from "@tauri-apps/api/core";
                     }
                   }}
                 >
-                  <track kind="captions" />
                 </video>
                 </div>
               {/key}
@@ -1775,9 +1756,6 @@ import { invoke } from "@tauri-apps/api/core";
                 showSpeedOverlay={playbackUI.showSpeedOverlay}
                 handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
                 handleSpeedScroll={playbackUI.handleSpeedScroll}
-                speedTooltipVisible={playbackUI.speedTooltipVisible}
-                speedTooltipX={playbackUI.speedTooltipX}
-                speedTooltipY={playbackUI.speedTooltipY}
                 handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
                 startSpeedDrag={playbackUI.startSpeedDrag}
                 {addTimestamp}
@@ -1891,9 +1869,6 @@ import { invoke } from "@tauri-apps/api/core";
                 showSpeedOverlay={playbackUI.showSpeedOverlay}
                 handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
                 handleSpeedScroll={playbackUI.handleSpeedScroll}
-                speedTooltipVisible={playbackUI.speedTooltipVisible}
-                speedTooltipX={playbackUI.speedTooltipX}
-                speedTooltipY={playbackUI.speedTooltipY}
                 handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
                 startSpeedDrag={playbackUI.startSpeedDrag}
                 addTimestamp={() => {}}
@@ -2049,9 +2024,6 @@ import { invoke } from "@tauri-apps/api/core";
               showSpeedOverlay={playbackUI.showSpeedOverlay}
               handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
               handleSpeedScroll={playbackUI.handleSpeedScroll}
-              speedTooltipVisible={playbackUI.speedTooltipVisible}
-              speedTooltipX={playbackUI.speedTooltipX}
-              speedTooltipY={playbackUI.speedTooltipY}
               handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
               startSpeedDrag={playbackUI.startSpeedDrag}
               {addTimestamp}

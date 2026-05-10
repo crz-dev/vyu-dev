@@ -1,5 +1,5 @@
 // DATAFLOW: readMediaFilesInFolder (line 15) scans parent dir for sibling media —
-// called by media.svelte.ts:loadFile (line 172) on initial file open only.
+// called by media.ts:loadFile (line 172) on initial file open only.
 import { readDir } from "@tauri-apps/plugin-fs";
 import { ALL_EXTS } from "$lib/shared/constants";
 

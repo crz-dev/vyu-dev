@@ -66,9 +66,23 @@
     hideFilenameTooltip();
     const newName = editValue.trim();
     if (!newName || newName === fileName || !filePath) return;
+
+    // Sanitize: reject names containing path separators or traversal
+    if (/[/\\]/.test(newName) || newName === ".." || newName === ".") {
+      console.error("Rename rejected: invalid characters in filename");
+      return;
+    }
+
     const sep = filePath.includes("\\") ? "\\" : "/";
     const dir = filePath.substring(0, filePath.lastIndexOf(sep));
     const newPath = `${dir}${sep}${newName}`;
+
+    // Ensure the resolved path stays within the original directory
+    if (!newPath.startsWith(dir + sep)) {
+      console.error("Rename rejected: path traversal detected");
+      return;
+    }
+
     try {
       await invokeRenameFile(filePath, newPath);
       onRenamed(newPath);

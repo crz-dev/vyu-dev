@@ -74,8 +74,6 @@ function createEditingStore() {
   let isApplying = $state(false);
   let cropMode = $state(false);
   let _cropShouldCenter = $state(false);
-  let _exportPath = $state<string | null>(null);
-  let _exportError = $state<string | null>(null);
   const sessionEdits = new Map<string, EditSnapshot>();
 
   function saveCurrentToSession() {
@@ -110,14 +108,6 @@ function createEditingStore() {
 
   function exitCropMode() {
     cropMode = false;
-  }
-
-  function toggleCropMode() {
-    if (cropMode) {
-      cropMode = false;
-    } else {
-      cropMode = true;
-    }
   }
 
   function setCropAspectRatio(ratio: number | null) {
@@ -196,8 +186,8 @@ function createEditingStore() {
     try {
       const backupPath: string = await invoke("backup_file", { source: path });
       originalBackupPath = backupPath;
-    } catch {
-      // non-fatal
+    } catch (e) {
+      console.error("backup_file failed (non-fatal):", e);
     }
   }
 
@@ -208,8 +198,8 @@ function createEditingStore() {
         source: originalBackupPath,
         destination: filePath,
       });
-    } catch {
-      // non-fatal
+    } catch (e) {
+      console.error("restoreOriginal failed (non-fatal):", e);
     }
   }
 
@@ -251,8 +241,6 @@ function createEditingStore() {
     originalBackupPath = null;
     isExporting = false;
     isApplying = false;
-    _exportPath = null;
-    _exportError = null;
   }
 
   function setFilePath(path: string) {
@@ -262,12 +250,6 @@ function createEditingStore() {
   return {
     get snapshot() {
       return snapshot;
-    },
-    get undoStack() {
-      return undoStack;
-    },
-    get originalBackupPath() {
-      return originalBackupPath;
     },
     get isApplied() {
       return isApplied;
@@ -305,7 +287,6 @@ function createEditingStore() {
     getHasEdits,
     startCropMode,
     exitCropMode,
-    toggleCropMode,
     switchFile,
     setCropAspectRatio,
     setCropBounds,
@@ -320,7 +301,6 @@ function createEditingStore() {
     setSaturation,
     setHue,
     backupOriginal,
-    restoreOriginal,
     reset,
     cleanup,
     setFilePath,

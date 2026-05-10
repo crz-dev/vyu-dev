@@ -17,7 +17,6 @@
     editingTimestamp,
     editingSegment,
     currentTitle,
-    getTitleEditorWidthCh,
     updateEditorTitle,
     closeTimestampEditor,
     onEditorScissor,
@@ -52,7 +51,6 @@
     editingTimestamp: VideoMarker | undefined;
     editingSegment: ClipBoundary | undefined;
     currentTitle: string;
-    getTitleEditorWidthCh: (title: string) => number;
     updateEditorTitle: (v: string) => void;
     closeTimestampEditor: () => void;
     onEditorScissor: (kind: "start" | "end") => void;

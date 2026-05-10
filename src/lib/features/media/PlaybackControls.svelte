@@ -23,9 +23,6 @@
     showSpeedOverlay,
     handleSpeedAreaLeave,
     handleSpeedScroll,
-    speedTooltipVisible,
-    speedTooltipX,
-    speedTooltipY,
     handleSpeedDiamondHover,
     startSpeedDrag,
     addTimestamp,
@@ -74,9 +71,6 @@
     showSpeedOverlay: () => void;
     handleSpeedAreaLeave: () => void;
     handleSpeedScroll: (e: WheelEvent) => void;
-    speedTooltipVisible: boolean;
-    speedTooltipX: number;
-    speedTooltipY: number;
     handleSpeedDiamondHover: (e: MouseEvent) => void;
     startSpeedDrag: (e: MouseEvent) => void;
     addTimestamp: () => void;

@@ -172,7 +172,7 @@ export function createMedia(
             getMetaValue(info, "modifiedAt"),
         ),
       });
-    } catch {}
+    } catch (e) { console.error("stat() failed:", e); }
   }
 
   async function loadFile(
@@ -187,7 +187,7 @@ export function createMedia(
     try {
       const list = await readMediaFilesInFolder(path);
       setFileList(list, list.indexOf(path));
-    } catch {}
+    } catch (e) { console.error("readMediaFilesInFolder failed:", e); }
   }
 
   function navigate(

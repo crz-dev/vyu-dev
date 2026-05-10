@@ -96,7 +96,7 @@ export async function invokeShowInExplorer(path: string): Promise<void> {
 }
 
 export async function invokeOpenFolder(path: string): Promise<void> {
-  return invoke("open_folder", { path });
+  return invoke("open_directory", { path });
 }
 
 export async function invokeOpenDirectory(path: string): Promise<void> {
@@ -179,10 +179,6 @@ export async function invokeCompressMedia(
     target,
     preset,
   });
-}
-
-export async function invokeBackupFile(source: string): Promise<string> {
-  return invoke("backup_file", { source });
 }
 
 export async function exportEditedImage(

@@ -612,7 +612,7 @@
             await invokeOpenDirectory(
               clipToast.outputDir || clipOutputDir || parentFolder(),
             );
-          } catch {}
+          } catch (e) { console.error("Failed to open clip output directory:", e); }
         }}
         aria-label="open output folder"
       >

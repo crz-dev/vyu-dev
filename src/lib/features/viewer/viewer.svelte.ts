@@ -102,16 +102,8 @@ function createViewer() {
     editing.rotate(angle);
   }
 
-  function setRotation(angle: number) {
-    editing.setRotation(angle);
-  }
-
   function flip() {
     editing.flip();
-  }
-
-  function flipVertical() {
-    editing.flipVertical();
   }
 
   function getPanCursor(): "default" | "grab" | "grabbing" {
@@ -181,23 +173,7 @@ function createViewer() {
     lastPinchDist = 0;
   }
 
-  function startCropMode() {
-    editing.startCropMode();
-  }
-
-  function cancelCrop() {
-    editing.exitCropMode();
-  }
-
-  function resetCrop() {
-    editing.resetCrop();
-  }
-
-  function setCropBounds(bounds: Partial<CropBounds>) {
-    editing.setCropBounds(bounds);
-  }
-
-  function getCropBounds(): CropBounds | null {
+  function getCropBounds() {
     return editing.getCropBounds();
   }
 
@@ -211,19 +187,13 @@ function createViewer() {
     fitToScreen,
     resetZoom,
     rotate,
-    setRotation,
     flip,
-    flipVertical,
     getPanCursor,
     getVideoWrapperTransform,
     getVideoInnerTransform,
     handleViewerScroll,
     handleTouchZoom,
     handleTouchEnd,
-    startCropMode,
-    cancelCrop,
-    resetCrop,
-    setCropBounds,
     getCropBounds,
   };
 }

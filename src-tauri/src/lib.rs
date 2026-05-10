@@ -458,13 +458,7 @@ fn backup_file(source: String) -> Result<String, String> {
         .map_err(|e| format!("Failed to create backup dir: {e}"))?;
 
     let ext = source_path.extension().and_then(|e| e.to_str()).unwrap_or("bak");
-    let hash = format!("{:x}", {
-        let mut h: u32 = 0;
-        for b in source.as_bytes() {
-            h = h.wrapping_mul(31).wrapping_add(*b as u32);
-        }
-        h
-    });
+    let hash = hash_path(&source);
     let backup_path = temp_dir.join(format!("{}.{}", hash, ext));
     if backup_path.exists() {
         let _ = std::fs::remove_file(&backup_path);
@@ -507,37 +501,6 @@ fn show_in_explorer(path: String) -> Result<(), String> {
     {
         std::process::Command::new("xdg-open")
             .arg(p.parent().unwrap_or(&p))
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    Ok(())
-}
-
-#[tauri::command]
-fn open_folder(path: String) -> Result<(), String> {
-    let p = PathBuf::from(&path);
-    if !p.exists() {
-        return Err("File does not exist".into());
-    }
-    let folder = p.parent().unwrap_or(&p);
-    #[cfg(target_os = "windows")]
-    {
-        Command::new("explorer")
-            .arg(folder)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    #[cfg(target_os = "macos")]
-    {
-        Command::new("open")
-            .arg(folder)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-    }
-    #[cfg(target_os = "linux")]
-    {
-        Command::new("xdg-open")
-            .arg(folder)
             .spawn()
             .map_err(|e| e.to_string())?;
     }
@@ -824,7 +787,6 @@ fn get_clipboard_file_path() -> Option<String> {
     None
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -834,7 +796,6 @@ pub fn run() {
             delete_file,
             trash_file,
             show_in_explorer,
-            open_folder,
             open_directory,
             get_media_properties,
             check_ffprobe,
@@ -855,7 +816,7 @@ pub fn run() {
         .setup(|app| {
             cleanup_vyu_temp();
 
-            let args: Vec<String> = std::env::args().collect();
+            let mut args: Vec<String> = std::env::args().collect();
             let window = app.get_webview_window("main").unwrap();
 
             let skip_save = Arc::new(AtomicBool::new(false));
@@ -869,7 +830,8 @@ pub fn run() {
             window.on_window_event(move |event| {
                 match event {
                     WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
-                        let mut last = last_save.lock().unwrap();
+                        let mut last = last_save.lock()
+                            .expect("window state save mutex should not be poisoned");
                         if last.elapsed() > Duration::from_millis(300) {
                             persist_window_state(&window_for_events, &skip_for_events);
                             *last = Instant::now();
@@ -890,11 +852,11 @@ pub fn run() {
             });
 
             if args.len() > 1 {
-                let file_path = args[1].clone();
-                window.eval(&format!(
-                    "window.__INITIAL_FILE__ = '{}'",
-                    file_path.replace('\'', "\\'").replace('\\', "\\\\")
-                )).unwrap();
+                let file_path = args.swap_remove(1);
+                let escaped = serde_json::to_string(&file_path)
+                    .expect("failed to JSON-escape file path");
+                window.eval(&format!("window.__INITIAL_FILE__ = {}", escaped))
+                    .expect("failed to set initial file via eval");
             }
             Ok(())
         })

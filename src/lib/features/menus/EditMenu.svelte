@@ -32,7 +32,6 @@
   let rotateRowOpen = $state(false);
   let activeRotateTool: "90-right" | "90-left" | "180" | "custom" | null =
     $state(null);
-  let rotateSliderHovered = $state(false);
   let rotateTrackEl: HTMLDivElement | null = $state(null);
   let isRotateDragging = $state(false);
   let localRotationAngle = $state(0);
@@ -936,8 +935,6 @@
           onpointermove={handleRotateTrackPointerMove}
           onpointerup={handleRotateTrackPointerUp}
           onpointercancel={handleRotateTrackPointerUp}
-          onmouseenter={() => (rotateSliderHovered = true)}
-          onmouseleave={() => (rotateSliderHovered = false)}
         >
           <div
             class="color-slider-fill"

@@ -25,19 +25,12 @@
     fileDimensions,
     fileSize,
     fileInfoLoading,
-    isGifVideo,
     isLoadingFile,
     loadingFadingOut,
     anyMenuOpen,
     viewerStateIsFullscreen,
     viewerResetFsTimer,
     viewerToggleFullscreen,
-    viewerStateFsControlsVisible,
-    onViewerScroll,
-    onViewerPan,
-    fsCursor,
-    viewerTouchZoom,
-    viewerTouchEnd,
     thumbnailBarVisible,
     zoomLevel,
     resetZoom,
@@ -112,7 +105,6 @@
     onUpdateDeleteNoAsk,
     onUpdateDeletePermanently,
     onCloseContextMenu,
-    onTsMenuChange,
     tsTooltip,
     tsEditMenuVisible,
     tsEditMenu,
@@ -164,14 +156,8 @@
     fileCreated,
     fileModified,
     durationDisplay,
-    ffprobeChecked: ffprobeCheckedProp,
-    ffprobeAvailable: ffprobeAvailableProp,
-    ffmpegInstalling: ffmpegInstallingProp,
-    ffmpegInstallError: ffmpegInstallErrorProp,
     mediaPropsLoading,
     mediaProps,
-    installFfmpegAndWait: installFfmpegAndWaitProp,
-    refreshFfprobeAvailability: refreshFfprobeAvailabilityProp,
     loadMediaProperties,
     showValue,
     propsCopyPath,
@@ -192,19 +178,12 @@
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
-    isGifVideo: boolean;
     isLoadingFile: boolean;
     loadingFadingOut: boolean;
     anyMenuOpen: boolean;
     viewerStateIsFullscreen: boolean;
     viewerResetFsTimer: () => void;
     viewerToggleFullscreen: () => void;
-    viewerStateFsControlsVisible: boolean;
-    onViewerScroll: (e: WheelEvent) => void;
-    onViewerPan: (e: MouseEvent) => void;
-    fsCursor: string;
-    viewerTouchZoom: (e: TouchEvent) => void;
-    viewerTouchEnd: () => void;
     thumbnailBarVisible: boolean;
     zoomLevel: number;
     resetZoom: () => void;
@@ -279,7 +258,6 @@
     onUpdateDeleteNoAsk: (v: boolean) => void;
     onUpdateDeletePermanently: (v: boolean) => void;
     onCloseContextMenu: () => void;
-    onTsMenuChange: (v: boolean) => void;
     tsTooltip: any;
     tsEditMenuVisible: boolean;
     tsEditMenu: any;
@@ -390,7 +368,6 @@
     {resetZoom}
     toggleFullscreen={viewerToggleFullscreen}
     {isVideo}
-    {isAudio}
     {clipCount}
     {triggerClipSegments}
     {clipJobRunning}
@@ -546,7 +523,6 @@
     {editingTimestamp}
     {editingSegment}
     {currentTitle}
-    {getTitleEditorWidthCh}
     {updateEditorTitle}
     {closeTimestampEditor}
     {onEditorScissor}
