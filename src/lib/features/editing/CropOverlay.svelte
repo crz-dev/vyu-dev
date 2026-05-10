@@ -61,7 +61,13 @@
   }
 
   function handleMouseMove(e: MouseEvent) {
-    if (!dragging || !mediaEl || overlayRect.width <= 0 || overlayRect.height <= 0) return;
+    if (
+      !dragging ||
+      !mediaEl ||
+      overlayRect.width <= 0 ||
+      overlayRect.height <= 0
+    )
+      return;
 
     const dx = (e.clientX - dragStartX) / overlayRect.width;
     const dy = (e.clientY - dragStartY) / overlayRect.height;
@@ -254,8 +260,7 @@
   <div
     class="crop-overlay"
     role="presentation"
-    style="position: absolute; left: {overlayRect.left}px; top: {overlayRect
-      .top}px; width: {overlayRect.width}px; height: {overlayRect.height}px;"
+    style="position: absolute; left: {overlayRect.left}px; top: {overlayRect.top}px; width: {overlayRect.width}px; height: {overlayRect.height}px;"
   >
     <div
       class="crop-dim crop-dim-top"

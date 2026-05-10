@@ -59,6 +59,9 @@ export function getFileExt(filePath: string): string {
 }
 
 export function getFileName(filePath: string): string {
-  const lastSep = Math.max(filePath.lastIndexOf("\\"), filePath.lastIndexOf("/"));
+  const lastSep = Math.max(
+    filePath.lastIndexOf("\\"),
+    filePath.lastIndexOf("/"),
+  );
   return lastSep >= 0 ? filePath.substring(lastSep + 1) : filePath;
 }

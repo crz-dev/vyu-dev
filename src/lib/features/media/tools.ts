@@ -117,9 +117,7 @@ export async function invokeCopyFile(
   return invoke("copy_file", { source, destination });
 }
 
-export async function invokeCopyImageToClipboard(
-  path: string,
-): Promise<void> {
+export async function invokeCopyImageToClipboard(path: string): Promise<void> {
   return invoke("copy_image_to_clipboard", { path });
 }
 
@@ -229,8 +227,7 @@ export async function exportEditedImage(
     filterParts.push(`contrast(${snapshot.contrast})`);
   if (snapshot.saturation !== 1)
     filterParts.push(`saturate(${snapshot.saturation})`);
-  if (snapshot.hue !== 0)
-    filterParts.push(`hue-rotate(${snapshot.hue}deg)`);
+  if (snapshot.hue !== 0) filterParts.push(`hue-rotate(${snapshot.hue}deg)`);
   if (filterParts.length > 0) {
     ctx.filter = filterParts.join(" ");
   }
@@ -243,10 +240,7 @@ export async function exportEditedImage(
   }
 
   if (snapshot.flipped || snapshot.flippedVertical) {
-    ctx.scale(
-      snapshot.flipped ? -1 : 1,
-      snapshot.flippedVertical ? -1 : 1,
-    );
+    ctx.scale(snapshot.flipped ? -1 : 1, snapshot.flippedVertical ? -1 : 1);
   }
 
   ctx.drawImage(

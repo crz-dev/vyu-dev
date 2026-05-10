@@ -1,9 +1,9 @@
 <!-- DATAFLOW: loadFile → media.loadFile → displayFile → services.
   navigate → media.navigate → displayFile. videoEl bound and injected into viewer/playback/slideshow. -->
 <script lang="ts">
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { open } from "@tauri-apps/plugin-dialog";
+  import { invoke } from "@tauri-apps/api/core";
   import {
     createPlaybackActions,
     createPlaybackUI,
@@ -347,11 +347,7 @@ import { invoke } from "@tauri-apps/api/core";
   // ── Playback ───────────────────────────────────────────
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
   const playback = createPlaybackActions(getMediaEl);
-  const playbackUI = createPlaybackUI(
-    getMediaEl,
-    () => volume,
-    setVolume,
-  );
+  const playbackUI = createPlaybackUI(getMediaEl, () => volume, setVolume);
   function updateProgress() {
     if (isScrubbing) return;
     const now = performance.now();
@@ -1022,7 +1018,7 @@ import { invoke } from "@tauri-apps/api/core";
     if (target.closest("button, .progress-bar, .fs-progress")) return;
     if (!fileSrc) return;
     const menuW = 200;
-    const menuH = (isVideo || isAudio) ? 300 : 260;
+    const menuH = isVideo || isAudio ? 300 : 260;
     const { x, y } = computeContextMenuPosition(
       e.clientX,
       e.clientY,
@@ -1179,8 +1175,7 @@ import { invoke } from "@tauri-apps/api/core";
     }
     try {
       const ext = getFileExt(filePath);
-      const defaultName =
-        fileName.replace(/\.[^.]+$/, "") + "_edited." + ext;
+      const defaultName = fileName.replace(/\.[^.]+$/, "") + "_edited." + ext;
 
       const { save } = await import("@tauri-apps/plugin-dialog");
       const outputPath = await save({
@@ -1663,7 +1658,11 @@ import { invoke } from "@tauri-apps/api/core";
             onmousedown={startPan}
             style="{videoWrapperTransform} cursor: {panCursor}"
           >
-            <div class="video-inner" bind:this={videoInnerEl} style={videoInnerStyle}>
+            <div
+              class="video-inner"
+              bind:this={videoInnerEl}
+              style={videoInnerStyle}
+            >
               {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
                 <div
                   class={slideshow.active && slideshow.transition !== "none"
@@ -1679,28 +1678,29 @@ import { invoke } from "@tauri-apps/api/core";
                     ontimeupdate={updateProgress}
                     onloadedmetadata={onVideoLoad}
                     onended={() => {
-                    if (slideshow.active) return;
-                    if (loopMode === "stop") {
-                      playing = false;
-                    } else if (loopMode === "next") {
-                      navigate(1);
-                    } else if (loopMode === "shuffle") {
-                      if (fileList.length > 1) {
-                        let idx;
-                        do {
-                          idx = Math.floor(Math.random() * fileList.length);
-                        } while (idx === currentIndex);
-                        currentIndex = media.navigate(
-                          idx - currentIndex,
-                          fileList,
-                          currentIndex,
-                          setMediaState,
-                        );
+                      if (slideshow.active) return;
+                      if (loopMode === "stop") {
+                        playing = false;
+                      } else if (loopMode === "next") {
+                        navigate(1);
+                      } else if (loopMode === "shuffle") {
+                        if (fileList.length > 1) {
+                          let idx;
+                          do {
+                            idx = Math.floor(Math.random() * fileList.length);
+                          } while (idx === currentIndex);
+                          currentIndex = media.navigate(
+                            idx - currentIndex,
+                            fileList,
+                            currentIndex,
+                            setMediaState,
+                          );
+                        }
                       }
-                    }
-                  }}
-                >
-                </video>
+                    }}
+                  >
+                    <track kind="captions" srclang="en" label="English" />
+                  </video>
                 </div>
               {/key}
             </div>
@@ -1815,26 +1815,26 @@ import { invoke } from "@tauri-apps/api/core";
               ontimeupdate={updateProgress}
               onloadedmetadata={onAudioLoad}
               onended={() => {
-              if (slideshow.active) return;
-              if (loopMode === "stop") {
-                playing = false;
-              } else if (loopMode === "next") {
-                navigate(1);
-              } else if (loopMode === "shuffle") {
-                if (fileList.length > 1) {
-                  let idx;
-                  do {
-                    idx = Math.floor(Math.random() * fileList.length);
-                  } while (idx === currentIndex);
-                  currentIndex = media.navigate(
-                    idx - currentIndex,
-                    fileList,
-                    currentIndex,
-                    setMediaState,
-                  );
+                if (slideshow.active) return;
+                if (loopMode === "stop") {
+                  playing = false;
+                } else if (loopMode === "next") {
+                  navigate(1);
+                } else if (loopMode === "shuffle") {
+                  if (fileList.length > 1) {
+                    let idx;
+                    do {
+                      idx = Math.floor(Math.random() * fileList.length);
+                    } while (idx === currentIndex);
+                    currentIndex = media.navigate(
+                      idx - currentIndex,
+                      fileList,
+                      currentIndex,
+                      setMediaState,
+                    );
+                  }
                 }
-              }
-            }}
+              }}
             ></audio>
             <div class="audio-waveform">
               {#if waveformSrc}
@@ -1852,7 +1852,10 @@ import { invoke } from "@tauri-apps/api/core";
               aria-label="Seek audio"
             >
               <div class="audio-progress-fill" style="width: {progress}%"></div>
-              <div class="audio-progress-playhead" style="left: {progress}%"></div>
+              <div
+                class="audio-progress-playhead"
+                style="left: {progress}%"
+              ></div>
             </div>
             <div class="audio-controls">
               <PlaybackControls

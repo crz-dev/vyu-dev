@@ -66,7 +66,9 @@ export async function ctxShowInExplorer(opts: {
   opts.closeContextMenu();
   try {
     await invokeShowInExplorer(opts.filePath);
-  } catch (e) { console.error("Show in explorer failed:", e); }
+  } catch (e) {
+    console.error("Show in explorer failed:", e);
+  }
 }
 
 export async function handleApplyCrop(opts: {

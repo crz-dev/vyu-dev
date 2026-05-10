@@ -24,20 +24,50 @@
       <span class="app-dropdown-title"><span>v{__APP_VERSION__}</span></span>
     </div>
     <div class="app-dropdown-separator"></div>
-    <button class="app-dropdown-item" onclick={() => { onOpenSettings(); onClose(); }}>
+    <button
+      class="app-dropdown-item"
+      onclick={() => {
+        onOpenSettings();
+        onClose();
+      }}
+    >
       Settings
     </button>
-    <button class="app-dropdown-item" onclick={() => { onOpenAccessibility(); onClose(); }}>
+    <button
+      class="app-dropdown-item"
+      onclick={() => {
+        onOpenAccessibility();
+        onClose();
+      }}
+    >
       Accessibility
     </button>
-    <button class="app-dropdown-item" onclick={() => { onOpenHelp(); onClose(); }}>
+    <button
+      class="app-dropdown-item"
+      onclick={() => {
+        onOpenHelp();
+        onClose();
+      }}
+    >
       Help
     </button>
-    <button class="app-dropdown-item" onclick={() => { onOpenFeedback(); onClose(); }}>
+    <button
+      class="app-dropdown-item"
+      onclick={() => {
+        onOpenFeedback();
+        onClose();
+      }}
+    >
       Feedback
     </button>
     <div class="app-dropdown-separator"></div>
-    <button class="app-dropdown-item" onclick={() => { onOpenAbout(); onClose(); }}>
+    <button
+      class="app-dropdown-item"
+      onclick={() => {
+        onOpenAbout();
+        onClose();
+      }}
+    >
       About
     </button>
   </div>

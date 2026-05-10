@@ -144,7 +144,7 @@ export function createMedia(
       playing: false,
       timestamps: isVideo ? readTimestamps(path) : [],
       clipBoundaries: isVideo ? readClipBoundaries(path) : [],
-      resumePoint: (isVideo || isAudio) ? loadResumePoint(path) : null,
+      resumePoint: isVideo || isAudio ? loadResumePoint(path) : null,
     });
 
     onReset(path);
@@ -172,7 +172,9 @@ export function createMedia(
             getMetaValue(info, "modifiedAt"),
         ),
       });
-    } catch (e) { console.error("stat() failed:", e); }
+    } catch (e) {
+      console.error("stat() failed:", e);
+    }
   }
 
   async function loadFile(
@@ -187,7 +189,9 @@ export function createMedia(
     try {
       const list = await readMediaFilesInFolder(path);
       setFileList(list, list.indexOf(path));
-    } catch (e) { console.error("readMediaFilesInFolder failed:", e); }
+    } catch (e) {
+      console.error("readMediaFilesInFolder failed:", e);
+    }
   }
 
   function navigate(

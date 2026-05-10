@@ -5,5 +5,11 @@
 @import "$lib/styles/layout.css";
 @import "$lib/styles/components.css";
 
-html, body { overflow: hidden; margin: 0; }
-:focus-visible { outline: none !important; }
+html,
+body {
+  overflow: hidden;
+  margin: 0;
+}
+:focus-visible {
+  outline: none !important;
+}

@@ -99,8 +99,8 @@ export function setupInit(s: InitState) {
         (item) =>
           item.kind === "file" &&
           (item.type.startsWith("image/") ||
-          item.type.startsWith("video/") ||
-          item.type.startsWith("audio/")),
+            item.type.startsWith("video/") ||
+            item.type.startsWith("audio/")),
       );
       if (mediaItem) {
         const file = mediaItem.getAsFile();
@@ -145,7 +145,11 @@ export function setupInit(s: InitState) {
             .replace(/^file:\/\//, ""),
         );
         const decoded = lines.map((l) => {
-          try { return decodeURIComponent(l); } catch { return l; }
+          try {
+            return decodeURIComponent(l);
+          } catch {
+            return l;
+          }
         });
         const match = decoded.find((l) => {
           const ext = getFileExt(l);

@@ -1866,7 +1866,11 @@ main.thumbnail-bar-open .video-inner video {
   justify-content: center;
   gap: 2px;
   cursor: pointer;
-  transition: background 0.16s, color 0.16s, border-color 0.16s, opacity 0.16s;
+  transition:
+    background 0.16s,
+    color 0.16s,
+    border-color 0.16s,
+    opacity 0.16s;
   opacity: 0.58;
   flex-shrink: 0;
   padding: 0;
@@ -2252,8 +2256,12 @@ main.thumbnail-bar-open .video-inner video {
   animation: audioWaveformShimmer 2s ease-in-out infinite;
 }
 @keyframes audioWaveformShimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 .audio-progress-bar {
   width: 100%;
