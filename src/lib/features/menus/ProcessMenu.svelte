@@ -332,7 +332,7 @@
     <div class="edit-menu-row">
       <button
         class="edit-menu-btn blue"
-        class:active={convertOpen}
+        class:sub-open={compressOpen}
         onclick={toggleConvert}
       >
         <svg
@@ -362,7 +362,7 @@
       </button>
       <button
         class="edit-menu-btn yellow"
-        class:active={compressOpen}
+        class:sub-open={convertOpen}
         onclick={toggleCompress}
       >
         <svg
@@ -420,6 +420,7 @@
           {/if}
         </div>
       {:else}
+        <div class="edit-menu-separator"></div>
         <div
           class="edit-menu-row"
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
@@ -527,6 +528,7 @@
         </div>
 
         {#if activeConvertTool === "format"}
+          <div class="edit-menu-separator"></div>
           <div
             class="edit-menu-row"
             transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
@@ -547,6 +549,7 @@
         {/if}
 
         {#if activeConvertTool === "preset"}
+          <div class="edit-menu-separator"></div>
           <div
             class="edit-menu-row"
             transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
@@ -638,6 +641,7 @@
     {/if}
 
     {#if compressOpen}
+      <div class="edit-menu-separator"></div>
       <div
         class="edit-menu-row"
         transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
@@ -746,6 +750,7 @@
       </div>
 
       {#if activeCompressTool === "target"}
+        <div class="edit-menu-separator"></div>
         <div
           class="edit-menu-row"
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
@@ -766,6 +771,7 @@
       {/if}
 
       {#if activeCompressTool === "preset"}
+        <div class="edit-menu-separator"></div>
         <div
           class="edit-menu-row"
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
