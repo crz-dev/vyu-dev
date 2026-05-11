@@ -252,7 +252,7 @@ export function createPlaybackUI(
 
   function handleSpeedSliderChange(val: number) {
     speedSliderValue = val;
-    const speed = sliderValToSpeed(val);
+    const speed = Math.round(sliderValToSpeed(val) * 100) / 100;
     playbackSpeed = speed;
     const mediaEl = mediaElRef();
     if (mediaEl) mediaEl.playbackRate = speed;

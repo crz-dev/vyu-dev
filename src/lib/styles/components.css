@@ -1063,8 +1063,8 @@ main.thumbnail-bar-open .video-inner video {
   font-family: Inter, sans-serif;
   font-weight: 600;
   color: #ffffff;
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   padding: 0;
   flex-shrink: 0;
 }
@@ -1231,7 +1231,7 @@ main.thumbnail-bar-open .video-inner video {
   pointer-events: none;
   z-index: 10;
   white-space: nowrap;
-  animation: tsTooltipPopIn 180ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  animation: tsTooltipPopInAbove 120ms ease-out both;
 }
 
 .thumbnail-bar {

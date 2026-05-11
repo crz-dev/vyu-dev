@@ -73,24 +73,6 @@
   </div>
 {/if}
 
-{#if volumeTooltipVisible}
-  <div
-    class="vol-tooltip"
-    style="left: {volumeTooltipX}px; top: {volumeTooltipY - 32}px;"
-  >
-    {muted ? "0" : Math.round(volume * 100)}%
-  </div>
-{/if}
-
-{#if speedTooltipVisible}
-  <div
-    class="vol-tooltip"
-    style="left: {speedTooltipX}px; top: {speedTooltipY - 32}px;"
-  >
-    {playbackSpeed}×
-  </div>
-{/if}
-
 <div
   id="filename-tooltip"
   class="filename-tooltip"

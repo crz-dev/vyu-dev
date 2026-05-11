@@ -407,6 +407,7 @@
             <div
               class="playback-slider-marker"
               style="left: {pct}%"
+              onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 handleVolumeSliderChange(pct / 100);
@@ -477,8 +478,8 @@
         {#if playbackSpeed < 1}
           <svg
             class="speed-mode-icon"
-            width="17"
-            height="17"
+            width="19"
+            height="19"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -496,8 +497,8 @@
         {:else if playbackSpeed > 1}
           <svg
             class="speed-mode-icon"
-            width="17"
-            height="17"
+            width="19"
+            height="19"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -510,8 +511,8 @@
         {:else}
           <svg
             class="speed-mode-icon"
-            width="21"
-            height="21"
+            width="23"
+            height="23"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -557,6 +558,7 @@
             <div
               class="playback-slider-marker"
               style="left: {marker.pct}%"
+              onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 setPlaybackSpeed(marker.step);
@@ -1097,6 +1099,7 @@
             <div
               class="playback-slider-marker"
               style="left: {pct}%"
+              onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 handleVolumeSliderChange(pct / 100);
@@ -1247,6 +1250,7 @@
             <div
               class="playback-slider-marker"
               style="left: {marker.pct}%"
+              onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 setPlaybackSpeed(marker.step);
