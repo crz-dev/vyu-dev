@@ -121,7 +121,9 @@ export function createPlaybackUI(
     const first = diamonds[0].getBoundingClientRect();
     const last = diamonds[diamonds.length - 1].getBoundingClientRect();
     const ratio = getVolume();
-    volumeTooltipX = first.left + ratio * (last.right - first.left);
+    volumeTooltipX =
+      first.left + first.width / 2 +
+      ratio * (last.left + last.width / 2 - first.left - first.width / 2);
     volumeTooltipY = containerRect.top;
     volumeTooltipVisible = true;
   }
@@ -136,13 +138,15 @@ export function createPlaybackUI(
     function dragTo(clientX: number, clientY: number) {
       const first = diamonds[0].getBoundingClientRect();
       const last = diamonds[diamonds.length - 1].getBoundingClientRect();
+      const firstCenter = first.left + first.width / 2;
+      const lastCenter = last.left + last.width / 2;
       const ratio = Math.max(
         0,
         Math.min(1, (clientX - first.left) / (last.right - first.left)),
       );
       setVolume(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
       const valRatio = getVolume();
-      volumeTooltipX = first.left + valRatio * (last.right - first.left);
+      volumeTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
       volumeTooltipY = containerRect.top;
       volumeTooltipVisible = true;
     }
@@ -192,7 +196,9 @@ export function createPlaybackUI(
     const steps = SPEED_STEPS;
     const idx = steps.indexOf(playbackSpeed);
     const ratio = idx / (steps.length - 1);
-    speedTooltipX = first.left + ratio * (last.right - first.left);
+    speedTooltipX =
+      first.left + first.width / 2 +
+      ratio * (last.left + last.width / 2 - first.left - first.width / 2);
     speedTooltipY = containerRect.top;
     speedTooltipVisible = true;
   }
@@ -207,6 +213,8 @@ export function createPlaybackUI(
     function dragTo(clientX: number, clientY: number) {
       const first = diamonds[0].getBoundingClientRect();
       const last = diamonds[diamonds.length - 1].getBoundingClientRect();
+      const firstCenter = first.left + first.width / 2;
+      const lastCenter = last.left + last.width / 2;
       const steps = SPEED_STEPS;
       const ratio = Math.max(
         0,
@@ -216,7 +224,7 @@ export function createPlaybackUI(
       setPlaybackSpeed(steps[idx]);
       const currentIdx = steps.indexOf(playbackSpeed);
       const valRatio = currentIdx / (steps.length - 1);
-      speedTooltipX = first.left + valRatio * (last.right - first.left);
+      speedTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
       speedTooltipY = containerRect.top;
       speedTooltipVisible = true;
     }
