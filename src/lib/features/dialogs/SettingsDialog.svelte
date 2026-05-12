@@ -137,7 +137,7 @@
     URL.revokeObjectURL(url);
   }
 
-  let theme = $state<"dark" | "light" | "system">("dark");
+  import { theme as themeStore } from "$lib/features/theme/theme.svelte";
   let uiMode = $state<"simple" | "advanced">("advanced");
   let transition = $state<"none" | "fade" | "slide">("fade");
   let allowZoomOut = $state(false);
@@ -590,18 +590,36 @@
                 <div class="pill-group pill-group-3">
                   <button
                     class="pill-btn"
-                    class:active={theme === "dark"}
-                    onclick={() => (theme = "dark")}>Dark</button
+                    class:active={themeStore.mode === "dark"}
+                    onclick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      themeStore.setTheme("dark", {
+                        x: r.left + r.width / 2,
+                        y: r.top + r.height / 2,
+                      });
+                    }}>Dark</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={theme === "light"}
-                    onclick={() => (theme = "light")}>Light</button
+                    class:active={themeStore.mode === "light"}
+                    onclick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      themeStore.setTheme("light", {
+                        x: r.left + r.width / 2,
+                        y: r.top + r.height / 2,
+                      });
+                    }}>Light</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={theme === "system"}
-                    onclick={() => (theme = "system")}>System</button
+                    class:active={themeStore.mode === "system"}
+                    onclick={(e) => {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      themeStore.setTheme("system", {
+                        x: r.left + r.width / 2,
+                        y: r.top + r.height / 2,
+                      });
+                    }}>System</button
                   >
                 </div>
               </div>

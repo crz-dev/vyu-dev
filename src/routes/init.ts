@@ -1,6 +1,7 @@
 import { onMount } from "svelte";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invokeGetClipboardFilePath } from "$lib/features/media/tools";
+import { theme } from "$lib/features/theme/theme.svelte";
 import {
   cleanupStaleStorageEntries,
   loadVolume,

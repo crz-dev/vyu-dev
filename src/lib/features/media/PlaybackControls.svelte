@@ -471,7 +471,7 @@
         class:active={playbackSpeed !== 1}
         data-tooltip="Playback speed"
         aria-label="playback speed"
-        style="color: #ffffff;"
+        style="color: var(--text-primary);"
         onclick={() => setPlaybackSpeed(1)}
         oncontextmenu={handleSpeedRightClick}
       >
@@ -1151,7 +1151,7 @@
         class:active={playbackSpeed !== 1}
         data-tooltip="Playback speed"
         aria-label="playback speed"
-        style="color: #ffffff;"
+        style="color: var(--text-primary);"
         onclick={() => setPlaybackSpeed(1)}
         oncontextmenu={handleSpeedRightClick}
       >

@@ -1,29 +1,54 @@
 :root {
-  --bg-base: #000000;
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-elevated: #1a1a1a;
-  --bg-border: #2a2a2a;
+	--bg-base: #000000;
+	--bg-primary: #0a0a0a;
+	--bg-secondary: #111111;
+	--bg-elevated: #1a1a1a;
+	--bg-border: #2a2a2a;
 
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-mid: #aaaaaa;
-  --text-muted: #888888;
-  --text-dim: #444444;
+	--text-primary: #ffffff;
+	--text-secondary: #cccccc;
+	--text-mid: #aaaaaa;
+	--text-muted: #888888;
+	--text-dim: #444444;
 
-  --bg-shimmer: #222222;
-  --border-subtle: #323232;
+	--text-hint: #555555;
 
-  --yellow: #f5c518;
-  --yellow-soft: #facc15;
+	--bg-shimmer: #222222;
+	--border-subtle: #323232;
 
-  --blue: #3b82f6;
-  --blue-light: #60a5fa;
-  --blue-lighter: #93c5fd;
+	--yellow: #f5c518;
+	--yellow-soft: #facc15;
 
-  --green: #4ade80;
-  --green-soft: #86efac;
+	--blue: #3b82f6;
+	--blue-light: #60a5fa;
+	--blue-lighter: #93c5fd;
 
-  --red: #f87171;
-  --red-soft: #fca5a5;
+	--green: #4ade80;
+	--green-soft: #86efac;
+
+	--red: #f87171;
+	--red-soft: #fca5a5;
+
+	color-scheme: dark;
+}
+
+[data-theme="light"] {
+	--bg-base: #f5f5f5;
+	--bg-primary: #fafafa;
+	--bg-secondary: #ffffff;
+	--bg-elevated: #f0f0f0;
+	--bg-border: #e0e0e0;
+
+	--text-primary: #1a1a1a;
+	--text-secondary: #444444;
+	--text-mid: #666666;
+	--text-muted: #888888;
+	--text-dim: #bbbbbb;
+
+	--text-hint: #999999;
+
+	--bg-shimmer: #e8e8e8;
+	--border-subtle: #d4d4d4;
+
+	color-scheme: light;
 }

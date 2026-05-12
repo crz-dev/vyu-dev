@@ -175,6 +175,16 @@ export function saveLoopMode(mode: LoopMode): void {
   localStorage.setItem("vyu-loop-mode", mode);
 }
 
+export function loadTheme(): "dark" | "light" | "system" {
+	const v = localStorage.getItem("vyu-theme");
+	if (v === "light" || v === "system") return v;
+	return "dark";
+}
+
+export function saveTheme(t: "dark" | "light" | "system"): void {
+	localStorage.setItem("vyu-theme", t);
+}
+
 export function loadSliderMode(): { volume?: boolean; speed?: boolean } {
   try {
     const raw = localStorage.getItem("vyu-slider-mode");
