@@ -787,6 +787,12 @@
     viewer.resetZoom();
     viewer.state.baseZoomLevel = 100;
     if (slideshow.active) slideshow.onMediaLoaded();
+    // After metadata load, video intrinsic size may have changed.
+    // If the mouse is no longer over the video wrapper, reset hover state
+    // so arrow keys don't seek in a stale hover zone.
+    if (cropContainerEl && !cropContainerEl.matches(":hover")) {
+      hoverZone = "none";
+    }
   }
   function onAudioLoad() {
     const el = audioEl;
@@ -804,6 +810,11 @@
     });
     if (isLoadingFile) media.finishLoading(setMediaState);
     if (slideshow.active) slideshow.onMediaLoaded();
+    // After metadata load, if the mouse is no longer over the audio wrapper,
+    // reset hover state so arrow keys don't seek in a stale hover zone.
+    if (audioEl?.parentElement && !audioEl.parentElement.matches(":hover")) {
+      hoverZone = "none";
+    }
     waveformSrc = "";
     import("@tauri-apps/api/core").then(({ convertFileSrc }) => {
       invoke<string | null>("generate_thumbnail", { path: filePath }).then(
@@ -1612,7 +1623,7 @@
       <div
         class="viewer"
         bind:this={viewerEl}
-        onmouseenter={() => (hoverZone = isVideo ? "video" : "sidebar")}
+        onmouseenter={() => (hoverZone = "sidebar")}
         onmouseleave={() => (hoverZone = "none")}
         onwheel={handleViewerScroll}
         onmousedown={!isVideo ? startPan : undefined}
