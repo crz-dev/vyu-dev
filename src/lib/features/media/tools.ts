@@ -125,6 +125,19 @@ export async function invokeCleanupTempFolder(): Promise<void> {
   return invoke("cleanup_temp_folder");
 }
 
+export async function invokeCheckMediaIntegrity(
+  path: string,
+): Promise<{ corrupted: boolean; reason: string }> {
+  return invoke("check_media_integrity", { path });
+}
+
+export async function invokeFixMedia(
+  path: string,
+  mode: "copy" | "replace",
+): Promise<{ success: boolean; output_path: string; error: string }> {
+  return invoke("fix_media", { path, mode });
+}
+
 export async function invokeGetClipboardFilePath(): Promise<string | null> {
   return invoke("get_clipboard_file_path");
 }

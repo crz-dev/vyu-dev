@@ -44,6 +44,8 @@
     invokeCleanupTempFolder,
     exportEditedImage,
     invokeExportEditedMedia,
+    invokeCheckMediaIntegrity,
+    invokeFixMedia,
   } from "$lib/features/media/tools";
   import { computeContextMenuPosition } from "$lib/services/session";
   import {
@@ -205,6 +207,10 @@
     visible: false,
     filePath: null,
   });
+  let corruptionWarning = $state(false);
+  let corruptionReason = $state("");
+  let corruptionFixing = $state(false);
+  let corruptionFixError = $state("");
 
   // ── Derived ────────────────────────────────────────────
   const imageScale = $derived(viewer.state.zoomLevel / 100);
@@ -250,7 +256,8 @@
       deleteConfirm ||
       propertiesOpen ||
       clipDeleteConfirm.visible ||
-      tsMenuOpen,
+      tsMenuOpen ||
+      corruptionWarning,
   );
   function currentTimeDisplay(): string {
     if (!timerShowRemaining) return formatTime(rawCurrentSecs);
@@ -874,6 +881,79 @@
     mediaProps = null;
     mediaPropsLoading = false;
     clearFolderCache();
+    corruptionWarning = false;
+    corruptionReason = "";
+    corruptionFixError = "";
+  }
+
+  // ── Corruption detection ────────────────────────────────
+  function onImageError() {
+    corruptionWarning = true;
+    corruptionReason =
+      "This image may be corrupted or in an unsupported format.";
+  }
+
+  function onVideoError() {
+    const err = videoEl?.error;
+    const reason = err
+      ? `Video decode error (code: ${err.code})`
+      : "This video may be corrupted.";
+    corruptionWarning = true;
+    corruptionReason = reason;
+  }
+
+  function onAudioError() {
+    const err = audioEl?.error;
+    const reason = err
+      ? `Audio decode error (code: ${err.code})`
+      : "This audio file may be corrupted.";
+    corruptionWarning = true;
+    corruptionReason = reason;
+  }
+
+  function dismissCorruption() {
+    corruptionWarning = false;
+    corruptionReason = "";
+  }
+
+  async function fixCopy() {
+    corruptionFixing = true;
+    corruptionFixError = "";
+    try {
+      const result = await invokeFixMedia(filePath, "copy");
+      if (result.success) {
+        corruptionWarning = false;
+        toast.showFrameCopyToast(
+          `Fixed copy saved: ${result.output_path}`,
+          "success",
+        );
+      } else {
+        corruptionFixError = result.error || "Failed to fix media";
+      }
+    } catch (e) {
+      corruptionFixError =
+        e instanceof Error ? e.message : "Failed to fix media";
+    }
+    corruptionFixing = false;
+  }
+
+  async function fixReplace() {
+    corruptionFixing = true;
+    corruptionFixError = "";
+    try {
+      const result = await invokeFixMedia(filePath, "replace");
+      if (result.success) {
+        corruptionWarning = false;
+        await loadFile(result.output_path);
+        toast.showFrameCopyToast("File fixed and replaced", "success");
+      } else {
+        corruptionFixError = result.error || "Failed to fix media";
+      }
+    } catch (e) {
+      corruptionFixError =
+        e instanceof Error ? e.message : "Failed to fix media";
+    }
+    corruptionFixing = false;
   }
   function advanceSlide(nextIndex: number) {
     if (fileList.length === 0) return;
@@ -971,7 +1051,8 @@
       feedbackOpen ||
       tsEditMenu.visible ||
       tsMenuOpen ||
-      clipDeleteConfirm.visible,
+      clipDeleteConfirm.visible ||
+      corruptionWarning,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -988,6 +1069,7 @@
       tsEditMenu.visible = false;
       tsMenuOpen = false;
       clipDeleteConfirm.visible = false;
+      corruptionWarning = false;
     },
     navigateToEdge,
     navigate,
@@ -1605,6 +1687,13 @@
   {copyPropValue}
   {performDelete}
   {runClipAction}
+  {corruptionWarning}
+  {corruptionReason}
+  {corruptionFixing}
+  {corruptionFixError}
+  {dismissCorruption}
+  {fixCopy}
+  {fixReplace}
 >
   {#snippet children()}
     <div class="content">
@@ -1653,6 +1742,7 @@
                   alt={fileName}
                   decoding="async"
                   onload={onImageLoad}
+                  onerror={onImageError}
                   style={imageStyle}
                 />
               </div>
@@ -1688,6 +1778,7 @@
                     autoplay
                     ontimeupdate={updateProgress}
                     onloadedmetadata={onVideoLoad}
+                    onerror={onVideoError}
                     onended={() => {
                       if (slideshow.active) return;
                       if (loopMode === "stop") {
@@ -1829,6 +1920,7 @@
               autoplay
               ontimeupdate={updateProgress}
               onloadedmetadata={onAudioLoad}
+              onerror={onAudioError}
               onended={() => {
                 if (slideshow.active) return;
                 if (loopMode === "stop") {

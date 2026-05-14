@@ -787,6 +787,276 @@ fn get_clipboard_file_path() -> Option<String> {
     None
 }
 
+#[derive(serde::Serialize)]
+struct MediaIntegrity {
+    corrupted: bool,
+    reason: String,
+}
+
+#[derive(serde::Serialize)]
+struct FixResult {
+    success: bool,
+    output_path: String,
+    error: String,
+}
+
+#[tauri::command]
+fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Ok(MediaIntegrity {
+            corrupted: true,
+            reason: "File does not exist".into(),
+        });
+    }
+
+    let ext = p
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
+    let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
+
+    if is_image {
+        match image::open(&path) {
+            Ok(img) => {
+                let (w, h) = img.dimensions();
+                if w == 0 || h == 0 {
+                    return Ok(MediaIntegrity {
+                        corrupted: true,
+                        reason: "Image has zero dimensions (corrupted header)".into(),
+                    });
+                }
+                Ok(MediaIntegrity {
+                    corrupted: false,
+                    reason: String::new(),
+                })
+            }
+            Err(e) => Ok(MediaIntegrity {
+                corrupted: true,
+                reason: format!("Image decode failed: {e}"),
+            }),
+        }
+    } else if is_video || is_audio {
+        let output = Command::new("ffprobe")
+            .args([
+                "-v",
+                "error",
+                "-show_streams",
+                "-show_format",
+                &path,
+            ])
+            .output();
+
+        match output {
+            Ok(out) => {
+                if out.status.success() {
+                    // Check if stderr contains corruption warnings
+                    let stderr = String::from_utf8_lossy(&out.stderr);
+                    let corruption_keywords = [
+                        "corrupt", "invalid", "truncated", "incomplete",
+                        "malformed", "missing", "broken",
+                    ];
+                    let lower = stderr.to_lowercase();
+                    for kw in &corruption_keywords {
+                        if lower.contains(kw) {
+                            return Ok(MediaIntegrity {
+                                corrupted: true,
+                                reason: format!("ffprobe reported issue: {stderr}"),
+                            });
+                        }
+                    }
+                    // Also check if no streams found (empty/broken file)
+                    let stdout = String::from_utf8_lossy(&out.stdout);
+                    if !stdout.contains("\"codec_type\"") {
+                        return Ok(MediaIntegrity {
+                            corrupted: true,
+                            reason: "No media streams found in file".into(),
+                        });
+                    }
+                    Ok(MediaIntegrity {
+                        corrupted: false,
+                        reason: String::new(),
+                    })
+                } else {
+                    let stderr = String::from_utf8_lossy(&out.stderr);
+                    Ok(MediaIntegrity {
+                        corrupted: true,
+                        reason: format!("ffprobe failed: {stderr}"),
+                    })
+                }
+            }
+            Err(e) => {
+                // ffprobe not available — can't check via ffprobe
+                Ok(MediaIntegrity {
+                    corrupted: false,
+                    reason: format!("ffprobe unavailable: {e}"),
+                })
+            }
+        }
+    } else {
+        Ok(MediaIntegrity {
+            corrupted: false,
+            reason: format!("Skipped integrity check for unsupported type: .{ext}"),
+        })
+    }
+}
+
+#[tauri::command]
+fn fix_media(
+    path: String,
+    mode: String,
+) -> Result<FixResult, String> {
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Ok(FixResult {
+            success: false,
+            output_path: String::new(),
+            error: "Source file does not exist".into(),
+        });
+    }
+
+    let ext = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
+    let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
+
+    let parent = input.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
+    let stem = input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("fixed")
+        .to_string();
+
+    let output_path = if mode == "copy" {
+        let fixed_name = format!("{stem}_fixed.{ext}");
+        unique_path(parent.join(&fixed_name))
+    } else {
+        // mode == "replace": write to a temp file first, then swap
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        let tmp = std::env::temp_dir()
+            .join("Vyu-temp")
+            .join(format!("fix-{stamp}.{ext}"));
+        if let Some(p) = tmp.parent() {
+            let _ = fs::create_dir_all(p);
+        }
+        tmp
+    };
+
+    let fix_result: Result<(), String> = if is_image {
+        fix_image(&input, &output_path)
+    } else if is_video || is_audio {
+        fix_video_audio(&input, &output_path)
+    } else {
+        Err(format!("Unsupported file type: .{ext}"))
+    };
+
+    match fix_result {
+        Ok(()) => {
+            if mode == "replace" {
+                // Move fixed file over original
+                if let Err(e) = fs::remove_file(&input) {
+                    let _ = fs::remove_file(&output_path);
+                    return Ok(FixResult {
+                        success: false,
+                        output_path: String::new(),
+                        error: format!("Failed to remove original: {e}"),
+                    });
+                }
+                if let Err(e) = fs::rename(&output_path, &input) {
+                    return Ok(FixResult {
+                        success: false,
+                        output_path: String::new(),
+                        error: format!("Failed to replace original: {e}"),
+                    });
+                }
+                Ok(FixResult {
+                    success: true,
+                    output_path: input.to_string_lossy().to_string(),
+                    error: String::new(),
+                })
+            } else {
+                Ok(FixResult {
+                    success: true,
+                    output_path: output_path.to_string_lossy().to_string(),
+                    error: String::new(),
+                })
+            }
+        }
+        Err(e) => {
+            let _ = fs::remove_file(&output_path);
+            Ok(FixResult {
+                success: false,
+                output_path: String::new(),
+                error: e,
+            })
+        }
+    }
+}
+
+fn fix_image(input: &Path, output: &Path) -> Result<(), String> {
+    let img = image::open(input).map_err(|e| format!("Failed to open image: {e}"))?;
+    img.save(output).map_err(|e| format!("Failed to save fixed image: {e}"))
+}
+
+fn fix_video_audio(input: &Path, output: &Path) -> Result<(), String> {
+    // First try: stream copy (remux) — fast and lossless
+    let remux = Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            &input.to_string_lossy(),
+            "-c",
+            "copy",
+            "-map",
+            "0",
+            &output.to_string_lossy(),
+        ])
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+
+    if remux.status.success() {
+        return Ok(());
+    }
+
+    // Second try: full re-encode (slower but can fix more corruption)
+    let reencode = Command::new("ffmpeg")
+        .args([
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-err_detect",
+            "ignore_err",
+            "-i",
+            &input.to_string_lossy(),
+            &output.to_string_lossy(),
+        ])
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg re-encode: {e}"))?;
+
+    if reencode.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&reencode.stderr).trim().to_string();
+        Err(format!("Failed to fix media: {stderr}"))
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -812,6 +1082,8 @@ pub fn run() {
             compress_media,
             generate_thumbnail,
             copy_image_to_clipboard,
+            check_media_integrity,
+            fix_media,
         ])
         .setup(|app| {
             cleanup_vyu_temp();

@@ -166,6 +166,13 @@
     copyPropValue,
     performDelete,
     runClipAction,
+    corruptionWarning,
+    corruptionReason,
+    corruptionFixing,
+    corruptionFixError,
+    dismissCorruption,
+    fixCopy,
+    fixReplace,
   }: {
     children: import("svelte").Snippet;
     fileName: string;
@@ -319,6 +326,13 @@
     copyPropValue: (v: string) => void;
     performDelete: () => void;
     runClipAction: (mode: "separate" | "merge") => void;
+    corruptionWarning: boolean;
+    corruptionReason: string;
+    corruptionFixing: boolean;
+    corruptionFixError: string;
+    dismissCorruption: () => void;
+    fixCopy: () => void;
+    fixReplace: () => void;
   } = $props();
 </script>
 
@@ -460,6 +474,13 @@
     updateDeletePermanently={onUpdateDeletePermanently}
     onClose={onCloseContextMenu}
     {clipOutputDir}
+    {corruptionWarning}
+    {corruptionReason}
+    {corruptionFixing}
+    {corruptionFixError}
+    {dismissCorruption}
+    {fixCopy}
+    {fixReplace}
   />
 
   <EditMenu

@@ -339,6 +339,53 @@
 .delete-confirm-btn:hover {
   background: rgba(239, 68, 68, 0.35);
 }
+.delete-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.delete-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Corruption dialog ─────────────────────────────────── */
+.corruption-dialog {
+  width: 340px;
+}
+.corruption-reason {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: Inter, sans-serif;
+  margin: 0;
+  line-height: 1.5;
+}
+.corruption-fixing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: Inter, sans-serif;
+}
+.corruption-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg-border);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.corruption-error {
+  font-size: 11px;
+  color: #ef4444;
+  font-family: Inter, sans-serif;
+  margin: 0;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .props-dialog {
   width: 420px;

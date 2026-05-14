@@ -68,6 +68,13 @@
     updateDeleteNoAsk,
     updateDeletePermanently,
     onClose,
+    corruptionWarning,
+    corruptionReason,
+    corruptionFixing,
+    corruptionFixError,
+    dismissCorruption,
+    fixCopy,
+    fixReplace,
   }: {
     contextMenu: ContextMenu;
     isVideo: boolean;
@@ -151,6 +158,13 @@
     updateDeleteNoAsk: (v: boolean) => void;
     updateDeletePermanently: (v: boolean) => void;
     onClose: () => void;
+    corruptionWarning: boolean;
+    corruptionReason: string;
+    corruptionFixing: boolean;
+    corruptionFixError: string;
+    dismissCorruption: () => void;
+    fixCopy: () => void;
+    fixReplace: () => void;
   } = $props();
 
   let pinned = $state(false);
@@ -922,6 +936,66 @@
             <path d="M10 11v6M14 11v6" />
           </svg>
           Delete
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if corruptionWarning}
+  <div
+    class="delete-overlay"
+    role="presentation"
+    onmousedown={(e) => e.stopPropagation()}
+  >
+    <div class="delete-dialog corruption-dialog" role="dialog" aria-modal="true">
+      <div class="delete-header-bar">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+          />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <div>
+          <p class="delete-title">File may be corrupted</p>
+          <p class="delete-subtitle">{fileName}</p>
+        </div>
+      </div>
+      <p class="corruption-reason">{corruptionReason}</p>
+      {#if corruptionFixing}
+        <div class="corruption-fixing">
+          <div class="corruption-spinner"></div>
+          <span>Fixing file...</span>
+        </div>
+      {/if}
+      {#if corruptionFixError}
+        <p class="corruption-error">{corruptionFixError}</p>
+      {/if}
+      <div class="delete-actions">
+        <button class="delete-cancel" onclick={dismissCorruption}> Dismiss </button>
+        <button
+          class="delete-cancel"
+          onclick={fixCopy}
+          disabled={corruptionFixing}
+        >
+          Make fixed copy
+        </button>
+        <button
+          class="delete-confirm-btn"
+          onclick={fixReplace}
+          disabled={corruptionFixing}
+        >
+          Fix &amp; replace
         </button>
       </div>
     </div>
