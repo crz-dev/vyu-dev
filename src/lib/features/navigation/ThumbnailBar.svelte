@@ -2,7 +2,7 @@
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { invoke } from "@tauri-apps/api/core";
   import { tick } from "svelte";
-  import { VIDEO_EXTS, IMAGE_EXTS } from "$lib/shared/constants";
+  import { VIDEO_EXTS, IMAGE_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
 
   let {
@@ -47,6 +47,10 @@
 
   function isImage(path: string): boolean {
     return IMAGE_EXTS_SET.has(getFileExt(path));
+  }
+
+  function isPdfFile(path: string): boolean {
+    return DOCUMENT_EXTS.includes(getFileExt(path));
   }
 
   function getSrc(path: string): string {
@@ -155,11 +159,16 @@
 
       if (result) {
         thumbnailUrls = { ...thumbnailUrls, [path]: result };
+      } else if (isPdfFile(path)) {
+        // PDFs use their own icon in template — mark as resolved
+        thumbnailUrls = { ...thumbnailUrls, [path]: path };
       } else if (!isVideo(path)) {
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
       }
     } catch {
-      if (inSlotWindow(path) && !isVideo(path)) {
+      if (inSlotWindow(path) && !isVideo(path) && !isPdfFile(path)) {
+        thumbnailUrls = { ...thumbnailUrls, [path]: path };
+      } else if (inSlotWindow(path) && isPdfFile(path)) {
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
       }
     } finally {
@@ -176,7 +185,7 @@
     const uncachedVideos: string[] = [];
     for (const slot of slots) {
       if (!slot) continue;
-      if (!isImage(slot.path) && !isVideo(slot.path)) continue;
+      if (!isImage(slot.path) && !isVideo(slot.path) && !isPdfFile(slot.path)) continue;
       if (slot.path in thumbnailUrls) continue;
       if (fetchingPaths.has(slot.path)) continue;
       if (isVideo(slot.path)) {
@@ -317,6 +326,7 @@
         {#if slot}
           {@const active = slot.index === (animatingToIndex ?? currentIndex)}
           {@const video = isVideo(slot.path)}
+          {@const pdf = isPdfFile(slot.path)}
           {@const inView = visiblePaths.has(slot.path)}
           {@const thumbSrc = getThumbSrc(slot.path)}
           <button
@@ -357,6 +367,26 @@
                   stroke-linejoin="round"
                 >
                   <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+              </div>
+            {:else if pdf}
+              <div class="thumbnail-pdf-icon">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                  />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="9" y1="13" x2="15" y2="13" />
+                  <line x1="12" y1="13" x2="12" y2="18" />
                 </svg>
               </div>
             {:else if thumbSrc && inView}

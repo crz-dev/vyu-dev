@@ -9,6 +9,7 @@
   let {
     contextMenu,
     isVideo,
+    isPdf,
     timestamps,
     clipBoundaries,
     frameCopyToast,
@@ -78,6 +79,7 @@
   }: {
     contextMenu: ContextMenu;
     isVideo: boolean;
+    isPdf: boolean;
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
     frameCopyToast: {
@@ -181,6 +183,19 @@
       }
     }
   });
+
+  async function openInDefaultApp() {
+    try {
+      const { openPath } = await import("@tauri-apps/plugin-opener");
+      await openPath(filePath);
+    } catch (e) {
+      console.error("Failed to open in default app:", e);
+    }
+  }
+
+  function printPdf() {
+    window.print();
+  }
 </script>
 
 {#if contextMenu.visible}
@@ -270,7 +285,165 @@
         </svg>
       </button>
     </div>
-    {#if !isVideo}
+    {#if isPdf}
+      <button
+        class="ctx-item green"
+        onclick={ctxCopyPath}
+        role="menuitem"
+        style="animation-delay: 0ms"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          ><path
+            d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /><path
+            d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /></svg
+        >
+        Copy file path
+      </button>
+      <div class="ctx-sep"></div>
+      <button
+        class="ctx-item blue"
+        onclick={openInDefaultApp}
+        role="menuitem"
+        style="animation-delay: 55ms"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          ><path
+            d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /><polyline
+            points="15 3 21 3 21 9"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /><line
+            x1="10"
+            y1="14"
+            x2="21"
+            y2="3"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        >
+        Open in default viewer
+      </button>
+      <button
+        class="ctx-item blue"
+        onclick={printPdf}
+        role="menuitem"
+        style="animation-delay: 110ms"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          ><polyline
+            points="6 9 6 2 18 2 18 9"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /><path
+            d="M6 12H4a2 2 0 00-2 2v4a2 2 0 002 2h16a2 2 0 002-2v-4a2 2 0 00-2-2h-2"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /><rect
+            x="6"
+            y="14"
+            width="12"
+            height="8"
+            rx="1"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        >
+        Print
+      </button>
+      <div class="ctx-sep"></div>
+      <button
+        class="ctx-item yellow"
+        onclick={ctxShowInExplorer}
+        role="menuitem"
+        style="animation-delay: 165ms"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          ><path
+            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+            stroke="currentColor"
+            stroke-width="2"
+          /></svg
+        >
+        Show in explorer
+      </button>
+      <button
+        class="ctx-item yellow"
+        onclick={ctxProperties}
+        role="menuitem"
+        style="animation-delay: 220ms"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          ><circle
+            cx="12"
+            cy="12"
+            r="9"
+            stroke="currentColor"
+            stroke-width="2"
+          /><path
+            d="M12 10.5V16"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+        >
+        Properties
+      </button>
+      <div class="ctx-sep"></div>
+      <button
+        class="ctx-item red"
+        onclick={ctxDelete}
+        role="menuitem"
+        style="animation-delay: 275ms"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+          ><polyline
+            points="3 6 5 6 21 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /><path
+            d="M19 6l-1 14H6L5 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /><path
+            d="M10 11v6M14 11v6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /><path
+            d="M9 6V4h6v2"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /></svg
+        >
+        Delete
+      </button>
+    {:else if !isVideo}
       <button
         class="ctx-item green"
         onclick={ctxCopyImage}
@@ -1033,13 +1206,13 @@
           class="props-row"
           onclick={() =>
             copyPropValue(
-              `${isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
+              `${isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
             )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               copyPropValue(
-                `${isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
+                `${isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
               );
             }
           }}
@@ -1063,7 +1236,7 @@
             Type
           </span>
           <span class="props-v"
-            >{isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
+            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
           >
         </div>
         <div

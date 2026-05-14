@@ -24,6 +24,7 @@
     resetZoom,
     toggleFullscreen,
     isVideo,
+    isPdf = false,
     clipCount,
     triggerClipSegments,
     clipJobRunning,
@@ -52,6 +53,7 @@
     resetZoom: () => void;
     toggleFullscreen: () => void;
     isVideo: boolean;
+    isPdf?: boolean;
     clipCount: number;
     triggerClipSegments: () => void;
     clipJobRunning: boolean;

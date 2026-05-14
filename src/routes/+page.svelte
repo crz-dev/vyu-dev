@@ -79,6 +79,7 @@
     installFfmpegAndWait,
   } from "$lib/features/media/ffmpeg";
   import { setupInit } from "./init";
+  import { createPdf } from "$lib/features/pdf/pdf.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -86,6 +87,7 @@
   let fileName = $state("no file open");
   let isVideo = $state(false);
   let isAudio = $state(false);
+  let isPdf = $state(false);
   let waveformSrc = $state("");
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
@@ -102,6 +104,7 @@
   let imageEl = $state<HTMLImageElement | null>(null);
   let videoInnerEl = $state<HTMLDivElement | null>(null);
   let viewerEl = $state<HTMLElement | null>(null);
+  let pdfContainerEl = $state<HTMLElement | null>(null);
   let playing = $state(false);
   let muted = $state(false);
   let loopMode = $state<LoopMode>("loop");
@@ -720,6 +723,7 @@
     if (data.fileName !== undefined) fileName = data.fileName;
     if (data.isVideo !== undefined) isVideo = data.isVideo;
     if (data.isAudio !== undefined) isAudio = data.isAudio;
+    if (data.isPdf !== undefined) isPdf = data.isPdf;
     if (data.fileList !== undefined) fileList = data.fileList;
     if (data.currentIndex !== undefined) currentIndex = data.currentIndex;
     if (data.fileSize !== undefined) fileSize = data.fileSize;
@@ -776,6 +780,9 @@
     advanceSlide,
     () => (isVideo ? videoEl : isAudio ? audioEl : null),
   );
+
+  // ── PDF ─────────────────────────────────────────────────
+  const pdf = createPdf();
   function onImageLoad(e: Event) {
     media.onImageLoad(e, isLoadingFile, setMediaState, () =>
       media.finishLoading(setMediaState),
@@ -877,6 +884,7 @@
     viewer.state.translateX = 0;
     viewer.state.translateY = 0;
     media.closeFile(setMediaState);
+    pdf.cleanup();
     waveformSrc = "";
     mediaProps = null;
     mediaPropsLoading = false;
@@ -961,6 +969,16 @@
     currentIndex = nextIndex;
     media.displayFile(fileList[nextIndex], setMediaState);
   }
+
+  // ── PDF load effect ─────────────────────────────────────
+  $effect(() => {
+    if (filePath && isPdf) {
+      pdf.loadFile(filePath);
+      pdf.setContainer(pdfContainerEl);
+    } else {
+      pdf.cleanup();
+    }
+  });
   async function openConvertedFile(path: string) {
     await loadFile(path);
   }
@@ -1374,6 +1392,7 @@
         fileName,
         filePath,
         isVideo,
+        isPdf,
         getFileExt(filePath),
         fileDimensions,
         fileSize,
@@ -1493,6 +1512,7 @@
     },
     isVideo: { get: () => isVideo },
     isAudio: { get: () => isAudio },
+    isPdf: { get: () => isPdf },
     filePath: { get: () => filePath },
     rawCurrentSecs: { get: () => rawCurrentSecs },
     rawDurationSecs: { get: () => rawDurationSecs },
@@ -1515,6 +1535,7 @@
   {currentIndex}
   {isVideo}
   {isAudio}
+  {isPdf}
   {fileDimensions}
   {fileSize}
   {fileInfoLoading}
@@ -1715,16 +1736,16 @@
         onmouseenter={() => (hoverZone = "sidebar")}
         onmouseleave={() => (hoverZone = "none")}
         onwheel={handleViewerScroll}
-        onmousedown={!isVideo ? startPan : undefined}
+        onmousedown={!isVideo && !isPdf ? startPan : undefined}
         ontouchstart={(e) => {
           if (e.touches.length === 2) e.preventDefault();
         }}
         ontouchmove={viewer.handleTouchZoom}
         ontouchend={viewer.handleTouchEnd}
-        style="cursor: {!isVideo ? panCursor : 'default'}"
+        style="cursor: {!isVideo && !isPdf ? panCursor : 'default'}"
         role="presentation"
       >
-        {#if fileSrc && !isVideo && !isAudio}
+        {#if fileSrc && !isVideo && !isAudio && !isPdf}
           <div
             class="media-container"
             bind:this={cropContainerEl}
@@ -2020,6 +2041,54 @@
                 hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
               />
             </div>
+          </div>
+        {:else if fileSrc && isPdf}
+          <div
+            class="pdf-viewer"
+            bind:this={pdfContainerEl}
+            role="region"
+            aria-label="PDF viewer"
+          >
+            {#if pdf.state.loading}
+              <div class="pdf-loading">
+                <div class="pdf-spinner"></div>
+                <span>Loading PDF...</span>
+              </div>
+            {:else if pdf.state.error}
+              <div class="pdf-error">{pdf.state.error}</div>
+            {:else}
+              {#each pdf.state.pages as page, i}
+                <div class="pdf-page-wrapper">
+                  <canvas
+                    bind:this={page.canvasRef}
+                    class="pdf-canvas"
+                  ></canvas>
+                </div>
+                {#if i < pdf.state.pages.length - 1}
+                  <div class="pdf-page-separator"></div>
+                {/if}
+              {/each}
+            {/if}
+          </div>
+          <div class="pdf-zoom-controls">
+            <button
+              class="pdf-zoom-btn"
+              onclick={() => pdf.setScale(pdf.state.scale - 0.25)}
+              disabled={pdf.state.scale <= 0.25}
+              aria-label="Zoom out"
+            >−</button>
+            <span class="pdf-zoom-label">{Math.round(pdf.state.scale * 100)}%</span>
+            <button
+              class="pdf-zoom-btn"
+              onclick={() => pdf.setScale(pdf.state.scale + 0.25)}
+              disabled={pdf.state.scale >= 5}
+              aria-label="Zoom in"
+            >+</button>
+            <button
+              class="pdf-zoom-btn pdf-zoom-reset"
+              onclick={() => pdf.setScale(1)}
+              aria-label="Reset zoom"
+            >Reset</button>
           </div>
         {:else}
           <button class="empty" onclick={openFileDialog}

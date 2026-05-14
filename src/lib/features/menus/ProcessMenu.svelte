@@ -11,6 +11,7 @@
     onClose,
     isVideo,
     isAudio = false,
+    isPdf = false,
     filePath,
     fileName,
     ffprobeChecked,
@@ -26,6 +27,7 @@
     onClose: () => void;
     isVideo: boolean;
     isAudio?: boolean;
+    isPdf?: boolean;
     filePath: string;
     fileName: string;
     ffprobeChecked: boolean;
@@ -329,6 +331,11 @@
       </button>
     </div>
 
+    {#if isPdf}
+      <div class="edit-menu-row" style="text-align:center; padding:16px;">
+        <span style="font-size:11px; color:var(--text-muted);">Convert/Compress not available for PDFs.<br />Use the context menu to open in default viewer or print.</span>
+      </div>
+    {:else}
     <div class="edit-menu-row">
       <button
         class="edit-menu-btn blue"
@@ -839,6 +846,7 @@
           </div>
         </div>
       {/if}
+    {/if}
     {/if}
   </div>
 {/if}

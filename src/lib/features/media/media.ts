@@ -2,7 +2,7 @@
 // navigate → displayFile (no folder rescan). closeFile → releaseMediaResources + reset state.
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
-import { VIDEO_EXTS, AUDIO_EXTS } from "$lib/shared/constants";
+import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
 import {
   readMediaFilesInFolder,
   getFileName,
@@ -41,6 +41,7 @@ export interface MediaState {
   fileName: string;
   isVideo: boolean;
   isAudio: boolean;
+  isPdf: boolean;
   fileList: string[];
   currentIndex: number;
   fileSize: string;
@@ -122,12 +123,14 @@ export function createMedia(
     const ext = getFileExt(path);
     const isVideo = VIDEO_EXTS.includes(ext);
     const isAudio = AUDIO_EXTS.includes(ext);
+    const isPdf = DOCUMENT_EXTS.includes(ext);
 
     set({
       filePath: path,
       fileName: getFileName(path),
       isVideo,
       isAudio,
+      isPdf,
       fileSrc: "",
       fileSize: "",
       fileDimensions: "",
@@ -229,6 +232,7 @@ export function createMedia(
       fileName: "no file open",
       isVideo: false,
       isAudio: false,
+      isPdf: false,
       fileList: [],
       currentIndex: 0,
       playing: false,

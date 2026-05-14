@@ -12,6 +12,7 @@
     fileModified,
     durationDisplay,
     isVideo,
+    isPdf = false,
     ffprobeChecked,
     ffprobeAvailable,
     ffmpegInstalling,
@@ -39,6 +40,7 @@
     fileModified: string;
     durationDisplay: string;
     isVideo: boolean;
+    isPdf?: boolean;
     ffprobeChecked: boolean;
     ffprobeAvailable: boolean;
     ffmpegInstalling: boolean;
@@ -89,13 +91,13 @@
           class="props-row"
           onclick={() =>
             copyPropValue(
-              `${isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
+              `${isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
             )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               copyPropValue(
-                `${isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
+                `${isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
               );
             }
           }}
@@ -119,7 +121,7 @@
             Type
           </span>
           <span class="props-v"
-            >{isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
+            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
           >
         </div>
         <div

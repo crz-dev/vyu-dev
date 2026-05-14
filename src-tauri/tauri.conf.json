@@ -59,6 +59,12 @@
         "name": "Audio",
         "description": "Audio files",
         "role": "Viewer"
+      },
+      {
+        "ext": ["pdf"],
+        "name": "Document",
+        "description": "PDF documents",
+        "role": "Viewer"
       }
     ]
   }

@@ -22,6 +22,7 @@
     currentIndex,
     isVideo,
     isAudio,
+    isPdf,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -182,6 +183,7 @@
     currentIndex: number;
     isVideo: boolean;
     isAudio: boolean;
+    isPdf: boolean;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -382,6 +384,7 @@
     {resetZoom}
     toggleFullscreen={viewerToggleFullscreen}
     {isVideo}
+    {isPdf}
     {clipCount}
     {triggerClipSegments}
     {clipJobRunning}
@@ -415,6 +418,7 @@
   <Dialog
     {contextMenu}
     {isVideo}
+    {isPdf}
     {timestamps}
     {clipBoundaries}
     {frameCopyToast}
@@ -497,6 +501,7 @@
     onClose={closeProcessMenu}
     {isVideo}
     {isAudio}
+    {isPdf}
     {filePath}
     {fileName}
     {ffprobeChecked}

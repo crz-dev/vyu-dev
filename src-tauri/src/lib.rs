@@ -269,6 +269,7 @@ fn hash_path(path: &str) -> String {
 const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp"];
 const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv"];
 const AUDIO_EXTS_RUST: &[&str] = &["mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus"];
+const DOCUMENT_EXTS_RUST: &[&str] = &["pdf"];
 const FFMPEG_THUMB_TIMEOUT: Duration = Duration::from_secs(8);
 
 fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
@@ -395,8 +396,14 @@ async fn generate_thumbnail(
     let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
     let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
     let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
+    let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
 
-    if !is_image && !is_video && !is_audio {
+    if !is_image && !is_video && !is_audio && !is_document {
+        return Ok(None);
+    }
+
+    // Documents are handled on the frontend (no Rust thumbnail)
+    if is_document {
         return Ok(None);
     }
 
@@ -819,6 +826,22 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
     let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
     let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
     let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
+    let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
+
+    if is_document {
+        // For PDF, check magic bytes (%PDF-)
+        let bytes = fs::read(&path).unwrap_or_default();
+        if bytes.len() < 5 || &bytes[0..5] != b"%PDF-" {
+            return Ok(MediaIntegrity {
+                corrupted: true,
+                reason: "Not a valid PDF file (missing %PDF- header)".into(),
+            });
+        }
+        return Ok(MediaIntegrity {
+            corrupted: false,
+            reason: String::new(),
+        });
+    }
 
     if is_image {
         match image::open(&path) {
@@ -928,6 +951,7 @@ fn fix_media(
     let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
     let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
     let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
+    let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
 
     let parent = input.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
     let stem = input
@@ -958,6 +982,8 @@ fn fix_media(
         fix_image(&input, &output_path)
     } else if is_video || is_audio {
         fix_video_audio(&input, &output_path)
+    } else if is_document {
+        fix_document(&input, &output_path)
     } else {
         Err(format!("Unsupported file type: .{ext}"))
     };
@@ -1055,6 +1081,16 @@ fn fix_video_audio(input: &Path, output: &Path) -> Result<(), String> {
         let stderr = String::from_utf8_lossy(&reencode.stderr).trim().to_string();
         Err(format!("Failed to fix media: {stderr}"))
     }
+}
+
+fn fix_document(input: &Path, output: &Path) -> Result<(), String> {
+    // For PDF, read the file and re-write it (basic re-save).
+    // This preserves the original bytes while writing a clean copy.
+    let bytes = fs::read(input).map_err(|e| format!("Failed to read document: {e}"))?;
+    if bytes.len() < 5 || &bytes[0..5] != b"%PDF-" {
+        return Err("Not a valid PDF file (missing %PDF- header)".into());
+    }
+    fs::write(output, &bytes).map_err(|e| format!("Failed to write fixed document: {e}"))
 }
 
 pub fn run() {

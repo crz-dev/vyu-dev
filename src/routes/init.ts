@@ -30,6 +30,7 @@ export interface InitState {
   clipMergeSegments: { get: () => boolean; set: (v: boolean) => void };
   isVideo: { get: () => boolean };
   isAudio: { get: () => boolean };
+  isPdf: { get: () => boolean };
   filePath: { get: () => string };
   rawCurrentSecs: { get: () => number };
   rawDurationSecs: { get: () => number };
