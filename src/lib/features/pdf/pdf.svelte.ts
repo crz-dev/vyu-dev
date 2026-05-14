@@ -1,6 +1,8 @@
 // DATAFLOW: createPdf manages PDF.js document loading and per-page canvas rendering.
 // Pages are rendered lazily via IntersectionObserver for large documents.
 // Zoom re-renders visible pages at the new scale.
+// Worker is disabled (disableWorker: true) because Tauri's custom protocol (asset://)
+// is not supported by WebView2 for Web Workers. Runs on main thread instead.
 import { convertFileSrc } from "@tauri-apps/api/core";
 
 export interface PdfPage {
@@ -20,6 +22,7 @@ export interface PdfState {
 }
 
 const RENDER_DEBOUNCE_MS = 60;
+const LOAD_TIMEOUT_MS = 45_000;
 
 export function createPdf() {
   const state = $state<PdfState>({
@@ -112,20 +115,11 @@ export function createPdf() {
           const canvas = entry.target as HTMLCanvasElement;
           const page = state.pages.find((p) => p.canvasRef === canvas);
           if (page && !page.rendered) {
-            const pdfPage = (pdfDoc as any)?._transport?._pagePromises?.[
-              page.pageNum - 1
-            ];
-            const resolvedPage =
-              pdfPage instanceof Promise ? null : pdfDoc?.getPage?.(page.pageNum);
-            if (resolvedPage) {
-              scheduleRender(resolvedPage, page);
-            } else {
-              // Page not yet loaded; fetch it
-              pdfDoc
-                ?.getPage(page.pageNum)
-                ?.then((p: any) => scheduleRender(p, page))
-                ?.catch(() => {});
-            }
+            // Try to get the page object from the pdfDoc
+            pdfDoc
+              ?.getPage(page.pageNum)
+              ?.then((p: any) => scheduleRender(p, page))
+              ?.catch(() => {});
           }
           observer?.unobserve(canvas);
         }
@@ -138,9 +132,6 @@ export function createPdf() {
     );
   }
 
-  // Pre-fetch all pages (needed because getPage is async)
-  let pagePromises: Map<number, Promise<any>> = new Map();
-
   async function loadFile(path: string): Promise<void> {
     cleanup();
     disposed = false;
@@ -148,23 +139,30 @@ export function createPdf() {
     state.error = "";
     state.pages = [];
     state.pageCount = 0;
-    pagePromises = new Map();
+
+    const timeoutId = setTimeout(() => {
+      if (state.loading) {
+        state.loading = false;
+        state.error = "PDF loading timed out. The file may be too large or corrupted.";
+        console.error("PDF load timed out after", LOAD_TIMEOUT_MS, "ms");
+      }
+    }, LOAD_TIMEOUT_MS);
 
     try {
-      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      // Dynamic import so pdfjs-dist only loads when a PDF is opened (code-split)
+      const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
 
-      // Resolve worker — try bundled first, fall back to CDN
-      try {
-        const workerUrl = new URL(
-          "pdfjs-dist/legacy/build/pdf.worker.mjs",
-          import.meta.url,
-        );
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl.href;
-      } catch {
-        // Fallback CDN
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs";
-      }
+      // Preload the worker module on the main thread — this triggers PDF.js's
+      // built-in "fake worker" mode, which runs worker logic on the main thread
+      // instead of spawning a Web Worker.  Necessary because Tauri's WebView2
+      // custom protocol (asset://) does not support Web Workers.
+      const pdfjsWorker = await import(
+        "pdfjs-dist/build/pdf.worker.min.mjs"
+      );
+      globalThis.pdfjsWorker = pdfjsWorker;
+
+      // Must be a truthy non-empty string — PDF.js 4.x checks for falsy
+      pdfjsLib.GlobalWorkerOptions.workerSrc = ".";
 
       const url = convertFileSrc(path);
       const loadingTask = pdfjsLib.getDocument({
@@ -178,8 +176,9 @@ export function createPdf() {
       state.pageCount = numPages;
 
       // Pre-fetch all pages
+      const pagePromises: Promise<any>[] = [];
       for (let i = 1; i <= numPages; i++) {
-        pagePromises.set(i, pdfDoc.getPage(i));
+        pagePromises.push(pdfDoc.getPage(i));
       }
 
       const pages: PdfPage[] = [];
@@ -194,12 +193,15 @@ export function createPdf() {
       }
       state.pages = pages;
       state.loading = false;
+      clearTimeout(timeoutId);
 
-      // Wait for pages to resolve, then set up observer
-      await Promise.allSettled(pagePromises.values());
+      // Wait for page promises to resolve before setting up observer
+      await Promise.allSettled(pagePromises);
 
-      // Defer observer setup so DOM can bind canvas refs
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // Defer observer setup so DOM has a chance to bind canvas refs
+      await new Promise((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(r)),
+      );
       setupObserver();
 
       if (observer) {
@@ -208,8 +210,10 @@ export function createPdf() {
         }
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       state.loading = false;
-      state.error = err instanceof Error ? err.message : "Failed to load PDF";
+      state.error =
+        err instanceof Error ? err.message : "Failed to load PDF";
       console.error("PDF load error:", err);
     }
   }
@@ -230,7 +234,6 @@ export function createPdf() {
       }
       pdfDoc = null;
     }
-    pagePromises.clear();
     state.pages = [];
     state.pageCount = 0;
     state.loading = false;

@@ -972,7 +972,7 @@
 
   // ── PDF load effect ─────────────────────────────────────
   $effect(() => {
-    if (filePath && isPdf) {
+    if (filePath && isPdf && pdfContainerEl) {
       pdf.loadFile(filePath);
       pdf.setContainer(pdfContainerEl);
     } else {
