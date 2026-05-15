@@ -468,18 +468,23 @@
   }
   function addTimestamp() {
     timeline.addTimestamp(rawCurrentSecs, timestamps, (v) => (timestamps = v));
+    saveTimestamps();
   }
   function removeTimestamp(id: string) {
     tsTooltip = { ...tsTooltip, visible: false };
     tsEditMenu = { ...tsEditMenu, visible: false };
     if (abLoopRegion) {
       const ts = timeline.getTimestampById(id, timestamps);
-      if (ts && (Math.abs(ts.time - abLoopRegion.start) < 0.01 ||
-                 Math.abs(ts.time - abLoopRegion.end) < 0.01)) {
+      if (
+        ts &&
+        (Math.abs(ts.time - abLoopRegion.start) < 0.01 ||
+          Math.abs(ts.time - abLoopRegion.end) < 0.01)
+      ) {
         clearABLoop();
       }
     }
     timeline.removeTimestamp(id, timestamps, (v) => (timestamps = v));
+    saveTimestamps();
   }
   function clearAllTimestamps() {
     tsTooltip = { ...tsTooltip, visible: false };
@@ -508,7 +513,7 @@
     tsTooltip = {
       visible: true,
       x: rect.left + rect.width / 2,
-      y: rect.top,
+      y: rect.top - 6,
       title: ts.title,
       timeLabel: formatTime(ts.time),
       tone: "yellow",
@@ -605,7 +610,7 @@
     tsTooltip = {
       visible: true,
       x: rect.left + rect.width / 2,
-      y: rect.top,
+      y: rect.top - 6,
       title: marker.title,
       timeLabel: formatTime(marker.time),
       tone: "blue",
@@ -657,7 +662,10 @@
 
     function timeFromClientX(clientX: number): number {
       const rect = bar!.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
       return ratio * rawDurationSecs;
     }
 
@@ -728,6 +736,7 @@
     if (mediaEl) mediaEl.currentTime = time;
   }
   function removeResumePoint() {
+    tsTooltip = { ...tsTooltip, visible: false };
     resumeTooltipVisible = false;
     resumePoint = null;
     deleteResumePoint(filePath);
@@ -741,7 +750,7 @@
     tsTooltip = {
       visible: true,
       x: rect.left + rect.width / 2,
-      y: rect.top,
+      y: rect.top - 6,
       title: "Resume",
       timeLabel: formatTime(resumePoint ?? 0),
       tone: "green",
@@ -1934,40 +1943,40 @@
               class:gif-only={isGifVideo}
               class:editor-open={tsEditMenu.visible}
             >
-               <TimelineMarkers
-                 fullscreen={false}
-                 {progress}
-                 currentTimeSecs={rawCurrentSecs}
-                 {isGifVideo}
-                 clipPairs={clips.clipPairs}
-                 clipBoundaries={clips.clipBoundaries}
-                 {timestamps}
-                 {tsDragRange}
-                 {abLoopRegion}
-                 {resumePoint}
-                 clipMarkerJustDragged={clips.clipMarkerJustDragged}
-                 {tsMarkerDragJustEnded}
-                 tsEditMenuVisible={tsEditMenu.visible}
-                 {startScrubbing}
-                 {getTimestampPct}
-                 {getDragRangeStyle}
-                 {startClipMarkerDrag}
-                 {removeClipBoundary}
-                 {showClipBoundaryTooltip}
-                 {hideTsTooltip}
-                 {seekToTimestamp}
-                 {openSegmentEditor}
-                 {startTimestampRangeDrag}
-                 {removeTimestamp}
-                 {showTimestampTooltip}
-                 {openTimestampEditor}
-                 {showResumeTooltip}
-                 {hideResumeTooltip}
-                 {seekToResumePoint}
-                 {removeResumePoint}
-                 {clearABLoop}
-                 {formatTime}
-               />
+              <TimelineMarkers
+                fullscreen={false}
+                {progress}
+                currentTimeSecs={rawCurrentSecs}
+                {isGifVideo}
+                clipPairs={clips.clipPairs}
+                clipBoundaries={clips.clipBoundaries}
+                {timestamps}
+                {tsDragRange}
+                {abLoopRegion}
+                {resumePoint}
+                clipMarkerJustDragged={clips.clipMarkerJustDragged}
+                {tsMarkerDragJustEnded}
+                tsEditMenuVisible={tsEditMenu.visible}
+                {startScrubbing}
+                {getTimestampPct}
+                {getDragRangeStyle}
+                {startClipMarkerDrag}
+                {removeClipBoundary}
+                {showClipBoundaryTooltip}
+                {hideTsTooltip}
+                {seekToTimestamp}
+                {openSegmentEditor}
+                {startTimestampRangeDrag}
+                {removeTimestamp}
+                {showTimestampTooltip}
+                {openTimestampEditor}
+                {showResumeTooltip}
+                {hideResumeTooltip}
+                {seekToResumePoint}
+                {removeResumePoint}
+                {clearABLoop}
+                {formatTime}
+              />
               <PlaybackControls
                 fullscreen={false}
                 {isGifVideo}
@@ -2162,9 +2171,7 @@
             {:else}
               {#each pdf.state.pages as page, i}
                 <div class="pdf-page-wrapper">
-                  <canvas
-                    bind:this={page.canvasRef}
-                    class="pdf-canvas"
+                  <canvas bind:this={page.canvasRef} class="pdf-canvas"
                   ></canvas>
                 </div>
                 {#if i < pdf.state.pages.length - 1}
@@ -2178,20 +2185,22 @@
               class="pdf-zoom-btn"
               onclick={() => pdf.setScale(pdf.state.scale - 0.25)}
               disabled={pdf.state.scale <= 0.25}
-              aria-label="Zoom out"
-            >−</button>
-            <span class="pdf-zoom-label">{Math.round(pdf.state.scale * 100)}%</span>
+              aria-label="Zoom out">−</button
+            >
+            <span class="pdf-zoom-label"
+              >{Math.round(pdf.state.scale * 100)}%</span
+            >
             <button
               class="pdf-zoom-btn"
               onclick={() => pdf.setScale(pdf.state.scale + 0.25)}
               disabled={pdf.state.scale >= 5}
-              aria-label="Zoom in"
-            >+</button>
+              aria-label="Zoom in">+</button
+            >
             <button
               class="pdf-zoom-btn pdf-zoom-reset"
               onclick={() => pdf.setScale(1)}
-              aria-label="Reset zoom"
-            >Reset</button>
+              aria-label="Reset zoom">Reset</button
+            >
           </div>
         {:else}
           <button class="empty" onclick={openFileDialog}

@@ -83,7 +83,7 @@ main.thumbnail-bar-open .video-inner video {
 
 .progress-bar {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background: var(--bg-border);
   border-radius: 2px;
   cursor: pointer;
@@ -172,6 +172,10 @@ main.thumbnail-bar-open .video-inner video {
   cursor: context-menu;
   z-index: 1;
   transition: background 0.2s ease;
+}
+.ab-range[data-tooltip] {
+  position: absolute;
+  display: block;
 }
 .ab-range:hover {
   background: rgba(245, 197, 24, 0.5);

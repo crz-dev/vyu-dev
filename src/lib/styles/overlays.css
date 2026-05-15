@@ -693,7 +693,7 @@
 
 .ts-tooltip {
   position: fixed;
-  transform: translate(-50%, -100%);
+  transform: translate(-50%, calc(-100% - 8px));
   background: var(--bg-elevated);
   color: #f5c518;
   font-size: 11px;

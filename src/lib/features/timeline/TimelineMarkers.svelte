@@ -170,12 +170,16 @@
   {/each}
   {#if abLoopRegion}
     <div
-      class={abRangeClass}
+      class="{abRangeClass} tooltip-above"
       style="left: {getTimestampPct(abLoopRegion.start)}%; width: {getTimestampPct(
         abLoopRegion.end,
       ) - getTimestampPct(abLoopRegion.start)}%;"
-      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); clearABLoop(); }}
-      title="AB Loop — right-click to clear"
+      oncontextmenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearABLoop();
+      }}
+      data-tooltip="AB Loop — right-click to clear"
     ></div>
   {/if}
   {#if tsDragRange.visible}
