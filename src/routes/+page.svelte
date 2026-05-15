@@ -188,6 +188,7 @@
   });
   let tsMarkerDragJustEnded = $state(false);
   let tsDragFadeTimer: ReturnType<typeof setTimeout> | undefined;
+  let abLoopRegion = $state<{ start: number; end: number } | null>(null);
   let frameCopyToast = $state<{
     visible: boolean;
     message: string;
@@ -369,6 +370,13 @@
       progress = data.progress;
       playing = data.playing;
     });
+    // AB loop enforcement
+    if (abLoopRegion) {
+      const mediaEl = getMediaEl();
+      if (mediaEl && mediaEl.currentTime >= abLoopRegion.end) {
+        mediaEl.currentTime = abLoopRegion.start;
+      }
+    }
   }
   function togglePlay() {
     playback.togglePlay();
@@ -464,11 +472,19 @@
   function removeTimestamp(id: string) {
     tsTooltip = { ...tsTooltip, visible: false };
     tsEditMenu = { ...tsEditMenu, visible: false };
+    if (abLoopRegion) {
+      const ts = timeline.getTimestampById(id, timestamps);
+      if (ts && (Math.abs(ts.time - abLoopRegion.start) < 0.01 ||
+                 Math.abs(ts.time - abLoopRegion.end) < 0.01)) {
+        clearABLoop();
+      }
+    }
     timeline.removeTimestamp(id, timestamps, (v) => (timestamps = v));
   }
   function clearAllTimestamps() {
     tsTooltip = { ...tsTooltip, visible: false };
     tsEditMenu = { ...tsEditMenu, visible: false };
+    clearABLoop();
     timeline.clearTimestamps((v) => (timestamps = v));
     deleteTimestamps(filePath);
   }
@@ -665,31 +681,15 @@
       const targetTs = timeline.findTouchTarget(timestamps, endTime);
 
       if (targetTs && targetTs.id !== id && duration >= 0.1) {
-        // Dragged to another timestamp — create a clip between them
-        const clipStart = Math.min(startTime, targetTs.time);
-        const clipEnd = Math.max(startTime, targetTs.time);
-
-        // Show converting animation briefly
-        tsDragRange = { ...tsDragRange, start: clipStart, end: clipEnd, phase: "converting" };
-
-        setTimeout(() => {
-          clips.addClipBoundary("start", clipStart);
-          clips.addClipBoundary("end", clipEnd);
-          clearTimestampDragRange();
-        }, 200);
+        // Dragged to another timestamp — create AB loop
+        const loopStart = Math.min(startTime, targetTs.time);
+        const loopEnd = Math.max(startTime, targetTs.time);
+        setABLoop(loopStart, loopEnd);
       } else if (duration >= 0.1) {
-        // Dragged a range but not near another timestamp — create clip from drag range
-        tsDragRange = { ...tsDragRange, phase: "converting" };
-
-        setTimeout(() => {
-          clips.addClipBoundary("start", s);
-          clips.addClipBoundary("end", en);
-          clearTimestampDragRange();
-        }, 200);
-      } else {
-        // Too short — just cancel
-        clearTimestampDragRange();
+        // Dragged a range — create AB loop from drag range
+        setABLoop(s, en);
       }
+      clearTimestampDragRange();
 
       // Prevent click from firing after drag
       tsMarkerDragJustEnded = true;
@@ -706,6 +706,19 @@
     const startPct = getTimestampPct(tsDragRange.start);
     const endPct = getTimestampPct(tsDragRange.end);
     return `left: ${startPct}%; width: ${endPct - startPct}%`;
+  }
+
+  // ── AB Loop ────────────────────────────────────────────
+  function setABLoop(start: number, end: number) {
+    abLoopRegion = { start, end };
+    const mediaEl = getMediaEl();
+    if (mediaEl) mediaEl.loop = true;
+  }
+
+  function clearABLoop() {
+    abLoopRegion = null;
+    const mediaEl = getMediaEl();
+    if (mediaEl) mediaEl.loop = loopMode === "loop";
   }
 
   // ── Resume point ───────────────────────────────────────
@@ -850,6 +863,7 @@
       clearTimestampDragRange();
       tsTooltip = { ...tsTooltip, visible: false };
       tsEditMenu = { ...tsEditMenu, visible: false };
+      abLoopRegion = null;
       resetZoom();
       viewer.state.baseZoomLevel = 100;
       if (newPath) {
@@ -1919,38 +1933,40 @@
               class:gif-only={isGifVideo}
               class:editor-open={tsEditMenu.visible}
             >
-              <TimelineMarkers
-                fullscreen={false}
-                {progress}
-                currentTimeSecs={rawCurrentSecs}
-                {isGifVideo}
-                clipPairs={clips.clipPairs}
-                clipBoundaries={clips.clipBoundaries}
-                {timestamps}
-                {tsDragRange}
-                {resumePoint}
-                clipMarkerJustDragged={clips.clipMarkerJustDragged}
-                {tsMarkerDragJustEnded}
-                tsEditMenuVisible={tsEditMenu.visible}
-                {startScrubbing}
-                {getTimestampPct}
-                {getDragRangeStyle}
-                {startClipMarkerDrag}
-                {removeClipBoundary}
-                {showClipBoundaryTooltip}
-                {hideTsTooltip}
-                {seekToTimestamp}
-                {openSegmentEditor}
-                {startTimestampRangeDrag}
-                {removeTimestamp}
-                {showTimestampTooltip}
-                {openTimestampEditor}
-                {showResumeTooltip}
-                {hideResumeTooltip}
-                {seekToResumePoint}
-                {removeResumePoint}
-                {formatTime}
-              />
+               <TimelineMarkers
+                 fullscreen={false}
+                 {progress}
+                 currentTimeSecs={rawCurrentSecs}
+                 {isGifVideo}
+                 clipPairs={clips.clipPairs}
+                 clipBoundaries={clips.clipBoundaries}
+                 {timestamps}
+                 {tsDragRange}
+                 {abLoopRegion}
+                 {resumePoint}
+                 clipMarkerJustDragged={clips.clipMarkerJustDragged}
+                 {tsMarkerDragJustEnded}
+                 tsEditMenuVisible={tsEditMenu.visible}
+                 {startScrubbing}
+                 {getTimestampPct}
+                 {getDragRangeStyle}
+                 {startClipMarkerDrag}
+                 {removeClipBoundary}
+                 {showClipBoundaryTooltip}
+                 {hideTsTooltip}
+                 {seekToTimestamp}
+                 {openSegmentEditor}
+                 {startTimestampRangeDrag}
+                 {removeTimestamp}
+                 {showTimestampTooltip}
+                 {openTimestampEditor}
+                 {showResumeTooltip}
+                 {hideResumeTooltip}
+                 {seekToResumePoint}
+                 {removeResumePoint}
+                 {clearABLoop}
+                 {formatTime}
+               />
               <PlaybackControls
                 fullscreen={false}
                 {isGifVideo}
@@ -2256,6 +2272,7 @@
               clipBoundaries={clips.clipBoundaries}
               {timestamps}
               {tsDragRange}
+              {abLoopRegion}
               {resumePoint}
               clipMarkerJustDragged={clips.clipMarkerJustDragged}
               {tsMarkerDragJustEnded}
@@ -2277,6 +2294,7 @@
               {hideResumeTooltip}
               {seekToResumePoint}
               {removeResumePoint}
+              {clearABLoop}
               {formatTime}
             />
             <PlaybackControls

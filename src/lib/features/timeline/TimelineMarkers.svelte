@@ -15,6 +15,7 @@
     clipBoundaries,
     timestamps,
     tsDragRange,
+    abLoopRegion,
     resumePoint,
     clipMarkerJustDragged,
     tsMarkerDragJustEnded,
@@ -36,6 +37,7 @@
     hideResumeTooltip,
     seekToResumePoint,
     removeResumePoint,
+    clearABLoop,
     formatTime,
   }: {
     fullscreen?: boolean;
@@ -46,6 +48,7 @@
     clipBoundaries: ClipBoundary[];
     timestamps: VideoMarker[];
     tsDragRange: VideoMarkerDragRange;
+    abLoopRegion: { start: number; end: number } | null;
     resumePoint: number | null;
     clipMarkerJustDragged: boolean;
     tsMarkerDragJustEnded: boolean;
@@ -67,6 +70,7 @@
     hideResumeTooltip: () => void;
     seekToResumePoint: () => void;
     removeResumePoint: () => void;
+    clearABLoop: () => void;
     formatTime: (time: number) => string;
   } = $props();
 
@@ -76,6 +80,7 @@
     fullscreen ? "fs-progress-playhead" : "progress-playhead",
   );
   const clipRangeClass = $derived(fullscreen ? "fs-clip-range" : "clip-range");
+  const abRangeClass = $derived(fullscreen ? "fs-ab-range" : "ab-range");
   const clipMarkerClass = $derived(
     fullscreen ? "fs-clip-marker" : "clip-marker",
   );
@@ -163,6 +168,16 @@
       ) - getTimestampPct(pair.start)}%;"
     ></div>
   {/each}
+  {#if abLoopRegion}
+    <div
+      class={abRangeClass}
+      style="left: {getTimestampPct(abLoopRegion.start)}%; width: {getTimestampPct(
+        abLoopRegion.end,
+      ) - getTimestampPct(abLoopRegion.start)}%;"
+      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); clearABLoop(); }}
+      title="AB Loop — right-click to clear"
+    ></div>
+  {/if}
   {#if tsDragRange.visible}
     <div
       class="ts-drag-range"
