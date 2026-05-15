@@ -705,17 +705,19 @@
         const loopStart = Math.min(startTime, targetTs.time);
         const loopEnd = Math.max(startTime, targetTs.time);
         setABLoop(loopStart, loopEnd);
+        tsMarkerDragJustEnded = true;
+        setTimeout(() => {
+          tsMarkerDragJustEnded = false;
+        }, 50);
       } else if (duration >= 0.1) {
         // Dragged a range — create AB loop from drag range
         setABLoop(s, en);
+        tsMarkerDragJustEnded = true;
+        setTimeout(() => {
+          tsMarkerDragJustEnded = false;
+        }, 50);
       }
       clearTimestampDragRange();
-
-      // Prevent click from firing after drag
-      tsMarkerDragJustEnded = true;
-      setTimeout(() => {
-        tsMarkerDragJustEnded = false;
-      }, 50);
     }
 
     window.addEventListener("mousemove", onMouseMove);
@@ -744,7 +746,11 @@
   // ── Resume point ───────────────────────────────────────
   function seekToTimestamp(time: number) {
     const mediaEl = isVideo ? videoEl : audioEl;
-    if (mediaEl) mediaEl.currentTime = time;
+    if (!mediaEl || !mediaEl.duration) return;
+    mediaEl.currentTime = time;
+    // Update UI immediately — don't wait for throttled timeupdate
+    rawCurrentSecs = time;
+    progress = (time / mediaEl.duration) * 100;
   }
   function removeResumePoint() {
     tsTooltip = { ...tsTooltip, visible: false };
