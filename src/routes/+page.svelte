@@ -613,7 +613,93 @@
     return timeline.getTimestampPct(time, rawDurationSecs);
   }
   function startTimestampRangeDrag(e: MouseEvent, id: string) {
-    // planned feature — not yet implemented
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const mediaEl = isVideo ? videoEl : audioEl;
+    if (!mediaEl || rawDurationSecs <= 0) return;
+
+    // Find the starting timestamp
+    const startTs = timeline.getTimestampById(id, timestamps);
+    if (!startTs) return;
+
+    // Find the progress bar element to calculate positions
+    const bar =
+      document.querySelector(".fs-progress") ??
+      document.querySelector(".progress-bar");
+    if (!bar) return;
+
+    const startTime = startTs.time;
+    tsDragRange = {
+      visible: true,
+      start: startTime,
+      end: startTime,
+      phase: "dragging",
+    };
+
+    function timeFromClientX(clientX: number): number {
+      const rect = bar!.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return ratio * rawDurationSecs;
+    }
+
+    function onMouseMove(ev: MouseEvent) {
+      const time = timeFromClientX(ev.clientX);
+      // Ensure start is always the earlier time, end is the later
+      const s = Math.min(startTime, time);
+      const en = Math.max(startTime, time);
+      tsDragRange = { ...tsDragRange, start: s, end: en };
+    }
+
+    function onMouseUp(ev: MouseEvent) {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+
+      const endTime = timeFromClientX(ev.clientX);
+      const s = Math.min(startTime, endTime);
+      const en = Math.max(startTime, endTime);
+      const duration = en - s;
+
+      // Check if released near another timestamp (different from the start)
+      const targetTs = timeline.findTouchTarget(timestamps, endTime);
+
+      if (targetTs && targetTs.id !== id && duration >= 0.1) {
+        // Dragged to another timestamp — create a clip between them
+        const clipStart = Math.min(startTime, targetTs.time);
+        const clipEnd = Math.max(startTime, targetTs.time);
+
+        // Show converting animation briefly
+        tsDragRange = { ...tsDragRange, start: clipStart, end: clipEnd, phase: "converting" };
+
+        setTimeout(() => {
+          clips.addClipBoundary("start", clipStart);
+          clips.addClipBoundary("end", clipEnd);
+          clearTimestampDragRange();
+        }, 200);
+      } else if (duration >= 0.1) {
+        // Dragged a range but not near another timestamp — create clip from drag range
+        tsDragRange = { ...tsDragRange, phase: "converting" };
+
+        setTimeout(() => {
+          clips.addClipBoundary("start", s);
+          clips.addClipBoundary("end", en);
+          clearTimestampDragRange();
+        }, 200);
+      } else {
+        // Too short — just cancel
+        clearTimestampDragRange();
+      }
+
+      // Prevent click from firing after drag
+      tsMarkerDragJustEnded = true;
+      setTimeout(() => {
+        tsMarkerDragJustEnded = false;
+      }, 50);
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
   }
   function getDragRangeStyle(): string {
     if (!tsDragRange.visible) return "";
