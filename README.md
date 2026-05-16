@@ -11,7 +11,7 @@ localStorage scoped to your machine. No network requests are made, ever.
 
 ## Features
 
-- View images (JPG, PNG, GIF, WebP, BMP, SVG) and videos (MP4, WebM, MKV, AVI, MOV, WMV)
+- View images (JPG, PNG, GIF, WebP, BMP, SVG, HEIC, TIFF, JXL, PSD, RAW) and videos (MP4, WebM, MKV, AVI, MOV, WMV)
 - Fullscreen mode with overlay controls and auto-hiding UI
 - Frame-accurate video timeline with scrubbing
 - Timestamp markers — bookmark points in videos with custom labels
@@ -124,7 +124,7 @@ A detailed data flow reference is available in [DATAFLOW.md](./DATAFLOW.md).
 ## Roadmap
 
 - [ ] Multi-monitor fullscreen support
-- [ ] RAW image format support
+- [x] RAW image format support
 - [ ] Video rotation metadata handling
 - [ ] Batch clip export queue
 - [ ] SRT/subtitle overlay for videos

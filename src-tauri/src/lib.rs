@@ -267,8 +267,8 @@ fn hash_path(path: &str) -> String {
     format!("{:016x}", hasher.finish())
 }
 
-const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "tiff", "tif", "psd", "jxl", "heic", "heif"];
-const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts"];
+const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr"];
+const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v"];
 const AUDIO_EXTS_RUST: &[&str] = &["mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus", "aiff", "alac"];
 const DOCUMENT_EXTS_RUST: &[&str] = &["pdf"];
 
@@ -445,6 +445,7 @@ async fn generate_thumbnail(
     let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
     let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
     let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
     if !is_image && !is_video && !is_audio && !is_document {
         return Ok(None);
@@ -482,7 +483,7 @@ async fn generate_thumbnail(
     tauri::async_runtime::spawn_blocking(move || {
         if is_video {
             generate_video_frame(&path, &thumb_path)
-        } else if is_ffmpeg_image {
+        } else if is_ffmpeg_image || is_raw {
             // ffmpeg-based image: extract first (and only) frame, no seek
             generate_ffmpeg_image_frame(&path, &thumb_path)
         } else if is_audio {
@@ -497,7 +498,14 @@ async fn generate_thumbnail(
 
 /// Image formats that browsers (WebView2/Edge) cannot render natively.
 /// These must be decoded server-side and served as PNG for display.
-const BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST: &[&str] = &["tiff", "tif", "psd", "jxl", "heic", "heif"];
+const BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST: &[&str] = &["tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr"];
+
+/// RAW camera formats — decoded via ffmpeg (libraw/libdcraw backend).
+const RAW_IMAGE_EXTS_RUST: &[&str] = &[
+    "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2",
+    "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc",
+    "mef", "mos", "x3f", "gpr",
+];
 
 /// Video formats that browsers cannot play natively.
 /// These must be remuxed server-side (ffmpeg -c copy → MP4) for playback.
@@ -549,7 +557,7 @@ async fn prepare_display_image(
     let path_clone = path.clone();
     let cached_clone = cached_png.clone();
     let ext_clone = ext.clone();
-    let is_ffmpeg = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_ffmpeg = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str()) || RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
     tauri::async_runtime::spawn_blocking(move || {
         if is_ffmpeg {
@@ -979,7 +987,24 @@ fn export_edited_media(
 
 #[tauri::command]
 fn copy_image_to_clipboard(path: String) -> Result<(), String> {
-    let img = image::open(&path).map_err(|e| format!("Failed to open image: {e}"))?;
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
+
+    let img = if is_raw {
+        // Decode RAW to temp PNG via ffmpeg, then load with image crate
+        let temp_png = std::env::temp_dir().join(format!("vyu_clipboard_{}.png", hash_path(&path)));
+        Command::new("ffmpeg")
+            .args(["-y", "-hide_banner", "-loglevel", "error", "-i", &path, temp_png.to_str().unwrap()])
+            .status()
+            .map_err(|e| format!("Failed to run ffmpeg for RAW clipboard: {e}"))?;
+        let decoded = image::open(&temp_png)
+            .map_err(|e| format!("Failed to decode RAW for clipboard: {e}"))?;
+        let _ = fs::remove_file(&temp_png);
+        decoded
+    } else {
+        image::open(&path).map_err(|e| format!("Failed to open image: {e}"))?
+    };
+
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
     let data = arboard::ImageData {
@@ -1047,6 +1072,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
     let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
     let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
     let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
     if is_document {
         // For PDF, check magic bytes (%PDF-)
@@ -1063,7 +1089,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
         });
     }
 
-    if is_image && !is_ffmpeg_image {
+    if is_image && !is_ffmpeg_image && !is_raw {
         match image::open(&path) {
             Ok(img) => {
                 let (w, h) = img.dimensions();
@@ -1083,7 +1109,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
                 reason: format!("Image decode failed: {e}"),
             }),
         }
-    } else if is_video || is_audio || is_ffmpeg_image {
+    } else if is_video || is_audio || is_ffmpeg_image || is_raw {
         let output = Command::new("ffprobe")
             .args([
                 "-v",
@@ -1173,6 +1199,7 @@ fn fix_media(
     let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
     let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
     let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
     let parent = input.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
     let stem = input
@@ -1199,9 +1226,9 @@ fn fix_media(
         tmp
     };
 
-    let fix_result: Result<(), String> = if is_image && !is_ffmpeg_image {
+    let fix_result: Result<(), String> = if is_image && !is_ffmpeg_image && !is_raw {
         fix_image(&input, &output_path)
-    } else if is_video || is_audio || is_ffmpeg_image {
+    } else if is_video || is_audio || is_ffmpeg_image || is_raw {
         fix_video_audio(&input, &output_path)
     } else if is_document {
         fix_document(&input, &output_path)

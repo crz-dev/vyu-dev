@@ -43,13 +43,13 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif", "tiff", "tif", "psd", "jxl", "heic", "heif"],
+        "ext": ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "avif", "tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr"],
         "name": "Image",
         "description": "Image files",
         "role": "Viewer"
       },
       {
-        "ext": ["mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts"],
+        "ext": ["mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v"],
         "name": "Video",
         "description": "Video files",
         "role": "Viewer"

@@ -2401,6 +2401,11 @@
   word-break: break-word;
 }
 
+.about-format-items-wrap {
+  display: block;
+  line-height: 1.6;
+}
+
 .about-sep {
   height: 0.5px;
   background: var(--bg-elevated);

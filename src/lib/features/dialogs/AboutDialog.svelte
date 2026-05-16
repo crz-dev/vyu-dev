@@ -59,24 +59,28 @@
             <div class="about-format-row">
               <span class="about-format-badge">Images</span>
               <span class="about-format-items"
-                >PNG, JPG, JPEG, GIF, WEBP, BMP, TIFF, AVIF, HEIC, TGA, PSD,
-                PCX, ICO, RAW</span
+                >JPG · PNG · GIF · WebP · BMP · HEIC · AVIF · TIFF · JXL</span
               >
             </div>
             <div class="about-sep"></div>
             <div class="about-format-row">
               <span class="about-format-badge">Videos</span>
               <span class="about-format-items"
-                >MP4, MKV, WEBM, MOV, AVI, FLV, WMV, MPEG, MPG, TS, M2TS, MTS,
-                3GP, OGV, ASF, DV, MXF, VOB, IVF</span
+                >MP4 · MKV · MOV · AVI · WebM · WMV · M4V · MPG · TS</span
               >
             </div>
             <div class="about-sep"></div>
             <div class="about-format-row">
               <span class="about-format-badge">Audio</span>
               <span class="about-format-items"
-                >MP3, AAC, FLAC, WAV, OGG, WMA, M4A, AIFF, AU, AC3, DTS, OPUS,
-                MPC, TTA, APE, ALAC, AMR</span
+                >MP3 · AAC · WAV · FLAC · M4A · OGG · WMA · AIFF · ALAC</span
+              >
+            </div>
+            <div class="about-sep"></div>
+            <div class="about-format-row">
+              <span class="about-format-badge">Other</span>
+              <span class="about-format-items"
+                >PDF · SVG · ICO · PSD · RAW · Opus · Damaged Media</span
               >
             </div>
           </div>
