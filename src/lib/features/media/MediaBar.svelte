@@ -297,6 +297,7 @@
       >
       <span>Clip Segments</span>
     </button>
+    <div class="edit-menu-separator"></div>
     <div class="clip-options-grid">
       <button
         class="clip-toggle-btn red"

@@ -728,7 +728,7 @@ main.thumbnail-bar-open .video-inner video {
   color: var(--text-muted);
   font-family: Inter, sans-serif;
   font-size: 11px;
-  padding: 6px 6px;
+  padding: 5px 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1864,6 +1864,10 @@ main.thumbnail-bar-open .video-inner video {
   opacity: 0.25;
   cursor: default;
   pointer-events: none;
+}
+
+.edit-menu-btn.sub {
+  padding: 5px 5px;
 }
 
 .edit-menu-separator {

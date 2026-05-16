@@ -492,7 +492,7 @@
       <div class="edit-menu-row">
         <button
           class="edit-menu-btn red"
-          class:sub-open={cropRowOpen || editing.cropMode}
+          class:sub-open={rotateRowOpen || flipRowOpen || colorRowOpen}
           onclick={handleCropClick}
         >
           <svg
@@ -513,7 +513,7 @@
         </button>
         <button
           class="edit-menu-btn yellow"
-          class:sub-open={rotateRowOpen}
+          class:sub-open={cropRowOpen || flipRowOpen || colorRowOpen}
           onclick={() => {
             if (rotateRowOpen) {
               rotateRowOpen = false;
@@ -548,7 +548,7 @@
         </button>
         <button
           class="edit-menu-btn green"
-          class:sub-open={flipRowOpen}
+          class:sub-open={cropRowOpen || rotateRowOpen || colorRowOpen}
           onclick={() => {
             if (flipRowOpen) {
               flipRowOpen = false;
@@ -582,7 +582,7 @@
         </button>
         <button
           class="edit-menu-btn blue"
-          class:sub-open={colorRowOpen}
+          class:sub-open={cropRowOpen || rotateRowOpen || flipRowOpen}
           onclick={() => {
             if (colorRowOpen) {
               colorRowOpen = false;
@@ -626,28 +626,28 @@
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
         >
           <button
-            class="edit-menu-btn red"
+            class="edit-menu-btn red sub"
             class:active={activeCropTool === "16-9"}
             onclick={() => selectCropTool("16-9", 16 / 9)}
           >
             <span>16:9</span>
           </button>
           <button
-            class="edit-menu-btn red"
+            class="edit-menu-btn red sub"
             class:active={activeCropTool === "9-16"}
             onclick={() => selectCropTool("9-16", 9 / 16)}
           >
             <span>9:16</span>
           </button>
           <button
-            class="edit-menu-btn red"
+            class="edit-menu-btn red sub"
             class:active={activeCropTool === "1-1"}
             onclick={() => selectCropTool("1-1", 1)}
           >
             <span>1:1</span>
           </button>
           <button
-            class="edit-menu-btn red"
+            class="edit-menu-btn red sub"
             class:active={activeCropTool === "custom"}
             onclick={() => selectCropTool("custom", null)}
           >
@@ -663,7 +663,7 @@
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
         >
           <button
-            class="edit-menu-btn white"
+            class="edit-menu-btn white sub"
             class:active={activeColorTool === "brightness"}
             onclick={() => toggleColorTool("brightness")}
           >
@@ -685,7 +685,7 @@
             <span>Brightness</span>
           </button>
           <button
-            class="edit-menu-btn white"
+            class="edit-menu-btn white sub"
             class:active={activeColorTool === "contrast"}
             onclick={() => toggleColorTool("contrast")}
           >
@@ -709,7 +709,7 @@
             <span>Contrast</span>
           </button>
           <button
-            class="edit-menu-btn white"
+            class="edit-menu-btn white sub"
             class:active={activeColorTool === "saturation"}
             onclick={() => toggleColorTool("saturation")}
           >
@@ -732,7 +732,7 @@
             <span>Saturation</span>
           </button>
           <button
-            class="edit-menu-btn white"
+            class="edit-menu-btn white sub"
             class:active={activeColorTool === "hue"}
             onclick={() => toggleColorTool("hue")}
           >
@@ -835,7 +835,7 @@
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
         >
           <button
-            class="edit-menu-btn yellow"
+            class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "90-right"}
             onclick={() => toggleRotateTool("90-right")}
           >
@@ -855,7 +855,7 @@
             <span>90 Right</span>
           </button>
           <button
-            class="edit-menu-btn yellow"
+            class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "90-left"}
             onclick={() => toggleRotateTool("90-left")}
           >
@@ -875,7 +875,7 @@
             <span>90 Left</span>
           </button>
           <button
-            class="edit-menu-btn yellow"
+            class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "180"}
             onclick={() => toggleRotateTool("180")}
           >
@@ -897,7 +897,7 @@
             <span>180 Full</span>
           </button>
           <button
-            class="edit-menu-btn yellow"
+            class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "custom"}
             onclick={() => toggleRotateTool("custom")}
           >
@@ -998,7 +998,7 @@
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
         >
           <button
-            class="edit-menu-btn green"
+            class="edit-menu-btn green sub"
             onclick={() => toggleFlip("horizontal")}
           >
             <svg
@@ -1018,7 +1018,7 @@
             <span>Horizontally</span>
           </button>
           <button
-            class="edit-menu-btn green"
+            class="edit-menu-btn green sub"
             onclick={() => toggleFlip("vertical")}
           >
             <svg

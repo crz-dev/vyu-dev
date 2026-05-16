@@ -442,7 +442,7 @@
           transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
         >
           <button
-            class="edit-menu-btn"
+            class="edit-menu-btn sub"
             class:grey={!activeFormat}
             class:blue={!!activeFormat}
             onclick={(e) => {
@@ -466,7 +466,7 @@
             Format
           </button>
           <button
-            class="edit-menu-btn"
+            class="edit-menu-btn sub"
             class:grey={!activePreset}
             class:blue={!!activePreset}
             onclick={(e) => {
@@ -492,7 +492,7 @@
             Preset
           </button>
           <button
-            class="edit-menu-btn"
+            class="edit-menu-btn sub"
             class:grey={!exportLocation}
             class:yellow={!!exportLocation}
             onclick={() => {
@@ -516,7 +516,7 @@
             Location
           </button>
           <button
-            class="edit-menu-btn"
+            class="edit-menu-btn sub"
             class:grey={!canExport}
             class:green={canExport}
             disabled={!canExport}
@@ -551,7 +551,7 @@
           >
             {#each formatOptions as opt}
               <button
-                class="edit-menu-btn white"
+                class="edit-menu-btn white sub"
                 class:inactive={activeFormat !== null && activeFormat !== opt}
                 onclick={(e) => {
                   e.stopPropagation();
@@ -572,7 +572,7 @@
           >
             {#each presetOptions as opt}
               <button
-                class="edit-menu-btn white"
+                class="edit-menu-btn white sub"
                 class:inactive={activePreset !== null && activePreset !== opt}
                 onclick={(e) => {
                   e.stopPropagation();
@@ -663,7 +663,7 @@
         transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
       >
         <button
-          class="edit-menu-btn"
+          class="edit-menu-btn sub"
           class:grey={!activeTarget}
           class:blue={!!activeTarget}
           onclick={(e) => {
@@ -688,7 +688,7 @@
           Target
         </button>
         <button
-          class="edit-menu-btn"
+          class="edit-menu-btn sub"
           class:grey={!activeCompressPreset}
           class:blue={!!activeCompressPreset}
           onclick={(e) => {
@@ -714,7 +714,7 @@
           Preset
         </button>
         <button
-          class="edit-menu-btn"
+          class="edit-menu-btn sub"
           class:grey={!compressLocation}
           class:yellow={!!compressLocation}
           onclick={() => {
@@ -738,7 +738,7 @@
           Location
         </button>
         <button
-          class="edit-menu-btn"
+          class="edit-menu-btn sub"
           class:grey={!canExtract}
           class:green={canExtract}
           disabled={!canExtract}
@@ -773,7 +773,7 @@
         >
           {#each targetOptions as opt}
             <button
-              class="edit-menu-btn white"
+              class="edit-menu-btn white sub"
               class:inactive={activeTarget !== null && activeTarget !== opt}
               onclick={(e) => {
                 e.stopPropagation();
@@ -794,7 +794,7 @@
         >
           {#each presetOptions as opt}
             <button
-              class="edit-menu-btn white"
+              class="edit-menu-btn white sub"
               class:inactive={activeCompressPreset !== null &&
                 activeCompressPreset !== opt}
               onclick={(e) => {
