@@ -581,9 +581,27 @@
   }
   function onEditorScissor(kind: "start" | "end") {
     const seg = getActiveEditorSegment();
-    if (!seg) return;
-    clips.setBoundaryKind(seg.id, kind);
-    closeTimestampEditor();
+    if (seg) {
+      clips.setBoundaryKind(seg.id, kind);
+      closeTimestampEditor();
+    } else {
+      const ts = getActiveEditorTimestamp();
+      if (ts) {
+        clips.addClipBoundary(kind, ts.time);
+        removeTimestamp(ts.id);
+        const newBoundary = clips.clipBoundaries.find(
+          (b) => b.time === ts.time && b.kind === kind,
+        );
+        if (newBoundary) {
+          tsEditMenu = {
+            ...tsEditMenu,
+            visible: true,
+            targetId: newBoundary.id,
+            targetType: "segment",
+          };
+        }
+      }
+    }
   }
   function onEditorDeleteTimestamp() {
     const ts = getActiveEditorTimestamp();
