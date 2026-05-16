@@ -1,46 +1,64 @@
 # Vyu
 
-A local-first media viewer for Windows — replacement for Windows Photos.
+A local-first media viewer for Windows. No telemetry, no cloud, no accounts — just your files, in one window.
 
-## Philosophy
+## About
 
-No telemetry. No cloud. No accounts. Files never leave your device.
-
-Vyu works entirely offline. All state (timestamps, clip boundaries, preferences) lives in
-localStorage scoped to your machine. No network requests are made, ever.
+Vyu is a lightweight alternative to Windows Photos and the built-in Media Player. It opens images, videos, audio files, and PDFs from your local disk — nothing leaves your machine. All state (timestamps, preferences, clip boundaries) stays in your browser's localStorage, scoped to your device. No network requests, ever. Works entirely offline.
 
 ## Features
 
-- View images (JPG, PNG, GIF, WebP, BMP, SVG, HEIC, TIFF, JXL, PSD, RAW) and videos (MP4, WebM, MKV, AVI, MOV, WMV)
-- Fullscreen mode with overlay controls and auto-hiding UI
-- Frame-accurate video timeline with scrubbing
-- Timestamp markers — bookmark points in videos with custom labels
-- Clip boundaries — mark start/end segments for export
-- Keyboard-driven navigation (arrows, Ctrl+arrows to edges, Alt+arrows always navigates)
-- Image adjustments — brightness, contrast, saturation, hue, rotation, flip
-- Crop overlay with corner/edge handles
-- Slideshow with interval, order (next/shuffle), video mode (skip/full), transitions (fade/slide)
-- Volume and playback speed controls (diamond scrubber + slider modes)
-- Context menus with copy frame, copy path, file properties, delete, show in explorer
-- Drag-and-drop file open, paste from clipboard
-- File rename inline in the title bar
-- Thumbnail bar for quick navigation within a folder
-- Process menu — convert and compress media via FFmpeg
-- Accessibility and help dialogs with keyboard navigation
-- Dark theme throughout
+- **Browse images** — JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, and 24 RAW camera formats. Unsupported formats are decoded server-side to PNG automatically.
+- **Play videos** — MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V. TS/M2TS files are remuxed to MP4 for browser playback.
+- **Listen to audio** — MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC with waveform thumbnails.
+- **View PDFs** — Rendered page by page with pdfjs-dist, loaded on demand.
+- **Fullscreen mode** — Overlay controls that auto-hide after a moment of inactivity.
+- **Zoom, pan, rotate, flip** — Scroll to zoom, drag to pan, keyboard shortcuts for rotation and flipping.
+- **Image adjustments** — Brightness, contrast, saturation, and hue sliders.
+- **Crop overlay** — Click-drag handles on corners and edges, with aspect ratio lock.
+- **Video timeline** — Frame-accurate scrubber with timestamp markers and clip boundaries.
+- **Timestamp markers** — Bookmark points in a video with optional labels. Saved per file.
+- **Clip boundaries** — Mark start/end segments on a video and export them (separate files or merged).
+- **A-B loop region** — Set a loop range for repeat playback.
+- **Slideshow** — Configurable interval, next/shuffle order, skip-or-play-videos mode, fade/slide/none transitions.
+- **Volume control** — Diamond scrubber and continuous slider mode, with keyboard shortcuts.
+- **Playback speed** — Step through 0.25x–3x, with diamond and slider controls.
+- **Keyboard navigation** — Arrow keys to browse, Ctrl+Arrow to jump to ends, Alt+Arrow to always navigate. Space to play/pause. F for fullscreen. Comma/period for frame stepping.
+- **Context menus** — Right-click to copy image, copy video frame (as PNG), copy file path, show in explorer, view file properties, delete or trash.
+- **Inline rename** — Click the filename in the title bar to rename the file on disk.
+- **Thumbnail bar** — Browse sibling files in the same folder.
+- **Process menu** — Convert media between formats (with presets) and compress files.
+- **Media properties** — Dialog showing codec info, container, dimensions, bit depth, frame rate, and more (requires FFmpeg).
+- **FFmpeg auto-install** — Detects if FFmpeg is available and offers to install it via winget.
+- **Media integrity check & fix** — Detect corruption and attempt repair via FFmpeg.
+- **Drag-and-drop** — Open files by dragging them onto the window.
+- **Clipboard paste** — Open files copied to your clipboard.
+- **Three themes** — Dark, light, and system-following, with animated transitions.
+- **Custom title bar** — Drawn by the app, with window controls and the current filename.
+- **Window state persistence** — Remembers position, size, and maximized state across sessions.
+- **All state in localStorage** — Volume, timestamps, clips, loop mode, theme, slider mode, resume points — all survive restarts.
 
 ## Tech Stack
 
-| Layer            | Technology                                       |
-| ---------------- | ------------------------------------------------ |
-| Desktop shell    | [Tauri 2](https://tauri.app)                     |
-| UI framework     | [Svelte 5](https://svelte.dev) (runes mode)      |
-| Meta-framework   | [SvelteKit](https://kit.svelte.dev) (static SPA) |
-| Language         | TypeScript (strict)                              |
-| Package manager  | pnpm                                             |
-| Video processing | FFmpeg (bundled, auto-install)                   |
+| Layer | Tool |
+|-------|------|
+| Desktop shell | Tauri 2 |
+| UI framework | Svelte 5 (runes mode) |
+| Meta-framework | SvelteKit (static SPA, no SSR) |
+| Language | TypeScript (strict) |
+| Package manager | pnpm |
+| Video/image processing | FFmpeg (system PATH, not bundled) |
+| PDF rendering | pdfjs-dist (code-split, dynamic import) |
+| State persistence | localStorage |
 
 ## Getting Started
+
+### Prerequisites
+
+- **Rust toolchain** — needed to compile Tauri's native backend. Install from [rustup.rs](https://rustup.rs).
+- **FFmpeg** — used for video processing, thumbnails, and format conversion. Not bundled with the app. If missing, Vyu will prompt to install it via winget.
+
+### Install and run
 
 ```bash
 # Install dependencies
@@ -53,82 +71,42 @@ pnpm tauri dev
 pnpm tauri build
 ```
 
-Requires Rust toolchain for Tauri's native backend.
-
 ## Project Structure
 
 ```
-src/
-├── app.css              # Global stylesheet — imports from lib/styles/
-├── app.html             # HTML shell with inline reset CSS
-├── app.d.ts             # Ambient type declarations (__APP_VERSION__)
+src/                    # Frontend (Svelte + TypeScript)
 ├── routes/
-│   ├── +layout.svelte   # Root layout — imports app.css, disables SSR
-│   ├── +layout.ts       # export const ssr = false
-│   └── +page.svelte     # Main page — all app state, orchestration, and template
-└── lib/
-    ├── shared/          # Constants, types, keybinds, Tooltip component
-    │   ├── constants.ts # IMAGE_EXTS, VIDEO_EXTS, VOLUME_SEGMENTS, LOOP_MODES
-    │   ├── types.ts     # CtxMenu, Timestamp, ClipBoundary, MediaProperties, etc.
-    │   ├── keybinds.ts  # Keyboard shortcut handler (returns keydown closure)
-    │   └── Tooltip.svelte
-    ├── features/
-    │   ├── viewer/      # Viewer state machine + fullscreen overlay component
-    │   │   ├── viewer.svelte.ts       # Zoom, pan, rotate, flip, crop state
-    │   │   └── ViewerControls.svelte  # Fullscreen overlay UI (topbar, nav, controls)
-    │   ├── timeline/    # Video timeline state + marker rendering
-    │   │   ├── timeline.svelte.ts        # Timestamp CRUD logic
-    │   │   └── TimelineMarkers.svelte    # Rendered markers on the video scrubber
-    │   ├── media/       # Media state, playback, clips, slideshow, tools
-    │   │   ├── media.svelte.ts        # Core state: loadFile, navigate, closeFile
-    │   │   ├── playback.svelte.ts     # Play, pause, volume, speed, progress
-    │   │   ├── clips.svelte.ts        # Clip boundary pairs (start/end segments)
-    │   │   ├── slideshow.svelte.ts    # Slideshow timer, order, transitions
-    │   │   ├── MediaBar.svelte        # Bottom bar: file info, zoom, fullscreen, clips
-    │   │   ├── PlaybackControls.svelte # Video controls: play, volume, speed, loop
-    │   │   ├── mediaSources.ts        # FFprobe availability, media properties fetch
-    │   │   └── mediaTools.ts          # Tauri invoke wrappers (clip, delete, convert, etc.)
-    │   ├── navigation/  # Thumbnail strip for folder browsing
-    │   │   └── ThumbnailBar.svelte
-    │   ├── dialogs/     # Context menu, settings, about, help, feedback, accessibility
-    │   │   ├── Dialog.svelte
-    │   │   ├── SettingsDialog.svelte
-    │   │   ├── AboutDialog.svelte
-    │   │   ├── HelpDialog.svelte
-    │   │   ├── FeedbackDialog.svelte
-    │   │   └── AccessibilityDialog.svelte
-    │   ├── menus/       # Floating menus: edit, process, slideshow, app dropdown
-    │   │   ├── AppMenu.svelte
-    │   │   ├── AppDropdownMenu.svelte
-    │   │   ├── EditMenu.svelte
-    │   │   ├── ProcessMenu.svelte
-    │   │   └── SlideshowMenu.svelte
-    │   └── editing/     # Image/video crop overlay
-    │       └── CropOverlay.svelte
-    ├── services/        # Backend-agnostic utilities
-    │   ├── files.ts     # readMediaFilesInFolder, folder cache, path helpers
-    │   ├── storage.ts   # localStorage wrapper (volume, timestamps, clips, prefs)
-    │   ├── session.ts   # Context menu positioning, floating tooltips
-    │   └── clipboard.ts # Copy image/frame/path/properties to clipboard
-    └── styles/          # Modular CSS (BEM-like)
-        ├── variables.css
-        ├── layout.css
-        ├── components.css
-        ├── overlays.css
-        ├── tooltips.css
-        └── animations.css
+│   ├── +page.svelte    # Single-page app — all state and template
+│   └── +layout.ts      # Disables SSR
+├── lib/
+│   ├── features/       # Feature modules with state files (.svelte.ts) and components
+│   │   ├── media/      # File loading, playback, clips, slideshow
+│   │   ├── viewer/     # Zoom, pan, rotate, fullscreen
+│   │   ├── timeline/   # Timestamp markers on video scrubber
+│   │   ├── editing/    # Crop overlay and image adjustments
+│   │   ├── pdf/        # PDF document loading and rendering
+│   │   ├── navigation/ # Thumbnail bar
+│   │   ├── dialogs/    # Settings, about, help, feedback, accessibility, file properties
+│   │   ├── menus/      # Edit, process, slideshow, app menus
+│   │   └── theme/      # Dark/light/system theme with transitions
+│   ├── services/       # Folder scanning, localStorage, clipboard, context menus
+│   ├── shared/         # Constants, types, keybinds, tooltip, shell, toast
+│   └── styles/         # Modular CSS (variables, layout, components, overlays)
+src-tauri/              # Backend (Rust)
+├── src/lib.rs          # All Tauri commands (~1750 lines)
+├── tauri.conf.json     # Tauri configuration
+├── Cargo.toml          # Rust dependencies
+└── capabilities/       # Tauri 2 capability permissions
 ```
 
-A detailed data flow reference is available in [DATAFLOW.md](./DATAFLOW.md).
+A detailed data flow reference is in [DATAFLOW.md](./DATAFLOW.md).
 
 ## Roadmap
 
-- [ ] Multi-monitor fullscreen support
-- [x] RAW image format support
-- [ ] Video rotation metadata handling
-- [ ] Batch clip export queue
-- [ ] SRT/subtitle overlay for videos
-- [ ] Color-managed display (ICC profile support)
-- [ ] Touchpad gesture navigation (swipe between files)
-- [ ] System theme integration (light mode)
-- [ ] Linux support
+- Multi-monitor fullscreen support
+- Video rotation metadata handling
+- Batch clip export queue
+- SRT/subtitle overlay for videos
+- Color-managed display (ICC profile support)
+- Touchpad gesture navigation (swipe between files)
+- Linux support
