@@ -336,6 +336,96 @@
     fixCopy: () => void;
     fixReplace: () => void;
   } = $props();
+
+  let editMenuMoved = $state(false);
+  let processMenuMoved = $state(false);
+  let clipMenuMoved = $state(false);
+  let clipMenuDismissed = $state(false);
+
+  $effect(() => {
+    if (!editMenuVisible) editMenuMoved = false;
+  });
+
+  $effect(() => {
+    if (!processMenuVisible) processMenuMoved = false;
+  });
+
+  $effect(() => {
+    if (clipCount === 0) {
+      clipMenuMoved = false;
+    }
+    clipMenuDismissed = false;
+  });
+
+  const MENU_WIDTH = $derived(Math.min(398, window.innerWidth - 30));
+  const GAP = 8;
+
+  const clipMenuActive = $derived(clipCount > 0 && !clipMenuDismissed);
+
+  const layoutOffsets = $derived.by(() => {
+    const editOpen = editMenuVisible && !editMenuMoved;
+    const processOpen = processMenuVisible && !processMenuMoved;
+    const clipOpen = clipMenuActive && !clipMenuMoved;
+
+    // Edit/process affect each other
+    let editOffset = 0;
+    let processOffset = 0;
+
+    if (editOpen && processOpen) {
+      const halfGap = (MENU_WIDTH + GAP) / 2;
+      editOffset = -halfGap;
+      processOffset = halfGap;
+    }
+
+    // Clip shifts based on edit/process presence
+    let clipOffset = 0;
+    if (clipOpen) {
+      const editOnly = editOpen && !processOpen;
+      const processOnly = !editOpen && processOpen;
+      const bothOpen = editOpen && processOpen;
+
+      if (editOnly) {
+        // edit left, clip right — gap centered
+        const halfGap = (MENU_WIDTH + GAP) / 2;
+        editOffset = -halfGap;
+        clipOffset = halfGap;
+      } else if (processOnly) {
+        // clip left, process right — gap centered
+        const halfGap = (MENU_WIDTH + GAP) / 2;
+        clipOffset = -halfGap;
+        processOffset = halfGap;
+      } else if (bothOpen) {
+        // edit left, clip center, process right
+        const fullGap = MENU_WIDTH + GAP;
+        editOffset = -fullGap;
+        clipOffset = 0;
+        processOffset = fullGap;
+      }
+    }
+
+    return { edit: editOffset, clip: clipOffset, process: processOffset };
+  });
+
+  const editMenuStyle = $derived.by(() => {
+    if (editMenuVisible && !editMenuMoved && layoutOffsets.edit !== 0) {
+      return `left: calc(50% + ${layoutOffsets.edit}px);`;
+    }
+    return "";
+  });
+
+  const processMenuStyle = $derived.by(() => {
+    if (processMenuVisible && !processMenuMoved && layoutOffsets.process !== 0) {
+      return `left: calc(50% + ${layoutOffsets.process}px);`;
+    }
+    return "";
+  });
+
+  const clipMenuStyle = $derived.by(() => {
+    if (clipMenuActive && !clipMenuMoved && layoutOffsets.clip !== 0) {
+      return `left: calc(50% + ${layoutOffsets.clip}px);`;
+    }
+    return "";
+  });
 </script>
 
 <main
@@ -401,6 +491,17 @@
     {closeSlideshowMenu}
     {thumbnailBarVisible}
     {toggleThumbnailBar}
+    {editMenuVisible}
+    {processMenuVisible}
+    {editMenuMoved}
+    {processMenuMoved}
+    {clipMenuMoved}
+    onClipMenuMoved={() => (clipMenuMoved = true)}
+    onClipMenuDismissed={() => (clipMenuDismissed = true)}
+    clipMenuDismissed
+    editMenuStyleOverride={editMenuStyle}
+    processMenuStyleOverride={processMenuStyle}
+    clipMenuStyleOverride={clipMenuStyle}
   />
 
   <ThumbnailBar
@@ -490,6 +591,8 @@
   <EditMenu
     visible={editMenuVisible}
     onClose={closeEditMenu}
+    onMoved={() => (editMenuMoved = true)}
+    styleOverride={editMenuStyle}
     {onApply}
     {onExport}
     {onUndo}
@@ -499,6 +602,8 @@
   <ProcessMenu
     visible={processMenuVisible}
     onClose={closeProcessMenu}
+    onMoved={() => (processMenuMoved = true)}
+    styleOverride={processMenuStyle}
     {isVideo}
     {isAudio}
     {isPdf}

@@ -22,6 +22,8 @@
     refreshFfprobeAvailability,
     openConvertedFile,
     showInExplorer,
+    onMoved,
+    styleOverride = "",
   }: {
     visible: boolean;
     onClose: () => void;
@@ -38,6 +40,8 @@
     refreshFfprobeAvailability: () => Promise<void>;
     openConvertedFile: (path: string) => Promise<void>;
     showInExplorer: (path: string) => Promise<void>;
+    onMoved?: () => void;
+    styleOverride?: string;
   } = $props();
 
   let convertOpen = $state(false);
@@ -232,6 +236,7 @@
     role="dialog"
     aria-label="Process menu"
     tabindex="-1"
+    style={styleOverride}
     transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     onclick={() => {
       activeConvertTool = null;
@@ -249,17 +254,20 @@
       role="button"
       tabindex="-1"
       aria-label="Drag to move"
-      onmousedown={(e) => {
-        e.preventDefault();
-        const menu = (e.currentTarget as HTMLElement).closest(
-          ".process-menu",
-        ) as HTMLElement;
+        onmousedown={(e) => {
+          e.preventDefault();
+          onMoved?.();
+          const menu = (e.currentTarget as HTMLElement).closest(
+            ".process-menu",
+          ) as HTMLElement;
         if (!menu) return;
         const startX = e.clientX;
         const startY = e.clientY;
         const rect = menu.getBoundingClientRect();
         const startLeft = rect.left;
         const startTop = rect.top;
+        const savedTransition = menu.style.transition;
+        menu.style.transition = "none";
 
         function onMouseMove(ev: MouseEvent) {
           menu.style.left = `${startLeft + ev.clientX - startX}px`;
@@ -268,6 +276,7 @@
         }
 
         function onMouseUp() {
+          menu.style.transition = savedTransition;
           window.removeEventListener("mousemove", onMouseMove);
           window.removeEventListener("mouseup", onMouseUp);
         }

@@ -41,6 +41,17 @@
     closeSlideshowMenu,
     thumbnailBarVisible,
     toggleThumbnailBar,
+    editMenuVisible = false,
+    processMenuVisible = false,
+    editMenuMoved = false,
+    processMenuMoved = false,
+    clipMenuMoved = false,
+    onClipMenuMoved,
+    onClipMenuDismissed,
+    clipMenuDismissed = false,
+    editMenuStyleOverride = "",
+    processMenuStyleOverride = "",
+    clipMenuStyleOverride = "",
   }: {
     fileListLength: number;
     currentIndex: number;
@@ -70,6 +81,17 @@
     closeSlideshowMenu: () => void;
     thumbnailBarVisible: boolean;
     toggleThumbnailBar: () => void;
+    editMenuVisible?: boolean;
+    processMenuVisible?: boolean;
+    editMenuMoved?: boolean;
+    processMenuMoved?: boolean;
+    clipMenuMoved?: boolean;
+    onClipMenuMoved?: () => void;
+    onClipMenuDismissed?: () => void;
+    clipMenuDismissed?: boolean;
+    editMenuStyleOverride?: string;
+    processMenuStyleOverride?: string;
+    clipMenuStyleOverride?: string;
   } = $props();
 
   $effect(() => {
@@ -153,6 +175,7 @@
   <div
     class="clip-actions"
     class:pinned
+    style={clipMenuStyleOverride}
     transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}
   >
     <div
@@ -162,6 +185,7 @@
       aria-label="Drag to move"
       onmousedown={(e) => {
         e.preventDefault();
+        onClipMenuMoved?.();
         const menu = (e.currentTarget as HTMLElement).closest(
           ".clip-actions",
         ) as HTMLElement;
@@ -171,6 +195,8 @@
         const rect = menu.getBoundingClientRect();
         const startLeft = rect.left;
         const startTop = rect.top;
+        const savedTransition = menu.style.transition;
+        menu.style.transition = "none";
 
         function onMouseMove(ev: MouseEvent) {
           menu.style.left = `${startLeft + ev.clientX - startX}px`;
@@ -181,6 +207,7 @@
         }
 
         function onMouseUp() {
+          menu.style.transition = savedTransition;
           window.removeEventListener("mousemove", onMouseMove);
           window.removeEventListener("mouseup", onMouseUp);
         }
@@ -226,6 +253,7 @@
         onclick={(e) => {
           e.stopPropagation();
           dismissed = true;
+          onClipMenuDismissed?.();
         }}
         onmousedown={(e) => e.stopPropagation()}
         aria-label="Close"

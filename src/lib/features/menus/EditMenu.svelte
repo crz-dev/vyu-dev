@@ -9,6 +9,8 @@
     onExport,
     onUndo,
     onReset,
+    onMoved,
+    styleOverride = "",
   }: {
     visible: boolean;
     onClose: () => void;
@@ -16,6 +18,8 @@
     onExport: () => void;
     onUndo: () => void;
     onReset: () => void;
+    onMoved?: () => void;
+    styleOverride?: string;
   } = $props();
 
   let colorRowOpen = $state(false);
@@ -332,7 +336,7 @@
 </script>
 
 {#if visible}
-  <div class="edit-menu-wrapper">
+  <div class="edit-menu-wrapper" style={styleOverride}>
     {#if hasEdits}
       <div
         class="edit-actions-bar edit-actions-left"
@@ -401,6 +405,7 @@
         aria-label="Drag to move"
         onmousedown={(e) => {
           e.preventDefault();
+          onMoved?.();
           const menu = (e.currentTarget as HTMLElement).closest(
             ".edit-menu-wrapper",
           ) as HTMLElement;
@@ -410,6 +415,8 @@
           const rect = menu.getBoundingClientRect();
           const startLeft = rect.left;
           const startTop = rect.top;
+          const savedTransition = menu.style.transition;
+          menu.style.transition = "none";
 
           function onMouseMove(ev: MouseEvent) {
             menu.style.left = `${startLeft + ev.clientX - startX}px`;
@@ -418,6 +425,7 @@
           }
 
           function onMouseUp() {
+            menu.style.transition = savedTransition;
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
           }
