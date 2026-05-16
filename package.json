@@ -1,7 +1,6 @@
 {
   "name": "vyu",
   "version": "0.1.0",
-  "description": "",
   "type": "module",
   "scripts": {
     "dev": "vite dev",
@@ -29,5 +28,8 @@
     "svelte-check": "^4.0.0",
     "typescript": "~5.6.2",
     "vite": "^6.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }
