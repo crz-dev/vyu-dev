@@ -77,6 +77,7 @@ export async function handleApplyCrop(opts: {
   isVideo: boolean;
   fileExt: () => string;
   videoEl: HTMLVideoElement | null;
+  rotation: number;
   viewer: {
     getCropBounds: () => {
       left: number;
@@ -142,6 +143,7 @@ export async function handleApplyCrop(opts: {
         bounds.bottom,
         ve.videoWidth,
         ve.videoHeight,
+        opts.rotation,
       );
     } else {
       await exportCroppedImage(opts.filePath, bounds, outputPath);

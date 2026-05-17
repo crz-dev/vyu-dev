@@ -167,6 +167,7 @@ export async function invokeExportCroppedMedia(
   bottom: number,
   width: number,
   height: number,
+  rotation: number,
 ): Promise<void> {
   return invoke("export_cropped_media", {
     path,
@@ -177,6 +178,7 @@ export async function invokeExportCroppedMedia(
     bottom,
     width,
     height,
+    rotation,
   });
 }
 
@@ -229,13 +231,36 @@ export async function exportEditedImage(
   const w = img.naturalWidth;
   const h = img.naturalHeight;
 
-  const b = snapshot.cropBounds;
+  const isQuarterTurn = Math.abs(snapshot.rotation % 180) === 90;
+  let b = snapshot.cropBounds;
+
+  // Crop bounds are set relative to the displayed (rotated) image.
+  // For quarter-turn rotations, swap the bounds to match natural coordinates.
+  if (isQuarterTurn) {
+    const normRot = (((snapshot.rotation % 360) + 360) % 360);
+    if (normRot === 90) {
+      // 90° CW: displayed width = natural height, displayed height = natural width
+      b = {
+        left: snapshot.cropBounds.top,
+        top: snapshot.cropBounds.right,
+        right: snapshot.cropBounds.bottom,
+        bottom: snapshot.cropBounds.left,
+      };
+    } else {
+      // 270° CW (= -90°): displayed width = natural height, displayed height = natural width
+      b = {
+        left: snapshot.cropBounds.bottom,
+        top: snapshot.cropBounds.left,
+        right: snapshot.cropBounds.top,
+        bottom: snapshot.cropBounds.right,
+      };
+    }
+  }
+
   const cropW = Math.round(w * (1 - b.left - b.right));
   const cropH = Math.round(h * (1 - b.top - b.bottom));
   const cropX = Math.round(b.left * w);
   const cropY = Math.round(b.top * h);
-
-  const isQuarterTurn = Math.abs(snapshot.rotation % 180) === 90;
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");

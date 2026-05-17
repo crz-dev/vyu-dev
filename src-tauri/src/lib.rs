@@ -806,11 +806,27 @@ fn export_cropped_media(
     bottom: f64,
     width: u32,
     height: u32,
+    rotation: f64,
 ) -> Result<(), String> {
     let input = PathBuf::from(&path);
     if !input.exists() {
         return Err("Source file does not exist".into());
     }
+
+    let rot = ((rotation % 360.0) + 360.0) % 360.0;
+    let is_quarter_turn = (rot - 90.0).abs() < 1.0 || (rot - 270.0).abs() < 1.0;
+
+    // Crop bounds are set relative to the displayed (rotated) image.
+    // For quarter-turn rotations, swap the bounds to match natural coordinates.
+    let (left, top, right, bottom) = if is_quarter_turn {
+        if (rot - 90.0).abs() < 1.0 {
+            (top, right, bottom, left)
+        } else {
+            (bottom, left, top, right)
+        }
+    } else {
+        (left, top, right, bottom)
+    };
 
     let out_w = ((width as f64) * (1.0 - left - right)).round() as u32;
     let out_h = ((height as f64) * (1.0 - top - bottom)).round() as u32;
@@ -889,6 +905,21 @@ fn export_edited_media(
 
     let mut filters: Vec<String> = Vec::new();
 
+    let rot = ((rotation % 360.0) + 360.0) % 360.0;
+    let is_quarter_turn = (rot - 90.0).abs() < 1.0 || (rot - 270.0).abs() < 1.0;
+
+    // Crop bounds are set relative to the displayed (rotated) image.
+    // For quarter-turn rotations, swap the bounds to match natural coordinates.
+    let (crop_left, crop_top, crop_right, crop_bottom) = if is_quarter_turn {
+        if (rot - 90.0).abs() < 1.0 {
+            (crop_top, crop_right, crop_bottom, crop_left)
+        } else {
+            (crop_bottom, crop_left, crop_top, crop_right)
+        }
+    } else {
+        (crop_left, crop_top, crop_right, crop_bottom)
+    };
+
     let has_crop = crop_left > 0.0 || crop_top > 0.0 || crop_right > 0.0 || crop_bottom > 0.0;
     if has_crop {
         let out_w = ((width as f64) * (1.0 - crop_left - crop_right)).round() as u32;
@@ -900,8 +931,6 @@ fn export_edited_media(
         }
         filters.push(format!("crop={}:{}:{}:{}", out_w, out_h, x, y));
     }
-
-    let rot = ((rotation % 360.0) + 360.0) % 360.0;
     if (rot - 90.0).abs() < 1.0 {
         filters.push("transpose=1".into());
     } else if (rot - 180.0).abs() < 1.0 || (rot + 180.0).abs() < 1.0 {
