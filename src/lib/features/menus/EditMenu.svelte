@@ -684,8 +684,8 @@
           out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
         >
           <button
-            class="edit-menu-btn white sub"
-            class:active={activeColorTool === "brightness"}
+            class="edit-menu-btn grey sub"
+            class:blue={activeColorTool === "brightness"}
             onclick={() => toggleColorTool("brightness")}
           >
             <svg
@@ -706,8 +706,8 @@
             <span>Brightness</span>
           </button>
           <button
-            class="edit-menu-btn white sub"
-            class:active={activeColorTool === "contrast"}
+            class="edit-menu-btn grey sub"
+            class:blue={activeColorTool === "contrast"}
             onclick={() => toggleColorTool("contrast")}
           >
             <svg
@@ -730,8 +730,8 @@
             <span>Contrast</span>
           </button>
           <button
-            class="edit-menu-btn white sub"
-            class:active={activeColorTool === "saturation"}
+            class="edit-menu-btn grey sub"
+            class:blue={activeColorTool === "saturation"}
             onclick={() => toggleColorTool("saturation")}
           >
             <svg
@@ -753,8 +753,8 @@
             <span>Saturation</span>
           </button>
           <button
-            class="edit-menu-btn white sub"
-            class:active={activeColorTool === "hue"}
+            class="edit-menu-btn grey sub"
+            class:blue={activeColorTool === "hue"}
             onclick={() => toggleColorTool("hue")}
           >
             <svg

@@ -127,7 +127,7 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(59, 130, 246, 0.46);
+  background: var(--blue-bg-strong);
   border-left: 1px solid rgba(147, 197, 253, 0.9);
   border-right: 1px solid rgba(147, 197, 253, 0.9);
   pointer-events: none;
@@ -141,9 +141,9 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(245, 197, 24, 0.45);
-  border-left: 1px solid rgba(245, 197, 24, 0.92);
-  border-right: 1px solid rgba(245, 197, 24, 0.92);
+  background: var(--yellow-border);
+  border-left: 1px solid var(--yellow-border-solid);
+  border-right: 1px solid var(--yellow-border-solid);
   pointer-events: none;
   z-index: 2;
   opacity: 1;
@@ -153,7 +153,7 @@ main.thumbnail-bar-open .video-inner video {
     opacity 0.16s ease;
 }
 .ts-drag-range.converting {
-  background: rgba(59, 130, 246, 0.44);
+  background: var(--blue-bg-strong);
   border-left-color: rgba(147, 197, 253, 0.9);
   border-right-color: rgba(147, 197, 253, 0.9);
 }
@@ -165,9 +165,9 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(245, 197, 24, 0.35);
-  border-left: 2px solid rgba(245, 197, 24, 0.9);
-  border-right: 2px solid rgba(245, 197, 24, 0.9);
+  background: var(--yellow-border);
+  border-left: 2px solid var(--yellow-border-solid);
+  border-right: 2px solid var(--yellow-border-solid);
   pointer-events: auto;
   cursor: context-menu;
   z-index: 1;
@@ -178,7 +178,7 @@ main.thumbnail-bar-open .video-inner video {
   display: block;
 }
 .ab-range:hover {
-  background: rgba(245, 197, 24, 0.5);
+  background: var(--yellow-border-strong);
 }
 
 .clip-marker {
@@ -186,7 +186,7 @@ main.thumbnail-bar-open .video-inner video {
   top: 50%;
   width: 10px;
   height: 10px;
-  background: #3b82f6;
+  background: var(--blue);
   transform: translate(-50%, -50%) rotate(45deg);
   cursor: pointer;
   z-index: 3;
@@ -232,7 +232,7 @@ main.thumbnail-bar-open .video-inner video {
   top: 50%;
   width: 10px;
   height: 10px;
-  background: #f5c518;
+  background: var(--yellow);
   transform: translate(-50%, -50%) rotate(45deg);
   cursor: pointer;
   z-index: 2;
@@ -248,11 +248,11 @@ main.thumbnail-bar-open .video-inner video {
   top: 50%;
   width: 10px;
   height: 10px;
-  background: #4ade80;
+  background: var(--green);
   transform: translate(-50%, -50%) rotate(45deg);
   cursor: pointer;
   z-index: 2;
-  border: 1px solid rgba(134, 239, 172, 0.75);
+  border: 1px solid var(--green-border-strong);
   transition: transform 0.15s;
 }
 .resume-marker:hover {
@@ -499,7 +499,7 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(59, 130, 246, 0.46);
+  background: var(--blue-bg-strong);
   border-left: 1px solid rgba(147, 197, 253, 0.9);
   border-right: 1px solid rgba(147, 197, 253, 0.9);
   pointer-events: none;
@@ -513,23 +513,23 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(245, 197, 24, 0.35);
-  border-left: 2px solid rgba(245, 197, 24, 0.9);
-  border-right: 2px solid rgba(245, 197, 24, 0.9);
+  background: var(--yellow-border);
+  border-left: 2px solid var(--yellow-border-solid);
+  border-right: 2px solid var(--yellow-border-solid);
   pointer-events: auto;
   cursor: context-menu;
   z-index: 1;
   transition: background 0.2s ease;
 }
 .fs-ab-range:hover {
-  background: rgba(245, 197, 24, 0.5);
+  background: var(--yellow-border-strong);
 }
 .fs-clip-marker {
   position: absolute;
   top: 50%;
   width: 10px;
   height: 10px;
-  background: #3b82f6;
+  background: var(--blue);
   transform: translate(-50%, -50%) rotate(45deg);
   cursor: pointer;
   z-index: 3;
@@ -691,8 +691,8 @@ main.thumbnail-bar-open .video-inner video {
 }
 .clip-main-btn {
   width: 100%;
-  border: 0.5px solid rgba(96, 165, 250, 0.42);
-  background: rgba(59, 130, 246, 0.24);
+  border: 0.5px solid var(--blue-light-border);
+  background: var(--blue-bg-hover);
   color: #bfdbfe;
   border-radius: 7px;
   font-family: Inter, sans-serif;
@@ -707,7 +707,7 @@ main.thumbnail-bar-open .video-inner video {
   transition: background 0.16s;
 }
 .clip-main-btn:hover {
-  background: rgba(59, 130, 246, 0.35);
+  background: var(--blue-border);
 }
 .clip-main-btn:disabled,
 .clip-toggle-btn:disabled {
@@ -748,19 +748,19 @@ main.thumbnail-bar-open .video-inner video {
   opacity: 1;
 }
 .clip-toggle-btn.red.is-on {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(248, 113, 113, 0.45);
-  color: #fca5a5;
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
+  color: var(--red-soft);
 }
 .clip-toggle-btn.yellow.is-on {
-  background: rgba(245, 197, 24, 0.2);
-  border-color: rgba(245, 197, 24, 0.45);
-  color: #facc15;
+  background: var(--yellow-bg-default);
+  border-color: var(--yellow-border);
+  color: var(--yellow-soft);
 }
 .clip-toggle-btn.green.is-on {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(74, 222, 128, 0.45);
-  color: #86efac;
+  background: var(--green-bg-default);
+  border-color: var(--green-border);
+  color: var(--green-soft);
 }
 .clip-toggle-btn:not(.is-on):hover {
   opacity: 0.74;
@@ -787,7 +787,7 @@ main.thumbnail-bar-open .video-inner video {
   display: block;
   width: 38%;
   height: 100%;
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.35), #60a5fa);
+  background: linear-gradient(90deg, var(--blue-border), var(--blue-light));
   animation: clipJobAnim 1s ease-in-out infinite;
 }
 .convert-progress {
@@ -801,7 +801,7 @@ main.thumbnail-bar-open .video-inner video {
   display: block;
   width: 40%;
   height: 100%;
-  background: linear-gradient(90deg, rgba(34, 197, 94, 0.35), #4ade80);
+  background: linear-gradient(90deg, var(--green-border), var(--green));
   animation: clipJobAnim 1s ease-in-out infinite;
 }
 .convert-success-row {
@@ -844,20 +844,20 @@ main.thumbnail-bar-open .video-inner video {
   flex-shrink: 0;
 }
 .convert-success-btn.yellow {
-  background: rgba(245, 197, 24, 0.14);
-  border-color: rgba(245, 197, 24, 0.35);
-  color: #facc15;
+  background: var(--yellow-bg-faint);
+  border-color: var(--yellow-border);
+  color: var(--yellow-soft);
 }
 .convert-success-btn.yellow:hover {
-  background: rgba(245, 197, 24, 0.24);
+  background: var(--yellow-bg-hover);
 }
 .convert-success-btn.green {
-  background: rgba(34, 197, 94, 0.14);
-  border-color: rgba(74, 222, 128, 0.35);
-  color: #86efac;
+  background: var(--green-bg-faint);
+  border-color: var(--green-border-subtle);
+  color: var(--green-soft);
 }
 .convert-success-btn.green:hover {
-  background: rgba(34, 197, 94, 0.24);
+  background: var(--green-bg-hover);
 }
 
 .slideshow-anchor {
@@ -885,7 +885,7 @@ main.thumbnail-bar-open .video-inner video {
   color: var(--text-muted);
 }
 .slideshow-btn.active {
-  color: #60a5fa;
+  color: var(--blue-light);
 }
 
 .slideshow-actions {
@@ -921,31 +921,31 @@ main.thumbnail-bar-open .video-inner video {
 
 .slideshow-action-btn.start,
 .slideshow-action-btn.play {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(74, 222, 128, 0.45);
-  color: #86efac;
+  background: var(--green-bg-default);
+  border-color: var(--green-border);
+  color: var(--green-soft);
 }
 .slideshow-action-btn.start:hover,
 .slideshow-action-btn.play:hover {
-  background: rgba(34, 197, 94, 0.3);
+  background: var(--green-bg-active);
 }
 
 .slideshow-action-btn.pause {
-  background: rgba(245, 197, 24, 0.2);
-  border-color: rgba(245, 197, 24, 0.45);
-  color: #facc15;
+  background: var(--yellow-bg-default);
+  border-color: var(--yellow-border);
+  color: var(--yellow-soft);
 }
 .slideshow-action-btn.pause:hover {
-  background: rgba(245, 197, 24, 0.3);
+  background: var(--yellow-bg-active);
 }
 
 .slideshow-action-btn.stop {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(248, 113, 113, 0.45);
-  color: #fca5a5;
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
+  color: var(--red-soft);
 }
 .slideshow-action-btn.stop:hover {
-  background: rgba(239, 68, 68, 0.3);
+  background: var(--red-bg-active);
 }
 
 .transition-fade {
@@ -987,7 +987,7 @@ main.thumbnail-bar-open .video-inner video {
   border-bottom: 0.5px solid var(--bg-elevated);
 }
 .slideshow-header-bar svg {
-  color: #3b82f6;
+  color: var(--blue);
   flex-shrink: 0;
 }
 .slideshow-header-bar .delete-title {
@@ -1065,8 +1065,8 @@ main.thumbnail-bar-open .video-inner video {
 }
 .slideshow-toggle-btn.active {
   opacity: 1;
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(96, 165, 250, 0.45);
+  background: var(--blue-bg-default);
+  border-color: var(--blue-light-border);
   color: #bfdbfe;
 }
 
@@ -1571,37 +1571,37 @@ main.thumbnail-bar-open .video-inner video {
   transition: background 0.13s;
 }
 .ts-drop-yellow {
-  background: rgba(245, 197, 24, 0.15);
-  border-color: rgba(245, 197, 24, 0.35);
-  color: #f5c518;
+  background: var(--yellow-bg);
+  border-color: var(--yellow-border);
+  color: var(--yellow);
 }
 .ts-drop-yellow:hover {
-  background: rgba(245, 197, 24, 0.25);
+  background: var(--yellow-bg-hover);
 }
 .ts-drop-blue {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(96, 165, 250, 0.35);
-  color: #60a5fa;
+  background: var(--blue-bg);
+  border-color: var(--blue-light-border);
+  color: var(--blue-light);
 }
 .ts-drop-blue:hover {
-  background: rgba(59, 130, 246, 0.26);
+  background: var(--blue-bg-hover);
 }
 .ts-drop-red {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(248, 113, 113, 0.35);
-  color: #f87171;
+  background: var(--red-bg);
+  border-color: var(--red-border-subtle);
+  color: var(--red);
 }
 .ts-drop-clip-mid {
-  border-left: 0.5px solid rgba(96, 165, 250, 0.2);
-  border-right: 0.5px solid rgba(96, 165, 250, 0.2);
+  border-left: 0.5px solid var(--blue-light-border-subtle);
+  border-right: 0.5px solid var(--blue-light-border-subtle);
 }
 .ts-drop-red:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.26);
+  background: var(--red-bg-hover);
 }
 .ts-drop-red-confirm {
-  background: rgba(239, 68, 68, 0.28);
-  border-color: rgba(248, 113, 113, 0.6);
-  color: #fca5a5;
+  background: var(--red-bg-active);
+  border-color: var(--red-border-strong);
+  color: var(--red-soft);
   font-weight: 600;
   width: 100%;
   display: flex;
@@ -1615,7 +1615,7 @@ main.thumbnail-bar-open .video-inner video {
   transition: background 0.13s;
 }
 .ts-drop-red-confirm:hover {
-  background: rgba(239, 68, 68, 0.4);
+  background: var(--red-bg-strong);
 }
 .add-ts-btn.ts-menu-open {
   color: var(--text-primary);
@@ -1725,40 +1725,40 @@ main.thumbnail-bar-open .video-inner video {
   opacity: 0.74;
 }
 .edit-menu-btn.red {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(248, 113, 113, 0.45);
-  color: #fca5a5;
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
+  color: var(--red-soft);
   opacity: 1;
 }
 .edit-menu-btn.red:hover {
-  background: rgba(239, 68, 68, 0.3);
+  background: var(--red-bg-active);
 }
 .edit-menu-btn.blue {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(96, 165, 250, 0.45);
+  background: var(--blue-bg-default);
+  border-color: var(--blue-light-border);
   color: #bfdbfe;
   opacity: 1;
 }
 .edit-menu-btn.blue:hover {
-  background: rgba(59, 130, 246, 0.3);
+  background: var(--blue-bg-active);
 }
 .edit-menu-btn.yellow {
-  background: rgba(245, 197, 24, 0.2);
-  border-color: rgba(245, 197, 24, 0.45);
-  color: #facc15;
+  background: var(--yellow-bg-default);
+  border-color: var(--yellow-border);
+  color: var(--yellow-soft);
   opacity: 1;
 }
 .edit-menu-btn.yellow:hover {
-  background: rgba(245, 197, 24, 0.3);
+  background: var(--yellow-bg-active);
 }
 .edit-menu-btn.green {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(74, 222, 128, 0.45);
-  color: #86efac;
+  background: var(--green-bg-default);
+  border-color: var(--green-border);
+  color: var(--green-soft);
   opacity: 1;
 }
 .edit-menu-btn.green:hover {
-  background: rgba(34, 197, 94, 0.3);
+  background: var(--green-bg-active);
 }
 .edit-menu-btn.grey {
   background: rgba(255, 255, 255, 0.08);
@@ -1817,36 +1817,36 @@ main.thumbnail-bar-open .video-inner video {
 }
 
 .crop-btn.reset {
-  background: rgba(239, 68, 68, 0.2);
-  border: 0.5px solid rgba(248, 113, 113, 0.45);
-  color: #fca5a5;
+  background: var(--red-bg-default);
+  border: 0.5px solid var(--red-border);
+  color: var(--red-soft);
   opacity: 1;
 }
 
 .crop-btn.reset:hover {
-  background: rgba(239, 68, 68, 0.3);
+  background: var(--red-bg-active);
 }
 
 .crop-btn.apply {
-  background: rgba(34, 197, 94, 0.2);
-  border: 0.5px solid rgba(74, 222, 128, 0.45);
-  color: #86efac;
+  background: var(--green-bg-default);
+  border: 0.5px solid var(--green-border);
+  color: var(--green-soft);
   opacity: 1;
 }
 
 .crop-btn.apply:hover {
-  background: rgba(34, 197, 94, 0.3);
+  background: var(--green-bg-active);
 }
 
 .edit-menu-btn.red.active {
-  background: rgba(239, 68, 68, 0.35);
-  border-color: rgba(248, 113, 113, 0.65);
-  color: #fca5a5;
+  background: var(--red-border);
+  border-color: var(--red-border-strong);
+  color: var(--red-soft);
 }
 
 .edit-menu-btn.white.active {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(96, 165, 250, 0.55);
+  background: var(--blue-bg-hover);
+  border-color: var(--blue-light-border-strong);
   color: #bfdbfe;
 }
 
@@ -1928,47 +1928,47 @@ main.thumbnail-bar-open .video-inner video {
 }
 
 .edit-action-btn.blue {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(96, 165, 250, 0.45);
+  background: var(--blue-bg-default);
+  border-color: var(--blue-light-border);
   color: #bfdbfe;
   opacity: 1;
 }
 
 .edit-action-btn.blue:hover {
-  background: rgba(59, 130, 246, 0.3);
+  background: var(--blue-bg-active);
 }
 
 .edit-action-btn.red {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(248, 113, 113, 0.45);
-  color: #fca5a5;
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
+  color: var(--red-soft);
   opacity: 1;
 }
 
 .edit-action-btn.red:hover {
-  background: rgba(239, 68, 68, 0.3);
+  background: var(--red-bg-active);
 }
 
 .edit-action-btn.green {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(74, 222, 128, 0.45);
-  color: #86efac;
+  background: var(--green-bg-default);
+  border-color: var(--green-border);
+  color: var(--green-soft);
   opacity: 1;
 }
 
 .edit-action-btn.green:hover {
-  background: rgba(34, 197, 94, 0.3);
+  background: var(--green-bg-active);
 }
 
 .edit-action-btn.yellow {
-  background: rgba(245, 197, 24, 0.2);
-  border-color: rgba(245, 197, 24, 0.45);
-  color: #facc15;
+  background: var(--yellow-bg-default);
+  border-color: var(--yellow-border);
+  color: var(--yellow-soft);
   opacity: 1;
 }
 
 .edit-action-btn.yellow:hover {
-  background: rgba(245, 197, 24, 0.3);
+  background: var(--yellow-bg-active);
 }
 
 .edit-action-btn.inactive {
