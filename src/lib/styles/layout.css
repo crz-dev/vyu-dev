@@ -297,6 +297,7 @@ main.thumbnail-bar-open.fullscreen .viewer {
   transition: color 0.2s;
   height: 36px;
   width: 36px;
+  margin-top: -3px; /* adjust this value to move up/down */
 }
 .fs-btn:hover {
   color: var(--text-muted);

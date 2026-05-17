@@ -880,6 +880,7 @@ main.thumbnail-bar-open .video-inner video {
   transition: color 0.2s;
   line-height: 0;
   height: 36px;
+  margin-top: -3px; /* adjust this value to move up/down */
 }
 .slideshow-btn:hover {
   color: var(--text-muted);
@@ -1483,6 +1484,7 @@ main.thumbnail-bar-open .video-inner video {
 .app-dropdown-item {
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 6px 10px;
   border-radius: 6px;
   border: none;

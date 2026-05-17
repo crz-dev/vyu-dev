@@ -2084,6 +2084,7 @@
                 {tsDragRange}
                 {abLoopRegion}
                 {resumePoint}
+                durationSecs={rawDurationSecs}
                 clipMarkerJustDragged={clips.clipMarkerJustDragged}
                 {tsMarkerDragJustEnded}
                 tsEditMenuVisible={tsEditMenu.visible}
@@ -2416,6 +2417,7 @@
               {tsDragRange}
               {abLoopRegion}
               {resumePoint}
+              durationSecs={rawDurationSecs}
               clipMarkerJustDragged={clips.clipMarkerJustDragged}
               {tsMarkerDragJustEnded}
               tsEditMenuVisible={tsEditMenu.visible}

@@ -17,6 +17,7 @@
     tsDragRange,
     abLoopRegion,
     resumePoint,
+    durationSecs = 0,
     clipMarkerJustDragged,
     tsMarkerDragJustEnded,
     tsEditMenuVisible,
@@ -50,6 +51,7 @@
     tsDragRange: VideoMarkerDragRange;
     abLoopRegion: { start: number; end: number } | null;
     resumePoint: number | null;
+    durationSecs: number;
     clipMarkerJustDragged: boolean;
     tsMarkerDragJustEnded: boolean;
     tsEditMenuVisible: boolean;
@@ -87,6 +89,9 @@
   const clipPairPrefix = $derived(fullscreen ? "fspair" : "pair");
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
   const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
+  const showResumeMarker = $derived(
+    resumePoint !== null && durationSecs > 0 && resumePoint / durationSecs >= 0.25,
+  );
   let showPlayheadTooltip = $state(false);
   let playheadHovered = $state(false);
   let isScrubbing = $state(false);
@@ -190,7 +195,7 @@
       style={getDragRangeStyle()}
     ></div>
   {/if}
-  {#if resumePoint !== null}
+  {#if showResumeMarker}
     <div
       class="resume-marker"
       style="left: {getTimestampPct(resumePoint)}%"
