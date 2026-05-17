@@ -18,20 +18,43 @@
   >
     <div class="delete-dialog about-dialog" role="dialog" aria-modal="true">
       <div class="settings-header-bar">
-        <p class="delete-title">About vyu</p>
-        <p class="delete-subtitle">Fast. Minimal. Yours.</p>
+        <p class="delete-title">
+          <svg
+            class="header-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="12" cy="12" r="10" /><line
+              x1="12"
+              y1="16"
+              x2="12"
+              y2="12"
+            /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
+          >
+          About Vyu
+        </p>
+        <p class="delete-subtitle">Version: v{__APP_VERSION__}</p>
       </div>
 
       <div class="about-content">
         <div class="about-brand">
           <div class="about-logo-wrap">
+            <div class="about-logo-border"></div>
             <img class="about-logo" src="/app-icon.png" alt="vyu" />
           </div>
-          <span class="about-version">v{__APP_VERSION__}</span>
         </div>
 
+        <h2 class="about-title">
+          View <span class="about-title-underline">Your</span> Universe
+        </h2>
+
         <p class="about-desc">
-          A modern media viewer that prioritizes speed, privacy, and a seamless
+          A modern media viewer that prioritizes ease, privacy, and a seamless
           viewing experience
         </p>
 

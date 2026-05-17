@@ -325,7 +325,10 @@
       aria-modal="true"
     >
       <div class="settings-header-bar">
-        <p class="delete-title">Accessibility</p>
+        <p class="delete-title">
+          <svg class="header-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M12 6v6"/><path d="M8 12h8"/><path d="M7 22l5-10 5 10"/><path d="M3 16l4-4"/><path d="M21 16l-4-4"/></svg>
+          Accessibility
+        </p>
         <p class="delete-subtitle">Customize how vyu works for you</p>
       </div>
 

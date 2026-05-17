@@ -87,7 +87,10 @@
   >
     <div class="delete-dialog feedback-dialog" role="dialog" aria-modal="true">
       <div class="settings-header-bar">
-        <p class="delete-title">Feedback</p>
+        <p class="delete-title">
+          <svg class="header-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Feedback
+        </p>
         <p class="delete-subtitle">Help us make vyu better for everyone</p>
       </div>
 

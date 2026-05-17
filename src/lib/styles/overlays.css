@@ -1209,6 +1209,16 @@
 
 .settings-header-bar .delete-title {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-header-bar .header-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .settings-header-bar .delete-subtitle {
@@ -2064,6 +2074,11 @@
   flex-shrink: 0;
   overflow-x: auto;
   justify-content: center;
+  scrollbar-width: none;
+}
+
+.help-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .help-tab-btn {
@@ -2257,9 +2272,52 @@
 }
 
 .about-logo-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.about-logo-border {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg); /* adjust size/position here */
+  border-radius: 8px;
+  overflow: hidden;
+
+  -webkit-mask:
+    linear-gradient(var(--text-primary) 0 0) content-box,
+    linear-gradient(var(--text-primary) 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(var(--text-primary) 0 0) content-box,
+    linear-gradient(var(--text-primary) 0 0);
+  mask-composite: exclude;
+  padding: 2px;
+}
+
+.about-logo-border::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300%;
+  height: 300%;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 60%,
+    rgba(255, 255, 255, 0.8) 80%,
+    rgba(255, 255, 255, 0.95) 85%,
+    rgba(255, 255, 255, 0.8) 90%,
+    transparent 100%
+  );
+  animation: borderSweep 5s linear infinite;
 }
 
 .about-logo {
@@ -2268,6 +2326,8 @@
   height: 48px;
   object-fit: contain;
   border-radius: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .about-logo-diamond {
@@ -2326,15 +2386,23 @@
   border-radius: 0px;
 }
 
-.about-version {
-  font-size: 12px;
-  color: var(--text-hint);
+.about-title {
+  margin: 0 0 0 0;
+  font-size: 24px;
+  color: var(--text-primary);
   font-family: var(--font-family);
-  font-weight: 500;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.about-title-underline {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .about-desc {
-  margin: 0;
+  margin: -4px 0 0 0;
   font-size: 12px;
   color: var(--text-muted);
   font-family: var(--font-family);
