@@ -95,6 +95,9 @@ export function createPlaybackUI(
   let volumeSliderValue = $state(1);
   let speedSliderValue = $state(0.5);
 
+  let volumeDragging = $state(false);
+  let speedDragging = $state(false);
+
   function speedToSliderVal(speed: number): number {
     if (speed <= 1) return 0.5 * ((speed - 0.1) / 0.9);
     return 0.5 + 0.5 * ((speed - 1) / 2);
@@ -110,6 +113,7 @@ export function createPlaybackUI(
   }
 
   function handleVolumeAreaLeave() {
+    if (volumeDragging) return;
     volumeTooltipVisible = false;
     volumeHovered = false;
   }
@@ -131,6 +135,7 @@ export function createPlaybackUI(
   function startVolumeDrag(e: MouseEvent) {
     if (e.button !== 0) return;
     e.preventDefault();
+    volumeDragging = true;
     const container = e.currentTarget as HTMLElement;
     const containerRect = container.getBoundingClientRect();
     const diamonds = container.querySelectorAll(".volume-diamond");
@@ -159,6 +164,7 @@ export function createPlaybackUI(
     function onMouseUp() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      volumeDragging = false;
       volumeTooltipVisible = false;
     }
 
@@ -183,6 +189,7 @@ export function createPlaybackUI(
   }
 
   function handleSpeedAreaLeave() {
+    if (speedDragging) return;
     speedTooltipVisible = false;
     speedHovered = false;
   }
@@ -206,6 +213,7 @@ export function createPlaybackUI(
   function startSpeedDrag(e: MouseEvent) {
     if (e.button !== 0) return;
     e.preventDefault();
+    speedDragging = true;
     const container = e.currentTarget as HTMLElement;
     const containerRect = container.getBoundingClientRect();
     const diamonds = container.querySelectorAll(".speed-diamond");
@@ -237,6 +245,7 @@ export function createPlaybackUI(
     function onMouseUp() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      speedDragging = false;
       speedTooltipVisible = false;
     }
 
@@ -316,6 +325,7 @@ export function createPlaybackUI(
   function startVolumeSliderDrag(e: PointerEvent, track: HTMLDivElement) {
     e.preventDefault();
     track.setPointerCapture(e.pointerId);
+    volumeDragging = true;
 
     volumeTooltipVisible = true;
 
@@ -336,6 +346,7 @@ export function createPlaybackUI(
       track.releasePointerCapture(ev.pointerId);
       track.removeEventListener("pointermove", onMove);
       track.removeEventListener("pointerup", onUp);
+      volumeDragging = false;
       volumeTooltipVisible = false;
     }
 
@@ -346,6 +357,7 @@ export function createPlaybackUI(
   function startSpeedSliderDrag(e: PointerEvent, track: HTMLDivElement) {
     e.preventDefault();
     track.setPointerCapture(e.pointerId);
+    speedDragging = true;
 
     speedTooltipVisible = true;
 
@@ -366,6 +378,7 @@ export function createPlaybackUI(
       track.releasePointerCapture(ev.pointerId);
       track.removeEventListener("pointermove", onMove);
       track.removeEventListener("pointerup", onUp);
+      speedDragging = false;
       speedTooltipVisible = false;
     }
 
@@ -412,6 +425,12 @@ export function createPlaybackUI(
     },
     get speedSliderValue() {
       return speedSliderValue;
+    },
+    get volumeDragging() {
+      return volumeDragging;
+    },
+    get speedDragging() {
+      return speedDragging;
     },
     showVolumeOverlay,
     handleVolumeAreaLeave,

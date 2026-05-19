@@ -2168,6 +2168,8 @@
                 hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
                 showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
                 hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
+                volumeDragging={playbackUI.volumeDragging}
+                speedDragging={playbackUI.speedDragging}
               />
             </div>
           </div>
@@ -2284,6 +2286,8 @@
                 hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
                 showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
                 hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
+                volumeDragging={playbackUI.volumeDragging}
+                speedDragging={playbackUI.speedDragging}
               />
             </div>
           </div>
@@ -2499,6 +2503,8 @@
               hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
               showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
               hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
+              volumeDragging={playbackUI.volumeDragging}
+              speedDragging={playbackUI.speedDragging}
             />
           </div>
         {:else}

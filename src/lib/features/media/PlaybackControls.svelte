@@ -53,6 +53,8 @@
     hideVolumeSliderTooltip,
     showSpeedSliderTooltip,
     hideSpeedSliderTooltip,
+    volumeDragging,
+    speedDragging,
   }: {
     fullscreen?: boolean;
     isGifVideo: boolean;
@@ -105,6 +107,8 @@
     hideVolumeSliderTooltip: () => void;
     showSpeedSliderTooltip: (trackEl: HTMLDivElement | null) => void;
     hideSpeedSliderTooltip: () => void;
+    volumeDragging: boolean;
+    speedDragging: boolean;
   } = $props();
   let tsMenuOpen = $state(false);
   let tsDeleteConfirm = $state(false);
@@ -388,7 +392,7 @@
           {/if}
         {/key}
       </button>
-      {#if volumeSliderMode && volumeHovered}
+      {#if volumeSliderMode && (volumeHovered || volumeDragging)}
         <div
           class="playback-slider-track"
           class:muted={muted || volume === 0}
@@ -436,7 +440,7 @@
           ></div>
 
         </div>
-      {:else if volumeHovered}
+      {:else if volumeHovered || volumeDragging}
         <div
           class="volume-diamonds"
           onmousedown={startVolumeDrag}
@@ -535,7 +539,7 @@
           </svg>
         {/if}
       </button>
-      {#if speedSliderMode && speedHovered}
+      {#if speedSliderMode && (speedHovered || speedDragging)}
         <div
           class="playback-slider-track"
           transition:fly={{ x: 8, duration: 150, opacity: 0 }}
@@ -581,7 +585,7 @@
           ></div>
 
         </div>
-      {:else if speedHovered}
+      {:else if speedHovered || speedDragging}
         <div
           class="speed-diamonds"
           onmousedown={startSpeedDrag}
@@ -1062,7 +1066,7 @@
           {/if}
         {/key}
       </button>
-      {#if volumeSliderMode && volumeHovered}
+      {#if volumeSliderMode && (volumeHovered || volumeDragging)}
         <div
           class="playback-slider-track"
           class:muted={muted || volume === 0}
@@ -1110,7 +1114,7 @@
           ></div>
 
         </div>
-      {:else if volumeHovered}
+      {:else if volumeHovered || volumeDragging}
         <div
           class="volume-diamonds"
           onmousedown={startVolumeDrag}
@@ -1202,7 +1206,7 @@
           </svg>
         {/if}
       </button>
-      {#if speedSliderMode && speedHovered}
+      {#if speedSliderMode && (speedHovered || speedDragging)}
         <div
           class="playback-slider-track"
           transition:fly={{ x: 8, duration: 150, opacity: 0 }}
@@ -1248,7 +1252,7 @@
           ></div>
 
         </div>
-      {:else if speedHovered}
+      {:else if speedHovered || speedDragging}
         <div
           class="speed-diamonds"
           onmousedown={startSpeedDrag}

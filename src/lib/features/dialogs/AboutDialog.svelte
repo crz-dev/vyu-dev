@@ -100,7 +100,7 @@
             <div class="about-format-row">
               <span class="about-format-badge">Other</span>
               <span class="about-format-items"
-                >PDF · SVG · ICO · PSD · RAW · Opus · Damaged Media</span
+                >PSD · PDF · SVG · ICO · RAW · Opus · Damaged Media</span
               >
             </div>
           </div>
