@@ -290,7 +290,7 @@ export function createPlaybackUI(
   function showVolumeSliderTooltip(trackEl: HTMLDivElement | null) {
     if (!trackEl) return;
     const rect = trackEl.getBoundingClientRect();
-    volumeTooltipX = rect.left + volumeSliderValue * rect.width;
+    volumeTooltipX = rect.left + volumeSliderValue * rect.width + 7;
     volumeTooltipY = rect.top;
     volumeTooltipVisible = true;
   }
@@ -300,7 +300,7 @@ export function createPlaybackUI(
   function showSpeedSliderTooltip(trackEl: HTMLDivElement | null) {
     if (!trackEl) return;
     const rect = trackEl.getBoundingClientRect();
-    speedTooltipX = rect.left + speedSliderValue * rect.width;
+    speedTooltipX = rect.left + speedSliderValue * rect.width + 7;
     speedTooltipY = rect.top;
     speedTooltipVisible = true;
   }
@@ -323,7 +323,7 @@ export function createPlaybackUI(
       const rect = track.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       handleVolumeSliderChange(pct);
-      volumeTooltipX = rect.left + volumeSliderValue * rect.width;
+      volumeTooltipX = rect.left + volumeSliderValue * rect.width + 7;
       volumeTooltipY = rect.top;
     }
 
@@ -353,7 +353,7 @@ export function createPlaybackUI(
       const rect = track.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       handleSpeedSliderChange(pct);
-      speedTooltipX = rect.left + speedSliderValue * rect.width;
+      speedTooltipX = rect.left + speedSliderValue * rect.width + 7;
       speedTooltipY = rect.top;
     }
 
