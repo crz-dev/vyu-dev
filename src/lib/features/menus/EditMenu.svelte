@@ -43,6 +43,17 @@
   let cropRowOpen = $state(false);
   let activeCropTool: "16-9" | "9-16" | "1-1" | "custom" | null = $state(null);
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+  let flashTarget = $state<string | null>(null);
+  let flashTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+
+  function flashButton(id: string) {
+    if (flashTimeout) clearTimeout(flashTimeout);
+    flashTarget = id;
+    flashTimeout = setTimeout(() => {
+      flashTarget = null;
+      flashTimeout = null;
+    }, 450);
+  }
 
   $effect(() => {
     if (!visible) {
@@ -169,6 +180,7 @@
   }
 
   function toggleRotateTool(tool: "90-right" | "90-left" | "180" | "custom") {
+    flashButton(tool);
     if (tool === "custom") {
       if (activeRotateTool === "custom") {
         activeRotateTool = null;
@@ -226,6 +238,7 @@
   }
 
   function toggleFlip(direction: "horizontal" | "vertical") {
+    flashButton(direction);
     editing.pushUndo();
     if (direction === "horizontal") {
       editing.flip();
@@ -685,7 +698,7 @@
         >
           <button
             class="edit-menu-btn grey sub"
-            class:blue={activeColorTool === "brightness"}
+            class:active={activeColorTool === "brightness"}
             onclick={() => toggleColorTool("brightness")}
           >
             <svg
@@ -707,7 +720,7 @@
           </button>
           <button
             class="edit-menu-btn grey sub"
-            class:blue={activeColorTool === "contrast"}
+            class:active={activeColorTool === "contrast"}
             onclick={() => toggleColorTool("contrast")}
           >
             <svg
@@ -731,7 +744,7 @@
           </button>
           <button
             class="edit-menu-btn grey sub"
-            class:blue={activeColorTool === "saturation"}
+            class:active={activeColorTool === "saturation"}
             onclick={() => toggleColorTool("saturation")}
           >
             <svg
@@ -754,7 +767,7 @@
           </button>
           <button
             class="edit-menu-btn grey sub"
-            class:blue={activeColorTool === "hue"}
+            class:active={activeColorTool === "hue"}
             onclick={() => toggleColorTool("hue")}
           >
             <svg
@@ -860,6 +873,7 @@
           <button
             class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "90-right"}
+            class:flash={flashTarget === "90-right"}
             onclick={() => toggleRotateTool("90-right")}
           >
             <svg
@@ -880,6 +894,7 @@
           <button
             class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "90-left"}
+            class:flash={flashTarget === "90-left"}
             onclick={() => toggleRotateTool("90-left")}
           >
             <svg
@@ -900,6 +915,7 @@
           <button
             class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "180"}
+            class:flash={flashTarget === "180"}
             onclick={() => toggleRotateTool("180")}
           >
             <svg
@@ -922,6 +938,7 @@
           <button
             class="edit-menu-btn yellow sub"
             class:active={activeRotateTool === "custom"}
+            class:flash={flashTarget === "custom"}
             onclick={() => toggleRotateTool("custom")}
           >
             <svg
@@ -1024,6 +1041,7 @@
         >
           <button
             class="edit-menu-btn green sub"
+            class:flash={flashTarget === "horizontal"}
             onclick={() => toggleFlip("horizontal")}
           >
             <svg
@@ -1044,6 +1062,7 @@
           </button>
           <button
             class="edit-menu-btn green sub"
+            class:flash={flashTarget === "vertical"}
             onclick={() => toggleFlip("vertical")}
           >
             <svg

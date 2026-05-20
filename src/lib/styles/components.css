@@ -1852,6 +1852,19 @@ main.thumbnail-bar-open .video-inner video {
   color: #bfdbfe;
 }
 
+@keyframes btnFlash {
+  0% {
+    filter: brightness(1.35);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+.edit-menu-btn.flash {
+  animation: btnFlash 0.45s ease-out;
+}
+
 .edit-menu-btn.sub-open {
   opacity: 0.35;
   cursor: pointer;
