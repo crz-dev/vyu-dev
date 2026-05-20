@@ -99,12 +99,13 @@
 <div class="topbar" onmousedown={startDrag} role="toolbar" tabindex="-1">
   <div class="app-dropdown-anchor">
     <button
-      class="app-name app-dropdown-toggle"
+      class="app-dropdown-toggle tooltip-below"
       class:active={dropdownVisible}
       onclick={onToggleDropdown}
       aria-label="Open app menu"
+      data-tooltip="Vyu"
     >
-      vyu
+      <img src="/app-icon.png" alt="vyu" class="app-icon" />
     </button>
     <AppDropdownMenu
       visible={dropdownVisible}

@@ -21,12 +21,6 @@ main {
   cursor: grab;
   user-select: none;
 }
-.app-name {
-  font-size: 16px;
-  color: var(--text-muted);
-  font-family: var(--font-family);
-  line-height: 0.1;
-}
 .divider {
   font-size: 14px;
   color: var(--text-dim);

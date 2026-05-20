@@ -1424,15 +1424,24 @@ main.thumbnail-bar-open .video-inner video {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0 4px;
-  margin-left: -4px;
+  padding: 0 2px;
+  margin-left: -6px;
+  margin-right: 0px;
   border-radius: 4px;
   transition:
     background 0.15s,
     color 0.15s;
-  height: 28px;
+  height: 30px;
+  width: 30px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+}
+
+.app-dropdown-toggle .app-icon {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
 }
 
 .app-dropdown-toggle:hover {

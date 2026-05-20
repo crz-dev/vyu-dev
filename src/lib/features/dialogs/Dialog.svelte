@@ -1123,7 +1123,11 @@
     role="presentation"
     onmousedown={(e) => e.stopPropagation()}
   >
-    <div class="delete-dialog corruption-dialog" role="dialog" aria-modal="true">
+    <div
+      class="delete-dialog corruption-dialog"
+      role="dialog"
+      aria-modal="true"
+    >
       <div class="delete-header-bar">
         <svg
           width="18"
@@ -1157,7 +1161,9 @@
         <p class="corruption-error">{corruptionFixError}</p>
       {/if}
       <div class="delete-actions">
-        <button class="delete-cancel" onclick={dismissCorruption}> Dismiss </button>
+        <button class="delete-cancel" onclick={dismissCorruption}>
+          Dismiss
+        </button>
         <button
           class="delete-cancel"
           onclick={fixCopy}
@@ -1238,7 +1244,8 @@
             Type
           </span>
           <span class="props-v"
-            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
+            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() ||
+              "unknown"})</span
           >
         </div>
         <div
@@ -1720,7 +1727,7 @@
               d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
             />
           </svg>
-          Copy path
+          Copy file path
         </button>
         <button class="props-btn" onclick={propsOpenFolder}>
           <svg
@@ -1750,7 +1757,7 @@
             <rect x="8" y="8" width="13" height="13" rx="2" />
             <path d="M4 16V5a1 1 0 011-1h11" />
           </svg>
-          Copy all properties
+          Copy properties
         </button>
       </div>
       <div class="delete-actions">

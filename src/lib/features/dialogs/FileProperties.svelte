@@ -121,7 +121,8 @@
             Type
           </span>
           <span class="props-v"
-            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() || "unknown"})</span
+            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() ||
+              "unknown"})</span
           >
         </div>
         <div
