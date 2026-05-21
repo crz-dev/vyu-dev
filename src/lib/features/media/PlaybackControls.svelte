@@ -129,6 +129,16 @@
     tsDeleteConfirm = true;
   }
 
+  function tsDropMenu(node: HTMLElement) {
+    return {
+      duration: 380,
+      css: (t: number) => {
+        const opacity = t < 0.55 ? t / 0.55 : 1;
+        return `transform: translateX(-50%) scaleY(${t}); opacity: ${opacity};`;
+      },
+    };
+  }
+
   function handleVolumeRightClick(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -644,8 +654,11 @@
         </svg>
       </button>
       {#if tsMenuOpen}
-        <div class="ts-drop-menu" role="menu">
-          <div class="ts-drop-header">
+        <div class="ts-drop-menu" role="menu" transition:tsDropMenu>
+          <div
+            class="ts-drop-header"
+            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms"
+          >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <polygon
                 points="12,2 22,12 12,22 2,12"
@@ -670,6 +683,7 @@
             {#if !tsDeleteConfirm}
               <button
                 class="ts-drop-item ts-drop-red"
+                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
                 onclick={handleDeleteMarkersClick}
                 role="menuitem"
               >
@@ -704,6 +718,7 @@
             {:else}
               <button
                 class="ts-drop-item ts-drop-red-confirm"
+                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
                 onclick={() => {
                   deleteAllMarkers();
   
@@ -716,6 +731,7 @@
           {/if}
           <button
             class="ts-drop-item ts-drop-yellow"
+            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
             onclick={() => {
               addTimestamp();
 
@@ -739,6 +755,7 @@
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-green"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
               onclick={() => {
                 addLoopStart();
 
@@ -768,6 +785,7 @@
             </button>
             <button
               class="ts-drop-half ts-drop-green"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
               onclick={() => {
                 addLoopEnd();
 
@@ -799,6 +817,7 @@
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
               onclick={() => {
                 addClipStart();
 
@@ -828,6 +847,7 @@
             </button>
             <button
               class="ts-drop-half ts-drop-blue"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
               onclick={() => {
                 addClipEnd();
 
@@ -1353,8 +1373,11 @@
         </svg>
       </button>
       {#if tsMenuOpen}
-        <div class="ts-drop-menu" role="menu">
-          <div class="ts-drop-header">
+        <div class="ts-drop-menu" role="menu" transition:tsDropMenu>
+          <div
+            class="ts-drop-header"
+            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms"
+          >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <polygon
                 points="12,2 22,12 12,22 2,12"
@@ -1379,6 +1402,7 @@
             {#if !tsDeleteConfirm}
               <button
                 class="ts-drop-item ts-drop-red"
+                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
                 onclick={handleDeleteMarkersClick}
                 role="menuitem"
               >
@@ -1413,6 +1437,7 @@
             {:else}
               <button
                 class="ts-drop-item ts-drop-red-confirm"
+                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
                 onclick={() => {
                   deleteAllMarkers();
   
@@ -1425,6 +1450,7 @@
           {/if}
           <button
             class="ts-drop-item ts-drop-yellow"
+            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
             onclick={() => {
               addTimestamp();
 
@@ -1448,6 +1474,7 @@
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-green"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
               onclick={() => {
                 addLoopStart();
 
@@ -1477,6 +1504,7 @@
             </button>
             <button
               class="ts-drop-half ts-drop-green"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
               onclick={() => {
                 addLoopEnd();
 
@@ -1508,6 +1536,7 @@
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
               onclick={() => {
                 addClipStart();
 
@@ -1537,6 +1566,7 @@
             </button>
             <button
               class="ts-drop-half ts-drop-blue"
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
               onclick={() => {
                 addClipEnd();
 
