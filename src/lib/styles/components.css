@@ -1746,6 +1746,7 @@ main.thumbnail-bar-open .video-inner video {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 4px 9px 6px;
   width: 100%;
@@ -1762,6 +1763,8 @@ main.thumbnail-bar-open .video-inner video {
   font-weight: 600;
   color: var(--text-muted);
   font-family: var(--font-family);
+  text-rendering: geometricPrecision;
+  letter-spacing: 0.2px;
 }
 .ts-drop-separator {
   width: 100%;

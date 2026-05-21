@@ -125,19 +125,8 @@
     onTsMenuChange?.(tsMenuOpen);
   });
 
-  function closeTsMenu() {
-    tsMenuOpen = false;
-    tsDeleteConfirm = false;
-  }
-
   function handleDeleteMarkersClick() {
     tsDeleteConfirm = true;
-  }
-
-  function handleWindowMouseDown(e: MouseEvent) {
-    if (tsMenuOpen && !(e.target as HTMLElement).closest(".ts-menu-anchor")) {
-      closeTsMenu();
-    }
   }
 
   function handleVolumeRightClick(e: MouseEvent) {
@@ -657,7 +646,7 @@
       {#if tsMenuOpen}
         <div class="ts-drop-menu" role="menu">
           <div class="ts-drop-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <polygon
                 points="12,2 22,12 12,22 2,12"
                 stroke="currentColor"
@@ -667,6 +656,15 @@
               />
             </svg>
             <span>Markers</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+              <polygon
+                points="12,2 22,12 12,22 2,12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </div>
           {#if hasAnyMarkers}
             {#if !tsDeleteConfirm}
@@ -708,7 +706,7 @@
                 class="ts-drop-item ts-drop-red-confirm"
                 onclick={() => {
                   deleteAllMarkers();
-                  closeTsMenu();
+  
                 }}
                 role="menuitem"
               >
@@ -716,13 +714,34 @@
               </button>
             {/if}
           {/if}
-          <div class="ts-drop-separator"></div>
+          <button
+            class="ts-drop-item ts-drop-yellow"
+            onclick={() => {
+              addTimestamp();
+
+            }}
+            role="menuitem"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+            </svg>
+            Add Timestamp
+          </button>
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-green"
               onclick={() => {
                 addLoopStart();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -751,7 +770,7 @@
               class="ts-drop-half ts-drop-green"
               onclick={() => {
                 addLoopEnd();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -777,13 +796,12 @@
               Loop end
             </button>
           </div>
-          <div class="ts-drop-separator"></div>
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
               onclick={() => {
                 addClipStart();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -812,7 +830,7 @@
               class="ts-drop-half ts-drop-blue"
               onclick={() => {
                 addClipEnd();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -838,29 +856,6 @@
               Clip end
             </button>
           </div>
-          <div class="ts-drop-separator"></div>
-          <button
-            class="ts-drop-item ts-drop-yellow"
-            onclick={() => {
-              addTimestamp();
-              closeTsMenu();
-            }}
-            role="menuitem"
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-            </svg>
-            Add Timestamp
-          </button>
         </div>
       {/if}
     </div>
@@ -1360,7 +1355,7 @@
       {#if tsMenuOpen}
         <div class="ts-drop-menu" role="menu">
           <div class="ts-drop-header">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <polygon
                 points="12,2 22,12 12,22 2,12"
                 stroke="currentColor"
@@ -1370,6 +1365,15 @@
               />
             </svg>
             <span>Markers</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+              <polygon
+                points="12,2 22,12 12,22 2,12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </div>
           {#if hasAnyMarkers}
             {#if !tsDeleteConfirm}
@@ -1411,7 +1415,7 @@
                 class="ts-drop-item ts-drop-red-confirm"
                 onclick={() => {
                   deleteAllMarkers();
-                  closeTsMenu();
+  
                 }}
                 role="menuitem"
               >
@@ -1419,13 +1423,34 @@
               </button>
             {/if}
           {/if}
-          <div class="ts-drop-separator"></div>
+          <button
+            class="ts-drop-item ts-drop-yellow"
+            onclick={() => {
+              addTimestamp();
+
+            }}
+            role="menuitem"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+            </svg>
+            Add Timestamp
+          </button>
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-green"
               onclick={() => {
                 addLoopStart();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -1454,7 +1479,7 @@
               class="ts-drop-half ts-drop-green"
               onclick={() => {
                 addLoopEnd();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -1480,13 +1505,12 @@
               Loop end
             </button>
           </div>
-          <div class="ts-drop-separator"></div>
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
               onclick={() => {
                 addClipStart();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -1515,7 +1539,7 @@
               class="ts-drop-half ts-drop-blue"
               onclick={() => {
                 addClipEnd();
-                closeTsMenu();
+
               }}
               role="menuitem"
             >
@@ -1541,29 +1565,6 @@
               Clip end
             </button>
           </div>
-          <div class="ts-drop-separator"></div>
-          <button
-            class="ts-drop-item ts-drop-yellow"
-            onclick={() => {
-              addTimestamp();
-              closeTsMenu();
-            }}
-            role="menuitem"
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-            </svg>
-            Add Timestamp
-          </button>
         </div>
       {/if}
     </div>
@@ -1638,4 +1639,4 @@
   {/if}
 {/if}
 
-<svelte:window onmousedown={handleWindowMouseDown} />
+<svelte:window />
