@@ -190,7 +190,13 @@
   });
   let tsMarkerDragJustEnded = $state(false);
   let tsDragFadeTimer: ReturnType<typeof setTimeout> | undefined;
-  let abLoopRegion = $state<{ start: number; end: number } | null>(null);
+  let loopStart = $state<number | null>(null);
+  let loopEnd = $state<number | null>(null);
+  const abLoopRegion = $derived(
+    loopStart !== null && loopEnd !== null
+      ? { start: loopStart, end: loopEnd }
+      : null,
+  );
   let frameCopyToast = $state<{
     visible: boolean;
     message: string;
@@ -721,9 +727,9 @@
 
       if (targetTs && targetTs.id !== id && duration >= 0.1) {
         // Dragged to another timestamp — create AB loop
-        const loopStart = Math.min(startTime, targetTs.time);
-        const loopEnd = Math.max(startTime, targetTs.time);
-        setABLoop(loopStart, loopEnd);
+        const abStart = Math.min(startTime, targetTs.time);
+        const abEnd = Math.max(startTime, targetTs.time);
+        setABLoop(abStart, abEnd);
         tsMarkerDragJustEnded = true;
         setTimeout(() => {
           tsMarkerDragJustEnded = false;
@@ -751,13 +757,47 @@
 
   // ── AB Loop ────────────────────────────────────────────
   function setABLoop(start: number, end: number) {
-    abLoopRegion = { start, end };
+    loopStart = start;
+    loopEnd = end;
     const mediaEl = getMediaEl();
     if (mediaEl) mediaEl.loop = true;
   }
 
   function clearABLoop() {
-    abLoopRegion = null;
+    loopStart = null;
+    loopEnd = null;
+    const mediaEl = getMediaEl();
+    if (mediaEl) mediaEl.loop = loopMode === "loop";
+  }
+
+  // ── Loop markers (A/B) ─────────────────────────────────
+  function addLoopStart() {
+    const mediaEl = isVideo ? videoEl : audioEl;
+    if (!mediaEl || rawDurationSecs <= 0) return;
+    const time = Math.max(0, Math.min(mediaEl.currentTime, rawDurationSecs));
+    loopStart = time;
+    // If end exists but is before new start, clear it
+    if (loopEnd !== null && loopEnd < time) {
+      loopEnd = null;
+    }
+    const mEl = getMediaEl();
+    if (mEl && loopStart !== null && loopEnd !== null) {
+      mEl.loop = true;
+    }
+  }
+
+  function addLoopEnd() {
+    const mediaEl = isVideo ? videoEl : audioEl;
+    if (!mediaEl || rawDurationSecs <= 0 || loopStart === null) return;
+    const time = Math.max(0, Math.min(mediaEl.currentTime, rawDurationSecs));
+    if (time <= loopStart) return;
+    loopEnd = time;
+    mediaEl.loop = true;
+  }
+
+  function clearLoopMarkers() {
+    loopStart = null;
+    loopEnd = null;
     const mediaEl = getMediaEl();
     if (mediaEl) mediaEl.loop = loopMode === "loop";
   }
@@ -1001,7 +1041,8 @@
       clearTimestampDragRange();
       tsTooltip = { ...tsTooltip, visible: false };
       tsEditMenu = { ...tsEditMenu, visible: false };
-      abLoopRegion = null;
+      loopStart = null;
+      loopEnd = null;
       resetZoom();
       viewer.state.baseZoomLevel = 100;
       if (newPath) {
@@ -2083,6 +2124,8 @@
                 {timestamps}
                 {tsDragRange}
                 {abLoopRegion}
+                loopStart={loopStart}
+                loopEnd={loopEnd}
                 {resumePoint}
                 durationSecs={rawDurationSecs}
                 clipMarkerJustDragged={clips.clipMarkerJustDragged}
@@ -2137,13 +2180,20 @@
                 {addTimestamp}
                 addClipStart={() => addClipBoundary("start")}
                 addClipEnd={() => addClipBoundary("end")}
-                hasMarkers={timestamps.length > 0 ||
+                addLoopStart={addLoopStart}
+                addLoopEnd={addLoopEnd}
+                hasLoopStart={loopStart !== null}
+                hasLoopEnd={loopEnd !== null}
+                hasAnyMarkers={timestamps.length > 0 ||
                   clips.clipBoundaries.length > 0 ||
-                  resumePoint !== null}
+                  resumePoint !== null ||
+                  loopStart !== null ||
+                  loopEnd !== null}
                 deleteAllMarkers={() => {
                   clearAllTimestamps();
                   clearAllSegments();
                   removeResumePoint();
+                  clearLoopMarkers();
                 }}
                 {toggleTimer}
                 {currentTimeDisplay}
@@ -2260,7 +2310,11 @@
                 addTimestamp={() => {}}
                 addClipStart={() => {}}
                 addClipEnd={() => {}}
-                hasMarkers={false}
+                addLoopStart={() => {}}
+                addLoopEnd={() => {}}
+                hasLoopStart={false}
+                hasLoopEnd={false}
+                hasAnyMarkers={false}
                 deleteAllMarkers={() => {}}
                 {toggleTimer}
                 {currentTimeDisplay}
@@ -2417,6 +2471,8 @@
               {timestamps}
               {tsDragRange}
               {abLoopRegion}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
               {resumePoint}
               durationSecs={rawDurationSecs}
               clipMarkerJustDragged={clips.clipMarkerJustDragged}
@@ -2471,13 +2527,20 @@
               {addTimestamp}
               addClipStart={() => addClipBoundary("start")}
               addClipEnd={() => addClipBoundary("end")}
-              hasMarkers={timestamps.length > 0 ||
+              addLoopStart={addLoopStart}
+              addLoopEnd={addLoopEnd}
+              hasLoopStart={loopStart !== null}
+              hasLoopEnd={loopEnd !== null}
+              hasAnyMarkers={timestamps.length > 0 ||
                 clips.clipBoundaries.length > 0 ||
-                resumePoint !== null}
+                resumePoint !== null ||
+                loopStart !== null ||
+                loopEnd !== null}
               deleteAllMarkers={() => {
                 clearAllTimestamps();
                 clearAllSegments();
                 removeResumePoint();
+                clearLoopMarkers();
               }}
               {toggleTimer}
               {currentTimeDisplay}

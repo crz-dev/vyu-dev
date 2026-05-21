@@ -30,7 +30,11 @@
     addTimestamp,
     addClipStart,
     addClipEnd,
-    hasMarkers,
+    addLoopStart,
+    addLoopEnd,
+    hasLoopStart,
+    hasLoopEnd,
+    hasAnyMarkers,
     deleteAllMarkers,
     toggleTimer,
     currentTimeDisplay,
@@ -83,7 +87,11 @@
     addTimestamp: () => void;
     addClipStart: () => void;
     addClipEnd: () => void;
-    hasMarkers: boolean;
+    addLoopStart: () => void;
+    addLoopEnd: () => void;
+    hasLoopStart: boolean;
+    hasLoopEnd: boolean;
+    hasAnyMarkers: boolean;
     deleteAllMarkers: () => void;
     toggleTimer: () => void;
     currentTimeDisplay: () => string;
@@ -120,6 +128,10 @@
   function closeTsMenu() {
     tsMenuOpen = false;
     tsDeleteConfirm = false;
+  }
+
+  function handleDeleteMarkersClick() {
+    tsDeleteConfirm = true;
   }
 
   function handleWindowMouseDown(e: MouseEvent) {
@@ -644,11 +656,23 @@
       </button>
       {#if tsMenuOpen}
         <div class="ts-drop-menu" role="menu">
-          {#if hasMarkers}
+          <div class="ts-drop-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <polygon
+                points="12,2 22,12 12,22 2,12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span>Markers</span>
+          </div>
+          {#if hasAnyMarkers}
             {#if !tsDeleteConfirm}
               <button
                 class="ts-drop-item ts-drop-red"
-                onclick={() => (tsDeleteConfirm = true)}
+                onclick={handleDeleteMarkersClick}
                 role="menuitem"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
@@ -692,6 +716,68 @@
               </button>
             {/if}
           {/if}
+          <div class="ts-drop-separator"></div>
+          <div class="ts-drop-split">
+            <button
+              class="ts-drop-half ts-drop-green"
+              onclick={() => {
+                addLoopStart();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <text
+                  x="12"
+                  y="12"
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  font-size="11"
+                  font-weight="700"
+                  fill="currentColor"
+                  font-family="var(--font-family)"
+                >A</text>
+              </svg>
+              Loop start
+            </button>
+            <button
+              class="ts-drop-half ts-drop-green"
+              onclick={() => {
+                addLoopEnd();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <text
+                  x="12"
+                  y="12"
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  font-size="11"
+                  font-weight="700"
+                  fill="currentColor"
+                  font-family="var(--font-family)"
+                >B</text>
+              </svg>
+              Loop end
+            </button>
+          </div>
+          <div class="ts-drop-separator"></div>
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
@@ -752,6 +838,7 @@
               Clip end
             </button>
           </div>
+          <div class="ts-drop-separator"></div>
           <button
             class="ts-drop-item ts-drop-yellow"
             onclick={() => {
@@ -761,8 +848,8 @@
             role="menuitem"
           >
             <svg
-              width="14"
-              height="14"
+              width="11"
+              height="11"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -1272,11 +1359,23 @@
       </button>
       {#if tsMenuOpen}
         <div class="ts-drop-menu" role="menu">
-          {#if hasMarkers}
+          <div class="ts-drop-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <polygon
+                points="12,2 22,12 12,22 2,12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span>Markers</span>
+          </div>
+          {#if hasAnyMarkers}
             {#if !tsDeleteConfirm}
               <button
                 class="ts-drop-item ts-drop-red"
-                onclick={() => (tsDeleteConfirm = true)}
+                onclick={handleDeleteMarkersClick}
                 role="menuitem"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
@@ -1320,6 +1419,68 @@
               </button>
             {/if}
           {/if}
+          <div class="ts-drop-separator"></div>
+          <div class="ts-drop-split">
+            <button
+              class="ts-drop-half ts-drop-green"
+              onclick={() => {
+                addLoopStart();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <text
+                  x="12"
+                  y="12"
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  font-size="11"
+                  font-weight="700"
+                  fill="currentColor"
+                  font-family="var(--font-family)"
+                >A</text>
+              </svg>
+              Loop start
+            </button>
+            <button
+              class="ts-drop-half ts-drop-green"
+              onclick={() => {
+                addLoopEnd();
+                closeTsMenu();
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <text
+                  x="12"
+                  y="12"
+                  text-anchor="middle"
+                  dominant-baseline="central"
+                  font-size="11"
+                  font-weight="700"
+                  fill="currentColor"
+                  font-family="var(--font-family)"
+                >B</text>
+              </svg>
+              Loop end
+            </button>
+          </div>
+          <div class="ts-drop-separator"></div>
           <div class="ts-drop-split">
             <button
               class="ts-drop-half ts-drop-blue"
@@ -1380,6 +1541,7 @@
               Clip end
             </button>
           </div>
+          <div class="ts-drop-separator"></div>
           <button
             class="ts-drop-item ts-drop-yellow"
             onclick={() => {
@@ -1389,8 +1551,8 @@
             role="menuitem"
           >
             <svg
-              width="14"
-              height="14"
+              width="11"
+              height="11"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

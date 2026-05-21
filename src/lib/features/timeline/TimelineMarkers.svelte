@@ -16,6 +16,8 @@
     timestamps,
     tsDragRange,
     abLoopRegion,
+    loopStart,
+    loopEnd,
     resumePoint,
     durationSecs = 0,
     clipMarkerJustDragged,
@@ -50,6 +52,8 @@
     timestamps: VideoMarker[];
     tsDragRange: VideoMarkerDragRange;
     abLoopRegion: { start: number; end: number } | null;
+    loopStart: number | null;
+    loopEnd: number | null;
     resumePoint: number | null;
     durationSecs: number;
     clipMarkerJustDragged: boolean;
@@ -85,6 +89,9 @@
   const abRangeClass = $derived(fullscreen ? "fs-ab-range" : "ab-range");
   const clipMarkerClass = $derived(
     fullscreen ? "fs-clip-marker" : "clip-marker",
+  );
+  const loopMarkerClass = $derived(
+    fullscreen ? "fs-loop-marker" : "loop-marker",
   );
   const clipPairPrefix = $derived(fullscreen ? "fspair" : "pair");
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
@@ -187,6 +194,59 @@
       data-tooltip="AB Loop — right-click to clear"
     ></div>
   {/if}
+  {#if loopStart !== null}
+    <div
+      class="{loopMarkerClass} start-marker"
+      style="left: {getTimestampPct(loopStart)}%"
+      role="button"
+      tabindex="0"
+      oncontextmenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        loopStart = null;
+        loopEnd = null;
+        clearABLoop();
+      }}
+      onclick={(e) => {
+        e.stopPropagation();
+        seekToTimestamp(loopStart!);
+      }}
+      onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          seekToTimestamp(loopStart!);
+        }
+      }}
+      aria-label="Loop start A at {formatTime(loopStart!)}"
+    ></div>
+  {/if}
+  {#if loopEnd !== null}
+    <div
+      class="{loopMarkerClass} end-marker"
+      style="left: {getTimestampPct(loopEnd)}%"
+      role="button"
+      tabindex="0"
+      oncontextmenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        loopEnd = null;
+        clearABLoop();
+      }}
+      onclick={(e) => {
+        e.stopPropagation();
+        seekToTimestamp(loopEnd!);
+      }}
+      onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          seekToTimestamp(loopEnd!);
+        }
+      }}
+      aria-label="Loop end B at {formatTime(loopEnd!)}"
+    ></div>
+  {/if}
   {#if tsDragRange.visible}
     <div
       class="ts-drag-range"
@@ -198,7 +258,7 @@
   {#if showResumeMarker}
     <div
       class="resume-marker"
-      style="left: {getTimestampPct(resumePoint)}%"
+      style="left: {getTimestampPct(resumePoint!)}%"
       role="button"
       tabindex="0"
       onclick={(e) => {
@@ -220,7 +280,7 @@
           seekToResumePoint();
         }
       }}
-      aria-label="Resume at {formatTime(resumePoint)}"
+      aria-label="Resume at {formatTime(resumePoint!)}"
     ></div>
   {/if}
   {#each clipBoundaries as marker (marker.id)}
