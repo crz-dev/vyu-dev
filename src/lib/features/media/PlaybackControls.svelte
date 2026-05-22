@@ -988,6 +988,7 @@
             style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
             onclick={() => {
               addTimestamp();
+              tsDeleteConfirm = false;
             }}
             role="menuitem"
           >
@@ -1865,6 +1866,7 @@
             style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
             onclick={() => {
               addTimestamp();
+              tsDeleteConfirm = false;
             }}
             role="menuitem"
           >

@@ -726,6 +726,10 @@
   color: var(--green);
   border-color: var(--green);
 }
+.ts-tooltip.grey {
+  color: rgba(180, 180, 180, 0.9);
+  border-color: rgba(180, 180, 180, 0.6);
+}
 .ts-tooltip.white {
   color: var(--text-primary);
   border-color: var(--text-primary);

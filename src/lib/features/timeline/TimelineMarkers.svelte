@@ -3,7 +3,6 @@
     ClipBoundary,
     ClipPair,
     VideoMarker,
-    VideoMarkerDragRange,
   } from "$lib/shared/types";
 
   let {
@@ -14,25 +13,23 @@
     clipPairs,
     clipBoundaries,
     timestamps,
-    tsDragRange,
     abLoopRegion,
     loopStart,
     loopEnd,
     resumePoint,
     durationSecs = 0,
     clipMarkerJustDragged,
-    tsMarkerDragJustEnded,
     tsEditMenuVisible,
     startScrubbing,
     getTimestampPct,
-    getDragRangeStyle,
     startClipMarkerDrag,
     removeClipBoundary,
     showClipBoundaryTooltip,
     hideTsTooltip,
     seekToTimestamp,
     openSegmentEditor,
-    startTimestampRangeDrag,
+    startTimestampDrag,
+    timestampDragJustEnded,
     removeTimestamp,
     showTimestampTooltip,
     openTimestampEditor,
@@ -42,6 +39,9 @@
     removeResumePoint,
     clearABLoop,
     formatTime,
+    startLoopMarkerDrag,
+    loopMarkerJustDragged,
+    showLoopMarkerTooltip,
   }: {
     fullscreen?: boolean;
     progress: number;
@@ -50,25 +50,23 @@
     clipPairs: ClipPair[];
     clipBoundaries: ClipBoundary[];
     timestamps: VideoMarker[];
-    tsDragRange: VideoMarkerDragRange;
     abLoopRegion: { start: number; end: number } | null;
     loopStart: number | null;
     loopEnd: number | null;
     resumePoint: number | null;
     durationSecs: number;
     clipMarkerJustDragged: boolean;
-    tsMarkerDragJustEnded: boolean;
     tsEditMenuVisible: boolean;
     startScrubbing: (e: MouseEvent) => void;
     getTimestampPct: (time: number) => number;
-    getDragRangeStyle: () => string;
     startClipMarkerDrag: (e: MouseEvent, id: string) => void;
     removeClipBoundary: (id: string) => void;
     showClipBoundaryTooltip: (e: MouseEvent, marker: ClipBoundary) => void;
     hideTsTooltip: () => void;
     seekToTimestamp: (time: number) => void;
     openSegmentEditor: (e: MouseEvent, id: string) => void;
-    startTimestampRangeDrag: (e: MouseEvent, id: string) => void;
+    startTimestampDrag: (e: MouseEvent, id: string) => void;
+    timestampDragJustEnded: boolean;
     removeTimestamp: (id: string) => void;
     showTimestampTooltip: (e: MouseEvent, ts: VideoMarker) => void;
     openTimestampEditor: (e: MouseEvent, id: string) => void;
@@ -78,6 +76,9 @@
     removeResumePoint: () => void;
     clearABLoop: () => void;
     formatTime: (time: number) => string;
+    startLoopMarkerDrag: (e: MouseEvent, which: "start" | "end") => void;
+    loopMarkerJustDragged: boolean;
+    showLoopMarkerTooltip: (e: MouseEvent, which: "start" | "end") => void;
   } = $props();
 
   const barClass = $derived(fullscreen ? "fs-progress" : "progress-bar");
@@ -182,6 +183,8 @@
   {/each}
   {#if abLoopRegion}
     <div
+      role="region"
+      aria-label="AB Loop region"
       class="{abRangeClass} tooltip-above"
       style="left: {getTimestampPct(abLoopRegion.start)}%; width: {getTimestampPct(
         abLoopRegion.end,
@@ -200,6 +203,10 @@
       style="left: {getTimestampPct(loopStart)}%"
       role="button"
       tabindex="0"
+      onmousedown={(e) => {
+        startLoopMarkerDrag(e, "start");
+        showLoopMarkerTooltip(e, "start");
+      }}
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -209,8 +216,11 @@
       }}
       onclick={(e) => {
         e.stopPropagation();
+        if (loopMarkerJustDragged) return;
         seekToTimestamp(loopStart!);
       }}
+      onmouseenter={(e) => showLoopMarkerTooltip(e, "start")}
+      onmouseleave={hideTsTooltip}
       onkeydown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -227,6 +237,10 @@
       style="left: {getTimestampPct(loopEnd)}%"
       role="button"
       tabindex="0"
+      onmousedown={(e) => {
+        startLoopMarkerDrag(e, "end");
+        showLoopMarkerTooltip(e, "end");
+      }}
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -235,8 +249,11 @@
       }}
       onclick={(e) => {
         e.stopPropagation();
+        if (loopMarkerJustDragged) return;
         seekToTimestamp(loopEnd!);
       }}
+      onmouseenter={(e) => showLoopMarkerTooltip(e, "end")}
+      onmouseleave={hideTsTooltip}
       onkeydown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -245,14 +262,6 @@
         }
       }}
       aria-label="Loop end B at {formatTime(loopEnd!)}"
-    ></div>
-  {/if}
-  {#if tsDragRange.visible}
-    <div
-      class="ts-drag-range"
-      class:converting={tsDragRange.phase === "converting"}
-      class:fading={tsDragRange.phase === "fading"}
-      style={getDragRangeStyle()}
     ></div>
   {/if}
   {#if showResumeMarker}
@@ -323,10 +332,10 @@
       style="left: {getTimestampPct(ts.time)}%"
       role="button"
       tabindex="0"
-      onmousedown={(e) => startTimestampRangeDrag(e, ts.id)}
+      onmousedown={(e) => startTimestampDrag(e, ts.id)}
       onclick={(e) => {
         e.stopPropagation();
-        if (tsMarkerDragJustEnded) return;
+        if (timestampDragJustEnded) return;
         seekToTimestamp(ts.time);
       }}
       ondblclick={(e) => openTimestampEditor(e, ts.id)}

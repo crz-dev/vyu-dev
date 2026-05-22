@@ -42,6 +42,18 @@ export function createTimeline() {
     set(next);
   }
 
+  function updateTimestampTime(
+    id: string,
+    time: number,
+    timestamps: VideoMarker[],
+    set: (v: VideoMarker[]) => void,
+  ) {
+    const next = timestamps
+      .map((ts) => (ts.id === id ? { ...ts, time } : ts))
+      .sort((a, b) => a.time - b.time);
+    set(next);
+  }
+
   function getTimestampById(
     id: string,
     timestamps: VideoMarker[],
@@ -89,6 +101,7 @@ export function createTimeline() {
     removeTimestamp,
     clearTimestamps,
     updateTimestampTitle,
+    updateTimestampTime,
     getTimestampById,
     getTimestampPct,
     findTouchTarget,

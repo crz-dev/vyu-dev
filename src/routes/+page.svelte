@@ -23,7 +23,6 @@
     VideoMarker,
     ClipBoundary,
     MediaProperties,
-    VideoMarkerDragRange,
   } from "$lib/shared/types";
   import {
     saveVolume,
@@ -172,7 +171,7 @@
     y: number;
     title?: string;
     timeLabel: string;
-    tone?: "yellow" | "blue" | "green" | "red";
+    tone?: "yellow" | "blue" | "green" | "red" | "grey";
     targetId?: string;
   }>({ visible: false, x: 0, y: 0, title: "", timeLabel: "", tone: "yellow" });
   let tsEditMenu = $state<{
@@ -182,14 +181,6 @@
     targetId: string;
     targetType: "timestamp" | "segment";
   }>({ visible: false, x: 0, y: 0, targetId: "", targetType: "timestamp" });
-  let tsDragRange = $state<VideoMarkerDragRange>({
-    visible: false,
-    start: 0,
-    end: 0,
-    phase: "idle",
-  });
-  let tsMarkerDragJustEnded = $state(false);
-  let tsDragFadeTimer: ReturnType<typeof setTimeout> | undefined;
   let loopStart = $state<number | null>(null);
   let loopEnd = $state<number | null>(null);
   const abLoopRegion = $derived(
@@ -370,7 +361,9 @@
   function updateProgress() {
     if (isScrubbing) return;
     const now = performance.now();
-    if (now - lastTimeupdate < 100) return;
+    const targetUpdates = 60;
+    const throttleMs = Math.max(16, Math.min(100, (rawDurationSecs * 1000) / targetUpdates));
+    if (now - lastTimeupdate < throttleMs) return;
     lastTimeupdate = now;
     playback.updateProgress((data) => {
       rawCurrentSecs = data.rawCurrentSecs;
@@ -658,6 +651,19 @@
       targetId: marker.id,
     };
   }
+  function showLoopMarkerTooltip(e: MouseEvent, which: "start" | "end") {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const time = which === "start" ? loopStart : loopEnd;
+    tsTooltip = {
+      visible: true,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 6,
+      title: which === "start" ? "Loop A" : "Loop B",
+      timeLabel: formatTime(time ?? 0),
+      tone: "green",
+      targetId: which,
+    };
+  }
   function clearAllSegments() {
     clips.clearBoundaries();
   }
@@ -665,18 +671,36 @@
     tsTooltip = { ...tsTooltip, visible: false };
   }
 
-  // ── Timestamp drag ─────────────────────────────────────
-  function clearTimestampDragRange() {
-    tsDragRange = { ...tsDragRange, visible: false, phase: "fading" };
-    clearTimeout(tsDragFadeTimer);
-    tsDragFadeTimer = setTimeout(() => {
-      tsDragRange = { ...tsDragRange, visible: false, phase: "idle" };
-    }, 600);
+  /** Update the tsTooltip position and time to track a marker during drag, floating above the progress bar. */
+  function updateTooltipDuringDrag(
+    time: number,
+    tone: "yellow" | "blue" | "green" | "grey",
+    title: string | undefined,
+    targetId: string | undefined,
+  ) {
+    const bar =
+      document.querySelector(".fs-progress") ??
+      document.querySelector(".progress-bar");
+    if (!bar) return;
+    const barRect = bar.getBoundingClientRect();
+    const pct = rawDurationSecs > 0 ? time / rawDurationSecs : 0;
+    tsTooltip = {
+      visible: true,
+      x: barRect.left + pct * barRect.width,
+      y: barRect.top - 12,
+      title,
+      timeLabel: formatTime(time),
+      tone,
+      targetId,
+    };
   }
+
+  // ── Timestamp drag to reposition ────────────────────────
+  let timestampDragJustEnded = $state(false);
   function getTimestampPct(time: number): number {
     return timeline.getTimestampPct(time, rawDurationSecs);
   }
-  function startTimestampRangeDrag(e: MouseEvent, id: string) {
+  function startTimestampDrag(e: MouseEvent, id: string) {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
@@ -684,23 +708,17 @@
     const mediaEl = isVideo ? videoEl : audioEl;
     if (!mediaEl || rawDurationSecs <= 0) return;
 
-    // Find the starting timestamp
     const startTs = timeline.getTimestampById(id, timestamps);
     if (!startTs) return;
+    const dragTitle = startTs.title;
 
-    // Find the progress bar element to calculate positions
     const bar =
       document.querySelector(".fs-progress") ??
       document.querySelector(".progress-bar");
     if (!bar) return;
 
-    const startTime = startTs.time;
-    tsDragRange = {
-      visible: true,
-      start: startTime,
-      end: startTime,
-      phase: "dragging",
-    };
+    // Show tooltip immediately at drag start
+    updateTooltipDuringDrag(startTs.time, "yellow", dragTitle, id);
 
     function timeFromClientX(clientX: number): number {
       const rect = bar!.getBoundingClientRect();
@@ -711,54 +729,29 @@
       return ratio * rawDurationSecs;
     }
 
+    let moved = false;
     function onMouseMove(ev: MouseEvent) {
-      const time = timeFromClientX(ev.clientX);
-      // Ensure start is always the earlier time, end is the later
-      const s = Math.min(startTime, time);
-      const en = Math.max(startTime, time);
-      tsDragRange = { ...tsDragRange, start: s, end: en };
+      moved = true;
+      const time = Math.max(0, Math.min(timeFromClientX(ev.clientX), rawDurationSecs));
+      timeline.updateTimestampTime(id, time, timestamps, (v) => (timestamps = v));
+      updateTooltipDuringDrag(time, "yellow", dragTitle, id);
     }
 
-    function onMouseUp(ev: MouseEvent) {
+    function onMouseUp() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-
-      const endTime = timeFromClientX(ev.clientX);
-      const s = Math.min(startTime, endTime);
-      const en = Math.max(startTime, endTime);
-      const duration = en - s;
-
-      // Check if released near another timestamp (different from the start)
-      const targetTs = timeline.findTouchTarget(timestamps, endTime);
-
-      if (targetTs && targetTs.id !== id && duration >= 0.1) {
-        // Dragged to another timestamp — create AB loop
-        const abStart = Math.min(startTime, targetTs.time);
-        const abEnd = Math.max(startTime, targetTs.time);
-        setABLoop(abStart, abEnd);
-        tsMarkerDragJustEnded = true;
+      if (moved) {
+        timestampDragJustEnded = true;
         setTimeout(() => {
-          tsMarkerDragJustEnded = false;
-        }, 50);
-      } else if (duration >= 0.1) {
-        // Dragged a range — create AB loop from drag range
-        setABLoop(s, en);
-        tsMarkerDragJustEnded = true;
-        setTimeout(() => {
-          tsMarkerDragJustEnded = false;
+          timestampDragJustEnded = false;
         }, 50);
       }
-      clearTimestampDragRange();
+      saveTimestamps();
+      hideTsTooltip();
     }
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
-  }
-  function getDragRangeStyle(): string {
-    if (!tsDragRange.visible) return "";
-    const startPct = getTimestampPct(tsDragRange.start);
-    const endPct = getTimestampPct(tsDragRange.end);
-    return `left: ${startPct}%; width: ${endPct - startPct}%`;
   }
 
   // ── AB Loop ────────────────────────────────────────────
@@ -808,6 +801,69 @@
     if (mediaEl) mediaEl.loop = loopMode === "loop";
   }
 
+  let loopMarkerJustDragged = $state(false);
+  function startLoopMarkerDrag(e: MouseEvent, which: "start" | "end") {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const mediaEl = isVideo ? videoEl : audioEl;
+    if (!mediaEl || rawDurationSecs <= 0) return;
+    if (which === "start" && loopStart === null) return;
+    if (which === "end" && loopEnd === null) return;
+
+    const bar =
+      document.querySelector(".fs-progress") ??
+      document.querySelector(".progress-bar");
+    if (!bar) return;
+
+    function timeFromClientX(clientX: number): number {
+      const rect = bar!.getBoundingClientRect();
+      const ratio = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
+      return ratio * rawDurationSecs;
+    }
+
+    let moved = false;
+    function onMouseMove(ev: MouseEvent) {
+      moved = true;
+      const time = timeFromClientX(ev.clientX);
+      if (which === "start") {
+        loopStart = Math.max(0, Math.min(time, rawDurationSecs));
+      } else {
+        loopEnd = Math.max(0, Math.min(time, rawDurationSecs));
+      }
+      updateTooltipDuringDrag(
+        time,
+        "green",
+        which === "start" ? "Loop A" : "Loop B",
+        which,
+      );
+    }
+
+    function onMouseUp() {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      if (moved) {
+        loopMarkerJustDragged = true;
+        setTimeout(() => {
+          loopMarkerJustDragged = false;
+        }, 50);
+      }
+      // Normalize the loop if A crossed B
+      if (loopStart !== null && loopEnd !== null) {
+        const mediaEl = getMediaEl();
+        if (mediaEl) mediaEl.loop = true;
+      }
+      hideTsTooltip();
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }
+
   // ── Resume point ───────────────────────────────────────
   function seekToTimestamp(time: number) {
     const mediaEl = isVideo ? videoEl : audioEl;
@@ -835,7 +891,7 @@
       y: rect.top - 6,
       title: "Resume",
       timeLabel: formatTime(resumePoint ?? 0),
-      tone: "green",
+      tone: "grey",
     };
   }
   function hideResumeTooltip() {
@@ -853,11 +909,15 @@
 
     const boundary = clips.getBoundaryById(id);
     if (!boundary) return;
+    const dragTitle = boundary.title;
 
     const bar =
       document.querySelector(".fs-progress") ??
       document.querySelector(".progress-bar");
     if (!bar) return;
+
+    // Show tooltip immediately at drag start
+    updateTooltipDuringDrag(boundary.time, "blue", dragTitle, id);
 
     function timeFromClientX(clientX: number): number {
       const rect = bar!.getBoundingClientRect();
@@ -868,18 +928,24 @@
       return ratio * rawDurationSecs;
     }
 
+    let moved = false;
     function onMouseMove(ev: MouseEvent) {
+      moved = true;
       const time = timeFromClientX(ev.clientX);
       clips.setBoundaryTime(id, Math.max(0, Math.min(time, rawDurationSecs)));
+      updateTooltipDuringDrag(time, "blue", dragTitle, id);
     }
 
     function onMouseUp() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
-      clips.clipMarkerJustDragged = true;
-      setTimeout(() => {
-        clips.clipMarkerJustDragged = false;
-      }, 50);
+      if (moved) {
+        clips.clipMarkerJustDragged = true;
+        setTimeout(() => {
+          clips.clipMarkerJustDragged = false;
+        }, 50);
+      }
+      hideTsTooltip();
     }
 
     window.addEventListener("mousemove", onMouseMove);
@@ -1043,8 +1109,6 @@
     () => muted,
     () => loopMode === "loop",
     (newPath?: string) => {
-      clearTimeout(tsDragFadeTimer);
-      clearTimestampDragRange();
       tsTooltip = { ...tsTooltip, visible: false };
       tsEditMenu = { ...tsEditMenu, visible: false };
       loopStart = null;
@@ -2128,25 +2192,23 @@
                 clipPairs={clips.clipPairs}
                 clipBoundaries={clips.clipBoundaries}
                 {timestamps}
-                {tsDragRange}
                 {abLoopRegion}
                 loopStart={loopStart}
                 loopEnd={loopEnd}
                 {resumePoint}
                 durationSecs={rawDurationSecs}
                 clipMarkerJustDragged={clips.clipMarkerJustDragged}
-                {tsMarkerDragJustEnded}
                 tsEditMenuVisible={tsEditMenu.visible}
                 {startScrubbing}
                 {getTimestampPct}
-                {getDragRangeStyle}
                 {startClipMarkerDrag}
                 {removeClipBoundary}
                 {showClipBoundaryTooltip}
                 {hideTsTooltip}
                 {seekToTimestamp}
                 {openSegmentEditor}
-                {startTimestampRangeDrag}
+                {startTimestampDrag}
+                {timestampDragJustEnded}
                 {removeTimestamp}
                 {showTimestampTooltip}
                 {openTimestampEditor}
@@ -2156,6 +2218,9 @@
                 {removeResumePoint}
                 {clearABLoop}
                 {formatTime}
+                {startLoopMarkerDrag}
+                {loopMarkerJustDragged}
+                {showLoopMarkerTooltip}
               />
               <PlaybackControls
                 fullscreen={false}
@@ -2475,25 +2540,23 @@
               clipPairs={clips.clipPairs}
               clipBoundaries={clips.clipBoundaries}
               {timestamps}
-              {tsDragRange}
               {abLoopRegion}
               loopStart={loopStart}
               loopEnd={loopEnd}
               {resumePoint}
               durationSecs={rawDurationSecs}
               clipMarkerJustDragged={clips.clipMarkerJustDragged}
-              {tsMarkerDragJustEnded}
               tsEditMenuVisible={tsEditMenu.visible}
               {startScrubbing}
               {getTimestampPct}
-              {getDragRangeStyle}
               {startClipMarkerDrag}
               {removeClipBoundary}
               {showClipBoundaryTooltip}
               {hideTsTooltip}
               {seekToTimestamp}
               {openSegmentEditor}
-              {startTimestampRangeDrag}
+              {startTimestampDrag}
+              {timestampDragJustEnded}
               {removeTimestamp}
               {showTimestampTooltip}
               {openTimestampEditor}
@@ -2503,10 +2566,13 @@
               {removeResumePoint}
               {clearABLoop}
               {formatTime}
+              {startLoopMarkerDrag}
+              {loopMarkerJustDragged}
+              {showLoopMarkerTooltip}
             />
-            <PlaybackControls
-              fullscreen={true}
-              {isGifVideo}
+              <PlaybackControls
+                fullscreen={true}
+                {isGifVideo}
               {playing}
               looping={loopMode}
               {muted}

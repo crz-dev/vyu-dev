@@ -137,37 +137,13 @@ main.thumbnail-bar-open .video-inner video {
     border-color 0.22s ease,
     opacity 0.22s ease;
 }
-.ts-drag-range {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--yellow-border);
-  border-left: 1px solid var(--yellow-border-solid);
-  border-right: 1px solid var(--yellow-border-solid);
-  pointer-events: none;
-  z-index: 2;
-  opacity: 1;
-  transition:
-    background 0.22s ease,
-    border-color 0.22s ease,
-    opacity 0.16s ease;
-}
-.ts-drag-range.converting {
-  background: var(--blue-bg-strong);
-  border-left-color: rgba(147, 197, 253, 0.9);
-  border-right-color: rgba(147, 197, 253, 0.9);
-}
-.ts-drag-range.fading {
-  opacity: 0;
-}
-
 .ab-range {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--yellow-border);
-  border-left: 2px solid var(--yellow-border-solid);
-  border-right: 2px solid var(--yellow-border-solid);
+  background: var(--green-border);
+  border-left: 2px solid var(--green-border-solid);
+  border-right: 2px solid var(--green-border-solid);
   pointer-events: auto;
   cursor: context-menu;
   z-index: 1;
@@ -178,7 +154,7 @@ main.thumbnail-bar-open .video-inner video {
   display: block;
 }
 .ab-range:hover {
-  background: var(--yellow-border-strong);
+  background: var(--green-border-strong);
 }
 
 .clip-marker {
@@ -279,25 +255,21 @@ main.thumbnail-bar-open .video-inner video {
 .loop-marker.end-marker::before {
   content: "";
   position: absolute;
-  width: 7px;
-  height: 7px;
-  color: #bbf7d0;
-  font-size: 7px;
-  font-weight: 700;
-  font-family: var(--font-family);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  pointer-events: none;
+  width: 8px;
+  height: 1.5px;
+  background: #bbf7d0;
+  border-radius: 999px;
 }
 .loop-marker.start-marker::before {
-  content: "A";
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .loop-marker.end-marker::before {
-  content: "B";
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .controls-row {
@@ -554,16 +526,16 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: var(--yellow-border);
-  border-left: 2px solid var(--yellow-border-solid);
-  border-right: 2px solid var(--yellow-border-solid);
+  background: var(--green-border);
+  border-left: 2px solid var(--green-border-solid);
+  border-right: 2px solid var(--green-border-solid);
   pointer-events: auto;
   cursor: context-menu;
   z-index: 1;
   transition: background 0.2s ease;
 }
 .fs-ab-range:hover {
-  background: var(--yellow-border-strong);
+  background: var(--green-border-strong);
 }
 .fs-clip-marker {
   position: absolute;
@@ -631,25 +603,21 @@ main.thumbnail-bar-open .video-inner video {
 .fs-loop-marker.end-marker::before {
   content: "";
   position: absolute;
-  width: 7px;
-  height: 7px;
-  color: #bbf7d0;
-  font-size: 7px;
-  font-weight: 700;
-  font-family: var(--font-family);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  pointer-events: none;
+  width: 8px;
+  height: 1.5px;
+  background: #bbf7d0;
+  border-radius: 999px;
 }
 .fs-loop-marker.start-marker::before {
-  content: "A";
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .fs-loop-marker.end-marker::before {
-  content: "B";
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .fs-controls-row {

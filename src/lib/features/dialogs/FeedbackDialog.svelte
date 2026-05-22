@@ -117,7 +117,7 @@
           </div>
           <div class="feedback-user-info">
             <div class="feedback-select-row">
-              <label>
+              <span class="feedback-label">
                 <svg
                   width="11"
                   height="11"
@@ -142,7 +142,7 @@
                   /></svg
                 >
                 OS
-              </label>
+              </span>
               <div class="feedback-os-toggle">
                 <button
                   class="feedback-os-btn"
@@ -232,7 +232,7 @@
               </div>
             </div>
             <div class="feedback-select-row">
-              <label>
+              <span class="feedback-label">
                 <svg
                   width="11"
                   height="11"
@@ -247,7 +247,7 @@
                   /></svg
                 >
                 Version
-              </label>
+              </span>
               <div class="feedback-version-actions">
                 <span class="feedback-version-text">
                   <svg
@@ -286,7 +286,7 @@
               </div>
             </div>
             <div class="feedback-select-row">
-              <label>
+              <span class="feedback-label">
                 <svg
                   width="11"
                   height="11"
@@ -308,7 +308,7 @@
                   /></svg
                 >
                 Logging
-              </label>
+              </span>
               <div class="feedback-version-actions">
                 <span class="feedback-version-text">
                   <svg
@@ -939,7 +939,7 @@
           </div>
           <div class="feedback-field">
             <div class="feedback-field-header">
-              <label>
+              <span class="feedback-label">
                 <svg
                   width="12"
                   height="12"
@@ -959,7 +959,7 @@
                   /></svg
                 >
                 Would you recommend this app?
-              </label>
+              </span>
             </div>
             <div class="feedback-frequency">
               <div class="feedback-frequency-toggle">

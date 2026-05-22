@@ -29,7 +29,7 @@
       y: number;
       title?: string;
       timeLabel: string;
-      tone?: "yellow" | "blue" | "green";
+      tone?: "yellow" | "blue" | "green" | "grey";
       targetId?: string;
     };
     tsEditMenuVisible: boolean;
@@ -65,6 +65,7 @@
     class="ts-tooltip"
     class:blue={tsTooltip.tone === "blue"}
     class:green={tsTooltip.tone === "green"}
+    class:grey={tsTooltip.tone === "grey"}
     style="left: {tsTooltip.x}px; top: {tsTooltip.y}px;"
   >
     {#if tsTooltip.title}
@@ -128,7 +129,8 @@
         />
         {#if !isSegmentMenu}
           <button
-            class="ts-delete-btn"
+            class="ts-delete-btn tooltip-ctrl"
+            data-tooltip="Delete Marker"
             onclick={(e) => {
               e.stopPropagation();
               onEditorDeleteTimestamp();
@@ -146,7 +148,8 @@
           </button>
         {:else}
           <button
-            class="ts-delete-btn"
+            class="ts-delete-btn tooltip-ctrl"
+            data-tooltip="Delete Marker"
             onclick={(e) => {
               e.stopPropagation();
               onEditorDeleteSegment();
@@ -178,12 +181,12 @@
           class:is-inactive={isSegmentMenu
             ? editingSegment?.kind !== "start"
             : false}
-          data-tooltip="Start clip"
+          data-tooltip="Clip start"
           onclick={(e) => {
             e.stopPropagation();
             onEditorScissor("start");
           }}
-          aria-label="Start clip"
+          aria-label="Clip start"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
             ><circle
@@ -213,12 +216,12 @@
           class:is-inactive={isSegmentMenu
             ? editingSegment?.kind !== "end"
             : false}
-          data-tooltip="End clip"
+          data-tooltip="Clip end"
           onclick={(e) => {
             e.stopPropagation();
             onEditorScissor("end");
           }}
-          aria-label="End clip"
+          aria-label="Clip end"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
             ><circle

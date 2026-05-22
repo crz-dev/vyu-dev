@@ -102,7 +102,7 @@
 
   function exportSettings() {
     const data = {
-      theme,
+      theme: themeStore.mode,
       uiMode,
       transition,
       allowZoomOut,
