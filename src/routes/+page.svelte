@@ -444,8 +444,10 @@
 
     // Cache rect at drag start to avoid forced layouts on every mousemove
     const barRect = bar.getBoundingClientRect();
+    const SEEK_THROTTLE_MS = 100; // max ~10 seeks/sec during drag — prevents overwhelming 4K decoder
     let pendingTime: number | null = null;
     let seekInProgress = false;
+    let lastSeekTime = 0;
 
     const computeTime = (clientX: number): number => {
       const ratio = Math.max(
@@ -469,6 +471,7 @@
       if (pendingTime !== null) {
         const t = pendingTime;
         pendingTime = null;
+        lastSeekTime = Date.now();
         doSeek(t);
       }
     };
@@ -478,15 +481,21 @@
 
     function onMouseMove(ev: MouseEvent) {
       const time = computeTime(ev.clientX);
-      if (!seekInProgress) {
-        doSeek(time);
-      } else {
-        // A seek is in flight — store the latest position; the seeked
-        // handler will pick it up. Still update the UI so the progress
-        // bar tracks the mouse responsively.
+      // Always update UI immediately — keeps the playhead tracking the mouse smoothly
+      rawCurrentSecs = time;
+      progress = (time / mediaEl!.duration) * 100;
+
+      if (seekInProgress) {
+        // A seek is in flight — coalesce into pendingTime; the seeked
+        // handler will pick it up.
         pendingTime = time;
-        rawCurrentSecs = time;
-        progress = (time / mediaEl!.duration) * 100;
+      } else if (Date.now() - lastSeekTime >= SEEK_THROTTLE_MS) {
+        // Enough time since last seek — fire one now
+        doSeek(time);
+        lastSeekTime = Date.now();
+      } else {
+        // Within throttle window — queue for the next seeked or mouseup
+        pendingTime = time;
       }
     }
 
