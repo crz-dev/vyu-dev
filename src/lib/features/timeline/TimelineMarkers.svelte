@@ -210,6 +210,7 @@
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        hideTsTooltip();
         loopStart = null;
         loopEnd = null;
         clearABLoop();
@@ -244,9 +245,11 @@
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
+        hideTsTooltip();
         loopEnd = null;
         clearABLoop();
       }}
+
       onclick={(e) => {
         e.stopPropagation();
         if (loopMarkerJustDragged) return;
