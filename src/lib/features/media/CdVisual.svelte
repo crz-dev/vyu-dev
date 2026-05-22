@@ -1,43 +1,152 @@
 <script lang="ts">
-  let { progress = 0 }: { progress: number } = $props();
+  let {
+    progress = 0,
+    audioEl,
+    duration,
+    currentTime,
+    onScrubStart,
+    onScrubMove,
+    onScrubEnd,
+    isScrubbing
+  }: {
+    progress: number;
+    audioEl: () => HTMLAudioElement | null;
+    duration: number;
+    currentTime: number;
+    onScrubStart: (e: MouseEvent | TouchEvent) => void;
+    onScrubMove: (e: MouseEvent | TouchEvent, newProgress: number) => void;
+    onScrubEnd: () => void;
+    isScrubbing: boolean;
+  } = $props();
 
-  const discRadius = 130;
+  const discRadius = 200;
+  const centerLabelRadius = 60;
   const circumference = 2 * Math.PI * discRadius;
   const dashOffset = $derived(circumference * (1 - progress / 100));
+
+  // Rotation state for visual feedback during drag
+  let rotation = $state(0);
+  let lastAngle = $state(0);
+  let isDragging = $state(false);
+
+  // Calculate angle from center point
+  function calculateAngle(clientX: number, clientY: number, rect: DOMRect): number {
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    // Convert to degrees, offset so 0° is at 12 o'clock
+    let angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+    if (angle < 0) angle += 360;
+    return angle;
+  }
+
+  function handleDragStart(e: MouseEvent | TouchEvent) {
+    if (e instanceof MouseEvent && e.button !== 0) return;
+    e.preventDefault();
+    
+    const svg = e.currentTarget as SVGSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const point = e instanceof TouchEvent ? e.touches[0] : e;
+    
+    lastAngle = calculateAngle(point.clientX, point.clientY, rect);
+    isDragging = true;
+    rotation = progress * 3.6; // Convert progress to degrees (100% = 360°)
+    
+    onScrubStart(e);
+  }
+
+  function handleDragMove(e: MouseEvent | TouchEvent) {
+    if (!isDragging) return;
+    
+    const svg = e.currentTarget as SVGSVGElement;
+    const rect = svg.getBoundingClientRect();
+    const point = e instanceof TouchEvent ? e.touches[0] : e;
+    
+    const currentAngle = calculateAngle(point.clientX, point.clientY, rect);
+    let deltaAngle = currentAngle - lastAngle;
+    
+    // Handle wraparound at 360°/0°
+    if (deltaAngle > 180) deltaAngle -= 360;
+    if (deltaAngle < -180) deltaAngle += 360;
+    
+    rotation += deltaAngle;
+    lastAngle = currentAngle;
+    
+    // Normalize rotation to 0-360 range for progress calculation
+    let normalizedRotation = rotation % 360;
+    if (normalizedRotation < 0) normalizedRotation += 360;
+    
+    // Convert rotation to progress (0-100%)
+    const newProgress = normalizedRotation / 3.6;
+    
+    onScrubMove(e, newProgress);
+  }
+
+  function handleDragEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    onScrubEnd();
+  }
+
+  // Sync rotation with progress when not dragging
+  $effect(() => {
+    if (!isDragging) {
+      rotation = progress * 3.6;
+    }
+  });
 </script>
 
 <svg
   class="cd-visual"
-  viewBox="0 0 300 300"
+  class:dragging={isDragging}
+  viewBox="0 0 500 500"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
-  role="img"
-  aria-label="Audio disc with playback progress"
+  role="slider"
+  aria-label="Vinyl record with playback progress - drag to scrub"
+  aria-valuenow={Math.round(progress)}
+  aria-valuemin={0}
+  aria-valuemax={100}
+  aria-valuetext={`${Math.round(progress)}% played`}
+  tabindex="0"
+  onmousedown={handleDragStart}
+  onmousemove={handleDragMove}
+  onmouseup={handleDragEnd}
+  onmouseleave={handleDragEnd}
+  ontouchstart={handleDragStart}
+  ontouchmove={handleDragMove}
+  ontouchend={handleDragEnd}
 >
   <defs>
-    <radialGradient id="cdDiscGradient" cx="40%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="var(--cd-highlight, #e8e8e8)" />
-      <stop offset="30%" stop-color="var(--cd-body, #d0d0d0)" />
-      <stop offset="60%" stop-color="var(--cd-body, #b8b8b8)" />
-      <stop offset="85%" stop-color="var(--cd-edge, #909090)" />
-      <stop offset="100%" stop-color="var(--cd-edge, #787878)" />
+    <!-- Vinyl groove pattern -->
+    <radialGradient id="vinylGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="var(--vinyl-disc)" />
+      <stop offset="95%" stop-color="var(--vinyl-disc)" />
+      <stop offset="100%" stop-color="var(--vinyl-edge, #2a2a2a)" />
+    </radialGradient>
+    
+    <!-- Center label gradient -->
+    <radialGradient id="centerLabelGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="var(--vinyl-center)" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="var(--vinyl-center)" />
     </radialGradient>
   </defs>
 
   <!-- Outer progress ring (background track) -->
   <circle
-    cx="150"
-    cy="150"
+    cx="250"
+    cy="250"
     r={discRadius}
-    stroke="var(--cd-ring-track, rgba(128,128,128,0.2))"
+    stroke="var(--cd-ring-track)"
     stroke-width="4"
     fill="none"
   />
 
   <!-- Outer progress ring (foreground progress) -->
   <circle
-    cx="150"
-    cy="150"
+    cx="250"
+    cy="250"
     r={discRadius}
     stroke="var(--green)"
     stroke-width="4"
@@ -45,31 +154,55 @@
     stroke-linecap="round"
     stroke-dasharray={circumference}
     stroke-dashoffset={dashOffset}
-    transform="rotate(-90 150 150)"
+    transform="rotate(-90 250 250)"
     class="cd-progress-ring"
   />
 
-  <!-- Disc body -->
-  <circle cx="150" cy="150" r="124" fill="url(#cdDiscGradient)" />
-
-  <!-- Faint decorative concentric rings for CD texture -->
-  <circle cx="150" cy="150" r="105" stroke="var(--cd-ring, rgba(0,0,0,0.06))" stroke-width="0.5" fill="none" />
-  <circle cx="150" cy="150" r="85" stroke="var(--cd-ring, rgba(0,0,0,0.06))" stroke-width="0.5" fill="none" />
-  <circle cx="150" cy="150" r="65" stroke="var(--cd-ring, rgba(0,0,0,0.06))" stroke-width="0.5" fill="none" />
-
-  <!-- Center hole -->
-  <circle cx="150" cy="150" r="18" fill="var(--bg-primary)" />
-
-  <!-- Center hole inner rim for depth -->
-  <circle cx="150" cy="150" r="18" stroke="var(--cd-edge, rgba(0,0,0,0.15))" stroke-width="0.5" fill="none" />
+  <!-- Vinyl disc body (rotates during drag) -->
+  <g transform="rotate({rotation} 250 250)">
+    <!-- Main disc -->
+    <circle cx="250" cy="250" r="195" fill="url(#vinylGradient)" />
+    
+    <!-- Concentric grooves for vinyl texture -->
+    <circle cx="250" cy="250" r="180" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="165" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="150" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="135" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="120" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="105" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="90" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="250" cy="250" r="75" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    
+    <!-- Center label -->
+    <circle cx="250" cy="250" r={centerLabelRadius} fill="url(#centerLabelGradient)" />
+    
+    <!-- Center label inner ring for depth -->
+    <circle cx="250" cy="250" r="55" stroke="rgba(0,0,0,0.2)" stroke-width="1" fill="none" />
+    
+    <!-- Center hole -->
+    <circle cx="250" cy="250" r="12" fill="var(--vinyl-center-hole)" />
+    
+    <!-- Center hole highlight -->
+    <circle cx="250" cy="250" r="12" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none" />
+  </g>
 </svg>
 
 <style>
   .cd-visual {
-    width: min(280px, 100%);
+    width: min(400px, 100%);
     height: auto;
     display: block;
     flex-shrink: 0;
+    cursor: grab;
+    transition: transform 0.05s linear;
+  }
+
+  .cd-visual:active {
+    cursor: grabbing;
+  }
+
+  .cd-visual.dragging {
+    cursor: grabbing;
   }
 
   .cd-progress-ring {

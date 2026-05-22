@@ -119,7 +119,7 @@
   let dragStart = $state({ x: 0, y: 0, tx: 0, ty: 0 });
   let lastLeftClickTime = 0;
   let pendingPlay: ReturnType<typeof setTimeout> | undefined;
-  let isScrubbing = false;
+  let isScrubbing = $state(false);
   let contextMenu = $state<ContextMenu>({ x: 0, y: 0, visible: false });
   let deleteConfirm = $state(false);
   let deletePermanently = $state(false);
@@ -518,6 +518,70 @@
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
   }
+  function startDiscScrubbing(e: MouseEvent | TouchEvent) {
+    if (!audioEl || !audioEl.duration) return;
+    const wasPlaying = !audioEl.paused;
+    audioEl.pause();
+    isScrubbing = true;
+
+    const SEEK_THROTTLE_MS = 100;
+    let pendingTime: number | null = null;
+    let seekInProgress = false;
+    let lastSeekTime = 0;
+
+    const doSeek = (time: number) => {
+      seekInProgress = true;
+      audioEl!.currentTime = time;
+      rawCurrentSecs = time;
+      progress = (time / audioEl!.duration) * 100;
+    };
+
+    const onSeeked = () => {
+      seekInProgress = false;
+      if (pendingTime !== null) {
+        const t = pendingTime;
+        pendingTime = null;
+        lastSeekTime = Date.now();
+        doSeek(t);
+      }
+    };
+
+    audioEl.addEventListener("seeked", onSeeked);
+
+    discScrubHandlers.onScrubMove = (e: MouseEvent | TouchEvent, newProgress: number) => {
+      const time = (newProgress / 100) * audioEl!.duration;
+      rawCurrentSecs = time;
+      progress = newProgress;
+
+      if (seekInProgress) {
+        pendingTime = time;
+      } else if (Date.now() - lastSeekTime >= SEEK_THROTTLE_MS) {
+        doSeek(time);
+        lastSeekTime = Date.now();
+      } else {
+        pendingTime = time;
+      }
+    };
+
+    discScrubHandlers.onScrubEnd = () => {
+      isScrubbing = false;
+      audioEl!.removeEventListener("seeked", onSeeked);
+      if (pendingTime !== null) {
+        seekInProgress = true;
+        audioEl!.currentTime = pendingTime;
+        rawCurrentSecs = pendingTime;
+        progress = (pendingTime / audioEl!.duration) * 100;
+      }
+      if (wasPlaying) audioEl!.play();
+      // Reset handlers
+      discScrubHandlers.onScrubMove = () => {};
+      discScrubHandlers.onScrubEnd = () => {};
+    };
+  }
+  let discScrubHandlers = $state<{
+    onScrubMove: (e: MouseEvent | TouchEvent, newProgress: number) => void;
+    onScrubEnd: () => void;
+  }>({ onScrubMove: () => {}, onScrubEnd: () => {} });
   function setVolume(val: number) {
     playback.setVolume(val, ({ volume: v, muted: m }) => {
       volume = v;
@@ -2387,7 +2451,16 @@
                 }
               }}
             ></audio>
-            <CdVisual {progress} />
+            <CdVisual
+              {progress}
+              audioEl={() => audioEl}
+              duration={rawDurationSecs}
+              currentTime={rawCurrentSecs}
+              onScrubStart={startDiscScrubbing}
+              onScrubMove={discScrubHandlers.onScrubMove}
+              onScrubEnd={discScrubHandlers.onScrubEnd}
+              isScrubbing={isScrubbing}
+            />
             <div
               class="audio-progress-bar"
               class:editor-open={tsEditMenu.visible}
