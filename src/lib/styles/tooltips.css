@@ -70,6 +70,19 @@
 .tooltip-ctrl:hover::after {
   opacity: 1;
 }
+.tooltip-ctrl.tooltip-left::after {
+  bottom: auto;
+  left: auto;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.tooltip-ctrl.tooltip-right::after {
+  bottom: auto;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
 
 .menu-open [data-tooltip]::after,
 .menu-open .tooltip-ctrl::after {

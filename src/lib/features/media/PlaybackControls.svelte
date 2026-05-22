@@ -3,6 +3,7 @@
 
   let {
     fullscreen = false,
+    isAudio = false,
     isGifVideo,
     playing,
     looping,
@@ -61,6 +62,7 @@
     speedDragging,
   }: {
     fullscreen?: boolean;
+    isAudio?: boolean;
     isGifVideo: boolean;
     playing: boolean;
     looping: "loop" | "stop" | "next" | "shuffle";
@@ -342,7 +344,7 @@
                 stroke-linejoin="round"
               />
             </svg>
-            <span>On video end</span>
+            <span>{isAudio ? "On audio end" : "On video end"}</span>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <rect
                 x="4"
@@ -1220,7 +1222,7 @@
                 stroke-linejoin="round"
               />
             </svg>
-            <span>On video end</span>
+            <span>{isAudio ? "On audio end" : "On video end"}</span>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <rect
                 x="4"

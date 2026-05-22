@@ -135,8 +135,8 @@
       <stop offset="100%" stop-color="var(--vinyl-center)" />
     </radialGradient>
 
-    <!-- Circular text path for filename (inside center label, rotated 45° CCW) -->
-    <path id="filenamePath" d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270" transform="rotate(-45 325 325)" />
+    <!-- Circular text path for filename (rotates with disc so filename stays at top at 0:00) -->
+    <path id="filenamePath" d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270" transform="rotate({-90 + rotation} 325 325)" />
   </defs>
 
   <!-- Outer progress ring (background track) -->

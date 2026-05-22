@@ -2578,7 +2578,7 @@ main.thumbnail-bar-open .video-inner video {
   align-items: center;
   width: 100%;
   max-width: 580px;
-  padding: 0 8px;
+  padding: 0 8px 0 4px;
 }
 
 .audio-menu-anchor {
@@ -2590,7 +2590,7 @@ main.thumbnail-bar-open .video-inner video {
   position: absolute;
   bottom: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
+  transform: translateX(-50%) translateY(-14px);
   z-index: 100;
 }
 
@@ -2614,7 +2614,7 @@ main.thumbnail-bar-open .video-inner video {
   align-items: center;
   width: 100%;
   max-width: 580px;
-  padding: 0 8px;
+  padding: 0 8px 0 4px;
 }
 
 .audio-bottom-row .volume-control,

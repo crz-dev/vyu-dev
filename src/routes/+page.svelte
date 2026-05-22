@@ -2468,7 +2468,7 @@
               <div class="audio-top-row">
                 <div class="audio-menu-anchor">
                   <button
-                    class="ctrl-btn loop-btn tooltip-ctrl"
+                    class="ctrl-btn loop-btn tooltip-ctrl tooltip-left"
                     class:loop-menu-open={loopMenuOpen}
                     data-tooltip={loopMenuOpen ? undefined : loopMode === "loop" ? "Loop" : loopMode === "stop" ? "Stop at end" : loopMode === "next" ? "Play next" : "Shuffle"}
                     onclick={() => { loopMenuOpen = !loopMenuOpen; }}
@@ -2526,7 +2526,7 @@
                 </div>
                 <div class="audio-menu-anchor">
                   <button
-                    class="ctrl-btn add-ts-btn tooltip-ctrl"
+                    class="ctrl-btn add-ts-btn tooltip-ctrl tooltip-right"
                     class:ts-menu-open={tsMenuOpen}
                     data-tooltip="Marker menu"
                     onclick={() => { tsMenuOpen = !tsMenuOpen; tsDeleteConfirm = false; }}
@@ -2606,7 +2606,7 @@
               </div>
               <div class="audio-progress-row">
                 <button
-                  class="ctrl-btn play-btn tooltip-ctrl"
+                  class="ctrl-btn play-btn tooltip-ctrl tooltip-left"
                   data-tooltip={playing ? "Pause" : "Play"}
                   onclick={togglePlay}
                   aria-label={playing ? "pause" : "play"}
@@ -2632,7 +2632,7 @@
                   <div class="audio-progress-playhead" style="left: {progress}%"></div>
                 </div>
                 <button
-                  class="time-display tooltip-ctrl"
+                  class="time-display tooltip-ctrl tooltip-right"
                   data-tooltip={timerTooltip}
                   onclick={toggleTimer}
                   aria-label="toggle timer mode"
@@ -2643,7 +2643,7 @@
               <div class="audio-bottom-row">
                 <div class="volume-control" onmouseenter={playbackUI.showVolumeOverlay} onmouseleave={playbackUI.handleVolumeAreaLeave} onwheel={playbackUI.handleVolumeScroll}>
                   <button
-                    class="ctrl-btn volume-btn tooltip-ctrl"
+                    class="ctrl-btn volume-btn tooltip-ctrl tooltip-left"
                     class:active={!(muted || volume === 0)}
                     data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
                     onclick={toggleMute}
@@ -2673,6 +2673,7 @@
                       aria-valuenow={Math.round(playbackUI.volumeSliderValue * 100)}
                       aria-label="Volume slider"
                       onpointerdown={(e) => playbackUI.startVolumeSliderDrag(e, volumeTrackEl!)}
+                      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); volumeTrackEl = null; playbackUI.toggleVolumeSliderMode(); }}
                       onmouseenter={() => playbackUI.showVolumeSliderTooltip(volumeTrackEl)}
                       onmouseleave={playbackUI.hideVolumeSliderTooltip}
                     >
@@ -2692,7 +2693,7 @@
                 </div>
                 <div class="speed-control" onmouseenter={playbackUI.showSpeedOverlay} onmouseleave={playbackUI.handleSpeedAreaLeave} onwheel={playbackUI.handleSpeedScroll}>
                   <button
-                    class="ctrl-btn speed-btn tooltip-ctrl"
+                    class="ctrl-btn speed-btn tooltip-ctrl tooltip-right"
                     class:active={playbackUI.playbackSpeed !== 1}
                     data-tooltip="Playback speed"
                     aria-label="playback speed"
@@ -2718,6 +2719,7 @@
                       aria-valuenow={Math.round(playbackUI.speedSliderValue * 100)}
                       aria-label="Playback speed slider"
                       onpointerdown={(e) => playbackUI.startSpeedSliderDrag(e, speedTrackEl!)}
+                      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); speedTrackEl = null; playbackUI.toggleSpeedSliderMode(); }}
                       onmouseenter={() => playbackUI.showSpeedSliderTooltip(speedTrackEl)}
                       onmouseleave={playbackUI.hideSpeedSliderTooltip}
                     >
@@ -2900,6 +2902,115 @@
               <PlaybackControls
                 fullscreen={true}
                 {isGifVideo}
+              {playing}
+              looping={loopMode}
+              {muted}
+              {volume}
+              volumeHovered={playbackUI.volumeHovered}
+              volumeSegments={VOLUME_SEGMENTS}
+              {togglePlay}
+              setLoopMode={setLoopMode}
+              {toggleMute}
+              showVolumeOverlay={playbackUI.showVolumeOverlay}
+              handleVolumeAreaLeave={playbackUI.handleVolumeAreaLeave}
+              handleVolumeScroll={playbackUI.handleVolumeScroll}
+              startVolumeDrag={playbackUI.startVolumeDrag}
+              handleVolumeDiamondHover={playbackUI.handleVolumeDiamondHover}
+              {setVolume}
+              playbackSpeed={playbackUI.playbackSpeed}
+              speedHovered={playbackUI.speedHovered}
+              setPlaybackSpeed={playbackUI.setPlaybackSpeed}
+              showSpeedOverlay={playbackUI.showSpeedOverlay}
+              handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
+              handleSpeedScroll={playbackUI.handleSpeedScroll}
+              handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
+              startSpeedDrag={playbackUI.startSpeedDrag}
+              {addTimestamp}
+              addClipStart={() => addClipBoundary("start")}
+              addClipEnd={() => addClipBoundary("end")}
+              addLoopStart={addLoopStart}
+              addLoopEnd={addLoopEnd}
+              hasLoopStart={loopStart !== null}
+              hasLoopEnd={loopEnd !== null}
+              hasAnyMarkers={timestamps.length > 0 ||
+                clips.clipBoundaries.length > 0 ||
+                resumePoint !== null ||
+                loopStart !== null ||
+                loopEnd !== null}
+              deleteAllMarkers={() => {
+                clearAllTimestamps();
+                clearAllSegments();
+                removeResumePoint();
+                clearLoopMarkers();
+              }}
+              {toggleTimer}
+              {currentTimeDisplay}
+              {durationDisplay}
+              {timerTooltip}
+              {toggleFullscreen}
+              onTsMenuChange={(v) => (tsMenuOpen = v)}
+              volumeSliderMode={playbackUI.volumeSliderMode || volumeSliderMode}
+              speedSliderMode={playbackUI.speedSliderMode || speedSliderMode}
+              volumeSliderValue={playbackUI.volumeSliderValue}
+              speedSliderValue={playbackUI.speedSliderValue}
+              {toggleVolumeSliderMode}
+              {toggleSpeedSliderMode}
+              startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
+              startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
+              handleVolumeSliderChange={playbackUI.handleVolumeSliderChange}
+              handleSpeedSliderChange={playbackUI.handleSpeedSliderChange}
+              showVolumeSliderTooltip={playbackUI.showVolumeSliderTooltip}
+              hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
+              showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
+              hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
+              volumeDragging={playbackUI.volumeDragging}
+              speedDragging={playbackUI.speedDragging}
+            />
+          </div>
+        {:else if isAudio}
+          <div class="fs-controls audio">
+            <TimelineMarkers
+              fullscreen={true}
+              {progress}
+              currentTimeSecs={rawCurrentSecs}
+              {isGifVideo}
+              clipPairs={clips.clipPairs}
+              clipBoundaries={clips.clipBoundaries}
+              {timestamps}
+              {abLoopRegion}
+              loopStart={loopStart}
+              loopEnd={loopEnd}
+              {resumePoint}
+              durationSecs={rawDurationSecs}
+              clipMarkerJustDragged={clips.clipMarkerJustDragged}
+              tsEditMenuVisible={tsEditMenu.visible}
+              {startScrubbing}
+              {getTimestampPct}
+              {startClipMarkerDrag}
+              {removeClipBoundary}
+              {showClipBoundaryTooltip}
+              {hideTsTooltip}
+              {seekToTimestamp}
+              {openSegmentEditor}
+              {startTimestampDrag}
+              {timestampDragJustEnded}
+              {removeTimestamp}
+              {showTimestampTooltip}
+              {openTimestampEditor}
+              {showResumeTooltip}
+              {hideResumeTooltip}
+              {seekToResumePoint}
+              {removeResumePoint}
+              {clearABLoop}
+              {formatTime}
+              {startLoopMarkerDrag}
+              {loopMarkerJustDragged}
+              {showLoopMarkerTooltip}
+            />
+            <PlaybackControls
+              fullscreen={true}
+              isAudio={true}
+              {isGifVideo}
               {playing}
               looping={loopMode}
               {muted}
