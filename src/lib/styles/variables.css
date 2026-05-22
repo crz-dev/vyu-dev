@@ -159,6 +159,13 @@
 	--red-border-strong: rgba(239, 68, 68, 0.58);
 	--red-border-solid: rgba(239, 68, 68, 0.92);
 
+	/* CD visual colors */
+	--cd-highlight: #e8e8e8;
+	--cd-body: #c0c0c0;
+	--cd-edge: #808080;
+	--cd-ring: rgba(0, 0, 0, 0.08);
+	--cd-ring-track: rgba(255, 255, 255, 0.08);
+
 	--font-family: 'Geist', sans-serif;
 
   color-scheme: dark;
@@ -252,6 +259,13 @@
 	--red-border: rgba(220, 38, 38, 0.4);
 	--red-border-strong: rgba(220, 38, 38, 0.65);
 	--red-border-solid: rgba(220, 38, 38, 0.95);
+
+	/* CD visual colors */
+	--cd-highlight: #f0f0e8;
+	--cd-body: #d4d4c8;
+	--cd-edge: #888880;
+	--cd-ring: rgba(0, 0, 0, 0.1);
+	--cd-ring-track: rgba(0, 0, 0, 0.12);
 
 	color-scheme: light;
 }

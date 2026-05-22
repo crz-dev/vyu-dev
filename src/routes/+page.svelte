@@ -80,6 +80,7 @@
   } from "$lib/features/media/ffmpeg";
   import { setupInit } from "./init";
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
+  import CdVisual from "$lib/features/media/CdVisual.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -88,7 +89,6 @@
   let isVideo = $state(false);
   let isAudio = $state(false);
   let isPdf = $state(false);
-  let waveformSrc = $state("");
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
   let fileSize = $state("");
@@ -1246,14 +1246,6 @@
     if (audioEl?.parentElement && !audioEl.parentElement.matches(":hover")) {
       hoverZone = "none";
     }
-    waveformSrc = "";
-    import("@tauri-apps/api/core").then(({ convertFileSrc }) => {
-      invoke<string | null>("generate_thumbnail", { path: filePath }).then(
-        (thumbPath) => {
-          if (thumbPath) waveformSrc = convertFileSrc(thumbPath);
-        },
-      );
-    });
   }
   async function loadFile(path: string) {
     slideshow.stop();
@@ -1302,7 +1294,6 @@
     viewer.state.translateY = 0;
     media.closeFile(setMediaState);
     pdf.cleanup();
-    waveformSrc = "";
     mediaProps = null;
     mediaPropsLoading = false;
     clearFolderCache();
@@ -2396,13 +2387,7 @@
                 }
               }}
             ></audio>
-            <div class="audio-waveform">
-              {#if waveformSrc}
-                <img src={waveformSrc} alt="waveform" />
-              {:else}
-                <div class="audio-waveform-placeholder"></div>
-              {/if}
-            </div>
+            <CdVisual {progress} />
             <div
               class="audio-progress-bar"
               class:editor-open={tsEditMenu.visible}
