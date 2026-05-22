@@ -7,7 +7,8 @@
     onScrubStart,
     onScrubMove,
     onScrubEnd,
-    isScrubbing
+    isScrubbing,
+    fileName
   }: {
     progress: number;
     audioEl: () => HTMLAudioElement | null;
@@ -17,10 +18,12 @@
     onScrubMove: (e: MouseEvent | TouchEvent, newProgress: number) => void;
     onScrubEnd: () => void;
     isScrubbing: boolean;
+    fileName: string;
   } = $props();
 
-  const discRadius = 200;
-  const centerLabelRadius = 60;
+  const discRadius = 275;
+  const centerLabelRadius = 80;
+  const textRadius = 55;
   const circumference = 2 * Math.PI * discRadius;
   const dashOffset = $derived(circumference * (1 - progress / 100));
 
@@ -100,7 +103,7 @@
 <svg
   class="cd-visual"
   class:dragging={isDragging}
-  viewBox="0 0 500 500"
+  viewBox="0 0 650 650"
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
   role="slider"
@@ -131,12 +134,15 @@
       <stop offset="0%" stop-color="var(--vinyl-center)" stop-opacity="0.9" />
       <stop offset="100%" stop-color="var(--vinyl-center)" />
     </radialGradient>
+
+    <!-- Circular text path for filename (top arc, inside center label) -->
+    <path id="filenamePath" d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270" />
   </defs>
 
   <!-- Outer progress ring (background track) -->
   <circle
-    cx="250"
-    cy="250"
+    cx="325"
+    cy="325"
     r={discRadius}
     stroke="var(--cd-ring-track)"
     stroke-width="4"
@@ -145,8 +151,8 @@
 
   <!-- Outer progress ring (foreground progress) -->
   <circle
-    cx="250"
-    cy="250"
+    cx="325"
+    cy="325"
     r={discRadius}
     stroke="var(--green)"
     stroke-width="4"
@@ -154,42 +160,48 @@
     stroke-linecap="round"
     stroke-dasharray={circumference}
     stroke-dashoffset={dashOffset}
-    transform="rotate(-90 250 250)"
+    transform="rotate(-90 325 325)"
     class="cd-progress-ring"
   />
 
   <!-- Vinyl disc body (rotates during drag) -->
-  <g transform="rotate({rotation} 250 250)">
+  <g transform="rotate({rotation} 325 325)">
     <!-- Main disc -->
-    <circle cx="250" cy="250" r="195" fill="url(#vinylGradient)" />
+    <circle cx="325" cy="325" r="270" fill="url(#vinylGradient)" />
     
     <!-- Concentric grooves for vinyl texture -->
-    <circle cx="250" cy="250" r="180" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="165" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="150" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="135" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="120" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="105" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="90" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="250" cy="250" r="75" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="248" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="226" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="204" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="182" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="160" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="138" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="116" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
     
     <!-- Center label -->
-    <circle cx="250" cy="250" r={centerLabelRadius} fill="url(#centerLabelGradient)" />
+    <circle cx="325" cy="325" r={centerLabelRadius} fill="url(#centerLabelGradient)" />
     
     <!-- Center label inner ring for depth -->
-    <circle cx="250" cy="250" r="55" stroke="rgba(0,0,0,0.2)" stroke-width="1" fill="none" />
+    <circle cx="325" cy="325" r="75" stroke="rgba(0,0,0,0.2)" stroke-width="1" fill="none" />
+    
+    <!-- Filename text on circular path -->
+    <text class="filename-text" font-size="13" font-weight="500" fill="var(--text-primary)" font-family="var(--font-family)" letter-spacing="0.5">
+      <textPath href="#filenamePath" startOffset="0%" method="align" spacing="auto">
+        {fileName}
+      </textPath>
+    </text>
     
     <!-- Center hole -->
-    <circle cx="250" cy="250" r="12" fill="var(--vinyl-center-hole)" />
+    <circle cx="325" cy="325" r="16" fill="var(--vinyl-center-hole)" />
     
     <!-- Center hole highlight -->
-    <circle cx="250" cy="250" r="12" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none" />
+    <circle cx="325" cy="325" r="16" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none" />
   </g>
 </svg>
 
 <style>
   .cd-visual {
-    width: min(400px, 100%);
+    width: min(550px, 100%);
     height: auto;
     display: block;
     flex-shrink: 0;
@@ -207,5 +219,9 @@
 
   .cd-progress-ring {
     transition: stroke-dashoffset 0.1s linear;
+  }
+
+  .filename-text {
+    text-transform: uppercase;
   }
 </style>
