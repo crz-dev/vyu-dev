@@ -1,5 +1,5 @@
 // DATAFLOW: createPlaybackActions monitors <video> element via videoElRef callback.
-// updateProgress called on 'timeupdate' event from +page.svelte.
+// Progress is polled via requestAnimationFrame in +page.svelte.
 import { VOLUME_SEGMENTS } from "$lib/shared/constants";
 
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 2, 3];
@@ -7,30 +7,6 @@ const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 2, 3];
 export function createPlaybackActions(
   mediaElRef: () => HTMLMediaElement | null,
 ) {
-  function updateProgress(
-    set: (data: {
-      rawCurrentSecs: number;
-      rawDurationSecs: number;
-      progress: number;
-      playing: boolean;
-    }) => void,
-  ) {
-    const mediaEl = mediaElRef();
-    if (!mediaEl) return;
-
-    const rawCurrentSecs = mediaEl.currentTime;
-    const rawDurationSecs = mediaEl.duration || 0;
-    const progress =
-      rawDurationSecs > 0 ? (rawCurrentSecs / rawDurationSecs) * 100 : 0;
-
-    set({
-      rawCurrentSecs,
-      rawDurationSecs,
-      progress,
-      playing: !mediaEl.paused,
-    });
-  }
-
   function togglePlay() {
     const mediaEl = mediaElRef();
     if (!mediaEl) return;
@@ -66,7 +42,6 @@ export function createPlaybackActions(
   }
 
   return {
-    updateProgress,
     togglePlay,
     toggleMute,
     setVolume,

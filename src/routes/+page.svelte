@@ -119,7 +119,6 @@
   let dragStart = $state({ x: 0, y: 0, tx: 0, ty: 0 });
   let lastLeftClickTime = 0;
   let pendingPlay: ReturnType<typeof setTimeout> | undefined;
-  let lastTimeupdate = 0;
   let isScrubbing = false;
   let contextMenu = $state<ContextMenu>({ x: 0, y: 0, visible: false });
   let deleteConfirm = $state(false);
@@ -339,6 +338,57 @@
       viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
     }
   });
+  // ── Smooth progress via requestAnimationFrame ──────────
+  $effect(() => {
+    const mediaEl = isVideo ? videoEl : isAudio ? audioEl : null;
+    if (!mediaEl) return;
+
+    let rafId: number;
+
+    function poll() {
+      const el = mediaEl;
+      if (!el) return;
+
+      if (!isScrubbing) {
+        rawCurrentSecs = el.currentTime;
+        rawDurationSecs = el.duration || 0;
+        progress =
+          rawDurationSecs > 0
+            ? (rawCurrentSecs / rawDurationSecs) * 100
+            : 0;
+        playing = !el.paused;
+
+        // AB loop enforcement
+        if (abLoopRegion && el.currentTime >= abLoopRegion.end) {
+          el.currentTime = abLoopRegion.start;
+        }
+      }
+
+      rafId = requestAnimationFrame(poll);
+    }
+
+    function onPlay() {
+      rafId = requestAnimationFrame(poll);
+    }
+
+    function onPause() {
+      cancelAnimationFrame(rafId);
+    }
+
+    mediaEl.addEventListener("play", onPlay);
+    mediaEl.addEventListener("pause", onPause);
+
+    // If already playing (e.g. autoplay), start RAF loop immediately
+    if (!mediaEl.paused) {
+      rafId = requestAnimationFrame(poll);
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      mediaEl.removeEventListener("play", onPlay);
+      mediaEl.removeEventListener("pause", onPause);
+    };
+  });
   function toggleFullscreen() {
     viewer.toggleFullscreen();
   }
@@ -358,27 +408,6 @@
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
   const playback = createPlaybackActions(getMediaEl);
   const playbackUI = createPlaybackUI(getMediaEl, () => volume, setVolume);
-  function updateProgress() {
-    if (isScrubbing) return;
-    const now = performance.now();
-    const targetUpdates = 60;
-    const throttleMs = Math.max(16, Math.min(100, (rawDurationSecs * 1000) / targetUpdates));
-    if (now - lastTimeupdate < throttleMs) return;
-    lastTimeupdate = now;
-    playback.updateProgress((data) => {
-      rawCurrentSecs = data.rawCurrentSecs;
-      rawDurationSecs = data.rawDurationSecs;
-      progress = data.progress;
-      playing = data.playing;
-    });
-    // AB loop enforcement
-    if (abLoopRegion) {
-      const mediaEl = getMediaEl();
-      if (mediaEl && mediaEl.currentTime >= abLoopRegion.end) {
-        mediaEl.currentTime = abLoopRegion.start;
-      }
-    }
-  }
   function togglePlay() {
     playback.togglePlay();
     playing = !playing;
@@ -2148,7 +2177,6 @@
                     crossorigin="anonymous"
                     preload="metadata"
                     autoplay
-                    ontimeupdate={updateProgress}
                     onloadedmetadata={onVideoLoad}
                     onerror={onVideoError}
                     onended={() => {
@@ -2304,11 +2332,10 @@
               src={fileSrc}
               crossorigin="anonymous"
               preload="metadata"
-              autoplay
-              ontimeupdate={updateProgress}
-              onloadedmetadata={onAudioLoad}
-              onerror={onAudioError}
-              onended={() => {
+                    autoplay
+                    onloadedmetadata={onAudioLoad}
+                    onerror={onAudioError}
+                    onended={() => {
                 if (slideshow.active) return;
                 if (loopMode === "stop") {
                   playing = false;
