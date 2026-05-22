@@ -135,8 +135,8 @@
       <stop offset="100%" stop-color="var(--vinyl-center)" />
     </radialGradient>
 
-    <!-- Circular text path for filename (top arc, inside center label) -->
-    <path id="filenamePath" d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270" />
+    <!-- Circular text path for filename (inside center label, rotated 45° CCW) -->
+    <path id="filenamePath" d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270" transform="rotate(-45 325 325)" />
   </defs>
 
   <!-- Outer progress ring (background track) -->
@@ -185,8 +185,8 @@
     <circle cx="325" cy="325" r="75" stroke="rgba(0,0,0,0.2)" stroke-width="1" fill="none" />
     
     <!-- Filename text on circular path -->
-    <text class="filename-text" font-size="13" font-weight="500" fill="var(--text-primary)" font-family="var(--font-family)" letter-spacing="0.5">
-      <textPath href="#filenamePath" startOffset="0%" method="align" spacing="auto">
+    <text class="filename-text" font-size="13" font-weight="500" fill="var(--text-primary)" font-family="var(--font-family)" letter-spacing="0.5" text-anchor="middle">
+      <textPath href="#filenamePath" startOffset="50%" method="align" spacing="auto">
         {fileName}
       </textPath>
     </text>
@@ -201,7 +201,7 @@
 
 <style>
   .cd-visual {
-    width: min(550px, 100%);
+    width: min(460px, 100%);
     height: auto;
     display: block;
     flex-shrink: 0;
