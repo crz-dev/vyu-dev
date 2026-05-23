@@ -480,10 +480,37 @@
             />
           </svg>
         </button>
-        <span class="ctx-dots">
-          <span class="ctx-dot"></span>
-          <span class="ctx-dot"></span>
-          <span class="ctx-dot"></span>
+        <span class="ctx-drag-title">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          <span>Edit</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path
+              d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"
+              fill="currentColor"
+              opacity="0.25"
+            />
+          </svg>
         </span>
         <button
           class="ctx-close tooltip-below"

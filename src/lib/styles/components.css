@@ -739,6 +739,10 @@ main.thumbnail-bar-open .video-inner video {
 }
 .clip-actions .ctx-drag {
   width: 100%;
+  border-bottom: 0.5px solid var(--bg-elevated);
+  margin-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 4px;
 }
 .clip-main-btn {
   width: 100%;
@@ -1026,26 +1030,13 @@ main.thumbnail-bar-open .video-inner video {
 }
 .slideshow-menu .ctx-drag {
   width: 100%;
+  border-bottom: 0.5px solid var(--bg-elevated);
+  margin-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 4px;
 }
 
-.slideshow-header-bar {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 4px 8px;
-  width: 100%;
-  box-sizing: border-box;
-  border-bottom: 0.5px solid var(--bg-elevated);
-}
-.slideshow-header-bar svg {
-  color: var(--blue);
-  flex-shrink: 0;
-}
-.slideshow-header-bar .delete-title {
-  margin: 0;
-  font-size: 13px;
-}
+
 
 .slideshow-sep {
   width: 100%;
@@ -1905,6 +1896,10 @@ main.thumbnail-bar-open .video-inner video {
 }
 .edit-menu .ctx-drag {
   width: 100%;
+  border-bottom: 0.5px solid var(--bg-elevated);
+  margin-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 4px;
 }
 .process-menu {
   position: fixed;
@@ -1926,6 +1921,10 @@ main.thumbnail-bar-open .video-inner video {
 }
 .process-menu .ctx-drag {
   width: 100%;
+  border-bottom: 0.5px solid var(--bg-elevated);
+  margin-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  padding-bottom: 4px;
 }
 .process-ffmpeg-note {
   width: 100%;

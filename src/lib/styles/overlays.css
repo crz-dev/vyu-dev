@@ -44,6 +44,21 @@
   border-radius: 50%;
   background: var(--text-hint);
 }
+.ctx-drag-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: var(--font-family);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.ctx-drag-title svg {
+  flex-shrink: 0;
+  color: var(--text-hint);
+}
 .ctx-close {
   display: flex;
   align-items: center;
