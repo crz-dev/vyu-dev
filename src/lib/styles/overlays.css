@@ -38,6 +38,9 @@
   justify-content: center;
   gap: 3px;
 }
+.ctx-drag-title .ctx-dots {
+  margin-top: -1px;
+}
 .ctx-dot {
   width: 2.5px;
   height: 2.5px;
@@ -52,7 +55,7 @@
   font-family: var(--font-family);
   font-size: 11.5px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text-hint);
   line-height: 1;
 }
 .ctx-drag-title svg {

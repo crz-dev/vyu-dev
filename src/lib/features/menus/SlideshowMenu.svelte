@@ -146,33 +146,17 @@
         </svg>
       </button>
       <span class="ctx-drag-title">
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
+        <span class="ctx-dots">
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+        </span>
         <span>Slideshow</span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polygon points="5 3 19 12 5 21 5 3" />
-        </svg>
+        <span class="ctx-dots">
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+        </span>
       </span>
       <button
         class="ctx-close tooltip-below"
