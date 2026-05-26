@@ -939,6 +939,13 @@ fn export_edited_media(
         filters.push("transpose=1,transpose=1".into());
     } else if (rot - 270.0).abs() < 1.0 || (rot + 90.0).abs() < 1.0 {
         filters.push("transpose=2".into());
+    } else if rot > 1.0 {
+        // Arbitrary rotation — expand canvas to fit the full rotated frame
+        let rad = rot * std::f64::consts::PI / 180.0;
+        filters.push(format!(
+            "rotate={}:ow=rotw({}):oh=roth({}):c=black@0",
+            rad, rad, rad
+        ));
     }
 
     if flipped {

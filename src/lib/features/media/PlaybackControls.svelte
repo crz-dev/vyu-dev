@@ -740,6 +740,8 @@
               class="speed-diamond"
               class:filled={dist === 0}
               class:grey={dist === 1}
+              class:dim={dist === 2}
+              class:hidden={dist >= 3}
               style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
@@ -1618,6 +1620,8 @@
               class="speed-diamond"
               class:filled={dist === 0}
               class:grey={dist === 1}
+              class:dim={dist === 2}
+              class:hidden={dist >= 3}
               style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
               aria-label="set speed {step}x"
@@ -1906,7 +1910,7 @@
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           ><path
-            d="M4 1H1V4M8 1H11V4M11 8V11H8M4 11H1V8"
+            d="M2 2h3v3M10 2h-3v3M10 10h-3v-3M2 10h3v-3"
             stroke="currentColor"
             stroke-width="1.2"
             stroke-linecap="round"

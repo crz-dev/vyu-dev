@@ -269,6 +269,12 @@ export async function exportEditedImage(
   if (isQuarterTurn) {
     canvas.width = Math.max(1, cropH);
     canvas.height = Math.max(1, cropW);
+  } else if (snapshot.rotation !== 0) {
+    // Arbitrary rotation — expand canvas to fit the full rotated image
+    const cos = Math.abs(Math.cos((snapshot.rotation * Math.PI) / 180));
+    const sin = Math.abs(Math.sin((snapshot.rotation * Math.PI) / 180));
+    canvas.width = Math.max(1, Math.round(cropW * cos + cropH * sin));
+    canvas.height = Math.max(1, Math.round(cropW * sin + cropH * cos));
   } else {
     canvas.width = Math.max(1, cropW);
     canvas.height = Math.max(1, cropH);

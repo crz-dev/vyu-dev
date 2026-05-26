@@ -29,7 +29,7 @@
   cursor: pointer;
 }
 
-main.thumbnail-bar-open .video-inner video {
+main:not(.fullscreen).thumbnail-bar-open .video-inner video {
   max-height: calc(100vh - 36px - 36px - 32px - 82px);
 }
 
@@ -1195,7 +1195,18 @@ main.thumbnail-bar-open .video-inner video {
 .speed-diamond.grey {
   background: none;
   border-color: var(--text-muted);
-  opacity: 0.45;
+  opacity: 0.35;
+}
+
+.speed-diamond.dim {
+  background: none;
+  border-color: var(--text-muted);
+  opacity: 0.12;
+}
+
+.speed-diamond.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 .speed-diamond:hover {
   transform: rotate(45deg) scale(1.35);
@@ -1312,8 +1323,17 @@ main.thumbnail-bar-open .video-inner video {
 }
 
 .thumbnail-bar.fullscreen {
-  bottom: 60px;
+  bottom: 0;
   z-index: 101;
+  background: var(--bg-secondary);
+  border-top: 0.5px solid var(--bg-elevated);
+  pointer-events: auto;
+}
+
+.thumbnail-bar.fullscreen .thumbnail-track {
+  background: transparent;
+  border-radius: 0;
+  border-top: none;
 }
 
 @keyframes thumbnailBarIn {

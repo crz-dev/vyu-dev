@@ -47,6 +47,7 @@
     editMenuMoved = false,
     processMenuMoved = false,
     clipMenuMoved = false,
+    clipMenuResetKey = 0,
     onClipMenuMoved,
     onClipMenuDismissed,
     clipMenuDismissed = false,
@@ -88,6 +89,7 @@
     editMenuMoved?: boolean;
     processMenuMoved?: boolean;
     clipMenuMoved?: boolean;
+    clipMenuResetKey?: number;
     onClipMenuMoved?: () => void;
     onClipMenuDismissed?: () => void;
     clipMenuDismissed?: boolean;
@@ -98,6 +100,13 @@
 
   $effect(() => {
     if (clipCount > 0) dismissed = false;
+  });
+
+  // Reopen clip menu when a clip marker is dragged on the timeline
+  $effect(() => {
+    if (clipMenuResetKey && clipMenuResetKey > 0) {
+      dismissed = false;
+    }
   });
 </script>
 

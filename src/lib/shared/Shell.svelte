@@ -36,6 +36,7 @@
     zoomLevel,
     resetZoom,
     clipCount,
+    clipMenuResetKey,
     triggerClipSegments,
     clipJobRunning,
     clipDeleteOriginal,
@@ -198,6 +199,7 @@
     zoomLevel: number;
     resetZoom: () => void;
     clipCount: number;
+    clipMenuResetKey: number;
     triggerClipSegments: () => void;
     clipJobRunning: boolean;
     clipDeleteOriginal: boolean;
@@ -359,6 +361,14 @@
     clipMenuDismissed = false;
   });
 
+  // Reset clip menu state when a clip marker is dragged
+  $effect(() => {
+    if (clipMenuResetKey > 0) {
+      clipMenuDismissed = false;
+      clipMenuMoved = false;
+    }
+  });
+
   const MENU_WIDTH = $derived(Math.min(398, window.innerWidth - 30));
   const GAP = 8;
 
@@ -498,6 +508,7 @@
     {editMenuMoved}
     {processMenuMoved}
     {clipMenuMoved}
+    {clipMenuResetKey}
     onClipMenuMoved={() => (clipMenuMoved = true)}
     onClipMenuDismissed={() => (clipMenuDismissed = true)}
     clipMenuDismissed

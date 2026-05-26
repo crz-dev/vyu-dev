@@ -181,12 +181,8 @@ main {
   box-sizing: border-box;
 }
 
-main.thumbnail-bar-open .viewer {
+main:not(.fullscreen).thumbnail-bar-open .viewer {
   padding-bottom: 98px;
-}
-
-main.thumbnail-bar-open.fullscreen .viewer {
-  padding-bottom: 82px;
 }
 
 .empty {
@@ -324,13 +320,17 @@ main.fullscreen .video-inner video {
   object-fit: contain;
 }
 
-main.thumbnail-bar-open.fullscreen .video-inner video {
-  max-height: calc(100vh - 82px);
-}
-
 main.fullscreen .media-container {
   width: 100%;
   height: 100%;
+}
+
+main.fullscreen.thumbnail-bar-open .fs-controls {
+  bottom: 80px;
+}
+
+main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
+  bottom: 90px;
 }
 
 .fs-overlay {
