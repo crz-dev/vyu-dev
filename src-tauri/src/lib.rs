@@ -5,11 +5,14 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use base64::Engine as _;
 use image::GenericImageView;
 use image::ImageEncoder;
 use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
+use tokio::sync::Semaphore;
 use windows::core::w;
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
+use xxhash_rust::xxh3::xxh3_64;
 
 #[derive(serde::Serialize)]
 struct MediaProperties {
@@ -44,6 +47,11 @@ struct SavedWindowState {
     width: u32,
     height: u32,
     maximized: bool,
+}
+
+/// Managed state for the thumbnail system — caps concurrent decode operations.
+struct ThumbState {
+    sem: Semaphore,
 }
 
 const WINDOW_STATE_FILE: &str = "window-state.json";
@@ -269,6 +277,11 @@ fn hash_path(path: &str) -> String {
     format!("{:016x}", hasher.finish())
 }
 
+/// Deterministic hash for thumbnail cache filenames (xxh3 is fast and consistent across runs).
+fn hash_path_xxh3(path: &str) -> String {
+    format!("{:016x}", xxh3_64(path.as_bytes()))
+}
+
 const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr"];
 const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v"];
 const AUDIO_EXTS_RUST: &[&str] = &["mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus", "aiff", "alac"];
@@ -401,41 +414,33 @@ fn generate_audio_waveform(path: &str, thumb_path: &Path) -> Result<Option<Strin
     }
 }
 
-fn generate_image_thumb(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
-    let img = image::open(path).map_err(|e| format!("Failed to open image: {e}"))?;
-    let (w, h) = img.dimensions();
-    let max_dim: u32 = 200;
-    let (nw, nh) = if w > h {
-        (max_dim, ((h as f64) * (max_dim as f64) / (w as f64)).round() as u32)
-    } else {
-        (((w as f64) * (max_dim as f64) / (h as f64)).round() as u32, max_dim)
-    };
-    let thumb = img.resize_exact(
-        nw.max(1),
-        nh.max(1),
-        image::imageops::FilterType::Lanczos3,
-    );
-    let mut jpeg_bytes: Vec<u8> = Vec::new();
-    let mut encoder =
-        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 75);
-    encoder
-        .encode(
-            thumb.as_bytes(),
-            thumb.width(),
-            thumb.height(),
-            thumb.color().into(),
-        )
-        .map_err(|e| format!("Failed to encode thumbnail: {e}"))?;
-    fs::write(thumb_path, &jpeg_bytes)
-        .map_err(|e| format!("Failed to write thumbnail: {e}"))?;
-    Ok(Some(thumb_path.to_string_lossy().to_string()))
+fn format_data_url(bytes: &[u8]) -> String {
+    let b64 = base64::engine::general_purpose::STANDARD.encode(bytes);
+    format!("data:image/jpeg;base64,{b64}")
 }
 
+fn thumb_cache_dir(app: &tauri::AppHandle) -> PathBuf {
+    let dir = app
+        .path()
+        .app_cache_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("thumbnails");
+    let _ = fs::create_dir_all(&dir);
+    dir
+}
+
+/// Single command for all thumbnail generation.
+/// Returns a base64 JPEG data URL, or empty string for PDFs / unsupported types.
+/// Internally branches by file type:
+///   - image-crate formats (JPG, PNG, WEBP, BMP, GIF, AVIF, TIFF): in-process decode + resize
+///   - video / audio / FFmpeg-dependent images: existing FFmpeg path
+/// Both paths go through the same semaphore (4 permits) and disk cache.
 #[tauri::command]
-async fn generate_thumbnail(
+async fn get_thumbnail(
     app: tauri::AppHandle,
+    state: tauri::State<'_, ThumbState>,
     path: String,
-) -> Result<Option<String>, String> {
+) -> Result<String, String> {
     let ext = path
         .rsplit('.')
         .next()
@@ -450,52 +455,159 @@ async fn generate_thumbnail(
     let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
     if !is_image && !is_video && !is_audio && !is_document {
-        return Ok(None);
+        return Ok(String::new());
     }
 
     // Documents are handled on the frontend (no Rust thumbnail)
     if is_document {
-        return Ok(None);
+        return Ok(String::new());
     }
 
-    let thumb_dir = app
-        .path()
-        .app_cache_dir()
-        .unwrap_or_else(|_| std::env::temp_dir())
-        .join("thumbnails");
-    let _ = fs::create_dir_all(&thumb_dir);
+    // Get source file mtime for cache key
+    let src_meta = fs::metadata(&path).map_err(|e| format!("Cannot access file: {e}"))?;
+    let mtime = src_meta
+        .modified()
+        .map_err(|e| format!("Cannot read mtime: {e}"))?
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
 
-    let hash = hash_path(&path);
-    let thumb_path = thumb_dir.join(format!("{hash}.jpg"));
+    let cache_dir = thumb_cache_dir(&app);
+    let hash = hash_path_xxh3(&path);
+    let thumb_name = format!("{hash}_{mtime}.jpg");
+    let thumb_path = cache_dir.join(&thumb_name);
+    let src_name = format!("{hash}_{mtime}.src");
+    let src_path = cache_dir.join(&src_name);
 
+    // Check disk cache — if an up-to-date thumbnail exists, return it directly
     if thumb_path.exists() {
-        if let (Ok(src_meta), Ok(thumb_meta)) =
-            (fs::metadata(&path), fs::metadata(&thumb_path))
-        {
-            if let (Ok(src_time), Ok(thumb_time)) =
-                (src_meta.modified(), thumb_meta.modified())
-            {
-                if thumb_time >= src_time {
-                    return Ok(Some(thumb_path.to_string_lossy().to_string()));
+        if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
+            return Ok(format_data_url(&jpeg_bytes));
+        }
+    }
+
+    let use_ffmpeg = is_video || is_audio || is_ffmpeg_image || is_raw;
+    let use_image_crate = !use_ffmpeg && is_image;
+
+    // Acquire semaphore permit — caps concurrent decode work to 4
+    let _permit = state
+        .sem
+        .acquire()
+        .await
+        .map_err(|e| format!("Semaphore error: {e}"))?;
+
+    let path_c = path.clone();
+    let thumb_path_c = thumb_path.clone();
+    let src_path_c = src_path.clone();
+
+    let jpeg_bytes = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
+        if use_image_crate {
+            // ── In-process image crate decode ──
+            let img =
+                image::open(&path_c).map_err(|e| format!("Failed to open image: {e}"))?;
+            let (w, h) = img.dimensions();
+            let short: u32 = 120;
+            let (nw, nh) = if w > h {
+                // Landscape: short side = height
+                (((w as f64) * (short as f64) / (h as f64)).round() as u32, short)
+            } else if h > w {
+                // Portrait: short side = width
+                (short, ((h as f64) * (short as f64) / (w as f64)).round() as u32)
+            } else {
+                // Square
+                (short, short)
+            };
+            let thumb = img.resize_exact(
+                nw.max(1),
+                nh.max(1),
+                image::imageops::FilterType::Triangle,
+            );
+            let mut jpeg_bytes: Vec<u8> = Vec::new();
+            let mut encoder =
+                image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 55);
+            encoder
+                .encode(
+                    thumb.as_bytes(),
+                    thumb.width(),
+                    thumb.height(),
+                    thumb.color().into(),
+                )
+                .map_err(|e| format!("JPEG encode error: {e}"))?;
+            // Write to disk cache
+            let _ = fs::write(&thumb_path_c, &jpeg_bytes);
+            let _ = fs::write(&src_path_c, &path_c);
+            Ok(jpeg_bytes)
+        } else {
+            // ── FFmpeg path (video / audio / unsupported image) ──
+            let result = if is_video {
+                generate_video_frame(&path_c, &thumb_path_c)
+            } else if is_ffmpeg_image || is_raw {
+                generate_ffmpeg_image_frame(&path_c, &thumb_path_c)
+            } else if is_audio {
+                generate_audio_waveform(&path_c, &thumb_path_c)
+            } else {
+                return Err("Unsupported media type for thumbnail".into());
+            };
+            match result {
+                Ok(Some(_)) => {
+                    let _ = fs::write(&src_path_c, &path_c);
+                    fs::read(&thumb_path_c)
+                        .map_err(|e| format!("Failed to read FFmpeg output: {e}"))
+                }
+                Ok(None) => {
+                    // FFmpeg failed to produce output (timeout, etc.)
+                    let _ = fs::remove_file(&thumb_path_c);
+                    Err("FFmpeg thumbnail generation failed (no output)".into())
+                }
+                Err(e) => {
+                    let _ = fs::remove_file(&thumb_path_c);
+                    Err(e)
                 }
             }
         }
-    }
-
-    tauri::async_runtime::spawn_blocking(move || {
-        if is_video {
-            generate_video_frame(&path, &thumb_path)
-        } else if is_ffmpeg_image || is_raw {
-            // ffmpeg-based image: extract first (and only) frame, no seek
-            generate_ffmpeg_image_frame(&path, &thumb_path)
-        } else if is_audio {
-            generate_audio_waveform(&path, &thumb_path)
-        } else {
-            generate_image_thumb(&path, &thumb_path)
-        }
     })
     .await
-    .map_err(|e| format!("Thread join error: {e}"))?
+    .map_err(|e| format!("Thread join error: {e}"))??;
+
+    Ok(format_data_url(&jpeg_bytes))
+}
+
+/// Returns the total size in bytes of all cached thumbnail JPEGs.
+#[tauri::command]
+async fn get_thumbnail_cache_size(app: tauri::AppHandle) -> Result<u64, String> {
+    let cache_dir = thumb_cache_dir(&app);
+    if !cache_dir.exists() {
+        return Ok(0);
+    }
+    let mut total: u64 = 0;
+    let entries = fs::read_dir(&cache_dir).map_err(|e| e.to_string())?;
+    for entry in entries.flatten() {
+        let p = entry.path();
+        if p.extension().map_or(false, |e| e == "jpg") {
+            total += entry.metadata().map(|m| m.len()).unwrap_or(0);
+        }
+    }
+    Ok(total)
+}
+
+/// Deletes all files in the thumbnail cache folder and returns bytes freed.
+#[tauri::command]
+async fn clear_thumbnail_cache(app: tauri::AppHandle) -> Result<u64, String> {
+    let cache_dir = thumb_cache_dir(&app);
+    if !cache_dir.exists() {
+        return Ok(0);
+    }
+    let mut freed: u64 = 0;
+    let entries = fs::read_dir(&cache_dir).map_err(|e| e.to_string())?;
+    for entry in entries.flatten() {
+        let p = entry.path();
+        let ext = p.extension().map(|e| e.to_os_string()).unwrap_or_default();
+        if ext == "jpg" || ext == "src" {
+            freed += entry.metadata().map(|m| m.len()).unwrap_or(0);
+            let _ = fs::remove_file(&p);
+        }
+    }
+    Ok(freed)
 }
 
 /// Image formats that browsers (WebView2/Edge) cannot render natively.
@@ -1402,7 +1514,9 @@ pub fn run() {
             export_edited_media,
             convert_media,
             compress_media,
-            generate_thumbnail,
+            get_thumbnail,
+            get_thumbnail_cache_size,
+            clear_thumbnail_cache,
             prepare_display_image,
             prepare_video_display,
             copy_image_to_clipboard,
@@ -1415,7 +1529,35 @@ pub fn run() {
                 let _ = SetCurrentProcessExplicitAppUserModelID(w!("com.vyu.app"));
             }
 
+            // Manage thumbnail concurrency semaphore (4 permits)
+            app.manage(ThumbState {
+                sem: Semaphore::new(4),
+            });
+
             cleanup_vyu_temp();
+
+            // Silently clean up orphaned thumbnail cache entries
+            let cache_dir = app
+                .path()
+                .app_cache_dir()
+                .unwrap_or_else(|_| std::env::temp_dir())
+                .join("thumbnails");
+            if cache_dir.exists() {
+                if let Ok(entries) = fs::read_dir(&cache_dir) {
+                    for entry in entries.flatten() {
+                        let p = entry.path();
+                        if p.extension().map_or(false, |e| e == "src") {
+                            if let Ok(src) = fs::read_to_string(&p) {
+                                let src = src.trim();
+                                if !Path::new(src).exists() {
+                                    let _ = fs::remove_file(&p);
+                                    let _ = fs::remove_file(p.with_extension("jpg"));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             let mut args: Vec<String> = std::env::args().collect();
             let window = app.get_webview_window("main").unwrap();

@@ -22,5 +22,8 @@ tauri-plugin-dialog = "2"
 trash = "3"
 zip = "2"
 image = "0.25"
+base64 = "0.22"
+tokio = { version = "1", features = ["sync"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
 arboard = "3"
 windows = { version = "0.58", features = ["Win32_UI_Shell"] }

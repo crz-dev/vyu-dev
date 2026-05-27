@@ -53,6 +53,18 @@ export async function exportCroppedImage(
   await writeFile(outputPath, new Uint8Array(arrayBuffer));
 }
 
+export async function invokeGetThumbnail(path: string): Promise<string> {
+  return invoke("get_thumbnail", { path });
+}
+
+export async function invokeGetThumbnailCacheSize(): Promise<number> {
+  return invoke("get_thumbnail_cache_size");
+}
+
+export async function invokeClearThumbnailCache(): Promise<number> {
+  return invoke("clear_thumbnail_cache");
+}
+
 export async function invokeGetMediaProperties(
   path: string,
 ): Promise<MediaProperties> {
