@@ -184,6 +184,15 @@
         block: "nearest",
         behavior: "smooth",
       });
+    } else {
+      // Element outside virtual window (e.g., wrap from last→first or first→last).
+      // Compute scroll position that centers the target item.
+      const targetScroll =
+        currentIndex * ITEM_STEP - (trackEl.clientWidth - ITEM_W) / 2;
+      trackEl.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: "smooth",
+      });
     }
   });
 
