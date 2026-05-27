@@ -36,16 +36,17 @@ main {
   max-width: 300px;
   pointer-events: auto;
   cursor: default;
+  height: 30px;
 }
 .filename-btn {
   background: none;
   border: none;
   cursor: text;
   text-align: left;
-  height: 36px;
+  height: 34px;
   display: inline-flex;
   align-items: center;
-  padding: 0;
+  padding: 2px 0 0 0;
 }
 .filename-btn:hover {
   color: var(--text-primary);
