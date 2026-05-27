@@ -77,10 +77,8 @@
       if (l >= 0) order.push(l--);
     }
 
-    // Filter to items within the visible+overscan window
-    loadQueue = order
-      .filter((idx) => idx >= firstIdx && idx <= lastIdx)
-      .map((idx) => fileList[idx]);
+    // Keep all items — will be fetched in center-outward order
+    loadQueue = order.map((idx) => fileList[idx]);
   });
 
   // ── IntersectionObserver ──
@@ -120,12 +118,11 @@
   });
 
   // ── Queue processor ──
-  // Takes one item at a time (concurrency is handled by Rust's semaphore).
+  // Takes one item at a time — `loadQueue` is already in center-outward order.
   $effect(() => {
     if (!afterOpen) return;
     for (const path of loadQueue) {
       if (loaded.has(path) || fetching.has(path)) continue;
-      if (!observed.has(path)) continue;
       fetchOne(path);
       return; // one at a time
     }
