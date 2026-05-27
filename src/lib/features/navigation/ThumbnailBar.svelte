@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { VIDEO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
+  import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
   import { invokeGetThumbnail } from "$lib/features/media/tools";
 
@@ -23,6 +23,7 @@
   const ITEM_STEP = ITEM_W + ITEM_GAP;
   const OVERSCAN = 6;
   const VIDEO_EXTS_SET = new Set(VIDEO_EXTS);
+  const AUDIO_EXTS_SET = new Set(AUDIO_EXTS);
 
   // ── Element refs ──
   let trackEl: HTMLDivElement | null = $state(null);
@@ -53,6 +54,8 @@
       path,
       index: firstIdx + i,
       isVideo: VIDEO_EXTS_SET.has(getFileExt(path)),
+      isGif: getFileExt(path) === "gif",
+      isAudio: AUDIO_EXTS_SET.has(getFileExt(path)),
       isPdf: DOCUMENT_EXTS.includes(getFileExt(path)),
     })),
   );
@@ -176,7 +179,11 @@
       `[data-index="${currentIndex}"]`,
     ) as HTMLElement | null;
     if (el) {
-      el.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      el.scrollIntoView({
+        inline: "center",
+        block: "nearest",
+        behavior: "smooth",
+      });
     }
   });
 
@@ -246,7 +253,10 @@
             draggable="false"
           />
         {:else}
-          <div class="thumb-placeholder" style="width: {ITEM_W}px; height: {ITEM_W}px;"></div>
+          <div
+            class="thumb-placeholder"
+            style="width: {ITEM_W}px; height: {ITEM_W}px;"
+          ></div>
         {/if}
 
         {#if item.isVideo}
@@ -265,13 +275,54 @@
             </svg>
           </div>
         {/if}
+
+        {#if item.isGif}
+          <div class="thumbnail-gif-icon">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path
+                d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+              />
+            </svg>
+          </div>
+        {/if}
+
+        {#if item.isAudio}
+          <div class="thumbnail-audio-icon">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 18V5l12-2v13" />
+              <circle cx="6" cy="18" r="3" />
+              <circle cx="18" cy="16" r="3" />
+            </svg>
+          </div>
+        {/if}
       </button>
     {/each}
 
     <!-- Right spacer to maintain total scroll width -->
     <div
       class="thumb-spacer"
-      style="width: {(fileList.length - 1 - lastIdx) * ITEM_STEP}px; flex-shrink: 0;"
+      style="width: {(fileList.length - 1 - lastIdx) *
+        ITEM_STEP}px; flex-shrink: 0;"
       aria-hidden="true"
     ></div>
   </div>
