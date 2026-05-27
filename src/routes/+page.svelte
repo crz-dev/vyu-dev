@@ -672,10 +672,15 @@
     e.stopPropagation();
     const ts = getTimestampById(id);
     if (!ts) return;
+    const markerEl = e.currentTarget as HTMLElement;
+    const bar = markerEl.closest(".progress-bar, .fs-progress") as HTMLElement | null;
+    if (!bar) return;
+    const barRect = bar.getBoundingClientRect();
+    const pct = rawDurationSecs > 0 ? ts.time / rawDurationSecs : 0;
     tsEditMenu = {
       visible: true,
-      x: e.clientX + 8,
-      y: e.clientY - 12,
+      x: barRect.left + pct * barRect.width,
+      y: barRect.top - 12,
       targetId: id,
       targetType: "timestamp",
     };
@@ -684,10 +689,15 @@
     e.stopPropagation();
     const b = clips.getBoundaryById(id);
     if (!b) return;
+    const markerEl = e.currentTarget as HTMLElement;
+    const bar = markerEl.closest(".progress-bar, .fs-progress") as HTMLElement | null;
+    if (!bar) return;
+    const barRect = bar.getBoundingClientRect();
+    const pct = rawDurationSecs > 0 ? b.time / rawDurationSecs : 0;
     tsEditMenu = {
       visible: true,
-      x: e.clientX + 8,
-      y: e.clientY - 12,
+      x: barRect.left + pct * barRect.width,
+      y: barRect.top - 12,
       targetId: id,
       targetType: "segment",
     };
@@ -877,7 +887,7 @@
         const barRect = bar.getBoundingClientRect();
         const pct = rawDurationSecs > 0 ? time / rawDurationSecs : 0;
         tsEditMenu.x = barRect.left + pct * barRect.width;
-        tsEditMenu.y = barRect.top;
+        tsEditMenu.y = barRect.top - 12;
       }
     }
 
@@ -1085,7 +1095,7 @@
         const barRect = bar.getBoundingClientRect();
         const pct = rawDurationSecs > 0 ? time / rawDurationSecs : 0;
         tsEditMenu.x = barRect.left + pct * barRect.width;
-        tsEditMenu.y = barRect.top;
+        tsEditMenu.y = barRect.top - 12;
       }
     }
 
