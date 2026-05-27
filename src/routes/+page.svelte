@@ -3116,10 +3116,11 @@
                   aria-label="exit fullscreen"
                   ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
                     ><path
-                      d="M2 2h3v3M10 2h-3v3M10 10h-3v-3M2 10h3v-3"
+                      d="M4 1v3h-3M8 1v3h3M8 11v-3h3M4 11v-3h-3"
                       stroke="currentColor"
                       stroke-width="1.2"
                       stroke-linecap="round"
+                      stroke-linejoin="round"
                     /></svg
                   ></button
                 >

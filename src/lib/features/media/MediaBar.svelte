@@ -173,10 +173,11 @@
       {#if fullscreen}
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           ><path
-            d="M1 1H4V4M8 1H11V4M11 8V11H8M4 11H1V8"
+            d="M4 1V4H1M8 1V4H11M8 11V8H11M4 11V8H1"
             stroke="currentColor"
             stroke-width="0.6"
             stroke-linecap="round"
+            stroke-linejoin="round"
           /></svg
         >
       {:else}
