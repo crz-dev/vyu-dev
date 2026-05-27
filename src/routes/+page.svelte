@@ -873,6 +873,12 @@
       const time = Math.max(0, Math.min(timeFromClientX(ev.clientX), rawDurationSecs));
       timeline.updateTimestampTime(id, time, timestamps, (v) => (timestamps = v));
       updateTooltipDuringDrag(time, "yellow", dragTitle, id);
+      if (tsEditMenu.visible && tsEditMenu.targetId === id && bar) {
+        const barRect = bar.getBoundingClientRect();
+        const pct = rawDurationSecs > 0 ? time / rawDurationSecs : 0;
+        tsEditMenu.x = barRect.left + pct * barRect.width;
+        tsEditMenu.y = barRect.top;
+      }
     }
 
     function onMouseUp() {
@@ -1075,6 +1081,12 @@
       const time = timeFromClientX(ev.clientX);
       clips.setBoundaryTime(id, Math.max(0, Math.min(time, rawDurationSecs)));
       updateTooltipDuringDrag(time, "blue", dragTitle, id);
+      if (tsEditMenu.visible && tsEditMenu.targetId === id && bar) {
+        const barRect = bar.getBoundingClientRect();
+        const pct = rawDurationSecs > 0 ? time / rawDurationSecs : 0;
+        tsEditMenu.x = barRect.left + pct * barRect.width;
+        tsEditMenu.y = barRect.top;
+      }
     }
 
     function onMouseUp() {
@@ -2819,7 +2831,7 @@
       </div>
     </div>
 
-    {#if viewer.state.isFullscreen}
+    {#if viewer.state.isFullscreen && fileSrc}
       <div
         class="fs-overlay"
         class:visible={viewer.state.fsControlsVisible || tsEditMenu.visible}
