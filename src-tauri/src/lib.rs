@@ -287,8 +287,8 @@ const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv", "m
 const AUDIO_EXTS_RUST: &[&str] = &["mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus", "aiff", "alac"];
 const DOCUMENT_EXTS_RUST: &[&str] = &["pdf"];
 
-/// Image formats that need ffmpeg for decoding (not supported by the image crate).
-const FFMPEG_IMAGE_EXTS_RUST: &[&str] = &["psd", "jxl", "heic", "heif"];
+/// Image formats that need ffmpeg for decoding/thumbnail generation.
+const FFMPEG_IMAGE_EXTS_RUST: &[&str] = &["gif", "psd", "jxl", "heic", "heif"];
 const FFMPEG_THUMB_TIMEOUT: Duration = Duration::from_secs(8);
 
 fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
