@@ -176,13 +176,13 @@ export function saveLoopMode(mode: LoopMode): void {
 }
 
 export function loadTheme(): "dark" | "light" | "system" {
-	const v = localStorage.getItem("vyu-theme");
-	if (v === "light" || v === "system") return v;
-	return "dark";
+  const v = localStorage.getItem("vyu-theme");
+  if (v === "light" || v === "system") return v;
+  return "dark";
 }
 
 export function saveTheme(t: "dark" | "light" | "system"): void {
-	localStorage.setItem("vyu-theme", t);
+  localStorage.setItem("vyu-theme", t);
 }
 
 export function loadSliderMode(): { volume?: boolean; speed?: boolean } {

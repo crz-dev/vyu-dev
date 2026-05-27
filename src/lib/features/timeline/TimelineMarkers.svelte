@@ -1,9 +1,5 @@
 <script lang="ts">
-  import type {
-    ClipBoundary,
-    ClipPair,
-    VideoMarker,
-  } from "$lib/shared/types";
+  import type { ClipBoundary, ClipPair, VideoMarker } from "$lib/shared/types";
 
   let {
     fullscreen = false,
@@ -98,7 +94,9 @@
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
   const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
   const showResumeMarker = $derived(
-    resumePoint !== null && durationSecs > 0 && resumePoint / durationSecs >= 0.25,
+    resumePoint !== null &&
+      durationSecs > 0 &&
+      resumePoint / durationSecs >= 0.25,
   );
   let showPlayheadTooltip = $state(false);
   let playheadHovered = $state(false);
@@ -186,9 +184,10 @@
       role="region"
       aria-label="AB Loop region"
       class="{abRangeClass} tooltip-above"
-      style="left: {getTimestampPct(abLoopRegion.start)}%; width: {getTimestampPct(
-        abLoopRegion.end,
-      ) - getTimestampPct(abLoopRegion.start)}%;"
+      style="left: {getTimestampPct(
+        abLoopRegion.start,
+      )}%; width: {getTimestampPct(abLoopRegion.end) -
+        getTimestampPct(abLoopRegion.start)}%;"
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -249,7 +248,6 @@
         loopEnd = null;
         clearABLoop();
       }}
-
       onclick={(e) => {
         e.stopPropagation();
         if (loopMarkerJustDragged) return;

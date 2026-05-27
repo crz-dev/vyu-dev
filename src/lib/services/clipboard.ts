@@ -60,11 +60,7 @@ export async function copyAllPropertiesToClipboard(
   parentFolder: string,
   mediaProps: MediaProperties | null,
 ): Promise<void> {
-  const typeLabel = isPdf
-    ? `Document (PDF)`
-    : isVideo
-      ? "Video"
-      : "Image";
+  const typeLabel = isPdf ? `Document (PDF)` : isVideo ? "Video" : "Image";
   const lines = [
     `Name: ${fileName}`,
     `Type: ${typeLabel} (${fileExt || "unknown"})`,

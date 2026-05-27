@@ -8,7 +8,7 @@
     onScrubMove,
     onScrubEnd,
     isScrubbing,
-    fileName
+    fileName,
   }: {
     progress: number;
     audioEl: () => HTMLAudioElement | null;
@@ -33,7 +33,11 @@
   let isDragging = $state(false);
 
   // Calculate angle from center point
-  function calculateAngle(clientX: number, clientY: number, rect: DOMRect): number {
+  function calculateAngle(
+    clientX: number,
+    clientY: number,
+    rect: DOMRect,
+  ): number {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     const dx = clientX - centerX;
@@ -47,42 +51,42 @@
   function handleDragStart(e: MouseEvent | TouchEvent) {
     if (e instanceof MouseEvent && e.button !== 0) return;
     e.preventDefault();
-    
+
     const svg = e.currentTarget as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
     const point = e instanceof TouchEvent ? e.touches[0] : e;
-    
+
     lastAngle = calculateAngle(point.clientX, point.clientY, rect);
     isDragging = true;
     rotation = progress * 3.6; // Convert progress to degrees (100% = 360°)
-    
+
     onScrubStart(e);
   }
 
   function handleDragMove(e: MouseEvent | TouchEvent) {
     if (!isDragging) return;
-    
+
     const svg = e.currentTarget as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
     const point = e instanceof TouchEvent ? e.touches[0] : e;
-    
+
     const currentAngle = calculateAngle(point.clientX, point.clientY, rect);
     let deltaAngle = currentAngle - lastAngle;
-    
+
     // Handle wraparound at 360°/0°
     if (deltaAngle > 180) deltaAngle -= 360;
     if (deltaAngle < -180) deltaAngle += 360;
-    
+
     rotation += deltaAngle;
     lastAngle = currentAngle;
-    
+
     // Normalize rotation to 0-360 range for progress calculation
     let normalizedRotation = rotation % 360;
     if (normalizedRotation < 0) normalizedRotation += 360;
-    
+
     // Convert rotation to progress (0-100%)
     const newProgress = normalizedRotation / 3.6;
-    
+
     onScrubMove(e, newProgress);
   }
 
@@ -128,7 +132,7 @@
       <stop offset="95%" stop-color="var(--vinyl-disc)" />
       <stop offset="100%" stop-color="var(--vinyl-edge, #2a2a2a)" />
     </radialGradient>
-    
+
     <!-- Center label gradient -->
     <radialGradient id="centerLabelGradient" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="var(--vinyl-center)" stop-opacity="0.9" />
@@ -136,7 +140,11 @@
     </radialGradient>
 
     <!-- Circular text path for filename (rotates with disc so filename stays at top at 0:00) -->
-    <path id="filenamePath" d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270" transform="rotate({-90 + rotation} 325 325)" />
+    <path
+      id="filenamePath"
+      d="M 325,270 A 55,55 0 0,1 325,380 A 55,55 0 0,1 325,270"
+      transform="rotate({-90 + rotation} 325 325)"
+    />
   </defs>
 
   <!-- Outer progress ring (background track) -->
@@ -168,34 +176,115 @@
   <g transform="rotate({rotation} 325 325)">
     <!-- Main disc -->
     <circle cx="325" cy="325" r="270" fill="url(#vinylGradient)" />
-    
+
     <!-- Concentric grooves for vinyl texture -->
-    <circle cx="325" cy="325" r="248" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="325" cy="325" r="226" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="325" cy="325" r="204" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="325" cy="325" r="182" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="325" cy="325" r="160" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="325" cy="325" r="138" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    <circle cx="325" cy="325" r="116" stroke="var(--vinyl-groove)" stroke-width="0.5" fill="none" />
-    
+    <circle
+      cx="325"
+      cy="325"
+      r="248"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+    <circle
+      cx="325"
+      cy="325"
+      r="226"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+    <circle
+      cx="325"
+      cy="325"
+      r="204"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+    <circle
+      cx="325"
+      cy="325"
+      r="182"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+    <circle
+      cx="325"
+      cy="325"
+      r="160"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+    <circle
+      cx="325"
+      cy="325"
+      r="138"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+    <circle
+      cx="325"
+      cy="325"
+      r="116"
+      stroke="var(--vinyl-groove)"
+      stroke-width="0.5"
+      fill="none"
+    />
+
     <!-- Center label -->
-    <circle cx="325" cy="325" r={centerLabelRadius} fill="url(#centerLabelGradient)" />
-    
+    <circle
+      cx="325"
+      cy="325"
+      r={centerLabelRadius}
+      fill="url(#centerLabelGradient)"
+    />
+
     <!-- Center label inner ring for depth -->
-    <circle cx="325" cy="325" r="75" stroke="rgba(0,0,0,0.2)" stroke-width="1" fill="none" />
-    
+    <circle
+      cx="325"
+      cy="325"
+      r="75"
+      stroke="rgba(0,0,0,0.2)"
+      stroke-width="1"
+      fill="none"
+    />
+
     <!-- Filename text on circular path -->
-    <text class="filename-text" font-size="13" font-weight="500" fill="var(--text-primary)" font-family="var(--font-family)" letter-spacing="0.5" text-anchor="middle">
-      <textPath href="#filenamePath" startOffset="50%" method="align" spacing="auto">
+    <text
+      class="filename-text"
+      font-size="13"
+      font-weight="500"
+      fill="var(--text-primary)"
+      font-family="var(--font-family)"
+      letter-spacing="0.5"
+      text-anchor="middle"
+    >
+      <textPath
+        href="#filenamePath"
+        startOffset="50%"
+        method="align"
+        spacing="auto"
+      >
         {fileName}
       </textPath>
     </text>
-    
+
     <!-- Center hole -->
     <circle cx="325" cy="325" r="16" fill="var(--vinyl-center-hole)" />
-    
+
     <!-- Center hole highlight -->
-    <circle cx="325" cy="325" r="16" stroke="rgba(255,255,255,0.1)" stroke-width="0.5" fill="none" />
+    <circle
+      cx="325"
+      cy="325"
+      r="16"
+      stroke="rgba(255,255,255,0.1)"
+      stroke-width="0.5"
+      fill="none"
+    />
   </g>
 </svg>
 

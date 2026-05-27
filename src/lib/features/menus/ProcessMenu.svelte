@@ -279,12 +279,12 @@
       role="button"
       tabindex="-1"
       aria-label="Drag to move"
-        onmousedown={(e) => {
-          e.preventDefault();
-          onMoved?.();
-          const menu = (e.currentTarget as HTMLElement).closest(
-            ".process-menu",
-          ) as HTMLElement;
+      onmousedown={(e) => {
+        e.preventDefault();
+        onMoved?.();
+        const menu = (e.currentTarget as HTMLElement).closest(
+          ".process-menu",
+        ) as HTMLElement;
         if (!menu) return;
         const startX = e.clientX;
         const startY = e.clientY;
@@ -375,100 +375,329 @@
 
     {#if isPdf}
       <div class="edit-menu-row" style="text-align:center; padding:16px;">
-        <span style="font-size:11px; color:var(--text-muted);">Convert/Compress not available for PDFs.<br />Use the context menu to open in default viewer or print.</span>
+        <span style="font-size:11px; color:var(--text-muted);"
+          >Convert/Compress not available for PDFs.<br />Use the context menu to
+          open in default viewer or print.</span
+        >
       </div>
     {:else}
-    <div class="edit-menu-row">
-      <button
-        class="edit-menu-btn blue"
-        class:sub-open={compressOpen}
-        onclick={toggleConvert}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      <div class="edit-menu-row">
+        <button
+          class="edit-menu-btn blue"
+          class:sub-open={compressOpen}
+          onclick={toggleConvert}
         >
-          <path d="M4 8h16" stroke-linecap="round" />
-          <path
-            d="M16 4l4 4-4 4"
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-          />
-          <path d="M20 16H4" stroke-linecap="round" />
-          <path
-            d="M8 20l-4-4 4-4"
+          >
+            <path d="M4 8h16" stroke-linecap="round" />
+            <path
+              d="M16 4l4 4-4 4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path d="M20 16H4" stroke-linecap="round" />
+            <path
+              d="M8 20l-4-4 4-4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Convert
+        </button>
+        <button
+          class="edit-menu-btn yellow"
+          class:sub-open={convertOpen}
+          onclick={toggleCompress}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-          />
-        </svg>
-        Convert
-      </button>
-      <button
-        class="edit-menu-btn yellow"
-        class:sub-open={convertOpen}
-        onclick={toggleCompress}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"
-          />
-        </svg>
-        Compress
-      </button>
-    </div>
+          >
+            <path
+              d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"
+            />
+          </svg>
+          Compress
+        </button>
+      </div>
 
-    {#if convertOpen}
-      {#if needsFfmpeg}
-        <div
-          class="ffprobe-note process-ffmpeg-note"
-          transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-        >
-          <p class="ffprobe-title">Conversion needs FFmpeg</p>
-          <p class="ffprobe-sub">
-            To convert or compress media files, install FFmpeg. Your files stay
-            local on your device and are not uploaded anywhere.
-          </p>
-          <div class="ffprobe-actions">
-            <button
-              class="props-btn"
-              onclick={installFfmpegAndWait}
-              disabled={ffmpegInstalling}
-            >
-              {ffmpegInstalling ? "Installing FFmpeg..." : "Install FFmpeg"}
-            </button>
-            <button
-              class="props-btn props-btn-secondary"
-              onclick={async () => {
-                await refreshFfprobeAvailability();
-              }}
-              disabled={ffmpegInstalling}
-            >
-              Retry detection
-            </button>
-            {#if ffmpegInstalling}
-              <div class="ffprobe-progress"><span></span></div>
+      {#if convertOpen}
+        {#if needsFfmpeg}
+          <div
+            class="ffprobe-note process-ffmpeg-note"
+            transition:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+          >
+            <p class="ffprobe-title">Conversion needs FFmpeg</p>
+            <p class="ffprobe-sub">
+              To convert or compress media files, install FFmpeg. Your files
+              stay local on your device and are not uploaded anywhere.
+            </p>
+            <div class="ffprobe-actions">
+              <button
+                class="props-btn"
+                onclick={installFfmpegAndWait}
+                disabled={ffmpegInstalling}
+              >
+                {ffmpegInstalling ? "Installing FFmpeg..." : "Install FFmpeg"}
+              </button>
+              <button
+                class="props-btn props-btn-secondary"
+                onclick={async () => {
+                  await refreshFfprobeAvailability();
+                }}
+                disabled={ffmpegInstalling}
+              >
+                Retry detection
+              </button>
+              {#if ffmpegInstalling}
+                <div class="ffprobe-progress"><span></span></div>
+              {/if}
+            </div>
+            {#if ffmpegInstallError}
+              <p class="ffprobe-error">{ffmpegInstallError}</p>
             {/if}
           </div>
-          {#if ffmpegInstallError}
-            <p class="ffprobe-error">{ffmpegInstallError}</p>
+        {:else}
+          <div class="edit-menu-separator"></div>
+          <div
+            class="edit-menu-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <button
+              class="edit-menu-btn sub"
+              class:grey={!activeFormat}
+              class:blue={!!activeFormat}
+              onclick={(e) => {
+                e.stopPropagation();
+                toggleTool("format");
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              Format
+            </button>
+            <button
+              class="edit-menu-btn sub"
+              class:grey={!activePreset}
+              class:blue={!!activePreset}
+              onclick={(e) => {
+                e.stopPropagation();
+                toggleTool("preset");
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+                />
+              </svg>
+              Preset
+            </button>
+            <button
+              class="edit-menu-btn sub"
+              class:grey={!exportLocation}
+              class:yellow={!!exportLocation}
+              onclick={() => {
+                activeConvertTool = null;
+                handleLocation();
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              >
+                <path
+                  d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                />
+              </svg>
+              Location
+            </button>
+            <button
+              class="edit-menu-btn sub"
+              class:grey={!canExport}
+              class:green={canExport}
+              disabled={!canExport}
+              onclick={() => {
+                activeConvertTool = null;
+                handleExport();
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {converting ? "Converting..." : "Export"}
+            </button>
+          </div>
+
+          {#if activeConvertTool === "format"}
+            <div class="edit-menu-separator"></div>
+            <div
+              class="edit-menu-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              {#each formatOptions as opt}
+                <button
+                  class="edit-menu-btn white sub"
+                  class:inactive={activeFormat !== null && activeFormat !== opt}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    selectFormat(opt);
+                  }}
+                >
+                  {opt}
+                </button>
+              {/each}
+            </div>
           {/if}
-        </div>
-      {:else}
+
+          {#if activeConvertTool === "preset"}
+            <div class="edit-menu-separator"></div>
+            <div
+              class="edit-menu-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              {#each presetOptions as opt}
+                <button
+                  class="edit-menu-btn white sub"
+                  class:inactive={activePreset !== null && activePreset !== opt}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    selectPreset(opt);
+                  }}
+                >
+                  {opt}
+                </button>
+              {/each}
+            </div>
+          {/if}
+
+          {#if converting}
+            <div
+              class="convert-progress"
+              transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
+            >
+              <span></span>
+            </div>
+          {/if}
+
+          {#if convertError}
+            <p
+              class="ffprobe-error"
+              style="margin: 0; text-align: center;"
+              transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
+            >
+              {convertError}
+            </p>
+          {/if}
+
+          {#if convertOutputPath && convertOutputFolder}
+            <div
+              class="convert-success-row"
+              transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
+            >
+              <span class="convert-success-text"
+                >Saved to {convertOutputFolder}</span
+              >
+              <div class="convert-success-actions">
+                <button
+                  class="convert-success-btn yellow"
+                  onclick={() => {
+                    if (convertOutputPath) showInExplorer(convertOutputPath);
+                  }}
+                  aria-label="Show in explorer"
+                  title="Show in explorer"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    ><path
+                      d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    /></svg
+                  >
+                </button>
+                <button
+                  class="convert-success-btn green"
+                  onclick={() => {
+                    if (convertOutputPath) openConvertedFile(convertOutputPath);
+                  }}
+                  aria-label="Open in Vyu"
+                  title="Open in Vyu"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          {/if}
+        {/if}
+      {/if}
+
+      {#if compressOpen}
         <div class="edit-menu-separator"></div>
         <div
           class="edit-menu-row"
@@ -477,11 +706,11 @@
         >
           <button
             class="edit-menu-btn sub"
-            class:grey={!activeFormat}
-            class:blue={!!activeFormat}
+            class:grey={!activeTarget}
+            class:blue={!!activeTarget}
             onclick={(e) => {
               e.stopPropagation();
-              toggleTool("format");
+              toggleCompressTool("target");
             }}
           >
             <svg
@@ -494,18 +723,19 @@
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
             </svg>
-            Format
+            Target
           </button>
           <button
             class="edit-menu-btn sub"
-            class:grey={!activePreset}
-            class:blue={!!activePreset}
+            class:grey={!activeCompressPreset}
+            class:blue={!!activeCompressPreset}
             onclick={(e) => {
               e.stopPropagation();
-              toggleTool("preset");
+              toggleCompressTool("preset");
             }}
           >
             <svg
@@ -527,11 +757,11 @@
           </button>
           <button
             class="edit-menu-btn sub"
-            class:grey={!exportLocation}
-            class:yellow={!!exportLocation}
+            class:grey={!compressLocation}
+            class:yellow={!!compressLocation}
             onclick={() => {
-              activeConvertTool = null;
-              handleLocation();
+              activeCompressTool = null;
+              handleCompressLocation();
             }}
           >
             <svg
@@ -551,12 +781,12 @@
           </button>
           <button
             class="edit-menu-btn sub"
-            class:grey={!canExport}
-            class:green={canExport}
-            disabled={!canExport}
+            class:grey={!canExtract}
+            class:green={canExtract}
+            disabled={!canExtract}
             onclick={() => {
-              activeConvertTool = null;
-              handleExport();
+              activeCompressTool = null;
+              handleExtract();
             }}
           >
             <svg
@@ -573,24 +803,24 @@
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            {converting ? "Converting..." : "Export"}
+            {compressing ? "Compressing..." : "Export"}
           </button>
         </div>
 
-        {#if activeConvertTool === "format"}
+        {#if activeCompressTool === "target"}
           <div class="edit-menu-separator"></div>
           <div
             class="edit-menu-row"
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            {#each formatOptions as opt}
+            {#each targetOptions as opt}
               <button
                 class="edit-menu-btn white sub"
-                class:inactive={activeFormat !== null && activeFormat !== opt}
+                class:inactive={activeTarget !== null && activeTarget !== opt}
                 onclick={(e) => {
                   e.stopPropagation();
-                  selectFormat(opt);
+                  selectTarget(opt);
                 }}
               >
                 {opt}
@@ -599,7 +829,7 @@
           </div>
         {/if}
 
-        {#if activeConvertTool === "preset"}
+        {#if activeCompressTool === "preset"}
           <div class="edit-menu-separator"></div>
           <div
             class="edit-menu-row"
@@ -609,10 +839,11 @@
             {#each presetOptions as opt}
               <button
                 class="edit-menu-btn white sub"
-                class:inactive={activePreset !== null && activePreset !== opt}
+                class:inactive={activeCompressPreset !== null &&
+                  activeCompressPreset !== opt}
                 onclick={(e) => {
                   e.stopPropagation();
-                  selectPreset(opt);
+                  selectCompressPreset(opt);
                 }}
               >
                 {opt}
@@ -621,7 +852,7 @@
           </div>
         {/if}
 
-        {#if converting}
+        {#if compressing}
           <div
             class="convert-progress"
             transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
@@ -630,29 +861,29 @@
           </div>
         {/if}
 
-        {#if convertError}
+        {#if compressError}
           <p
             class="ffprobe-error"
             style="margin: 0; text-align: center;"
             transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
           >
-            {convertError}
+            {compressError}
           </p>
         {/if}
 
-        {#if convertOutputPath && convertOutputFolder}
+        {#if compressOutputPath && compressOutputFolder}
           <div
             class="convert-success-row"
             transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
           >
             <span class="convert-success-text"
-              >Saved to {convertOutputFolder}</span
+              >Saved to {compressOutputFolder}</span
             >
             <div class="convert-success-actions">
               <button
                 class="convert-success-btn yellow"
                 onclick={() => {
-                  if (convertOutputPath) showInExplorer(convertOutputPath);
+                  if (compressOutputPath) showInExplorer(compressOutputPath);
                 }}
                 aria-label="Show in explorer"
                 title="Show in explorer"
@@ -665,236 +896,10 @@
                   /></svg
                 >
               </button>
-              <button
-                class="convert-success-btn green"
-                onclick={() => {
-                  if (convertOutputPath) openConvertedFile(convertOutputPath);
-                }}
-                aria-label="Open in Vyu"
-                title="Open in Vyu"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-              </button>
             </div>
           </div>
         {/if}
       {/if}
-    {/if}
-
-    {#if compressOpen}
-      <div class="edit-menu-separator"></div>
-      <div
-        class="edit-menu-row"
-        in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-        out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-      >
-        <button
-          class="edit-menu-btn sub"
-          class:grey={!activeTarget}
-          class:blue={!!activeTarget}
-          onclick={(e) => {
-            e.stopPropagation();
-            toggleCompressTool("target");
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <circle cx="12" cy="12" r="6" />
-            <circle cx="12" cy="12" r="2" />
-          </svg>
-          Target
-        </button>
-        <button
-          class="edit-menu-btn sub"
-          class:grey={!activeCompressPreset}
-          class:blue={!!activeCompressPreset}
-          onclick={(e) => {
-            e.stopPropagation();
-            toggleCompressTool("preset");
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
-            />
-          </svg>
-          Preset
-        </button>
-        <button
-          class="edit-menu-btn sub"
-          class:grey={!compressLocation}
-          class:yellow={!!compressLocation}
-          onclick={() => {
-            activeCompressTool = null;
-            handleCompressLocation();
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          >
-            <path
-              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-            />
-          </svg>
-          Location
-        </button>
-        <button
-          class="edit-menu-btn sub"
-          class:grey={!canExtract}
-          class:green={canExtract}
-          disabled={!canExtract}
-          onclick={() => {
-            activeCompressTool = null;
-            handleExtract();
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          {compressing ? "Compressing..." : "Export"}
-        </button>
-      </div>
-
-      {#if activeCompressTool === "target"}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          {#each targetOptions as opt}
-            <button
-              class="edit-menu-btn white sub"
-              class:inactive={activeTarget !== null && activeTarget !== opt}
-              onclick={(e) => {
-                e.stopPropagation();
-                selectTarget(opt);
-              }}
-            >
-              {opt}
-            </button>
-          {/each}
-        </div>
-      {/if}
-
-      {#if activeCompressTool === "preset"}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          {#each presetOptions as opt}
-            <button
-              class="edit-menu-btn white sub"
-              class:inactive={activeCompressPreset !== null &&
-                activeCompressPreset !== opt}
-              onclick={(e) => {
-                e.stopPropagation();
-                selectCompressPreset(opt);
-              }}
-            >
-              {opt}
-            </button>
-          {/each}
-        </div>
-      {/if}
-
-      {#if compressing}
-        <div
-          class="convert-progress"
-          transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
-        >
-          <span></span>
-        </div>
-      {/if}
-
-      {#if compressError}
-        <p
-          class="ffprobe-error"
-          style="margin: 0; text-align: center;"
-          transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
-        >
-          {compressError}
-        </p>
-      {/if}
-
-      {#if compressOutputPath && compressOutputFolder}
-        <div
-          class="convert-success-row"
-          transition:fly={{ y: -6, duration: 120, opacity: 0.05 }}
-        >
-          <span class="convert-success-text"
-            >Saved to {compressOutputFolder}</span
-          >
-          <div class="convert-success-actions">
-            <button
-              class="convert-success-btn yellow"
-              onclick={() => {
-                if (compressOutputPath) showInExplorer(compressOutputPath);
-              }}
-              aria-label="Show in explorer"
-              title="Show in explorer"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                ><path
-                  d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                /></svg
-              >
-            </button>
-          </div>
-        </div>
-      {/if}
-    {/if}
     {/if}
   </div>
 {/if}

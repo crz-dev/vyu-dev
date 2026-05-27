@@ -428,7 +428,11 @@
   });
 
   const processMenuStyle = $derived.by(() => {
-    if (processMenuVisible && !processMenuMoved && layoutOffsets.process !== 0) {
+    if (
+      processMenuVisible &&
+      !processMenuMoved &&
+      layoutOffsets.process !== 0
+    ) {
       return `left: calc(50% + ${layoutOffsets.process}px);`;
     }
     return "";
@@ -446,7 +450,9 @@
   class:fullscreen={viewerStateIsFullscreen}
   class:menu-open={anyMenuOpen}
   class:thumbnail-bar-open={thumbnailBarVisible}
-  class:fs-controls-hidden={viewerStateIsFullscreen && thumbnailBarVisible && !viewerFsControlsVisible}
+  class:fs-controls-hidden={viewerStateIsFullscreen &&
+    thumbnailBarVisible &&
+    !viewerFsControlsVisible}
   onmousemove={viewerStateIsFullscreen ? viewerResetFsTimer : undefined}
   ondrop={(e) => e.preventDefault()}
   ondragover={(e) => e.preventDefault()}

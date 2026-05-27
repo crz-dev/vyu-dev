@@ -2,14 +2,14 @@
 
 ## Quick Commands
 
-| Task | Command |
-|------|---------|
-| Install deps | `pnpm install` |
-| Dev (Tauri + SvelteKit SPA) | `pnpm tauri dev` |
-| Production build | `pnpm tauri build` |
-| Type check | `pnpm check` (runs `svelte-kit sync && svelte-check`) |
-| Format | `pnpm prettier --write .` (Prettier + `prettier-plugin-svelte`) |
-| Lint | ESLint is config-only (`eslint-config-prettier`) — no rules, just disables conflicts |
+| Task                        | Command                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| Install deps                | `pnpm install`                                                                       |
+| Dev (Tauri + SvelteKit SPA) | `pnpm tauri dev`                                                                     |
+| Production build            | `pnpm tauri build`                                                                   |
+| Type check                  | `pnpm check` (runs `svelte-kit sync && svelte-check`)                                |
+| Format                      | `pnpm prettier --write .` (Prettier + `prettier-plugin-svelte`)                      |
+| Lint                        | ESLint is config-only (`eslint-config-prettier`) — no rules, just disables conflicts |
 
 **Prerequisites:** Rust toolchain (Tauri backend) + FFmpeg on PATH (video processing, thumbnails, format conversion). FFmpeg is **not bundled** — the app checks via `check_ffprobe()` and offers `install_ffmpeg()` (winget on Windows only).
 
@@ -19,10 +19,10 @@
 
 ### Two halves
 
-| Layer | Location | Role |
-|-------|----------|------|
-| Frontend (Svelte 5 runes) | `src/` | UI, state machines, viewer logic, all in-browser rendering |
-| Backend (Rust) | `src-tauri/src/lib.rs` (~1753 lines) | Tauri commands: file I/O, FFmpeg orchestration, thumbnails, clipboard, trash, zip, media integrity/fix |
+| Layer                     | Location                             | Role                                                                                                   |
+| ------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Frontend (Svelte 5 runes) | `src/`                               | UI, state machines, viewer logic, all in-browser rendering                                             |
+| Backend (Rust)            | `src-tauri/src/lib.rs` (~1753 lines) | Tauri commands: file I/O, FFmpeg orchestration, thumbnails, clipboard, trash, zip, media integrity/fix |
 
 ### Frontend structure
 
@@ -42,16 +42,17 @@
 
 ### Supported media
 
-| Type | Extensions | Notes |
-|------|-----------|-------|
-| Image | JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, 24 RAW formats | Unsupported formats decoded via Rust `image` crate or FFmpeg → cached PNG |
-| Video | MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V | TS/M2TS remuxed to MP4 via `ffmpeg -c copy` for browser playback |
-| Audio | MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC | Waveform thumbnails via FFmpeg |
-| Document | PDF | Rendered with pdfjs-dist (dynamically imported, code-split) |
+| Type     | Extensions                                                                     | Notes                                                                     |
+| -------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Image    | JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, 24 RAW formats | Unsupported formats decoded via Rust `image` crate or FFmpeg → cached PNG |
+| Video    | MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V                             | TS/M2TS remuxed to MP4 via `ffmpeg -c copy` for browser playback          |
+| Audio    | MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC                           | Waveform thumbnails via FFmpeg                                            |
+| Document | PDF                                                                            | Rendered with pdfjs-dist (dynamically imported, code-split)               |
 
 ### Backend (Rust)
 
 All Tauri commands in `src-tauri/src/lib.rs`. Key capabilities:
+
 - Thumbnail generation (video frames, image resize, audio waveform)
 - Display image prep (decode TIFF/PSD/JXL/RAW/HEIC → cached PNG in `%LOCALAPPDATA%/vyu/cache/displays/`)
 - Video remuxing (TS/M2TS → MP4)
@@ -74,17 +75,17 @@ All Tauri commands in `src-tauri/src/lib.rs`. Key capabilities:
 
 ## Important Files
 
-| File | Why it matters |
-|------|---------------|
-| `src/routes/+page.svelte` | Main app entry — all state, keybinds, template |
-| `src-tauri/src/lib.rs` | All Tauri `#[tauri::command]` handlers |
-| `src/lib/features/media/media.svelte.ts` | Core file loading, navigation, display state |
-| `src/lib/features/viewer/viewer.svelte.ts` | Image/video viewer state machine |
-| `src/lib/features/pdf/pdf.svelte.ts` | PDF.js loading, canvas rendering, scale control |
-| `src/lib/services/storage.ts` | localStorage read/write for all persisted state |
-| `src/lib/services/files.ts` | Folder scanning with LRU cache (max 50 folders) |
-| `src/lib/shared/constants.ts` | Extension lists, constants — must match `*_RUST` in `lib.rs` |
-| `DATAFLOW.md` | Detailed data flow: file open, navigation, video lifecycle, localStorage map |
+| File                                       | Why it matters                                                               |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `src/routes/+page.svelte`                  | Main app entry — all state, keybinds, template                               |
+| `src-tauri/src/lib.rs`                     | All Tauri `#[tauri::command]` handlers                                       |
+| `src/lib/features/media/media.svelte.ts`   | Core file loading, navigation, display state                                 |
+| `src/lib/features/viewer/viewer.svelte.ts` | Image/video viewer state machine                                             |
+| `src/lib/features/pdf/pdf.svelte.ts`       | PDF.js loading, canvas rendering, scale control                              |
+| `src/lib/services/storage.ts`              | localStorage read/write for all persisted state                              |
+| `src/lib/services/files.ts`                | Folder scanning with LRU cache (max 50 folders)                              |
+| `src/lib/shared/constants.ts`              | Extension lists, constants — must match `*_RUST` in `lib.rs`                 |
+| `DATAFLOW.md`                              | Detailed data flow: file open, navigation, video lifecycle, localStorage map |
 
 ## Gotchas
 

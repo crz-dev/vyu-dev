@@ -188,7 +188,11 @@ export function createMedia(
           "prepare_video_display",
           { path },
         );
-        set({ fileSrc: displayPath ? convertFileSrc(displayPath) : convertFileSrc(path) });
+        set({
+          fileSrc: displayPath
+            ? convertFileSrc(displayPath)
+            : convertFileSrc(path),
+        });
       } catch (e) {
         console.error("prepare_video_display failed:", e);
         set({ fileSrc: convertFileSrc(path) });

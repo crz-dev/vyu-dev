@@ -143,7 +143,8 @@ export function createPdf() {
     const timeoutId = setTimeout(() => {
       if (state.loading) {
         state.loading = false;
-        state.error = "PDF loading timed out. The file may be too large or corrupted.";
+        state.error =
+          "PDF loading timed out. The file may be too large or corrupted.";
         console.error("PDF load timed out after", LOAD_TIMEOUT_MS, "ms");
       }
     }, LOAD_TIMEOUT_MS);
@@ -156,9 +157,7 @@ export function createPdf() {
       // built-in "fake worker" mode, which runs worker logic on the main thread
       // instead of spawning a Web Worker.  Necessary because Tauri's WebView2
       // custom protocol (asset://) does not support Web Workers.
-      const pdfjsWorker = await import(
-        "pdfjs-dist/build/pdf.worker.min.mjs"
-      );
+      const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs");
       globalThis.pdfjsWorker = pdfjsWorker;
 
       // Must be a truthy non-empty string — PDF.js 4.x checks for falsy
@@ -212,8 +211,7 @@ export function createPdf() {
     } catch (err) {
       clearTimeout(timeoutId);
       state.loading = false;
-      state.error =
-        err instanceof Error ? err.message : "Failed to load PDF";
+      state.error = err instanceof Error ? err.message : "Failed to load PDF";
       console.error("PDF load error:", err);
     }
   }

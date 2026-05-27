@@ -237,7 +237,7 @@ export async function exportEditedImage(
   // Crop bounds are set relative to the displayed (rotated) image.
   // For quarter-turn rotations, swap the bounds to match natural coordinates.
   if (isQuarterTurn) {
-    const normRot = (((snapshot.rotation % 360) + 360) % 360);
+    const normRot = ((snapshot.rotation % 360) + 360) % 360;
     if (normRot === 90) {
       // 90° CW: displayed width = natural height, displayed height = natural width
       b = {

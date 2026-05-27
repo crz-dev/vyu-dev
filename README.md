@@ -4,15 +4,15 @@ A local-first media viewer for Windows. No telemetry, no cloud, no accounts — 
 
 ## About
 
-Vyu is a lightweight alternative to Windows Photos and the built-in Media Player. It opens images, videos, audio files, and PDFs from your local disk — nothing leaves your machine. All state (timestamps, preferences, clip boundaries) stays in your browser's localStorage, scoped to your device. No network requests, ever. Works entirely offline.
+Vyu is a lightweight alternative to Windows Photos and the built-in Media Player. It opens images, videos, audio files, and PDFs from your local disk — nothing leaves your machine. All preferences, clip boundaries, and resume points stay in your browser's localStorage. No network requests, ever. Works entirely offline.
 
 ## Features
 
-- **Browse images** — JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, and 24 RAW camera formats. Unsupported formats are decoded server-side to PNG automatically.
-- **Play videos** — MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V. TS/M2TS files are remuxed to MP4 for browser playback.
+- **Browse images** — JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, and 24 RAW camera formats. Unsupported formats are decoded and cached as PNG automatically.
+- **Play videos** — MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V. TS/M2TS files are remuxed to MP4 so they play in the browser.
 - **Listen to audio** — MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC with waveform thumbnails.
-- **View PDFs** — Rendered page by page with pdfjs-dist, loaded on demand.
-- **Fullscreen mode** — Overlay controls that auto-hide after a moment of inactivity.
+- **View PDFs** — Rendered page by page, loaded only when you open a PDF.
+- **Fullscreen mode** — Overlay controls that hide after a moment of inactivity.
 - **Zoom, pan, rotate, flip** — Scroll to zoom, drag to pan, keyboard shortcuts for rotation and flipping.
 - **Image adjustments** — Brightness, contrast, saturation, and hue sliders.
 - **Crop overlay** — Click-drag handles on corners and edges, with aspect ratio lock.
@@ -21,7 +21,7 @@ Vyu is a lightweight alternative to Windows Photos and the built-in Media Player
 - **Clip boundaries** — Mark start/end segments on a video and export them (separate files or merged).
 - **A-B loop region** — Set a loop range for repeat playback.
 - **Slideshow** — Configurable interval, next/shuffle order, skip-or-play-videos mode, fade/slide/none transitions.
-- **Volume control** — Diamond scrubber and continuous slider mode, with keyboard shortcuts.
+- **Volume control** — Stepped diamond buttons or continuous slider, with keyboard shortcuts.
 - **Playback speed** — Step through 0.25x–3x, with diamond and slider controls.
 - **Keyboard navigation** — Arrow keys to browse, Ctrl+Arrow to jump to ends, Alt+Arrow to always navigate. Space to play/pause. F for fullscreen. Comma/period for frame stepping.
 - **Context menus** — Right-click to copy image, copy video frame (as PNG), copy file path, show in explorer, view file properties, delete or trash.
@@ -40,16 +40,16 @@ Vyu is a lightweight alternative to Windows Photos and the built-in Media Player
 
 ## Tech Stack
 
-| Layer | Tool |
-|-------|------|
-| Desktop shell | Tauri 2 |
-| UI framework | Svelte 5 (runes mode) |
-| Meta-framework | SvelteKit (static SPA, no SSR) |
-| Language | TypeScript (strict) |
-| Package manager | pnpm |
-| Video/image processing | FFmpeg (system PATH, not bundled) |
-| PDF rendering | pdfjs-dist (code-split, dynamic import) |
-| State persistence | localStorage |
+| Layer                  | Tool                                    |
+| ---------------------- | --------------------------------------- |
+| Desktop shell          | Tauri 2                                 |
+| UI framework           | Svelte 5 (runes mode)                   |
+| Meta-framework         | SvelteKit (static SPA, no SSR)          |
+| Language               | TypeScript (strict)                     |
+| Package manager        | pnpm                                    |
+| Video/image processing | FFmpeg (system PATH, not bundled)       |
+| PDF rendering          | pdfjs-dist (code-split, dynamic import) |
+| State persistence      | localStorage                            |
 
 ## Getting Started
 

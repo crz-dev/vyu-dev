@@ -101,7 +101,8 @@ export function createPlaybackUI(
     const last = diamonds[diamonds.length - 1].getBoundingClientRect();
     const ratio = getVolume();
     volumeTooltipX =
-      first.left + first.width / 2 +
+      first.left +
+      first.width / 2 +
       ratio * (last.left + last.width / 2 - first.left - first.width / 2);
     volumeTooltipY = containerRect.top;
     volumeTooltipVisible = true;
@@ -179,7 +180,8 @@ export function createPlaybackUI(
     const idx = steps.indexOf(playbackSpeed);
     const ratio = idx / (steps.length - 1);
     speedTooltipX =
-      first.left + first.width / 2 +
+      first.left +
+      first.width / 2 +
       ratio * (last.left + last.width / 2 - first.left - first.width / 2);
     speedTooltipY = containerRect.top;
     speedTooltipVisible = true;

@@ -1,289 +1,289 @@
 @font-face {
-	font-family: 'Geist';
-	src: url('/fonts/Geist-Light.woff2') format('woff2');
-	font-weight: 300;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Geist";
+  src: url("/fonts/Geist-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Geist';
-	src: url('/fonts/Geist-Regular.woff2') format('woff2');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Geist";
+  src: url("/fonts/Geist-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Geist';
-	src: url('/fonts/Geist-Medium.woff2') format('woff2');
-	font-weight: 500;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Geist";
+  src: url("/fonts/Geist-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Geist';
-	src: url('/fonts/Geist-Semibold.woff2') format('woff2');
-	font-weight: 600;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Geist";
+  src: url("/fonts/Geist-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Geist';
-	src: url('/fonts/Geist-Bold.woff2') format('woff2');
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Geist";
+  src: url("/fonts/Geist-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Satoshi';
-	src: url('/fonts/Satoshi-Light.woff2') format('woff2');
-	font-weight: 300;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Satoshi';
-	src: url('/fonts/Satoshi-Regular.woff2') format('woff2');
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Satoshi';
-	src: url('/fonts/Satoshi-Medium.woff2') format('woff2');
-	font-weight: 500;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-	font-family: 'Satoshi';
-	src: url('/fonts/Satoshi-Bold.woff2') format('woff2');
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap;
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 :root {
-	--bg-base: #000000;
-	--bg-primary: #0a0a0a;
-	--bg-secondary: #111111;
-	--bg-elevated: #1a1a1a;
-	--bg-border: #2a2a2a;
+  --bg-base: #000000;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --bg-elevated: #1a1a1a;
+  --bg-border: #2a2a2a;
 
-	--text-primary: #ffffff;
-	--text-secondary: #cccccc;
-	--text-mid: #aaaaaa;
-	--text-muted: #888888;
-	--text-dim: #444444;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-mid: #aaaaaa;
+  --text-muted: #888888;
+  --text-dim: #444444;
 
-	--text-hint: #555555;
+  --text-hint: #555555;
 
-	--bg-shimmer: #222222;
-	--border-subtle: #323232;
+  --bg-shimmer: #222222;
+  --border-subtle: #323232;
 
-	--yellow: #f5c518;
-	--yellow-soft: #facc15;
+  --yellow: #f5c518;
+  --yellow-soft: #facc15;
 
-	--blue: #3b82f6;
-	--blue-light: #60a5fa;
-	--blue-lighter: #93c5fd;
+  --blue: #3b82f6;
+  --blue-light: #60a5fa;
+  --blue-lighter: #93c5fd;
 
-	--green: #4ade80;
-	--green-soft: #86efac;
+  --green: #4ade80;
+  --green-soft: #86efac;
 
-	--red: #f87171;
-	--red-soft: #fca5a5;
+  --red: #f87171;
+  --red-soft: #fca5a5;
 
-	/* Green rgba tiers */
-	--green-bg-subtle: rgba(34, 197, 94, 0.08);
-	--green-bg-faint: rgba(34, 197, 94, 0.12);
-	--green-bg: rgba(34, 197, 94, 0.15);
-	--green-bg-default: rgba(34, 197, 94, 0.2);
-	--green-bg-hover: rgba(34, 197, 94, 0.25);
-	--green-bg-active: rgba(34, 197, 94, 0.3);
-	--green-bg-strong: rgba(34, 197, 94, 0.45);
-	--green-border-subtle: rgba(34, 197, 94, 0.18);
-	--green-border: rgba(34, 197, 94, 0.35);
-	--green-border-strong: rgba(34, 197, 94, 0.58);
-	--green-border-solid: rgba(34, 197, 94, 0.92);
+  /* Green rgba tiers */
+  --green-bg-subtle: rgba(34, 197, 94, 0.08);
+  --green-bg-faint: rgba(34, 197, 94, 0.12);
+  --green-bg: rgba(34, 197, 94, 0.15);
+  --green-bg-default: rgba(34, 197, 94, 0.2);
+  --green-bg-hover: rgba(34, 197, 94, 0.25);
+  --green-bg-active: rgba(34, 197, 94, 0.3);
+  --green-bg-strong: rgba(34, 197, 94, 0.45);
+  --green-border-subtle: rgba(34, 197, 94, 0.18);
+  --green-border: rgba(34, 197, 94, 0.35);
+  --green-border-strong: rgba(34, 197, 94, 0.58);
+  --green-border-solid: rgba(34, 197, 94, 0.92);
 
-	/* Blue rgba tiers */
-	--blue-bg-subtle: rgba(59, 130, 246, 0.08);
-	--blue-bg-faint: rgba(59, 130, 246, 0.12);
-	--blue-bg: rgba(59, 130, 246, 0.15);
-	--blue-bg-default: rgba(59, 130, 246, 0.2);
-	--blue-bg-hover: rgba(59, 130, 246, 0.25);
-	--blue-bg-active: rgba(59, 130, 246, 0.3);
-	--blue-bg-strong: rgba(59, 130, 246, 0.45);
-	--blue-border-subtle: rgba(59, 130, 246, 0.18);
-	--blue-border: rgba(59, 130, 246, 0.35);
-	--blue-border-strong: rgba(59, 130, 246, 0.58);
-	--blue-border-solid: rgba(59, 130, 246, 0.92);
+  /* Blue rgba tiers */
+  --blue-bg-subtle: rgba(59, 130, 246, 0.08);
+  --blue-bg-faint: rgba(59, 130, 246, 0.12);
+  --blue-bg: rgba(59, 130, 246, 0.15);
+  --blue-bg-default: rgba(59, 130, 246, 0.2);
+  --blue-bg-hover: rgba(59, 130, 246, 0.25);
+  --blue-bg-active: rgba(59, 130, 246, 0.3);
+  --blue-bg-strong: rgba(59, 130, 246, 0.45);
+  --blue-border-subtle: rgba(59, 130, 246, 0.18);
+  --blue-border: rgba(59, 130, 246, 0.35);
+  --blue-border-strong: rgba(59, 130, 246, 0.58);
+  --blue-border-solid: rgba(59, 130, 246, 0.92);
 
-	/* Blue-light rgba tiers */
-	--blue-light-border-subtle: rgba(96, 165, 250, 0.18);
-	--blue-light-border: rgba(96, 165, 250, 0.42);
-	--blue-light-border-strong: rgba(96, 165, 250, 0.58);
-	--blue-light-border-solid: rgba(96, 165, 250, 0.85);
+  /* Blue-light rgba tiers */
+  --blue-light-border-subtle: rgba(96, 165, 250, 0.18);
+  --blue-light-border: rgba(96, 165, 250, 0.42);
+  --blue-light-border-strong: rgba(96, 165, 250, 0.58);
+  --blue-light-border-solid: rgba(96, 165, 250, 0.85);
 
-	/* Yellow rgba tiers */
-	--yellow-bg-subtle: rgba(245, 197, 24, 0.08);
-	--yellow-bg-faint: rgba(245, 197, 24, 0.12);
-	--yellow-bg: rgba(245, 197, 24, 0.15);
-	--yellow-bg-default: rgba(245, 197, 24, 0.2);
-	--yellow-bg-hover: rgba(245, 197, 24, 0.25);
-	--yellow-bg-active: rgba(245, 197, 24, 0.3);
-	--yellow-bg-strong: rgba(245, 197, 24, 0.45);
-	--yellow-border-subtle: rgba(245, 197, 24, 0.18);
-	--yellow-border: rgba(245, 197, 24, 0.35);
-	--yellow-border-strong: rgba(245, 197, 24, 0.58);
-	--yellow-border-solid: rgba(245, 197, 24, 0.92);
+  /* Yellow rgba tiers */
+  --yellow-bg-subtle: rgba(245, 197, 24, 0.08);
+  --yellow-bg-faint: rgba(245, 197, 24, 0.12);
+  --yellow-bg: rgba(245, 197, 24, 0.15);
+  --yellow-bg-default: rgba(245, 197, 24, 0.2);
+  --yellow-bg-hover: rgba(245, 197, 24, 0.25);
+  --yellow-bg-active: rgba(245, 197, 24, 0.3);
+  --yellow-bg-strong: rgba(245, 197, 24, 0.45);
+  --yellow-border-subtle: rgba(245, 197, 24, 0.18);
+  --yellow-border: rgba(245, 197, 24, 0.35);
+  --yellow-border-strong: rgba(245, 197, 24, 0.58);
+  --yellow-border-solid: rgba(245, 197, 24, 0.92);
 
-	/* Red rgba tiers */
-	--red-bg-subtle: rgba(239, 68, 68, 0.08);
-	--red-bg-faint: rgba(239, 68, 68, 0.12);
-	--red-bg: rgba(239, 68, 68, 0.15);
-	--red-bg-default: rgba(239, 68, 68, 0.2);
-	--red-bg-hover: rgba(239, 68, 68, 0.25);
-	--red-bg-active: rgba(239, 68, 68, 0.3);
-	--red-bg-strong: rgba(239, 68, 68, 0.45);
-	--red-border-subtle: rgba(239, 68, 68, 0.18);
-	--red-border: rgba(239, 68, 68, 0.35);
-	--red-border-strong: rgba(239, 68, 68, 0.58);
-	--red-border-solid: rgba(239, 68, 68, 0.92);
+  /* Red rgba tiers */
+  --red-bg-subtle: rgba(239, 68, 68, 0.08);
+  --red-bg-faint: rgba(239, 68, 68, 0.12);
+  --red-bg: rgba(239, 68, 68, 0.15);
+  --red-bg-default: rgba(239, 68, 68, 0.2);
+  --red-bg-hover: rgba(239, 68, 68, 0.25);
+  --red-bg-active: rgba(239, 68, 68, 0.3);
+  --red-bg-strong: rgba(239, 68, 68, 0.45);
+  --red-border-subtle: rgba(239, 68, 68, 0.18);
+  --red-border: rgba(239, 68, 68, 0.35);
+  --red-border-strong: rgba(239, 68, 68, 0.58);
+  --red-border-solid: rgba(239, 68, 68, 0.92);
 
-	/* CD visual colors */
-	--cd-highlight: #e8e8e8;
-	--cd-body: #c0c0c0;
-	--cd-edge: #808080;
-	--cd-ring: rgba(0, 0, 0, 0.08);
-	--cd-ring-track: rgba(255, 255, 255, 0.08);
+  /* CD visual colors */
+  --cd-highlight: #e8e8e8;
+  --cd-body: #c0c0c0;
+  --cd-edge: #808080;
+  --cd-ring: rgba(0, 0, 0, 0.08);
+  --cd-ring-track: rgba(255, 255, 255, 0.08);
 
-	/* Vinyl record colors (dark theme) */
-	--vinyl-disc: #1a1a1a;
-	--vinyl-groove: rgba(255, 255, 255, 0.04);
-	--vinyl-center: var(--green);
-	--vinyl-center-hole: #0d0d0d;
+  /* Vinyl record colors (dark theme) */
+  --vinyl-disc: #1a1a1a;
+  --vinyl-groove: rgba(255, 255, 255, 0.04);
+  --vinyl-center: var(--green);
+  --vinyl-center-hole: #0d0d0d;
 
-	--font-family: 'Geist', sans-serif;
+  --font-family: "Geist", sans-serif;
 
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-	--bg-base: #c0c0c0;
-	--bg-primary: #c8c8c8;
-	--bg-secondary: #d2d2d2;
-	--bg-elevated: #dddddd;
-	--bg-border: #aeaeae;
+  --bg-base: #c0c0c0;
+  --bg-primary: #c8c8c8;
+  --bg-secondary: #d2d2d2;
+  --bg-elevated: #dddddd;
+  --bg-border: #aeaeae;
 
-	--text-primary: #1a1a1a;
-	--text-secondary: #444444;
-	--text-mid: #666666;
-	--text-muted: #666666;
-	--text-dim: #999999;
+  --text-primary: #1a1a1a;
+  --text-secondary: #444444;
+  --text-mid: #666666;
+  --text-muted: #666666;
+  --text-dim: #999999;
 
-	--text-hint: #666666;
+  --text-hint: #666666;
 
-	--bg-shimmer: #b8b8b8;
-	--border-subtle: #9e9e9e;
+  --bg-shimmer: #b8b8b8;
+  --border-subtle: #9e9e9e;
 
-	--yellow: #92400e;
-	--yellow-soft: #a16207;
+  --yellow: #92400e;
+  --yellow-soft: #a16207;
 
-	--blue: #2563eb;
-	--blue-light: #3b82f6;
-	--blue-lighter: #60a5fa;
+  --blue: #2563eb;
+  --blue-light: #3b82f6;
+  --blue-lighter: #60a5fa;
 
-	--green: #15803d;
-	--green-soft: #16a34a;
+  --green: #15803d;
+  --green-soft: #16a34a;
 
-	--red: #dc2626;
-	--red-soft: #ef4444;
+  --red: #dc2626;
+  --red-soft: #ef4444;
 
-	/* Green rgba tiers (higher opacity for light bg visibility) */
-	--green-bg-subtle: rgba(21, 128, 61, 0.12);
-	--green-bg-faint: rgba(21, 128, 61, 0.16);
-	--green-bg: rgba(21, 128, 61, 0.2);
-	--green-bg-default: rgba(21, 128, 61, 0.25);
-	--green-bg-hover: rgba(21, 128, 61, 0.3);
-	--green-bg-active: rgba(21, 128, 61, 0.35);
-	--green-bg-strong: rgba(21, 128, 61, 0.5);
-	--green-border-subtle: rgba(21, 128, 61, 0.22);
-	--green-border: rgba(21, 128, 61, 0.4);
-	--green-border-strong: rgba(21, 128, 61, 0.65);
-	--green-border-solid: rgba(21, 128, 61, 0.95);
+  /* Green rgba tiers (higher opacity for light bg visibility) */
+  --green-bg-subtle: rgba(21, 128, 61, 0.12);
+  --green-bg-faint: rgba(21, 128, 61, 0.16);
+  --green-bg: rgba(21, 128, 61, 0.2);
+  --green-bg-default: rgba(21, 128, 61, 0.25);
+  --green-bg-hover: rgba(21, 128, 61, 0.3);
+  --green-bg-active: rgba(21, 128, 61, 0.35);
+  --green-bg-strong: rgba(21, 128, 61, 0.5);
+  --green-border-subtle: rgba(21, 128, 61, 0.22);
+  --green-border: rgba(21, 128, 61, 0.4);
+  --green-border-strong: rgba(21, 128, 61, 0.65);
+  --green-border-solid: rgba(21, 128, 61, 0.95);
 
-	/* Blue rgba tiers (higher opacity for light bg visibility) */
-	--blue-bg-subtle: rgba(37, 99, 235, 0.12);
-	--blue-bg-faint: rgba(37, 99, 235, 0.16);
-	--blue-bg: rgba(37, 99, 235, 0.2);
-	--blue-bg-default: rgba(37, 99, 235, 0.25);
-	--blue-bg-hover: rgba(37, 99, 235, 0.3);
-	--blue-bg-active: rgba(37, 99, 235, 0.35);
-	--blue-bg-strong: rgba(37, 99, 235, 0.5);
-	--blue-border-subtle: rgba(37, 99, 235, 0.22);
-	--blue-border: rgba(37, 99, 235, 0.4);
-	--blue-border-strong: rgba(37, 99, 235, 0.65);
-	--blue-border-solid: rgba(37, 99, 235, 0.95);
+  /* Blue rgba tiers (higher opacity for light bg visibility) */
+  --blue-bg-subtle: rgba(37, 99, 235, 0.12);
+  --blue-bg-faint: rgba(37, 99, 235, 0.16);
+  --blue-bg: rgba(37, 99, 235, 0.2);
+  --blue-bg-default: rgba(37, 99, 235, 0.25);
+  --blue-bg-hover: rgba(37, 99, 235, 0.3);
+  --blue-bg-active: rgba(37, 99, 235, 0.35);
+  --blue-bg-strong: rgba(37, 99, 235, 0.5);
+  --blue-border-subtle: rgba(37, 99, 235, 0.22);
+  --blue-border: rgba(37, 99, 235, 0.4);
+  --blue-border-strong: rgba(37, 99, 235, 0.65);
+  --blue-border-solid: rgba(37, 99, 235, 0.95);
 
-	/* Blue-light rgba tiers (higher opacity for light bg visibility) */
-	--blue-light-border-subtle: rgba(59, 130, 246, 0.22);
-	--blue-light-border: rgba(59, 130, 246, 0.5);
-	--blue-light-border-strong: rgba(59, 130, 246, 0.65);
-	--blue-light-border-solid: rgba(59, 130, 246, 0.9);
+  /* Blue-light rgba tiers (higher opacity for light bg visibility) */
+  --blue-light-border-subtle: rgba(59, 130, 246, 0.22);
+  --blue-light-border: rgba(59, 130, 246, 0.5);
+  --blue-light-border-strong: rgba(59, 130, 246, 0.65);
+  --blue-light-border-solid: rgba(59, 130, 246, 0.9);
 
-	/* Yellow rgba tiers (higher opacity for light bg visibility) */
-	--yellow-bg-subtle: rgba(146, 64, 14, 0.12);
-	--yellow-bg-faint: rgba(146, 64, 14, 0.16);
-	--yellow-bg: rgba(146, 64, 14, 0.2);
-	--yellow-bg-default: rgba(146, 64, 14, 0.25);
-	--yellow-bg-hover: rgba(146, 64, 14, 0.3);
-	--yellow-bg-active: rgba(146, 64, 14, 0.35);
-	--yellow-bg-strong: rgba(146, 64, 14, 0.5);
-	--yellow-border-subtle: rgba(146, 64, 14, 0.22);
-	--yellow-border: rgba(146, 64, 14, 0.4);
-	--yellow-border-strong: rgba(146, 64, 14, 0.65);
-	--yellow-border-solid: rgba(146, 64, 14, 0.95);
+  /* Yellow rgba tiers (higher opacity for light bg visibility) */
+  --yellow-bg-subtle: rgba(146, 64, 14, 0.12);
+  --yellow-bg-faint: rgba(146, 64, 14, 0.16);
+  --yellow-bg: rgba(146, 64, 14, 0.2);
+  --yellow-bg-default: rgba(146, 64, 14, 0.25);
+  --yellow-bg-hover: rgba(146, 64, 14, 0.3);
+  --yellow-bg-active: rgba(146, 64, 14, 0.35);
+  --yellow-bg-strong: rgba(146, 64, 14, 0.5);
+  --yellow-border-subtle: rgba(146, 64, 14, 0.22);
+  --yellow-border: rgba(146, 64, 14, 0.4);
+  --yellow-border-strong: rgba(146, 64, 14, 0.65);
+  --yellow-border-solid: rgba(146, 64, 14, 0.95);
 
-	/* Red rgba tiers (higher opacity for light bg visibility) */
-	--red-bg-subtle: rgba(220, 38, 38, 0.12);
-	--red-bg-faint: rgba(220, 38, 38, 0.16);
-	--red-bg: rgba(220, 38, 38, 0.2);
-	--red-bg-default: rgba(220, 38, 38, 0.25);
-	--red-bg-hover: rgba(220, 38, 38, 0.3);
-	--red-bg-active: rgba(220, 38, 38, 0.35);
-	--red-bg-strong: rgba(220, 38, 38, 0.5);
-	--red-border-subtle: rgba(220, 38, 38, 0.22);
-	--red-border: rgba(220, 38, 38, 0.4);
-	--red-border-strong: rgba(220, 38, 38, 0.65);
-	--red-border-solid: rgba(220, 38, 38, 0.95);
+  /* Red rgba tiers (higher opacity for light bg visibility) */
+  --red-bg-subtle: rgba(220, 38, 38, 0.12);
+  --red-bg-faint: rgba(220, 38, 38, 0.16);
+  --red-bg: rgba(220, 38, 38, 0.2);
+  --red-bg-default: rgba(220, 38, 38, 0.25);
+  --red-bg-hover: rgba(220, 38, 38, 0.3);
+  --red-bg-active: rgba(220, 38, 38, 0.35);
+  --red-bg-strong: rgba(220, 38, 38, 0.5);
+  --red-border-subtle: rgba(220, 38, 38, 0.22);
+  --red-border: rgba(220, 38, 38, 0.4);
+  --red-border-strong: rgba(220, 38, 38, 0.65);
+  --red-border-solid: rgba(220, 38, 38, 0.95);
 
-	/* CD visual colors */
-	--cd-highlight: #f0f0e8;
-	--cd-body: #d4d4c8;
-	--cd-edge: #888880;
-	--cd-ring: rgba(0, 0, 0, 0.1);
-	--cd-ring-track: rgba(0, 0, 0, 0.12);
+  /* CD visual colors */
+  --cd-highlight: #f0f0e8;
+  --cd-body: #d4d4c8;
+  --cd-edge: #888880;
+  --cd-ring: rgba(0, 0, 0, 0.1);
+  --cd-ring-track: rgba(0, 0, 0, 0.12);
 
-	/* Vinyl record colors (light theme) */
-	--vinyl-disc: #222222;
-	--vinyl-groove: rgba(255, 255, 255, 0.05);
-	--vinyl-center: var(--green);
-	--vinyl-center-hole: #111111;
+  /* Vinyl record colors (light theme) */
+  --vinyl-disc: #222222;
+  --vinyl-groove: rgba(255, 255, 255, 0.05);
+  --vinyl-center: var(--green);
+  --vinyl-center-hole: #111111;
 
-	color-scheme: light;
+  color-scheme: light;
 }
 
 /* Video overlay elements must stay light regardless of theme */
 [data-theme="light"] .video-controls,
 [data-theme="light"] .fs-overlay {
-	--text-primary: #ffffff;
+  --text-primary: #ffffff;
 }

@@ -2,7 +2,13 @@
   import { convertFileSrc } from "@tauri-apps/api/core";
   import { invoke } from "@tauri-apps/api/core";
   import { tick } from "svelte";
-  import { VIDEO_EXTS, IMAGE_EXTS, DOCUMENT_EXTS, BROWSER_UNSUPPORTED_IMAGE_EXTS, REMUX_VIDEO_EXTS } from "$lib/shared/constants";
+  import {
+    VIDEO_EXTS,
+    IMAGE_EXTS,
+    DOCUMENT_EXTS,
+    BROWSER_UNSUPPORTED_IMAGE_EXTS,
+    REMUX_VIDEO_EXTS,
+  } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
 
   let {
@@ -171,11 +177,19 @@
       } else if (isPdfFile(path)) {
         // PDFs use their own icon in template — mark as resolved
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
-      } else if (!isVideo(path) && !BROWSER_UNSUPPORTED_IMAGE_EXTS.has(getFileExt(path))) {
+      } else if (
+        !isVideo(path) &&
+        !BROWSER_UNSUPPORTED_IMAGE_EXTS.has(getFileExt(path))
+      ) {
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
       }
     } catch {
-      if (inSlotWindow(path) && !isVideo(path) && !isPdfFile(path) && !BROWSER_UNSUPPORTED_IMAGE_EXTS.has(getFileExt(path))) {
+      if (
+        inSlotWindow(path) &&
+        !isVideo(path) &&
+        !isPdfFile(path) &&
+        !BROWSER_UNSUPPORTED_IMAGE_EXTS.has(getFileExt(path))
+      ) {
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
       } else if (inSlotWindow(path) && isPdfFile(path)) {
         thumbnailUrls = { ...thumbnailUrls, [path]: path };
@@ -194,7 +208,8 @@
     const uncachedServer: string[] = [];
     for (const slot of slots) {
       if (!slot) continue;
-      if (!isImage(slot.path) && !isVideo(slot.path) && !isPdfFile(slot.path)) continue;
+      if (!isImage(slot.path) && !isVideo(slot.path) && !isPdfFile(slot.path))
+        continue;
       if (slot.path in thumbnailUrls) continue;
       if (fetchingPaths.has(slot.path)) continue;
       if (needsServerThumbnail(slot.path)) {

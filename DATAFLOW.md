@@ -79,11 +79,11 @@ When `fileSrc` changes, the `<video>` element in `+page.svelte` loads the new so
 
 On every `displayFile()` call, three localStorage keys are read (video-only):
 
-| Key | Read by | Stored data |
-|-----|---------|-------------|
-| `vyu-ts-{path}` | `readTimestamps()` in `storage.ts` | `Timestamp[]` JSON |
-| `vyu-clips-{path}` | `readClipBoundaries()` in `storage.ts` | `ClipBoundary[]` JSON |
-| `vyu-resume-{path}` | `loadResumePoint()` in `storage.ts` | `number` (seconds) |
+| Key                 | Read by                                | Stored data           |
+| ------------------- | -------------------------------------- | --------------------- |
+| `vyu-ts-{path}`     | `readTimestamps()` in `storage.ts`     | `Timestamp[]` JSON    |
+| `vyu-clips-{path}`  | `readClipBoundaries()` in `storage.ts` | `ClipBoundary[]` JSON |
+| `vyu-resume-{path}` | `loadResumePoint()` in `storage.ts`    | `number` (seconds)    |
 
 ---
 

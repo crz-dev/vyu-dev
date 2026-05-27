@@ -366,7 +366,20 @@
     <div class="delete-dialog settings-dialog" role="dialog" aria-modal="true">
       <div class="settings-header-bar">
         <p class="delete-title">
-          <svg class="header-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <svg
+            class="header-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="12" cy="12" r="3" /><path
+              d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+            /></svg
+          >
           Settings
         </p>
         <p class="delete-subtitle">Configure your media viewer experience</p>
@@ -805,12 +818,16 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20"
-                /></svg>
+                  ><polyline points="4 7 4 4 20 4 20 7" /><line
+                    x1="9"
+                    y1="20"
+                    x2="15"
+                    y2="20"
+                  /><line x1="12" y1="4" x2="12" y2="20" /></svg
+                >
                 <div class="settings-label-text">
                   <span class="settings-label">Font</span>
-                  <span class="settings-hint"
-                    >Typeface used across the app</span
+                  <span class="settings-hint">Typeface used across the app</span
                   >
                 </div>
               </div>
@@ -819,20 +836,17 @@
                   <button
                     class="pill-btn"
                     class:active={fontStore.family === "geist"}
-                    onclick={() => fontStore.setFont("geist")}
-                  >Geist</button
+                    onclick={() => fontStore.setFont("geist")}>Geist</button
                   >
                   <button
                     class="pill-btn"
                     class:active={fontStore.family === "satoshi"}
-                    onclick={() => fontStore.setFont("satoshi")}
-                  >Satoshi</button
+                    onclick={() => fontStore.setFont("satoshi")}>Satoshi</button
                   >
                   <button
                     class="pill-btn"
                     class:active={fontStore.family === "system"}
-                    onclick={() => fontStore.setFont("system")}
-                  >System</button
+                    onclick={() => fontStore.setFont("system")}>System</button
                   >
                 </div>
               </div>
