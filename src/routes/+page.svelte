@@ -2619,23 +2619,23 @@
                   <div class="loop-drop-menu" role="menu">
                     <div class="loop-drop-header">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                      <span>On audio end</span>
+                      <span>After playback</span>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </div>
                     <div class="loop-drop-grid">
-                      <button class="loop-drop-btn" class:active={loopMode === "loop"} onclick={() => { loopMode = "loop"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = true; loopMenuOpen = false; }} role="menuitem">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M17 2L21 6L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9C3 7.9 3.9 7 5 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 22L3 18L7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13V15C21 16.1 20.1 17 19 17H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                        Loop
-                      </button>
-                      <button class="loop-drop-btn" class:active={loopMode === "stop"} onclick={() => { loopMode = "stop"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = false; loopMenuOpen = false; }} role="menuitem">
+                      <button class="loop-drop-btn" class:active={loopMode === "stop"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms" onclick={() => { loopMode = "stop"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = false; loopMenuOpen = false; }} role="menuitem">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2"/></svg>
                         Stop
                       </button>
-                      <button class="loop-drop-btn" class:active={loopMode === "next"} onclick={() => { loopMode = "next"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = false; loopMenuOpen = false; }} role="menuitem">
+                      <button class="loop-drop-btn" class:active={loopMode === "next"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms" onclick={() => { loopMode = "next"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = false; loopMenuOpen = false; }} role="menuitem">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 4l10 8-10 8V4z" fill="currentColor"/><rect x="19" y="4" width="2" height="16" rx="1" fill="currentColor"/></svg>
                         Play next
                       </button>
-                      <button class="loop-drop-btn" class:active={loopMode === "shuffle"} onclick={() => { loopMode = "shuffle"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = false; loopMenuOpen = false; }} role="menuitem">
+                      <button class="loop-drop-btn" class:active={loopMode === "loop"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms" onclick={() => { loopMode = "loop"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = true; loopMenuOpen = false; }} role="menuitem">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M17 2L21 6L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11V9C3 7.9 3.9 7 5 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 22L3 18L7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13V15C21 16.1 20.1 17 19 17H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                        Loop
+                      </button>
+                      <button class="loop-drop-btn" class:active={loopMode === "shuffle"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms" onclick={() => { loopMode = "shuffle"; saveLoopMode(loopMode); if (audioEl) audioEl.loop = false; loopMenuOpen = false; }} role="menuitem">
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h5l9 10h4"/><path d="M3 17h5l2-2.2"/><path d="M17 5l4 4-4 4"/><path d="M17 13l4 4-4 4"/></svg>
                         Shuffle
                       </button>
@@ -2760,7 +2760,7 @@
                 </button>
               </div>
               <div class="audio-bottom-row">
-                <div class="volume-control" onmouseenter={playbackUI.showVolumeOverlay} onmouseleave={playbackUI.handleVolumeAreaLeave} onwheel={playbackUI.handleVolumeScroll}>
+                <div class="volume-control" role="presentation" onmouseenter={playbackUI.showVolumeOverlay} onmouseleave={playbackUI.handleVolumeAreaLeave} onwheel={playbackUI.handleVolumeScroll}>
                   <button
                     class="ctrl-btn volume-btn tooltip-ctrl tooltip-left"
                     class:active={!(muted || volume === 0)}
@@ -2810,7 +2810,7 @@
                     </div>
                   {/if}
                 </div>
-                <div class="speed-control" onmouseenter={playbackUI.showSpeedOverlay} onmouseleave={playbackUI.handleSpeedAreaLeave} onwheel={playbackUI.handleSpeedScroll}>
+                <div class="speed-control" role="presentation" onmouseenter={playbackUI.showSpeedOverlay} onmouseleave={playbackUI.handleSpeedAreaLeave} onwheel={playbackUI.handleSpeedScroll}>
                   <button
                     class="ctrl-btn speed-btn tooltip-ctrl tooltip-right"
                     class:active={playbackUI.playbackSpeed !== 1}

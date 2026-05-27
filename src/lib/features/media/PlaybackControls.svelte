@@ -344,7 +344,7 @@
                 stroke-linejoin="round"
               />
             </svg>
-            <span>{isAudio ? "On audio end" : "On video end"}</span>
+            <span>After playback</span>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <rect
                 x="4"
@@ -362,8 +362,54 @@
           <div class="loop-drop-grid">
             <button
               class="loop-drop-btn"
-              class:active={looping === "loop"}
+              class:active={looping === "stop"}
               style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
+              onclick={() => {
+                setLoopMode("stop");
+                loopMenuOpen = false;
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <rect
+                  x="4"
+                  y="4"
+                  width="16"
+                  height="16"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+              </svg>
+              Stop
+            </button>
+            <button
+              class="loop-drop-btn"
+              class:active={looping === "next"}
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
+              onclick={() => {
+                setLoopMode("next");
+                loopMenuOpen = false;
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
+                <rect
+                  x="19"
+                  y="4"
+                  width="2"
+                  height="16"
+                  rx="1"
+                  fill="currentColor"
+                />
+              </svg>
+              Play next
+            </button>
+            <button
+              class="loop-drop-btn"
+              class:active={looping === "loop"}
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
               onclick={() => {
                 setLoopMode("loop");
                 loopMenuOpen = false;
@@ -399,52 +445,6 @@
                 />
               </svg>
               Loop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "stop"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                setLoopMode("stop");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-              Stop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "next"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                setLoopMode("next");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
-                <rect
-                  x="19"
-                  y="4"
-                  width="2"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-              Play next
             </button>
             <button
               class="loop-drop-btn"
@@ -1224,7 +1224,7 @@
                 stroke-linejoin="round"
               />
             </svg>
-            <span>{isAudio ? "On audio end" : "On video end"}</span>
+            <span>After playback</span>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
               <rect
                 x="4"
@@ -1242,8 +1242,54 @@
           <div class="loop-drop-grid">
             <button
               class="loop-drop-btn"
-              class:active={looping === "loop"}
+              class:active={looping === "stop"}
               style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
+              onclick={() => {
+                setLoopMode("stop");
+                loopMenuOpen = false;
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <rect
+                  x="4"
+                  y="4"
+                  width="16"
+                  height="16"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+              </svg>
+              Stop
+            </button>
+            <button
+              class="loop-drop-btn"
+              class:active={looping === "next"}
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
+              onclick={() => {
+                setLoopMode("next");
+                loopMenuOpen = false;
+              }}
+              role="menuitem"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
+                <rect
+                  x="19"
+                  y="4"
+                  width="2"
+                  height="16"
+                  rx="1"
+                  fill="currentColor"
+                />
+              </svg>
+              Play next
+            </button>
+            <button
+              class="loop-drop-btn"
+              class:active={looping === "loop"}
+              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
               onclick={() => {
                 setLoopMode("loop");
                 loopMenuOpen = false;
@@ -1279,52 +1325,6 @@
                 />
               </svg>
               Loop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "stop"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                setLoopMode("stop");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-              Stop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "next"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                setLoopMode("next");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
-                <rect
-                  x="19"
-                  y="4"
-                  width="2"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-              Play next
             </button>
             <button
               class="loop-drop-btn"
