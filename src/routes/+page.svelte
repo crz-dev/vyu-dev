@@ -1720,7 +1720,8 @@
   }
   async function startDrag(e: MouseEvent) {
     if (e.button !== 0) return;
-    if ((e.target as HTMLElement).closest("button, .filename")) return;
+    if ((e.target as HTMLElement).closest("button, .filename, .filename-input")) return;
+    document.activeElement && (document.activeElement as HTMLElement).blur();
     await getCurrentWindow().startDragging();
   }
 

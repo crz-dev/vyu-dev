@@ -45,7 +45,7 @@
 {#if visible}
   <div class="sort-menu" style="left: {x + 62}px; bottom: {y + 4}px;">
     <div class="sort-menu-header">
-      <span class="sort-menu-title">Sort files</span>
+      <span class="sort-menu-title">Sort files by</span>
     </div>
     <div class="sort-menu-separator"></div>
     {#each SORT_MODES as option}

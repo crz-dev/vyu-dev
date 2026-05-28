@@ -94,6 +94,20 @@
   function cancelEdit() {
     editing = false;
   }
+
+  // Submit rename on any click outside the input.
+  // onblur doesn't work here because startPan calls preventDefault()
+  // on mousedown, which prevents the browser from blurring the input.
+  $effect(() => {
+    if (!editing) return;
+    function onGlobalMouseDown(e: MouseEvent) {
+      if (inputEl && !inputEl.contains(e.target as Node)) {
+        commitRename();
+      }
+    }
+    document.addEventListener("mousedown", onGlobalMouseDown, true);
+    return () => document.removeEventListener("mousedown", onGlobalMouseDown, true);
+  });
 </script>
 
 <div class="topbar" onmousedown={startDrag} role="toolbar" tabindex="-1">
@@ -134,7 +148,6 @@
           cancelEdit();
         }
       }}
-      onblur={commitRename}
       onmousedown={(e) => e.stopPropagation()}
       aria-label="Rename file"
     />

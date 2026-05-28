@@ -1113,7 +1113,7 @@ main:not(.fullscreen).thumbnail-bar-open .video-inner video {
 
 .slideshow-scrubber-tooltip {
   position: absolute;
-  top: -22px;
+  top: -16px;
   transform: translateX(-50%);
   background: var(--bg-elevated);
   color: var(--text-primary);
