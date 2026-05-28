@@ -10,14 +10,16 @@ export function cleanupStaleStorageEntries(): void {
   const tsKeys: string[] = [];
   const clipKeys: string[] = [];
   const resumeKeys: string[] = [];
+  const cdColorKeys: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key) continue;
     if (key.startsWith("vyu-ts-")) tsKeys.push(key);
     else if (key.startsWith("vyu-clips-")) clipKeys.push(key);
     else if (key.startsWith("vyu-resume-")) resumeKeys.push(key);
+    else if (key.startsWith("vyu-cd-color-")) cdColorKeys.push(key);
   }
-  for (const keys of [tsKeys, clipKeys, resumeKeys]) {
+  for (const keys of [tsKeys, clipKeys, resumeKeys, cdColorKeys]) {
     if (keys.length > MAX_STALE_ENTRIES) {
       const toRemove = keys.slice(0, keys.length - MAX_STALE_ENTRIES);
       for (const k of toRemove) localStorage.removeItem(k);
@@ -209,4 +211,21 @@ export function loadFont(): "geist" | "satoshi" | "system" {
 
 export function saveFont(f: "geist" | "satoshi" | "system"): void {
   localStorage.setItem("vyu-font", f);
+}
+
+export function loadCdColor(filePath: string): number {
+  if (!filePath) return -1;
+  const raw = localStorage.getItem(`vyu-cd-color-${filePath}`);
+  if (raw === null) return -1;
+  const val = parseInt(raw, 10);
+  return Number.isFinite(val) ? val : -1;
+}
+
+export function saveCdColor(filePath: string, index: number): void {
+  if (!filePath) return;
+  localStorage.setItem(`vyu-cd-color-${filePath}`, String(index));
+}
+
+export function deleteCdColor(filePath: string): void {
+  if (filePath) localStorage.removeItem(`vyu-cd-color-${filePath}`);
 }

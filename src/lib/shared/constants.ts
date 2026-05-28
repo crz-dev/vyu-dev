@@ -68,6 +68,21 @@ export const ALL_EXTS = [
   ...DOCUMENT_EXTS,
 ];
 
+/** CSS color variables used for vinyl CD visual center labels and progress rings.
+ *  Index is persisted per audio file in localStorage (`vyu-cd-color-{path}`). */
+export const CD_COLORS = [
+  "var(--green)",
+  "var(--blue)",
+  "var(--yellow)",
+  "var(--red)",
+  "var(--text-muted)",
+  "var(--purple)",
+  "var(--cyan)",
+  "var(--orange)",
+  "var(--pink)",
+  "var(--text-primary)",
+];
+
 /** Image formats that browsers cannot render natively in &lt;img&gt; tags.
  *  These need to be decoded server-side (Rust image crate / ffmpeg) and served as PNG. */
 export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([

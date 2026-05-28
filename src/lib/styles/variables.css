@@ -166,6 +166,12 @@
   --cd-ring: rgba(0, 0, 0, 0.08);
   --cd-ring-track: rgba(255, 255, 255, 0.08);
 
+  /* Accessibility accent colors */
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --orange: #f97316;
+  --pink: #ec4899;
+
   /* Vinyl record colors (dark theme) */
   --vinyl-disc: #1a1a1a;
   --vinyl-groove: rgba(255, 255, 255, 0.04);
@@ -272,6 +278,12 @@
   --cd-edge: #888880;
   --cd-ring: rgba(0, 0, 0, 0.1);
   --cd-ring-track: rgba(0, 0, 0, 0.12);
+
+  /* Accessibility accent colors */
+  --purple: #a855f7;
+  --cyan: #06b6d4;
+  --orange: #f97316;
+  --pink: #ec4899;
 
   /* Vinyl record colors (light theme) */
   --vinyl-disc: #222222;

@@ -16,6 +16,7 @@
     VOLUME_SEGMENTS,
     LOOP_MODES,
     ALL_EXTS,
+    CD_COLORS,
     type LoopMode,
   } from "$lib/shared/constants";
   import type {
@@ -34,6 +35,8 @@
     saveLoopMode,
     saveSliderMode,
     saveClipPreferences,
+    loadCdColor,
+    saveCdColor,
   } from "$lib/services/storage";
   import {
     invokeDeleteFile,
@@ -89,6 +92,7 @@
   let isVideo = $state(false);
   let isAudio = $state(false);
   let isPdf = $state(false);
+  let cdColor = $state("var(--green)");
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
   let fileSize = $state("");
@@ -1257,6 +1261,16 @@
     if (data.fileName !== undefined) fileName = data.fileName;
     if (data.isVideo !== undefined) isVideo = data.isVideo;
     if (data.isAudio !== undefined) isAudio = data.isAudio;
+    if (data.isAudio && data.filePath) {
+      const idx = loadCdColor(data.filePath);
+      if (idx >= 0 && idx < CD_COLORS.length) {
+        cdColor = CD_COLORS[idx];
+      } else {
+        const rand = Math.floor(Math.random() * CD_COLORS.length);
+        saveCdColor(data.filePath, rand);
+        cdColor = CD_COLORS[rand];
+      }
+    }
     if (data.isPdf !== undefined) isPdf = data.isPdf;
     if (data.fileList !== undefined) fileList = data.fileList;
     if (data.currentIndex !== undefined) currentIndex = data.currentIndex;
@@ -2595,6 +2609,7 @@
               onScrubEnd={discScrubHandlers.onScrubEnd}
               {isScrubbing}
               {fileName}
+              color={cdColor}
             />
             <div class="audio-controls-new">
               <div class="audio-top-row">

@@ -9,6 +9,7 @@
     onScrubEnd,
     isScrubbing,
     fileName,
+    color = "var(--green)",
   }: {
     progress: number;
     audioEl: () => HTMLAudioElement | null;
@@ -19,6 +20,7 @@
     onScrubEnd: () => void;
     isScrubbing: boolean;
     fileName: string;
+    color?: string;
   } = $props();
 
   const discRadius = 275;
@@ -117,6 +119,7 @@
   aria-valuemax={100}
   aria-valuetext={`${Math.round(progress)}% played`}
   tabindex="0"
+  style="--cd-accent: {color}"
   onmousedown={handleDragStart}
   onmousemove={handleDragMove}
   onmouseup={handleDragEnd}
@@ -135,8 +138,8 @@
 
     <!-- Center label gradient -->
     <radialGradient id="centerLabelGradient" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="var(--vinyl-center)" stop-opacity="0.9" />
-      <stop offset="100%" stop-color="var(--vinyl-center)" />
+      <stop offset="0%" stop-color="var(--cd-accent)" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="var(--cd-accent)" />
     </radialGradient>
 
     <!-- Circular text path for filename (rotates with disc so filename stays at top at 0:00) -->
@@ -162,7 +165,7 @@
     cx="325"
     cy="325"
     r={discRadius}
-    stroke="var(--green)"
+    stroke="var(--cd-accent)"
     stroke-width="4"
     fill="none"
     stroke-linecap="round"
