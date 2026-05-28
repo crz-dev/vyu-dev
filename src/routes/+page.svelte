@@ -422,11 +422,21 @@
     viewer.toggleFullscreen();
   }
   function resetZoom() {
-    if (viewerEl && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
+    if (viewer.state.zoomLocked || !viewerEl || imageNaturalWidth <= 0 || imageNaturalHeight <= 0) {
+      viewer.resetZoom();
+    } else {
       const { width, height } = getViewerContentSize();
       viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
-    } else {
-      viewer.resetZoom();
+    }
+  }
+  function handleToggleZoomLock() {
+    const wasLocked = viewer.state.zoomLocked;
+    viewer.toggleZoomLock();
+    if (wasLocked && !viewer.state.zoomLocked) {
+      if (viewerEl && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
+        const { width, height } = getViewerContentSize();
+        viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
+      }
     }
   }
   function handleViewerScroll(e: WheelEvent) {
@@ -2295,7 +2305,9 @@
   viewerToggleFullscreen={toggleFullscreen}
   {thumbnailBarVisible}
   zoomLevel={viewer.state.zoomLevel}
+  zoomLocked={viewer.state.zoomLocked}
   {resetZoom}
+  toggleZoomLock={handleToggleZoomLock}
   clipCount={clips.clipCount}
   {clipMenuResetKey}
   {triggerClipSegments}

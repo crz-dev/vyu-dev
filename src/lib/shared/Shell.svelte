@@ -35,7 +35,9 @@
     viewerToggleFullscreen,
     thumbnailBarVisible,
     zoomLevel,
+    zoomLocked,
     resetZoom,
+    toggleZoomLock,
     clipCount,
     clipMenuResetKey,
     triggerClipSegments,
@@ -205,7 +207,9 @@
     viewerToggleFullscreen: () => void;
     thumbnailBarVisible: boolean;
     zoomLevel: number;
+    zoomLocked: boolean;
     resetZoom: () => void;
+    toggleZoomLock: () => void;
     clipCount: number;
     clipMenuResetKey: number;
     triggerClipSegments: () => void;
@@ -507,7 +511,9 @@
     {fileName}
     {fileSrc}
     {zoomLevel}
+    {zoomLocked}
     {resetZoom}
+    {toggleZoomLock}
     toggleFullscreen={viewerToggleFullscreen}
     {isVideo}
     {isPdf}

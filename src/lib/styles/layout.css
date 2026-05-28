@@ -277,6 +277,7 @@ main:not(.fullscreen).thumbnail-bar-open .viewer {
 .zoom:hover {
   color: var(--text-muted);
 }
+
 .fs-btn {
   background: none;
   border: none;

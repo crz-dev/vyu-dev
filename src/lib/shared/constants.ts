@@ -125,6 +125,7 @@ export type LoopMode = (typeof LOOP_MODES)[number];
 
 // UI / interaction constants
 export const DEFAULT_ZOOM = 100;
+export const ZOOM_MIN = 10;
 export const ZOOM_MAX = 1000;
 export const FULLSCREEN_HIDE_DELAY_MS = 1500;
 export const VOLUME_STEP = 1 / VOLUME_SEGMENTS;

@@ -1,4 +1,5 @@
 import { editing } from "$lib/features/editing/editing.svelte";
+import { ZOOM_MIN } from "$lib/shared/constants";
 
 type CropBounds = {
   left: number;
@@ -13,6 +14,7 @@ type ViewerState = {
   fsControlsVisible: boolean;
   zoomLevel: number;
   baseZoomLevel: number;
+  zoomLocked: boolean;
   translateX: number;
   translateY: number;
   isDragging: boolean;
@@ -29,6 +31,7 @@ function createViewer() {
     fsControlsVisible: true,
     zoomLevel: 100,
     baseZoomLevel: 100,
+    zoomLocked: false,
     translateX: 0,
     translateY: 0,
     isDragging: false,
@@ -69,6 +72,8 @@ function createViewer() {
     imageWidth: number,
     imageHeight: number,
   ) {
+    if (state.zoomLocked) return;
+
     if (
       imageWidth <= 0 ||
       imageHeight <= 0 ||
@@ -96,6 +101,18 @@ function createViewer() {
     state.zoomLevel = 100;
     state.translateX = 0;
     state.translateY = 0;
+  }
+
+  function toggleZoomLock() {
+    state.zoomLocked = !state.zoomLocked;
+    if (state.zoomLocked) {
+      state.zoomLevel = 100;
+      state.baseZoomLevel = ZOOM_MIN;
+      state.translateX = 0;
+      state.translateY = 0;
+    } else {
+      state.baseZoomLevel = 100;
+    }
   }
 
   function rotate(angle: number = 90) {
@@ -186,6 +203,7 @@ function createViewer() {
     resetFsTimer,
     fitToScreen,
     resetZoom,
+    toggleZoomLock,
     rotate,
     flip,
     getPanCursor,

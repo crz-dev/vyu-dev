@@ -25,7 +25,9 @@
     fileName,
     fileSrc,
     zoomLevel,
+    zoomLocked,
     resetZoom,
+    toggleZoomLock,
     toggleFullscreen,
     isVideo,
     isPdf = false,
@@ -73,7 +75,9 @@
     fileName: string;
     fileSrc: string;
     zoomLevel: number;
+    zoomLocked: boolean;
     resetZoom: () => void;
+    toggleZoomLock?: () => void;
     toggleFullscreen: () => void;
     isVideo: boolean;
     isPdf?: boolean;
@@ -194,8 +198,13 @@
   <div class="bottombar-right">
     <button
       class="zoom tooltip-above"
+      class:active={zoomLocked}
       data-tooltip="Reset zoom"
-      onclick={resetZoom}>{Math.round(zoomLevel)}%</button
+      onclick={resetZoom}
+      oncontextmenu={(e) => {
+        e.preventDefault();
+        toggleZoomLock?.();
+      }}>{Math.round(zoomLevel)}%{zoomLocked ? '-' : ''}</button
     >
     <button
       class="fs-btn tooltip-above-shift-left"
