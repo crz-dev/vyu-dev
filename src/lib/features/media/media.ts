@@ -153,7 +153,7 @@ export function createMedia(
       rawDurationSecs: 0,
       progress: 0,
       playing: false,
-      timestamps: isVideo ? readTimestamps(path) : [],
+      timestamps: isVideo || isAudio ? readTimestamps(path) : [],
       clipBoundaries: isVideo ? readClipBoundaries(path) : [],
       resumePoint: isVideo || isAudio ? loadResumePoint(path) : null,
     });

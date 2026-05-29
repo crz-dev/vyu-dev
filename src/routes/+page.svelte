@@ -2863,6 +2863,12 @@
                       {progress}
                       {isScrubbing}
                       editorOpen={tsEditMenu.visible}
+                      timestamps={timestamps}
+                      durationSecs={rawDurationSecs}
+                      {loopStart}
+                      {loopEnd}
+                      clipBoundaries={clips.clipBoundaries}
+                      {resumePoint}
                       onScrubStart={startScrubbing}
                     />
                   </div>
@@ -3274,6 +3280,12 @@
                 {progress}
                 {isScrubbing}
                 editorOpen={tsEditMenu.visible}
+                timestamps={timestamps}
+                durationSecs={rawDurationSecs}
+                {loopStart}
+                {loopEnd}
+                clipBoundaries={clips.clipBoundaries}
+                {resumePoint}
                 onScrubStart={startScrubbing}
               />
             </div>

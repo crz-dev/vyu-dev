@@ -1,15 +1,29 @@
 <script lang="ts">
+  import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
+
   let {
     filePath,
     progress,
     isScrubbing,
     editorOpen = false,
+    timestamps = [],
+    durationSecs = 0,
+    loopStart = null,
+    loopEnd = null,
+    clipBoundaries = [],
+    resumePoint = null,
     onScrubStart,
   }: {
     filePath: string;
     progress: number;
     isScrubbing: boolean;
     editorOpen?: boolean;
+    timestamps?: VideoMarker[];
+    durationSecs?: number;
+    loopStart?: number | null;
+    loopEnd?: number | null;
+    clipBoundaries?: ClipBoundary[];
+    resumePoint?: number | null;
     onScrubStart: (e: MouseEvent) => void;
   } = $props();
 
@@ -138,6 +152,36 @@
     class="audio-progress-playhead"
     style="left: {progress}%"
   ></div>
+  {#each timestamps as ts (ts.id)}
+    <div
+      class="audio-marker audio-ts-marker"
+      style="left: {durationSecs > 0 ? (ts.time / durationSecs) * 100 : 0}%"
+    ></div>
+  {/each}
+  {#if loopStart !== null}
+    <div
+      class="audio-marker audio-loop-marker"
+      style="left: {durationSecs > 0 ? (loopStart / durationSecs) * 100 : 0}%"
+    ></div>
+  {/if}
+  {#if loopEnd !== null}
+    <div
+      class="audio-marker audio-loop-marker"
+      style="left: {durationSecs > 0 ? (loopEnd / durationSecs) * 100 : 0}%"
+    ></div>
+  {/if}
+  {#each clipBoundaries as cb (cb.id)}
+    <div
+      class="audio-marker audio-clip-marker"
+      style="left: {durationSecs > 0 ? (cb.time / durationSecs) * 100 : 0}%"
+    ></div>
+  {/each}
+  {#if resumePoint !== null}
+    <div
+      class="audio-marker audio-resume-marker"
+      style="left: {durationSecs > 0 ? (resumePoint / durationSecs) * 100 : 0}%"
+    ></div>
+  {/if}
 </div>
 
 <style>
@@ -148,6 +192,20 @@
     overflow: hidden;
     border-radius: 2px;
   }
+  .audio-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.8;
+    transform: translateX(-1px);
+  }
+  .audio-ts-marker { background: var(--yellow); }
+  .audio-loop-marker { background: var(--green); }
+  .audio-clip-marker { background: var(--blue); }
+  .audio-resume-marker { background: rgba(150, 150, 150, 0.5); }
   .waveform-canvas {
     width: 100%;
     height: 32px;
