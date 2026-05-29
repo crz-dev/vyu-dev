@@ -785,6 +785,156 @@ async fn prepare_video_display(
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
+fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
+    let dir = app
+        .path()
+        .app_cache_dir()
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("cover_art");
+    let _ = fs::create_dir_all(&dir);
+    dir
+}
+
+/// Extracts embedded album art from an audio file using ffmpeg.
+/// Returns the cached image path, or None if no cover art exists / ffmpeg fails.
+#[tauri::command]
+async fn extract_cover_art(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<Option<String>, String> {
+    let cache_dir = cover_art_cache_dir(&app);
+    let hash = hash_path_xxh3(&path);
+
+    // Get source mtime
+    let src_meta = fs::metadata(&path).map_err(|e| format!("Cannot access file: {e}"))?;
+    let mtime = src_meta
+        .modified()
+        .map_err(|e| format!("Cannot read mtime: {e}"))?
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    // Check for existing cached cover (jpg or png)
+    for ext in ["jpg", "png"] {
+        let cached = cache_dir.join(format!("{hash}_{mtime}.{ext}"));
+        if cached.exists() {
+            return Ok(Some(cached.to_string_lossy().to_string()));
+        }
+    }
+
+    // Try extracting via ffmpeg
+    let cached_jpg = cache_dir.join(format!("{hash}_{mtime}.jpg"));
+    let path_c = path.clone();
+    let cached_c = cached_jpg.clone();
+
+    let result = tauri::async_runtime::spawn_blocking(move || -> Result<Option<PathBuf>, String> {
+        let mut child = Command::new("ffmpeg")
+            .args([
+                "-y", "-hide_banner", "-loglevel", "error",
+                "-i", &path_c,
+                "-an",
+                "-c:v", "copy",
+                "-q:v", "4",
+                &cached_c.to_string_lossy(),
+            ])
+            .spawn()
+            .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
+
+        let start = Instant::now();
+        loop {
+            match child.try_wait() {
+                Ok(Some(status)) => {
+                    if status.success() && cached_c.exists() && cached_c.metadata().map(|m| m.len()).unwrap_or(0) > 0 {
+                        return Ok(Some(cached_c));
+                    }
+                    // ffmpeg succeeded but no cover art stream exists
+                    let _ = fs::remove_file(&cached_c);
+                    return Ok(None);
+                }
+                Ok(None) => {
+                    if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        let _ = fs::remove_file(&cached_c);
+                        return Ok(None);
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+                Err(e) => {
+                    let _ = fs::remove_file(&cached_c);
+                    return Err(format!("ffmpeg error: {e}"));
+                }
+            }
+        }
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?;
+
+    Ok(result?.map(|p| p.to_string_lossy().to_string()))
+}
+
+/// Embeds a cover image into an audio file permanently using ffmpeg.
+/// Creates a temporary backup before modifying the original.
+/// Returns the audio file path on success.
+#[tauri::command]
+fn write_cover_art(audio_path: String, image_path: String) -> Result<String, String> {
+    let audio = PathBuf::from(&audio_path);
+    if !audio.exists() {
+        return Err("Audio file does not exist".into());
+    }
+    let image = PathBuf::from(&image_path);
+    if !image.exists() {
+        return Err("Image file does not exist".into());
+    }
+
+    // Create a backup in Vyu-temp
+    let temp_dir = std::env::temp_dir().join("Vyu-temp").join("originals");
+    fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create backup dir: {e}"))?;
+    let hash = hash_path_xxh3(&audio_path);
+    let backup_path = temp_dir.join(format!("{hash}_original_cover"));
+    let _ = fs::copy(&audio, &backup_path);
+
+    // Create temp output file alongside original
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let temp_output = audio
+        .parent()
+        .unwrap_or(Path::new("."))
+        .join(format!(".vyu-cover-temp-{stamp}"))
+        .with_extension(
+            audio
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("tmp"),
+        );
+
+    let status = Command::new("ffmpeg")
+        .args([
+            "-y", "-hide_banner", "-loglevel", "error",
+            "-i", &audio_path,
+            "-i", &image_path,
+            "-map", "0:a",
+            "-map", "1:v",
+            "-c", "copy",
+            "-disposition:v", "attached_pic",
+            &temp_output.to_string_lossy(),
+        ])
+        .status()
+        .map_err(|e| format!("Failed to run ffmpeg: {e}"))?;
+
+    if !status.success() {
+        let _ = fs::remove_file(&temp_output);
+        return Err("ffmpeg failed to embed cover art".into());
+    }
+
+    // Replace original with temp output
+    fs::rename(&temp_output, &audio).map_err(|e| format!("Failed to replace original file: {e}"))?;
+
+    Ok(audio_path)
+}
+
 fn cleanup_vyu_temp() {
     let temp_dir = std::env::temp_dir().join("Vyu-temp");
     let _ = std::fs::remove_dir_all(&temp_dir);
@@ -1519,6 +1669,8 @@ pub fn run() {
             clear_thumbnail_cache,
             prepare_display_image,
             prepare_video_display,
+            extract_cover_art,
+            write_cover_art,
             copy_image_to_clipboard,
             check_media_integrity,
             fix_media,

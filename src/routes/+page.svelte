@@ -3,7 +3,7 @@
 <script lang="ts">
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open } from "@tauri-apps/plugin-dialog";
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke, convertFileSrc } from "@tauri-apps/api/core";
   import { watchImmediate } from "@tauri-apps/plugin-fs";
   import {
     createPlaybackActions,
@@ -55,6 +55,8 @@
     invokeCheckMediaIntegrity,
     invokeFixMedia,
     invokeProcessVideoClips,
+    invokeExtractCoverArt,
+    invokeWriteCoverArt,
   } from "$lib/features/media/tools";
   import { computeContextMenuPosition } from "$lib/services/session";
   import {
@@ -93,6 +95,7 @@
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
   import CdVisual from "$lib/features/media/CdVisual.svelte";
   import WaveformBar from "$lib/features/media/WaveformBar.svelte";
+  import AlbumCover from "$lib/features/media/AlbumCover.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -102,6 +105,7 @@
   let isAudio = $state(false);
   let isPdf = $state(false);
   let cdColor = $state("var(--green)");
+  let coverArtSrc = $state("");
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
   let fileSize = $state("");
@@ -1295,6 +1299,16 @@
         saveCdColor(data.filePath, rand);
         cdColor = CD_COLORS[rand];
       }
+      // Extract embedded album art
+      invokeExtractCoverArt(data.filePath).then((coverPath) => {
+        if (coverPath) {
+          coverArtSrc = convertFileSrc(coverPath);
+        } else {
+          coverArtSrc = "";
+        }
+      }).catch(() => {
+        coverArtSrc = "";
+      });
     }
     if (data.isPdf !== undefined) isPdf = data.isPdf;
     if (data.fileList !== undefined) fileList = data.fileList;
@@ -1590,6 +1604,27 @@
       : "This audio file may be corrupted.";
     corruptionWarning = true;
     corruptionReason = reason;
+  }
+
+  async function changeAlbumCover() {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "Images",
+            extensions: ["png", "jpg", "jpeg", "webp", "bmp", "gif"],
+          },
+        ],
+      });
+      if (!selected || typeof selected !== "string") return;
+      await invokeWriteCoverArt(filePath, selected);
+      // Refresh the cover display
+      const coverPath = await invokeExtractCoverArt(filePath);
+      coverArtSrc = coverPath ? convertFileSrc(coverPath) : "";
+    } catch (err) {
+      console.error("Failed to change album cover:", err);
+    }
   }
 
   function dismissCorruption() {
@@ -3323,6 +3358,11 @@
                 </div>
               </div>
               <div class="audio-progress-row">
+                <AlbumCover
+                  src={coverArtSrc || null}
+                  color={cdColor}
+                  onChange={changeAlbumCover}
+                />
                 <button
                   class="ctrl-btn play-btn tooltip-ctrl tooltip-left"
                   data-tooltip={playing ? "Pause" : "Play"}
