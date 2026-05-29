@@ -44,8 +44,8 @@
   <div class="album-cover-overlay">
     {#if playing}
       <svg
-        width={size === "large" ? "22" : "16"}
-        height={size === "large" ? "22" : "16"}
+        width="48"
+        height="48"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -54,8 +54,8 @@
       </svg>
     {:else}
       <svg
-        width={size === "large" ? "22" : "16"}
-        height={size === "large" ? "22" : "16"}
+        width="48"
+        height="48"
         viewBox="0 0 24 24"
         fill="currentColor"
       >

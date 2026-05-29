@@ -348,6 +348,12 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
 .fs-overlay.visible {
   opacity: 1;
 }
+.fs-overlay.audio-fullscreen {
+  pointer-events: none;
+}
+.fs-overlay.audio-fullscreen > * {
+  pointer-events: auto;
+}
 .fs-topbar {
   position: absolute;
   top: 0;

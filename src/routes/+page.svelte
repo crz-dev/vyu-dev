@@ -3257,6 +3257,7 @@
       <div
         class="fs-overlay"
         class:visible={viewer.state.fsControlsVisible || tsEditMenu.visible}
+        class:audio-fullscreen={isAudio}
         role="button"
         tabindex="0"
         onwheel={handleViewerScroll}
@@ -3408,115 +3409,7 @@
               speedDragging={playbackUI.speedDragging}
             />
           </div>
-        {:else if isAudio}
-          <div class="fs-controls audio">
-            <TimelineMarkers
-              fullscreen={true}
-              {progress}
-              currentTimeSecs={rawCurrentSecs}
-              {isGifVideo}
-              clipPairs={clips.clipPairs}
-              clipBoundaries={clips.clipBoundaries}
-              {timestamps}
-              {abLoopRegion}
-              {loopStart}
-              {loopEnd}
-              {resumePoint}
-              durationSecs={rawDurationSecs}
-              clipMarkerJustDragged={clips.clipMarkerJustDragged}
-              tsEditMenuVisible={tsEditMenu.visible}
-              {startScrubbing}
-              {getTimestampPct}
-              {startClipMarkerDrag}
-              {removeClipBoundary}
-              {showClipBoundaryTooltip}
-              {hideTsTooltip}
-              {seekToTimestamp}
-              {openSegmentEditor}
-              {startTimestampDrag}
-              {timestampDragJustEnded}
-              {removeTimestamp}
-              {showTimestampTooltip}
-              {openTimestampEditor}
-              {showResumeTooltip}
-              {hideResumeTooltip}
-              {seekToResumePoint}
-              {removeResumePoint}
-              {clearABLoop}
-              {formatTime}
-              {startLoopMarkerDrag}
-              {loopMarkerJustDragged}
-              {showLoopMarkerTooltip}
-            />
-            <PlaybackControls
-              fullscreen={true}
-              isAudio={true}
-              {isGifVideo}
-              {playing}
-              looping={loopMode}
-              {muted}
-              {volume}
-              volumeHovered={playbackUI.volumeHovered}
-              volumeSegments={VOLUME_SEGMENTS}
-              {togglePlay}
-              {setLoopMode}
-              {toggleMute}
-              showVolumeOverlay={playbackUI.showVolumeOverlay}
-              handleVolumeAreaLeave={playbackUI.handleVolumeAreaLeave}
-              handleVolumeScroll={playbackUI.handleVolumeScroll}
-              startVolumeDrag={playbackUI.startVolumeDrag}
-              handleVolumeDiamondHover={playbackUI.handleVolumeDiamondHover}
-              {setVolume}
-              playbackSpeed={playbackUI.playbackSpeed}
-              speedHovered={playbackUI.speedHovered}
-              setPlaybackSpeed={playbackUI.setPlaybackSpeed}
-              showSpeedOverlay={playbackUI.showSpeedOverlay}
-              handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
-              handleSpeedScroll={playbackUI.handleSpeedScroll}
-              handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
-              startSpeedDrag={playbackUI.startSpeedDrag}
-              {addTimestamp}
-              addClipStart={() => addClipBoundary("start")}
-              addClipEnd={() => addClipBoundary("end")}
-              {addLoopStart}
-              {addLoopEnd}
-              hasLoopStart={loopStart !== null}
-              hasLoopEnd={loopEnd !== null}
-              hasAnyMarkers={timestamps.length > 0 ||
-                clips.clipBoundaries.length > 0 ||
-                resumePoint !== null ||
-                loopStart !== null ||
-                loopEnd !== null}
-              deleteAllMarkers={() => {
-                clearAllTimestamps();
-                clearAllSegments();
-                removeResumePoint();
-                clearLoopMarkers();
-              }}
-              {toggleTimer}
-              {currentTimeDisplay}
-              {durationDisplay}
-              {timerTooltip}
-              {toggleFullscreen}
-              onTsMenuChange={(v) => (tsMenuOpen = v)}
-              volumeSliderMode={playbackUI.volumeSliderMode || volumeSliderMode}
-              speedSliderMode={playbackUI.speedSliderMode || speedSliderMode}
-              volumeSliderValue={playbackUI.volumeSliderValue}
-              speedSliderValue={playbackUI.speedSliderValue}
-              {toggleVolumeSliderMode}
-              {toggleSpeedSliderMode}
-              startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
-              startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
-              handleVolumeSliderChange={playbackUI.handleVolumeSliderChange}
-              handleSpeedSliderChange={playbackUI.handleSpeedSliderChange}
-              showVolumeSliderTooltip={playbackUI.showVolumeSliderTooltip}
-              hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
-              showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
-              hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
-              volumeDragging={playbackUI.volumeDragging}
-              speedDragging={playbackUI.speedDragging}
-            />
-          </div>
+
         {:else}
           <div class="fs-controls image-only">
             <div class="fs-controls-row">
