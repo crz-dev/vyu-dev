@@ -57,7 +57,6 @@
     invokeFixMedia,
     invokeProcessVideoClips,
     invokeExtractCoverArt,
-    invokeWriteCoverArt,
   } from "$lib/features/media/tools";
   import { computeContextMenuPosition } from "$lib/services/session";
   import {
@@ -1619,27 +1618,6 @@
     corruptionReason = reason;
   }
 
-  async function changeAlbumCover() {
-    try {
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: "Images",
-            extensions: ["png", "jpg", "jpeg", "webp", "bmp", "gif"],
-          },
-        ],
-      });
-      if (!selected || typeof selected !== "string") return;
-      await invokeWriteCoverArt(filePath, selected);
-      // Refresh the cover display
-      const coverPath = await invokeExtractCoverArt(filePath);
-      coverArtSrc = coverPath ? convertFileSrc(coverPath) : "";
-    } catch (err) {
-      console.error("Failed to change album cover:", err);
-    }
-  }
-
   function dismissCorruption() {
     corruptionWarning = false;
     corruptionReason = "";
@@ -2803,12 +2781,14 @@
               {fileName}
               color={cdColor}
             />
+            <div class="audio-controls-card">
             <div class="audio-controls-new">
               <div class="audio-thumb-wrapper">
                 <AlbumCover
                   src={coverArtSrc || null}
                   color={cdColor}
-                  onChange={changeAlbumCover}
+                  {playing}
+                  onTogglePlay={togglePlay}
                 />
               </div>
               <div class="audio-content-right">
@@ -3198,6 +3178,7 @@
                 </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         {:else if fileSrc && isPdf}

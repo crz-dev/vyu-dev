@@ -2,12 +2,14 @@
   let {
     src = null,
     color = "var(--green)",
-    onChange,
+    playing = false,
+    onTogglePlay,
     size = "small",
   }: {
     src: string | null;
     color: string;
-    onChange: () => void;
+    playing: boolean;
+    onTogglePlay: () => void;
     size?: "small" | "large";
   } = $props();
 </script>
@@ -17,25 +19,11 @@
   class:has-image={!!src}
   class:large={size === "large"}
   style={src ? "" : `--cover-placeholder-bg: ${color}`}
-  onclick={onChange}
-  aria-label="Album cover — click to change"
+  onclick={onTogglePlay}
+  aria-label="Play / Pause"
 >
   {#if src}
     <img {src} alt="Album cover" draggable="false" />
-    <div class="album-cover-overlay">
-      <svg
-        width={size === "large" ? "22" : "16"}
-        height={size === "large" ? "22" : "16"}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-      </svg>
-    </div>
   {:else}
     <svg
       class="album-cover-note"
@@ -53,6 +41,28 @@
       <circle cx="18" cy="16" r="3" />
     </svg>
   {/if}
+  <div class="album-cover-overlay">
+    {#if playing}
+      <svg
+        width={size === "large" ? "22" : "16"}
+        height={size === "large" ? "22" : "16"}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <rect x="5" y="4" width="5" height="16" rx="1" />
+        <rect x="14" y="4" width="5" height="16" rx="1" />
+      </svg>
+    {:else}
+      <svg
+        width={size === "large" ? "22" : "16"}
+        height={size === "large" ? "22" : "16"}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+        <polygon points="6,3 20,12 6,21" />
+      </svg>
+    {/if}
+  </div>
 </button>
 
 <style>
@@ -81,7 +91,7 @@
     object-fit: cover;
     display: block;
   }
-  .album-cover.has-image:hover .album-cover-overlay {
+  .album-cover:hover .album-cover-overlay {
     opacity: 1;
   }
   .album-cover-overlay {
