@@ -18,6 +18,7 @@
     VOLUME_SEGMENTS,
     LOOP_MODES,
     ALL_EXTS,
+    AUDIO_EXTS,
     CD_COLORS,
     type LoopMode,
     type SortMode,
@@ -167,6 +168,8 @@
   let audioCustomizeMenuStyle = $state("");
   let audioLayoutMode: "retro" | "modern" = $state(loadAudioLayoutMode());
   let audioVisualizerMode: "waveform" | "progress" = $state(loadAudioVisualizerMode());
+  let lastPrevClickTime = $state(0);
+  const PREV_DOUBLE_CLICK_MS = 1200;
   let tsDeleteConfirm = $state(false);
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
@@ -1488,6 +1491,45 @@
     editing.exitCropMode();
     currentIndex = media.navigateToEdge(first, fileList, setMediaState);
   }
+  /** Navigate to the next/previous audio file in the file list, skipping non-audio files. */
+  function navigateToAudioFile(direction: number): void {
+    if (fileList.length === 0) return;
+    let idx = (currentIndex + direction + fileList.length) % fileList.length;
+    const startIdx = idx;
+    do {
+      const ext = getFileExt(fileList[idx]);
+      if (AUDIO_EXTS.includes(ext)) {
+        slideshow.stop();
+        editing.exitCropMode();
+        currentIndex = idx;
+        media.displayFile(fileList[idx], setMediaState);
+        return;
+      }
+      idx = (idx + direction + fileList.length) % fileList.length;
+    } while (idx !== startIdx);
+    // No other audio file found — do nothing
+  }
+
+  function handlePrevClick() {
+    const now = Date.now();
+    if (now - lastPrevClickTime < PREV_DOUBLE_CLICK_MS) {
+      // Double-click: navigate to previous audio file
+      navigateToAudioFile(-1);
+    } else {
+      // Single click: restart current audio from beginning
+      if (audioEl && audioEl.duration) {
+        audioEl.currentTime = 0;
+        audioEl.play().catch(() => {});
+        playing = true;
+      }
+    }
+    lastPrevClickTime = now;
+  }
+
+  function handleNextClick() {
+    navigateToAudioFile(1);
+  }
+
   function toggleThumbnailBar() {
     thumbnailBarVisible = !thumbnailBarVisible;
   }
@@ -3243,7 +3285,7 @@
             </div>
             </div>
             {:else}
-            <!-- Modern layout: large thumbnail + separated info + waveform + controls -->
+            <!-- Modern layout: large thumbnail outside, info/waveform/controls inside card + transport buttons -->
             <div class="audio-modern-thumbnail">
               <AlbumCover
                 size="xlarge"
@@ -3274,22 +3316,22 @@
                 {durationDisplay}
               </button>
             </div>
-            <div class="audio-waveform-card">
-              <WaveformBar
-                {filePath}
-                {progress}
-                {isScrubbing}
-                editorOpen={tsEditMenu.visible}
-                timestamps={timestamps}
-                durationSecs={rawDurationSecs}
-                {loopStart}
-                {loopEnd}
-                clipBoundaries={clips.clipBoundaries}
-                {resumePoint}
-                onScrubStart={startScrubbing}
-              />
-            </div>
             <div class="audio-modern-controls-card">
+              <div class="audio-waveform-card">
+                <WaveformBar
+                  {filePath}
+                  {progress}
+                  {isScrubbing}
+                  editorOpen={tsEditMenu.visible}
+                  timestamps={timestamps}
+                  durationSecs={rawDurationSecs}
+                  {loopStart}
+                  {loopEnd}
+                  clipBoundaries={clips.clipBoundaries}
+                  {resumePoint}
+                  onScrubStart={startScrubbing}
+                />
+              </div>
               <div class="audio-modern-controls-row">
                 <div class="audio-controls-left">
                   <!-- After playback (loop) menu -->
@@ -3457,6 +3499,51 @@
                         {/each}
                       </div>
                     {/if}
+                  </div>
+                </div>
+                <!-- Transport buttons: prev, play/pause, next — centered between left/right groups -->
+                <div class="audio-transport-cards-container">
+                  <div class="audio-transport-card">
+                    <button
+                      class="audio-transport-btn"
+                      onclick={handlePrevClick}
+                      aria-label="Previous track"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4v16M18 4l-12 8 12 8V4z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="audio-transport-card">
+                    <button
+                      class="audio-transport-btn is-playpause"
+                      onclick={togglePlay}
+                      aria-label={playing ? "Pause" : "Play"}
+                    >
+                      {#key playing}
+                        {#if playing}
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <rect x="2.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
+                            <rect x="9.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
+                          </svg>
+                        {:else}
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M3 2L14 8L3 14V2Z" fill="currentColor" />
+                          </svg>
+                        {/if}
+                      {/key}
+                    </button>
+                  </div>
+                  <div class="audio-transport-card">
+                    <button
+                      class="audio-transport-btn"
+                      onclick={handleNextClick}
+                      aria-label="Next track"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 4l12 8-12 8V4zM18 4v16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <div class="controls-spacer"></div>
