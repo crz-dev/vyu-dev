@@ -92,6 +92,7 @@
   import { setupInit } from "./init";
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
   import CdVisual from "$lib/features/media/CdVisual.svelte";
+  import WaveformBar from "$lib/features/media/WaveformBar.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -3353,23 +3354,13 @@
                     >
                   {/if}
                 </button>
-                <div
-                  class="audio-progress-bar"
-                  class:editor-open={tsEditMenu.visible}
-                  onmousedown={startScrubbing}
-                  role="button"
-                  tabindex="0"
-                  aria-label="Seek audio"
-                >
-                  <div
-                    class="audio-progress-fill"
-                    style="width: {progress}%"
-                  ></div>
-                  <div
-                    class="audio-progress-playhead"
-                    style="left: {progress}%"
-                  ></div>
-                </div>
+                <WaveformBar
+                  {filePath}
+                  {progress}
+                  {isScrubbing}
+                  editorOpen={tsEditMenu.visible}
+                  onScrubStart={startScrubbing}
+                />
                 <button
                   class="time-display tooltip-ctrl tooltip-right"
                   data-tooltip={timerTooltip}

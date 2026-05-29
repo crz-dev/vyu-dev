@@ -2521,21 +2521,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border-radius: 8px;
   background: var(--bg-primary);
 }
-.audio-progress-bar {
-  width: 100%;
-  height: 6px;
-  background: var(--bg-border);
-  border-radius: 2px;
-  cursor: pointer;
-  position: relative;
-  overflow: visible;
-}
-.audio-progress-fill {
-  height: 100%;
-  background: var(--text-primary);
-  border-radius: 2px;
-  pointer-events: none;
-}
 .audio-progress-playhead {
   position: absolute;
   top: 50%;
@@ -2555,10 +2540,10 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 .audio-progress-playhead:hover,
-.audio-progress-bar:active .audio-progress-playhead {
+.audio-waveform-bar:active .audio-progress-playhead {
   transform: translate(-50%, -50%) rotate(45deg) scale(1.28);
 }
-.audio-progress-bar.editor-open .audio-progress-playhead {
+.audio-waveform-bar.editor-open .audio-progress-playhead {
   opacity: 1;
 }
 .audio-controls {
@@ -2605,12 +2590,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   gap: 8px;
   width: 100%;
   max-width: 580px;
-}
-
-.audio-progress-row .audio-progress-bar {
-  flex: 1;
-  margin: 0;
-  height: 6px;
 }
 
 .audio-bottom-row {
