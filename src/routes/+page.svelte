@@ -5,6 +5,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke, convertFileSrc } from "@tauri-apps/api/core";
   import { watchImmediate } from "@tauri-apps/plugin-fs";
+  import { fly } from "svelte/transition";
   import {
     createPlaybackActions,
     createPlaybackUI,
@@ -156,8 +157,8 @@
   let aboutOpen = $state(false);
   let feedbackOpen = $state(false);
   let tsMenuOpen = $state(false);
-  let tsDeleteConfirm = $state(false);
   let loopMenuOpen = $state(false);
+  let tsDeleteConfirm = $state(false);
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
   let thumbnailBarVisible = $state(false);
@@ -2803,1035 +2804,398 @@
               color={cdColor}
             />
             <div class="audio-controls-new">
-              <div class="audio-controls-panel">
-                <div class="audio-controls-right">
-                  <div class="audio-filename-row">
-                    <div class="audio-menu-anchor">
-                      <button
-                        class="ctrl-btn loop-btn tooltip-ctrl tooltip-left"
-                        class:loop-menu-open={loopMenuOpen}
-                        data-tooltip={loopMenuOpen
-                          ? undefined
-                          : loopMode === "loop"
-                            ? "Loop"
-                            : loopMode === "stop"
-                              ? "Stop at end"
-                              : loopMode === "next"
-                                ? "Play next"
-                                : "Shuffle"}
-                        onclick={() => {
-                          loopMenuOpen = !loopMenuOpen;
-                        }}
-                        aria-label="loop mode menu"
-                      >
-                        {#if loopMode === "loop"}
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M17 2L21 6L17 10"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            />
-                            <path
-                              d="M3 11V9C3 7.9 3.9 7 5 7H21"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                            />
-                            <path
-                              d="M7 22L3 18L7 14"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            />
-                            <path
-                              d="M21 13V15C21 16.1 20.1 17 19 17H3"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                            />
-                          </svg>
-                        {:else if loopMode === "stop"}
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <rect
-                              x="4"
-                              y="4"
-                              width="16"
-                              height="16"
-                              rx="2"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            />
-                          </svg>
-                        {:else if loopMode === "next"}
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
-                            <rect
-                              x="19"
-                              y="4"
-                              width="2"
-                              height="16"
-                              rx="1"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        {:else}
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <path d="M3 7h5l9 10h4" /><path
-                              d="M3 17h5l2-2.2"
-                            /><path d="M17 5l4 4-4 4" /><path
-                              d="M17 13l4 4-4 4"
-                            />
-                          </svg>
-                        {/if}
-                      </button>
-                      {#if loopMenuOpen}
-                        <div class="loop-drop-menu" role="menu">
-                          <div class="loop-drop-header">
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              ><rect
-                                x="4"
-                                y="4"
-                                width="16"
-                                height="16"
-                                rx="2"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              /></svg
-                            >
-                            <span>After playback</span>
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              ><rect
-                                x="4"
-                                y="4"
-                                width="16"
-                                height="16"
-                                rx="2"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              /></svg
-                            >
-                          </div>
-                          <div class="loop-drop-grid">
-                            <button
-                              class="loop-drop-btn"
-                              class:active={loopMode === "stop"}
-                              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-                              onclick={() => {
-                                loopMode = "stop";
-                                saveLoopMode(loopMode);
-                                if (audioEl) audioEl.loop = false;
-                                loopMenuOpen = false;
-                              }}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                ><rect
-                                  x="4"
-                                  y="4"
-                                  width="16"
-                                  height="16"
-                                  rx="2"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                /></svg
-                              >
-                              Stop
-                            </button>
-                            <button
-                              class="loop-drop-btn"
-                              class:active={loopMode === "next"}
-                              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-                              onclick={() => {
-                                loopMode = "next";
-                                saveLoopMode(loopMode);
-                                if (audioEl) audioEl.loop = false;
-                                loopMenuOpen = false;
-                              }}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                ><path
-                                  d="M5 4l10 8-10 8V4z"
-                                  fill="currentColor"
-                                /><rect
-                                  x="19"
-                                  y="4"
-                                  width="2"
-                                  height="16"
-                                  rx="1"
-                                  fill="currentColor"
-                                /></svg
-                              >
-                              Play next
-                            </button>
-                            <button
-                              class="loop-drop-btn"
-                              class:active={loopMode === "loop"}
-                              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-                              onclick={() => {
-                                loopMode = "loop";
-                                saveLoopMode(loopMode);
-                                if (audioEl) audioEl.loop = true;
-                                loopMenuOpen = false;
-                              }}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                ><path
-                                  d="M17 2L21 6L17 10"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                /><path
-                                  d="M3 11V9C3 7.9 3.9 7 5 7H21"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                /><path
-                                  d="M7 22L3 18L7 14"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                /><path
-                                  d="M21 13V15C21 16.1 20.1 17 19 17H3"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                /></svg
-                              >
-                              Loop
-                            </button>
-                            <button
-                              class="loop-drop-btn"
-                              class:active={loopMode === "shuffle"}
-                              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
-                              onclick={() => {
-                                loopMode = "shuffle";
-                                saveLoopMode(loopMode);
-                                if (audioEl) audioEl.loop = false;
-                                loopMenuOpen = false;
-                              }}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                ><path d="M3 7h5l9 10h4" /><path
-                                  d="M3 17h5l2-2.2"
-                                /><path d="M17 5l4 4-4 4" /><path
-                                  d="M17 13l4 4-4 4"
-                                /></svg
-                              >
-                              Shuffle
-                            </button>
-                          </div>
-                        </div>
-                      {/if}
-                    </div>
-                    <div class="audio-menu-anchor">
-                      <button
-                        class="ctrl-btn add-ts-btn tooltip-ctrl tooltip-right"
-                        class:ts-menu-open={tsMenuOpen}
-                        data-tooltip="Marker menu"
-                        onclick={() => {
-                          tsMenuOpen = !tsMenuOpen;
-                          tsDeleteConfirm = false;
-                        }}
-                        aria-label="markers menu"
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <polygon
-                            class="diamond-shape"
-                            points="12,3 21,12 12,21 3,12"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                          <g class="x-shape">
-                            <path
-                              d="M4.5,4.5 L19.5,19.5"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                            />
-                            <path
-                              d="M19.5,4.5 L4.5,19.5"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                            />
-                          </g>
+              <div class="audio-thumb-wrapper">
+                <AlbumCover
+                  src={coverArtSrc || null}
+                  color={cdColor}
+                  onChange={changeAlbumCover}
+                />
+              </div>
+              <div class="audio-content-right">
+                <div class="audio-filename-row">
+                  <span class="audio-filename">{fileName}</span>
+                  <button
+                    class="time-display tooltip-ctrl tooltip-right"
+                    data-tooltip={timerTooltip}
+                    onclick={toggleTimer}
+                    aria-label="toggle timer mode"
+                  >
+                    {currentTimeDisplay()} / {durationDisplay}
+                  </button>
+                </div>
+                <WaveformBar
+                  {filePath}
+                  {progress}
+                  {isScrubbing}
+                  editorOpen={tsEditMenu.visible}
+                  onScrubStart={startScrubbing}
+                />
+                <div class="audio-controls-row">
+                <div class="audio-controls-left">
+                  <!-- After playback (loop) menu -->
+                  <div class="loop-menu-anchor" style="position:relative;">
+                    <button
+                      class="ctrl-btn loop-btn tooltip-ctrl"
+                      class:loop-menu-open={loopMenuOpen}
+                      data-tooltip={loopMenuOpen
+                        ? undefined
+                        : loopMode === "loop"
+                          ? "Loop"
+                          : loopMode === "stop"
+                            ? "Stop at end"
+                            : loopMode === "next"
+                              ? "Play next"
+                              : "Shuffle"}
+                      onclick={() => {
+                        loopMenuOpen = !loopMenuOpen;
+                      }}
+                      aria-label="loop mode menu"
+                    >
+                      {#if loopMode === "loop"}
+                        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <path d="M17 2L21 6L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="M3 11V9C3 7.9 3.9 7 5 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          <path d="M7 22L3 18L7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="M21 13V15C21 16.1 20.1 17 19 17H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
-                      </button>
-                      {#if tsMenuOpen}
-                        <div class="ts-drop-menu" role="menu">
-                          <div class="ts-drop-header">
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              ><polygon
-                                points="12,2 22,12 12,22 2,12"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              /></svg
-                            >
-                            <span>Markers</span>
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              ><polygon
-                                points="12,2 22,12 12,22 2,12"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                              /></svg
-                            >
-                          </div>
+                      {:else if loopMode === "stop"}
+                        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                      {:else if loopMode === "next"}
+                        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
+                          <rect x="19" y="4" width="2" height="16" rx="1" fill="currentColor" />
+                        </svg>
+                      {:else}
+                        <svg class="loop-mode-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M3 7h5l9 10h4" />
+                          <path d="M3 17h5l2-2.2" />
+                          <path d="M17 5l4 4-4 4" />
+                          <path d="M17 13l4 4-4 4" />
+                        </svg>
+                      {/if}
+                    </button>
+                    {#if loopMenuOpen}
+                      <div class="loop-drop-menu" role="menu">
+                        <div class="loop-drop-header" style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          <span>After playback</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </div>
+                        <div class="loop-drop-grid">
+                          <button class="loop-drop-btn" class:active={loopMode === "stop"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms" onclick={() => { setLoopMode("stop"); loopMenuOpen = false; }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" /></svg>
+                            Stop
+                          </button>
+                          <button class="loop-drop-btn" class:active={loopMode === "next"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms" onclick={() => { setLoopMode("next"); loopMenuOpen = false; }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 4l10 8-10 8V4z" fill="currentColor" /><rect x="19" y="4" width="2" height="16" rx="1" fill="currentColor" /></svg>
+                            Play next
+                          </button>
+                          <button class="loop-drop-btn" class:active={loopMode === "loop"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms" onclick={() => { setLoopMode("loop"); loopMenuOpen = false; }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                              <path d="M17 2L21 6L17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                              <path d="M3 11V9C3 7.9 3.9 7 5 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                              <path d="M7 22L3 18L7 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                              <path d="M21 13V15C21 16.1 20.1 17 19 17H3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            Loop
+                          </button>
+                          <button class="loop-drop-btn" class:active={loopMode === "shuffle"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms" onclick={() => { setLoopMode("shuffle"); loopMenuOpen = false; }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 7h5l9 10h4" />
+                              <path d="M3 17h5l2-2.2" />
+                              <path d="M17 5l4 4-4 4" />
+                              <path d="M17 13l4 4-4 4" />
+                            </svg>
+                            Shuffle
+                          </button>
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+                  <!-- Volume control -->
+                  <div
+                    class="volume-control"
+                    class:audio-off={muted || volume === 0}
+                    onmouseenter={playbackUI.showVolumeOverlay}
+                    onmouseleave={playbackUI.handleVolumeAreaLeave}
+                    onwheel={playbackUI.handleVolumeScroll}
+                    role="presentation"
+                  >
+                    <button
+                      class="ctrl-btn volume-btn tooltip-ctrl"
+                      class:active={!(muted || volume === 0)}
+                      data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
+                      onclick={toggleMute}
+                      aria-label={muted ? "unmute" : "mute"}
+                      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); volumeTrackEl = null; toggleVolumeSliderMode(); }}
+                    >
+                      {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
+                        {#if muted || volume === 0}
+                          <svg class="loop-mode-icon" viewBox="0 0 18 18" fill="none"><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><line x1="12" y1="6" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><line x1="16" y1="6" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+                        {:else if volume < 0.5}
+                          <svg class="loop-mode-icon" viewBox="0 0 18 18" fill="none"><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+                        {:else}
+                          <svg class="loop-mode-icon" viewBox="0 0 18 18" fill="none"><path d="M9 4L5 7H2V11H5L9 14V4Z" fill="currentColor" /><path d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M13.5 5C15.5 6.5 16.5 7.7 16.5 9C16.5 10.3 15.5 11.5 13.5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg>
+                        {/if}
+                      {/key}
+                    </button>
+                    {#if playbackUI.volumeSliderMode && (playbackUI.volumeHovered || playbackUI.volumeDragging)}
+                      <div
+                        class="playback-slider-track"
+                        class:muted={muted || volume === 0}
+                        style="width: 140px;"
+                        transition:fly={{ x: -8, duration: 150, opacity: 0 }}
+                        bind:this={volumeTrackEl}
+                        role="slider"
+                        tabindex="0"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(playbackUI.volumeSliderValue * 100)}
+                        aria-label="Volume slider"
+                        onpointerdown={(e) => { if (volumeTrackEl) playbackUI.startVolumeSliderDrag(e, volumeTrackEl); }}
+                        oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); volumeTrackEl = null; toggleVolumeSliderMode(); }}
+                        onmouseenter={() => playbackUI.showVolumeSliderTooltip(volumeTrackEl)}
+                        onmouseleave={playbackUI.hideVolumeSliderTooltip}
+                      >
+                        <div class="playback-slider-fill" style="width: {playbackUI.volumeSliderValue * 100}%"></div>
+                        {#each [0, 50, 100] as pct}
+                          <div
+                            class="playback-slider-marker"
+                            style="left: {pct}%"
+                            onpointerdown={(e) => e.stopPropagation()}
+                            onclick={(e) => { e.stopPropagation(); playbackUI.handleVolumeSliderChange(pct / 100); }}
+                            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playbackUI.handleVolumeSliderChange(pct / 100); } }}
+                            role="button"
+                            tabindex="0"
+                            aria-label="Set volume to {pct}%"
+                          ></div>
+                        {/each}
+                        <div class="playback-slider-scrubber" style="left: {playbackUI.volumeSliderValue * 100}%"></div>
+                      </div>
+                    {:else if playbackUI.volumeHovered || playbackUI.volumeDragging}
+                      <div
+                        class="volume-diamonds"
+                        onmousedown={playbackUI.startVolumeDrag}
+                        onmousemove={playbackUI.handleVolumeDiamondHover}
+                        role="presentation"
+                      >
+                        {#each Array(VOLUME_SEGMENTS) as _, i}
+                          <button
+                            class="volume-diamond"
+                            class:filled={i < Math.round(volume * VOLUME_SEGMENTS)}
+                            class:muted-diamond={muted}
+                            style="--i: {i}"
+                            onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
+                            aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
+                          ></button>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+                <div class="controls-spacer"></div>
+                <div class="audio-controls-right">
+                  <!-- Playback speed control -->
+                  <div
+                    class="speed-control"
+                    onmouseenter={playbackUI.showSpeedOverlay}
+                    onmouseleave={playbackUI.handleSpeedAreaLeave}
+                    onwheel={playbackUI.handleSpeedScroll}
+                    role="presentation"
+                  >
+                    <button
+                      class="ctrl-btn speed-btn tooltip-ctrl"
+                      class:active={playbackUI.playbackSpeed !== 1}
+                      data-tooltip="Playback speed"
+                      aria-label="playback speed"
+                      onclick={() => playbackUI.setPlaybackSpeed(1)}
+                      oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); speedTrackEl = null; toggleSpeedSliderMode(); }}
+                    >
+                      {#if playbackUI.playbackSpeed < 1}
+                        <svg class="speed-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M2 12c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3" />
+                          <path d="M2 17c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3" />
+                        </svg>
+                      {:else if playbackUI.playbackSpeed > 1}
+                        <svg class="speed-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
+                      {:else}
+                        <svg class="speed-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="13" r="7.5" />
+                          <path d="M12 9.5v4l2.5 2" />
+                          <path d="M10 3h4" />
+                          <path d="M12 3v2" />
+                          <path d="M19 5.5l-1.5 1.5" />
+                          <circle cx="19.5" cy="5" r="1.2" fill="currentColor" stroke="none" />
+                        </svg>
+                      {/if}
+                    </button>
+                    {#if playbackUI.speedSliderMode && (playbackUI.speedHovered || playbackUI.speedDragging)}
+                      <div
+                        class="playback-slider-track"
+                        transition:fly={{ x: 8, duration: 150, opacity: 0 }}
+                        bind:this={speedTrackEl}
+                        role="slider"
+                        tabindex="0"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(playbackUI.speedSliderValue * 100)}
+                        aria-label="Playback speed slider"
+                        onpointerdown={(e) => { if (speedTrackEl) playbackUI.startSpeedSliderDrag(e, speedTrackEl); }}
+                        oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); speedTrackEl = null; toggleSpeedSliderMode(); }}
+                        onmouseenter={() => playbackUI.showSpeedSliderTooltip(speedTrackEl)}
+                        onmouseleave={playbackUI.hideSpeedSliderTooltip}
+                      >
+                        <div class="playback-slider-fill" style="width: {playbackUI.speedSliderValue * 100}%"></div>
+                        {#each [{ step: 0.1, pct: 0 }, { step: 1, pct: 50 }, { step: 3, pct: 100 }] as marker}
+                          <div
+                            class="playback-slider-marker"
+                            style="left: {marker.pct}%"
+                            onpointerdown={(e) => e.stopPropagation()}
+                            onclick={(e) => { e.stopPropagation(); playbackUI.setPlaybackSpeed(marker.step); }}
+                            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); playbackUI.setPlaybackSpeed(marker.step); } }}
+                            role="button"
+                            tabindex="0"
+                            aria-label="Set speed to {marker.step}x"
+                          ></div>
+                        {/each}
+                        <div class="playback-slider-scrubber" style="left: {playbackUI.speedSliderValue * 100}%"></div>
+                      </div>
+                    {:else if playbackUI.speedHovered || playbackUI.speedDragging}
+                      <div
+                        class="speed-diamonds"
+                        onmousedown={playbackUI.startSpeedDrag}
+                        onmousemove={playbackUI.handleSpeedDiamondHover}
+                        role="presentation"
+                      >
+                        {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+                          {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(playbackUI.playbackSpeed)}
+                          {@const dist = Math.abs(i - selectedIdx)}
+                          <button
+                            class="speed-diamond"
+                            class:filled={dist === 0}
+                            class:grey={dist === 1}
+                            class:dim={dist === 2}
+                            class:hidden={dist >= 3}
+                            style="--i: {6 - i}"
+                            onclick={() => playbackUI.setPlaybackSpeed(step)}
+                            aria-label="set speed {step}x"
+                          ></button>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+                  <!-- Markers menu -->
+                  <div class="ts-menu-anchor" style="position:relative;">
+                    <button
+                      class="ctrl-btn add-ts-btn tooltip-ctrl"
+                      data-tooltip="Marker menu"
+                      class:ts-menu-open={tsMenuOpen}
+                      onclick={() => {
+                        tsMenuOpen = !tsMenuOpen;
+                        tsDeleteConfirm = false;
+                      }}
+                      aria-label="markers menu"
+                    >
+                      <svg class="ts-drop-arrow-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <polygon class="diamond-shape" points="12,3 21,12 12,21 3,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <g class="x-shape">
+                          <path d="M4.5,4.5 L19.5,19.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          <path d="M19.5,4.5 L4.5,19.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </g>
+                      </svg>
+                    </button>
+                    {#if tsMenuOpen}
+                      <div class="ts-drop-menu" role="menu">
+                        <div class="ts-drop-header" style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <polygon points="12,2 22,12 12,22 2,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          <span>Markers</span>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                            <polygon points="12,2 22,12 12,22 2,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </div>
+                        {#if timestamps.length > 0 || clips.clipBoundaries.length > 0 || resumePoint !== null || loopStart !== null || loopEnd !== null}
                           {#if !tsDeleteConfirm}
                             <button
                               class="ts-drop-item ts-drop-red"
-                              onclick={() => {
-                                tsDeleteConfirm = true;
-                              }}
+                              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
+                              onclick={() => { tsDeleteConfirm = true; }}
                               role="menuitem"
                             >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <polyline
-                                  points="3 6 5 6 21 6"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                />
-                                <path
-                                  d="M19 6l-1 14H6L5 6"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                />
-                                <path
-                                  d="M10 11v6M14 11v6"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                />
-                                <path
-                                  d="M9 6V4h6v2"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                  stroke-linecap="round"
-                                />
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                                <polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                                <path d="M9 6V4h6v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                               </svg>
                               Delete Markers
                             </button>
                           {:else}
                             <button
                               class="ts-drop-item ts-drop-red-confirm"
+                              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
                               onclick={() => {
                                 clearAllTimestamps();
                                 clearAllSegments();
                                 removeResumePoint();
                                 clearLoopMarkers();
-                                tsMenuOpen = false;
-                                tsDeleteConfirm = false;
                               }}
                               role="menuitem"
                             >
                               Confirm Delete
                             </button>
                           {/if}
-                          <div class="ts-drop-split">
-                            <button
-                              class="ts-drop-half ts-drop-green"
-                              onclick={() => {
-                                addLoopStart();
-                              }}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="9"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                />
-                                <text
-                                  x="12"
-                                  y="12"
-                                  text-anchor="middle"
-                                  dominant-baseline="central"
-                                  font-size="11"
-                                  font-weight="700"
-                                  fill="currentColor"
-                                  font-family="var(--font-family)">A</text
-                                >
-                              </svg>
-                              Loop start
-                            </button>
-                            <button
-                              class="ts-drop-half ts-drop-green"
-                              onclick={() => {
-                                addLoopEnd();
-                              }}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="9"
-                                  stroke="currentColor"
-                                  stroke-width="2"
-                                />
-                                <text
-                                  x="12"
-                                  y="12"
-                                  text-anchor="middle"
-                                  dominant-baseline="central"
-                                  font-size="11"
-                                  font-weight="700"
-                                  fill="currentColor"
-                                  font-family="var(--font-family)">B</text
-                                >
-                              </svg>
-                              Loop end
-                            </button>
-                          </div>
-                          <div class="ts-drop-split">
-                            <button
-                              class="ts-drop-half ts-drop-blue"
-                              onclick={() => addClipBoundary("start")}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <circle
-                                  cx="7"
-                                  cy="8"
-                                  r="2.2"
-                                  stroke="currentColor"
-                                  stroke-width="1.8"
-                                />
-                                <circle
-                                  cx="7"
-                                  cy="15.8"
-                                  r="2.2"
-                                  stroke="currentColor"
-                                  stroke-width="1.8"
-                                />
-                                <path
-                                  d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
-                                  stroke="currentColor"
-                                  stroke-width="1.8"
-                                />
-                              </svg>
-                              Clip start
-                            </button>
-                            <button
-                              class="ts-drop-half ts-drop-blue"
-                              onclick={() => addClipBoundary("end")}
-                              role="menuitem"
-                            >
-                              <svg
-                                width="11"
-                                height="11"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                              >
-                                <circle
-                                  cx="17"
-                                  cy="8"
-                                  r="2.2"
-                                  stroke="currentColor"
-                                  stroke-width="1.8"
-                                />
-                                <circle
-                                  cx="17"
-                                  cy="15.8"
-                                  r="2.2"
-                                  stroke="currentColor"
-                                  stroke-width="1.8"
-                                />
-                                <path
-                                  d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
-                                  stroke="currentColor"
-                                  stroke-width="1.8"
-                                />
-                              </svg>
-                              Clip end
-                            </button>
-                          </div>
-                          <button
-                            class="ts-drop-item ts-drop-yellow"
-                            onclick={() => {
-                              addTimestamp();
-                              tsDeleteConfirm = false;
-                            }}
-                            role="menuitem"
-                          >
-                            <svg
-                              width="11"
-                              height="11"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="1.7"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              ><path
-                                d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"
-                              /></svg
-                            >
-                            Add Timestamp
+                        {/if}
+                        <div class="ts-drop-split">
+                          <button class="ts-drop-half ts-drop-green" style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms" onclick={() => { addLoopStart(); }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                              <text x="12" y="12" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="currentColor" font-family="var(--font-family)">A</text>
+                            </svg>
+                            Loop start
+                          </button>
+                          <button class="ts-drop-half ts-drop-green" style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms" onclick={() => { addLoopEnd(); }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                              <text x="12" y="12" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="currentColor" font-family="var(--font-family)">B</text>
+                            </svg>
+                            Loop end
                           </button>
                         </div>
-                      {/if}
-                    </div>
-                    <span class="audio-filename">{fileName}</span>
-                  </div>
-                  <div class="audio-waveform-row">
-                    <div class="audio-thumb-wrapper">
-                      <AlbumCover
-                        src={coverArtSrc || null}
-                        color={cdColor}
-                        onChange={changeAlbumCover}
-                      />
-                    </div>
-                    <WaveformBar
-                      {filePath}
-                      {progress}
-                      {isScrubbing}
-                      editorOpen={tsEditMenu.visible}
-                      onScrubStart={startScrubbing}
-                    />
-                    <div class="audio-time-container">
-                      <button
-                        class="time-display tooltip-ctrl tooltip-right"
-                        data-tooltip={timerTooltip}
-                        onclick={toggleTimer}
-                        aria-label="toggle timer mode"
-                      >
-                        {currentTimeDisplay()} / {durationDisplay}
-                      </button>
-                    </div>
-                  </div>
-                  <div class="audio-transport-row">
-                    <button
-                      class="audio-seek-btn tooltip-ctrl tooltip-left"
-                      onclick={() => {
-                        if (audioEl)
-                          audioEl.currentTime = Math.max(
-                            0,
-                            audioEl.currentTime - 5,
-                          );
-                      }}
-                      aria-label="seek backward 5 seconds"
-                      data-tooltip="Seek -5s"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polygon points="19,20 9,12 19,4" fill="currentColor" />
-                        <line x1="5" y1="19" x2="5" y2="5" />
-                      </svg>
-                    </button>
-                    <button
-                      class="ctrl-btn play-btn tooltip-ctrl"
-                      data-tooltip={playing ? "Pause" : "Play"}
-                      onclick={togglePlay}
-                      aria-label={playing ? "pause" : "play"}
-                    >
-                      {#if playing}
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                        >
-                          <rect
-                            x="3"
-                            y="2"
-                            width="3.5"
-                            height="12"
-                            rx="1"
-                            fill="currentColor"
-                          />
-                          <rect
-                            x="9.5"
-                            y="2"
-                            width="3.5"
-                            height="12"
-                            rx="1"
-                            fill="currentColor"
-                          />
-                        </svg>
-                      {:else}
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                        >
-                          <path d="M3 2L14 8L3 14V2Z" fill="currentColor" />
-                        </svg>
-                      {/if}
-                    </button>
-                    <button
-                      class="audio-seek-btn tooltip-ctrl tooltip-right"
-                      onclick={() => {
-                        if (audioEl)
-                          audioEl.currentTime = Math.min(
-                            rawDurationSecs,
-                            audioEl.currentTime + 5,
-                          );
-                      }}
-                      aria-label="seek forward 5 seconds"
-                      data-tooltip="Seek +5s"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <polygon points="5,4 15,12 5,20" fill="currentColor" />
-                        <line x1="19" y1="5" x2="19" y2="19" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="audio-sliders-row">
-                <div
-                  class="volume-control"
-                  role="presentation"
-                  onmouseenter={playbackUI.showVolumeOverlay}
-                  onmouseleave={playbackUI.handleVolumeAreaLeave}
-                  onwheel={playbackUI.handleVolumeScroll}
-                >
-                  <button
-                    class="ctrl-btn volume-btn tooltip-ctrl tooltip-left"
-                    class:active={!(muted || volume === 0)}
-                    data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
-                    onclick={toggleMute}
-                    aria-label={muted ? "unmute" : "mute"}
-                    oncontextmenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      volumeTrackEl = null;
-                      playbackUI.toggleVolumeSliderMode();
-                    }}
-                  >
-                    {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
-                      {#if muted || volume === 0}
-                        <svg viewBox="0 0 18 18" fill="none"
-                          ><path
-                            d="M9 4L5 7H2V11H5L9 14V4Z"
-                            fill="currentColor"
-                          /><line
-                            x1="12"
-                            y1="6"
-                            x2="16"
-                            y2="12"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          /><line
-                            x1="16"
-                            y1="6"
-                            x2="12"
-                            y2="12"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          /></svg
-                        >
-                      {:else if volume < 0.5}
-                        <svg viewBox="0 0 18 18" fill="none"
-                          ><path
-                            d="M9 4L5 7H2V11H5L9 14V4Z"
-                            fill="currentColor"
-                          /><path
-                            d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          /></svg
-                        >
-                      {:else}
-                        <svg viewBox="0 0 18 18" fill="none"
-                          ><path
-                            d="M9 4L5 7H2V11H5L9 14V4Z"
-                            fill="currentColor"
-                          /><path
-                            d="M11.5 7C12.5 7.8 13 8.4 13 9C13 9.6 12.5 10.2 11.5 11"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          /><path
-                            d="M13.5 5C15.5 6.5 16.5 7.7 16.5 9C16.5 10.3 15.5 11.5 13.5 13"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          /></svg
-                        >
-                      {/if}
-                    {/key}
-                  </button>
-                  {#if volumeSliderMode && (playbackUI.volumeHovered || playbackUI.volumeDragging)}
-                    <div
-                      class="playback-slider-track"
-                      class:muted={muted || volume === 0}
-                      style="width: 140px;"
-                      bind:this={volumeTrackEl}
-                      role="slider"
-                      tabindex="0"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.round(
-                        playbackUI.volumeSliderValue * 100,
-                      )}
-                      aria-label="Volume slider"
-                      onpointerdown={(e) =>
-                        playbackUI.startVolumeSliderDrag(e, volumeTrackEl!)}
-                      oncontextmenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        volumeTrackEl = null;
-                        playbackUI.toggleVolumeSliderMode();
-                      }}
-                      onmouseenter={() =>
-                        playbackUI.showVolumeSliderTooltip(volumeTrackEl)}
-                      onmouseleave={playbackUI.hideVolumeSliderTooltip}
-                    >
-                      <div
-                        class="playback-slider-fill"
-                        style="width: {playbackUI.volumeSliderValue * 100}%"
-                      ></div>
-                      {#each [0, 50, 100] as pct}
-                        <div
-                          class="playback-slider-marker"
-                          style="left: {pct}%"
-                          onpointerdown={(e) => e.stopPropagation()}
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            playbackUI.handleVolumeSliderChange(pct / 100);
-                          }}
-                          onkeydown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              playbackUI.handleVolumeSliderChange(pct / 100);
-                            }
-                          }}
-                          role="button"
-                          tabindex="0"
-                          aria-label="Set volume to {pct}%"
-                        ></div>
-                      {/each}
-                      <div
-                        class="playback-slider-scrubber"
-                        style="left: {playbackUI.volumeSliderValue * 100}%"
-                      ></div>
-                    </div>
-                  {:else if playbackUI.volumeHovered || playbackUI.volumeDragging}
-                    <div
-                      class="volume-diamonds"
-                      onmousedown={playbackUI.startVolumeDrag}
-                      onmousemove={playbackUI.handleVolumeDiamondHover}
-                      role="presentation"
-                    >
-                      {#each Array(VOLUME_SEGMENTS) as _, i}
+                        <div class="ts-drop-split">
+                          <button class="ts-drop-half ts-drop-blue" style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms" onclick={() => { addClipBoundary("start"); }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle cx="7" cy="15.8" r="2.2" stroke="currentColor" stroke-width="1.8" /><path d="M9.5 9.6L19 5.2M9.5 14.2L19 19" stroke="currentColor" stroke-width="1.8" /></svg>
+                            Clip start
+                          </button>
+                          <button class="ts-drop-half ts-drop-blue" style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms" onclick={() => { addClipBoundary("end"); }} role="menuitem">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><circle cx="17" cy="8" r="2.2" stroke="currentColor" stroke-width="1.8" /><circle cx="17" cy="15.8" r="2.2" stroke="currentColor" stroke-width="1.8" /><path d="M14.5 9.6L5 5.2M14.5 14.2L5 19" stroke="currentColor" stroke-width="1.8" /></svg>
+                            Clip end
+                          </button>
+                        </div>
                         <button
-                          class="volume-diamond"
-                          class:filled={i <
-                            Math.round(volume * VOLUME_SEGMENTS)}
-                          class:muted-diamond={muted}
-                          style="--i: {i}"
-                          onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
-                          aria-label="set volume {Math.round(
-                            ((i + 1) / VOLUME_SEGMENTS) * 100,
-                          )}%"
-                        ></button>
-                      {/each}
-                    </div>
-                  {/if}
-                </div>
-                <span class="audio-slider-arrow audio-slider-arrow-right">
-                  <svg
-                    width="18"
-                    height="10"
-                    viewBox="0 0 18 10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="0" y1="5" x2="14" y2="5" />
-                    <polyline points="10,1 14,5 10,9" />
-                  </svg>
-                </span>
-                <span class="audio-slider-arrow audio-slider-arrow-left">
-                  <svg
-                    width="18"
-                    height="10"
-                    viewBox="0 0 18 10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <line x1="4" y1="5" x2="18" y2="5" />
-                    <polyline points="8,1 4,5 8,9" />
-                  </svg>
-                </span>
-                <div
-                  class="speed-control"
-                  role="presentation"
-                  onmouseenter={playbackUI.showSpeedOverlay}
-                  onmouseleave={playbackUI.handleSpeedAreaLeave}
-                  onwheel={playbackUI.handleSpeedScroll}
-                >
-                  <button
-                    class="ctrl-btn speed-btn tooltip-ctrl tooltip-right"
-                    class:active={playbackUI.playbackSpeed !== 1}
-                    data-tooltip="Playback speed"
-                    aria-label="playback speed"
-                    onclick={() => playbackUI.setPlaybackSpeed(1)}
-                    oncontextmenu={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      speedTrackEl = null;
-                      playbackUI.toggleSpeedSliderMode();
-                    }}
-                  >
-                    {#if playbackUI.playbackSpeed < 1}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        ><path
-                          d="M2 12c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
-                        /><path
-                          d="M2 17c1.5-2 3.5-3 5.5-3s3.5 1 5 3c1.5 2 3 3 5 3s3.5-1 4.5-3"
-                        /></svg
-                      >
-                    {:else if playbackUI.playbackSpeed > 1}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        ><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg
-                      >
-                    {:else}
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        ><circle cx="12" cy="13" r="7.5" /><path
-                          d="M12 9.5v4l2.5 2"
-                        /><path d="M10 3h4" /><path d="M12 3v2" /><path
-                          d="M19 5.5l-1.5 1.5"
-                        /><circle
-                          cx="19.5"
-                          cy="5"
-                          r="1.2"
-                          fill="currentColor"
-                          stroke="none"
-                        /></svg
-                      >
+                          class="ts-drop-item ts-drop-yellow"
+                          style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
+                          onclick={() => { addTimestamp(); tsDeleteConfirm = false; }}
+                          role="menuitem"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+                          </svg>
+                          Add Timestamp
+                        </button>
+                      </div>
                     {/if}
-                  </button>
-                  {#if speedSliderMode && (playbackUI.speedHovered || playbackUI.speedDragging)}
-                    <div
-                      class="playback-slider-track"
-                      bind:this={speedTrackEl}
-                      role="slider"
-                      tabindex="0"
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={Math.round(
-                        playbackUI.speedSliderValue * 100,
-                      )}
-                      aria-label="Playback speed slider"
-                      onpointerdown={(e) =>
-                        playbackUI.startSpeedSliderDrag(e, speedTrackEl!)}
-                      oncontextmenu={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        speedTrackEl = null;
-                        playbackUI.toggleSpeedSliderMode();
-                      }}
-                      onmouseenter={() =>
-                        playbackUI.showSpeedSliderTooltip(speedTrackEl)}
-                      onmouseleave={playbackUI.hideSpeedSliderTooltip}
-                    >
-                      <div
-                        class="playback-slider-fill"
-                        style="width: {playbackUI.speedSliderValue * 100}%"
-                      ></div>
-                      {#each [{ step: 0.1, pct: 0 }, { step: 1, pct: 50 }, { step: 3, pct: 100 }] as marker}
-                        <div
-                          class="playback-slider-marker"
-                          style="left: {marker.pct}%"
-                          onpointerdown={(e) => e.stopPropagation()}
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            playbackUI.setPlaybackSpeed(marker.step);
-                          }}
-                          onkeydown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              playbackUI.setPlaybackSpeed(marker.step);
-                            }
-                          }}
-                          role="button"
-                          tabindex="0"
-                          aria-label="Set speed to {marker.step}x"
-                        ></div>
-                      {/each}
-                      <div
-                        class="playback-slider-scrubber"
-                        style="left: {playbackUI.speedSliderValue * 100}%"
-                      ></div>
-                    </div>
-                  {:else if playbackUI.speedHovered || playbackUI.speedDragging}
-                    <div
-                      class="speed-diamonds"
-                      onmousedown={playbackUI.startSpeedDrag}
-                      onmousemove={playbackUI.handleSpeedDiamondHover}
-                      role="presentation"
-                    >
-                      {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-                        {@const selectedIdx = [
-                          0.25, 0.5, 0.75, 1, 1.25, 2, 3,
-                        ].indexOf(playbackUI.playbackSpeed)}
-                        {@const dist = Math.abs(i - selectedIdx)}
-                        <button
-                          class="speed-diamond"
-                          class:filled={dist === 0}
-                          class:grey={dist === 1}
-                          class:dim={dist === 2}
-                          class:hidden={dist >= 3}
-                          style="--i: {6 - i}"
-                          onclick={() => playbackUI.setPlaybackSpeed(step)}
-                          aria-label="set speed {step}x"
-                        ></button>
-                      {/each}
-                    </div>
-                  {/if}
+                  </div>
+                </div>
                 </div>
               </div>
             </div>
