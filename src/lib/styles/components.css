@@ -2765,3 +2765,129 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .audio-customize-label {
   flex: 1;
 }
+
+/* ── Modern audio layout ─────────────────────────────── */
+.audio-modern-thumbnail {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.audio-modern-thumbnail .album-cover {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+.audio-modern-thumbnail .album-cover.large {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+.audio-modern-thumbnail .album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.audio-modern-thumbnail .album-cover-overlay {
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.audio-modern-thumbnail:hover .album-cover-overlay {
+  opacity: 1;
+}
+
+/* Fallback placeholder for no cover art */
+.audio-modern-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--cover-placeholder-bg, var(--bg-elevated));
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.audio-modern-placeholder-filename {
+  font-size: 14px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80%;
+}
+.audio-modern-placeholder-duration {
+  font-size: 12px;
+  font-family: var(--font-family);
+  color: var(--text-secondary);
+}
+
+/* Separated time row (modern layout) */
+.audio-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 2px;
+}
+.audio-info-row .audio-info-time {
+  font-size: 12px;
+  font-family: var(--font-family);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 0;
+  cursor: pointer;
+}
+.audio-info-row .audio-info-time:hover {
+  color: var(--text-primary);
+}
+.audio-info-row .audio-info-filename {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  padding: 0 8px;
+}
+
+/* Modern controls card (no album cover grid) */
+.audio-modern-controls-card {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.audio-modern-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  justify-content: center;
+}
+.audio-modern-controls-row .audio-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.audio-modern-controls-row .audio-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.audio-modern-controls-row .controls-spacer {
+  flex: 1;
+}
