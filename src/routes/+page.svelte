@@ -3395,14 +3395,16 @@
                       editorOpen={tsEditMenu.visible}
                       onScrubStart={startScrubbing}
                     />
-                    <button
-                      class="time-display tooltip-ctrl tooltip-right"
-                      data-tooltip={timerTooltip}
-                      onclick={toggleTimer}
-                      aria-label="toggle timer mode"
-                    >
-                      {currentTimeDisplay()} / {durationDisplay}
-                    </button>
+                    <div class="audio-time-container">
+                      <button
+                        class="time-display tooltip-ctrl tooltip-right"
+                        data-tooltip={timerTooltip}
+                        onclick={toggleTimer}
+                        aria-label="toggle timer mode"
+                      >
+                        {currentTimeDisplay()} / {durationDisplay}
+                      </button>
+                    </div>
                   </div>
                   <div class="audio-transport-row">
                     <button
