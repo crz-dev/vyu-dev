@@ -30,7 +30,10 @@
     toggleZoomLock,
     toggleFullscreen,
     isVideo,
+    isAudio,
     isPdf = false,
+    durationDisplay,
+    audioBitrateDisplay,
     fullscreen = false,
     clipCount,
     triggerClipSegments,
@@ -80,7 +83,10 @@
     toggleZoomLock?: () => void;
     toggleFullscreen: () => void;
     isVideo: boolean;
+    isAudio: boolean;
     isPdf?: boolean;
+    durationDisplay: string;
+    audioBitrateDisplay: string;
     fullscreen?: boolean;
     clipCount: number;
     triggerClipSegments: () => void;
@@ -186,8 +192,10 @@
       {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
     </button>
   </div>
-  <span class="file-info tooltip-above" data-tooltip="Resolution · File size">
-    {#if fileDimensions && fileSize}
+  <span class="file-info tooltip-above" data-tooltip={isAudio ? "Duration · Bitrate · File size" : "Resolution · File size"}>
+    {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
+      {durationDisplay} · {audioBitrateDisplay} · {fileSize}
+    {:else if fileDimensions && fileSize}
       {fileDimensions} · {fileSize}
     {:else if !fileInfoLoading && fileName !== "no file open"}
       {fileName}

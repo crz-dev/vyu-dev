@@ -51,6 +51,7 @@ export interface MediaState {
   fileList: string[];
   currentIndex: number;
   fileSize: string;
+  fileSizeBytes: number;
   fileDimensions: string;
   fileCreated: string;
   fileModified: string;
@@ -139,6 +140,7 @@ export function createMedia(
       isPdf,
       fileSrc: "",
       fileSize: "",
+      fileSizeBytes: 0,
       fileDimensions: "",
       fileCreated: "",
       fileModified: "",
@@ -209,6 +211,7 @@ export function createMedia(
       }
       set({
         fileSize: formatFileSize(info.size),
+        fileSizeBytes: info.size,
         fileCreated: formatMetaDate(
           getMetaValue(info, "birthtime") ??
             getMetaValue(info, "birthtimeMs") ??
@@ -292,6 +295,7 @@ export function createMedia(
       rawCurrentSecs: 0,
       rawDurationSecs: 0,
       fileSize: "",
+      fileSizeBytes: 0,
       fileDimensions: "",
       fileCreated: "",
       fileModified: "",

@@ -168,6 +168,7 @@
     fileCreated,
     fileModified,
     durationDisplay,
+    audioBitrateDisplay,
     mediaPropsLoading,
     mediaProps,
     loadMediaProperties,
@@ -343,6 +344,7 @@
     fileCreated: string;
     fileModified: string;
     durationDisplay: string;
+    audioBitrateDisplay: string;
     mediaPropsLoading: boolean;
     mediaProps: any;
     loadMediaProperties: any;
@@ -516,7 +518,10 @@
     {toggleZoomLock}
     toggleFullscreen={viewerToggleFullscreen}
     {isVideo}
+    {isAudio}
     {isPdf}
+    {durationDisplay}
+    {audioBitrateDisplay}
     {clipCount}
     {triggerClipSegments}
     {clipJobRunning}

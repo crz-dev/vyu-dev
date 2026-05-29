@@ -109,6 +109,7 @@
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
   let fileSize = $state("");
+  let fileSizeBytes = $state(0);
   let fileDimensions = $state("");
   let fileCreated = $state("");
   let fileModified = $state("");
@@ -301,6 +302,11 @@
     return `-${formatTime(rawDurationSecs - rawCurrentSecs)}`;
   }
   const durationDisplay = $derived(formatTime(rawDurationSecs));
+  const audioBitrateDisplay = $derived.by(() => {
+    if (!isAudio || fileSizeBytes <= 0 || rawDurationSecs <= 0) return "";
+    const kbps = Math.round((fileSizeBytes * 8) / rawDurationSecs / 1000);
+    return `${kbps} kbps`;
+  });
   const timerTooltip = $derived(timerShowRemaining ? "Remaining" : "Elapsed");
 
   // ── Toast helpers ──────────────────────────────────────
@@ -1326,6 +1332,7 @@
     if (data.fileList !== undefined) fileList = data.fileList;
     if (data.currentIndex !== undefined) currentIndex = data.currentIndex;
     if (data.fileSize !== undefined) fileSize = data.fileSize;
+    if (data.fileSizeBytes !== undefined) fileSizeBytes = data.fileSizeBytes;
     if (data.fileDimensions !== undefined) fileDimensions = data.fileDimensions;
     if (data.fileCreated !== undefined) fileCreated = data.fileCreated;
     if (data.fileModified !== undefined) fileModified = data.fileModified;
@@ -2497,6 +2504,7 @@
   {fileCreated}
   {fileModified}
   {durationDisplay}
+  {audioBitrateDisplay}
   {mediaPropsLoading}
   {mediaProps}
   {propsCopyPath}
