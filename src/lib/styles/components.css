@@ -290,8 +290,8 @@ main:not(.fullscreen).thumbnail-bar-open .video-inner video {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 4px;
   line-height: 0;
   transition:
@@ -299,8 +299,8 @@ main:not(.fullscreen).thumbnail-bar-open .video-inner video {
     color 0.15s;
 }
 .ctrl-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   display: block;
   margin: 0 auto;
   flex-shrink: 0;
@@ -2529,14 +2529,14 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   background: var(--bg-elevated);
   border: 0.5px solid var(--bg-border);
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
 }
 .audio-waveform-card {
   width: 100%;
   background: var(--bg-secondary);
   border: 0.5px solid var(--bg-border);
   border-radius: 8px;
-  padding: 10px;
+  padding: 6px;
 }
 .audio-progress-playhead {
   position: absolute;
@@ -2574,15 +2574,15 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .audio-controls-new {
   width: 100%;
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 104px 1fr;
   gap: 10px 12px;
-  align-items: start;
+  align-items: center;
 }
 
 .audio-controls-new .audio-thumb-wrapper {
   grid-row: 1 / -1;
-  width: 96px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2590,8 +2590,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 .audio-controls-new .audio-thumb-wrapper .album-cover {
-  width: 96px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
   border-radius: 8px;
 }
 
