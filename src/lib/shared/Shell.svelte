@@ -471,6 +471,7 @@
   class:fullscreen={viewerStateIsFullscreen}
   class:menu-open={anyMenuOpen}
   class:thumbnail-bar-open={thumbnailBarVisible}
+  class:is-audio={isAudio}
   class:fs-controls-hidden={viewerStateIsFullscreen &&
     thumbnailBarVisible &&
     !viewerFsControlsVisible}
