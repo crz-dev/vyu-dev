@@ -2618,7 +2618,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   font-family: var(--font-family);
   color: var(--text-primary);
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
 }
@@ -2793,6 +2792,9 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   padding: 0 2px;
   margin: 4px 0;
 }
+.audio-info-row.expanded {
+  grid-template-columns: 1fr minmax(0, 3fr) 1fr;
+}
 .audio-info-row .audio-info-time {
   font-size: 12px;
   font-family: var(--font-family);
@@ -2819,10 +2821,16 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   font-family: var(--font-family);
   color: var(--text-primary);
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
   padding: 0 8px;
+}
+.audio-marquee {
+  width: 100%;
+}
+.album-marquee {
+  width: 100%;
+  max-width: 80%;
 }
 
 /* Modern controls card (no album cover grid) */

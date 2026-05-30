@@ -67,6 +67,37 @@ main {
 .filename-input:focus {
   border-color: var(--text-muted);
 }
+
+/* Marquee scrolling text */
+.marquee-wrapper {
+  overflow: hidden;
+  max-width: 100%;
+  display: flex;
+  align-items: inherit;
+}
+.marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  min-width: 0;
+}
+.marquee-track.scrolling {
+  animation: marquee var(--marquee-dur, 8s) linear infinite;
+}
+.marquee-sep {
+  display: inline-block;
+  width: 32px;
+  flex-shrink: 0;
+}
+.marquee-text {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.filename-marquee {
+  width: 100%;
+  max-width: 300px;
+}
+
 .folder-btn {
   background: none;
   border: none;
@@ -373,6 +404,12 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   font-size: 12px;
   color: var(--text-muted);
   font-family: var(--font-family);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100vw - 160px);
 }
 .fs-window-controls {
   display: flex;

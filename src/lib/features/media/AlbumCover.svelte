@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Marquee from "$lib/shared/Marquee.svelte";
+
   let {
     src = null,
     color = "var(--green)",
@@ -47,7 +49,7 @@
         <circle cx="18" cy="16" r="3" />
       </svg>
       {#if fileName}
-        <span class="album-cover-xlarge-filename">{fileName}</span>
+        <span class="album-cover-xlarge-filename"><Marquee text={fileName} class="album-marquee" /></span>
       {/if}
       {#if duration}
         <span class="album-cover-xlarge-duration">{duration}</span>
@@ -164,7 +166,6 @@
     color: var(--text-primary);
     text-align: center;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 80%;
   }

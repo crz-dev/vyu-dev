@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invokeRenameFile } from "$lib/features/media/tools";
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
+  import Marquee from "$lib/shared/Marquee.svelte";
 
   let {
     fileName,
@@ -157,7 +158,7 @@
       onmouseenter={showFilenameTooltip}
       onmouseleave={hideFilenameTooltip}
       onclick={fileSrc ? startEditing : undefined}
-      aria-label="Rename file">{fileName}</button
+      aria-label="Rename file"><Marquee text={fileName} scrollOnHover class="filename-marquee" /></button
     >
   {/if}
   {#if fileSrc}

@@ -99,6 +99,7 @@
   import CdVisual from "$lib/features/media/CdVisual.svelte";
   import WaveformBar from "$lib/features/media/WaveformBar.svelte";
   import AlbumCover from "$lib/features/media/AlbumCover.svelte";
+  import Marquee from "$lib/shared/Marquee.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -162,6 +163,8 @@
   let tsMenuOpen = $state(false);
   let loopMenuOpen = $state(false);
   let audioLayoutMode: "retro" | "modern" = $state(loadAudioLayoutMode());
+  let cassetteFilenameOverflow = $state(false);
+  let cassetteInfoRowEl = $state<HTMLElement | null>(null);
   let lastPrevClickTime = $state(0);
   const PREV_DOUBLE_CLICK_MS = 1200;
   let tsDeleteConfirm = $state(false);
@@ -2867,7 +2870,7 @@
                 </div>
                 <div class="audio-content-right">
                   <div class="audio-filename-row">
-                    <span class="audio-filename">{fileName}</span>
+                    <span class="audio-filename"><Marquee text={fileName} class="audio-marquee" /></span>
                     <button
                       class="time-display tooltip-ctrl tooltip-right"
                       data-tooltip={timerTooltip}
@@ -3352,7 +3355,7 @@
                 duration={durationDisplay}
               />
             </div>
-            <div class="audio-info-row">
+            <div class="audio-info-row" class:expanded={cassetteFilenameOverflow} bind:this={cassetteInfoRowEl}>
               <button
                 class="audio-info-time tooltip-ctrl"
                 data-tooltip={timerTooltip}
@@ -3361,7 +3364,7 @@
               >
                 {currentTimeDisplay()}
               </button>
-              <span class="audio-info-filename">{fileName}</span>
+              <span class="audio-info-filename"><Marquee text={fileName} class="audio-marquee" measureWidth={cassetteInfoRowEl ? cassetteInfoRowEl.clientWidth / 3 : undefined} onOverflow={(v) => cassetteFilenameOverflow = v} /></span>
               <button
                 class="audio-info-time tooltip-ctrl"
                 data-tooltip={timerTooltip}
@@ -3892,7 +3895,7 @@
         style="cursor: {fsCursor}"
       >
         <div class="fs-topbar">
-          <span class="fs-filename">{fileName}</span>
+          <span class="fs-filename"><Marquee text={fileName} scrollOnHover class="fs-marquee" /></span>
           <div class="fs-window-controls">
             <button
               class="fs-wc-btn"
