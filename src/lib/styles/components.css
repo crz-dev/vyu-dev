@@ -2977,8 +2977,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 .retro-controls-row .retro-slider-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -2994,8 +2994,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 .retro-controls-row .retro-slider-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   display: block;
   flex-shrink: 0;
 }
@@ -3021,7 +3021,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-bottom: 8px;
   background: var(--bg-elevated);
   border: 0.5px solid var(--bg-border);
   border-radius: 8px;
@@ -3119,7 +3118,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .retro-slider-container.muted {
   opacity: 0.4;
-  pointer-events: none;
 }
 
 /* Retro transport buttons (inline in controls row) */
