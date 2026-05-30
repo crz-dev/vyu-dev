@@ -2937,12 +2937,12 @@
                         >
                           {#key playing}
                             {#if playing}
-                              <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <rect x="2.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
                                 <rect x="9.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
                               </svg>
                             {:else}
-                              <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M3 2L14 8L3 14V2Z" fill="currentColor" />
                               </svg>
                             {/if}

@@ -3169,20 +3169,21 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: 3px;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
   transition: background 0.13s, color 0.13s;
   line-height: 0;
+  box-sizing: border-box;
 }
 
 .retro-transport-btn svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   display: block;
   flex-shrink: 0;
 }
@@ -3193,11 +3194,11 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 .retro-transport-btn.is-playpause {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
 }
 
 .retro-transport-btn.is-playpause svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
