@@ -93,22 +93,30 @@ export function createPlaybackUI(
     volumeHovered = false;
   }
 
-  function handleVolumeDiamondHover(e: MouseEvent) {
+  function handleVolumeDiamondHover(e: MouseEvent, vertical = false) {
     const container = e.currentTarget as HTMLElement;
     const containerRect = container.getBoundingClientRect();
     const diamonds = container.querySelectorAll(".volume-diamond");
     const first = diamonds[0].getBoundingClientRect();
     const last = diamonds[diamonds.length - 1].getBoundingClientRect();
     const ratio = getVolume();
-    volumeTooltipX =
-      first.left +
-      first.width / 2 +
-      ratio * (last.left + last.width / 2 - first.left - first.width / 2);
-    volumeTooltipY = containerRect.top;
+    if (vertical) {
+      volumeTooltipY =
+        first.top +
+        first.height / 2 +
+        ratio * (last.top + last.height / 2 - first.top - first.height / 2);
+      volumeTooltipX = containerRect.right;
+    } else {
+      volumeTooltipX =
+        first.left +
+        first.width / 2 +
+        ratio * (last.left + last.width / 2 - first.left - first.width / 2);
+      volumeTooltipY = containerRect.top;
+    }
     volumeTooltipVisible = true;
   }
 
-  function startVolumeDrag(e: MouseEvent) {
+  function startVolumeDrag(e: MouseEvent, vertical = false) {
     if (e.button !== 0) return;
     e.preventDefault();
     volumeDragging = true;
@@ -119,16 +127,30 @@ export function createPlaybackUI(
     function dragTo(clientX: number, clientY: number) {
       const first = diamonds[0].getBoundingClientRect();
       const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-      const firstCenter = first.left + first.width / 2;
-      const lastCenter = last.left + last.width / 2;
-      const ratio = Math.max(
-        0,
-        Math.min(1, (clientX - first.left) / (last.right - first.left)),
-      );
-      setVolume(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
-      const valRatio = getVolume();
-      volumeTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
-      volumeTooltipY = containerRect.top;
+      let ratio: number;
+      if (vertical) {
+        const firstCenter = first.top + first.height / 2;
+        const lastCenter = last.top + last.height / 2;
+        ratio = Math.max(
+          0,
+          Math.min(1, (clientY - first.top) / (last.bottom - first.top)),
+        );
+        setVolume(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
+        const valRatio = getVolume();
+        volumeTooltipY = firstCenter + valRatio * (lastCenter - firstCenter);
+        volumeTooltipX = containerRect.right;
+      } else {
+        const firstCenter = first.left + first.width / 2;
+        const lastCenter = last.left + last.width / 2;
+        ratio = Math.max(
+          0,
+          Math.min(1, (clientX - first.left) / (last.right - first.left)),
+        );
+        setVolume(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
+        const valRatio = getVolume();
+        volumeTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
+        volumeTooltipY = containerRect.top;
+      }
       volumeTooltipVisible = true;
     }
 
@@ -170,7 +192,7 @@ export function createPlaybackUI(
     speedHovered = false;
   }
 
-  function handleSpeedDiamondHover(e: MouseEvent) {
+  function handleSpeedDiamondHover(e: MouseEvent, vertical = false) {
     const container = e.currentTarget as HTMLElement;
     const containerRect = container.getBoundingClientRect();
     const diamonds = container.querySelectorAll(".speed-diamond");
@@ -179,15 +201,23 @@ export function createPlaybackUI(
     const steps = SPEED_STEPS;
     const idx = steps.indexOf(playbackSpeed);
     const ratio = idx / (steps.length - 1);
-    speedTooltipX =
-      first.left +
-      first.width / 2 +
-      ratio * (last.left + last.width / 2 - first.left - first.width / 2);
-    speedTooltipY = containerRect.top;
+    if (vertical) {
+      speedTooltipY =
+        first.top +
+        first.height / 2 +
+        ratio * (last.top + last.height / 2 - first.top - first.height / 2);
+      speedTooltipX = containerRect.right;
+    } else {
+      speedTooltipX =
+        first.left +
+        first.width / 2 +
+        ratio * (last.left + last.width / 2 - first.left - first.width / 2);
+      speedTooltipY = containerRect.top;
+    }
     speedTooltipVisible = true;
   }
 
-  function startSpeedDrag(e: MouseEvent) {
+  function startSpeedDrag(e: MouseEvent, vertical = false) {
     if (e.button !== 0) return;
     e.preventDefault();
     speedDragging = true;
@@ -198,19 +228,35 @@ export function createPlaybackUI(
     function dragTo(clientX: number, clientY: number) {
       const first = diamonds[0].getBoundingClientRect();
       const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-      const firstCenter = first.left + first.width / 2;
-      const lastCenter = last.left + last.width / 2;
       const steps = SPEED_STEPS;
-      const ratio = Math.max(
-        0,
-        Math.min(1, (clientX - first.left) / (last.right - first.left)),
-      );
-      const idx = Math.round(ratio * (steps.length - 1));
-      setPlaybackSpeed(steps[idx]);
-      const currentIdx = steps.indexOf(playbackSpeed);
-      const valRatio = currentIdx / (steps.length - 1);
-      speedTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
-      speedTooltipY = containerRect.top;
+      let ratio: number;
+      if (vertical) {
+        const firstCenter = first.top + first.height / 2;
+        const lastCenter = last.top + last.height / 2;
+        ratio = Math.max(
+          0,
+          Math.min(1, (clientY - first.top) / (last.bottom - first.top)),
+        );
+        const idx = Math.round(ratio * (steps.length - 1));
+        setPlaybackSpeed(steps[idx]);
+        const currentIdx = steps.indexOf(playbackSpeed);
+        const valRatio = currentIdx / (steps.length - 1);
+        speedTooltipY = firstCenter + valRatio * (lastCenter - firstCenter);
+        speedTooltipX = containerRect.right;
+      } else {
+        const firstCenter = first.left + first.width / 2;
+        const lastCenter = last.left + last.width / 2;
+        ratio = Math.max(
+          0,
+          Math.min(1, (clientX - first.left) / (last.right - first.left)),
+        );
+        const idx = Math.round(ratio * (steps.length - 1));
+        setPlaybackSpeed(steps[idx]);
+        const currentIdx = steps.indexOf(playbackSpeed);
+        const valRatio = currentIdx / (steps.length - 1);
+        speedTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
+        speedTooltipY = containerRect.top;
+      }
       speedTooltipVisible = true;
     }
 
@@ -219,6 +265,7 @@ export function createPlaybackUI(
     function onMouseMove(ev: MouseEvent) {
       dragTo(ev.clientX, ev.clientY);
     }
+
     function onMouseUp() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);

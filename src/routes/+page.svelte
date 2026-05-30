@@ -3036,21 +3036,26 @@
                         </div>
                       {:else if playbackUI.volumeHovered || playbackUI.volumeDragging}
                         <div
-                          class="volume-diamonds"
-                          onmousedown={playbackUI.startVolumeDrag}
-                          onmousemove={playbackUI.handleVolumeDiamondHover}
-                          role="presentation"
+                          class="retro-diamonds-wrapper"
+                          transition:fly={{ y: 12, duration: 150, opacity: 0 }}
                         >
-                          {#each Array(VOLUME_SEGMENTS) as _, i}
-                            <button
-                              class="volume-diamond"
-                              class:filled={i < Math.round(volume * VOLUME_SEGMENTS)}
-                              class:muted-diamond={muted}
-                              style="--i: {i}"
-                              onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
-                              aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
-                            ></button>
-                          {/each}
+                          <div
+                            class="volume-diamonds"
+                            onmousedown={(e) => playbackUI.startVolumeDrag(e, true)}
+                            onmousemove={(e) => playbackUI.handleVolumeDiamondHover(e, true)}
+                            role="presentation"
+                          >
+                            {#each Array(VOLUME_SEGMENTS) as _, i}
+                              <button
+                                class="volume-diamond"
+                                class:filled={i < Math.round(volume * VOLUME_SEGMENTS)}
+                                class:muted-diamond={muted}
+                                style="--i: {i}"
+                                onclick={() => setVolume((i + 1) / VOLUME_SEGMENTS)}
+                                aria-label="set volume {Math.round(((i + 1) / VOLUME_SEGMENTS) * 100)}%"
+                              ></button>
+                            {/each}
+                          </div>
                         </div>
                       {/if}
                     </div>
@@ -3135,25 +3140,30 @@
                         </div>
                       {:else if playbackUI.speedHovered || playbackUI.speedDragging}
                         <div
-                          class="speed-diamonds"
-                          onmousedown={playbackUI.startSpeedDrag}
-                          onmousemove={playbackUI.handleSpeedDiamondHover}
-                          role="presentation"
+                          class="retro-diamonds-wrapper"
+                          transition:fly={{ y: 12, duration: 150, opacity: 0 }}
                         >
-                          {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-                            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(playbackUI.playbackSpeed)}
-                            {@const dist = Math.abs(i - selectedIdx)}
-                            <button
-                              class="speed-diamond"
-                              class:filled={dist === 0}
-                              class:grey={dist === 1}
-                              class:dim={dist === 2}
-                              class:hidden={dist >= 3}
-                              style="--i: {6 - i}"
-                              onclick={() => playbackUI.setPlaybackSpeed(step)}
-                              aria-label="set speed {step}x"
-                            ></button>
-                          {/each}
+                          <div
+                            class="speed-diamonds"
+                            onmousedown={(e) => playbackUI.startSpeedDrag(e, true)}
+                            onmousemove={(e) => playbackUI.handleSpeedDiamondHover(e, true)}
+                            role="presentation"
+                          >
+                            {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+                              {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(playbackUI.playbackSpeed)}
+                              {@const dist = Math.abs(i - selectedIdx)}
+                              <button
+                                class="speed-diamond"
+                                class:filled={dist === 0}
+                                class:grey={dist === 1}
+                                class:dim={dist === 2}
+                                class:hidden={dist >= 3}
+                                style="--i: {6 - i}"
+                                onclick={() => playbackUI.setPlaybackSpeed(step)}
+                                aria-label="set speed {step}x"
+                              ></button>
+                            {/each}
+                          </div>
                         </div>
                       {/if}
                     </div>

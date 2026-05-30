@@ -3035,6 +3035,32 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform-origin: bottom center;
 }
 
+.retro-diamonds-wrapper {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding-bottom: 6px;
+}
+
+.retro-diamonds-wrapper .volume-diamonds,
+.retro-diamonds-wrapper .speed-diamonds {
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.retro-diamonds-wrapper .volume-diamond,
+.retro-diamonds-wrapper .speed-diamond {
+  width: 11px;
+  height: 11px;
+}
+
 .retro-slider-track-vertical {
   position: relative;
   width: 4px;
