@@ -2705,10 +2705,19 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
 }
+.audio-swap-container {
+  width: 100%;
+  display: grid;
+}
+.audio-swap-container > * {
+  grid-row: 1;
+  grid-column: 1;
+}
 .audio-layout-swap {
   width: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .audio-modern-thumbnail {

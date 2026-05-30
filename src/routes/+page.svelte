@@ -2839,8 +2839,9 @@
                 }
               }}
             ></audio>
+            <div class="audio-swap-container">
             {#key audioLayoutMode}
-            <div class="audio-layout-swap" in:fly={{ y: 14, duration: 260, delay: 40 }} out:fly={{ y: -14, duration: 180 }}>
+            <div class="audio-layout-swap" in:fly={{ x: audioLayoutMode === "retro" ? 100 : -100, duration: 260, delay: 40 }} out:fly={{ x: audioLayoutMode === "retro" ? -100 : 100, duration: 180 }}>
             {#if audioLayoutMode === "retro"}
               <CdVisual
                 {progress}
@@ -3801,6 +3802,7 @@
             {/if}
             </div>
             {/key}
+            </div>
           </div>
 
         {:else if fileSrc && isPdf}
