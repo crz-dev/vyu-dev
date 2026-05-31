@@ -1996,6 +1996,8 @@
         setFfprobeChecked: (v) => (ffprobeChecked = v),
         setFfprobeAvailable: (v) => (ffprobeAvailable = v),
       });
+      // Bail if the user closed the dialog while ffprobe was being checked
+      if (!propertiesOpen) return;
       if (ffprobeAvailable)
         await loadMediaProperties({
           filePath,
