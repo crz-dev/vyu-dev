@@ -3154,6 +3154,7 @@
                     <div class="loop-menu-anchor" style="position:relative;"
                       onmouseenter={() => { loopMenuOpen = true; }}
                       onmouseleave={() => { loopMenuOpen = false; }}
+                      role="presentation"
                     >
                       <button
                         class="retro-slider-btn tooltip-ctrl"
@@ -3240,6 +3241,7 @@
                     <div class="ts-menu-anchor" style="position:relative;"
                       onmouseenter={() => { tsMenuOpen = true; tsDeleteConfirm = false; }}
                       onmouseleave={() => { tsMenuOpen = false; }}
+                      role="presentation"
                     >
                       <button
                         class="retro-slider-btn tooltip-ctrl"
