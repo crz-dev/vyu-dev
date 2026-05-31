@@ -5,7 +5,7 @@
     src = null,
     color = "var(--green)",
     playing = false,
-    onTogglePlay,
+    onTogglePlay = undefined,
     onPickAudio,
     size = "small",
     fileName = "",
@@ -14,7 +14,7 @@
     src: string | null;
     color: string;
     playing: boolean;
-    onTogglePlay: () => void;
+    onTogglePlay?: () => void;
     onPickAudio?: () => void;
     size?: "small" | "large" | "xlarge";
     fileName?: string;
