@@ -2716,7 +2716,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .audio-modern-thumbnail {
@@ -3171,4 +3171,25 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .retro-transport-btn.is-playpause svg {
   width: 16px;
   height: 16px;
+}
+
+/* Retro layout: open dropdowns left/right instead of upward to avoid card clipping */
+.retro-controls-row .loop-menu-anchor .loop-drop-menu {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 12px);
+  left: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+  transform-origin: right center;
+}
+
+.retro-controls-row .ts-menu-anchor .ts-drop-menu {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 12px);
+  right: auto;
+  bottom: auto;
+  transform: translateY(-50%);
+  transform-origin: left center;
 }
