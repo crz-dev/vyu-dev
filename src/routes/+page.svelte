@@ -3169,8 +3169,6 @@
                     </div>
                     <!-- After playback (loop) menu -->
                     <div class="loop-menu-anchor" style="position:relative;"
-                      onmouseenter={() => { loopMenuOpen = true; }}
-                      onmouseleave={() => { loopMenuOpen = false; }}
                       role="presentation"
                     >
                       <button
@@ -3185,6 +3183,7 @@
                               : loopMode === "next"
                                 ? "Play next"
                                 : "Shuffle"}
+                        onclick={() => { loopMenuOpen = !loopMenuOpen; }}
                         aria-label="loop mode menu"
                       >
                         {#if loopMode === "loop"}
@@ -3256,14 +3255,13 @@
                     </div>
                     <!-- Markers menu -->
                     <div class="ts-menu-anchor" style="position:relative;"
-                      onmouseenter={() => { tsMenuOpen = true; tsDeleteConfirm = false; }}
-                      onmouseleave={() => { tsMenuOpen = false; }}
                       role="presentation"
                     >
                       <button
                         class="retro-slider-btn tooltip-ctrl"
                         data-tooltip="Marker menu"
                         class:ts-menu-open={tsMenuOpen}
+                        onclick={() => { tsMenuOpen = !tsMenuOpen; tsDeleteConfirm = false; }}
                         aria-label="markers menu"
                       >
                         <svg class="ts-drop-arrow-icon" width="14" height="14" viewBox="0 0 24 24" fill="none">

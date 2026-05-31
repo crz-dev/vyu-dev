@@ -2918,12 +2918,13 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   flex: 1;
 }
 .audio-modern-controls-row .playback-slider-track {
-  width: 107px;
+  width: 100px;
+  margin: 0 4px;
 }
 .audio-modern-controls-row .volume-diamond,
 .audio-modern-controls-row .speed-diamond {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
 }
 .audio-modern-controls-row .volume-diamonds,
 .audio-modern-controls-row .speed-diamonds {
@@ -3225,23 +3226,22 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   height: 16px;
 }
 
-/* Retro layout: open dropdowns left/right instead of upward to avoid card clipping */
 .retro-controls-row .loop-menu-anchor .loop-drop-menu {
   position: absolute;
-  top: 50%;
-  right: calc(100% + 12px);
-  left: auto;
-  bottom: auto;
-  transform: translateY(-50%);
-  transform-origin: right center;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  right: auto;
+  top: auto;
+  transform: translateX(-50%);
+  transform-origin: bottom center;
 }
 
 .retro-controls-row .ts-menu-anchor .ts-drop-menu {
   position: absolute;
-  top: 50%;
-  left: calc(100% + 12px);
+  bottom: calc(100% + 10px);
+  left: 50%;
   right: auto;
-  bottom: auto;
-  transform: translateY(-50%);
-  transform-origin: left center;
+  top: auto;
+  transform: translateX(-50%);
+  transform-origin: bottom center;
 }
