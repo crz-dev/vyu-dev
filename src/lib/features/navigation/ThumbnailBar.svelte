@@ -39,6 +39,26 @@
   let loaded = $state(new Map<string, string>());
   let fetching = $state(new Set<string>());
 
+  // ── Generating toast ──
+  // Delay the toast so it doesn't flash when thumbnails are already cached.
+  const generating = $derived(afterOpen && loaded.size < fileList.length);
+  let showToast = $state(false);
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    if (generating) {
+      toastTimer = setTimeout(() => {
+        showToast = true;
+      }, 400);
+    } else {
+      if (toastTimer) clearTimeout(toastTimer);
+      showToast = false;
+    }
+    return () => {
+      if (toastTimer) clearTimeout(toastTimer);
+    };
+  });
+
   // ── Virtual-scroll computed range ──
   const firstIdx = $derived(
     Math.max(0, Math.floor(scrollLeft / ITEM_STEP) - OVERSCAN),
@@ -121,13 +141,17 @@
   });
 
   // ── Queue processor ──
-  // Takes one item at a time — `loadQueue` is already in center-outward order.
+  // Starts up to MAX_CONCURRENT fetches in center-outward order.
+  // The throttle ensures the visual fill-in expands outward from the current file
+  // rather than all items starting simultaneously and completing in random order.
+  const MAX_CONCURRENT = 4;
   $effect(() => {
     if (!afterOpen) return;
+    if (fetching.size >= MAX_CONCURRENT) return;
     for (const path of loadQueue) {
       if (loaded.has(path) || fetching.has(path)) continue;
       fetchOne(path);
-      return; // one at a time
+      return; // one per effect run — re-triggers when a slot opens
     }
   });
 
@@ -151,7 +175,6 @@
   $effect(() => {
     if (!visible) {
       afterOpen = false;
-      loaded = new Map();
       observed = new Set();
       loadQueue = [];
       fetching = new Set();
@@ -210,6 +233,15 @@
   bind:this={barEl}
   ontransitionend={onTransitionEnd}
 >
+  {#if showToast}
+    <div class="thumb-gen-toast">
+      <span>Generating folder thumbnails...</span>
+      <div class="thumb-gen-progress">
+        <div class="thumb-gen-progress-bar"></div>
+      </div>
+    </div>
+  {/if}
+
   <div
     class="thumbnail-track"
     class:animating={false}
@@ -265,6 +297,7 @@
         {:else}
           <div
             class="thumb-placeholder"
+            class:fetching={fetching.has(item.path)}
             style="width: {ITEM_W}px; height: {ITEM_W}px;"
           ></div>
         {/if}

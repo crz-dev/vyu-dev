@@ -1329,6 +1329,41 @@ main:not(.fullscreen).thumbnail-bar-open .video-inner video {
   pointer-events: auto;
 }
 
+.thumb-gen-toast {
+  position: absolute;
+  top: -36px;
+  left: 8px;
+  z-index: 95;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--bg-border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  padding: 5px 8px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  animation: uiToastPopIn 190ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+.thumb-gen-progress {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.thumb-gen-progress-bar {
+  height: 100%;
+  width: 40%;
+  background: var(--text-dim);
+  border-radius: 1px;
+  animation: exportProgress 1.2s infinite ease-in-out;
+}
+
 .thumbnail-bar.fullscreen {
   bottom: 0;
   z-index: 101;
@@ -1408,9 +1443,36 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 /** Placeholder shown while thumbnail is loading */
+@keyframes thumbShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .thumb-placeholder {
-  background: var(--bg-elevated);
   border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    color-mix(in srgb, var(--bg-shimmer) 30%, var(--bg-elevated)) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: thumbShimmer 1.8s ease-in-out infinite;
+}
+
+.thumb-placeholder.fetching {
+  animation-duration: 1.2s;
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    color-mix(in srgb, var(--bg-shimmer) 50%, var(--bg-elevated)) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
 }
 
 .thumb-spacer {
@@ -2883,7 +2945,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   max-width: 80%;
 }
 
-/* Modern controls card (no album cover grid) */
 .audio-modern-controls-card {
   width: 100%;
   background: var(--bg-elevated);
