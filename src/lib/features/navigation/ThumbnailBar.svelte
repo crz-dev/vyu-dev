@@ -28,7 +28,7 @@
   // ── Element refs ──
   let trackEl: HTMLDivElement | null = $state(null);
   let barEl: HTMLDivElement | null = $state(null);
-  let trackWidth = $state(800);
+  let trackWidth = $state(0);
   let scrollLeft = $state(0);
 
   // ── Animation gate ──
@@ -214,6 +214,7 @@
     class="thumbnail-track"
     class:animating={false}
     bind:this={trackEl}
+    bind:clientWidth={trackWidth}
     onscroll={onScroll}
   >
     <!-- Left spacer so the first visible item aligns as if all items are rendered -->
