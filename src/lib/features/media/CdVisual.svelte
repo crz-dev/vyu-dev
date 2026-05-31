@@ -10,6 +10,7 @@
     isScrubbing,
     fileName,
     color = "var(--green)",
+    onCenterClick,
   }: {
     progress: number;
     audioEl: () => HTMLAudioElement | null;
@@ -21,6 +22,7 @@
     isScrubbing: boolean;
     fileName: string;
     color?: string;
+    onCenterClick?: () => void;
   } = $props();
 
   const discRadius = 275;
@@ -33,6 +35,11 @@
   let rotation = $state(0);
   let lastAngle = $state(0);
   let isDragging = $state(false);
+
+  // Center click detection
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let wasInCenter = false;
 
   // Calculate angle from center point
   function calculateAngle(
@@ -57,6 +64,20 @@
     const svg = e.currentTarget as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
     const point = e instanceof TouchEvent ? e.touches[0] : e;
+
+    // Track start position for center-click detection
+    dragStartX = point.clientX;
+    dragStartY = point.clientY;
+
+    // Check if click is within the center label area (SVG coordinates)
+    const svgEl = svg;
+    const pt = svgEl.createSVGPoint();
+    pt.x = point.clientX;
+    pt.y = point.clientY;
+    const svgPt = pt.matrixTransform(svgEl.getScreenCTM()!.inverse());
+    const dx = svgPt.x - 325;
+    const dy = svgPt.y - 325;
+    wasInCenter = Math.sqrt(dx * dx + dy * dy) <= centerLabelRadius;
 
     lastAngle = calculateAngle(point.clientX, point.clientY, rect);
     isDragging = true;
@@ -92,9 +113,21 @@
     onScrubMove(e, newProgress);
   }
 
-  function handleDragEnd() {
+  function handleDragEnd(e: MouseEvent | TouchEvent) {
     if (!isDragging) return;
+
+    const point = e instanceof TouchEvent ? e.changedTouches[0] : e;
+    const dx = point.clientX - dragStartX;
+    const dy = point.clientY - dragStartY;
+    const moved = Math.sqrt(dx * dx + dy * dy);
+
     isDragging = false;
+
+    // If click was in center and mouse didn't move, fire center click
+    if (wasInCenter && moved < 4 && onCenterClick) {
+      onCenterClick();
+    }
+
     onScrubEnd();
   }
 
@@ -244,6 +277,7 @@
       cy="325"
       r={centerLabelRadius}
       fill="url(#centerLabelGradient)"
+      class="cd-center-label"
     />
 
     <!-- Center label inner ring for depth -->
@@ -315,5 +349,9 @@
 
   .filename-text {
     text-transform: uppercase;
+  }
+
+  .cd-center-label {
+    cursor: pointer;
   }
 </style>

@@ -97,6 +97,7 @@
   import { setupInit } from "./init";
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
   import CdVisual from "$lib/features/media/CdVisual.svelte";
+  import CdColorPicker from "$lib/features/media/CdColorPicker.svelte";
   import WaveformBar from "$lib/features/media/WaveformBar.svelte";
   import AlbumCover from "$lib/features/media/AlbumCover.svelte";
   import Marquee from "$lib/shared/Marquee.svelte";
@@ -109,6 +110,8 @@
   let isAudio = $state(false);
   let isPdf = $state(false);
   let cdColor = $state("var(--green)");
+  let cdColorIndex = $state(0);
+  let showCdColorPicker = $state(false);
   let coverArtSrc = $state("");
   let fileList: string[] = $state([]);
   let currentIndex = $state(0);
@@ -1318,10 +1321,12 @@
     if (data.isAudio && data.filePath) {
       const idx = loadCdColor(data.filePath);
       if (idx >= 0 && idx < CD_COLORS.length) {
+        cdColorIndex = idx;
         cdColor = CD_COLORS[idx];
       } else {
         const rand = Math.floor(Math.random() * CD_COLORS.length);
         saveCdColor(data.filePath, rand);
+        cdColorIndex = rand;
         cdColor = CD_COLORS[rand];
       }
       // Extract embedded album art
@@ -2867,6 +2872,18 @@
                 {isScrubbing}
                 {fileName}
                 color={cdColor}
+                onCenterClick={() => (showCdColorPicker = !showCdColorPicker)}
+              />
+              <CdColorPicker
+                visible={showCdColorPicker}
+                onClose={() => (showCdColorPicker = false)}
+                activeIndex={cdColorIndex}
+                onPick={(idx) => {
+                  cdColorIndex = idx;
+                  cdColor = CD_COLORS[idx];
+                  if (filePath) saveCdColor(filePath, idx);
+                  showCdColorPicker = false;
+                }}
               />
               <div class="audio-controls-card">
               <div class="audio-controls-new">

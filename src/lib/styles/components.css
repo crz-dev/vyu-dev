@@ -2718,6 +2718,45 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   flex-direction: column;
   align-items: center;
   overflow: visible;
+  position: relative;
+}
+
+/* CD color picker popup — vertical bar to the right of the disc */
+.cd-color-picker {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateX(calc(100% + 12px)) translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  animation: uiMenuPopIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+.cd-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.cd-color-swatch:hover {
+  transform: scale(1.2);
+}
+.cd-color-swatch.active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 2px var(--bg-secondary), 0 0 0 3.5px currentColor;
+  transform: scale(1.15);
 }
 
 .audio-modern-thumbnail {

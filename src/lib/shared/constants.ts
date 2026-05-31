@@ -71,15 +71,15 @@ export const ALL_EXTS = [
 /** CSS color variables used for vinyl CD visual center labels and progress rings.
  *  Index is persisted per audio file in localStorage (`vyu-cd-color-{path}`). */
 export const CD_COLORS = [
-  "var(--green)",
-  "var(--blue)",
-  "var(--yellow)",
   "var(--red)",
-  "var(--text-muted)",
-  "var(--purple)",
-  "var(--cyan)",
   "var(--orange)",
+  "var(--yellow)",
+  "var(--green)",
+  "var(--cyan)",
+  "var(--blue)",
+  "var(--purple)",
   "var(--pink)",
+  "var(--text-muted)",
   "var(--text-primary)",
 ];
 
