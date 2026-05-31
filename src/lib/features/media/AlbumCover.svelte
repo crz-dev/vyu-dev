@@ -6,6 +6,7 @@
     color = "var(--green)",
     playing = false,
     onTogglePlay,
+    onPickAudio,
     size = "small",
     fileName = "",
     duration = "",
@@ -14,6 +15,7 @@
     color: string;
     playing: boolean;
     onTogglePlay: () => void;
+    onPickAudio?: () => void;
     size?: "small" | "large" | "xlarge";
     fileName?: string;
     duration?: string;
@@ -26,8 +28,8 @@
   class:large={size === "large"}
   class:xlarge={size === "xlarge"}
   style={src ? "" : `--cover-placeholder-bg: ${color}`}
-  onclick={onTogglePlay}
-  aria-label="Play / Pause"
+  onclick={onPickAudio ?? onTogglePlay}
+  aria-label={onPickAudio ? "Open audio file" : "Play / Pause"}
 >
   {#if src}
     <img {src} alt="Album cover" draggable="false" />
@@ -73,7 +75,20 @@
     </svg>
   {/if}
   <div class="album-cover-overlay">
-    {#if playing}
+    {#if onPickAudio}
+      <svg
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    {:else if playing}
       <svg
         width="48"
         height="48"

@@ -1882,6 +1882,14 @@
     if (selected) loadFile(selected as string);
   }
 
+  async function pickAudioFile() {
+    const selected = await open({
+      multiple: false,
+      filters: [{ name: "Audio", extensions: AUDIO_EXTS }],
+    });
+    if (selected) loadFile(selected as string);
+  }
+
   // ── Context menu ───────────────────────────────────────
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -2867,7 +2875,7 @@
                     src={coverArtSrc || null}
                     color={cdColor}
                     {playing}
-                    onTogglePlay={togglePlay}
+                    onPickAudio={pickAudioFile}
                   />
                 </div>
                 <div class="audio-content-right">
@@ -2921,12 +2929,12 @@
                         >
                           {#key playing}
                             {#if playing}
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <svg class="loop-mode-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <rect x="2.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
                                 <rect x="9.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
                               </svg>
                             {:else}
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <svg class="loop-mode-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                                 <path d="M3 2L14 8L3 14V2Z" fill="currentColor" />
                               </svg>
                             {/if}
@@ -3357,7 +3365,7 @@
                 src={coverArtSrc || null}
                 color={cdColor}
                 {playing}
-                onTogglePlay={togglePlay}
+                onPickAudio={pickAudioFile}
                 {fileName}
                 duration={durationDisplay}
               />
@@ -3588,12 +3596,12 @@
                     >
                       {#key playing}
                         {#if playing}
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <svg class="loop-mode-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <rect x="2.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
                             <rect x="9.5" y="1.5" width="4" height="13" rx="1" fill="currentColor" />
                           </svg>
                         {:else}
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <svg class="loop-mode-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                             <path d="M3 2L14 8L3 14V2Z" fill="currentColor" />
                           </svg>
                         {/if}
