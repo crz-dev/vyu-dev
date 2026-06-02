@@ -1,4 +1,12 @@
 <script lang="ts">
+  // ── Module-level analyser tracking ──────────────────────
+  // Shared AudioContext (lazy singleton) and per-element analyser map.
+  // createMediaElementSource() can only be called once per <audio> element,
+  // so we track connected elements to avoid double-connection errors when
+  // CdVisual is unmounted/remounted (e.g. retro ↔ modern layout switch).
+  let sharedCtx: AudioContext | null = null;
+  const analyserMap = new WeakMap<HTMLAudioElement, AnalyserNode>();
+
   let {
     progress = 0,
     audioEl,
@@ -30,6 +38,9 @@
   const textRadius = 55;
   const circumference = 2 * Math.PI * discRadius;
   const dashOffset = $derived(circumference * (1 - progress / 100));
+
+  // Bass-reactive scale (1 = no pop, up to ~1.03 on strong bass)
+  let bassScale = $state(1);
 
   // Rotation state for visual feedback during drag
   let rotation = $state(0);
@@ -137,6 +148,69 @@
       rotation = progress * 3.6;
     }
   });
+
+  // ── Bass-reactive scale pulse ───────────────────────────
+  $effect(() => {
+    const el = audioEl();
+    if (!el) return;
+
+    // Lazily create or resume the shared AudioContext
+    if (!sharedCtx) {
+      sharedCtx = new AudioContext();
+    }
+    if (sharedCtx.state === "suspended") {
+      sharedCtx.resume();
+    }
+
+    // Get or create the AnalyserNode for this audio element
+    let analyser = analyserMap.get(el);
+    if (!analyser) {
+      try {
+        const source = sharedCtx.createMediaElementSource(el);
+        analyser = sharedCtx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.8;
+        source.connect(analyser);
+        // Connect to destination so audio still plays through speakers
+        analyser.connect(sharedCtx.destination);
+        analyserMap.set(el, analyser);
+      } catch {
+        // Already connected or unsupported — bail silently
+        return;
+      }
+    }
+
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    let rafId: number;
+    let currentScale = 1;
+
+    function tick() {
+      analyser!.getByteFrequencyData(freqData);
+
+      // Deep bass only (~20–170 Hz).
+      // At fftSize=256, sampleRate≈44100, each bin ≈ 86 Hz.
+      // Bins 0–1 cover 0–172 Hz — sub-bass and low bass.
+      // Weight bin 0 (DC/sub-bass) at 1.0, bin 1 at 0.6 so deeper bass dominates.
+      const b0 = freqData[0] / 255;
+      const b1 = freqData[1] / 255;
+      const avg = (b0 * 1.0 + b1 * 0.6) / 1.6;
+
+      // Target scale: 1.0 at silence → 1.05 at full bass
+      const target = 1 + avg * 0.05;
+      // Exponential smoothing for organic feel
+      currentScale += (target - currentScale) * 0.3;
+      bassScale = currentScale;
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      bassScale = 1;
+    };
+  });
 </script>
 
 <svg
@@ -152,7 +226,7 @@
   aria-valuemax={100}
   aria-valuetext={`${Math.round(progress)}% played`}
   tabindex="0"
-  style="--cd-accent: {color}"
+  style="--cd-accent: {color}; transform: scale({bassScale})"
   onmousedown={handleDragStart}
   onmousemove={handleDragMove}
   onmouseup={handleDragEnd}
