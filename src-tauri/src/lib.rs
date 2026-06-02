@@ -12,7 +12,7 @@ use image::GenericImageView;
 use image::ImageEncoder;
 use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 use tokio::sync::Semaphore;
-use windows::core::{w, PCWSTR};
+use windows::core::w;
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED};
 use xxhash_rust::xxh3::xxh3_64;
@@ -688,6 +688,11 @@ const RAW_IMAGE_EXTS_RUST: &[&str] = &[
 /// Video formats that browsers cannot play natively.
 /// These must be remuxed server-side (ffmpeg -c copy → MP4) for playback.
 const REMUX_VIDEO_EXTS_RUST: &[&str] = &["ts", "m2ts"];
+
+/// Video formats that browsers cannot play natively (beyond REMUX_VIDEO_EXTS).
+/// These must be re-encoded server-side (ffmpeg → WebM) for browser playback.
+const BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST: &[&str] =
+    &["mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v"];
 
 /// Decodes a browser-unsupported image and returns a cached PNG path for display.
 /// Uses the image crate for formats it supports (TIFF), ffmpeg for PSD/JXL.
@@ -2558,173 +2563,105 @@ fn open_in_spotify(path: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Converts a media file to a browser-compatible format for opening in the browser.
+/// Images that browsers can't render → WebP; videos that browsers can't play → WebM.
+/// Returns the converted file path, or None if the format is already browser-compatible.
+fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
+    let ext = PathBuf::from(path)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    let target_ext = if BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST.contains(&ext.as_str()) {
+        "webp"
+    } else if BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST.contains(&ext.as_str()) {
+        "webm"
+    } else {
+        return Ok(None);
+    };
+
+    let temp_dir = std::env::temp_dir().join("Vyu-temp").join("browser");
+    fs::create_dir_all(&temp_dir)
+        .map_err(|e| format!("Failed to create browser temp dir: {e}"))?;
+
+    let input = PathBuf::from(path);
+    let base_name = input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let out_name = format!("{}_browser.{}", base_name, target_ext);
+    let output_path = unique_path(temp_dir.join(&out_name));
+
+    let mut args: Vec<String> = vec![
+        "-y".into(),
+        "-hide_banner".into(),
+        "-loglevel".into(),
+        "error".into(),
+        "-i".into(),
+        path.to_string(),
+    ];
+
+    match target_ext {
+        "webp" => {
+            args.push("-c:v".into());
+            args.push("libwebp".into());
+            args.push("-quality".into());
+            args.push("80".into());
+        }
+        "webm" => {
+            args.push("-c:v".into());
+            args.push("libvpx-vp9".into());
+            args.push("-c:a".into());
+            args.push("libopus".into());
+            args.push("-b:v".into());
+            args.push("1M".into());
+        }
+        _ => {}
+    }
+
+    args.push(output_path.to_string_lossy().to_string());
+
+    let output = Command::new("ffmpeg")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+
+    if output.status.success() {
+        Ok(Some(output_path.to_string_lossy().to_string()))
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
 #[tauri::command]
 fn open_in_browser(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());
     }
+
+    // Convert unsupported formats to browser-compatible versions (WebP/WebM).
+    // Falls through to the original path if the format is already browser-compatible
+    // or if conversion fails (best-effort).
+    let converted = convert_for_browser(&path);
+    let open_path = match converted {
+        Ok(Some(ref c)) => c.as_str(),
+        _ => &path,
+    };
     #[cfg(target_os = "windows")]
     {
         use windows::Win32::UI::Shell::ShellExecuteW;
         use windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT;
 
-        let url = format!("file:///{}", path.replace('\\', "/"));
-
-        // Find the default browser by reading the Windows registry.
-        // We read the ProgId from the UserChoice key, then look up the
-        // shell\open\command to get the browser executable path.
-        //
-        // Helper: convert a Rust string to a null-terminated UTF-16 Vec<u16>
-        // suitable for use as a PCWSTR with RegOpenKeyExW.
-        fn to_pcwstr(s: &str) -> Vec<u16> {
-            s.encode_utf16().chain(std::iter::once(0)).collect()
-        }
-
+        let url = format!("file:///{}", open_path.replace('\\', "/"));
+        let wide_url = windows::core::HSTRING::from(&url);
         unsafe {
-            use windows::Win32::System::Registry::{
-                RegOpenKeyExW, RegQueryValueExW, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ,
-            };
-
-            // Step 1: Get the ProgId for the HTTP handler
-            let user_choice_key = to_pcwstr(
-                r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice",
-            );
-            let mut key = Default::default();
-            let open_err = RegOpenKeyExW(
-                HKEY_CURRENT_USER,
-                PCWSTR::from_raw(user_choice_key.as_ptr()),
-                0,
-                KEY_READ,
-                &mut key,
-            );
-            if open_err.0 != 0 {
-                // Fallback: ShellExecuteW with the file:/// URL
-                let wide_url = windows::core::HSTRING::from(&url);
-                let hinst =
-                    ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
-                if hinst.is_invalid() {
-                    return Err("Failed to open in browser".into());
-                }
-                return Ok(());
-            }
-
-            // Read the ProgId value
-            let mut prog_id_buf = [0u16; 256];
-            let mut prog_id_len: u32 = 256 * 2;
-            let query_err = RegQueryValueExW(
-                key,
-                w!("ProgId"),
-                None,
-                None,
-                Some(prog_id_buf.as_mut_ptr() as _),
-                Some(&mut prog_id_len),
-            );
-            if query_err.0 != 0 {
-                let wide_url = windows::core::HSTRING::from(&url);
-                let hinst =
-                    ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
-                if hinst.is_invalid() {
-                    return Err("Failed to open in browser".into());
-                }
-                return Ok(());
-            }
-
-            let prog_id = String::from_utf16_lossy(&prog_id_buf[..(prog_id_len / 2) as usize]);
-
-            // Step 2: Get shell\open\command for this ProgId
-            let class_key_path = to_pcwstr(&format!("Software\\Classes\\{prog_id}\\shell\\open\\command"));
-            let mut cmd_key = Default::default();
-            let cmd_err = RegOpenKeyExW(
-                HKEY_CURRENT_USER,
-                PCWSTR::from_raw(class_key_path.as_ptr()),
-                0,
-                KEY_READ,
-                &mut cmd_key,
-            );
-            let cmd_key = if cmd_err.0 == 0 {
-                cmd_key
-            } else {
-                let mut hklm_key = Default::default();
-                let hklm_err = RegOpenKeyExW(
-                    HKEY_LOCAL_MACHINE,
-                    PCWSTR::from_raw(class_key_path.as_ptr()),
-                    0,
-                    KEY_READ,
-                    &mut hklm_key,
-                );
-                if hklm_err.0 != 0 {
-                    let wide_url = windows::core::HSTRING::from(&url);
-                    let hinst =
-                        ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
-                    if hinst.is_invalid() {
-                        return Err("Failed to open in browser".into());
-                    }
-                    return Ok(());
-                }
-                hklm_key
-            };
-
-            // Read the command string
-            let mut cmd_buf = [0u16; 1024];
-            let mut cmd_len: u32 = 1024 * 2;
-            let cmd_val_err = RegQueryValueExW(
-                cmd_key,
-                PCWSTR::null(),
-                None,
-                None,
-                Some(cmd_buf.as_mut_ptr() as _),
-                Some(&mut cmd_len),
-            );
-            if cmd_val_err.0 != 0 {
-                let wide_url = windows::core::HSTRING::from(&url);
-                let hinst =
-                    ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
-                if hinst.is_invalid() {
-                    return Err("Failed to open in browser".into());
-                }
-                return Ok(());
-            }
-
-            let cmd_str =
-                String::from_utf16_lossy(&cmd_buf[..(cmd_len / 2) as usize]);
-
-            // Extract the executable path from the command string
-            // Typically: "C:\path\to\browser.exe" "%1" or C:\path\browser.exe "%1"
-            let exe_path = if cmd_str.starts_with('"') {
-                cmd_str[1..].find('"').map(|i| cmd_str[1..=i].to_string())
-            } else {
-                cmd_str
-                    .split_whitespace()
-                    .next()
-                    .map(|s| s.to_string())
-            };
-
-            match exe_path {
-                Some(exe) => {
-                    let wide_exe = windows::core::HSTRING::from(&exe);
-                    let wide_url_arg = windows::core::HSTRING::from(&url);
-                    let param_ptr = PCWSTR::from_raw(wide_url_arg.as_ptr() as _);
-                    let hinst = ShellExecuteW(
-                        None,
-                        w!("open"),
-                        &wide_exe,
-                        param_ptr,
-                        None,
-                        SW_SHOWDEFAULT,
-                    );
-                    if hinst.is_invalid() {
-                        return Err("Failed to open in browser".into());
-                    }
-                }
-                None => {
-                    let wide_url = windows::core::HSTRING::from(&url);
-                    let hinst =
-                        ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
-                    if hinst.is_invalid() {
-                        return Err("Failed to open in browser".into());
-                    }
-                }
+            let hinst =
+                ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+            if hinst.is_invalid() {
+                return Err("Failed to open in browser".into());
             }
         }
         return Ok(());
@@ -2732,7 +2669,7 @@ fn open_in_browser(path: String) -> Result<(), String> {
     #[cfg(target_os = "linux")]
     {
         Command::new("xdg-open")
-            .arg(&format!("file://{path}"))
+            .arg(&format!("file://{open_path}"))
             .spawn()
             .map_err(|e| format!("Failed to open in browser: {e}"))?;
         return Ok(());
