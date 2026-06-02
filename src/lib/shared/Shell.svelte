@@ -581,6 +581,7 @@
   <Dialog
     {contextMenu}
     {isVideo}
+    {isAudio}
     {isPdf}
     {timestamps}
     {clipBoundaries}

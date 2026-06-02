@@ -9,6 +9,7 @@
   let {
     contextMenu,
     isVideo,
+    isAudio,
     isPdf,
     timestamps,
     clipBoundaries,
@@ -83,6 +84,7 @@
   }: {
     contextMenu: ContextMenu;
     isVideo: boolean;
+    isAudio: boolean;
     isPdf: boolean;
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
@@ -301,13 +303,25 @@
         style="animation-delay: 0ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          ><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2" /><circle
+          ><circle
+            cx="18"
+            cy="5"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          /><circle
             cx="6"
             cy="12"
             r="3"
             stroke="currentColor"
             stroke-width="2"
-          /><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2" /><line
+          /><circle
+            cx="18"
+            cy="19"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          /><line
             x1="8.59"
             y1="13.51"
             x2="15.42"
@@ -495,13 +509,25 @@
         style="animation-delay: 55ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          ><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2" /><circle
+          ><circle
+            cx="18"
+            cy="5"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          /><circle
             cx="6"
             cy="12"
             r="3"
             stroke="currentColor"
             stroke-width="2"
-          /><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2" /><line
+          /><circle
+            cx="18"
+            cy="19"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          /><line
             x1="8.59"
             y1="13.51"
             x2="15.42"
@@ -675,13 +701,25 @@
         style="animation-delay: 55ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-          ><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="2" /><circle
+          ><circle
+            cx="18"
+            cy="5"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          /><circle
             cx="6"
             cy="12"
             r="3"
             stroke="currentColor"
             stroke-width="2"
-          /><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="2" /><line
+          /><circle
+            cx="18"
+            cy="19"
+            r="3"
+            stroke="currentColor"
+            stroke-width="2"
+          /><line
             x1="8.59"
             y1="13.51"
             x2="15.42"
@@ -1842,40 +1880,73 @@
       <div class="share-card">
         <div class="share-section">
           <p class="share-section-label">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              ><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" /><polyline
+                points="16 6 12 2 8 6"
+              /><line x1="12" y1="2" x2="12" y2="15" /></svg
             >
-            Send to
+            Send to...
           </p>
           <div class="share-grid share-grid-4">
+            {#if isVideo || isAudio}
+              <button class="share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><path
+                    d="M2 16.1A5 5 0 015.9 20M2 12.05A9 9 0 019.95 20M2 8V6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2h-6"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /><line
+                    x1="2"
+                    y1="20"
+                    x2="2.01"
+                    y2="20"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                >
+                Cast
+              </button>
+            {:else}
+              <button class="share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><polyline
+                    points="6 9 6 2 18 2 18 9"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /><path
+                    d="M6 12H4a2 2 0 00-2 2v4a2 2 0 002 2h16a2 2 0 002-2v-4a2 2 0 00-2-2h-2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /><rect
+                    x="6"
+                    y="14"
+                    width="12"
+                    height="8"
+                    rx="1"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /></svg
+                >
+                Printer
+              </button>
+            {/if}
             <button class="share-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                ><polyline
-                  points="6 9 6 2 18 2 18 9"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                /><path
-                  d="M6 12H4a2 2 0 00-2 2v4a2 2 0 002 2h16a2 2 0 002-2v-4a2 2 0 00-2-2h-2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                /><rect
-                  x="6"
-                  y="14"
-                  width="12"
-                  height="8"
-                  rx="1"
-                  stroke="currentColor"
-                  stroke-width="2"
-                /></svg
-              >
-              Printer
-            </button>
-            <button class="share-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
                   d="M8.5 16.5a5 5 0 017 0"
                   stroke="currentColor"
@@ -1891,67 +1962,111 @@
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
-                /><circle
-                  cx="12"
-                  cy="19.5"
-                  r="1.5"
-                  fill="currentColor"
-                /></svg
+                /><circle cx="12" cy="19.5" r="1.5" fill="currentColor" /></svg
               >
               Device
             </button>
+            {#if isAudio}
+              <button class="share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><polyline
+                    points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
+                Bluetooth
+              </button>
+            {:else}
+              <button class="share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="8"
+                    rx="4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    fill="none"
+                  /><line
+                    x1="7"
+                    y1="11"
+                    x2="7"
+                    y2="19"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /><line
+                    x1="7"
+                    y1="19"
+                    x2="11"
+                    y2="19"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                >
+                Wallpaper
+              </button>
+            {/if}
+            {#if isAudio}
+              <button class="share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><path
+                    d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /><path
+                    d="M19 10v2a7 7 0 01-14 0v-2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /><line
+                    x1="12"
+                    y1="19"
+                    x2="12"
+                    y2="23"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /><line
+                    x1="8"
+                    y1="23"
+                    x2="16"
+                    y2="23"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                >
+                Transcriptor
+              </button>
+            {:else}
+              <button class="share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><rect
+                    x="3"
+                    y="11"
+                    width="18"
+                    height="11"
+                    rx="2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /><path
+                    d="M7 11V7a5 5 0 0110 0v4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                >
+                Lock Screen
+              </button>
+            {/if}
             <button class="share-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                ><rect
-                  x="3"
-                  y="3"
-                  width="18"
-                  height="8"
-                  rx="4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  fill="none"
-                /><line
-                  x1="7"
-                  y1="11"
-                  x2="7"
-                  y2="19"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                /><line
-                  x1="7"
-                  y1="19"
-                  x2="11"
-                  y2="19"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                /></svg
-              >
-              Wallpaper
-            </button>
-            <button class="share-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                ><rect
-                  x="3"
-                  y="11"
-                  width="18"
-                  height="11"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                /><path
-                  d="M7 11V7a5 5 0 0110 0v4"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                /></svg
-              >
-              Lock Screen
-            </button>
-            <button class="share-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><rect
                   x="2"
                   y="3"
@@ -1987,14 +2102,29 @@
 
         <div class="share-section">
           <p class="share-section-label">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              ><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+              /><polyline points="15 3 21 3 21 9" /><line
+                x1="10"
+                y1="14"
+                x2="21"
+                y2="3"
+              /></svg
             >
-            Open with
+            Open with...
           </p>
           <div class="share-grid share-grid-4">
             <button class="share-btn-circle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
                   d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
                   stroke="currentColor"
@@ -2020,40 +2150,96 @@
               >
               Default app
             </button>
+            {#if isAudio}
+              <button class="share-btn-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /><path
+                    d="M8.5 16C10 14.8 13 14.3 15.5 15"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /><path
+                    d="M7 13.5C10 11 14.5 10.5 17 12"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /><path
+                    d="M6 11C10 7.5 15 7 18.5 9.5"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  /></svg
+                >
+                Spotify
+              </button>
+            {:else}
+              <button class="share-btn-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  /><circle
+                    cx="8.5"
+                    cy="8.5"
+                    r="1.5"
+                    fill="currentColor"
+                  /><path
+                    d="M21 15l-5-5L5 21"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
+                Photos
+              </button>
+            {/if}
+            {#if !isVideo && !isAudio}
+              <button class="share-btn-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><path
+                    d="M18.37 2.63a2.12 2.12 0 013 3L14 13l-4 1 1-4 7.37-7.37z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /><path
+                    d="M9 14.5c-1.5 1-2.5 2.5-2.5 4a1.5 1.5 0 003 0c0-1.5-1-3-2.5-4z"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
+                Paint
+              </button>
+            {:else}
+              <button class="share-btn-circle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  ><polygon
+                    points="5 3 19 12 5 21 5 3"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
+                VLC
+              </button>
+            {/if}
             <button class="share-btn-circle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                ><rect
-                  x="3"
-                  y="3"
-                  width="18"
-                  height="18"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                /><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" /><path
-                  d="M21 15l-5-5L5 21"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                /></svg
-              >
-              Photos
-            </button>
-            <button class="share-btn-circle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                ><polygon
-                  points="5 3 19 12 5 21 5 3"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                /></svg
-              >
-              VLC
-            </button>
-            <button class="share-btn-circle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><circle
                   cx="12"
                   cy="12"
@@ -2076,23 +2262,13 @@
               Browser
             </button>
             <button class="share-btn-circle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                ><circle
-                  cx="5"
-                  cy="12"
-                  r="1.5"
-                  fill="currentColor"
-                /><circle
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                ><circle cx="5" cy="12" r="1.5" fill="currentColor" /><circle
                   cx="12"
                   cy="12"
                   r="1.5"
                   fill="currentColor"
-                /><circle
-                  cx="19"
-                  cy="12"
-                  r="1.5"
-                  fill="currentColor"
-                /></svg
+                /><circle cx="19" cy="12" r="1.5" fill="currentColor" /></svg
               >
               Other
             </button>
@@ -2103,21 +2279,57 @@
 
         <div class="share-section">
           <p class="share-section-label">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              ><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+              /><polyline points="17 21 17 13 7 13 7 21" /><polyline
+                points="7 3 7 8 15 8"
+              /></svg
             >
-            Save as
+            Save as...
           </p>
-          <div class="share-grid share-grid-3">
-            <button class="share-btn-wide">JPG</button>
-            <button class="share-btn-wide">PNG</button>
-            <button class="share-btn-wide">WebP</button>
-          </div>
-          <div class="share-grid share-grid-3">
-            <button class="share-btn-wide">PSD</button>
-            <button class="share-btn-wide">PDF</button>
-            <button class="share-btn-wide">Other…</button>
-          </div>
+          {#if isVideo}
+            <div class="share-grid share-grid-3">
+              <button class="share-btn-wide">MP4</button>
+              <button class="share-btn-wide">MKV</button>
+              <button class="share-btn-wide">WebM</button>
+            </div>
+            <div class="share-grid share-grid-3">
+              <button class="share-btn-wide">MP3</button>
+              <button class="share-btn-wide">GIF</button>
+              <button class="share-btn-wide">Other…</button>
+            </div>
+          {:else if isAudio}
+            <div class="share-grid share-grid-3">
+              <button class="share-btn-wide">MP3</button>
+              <button class="share-btn-wide">WAV</button>
+              <button class="share-btn-wide">FLAC</button>
+            </div>
+            <div class="share-grid share-grid-3">
+              <button class="share-btn-wide">MP4</button>
+              <button class="share-btn-wide">Opus</button>
+              <button class="share-btn-wide">Other…</button>
+            </div>
+          {:else}
+            <div class="share-grid share-grid-3">
+              <button class="share-btn-wide">JPG</button>
+              <button class="share-btn-wide">PNG</button>
+              <button class="share-btn-wide">WebP</button>
+            </div>
+            <div class="share-grid share-grid-3">
+              <button class="share-btn-wide">PSD</button>
+              <button class="share-btn-wide">PDF</button>
+              <button class="share-btn-wide">Other…</button>
+            </div>
+          {/if}
         </div>
       </div>
 
