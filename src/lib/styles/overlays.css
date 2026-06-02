@@ -161,7 +161,7 @@
 .ctx-sep {
   height: 0.5px;
   background: var(--bg-border);
-  margin: 2px 4px;
+  margin: 4px 4px;
 }
 
 .copy-toast {
@@ -629,16 +629,16 @@
 .share-card {
   border: 0.5px solid var(--bg-elevated);
   border-radius: 10px;
-  padding: 8px;
+  padding: 12px;
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 .share-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 .share-section-label {
   margin: 0;
@@ -646,7 +646,7 @@
   font-weight: 500;
   color: var(--text-muted);
   font-family: var(--font-family);
-  padding-bottom: 2px;
+  padding-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -674,13 +674,12 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 54px;
-  border-radius: 8px;
+  width: 68px;
+  height: 68px;
+  border-radius: 10px;
   border: 0.5px solid var(--bg-border);
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
+  color: var(--green);
   font-size: 10px;
   font-family: var(--font-family);
   cursor: pointer;
@@ -688,7 +687,7 @@
 }
 .share-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
+  color: var(--green);
 }
 .share-btn:disabled {
   opacity: 0.45;
@@ -706,7 +705,7 @@
   border-radius: 50%;
   border: 0.5px solid var(--bg-border);
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
+  color: var(--blue-light);
   font-size: 10px;
   font-family: var(--font-family);
   cursor: pointer;
@@ -714,7 +713,7 @@
 }
 .share-btn-circle:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
+  color: var(--blue-light);
 }
 .share-btn-circle:disabled {
   opacity: 0.45;
@@ -732,7 +731,7 @@
   border-radius: 7px;
   border: 0.5px solid var(--bg-border);
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
+  color: var(--yellow-soft);
   font-size: 11px;
   font-family: var(--font-family);
   cursor: pointer;
@@ -740,7 +739,7 @@
 }
 .share-btn-wide:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
+  color: var(--yellow-soft);
 }
 .share-btn-wide:disabled {
   opacity: 0.45;

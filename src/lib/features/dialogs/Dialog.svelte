@@ -1953,6 +1953,32 @@
               >
               Desktop
             </button>
+            <button class="share-btn" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                ><path
+                  d="M8.5 16.5a5 5 0 017 0"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /><path
+                  d="M5.5 13.5a10 10 0 0113 0"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /><path
+                  d="M2 10.5a15 15 0 0120 0"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                /><circle
+                  cx="12"
+                  cy="19.5"
+                  r="1.5"
+                  fill="currentColor"
+                /></svg
+              >
+              Nearby sharing
+            </button>
           </div>
         </div>
 
@@ -2047,6 +2073,26 @@
                 /></svg
               >
               Browser
+            </button>
+            <button class="share-btn-circle" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                ><rect
+                  x="2"
+                  y="4"
+                  width="20"
+                  height="16"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                /><polyline
+                  points="22,4 12,13 2,4"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                /></svg
+              >
+              Email
             </button>
           </div>
         </div>
