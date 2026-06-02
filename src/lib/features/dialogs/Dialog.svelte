@@ -11,6 +11,12 @@
     invokeSetWallpaper,
     invokeSetLockScreen,
     invokeCreateDesktopShortcut,
+    invokeOpenInPhotos,
+    invokeOpenInPaint,
+    invokeOpenInVlc,
+    invokeOpenInSpotify,
+    invokeOpenInBrowser,
+    invokeOpenWithDialog,
   } from "$lib/features/media/tools";
 
   let {
@@ -193,6 +199,8 @@
     visible: boolean;
     message: string;
     tone: "success" | "error";
+    installUrl?: string;
+    appName?: string;
   }>({ visible: false, message: "", tone: "success" });
   let shareToastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -208,12 +216,8 @@
   });
 
   async function openInDefaultApp() {
-    try {
-      const { openPath } = await import("@tauri-apps/plugin-opener");
-      await openPath(filePath);
-    } catch (e) {
-      console.error("Failed to open in default app:", e);
-    }
+    const { openPath } = await import("@tauri-apps/plugin-opener");
+    await openPath(filePath);
   }
 
   function printPdf() {
@@ -230,13 +234,34 @@
     }, 2200);
   }
 
+  function showAppNotInstalledToast(appName: string, installUrl: string) {
+    clearTimeout(shareToastTimer);
+    shareToast = {
+      visible: true,
+      message: `${appName} not installed \u2014 install?`,
+      tone: "error",
+      installUrl,
+      appName,
+    };
+    shareToastTimer = setTimeout(() => {
+      shareToast = { ...shareToast, visible: false };
+    }, 5000);
+  }
+
   async function shareAction(fn: () => Promise<void>, successMsg: string) {
     try {
       await fn();
       showShareToast(successMsg, "success");
-    } catch (e) {
-      console.error("Share action failed:", e);
-      showShareToast("Action failed", "error");
+    } catch (e: any) {
+      const msg = typeof e === "string" ? e : e?.message || "Action failed";
+      // Detect APP_NOT_FOUND:AppName:InstallUrl pattern from Rust commands
+      const appNotFoundMatch = msg.match(/^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/);
+      if (appNotFoundMatch) {
+        showAppNotInstalledToast(appNotFoundMatch[1], appNotFoundMatch[2]);
+      } else {
+        console.error("Share action failed:", e);
+        showShareToast("Action failed", "error");
+      }
     }
     closeShare();
   }
@@ -977,12 +1002,32 @@
 
 {#if shareToast.visible}
   <div
-    class="copy-toast"
+    class="copy-toast share-toast-interactive"
     class:error={shareToast.tone === "error"}
     role="status"
     aria-live="polite"
   >
-    {shareToast.message}
+    <span class="share-toast-msg">{shareToast.message}</span>
+    <div class="share-toast-actions">
+      {#if shareToast.installUrl}
+        <button
+          class="share-toast-link"
+          onclick={() => {
+            if (shareToast.installUrl) window.open(shareToast.installUrl, "_blank");
+          }}
+        >Get it</button>
+      {/if}
+      <button
+        class="share-toast-dismiss"
+        aria-label="Dismiss"
+        onclick={() => {
+          clearTimeout(shareToastTimer);
+          shareToast = { ...shareToast, visible: false };
+        }}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -2184,7 +2229,7 @@
             Open with...
           </p>
           <div class="share-grid share-grid-4">
-            <button class="share-btn-circle">
+            <button class="share-btn-circle" onclick={() => shareAction(() => openInDefaultApp(), "Opened in default app")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
                   d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
@@ -2212,7 +2257,7 @@
               Default app
             </button>
             {#if isAudio}
-              <button class="share-btn-circle">
+              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInSpotify(filePath), "Copied to Spotify Local Files")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><circle
                     cx="12"
@@ -2240,7 +2285,7 @@
                 Spotify
               </button>
             {:else}
-              <button class="share-btn-circle">
+              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInPhotos(filePath), "Opened in Photos")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><rect
                     x="3"
@@ -2267,7 +2312,7 @@
               </button>
             {/if}
             {#if !isVideo && !isAudio}
-              <button class="share-btn-circle">
+              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInPaint(filePath), "Opened in Paint")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M18.37 2.63a2.12 2.12 0 013 3L14 13l-4 1 1-4 7.37-7.37z"
@@ -2286,7 +2331,7 @@
                 Paint
               </button>
             {:else}
-              <button class="share-btn-circle">
+              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInVlc(filePath), "Opened in VLC")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><polygon
                     points="5 3 19 12 5 21 5 3"
@@ -2299,7 +2344,7 @@
                 VLC
               </button>
             {/if}
-            <button class="share-btn-circle">
+            <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInBrowser(filePath), "Opened in browser")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><circle
                   cx="12"
@@ -2322,7 +2367,7 @@
               >
               Browser
             </button>
-            <button class="share-btn-circle">
+            <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenWithDialog(filePath), "Open With dialog shown")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><circle cx="5" cy="12" r="1.5" fill="currentColor" /><circle
                   cx="12"

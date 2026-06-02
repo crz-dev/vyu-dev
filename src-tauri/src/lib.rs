@@ -12,7 +12,7 @@ use image::GenericImageView;
 use image::ImageEncoder;
 use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 use tokio::sync::Semaphore;
-use windows::core::w;
+use windows::core::{w, PCWSTR};
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED};
 use xxhash_rust::xxh3::xxh3_64;
@@ -1758,6 +1758,12 @@ pub fn run() {
             set_wallpaper,
             set_lock_screen,
             create_desktop_shortcut,
+            open_in_photos,
+            open_in_paint,
+            open_in_vlc,
+            open_in_spotify,
+            open_in_browser,
+            open_with_dialog,
         ])
         .setup(|app| {
             // Set AppUserModelID so Task Manager groups all WebView2 children under "Vyu"
@@ -2368,6 +2374,392 @@ fn create_desktop_shortcut(path: String) -> Result<(), String> {
     #[cfg(not(target_os = "windows"))]
     {
         return Err("Creating shortcuts is only supported on Windows.".into());
+    }
+    Ok(())
+}
+
+// ── Share: Open with ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+fn open_in_photos(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT;
+
+        // Open the file directly — on Windows 10/11, MS Photos is the default
+        // handler for image files, so ShellExecuteW with "open" verb opens it there.
+        let wide_path = windows::core::HSTRING::from(&path);
+        unsafe {
+            let hinst = ShellExecuteW(None, w!("open"), &wide_path, None, None, SW_SHOWDEFAULT);
+            if hinst.is_invalid() {
+                return Err(
+                    "APP_NOT_FOUND:Photos:https://apps.microsoft.com/store/apps/microsoft-photos/9WZDNCRFJBH4"
+                        .into(),
+                );
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Err("Opening in Photos is only supported on Windows.".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn open_in_paint(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let result = Command::new("mspaint")
+            .creation_flags(CREATE_NO_WINDOW)
+            .arg(&path)
+            .spawn();
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    return Err(
+                        "APP_NOT_FOUND:Paint:https://apps.microsoft.com/store/apps/microsoft-paint/9PCFS5B6T72H"
+                            .into(),
+                    );
+                }
+                return Err(format!("Failed to open Paint: {e}"));
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Err("Opening in Paint is only supported on Windows.".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn open_in_vlc(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // Try known VLC install paths
+        let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
+        let known_paths = [
+            format!("{local_app}\\VideoLAN\\VLC\\vlc.exe"),
+            "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe".to_string(),
+            "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe".to_string(),
+        ];
+        let mut vlc_path: Option<String> = None;
+        for kp in &known_paths {
+            if Path::new(kp).exists() {
+                vlc_path = Some(kp.clone());
+                break;
+            }
+        }
+        // Fallback: try PATH
+        if vlc_path.is_none() {
+            let path_var = std::env::var("PATH").unwrap_or_default();
+            for dir in path_var.split(';') {
+                let candidate = format!("{dir}\\vlc.exe");
+                if Path::new(&candidate).exists() {
+                    vlc_path = Some(candidate);
+                    break;
+                }
+            }
+        }
+        match vlc_path {
+            Some(exe) => {
+                Command::new(&exe)
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .arg(&path)
+                    .spawn()
+                    .map_err(|e| format!("Failed to launch VLC: {e}"))?;
+            }
+            None => {
+                return Err(
+                    "APP_NOT_FOUND:VLC:https://www.videolan.org/vlc/".into(),
+                );
+            }
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Err("Opening in VLC is only supported on Windows.".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn open_in_spotify(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        // Copy the audio file to %USERPROFILE%\Music\Vyu\ so Spotify can pick it up
+        let user_profile = std::env::var("USERPROFILE").unwrap_or_default();
+        let vyu_dir = PathBuf::from(&user_profile).join("Music").join("Vyu");
+        fs::create_dir_all(&vyu_dir)
+            .map_err(|e| format!("Failed to create Music/Vyu directory: {e}"))?;
+
+        let file_name = p
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("audio.mp3");
+        let mut dest = vyu_dir.join(file_name);
+        // Handle duplicates by appending a counter
+        if dest.exists() {
+            let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("audio");
+            let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("mp3");
+            let mut counter = 2u32;
+            loop {
+                let candidate = vyu_dir.join(format!("{stem} ({counter}).{ext}"));
+                if !candidate.exists() {
+                    dest = candidate;
+                    break;
+                }
+                counter += 1;
+                if counter > 9999 {
+                    return Err("Too many duplicate files".into());
+                }
+            }
+        }
+        fs::copy(&p, &dest)
+            .map_err(|e| format!("Failed to copy file to Music/Vyu: {e}"))?;
+
+        // Find and launch Spotify
+        let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
+        let spotify_exe = format!("{local_app}\\Spotify\\Spotify.exe");
+        if !Path::new(&spotify_exe).exists() {
+            return Err(
+                "APP_NOT_FOUND:Spotify:https://www.spotify.com/download/".into(),
+            );
+        }
+        Command::new(&spotify_exe)
+            .creation_flags(CREATE_NO_WINDOW)
+            .arg("spotify:localfiles")
+            .spawn()
+            .map_err(|e| format!("Failed to launch Spotify: {e}"))?;
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Err("Opening in Spotify is only supported on Windows.".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn open_in_browser(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT;
+
+        let url = format!("file:///{}", path.replace('\\', "/"));
+
+        // Find the default browser by reading the Windows registry.
+        // We read the ProgId from the UserChoice key, then look up the
+        // shell\open\command to get the browser executable path.
+        //
+        // Helper: convert a Rust string to a null-terminated UTF-16 Vec<u16>
+        // suitable for use as a PCWSTR with RegOpenKeyExW.
+        fn to_pcwstr(s: &str) -> Vec<u16> {
+            s.encode_utf16().chain(std::iter::once(0)).collect()
+        }
+
+        unsafe {
+            use windows::Win32::System::Registry::{
+                RegOpenKeyExW, RegQueryValueExW, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ,
+            };
+
+            // Step 1: Get the ProgId for the HTTP handler
+            let user_choice_key = to_pcwstr(
+                r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice",
+            );
+            let mut key = Default::default();
+            let open_err = RegOpenKeyExW(
+                HKEY_CURRENT_USER,
+                PCWSTR::from_raw(user_choice_key.as_ptr()),
+                0,
+                KEY_READ,
+                &mut key,
+            );
+            if open_err.0 != 0 {
+                // Fallback: ShellExecuteW with the file:/// URL
+                let wide_url = windows::core::HSTRING::from(&url);
+                let hinst =
+                    ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+                if hinst.is_invalid() {
+                    return Err("Failed to open in browser".into());
+                }
+                return Ok(());
+            }
+
+            // Read the ProgId value
+            let mut prog_id_buf = [0u16; 256];
+            let mut prog_id_len: u32 = 256 * 2;
+            let query_err = RegQueryValueExW(
+                key,
+                w!("ProgId"),
+                None,
+                None,
+                Some(prog_id_buf.as_mut_ptr() as _),
+                Some(&mut prog_id_len),
+            );
+            if query_err.0 != 0 {
+                let wide_url = windows::core::HSTRING::from(&url);
+                let hinst =
+                    ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+                if hinst.is_invalid() {
+                    return Err("Failed to open in browser".into());
+                }
+                return Ok(());
+            }
+
+            let prog_id = String::from_utf16_lossy(&prog_id_buf[..(prog_id_len / 2) as usize]);
+
+            // Step 2: Get shell\open\command for this ProgId
+            let class_key_path = to_pcwstr(&format!("Software\\Classes\\{prog_id}\\shell\\open\\command"));
+            let mut cmd_key = Default::default();
+            let cmd_err = RegOpenKeyExW(
+                HKEY_CURRENT_USER,
+                PCWSTR::from_raw(class_key_path.as_ptr()),
+                0,
+                KEY_READ,
+                &mut cmd_key,
+            );
+            let cmd_key = if cmd_err.0 == 0 {
+                cmd_key
+            } else {
+                let mut hklm_key = Default::default();
+                let hklm_err = RegOpenKeyExW(
+                    HKEY_LOCAL_MACHINE,
+                    PCWSTR::from_raw(class_key_path.as_ptr()),
+                    0,
+                    KEY_READ,
+                    &mut hklm_key,
+                );
+                if hklm_err.0 != 0 {
+                    let wide_url = windows::core::HSTRING::from(&url);
+                    let hinst =
+                        ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+                    if hinst.is_invalid() {
+                        return Err("Failed to open in browser".into());
+                    }
+                    return Ok(());
+                }
+                hklm_key
+            };
+
+            // Read the command string
+            let mut cmd_buf = [0u16; 1024];
+            let mut cmd_len: u32 = 1024 * 2;
+            let cmd_val_err = RegQueryValueExW(
+                cmd_key,
+                PCWSTR::null(),
+                None,
+                None,
+                Some(cmd_buf.as_mut_ptr() as _),
+                Some(&mut cmd_len),
+            );
+            if cmd_val_err.0 != 0 {
+                let wide_url = windows::core::HSTRING::from(&url);
+                let hinst =
+                    ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+                if hinst.is_invalid() {
+                    return Err("Failed to open in browser".into());
+                }
+                return Ok(());
+            }
+
+            let cmd_str =
+                String::from_utf16_lossy(&cmd_buf[..(cmd_len / 2) as usize]);
+
+            // Extract the executable path from the command string
+            // Typically: "C:\path\to\browser.exe" "%1" or C:\path\browser.exe "%1"
+            let exe_path = if cmd_str.starts_with('"') {
+                cmd_str[1..].find('"').map(|i| cmd_str[1..=i].to_string())
+            } else {
+                cmd_str
+                    .split_whitespace()
+                    .next()
+                    .map(|s| s.to_string())
+            };
+
+            match exe_path {
+                Some(exe) => {
+                    let wide_exe = windows::core::HSTRING::from(&exe);
+                    let wide_url_arg = windows::core::HSTRING::from(&url);
+                    let param_ptr = PCWSTR::from_raw(wide_url_arg.as_ptr() as _);
+                    let hinst = ShellExecuteW(
+                        None,
+                        w!("open"),
+                        &wide_exe,
+                        param_ptr,
+                        None,
+                        SW_SHOWDEFAULT,
+                    );
+                    if hinst.is_invalid() {
+                        return Err("Failed to open in browser".into());
+                    }
+                }
+                None => {
+                    let wide_url = windows::core::HSTRING::from(&url);
+                    let hinst =
+                        ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+                    if hinst.is_invalid() {
+                        return Err("Failed to open in browser".into());
+                    }
+                }
+            }
+        }
+        return Ok(());
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&format!("file://{path}"))
+            .spawn()
+            .map_err(|e| format!("Failed to open in browser: {e}"))?;
+        return Ok(());
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+    {
+        return Err("Opening in browser is not supported on this platform.".into());
+    }
+}
+
+#[tauri::command]
+fn open_with_dialog(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("rundll32.exe")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(["shell32.dll,OpenAs_RunDLL", &path])
+            .spawn()
+            .map_err(|e| format!("Failed to open Open With dialog: {e}"))?;
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Err("Open With dialog is only supported on Windows.".into());
     }
     Ok(())
 }

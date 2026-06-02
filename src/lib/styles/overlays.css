@@ -190,6 +190,56 @@
   border-color: var(--yellow-border-strong);
   color: #fef9c3;
 }
+/* Share toast with action buttons (app not installed) */
+.share-toast-interactive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.share-toast-msg {
+  flex: 1;
+  min-width: 0;
+}
+.share-toast-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.share-toast-link {
+  font-size: 11px;
+  font-family: var(--font-family);
+  background: rgba(255, 255, 255, 0.12);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  color: inherit;
+  border-radius: 5px;
+  padding: 2px 8px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.share-toast-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.share-toast-dismiss {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.share-toast-dismiss:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
 
 .clip-toast {
   position: fixed;

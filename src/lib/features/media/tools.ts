@@ -409,3 +409,29 @@ export async function invokeSetLockScreen(path: string): Promise<void> {
 export async function invokeCreateDesktopShortcut(path: string): Promise<void> {
   return invoke("create_desktop_shortcut", { path });
 }
+
+// ── Share: Open with ─────────────────────────────────────────────────────────
+
+export async function invokeOpenInPhotos(path: string): Promise<void> {
+  return invoke("open_in_photos", { path });
+}
+
+export async function invokeOpenInPaint(path: string): Promise<void> {
+  return invoke("open_in_paint", { path });
+}
+
+export async function invokeOpenInVlc(path: string): Promise<void> {
+  return invoke("open_in_vlc", { path });
+}
+
+export async function invokeOpenInSpotify(path: string): Promise<void> {
+  return invoke("open_in_spotify", { path });
+}
+
+export async function invokeOpenInBrowser(path: string): Promise<void> {
+  return invoke("open_in_browser", { path });
+}
+
+export async function invokeOpenWithDialog(path: string): Promise<void> {
+  return invoke("open_with_dialog", { path });
+}
