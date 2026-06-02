@@ -406,6 +406,7 @@
     display: block;
     flex-shrink: 0;
     cursor: grab;
+    outline: none;
     transition: transform 0.05s linear;
   }
 
