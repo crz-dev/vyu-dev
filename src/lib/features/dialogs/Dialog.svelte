@@ -205,6 +205,11 @@
   }>({ visible: false, message: "", tone: "success" });
   let shareToastTimer: ReturnType<typeof setTimeout> | undefined;
   let shareOutputDir = $state(loadShareOutputDir());
+  let shareDeleteOriginal = $state(false);
+
+  $effect(() => {
+    if (!shareOpen) shareDeleteOriginal = false;
+  });
 
   $effect(() => {
     if (!contextMenu.visible) {
@@ -2473,8 +2478,34 @@
           >
           Save to:
         </span>
-        <button class="share-dest-btn" onclick={handleShareLocation}>
-          {shareOutputDir || parentFolder()}
+        <span class="tooltip-above" data-tooltip={shareOutputDir || parentFolder()}>
+          <button class="share-dest-btn" onclick={handleShareLocation}>
+            {shareOutputDir || parentFolder()}
+          </button>
+        </span>
+        <button
+          class="share-delete-toggle tooltip-above"
+          class:is-on={shareDeleteOriginal}
+          data-tooltip="Delete original"
+          aria-label="Delete original"
+          onclick={() => (shareDeleteOriginal = !shareDeleteOriginal)}
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+          </svg>
         </button>
       </div>
 
