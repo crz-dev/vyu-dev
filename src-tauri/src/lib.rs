@@ -5,12 +5,13 @@ use std::fs;
 use std::hash::{Hash, Hasher};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
+use tauri::{Emitter, Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 use tokio::sync::Semaphore;
 use windows::core::w;
 use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED};
@@ -2315,6 +2316,7 @@ fn convert_media(
 
 #[tauri::command]
 fn convert_audio_to_waveform_video(
+    app: tauri::AppHandle,
     path: String,
     output_dir: String,
     custom_output: Option<String>,
@@ -2351,46 +2353,171 @@ fn convert_audio_to_waveform_video(
         }
     };
 
-    let filter_complex =
-        "[0:a]showwavespic=s=1920x1080:colors=white,format=yuv420p,loop=loop=-1:size=1:start=0[v]";
+    // ── Step 1: Generate background image to temp file ────────────────────────
+    let temp_dir = std::env::temp_dir().join("Vyu-temp");
+    let _ = fs::create_dir_all(&temp_dir);
+    let temp_image = temp_dir.join(format!("vyu_wave_{}.jpg", hash_path(&path)));
 
-    let output = Command::new("ffmpeg")
+    // Try embedded artwork first
+    let has_artwork = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
         .args([
-            "-y",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-i",
-            &input.to_string_lossy(),
-            "-filter_complex",
-            filter_complex,
-            "-map",
-            "[v]",
-            "-map",
-            "0:a",
-            "-c:v",
-            "libx264",
-            "-preset",
-            "medium",
-            "-crf",
-            "23",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "-movflags",
-            "+faststart",
-            "-shortest",
+            "-y", "-hide_banner", "-loglevel", "error",
+            "-i", &input.to_string_lossy(),
+            "-an", "-frames:v", "1",
+            &temp_image.to_string_lossy(),
         ])
-        .arg(output_path.to_string_lossy().to_string())
         .output()
-        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+        .map(|o| {
+            o.status.success()
+                && temp_image.exists()
+                && temp_image.metadata().map(|m| m.len()).unwrap_or(0) > 1024
+        })
+        .unwrap_or(false);
 
-    if output.status.success() {
+    if !has_artwork {
+        // Generate static waveform picture
+        let wf_output = Command::new("ffmpeg")
+            .creation_flags(CREATE_NO_WINDOW)
+            .args([
+                "-y", "-hide_banner", "-loglevel", "error",
+                "-i", &input.to_string_lossy(),
+                "-filter_complex",
+                "[0:a]showwavespic=s=1920x1080:colors=white",
+                "-frames:v", "1",
+                &temp_image.to_string_lossy(),
+            ])
+            .output()
+            .map_err(|e| format!("Failed to generate waveform: {e}"))?;
+        if !wf_output.status.success() {
+            let _ = fs::remove_file(&temp_image);
+            return Err(
+                String::from_utf8_lossy(&wf_output.stderr).trim().to_string(),
+            );
+        }
+    }
+
+    // ── Step 2: Probe audio duration ──────────────────────────────────────────
+    let duration_ms: f64 = Command::new("ffprobe")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args([
+            "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "csv=p=0",
+            &input.to_string_lossy(),
+        ])
+        .output()
+        .ok()
+        .and_then(|o| {
+            if o.status.success() {
+                String::from_utf8(o.stdout)
+                    .ok()?
+                    .trim()
+                    .parse::<f64>()
+                    .ok()
+                    .map(|s| s * 1000.0)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(0.0);
+
+    // ── Step 3: Create video from image + audio with progress ─────────────────
+    //    -loop 1 on the image input creates an infinite video stream from the
+    //    still image.  -shortest ends the output when the audio stream finishes,
+    //    so the MP4 duration matches the audio exactly.
+    let mut args: Vec<String> = vec![
+        "-y".into(),
+        "-hide_banner".into(),
+        "-loglevel".into(),
+        "error".into(),
+        "-progress".into(),
+        "pipe:1".into(),
+        "-loop".into(),
+        "1".into(),
+        "-i".into(),
+        temp_image.to_string_lossy().to_string(),
+        "-i".into(),
+        input.to_string_lossy().to_string(),
+        "-filter_complex".into(),
+        "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black,format=yuv420p[v]"
+            .into(),
+        "-map".into(),
+        "[v]".into(),
+        "-map".into(),
+        "1:a".into(),
+        "-c:v".into(),
+        "libx264".into(),
+        "-preset".into(),
+        "medium".into(),
+        "-crf".into(),
+        "23".into(),
+        "-c:a".into(),
+        "aac".into(),
+        "-b:a".into(),
+        "192k".into(),
+        "-pix_fmt".into(),
+        "yuv420p".into(),
+        "-movflags".into(),
+        "+faststart".into(),
+        "-shortest".into(),
+    ];
+    args.push(output_path.to_string_lossy().to_string());
+
+    let mut child = Command::new("ffmpeg")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(&args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| {
+            let _ = fs::remove_file(&temp_image);
+            format!("Failed to start ffmpeg: {e}")
+        })?;
+
+    let stderr_handle = child.stderr.take();
+
+    // Read progress lines from stdout
+    if let Some(stdout) = child.stdout.take() {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                if line.starts_with("out_time_ms=") {
+                    if let Some(ms_str) = line.strip_prefix("out_time_ms=") {
+                        if let Ok(current_ms) = ms_str.trim().parse::<f64>() {
+                            let pct = if duration_ms > 0.0 {
+                                ((current_ms / duration_ms) * 100.0).min(99.0) as u32
+                            } else {
+                                0
+                            };
+                            let _ = app.emit("conversion-progress", pct);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let status = child.wait().map_err(|e| {
+        let _ = fs::remove_file(&temp_image);
+        format!("Failed to wait for ffmpeg: {e}")
+    })?;
+
+    let _ = fs::remove_file(&temp_image);
+
+    if status.success() {
+        let _ = app.emit("conversion-progress", 100u32);
         Ok(output_path.to_string_lossy().to_string())
     } else {
-        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+        let err_msg = stderr_handle
+            .and_then(|mut s| {
+                let mut buf = String::new();
+                let _ = std::io::Read::read_to_string(&mut s, &mut buf);
+                Some(buf)
+            })
+            .filter(|s| !s.trim().is_empty())
+            .unwrap_or_else(|| "Conversion failed".to_string());
+        Err(err_msg.trim().to_string())
     }
 }
 

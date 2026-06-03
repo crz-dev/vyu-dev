@@ -28,6 +28,7 @@
     loadShareOutputDir,
     saveShareOutputDir,
   } from "$lib/services/storage";
+  import { listen } from "@tauri-apps/api/event";
 
   let {
     contextMenu,
@@ -217,11 +218,15 @@
   let shareOutputDir = $state(loadShareOutputDir());
   let shareDeleteOriginal = $state(false);
   let shareConverting = $state(false);
+  let convertingFormat = $state<string | undefined>(undefined);
+  let convertProgress = $state<number>(0);
 
   $effect(() => {
     if (!shareOpen) {
       shareDeleteOriginal = false;
       shareConverting = false;
+      convertingFormat = undefined;
+      convertProgress = 0;
     }
   });
 
@@ -322,12 +327,23 @@
     }
     shareConverting = true;
     let success = false;
+    let unlisten: (() => void) | undefined;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
       const isImage = !isVideo && !isAudio && !isPdf;
+      const isWaveformConvert = isAudio && format === "mp4";
+
+      if (isWaveformConvert) {
+        convertingFormat = format;
+        convertProgress = 0;
+        unlisten = await listen<number>("conversion-progress", (event) => {
+          convertProgress = event.payload;
+        });
+      }
+
       if (sourceExt === format) {
         await invokeCopyFileUnique(filePath, outputDir);
-      } else if (isAudio && format === "mp4") {
+      } else if (isWaveformConvert) {
         await invokeConvertAudioToWaveformVideo(filePath, outputDir);
       } else if (isImage && format === "pdf") {
         await invokeConvertImageToPdf(filePath, outputDir);
@@ -342,6 +358,9 @@
       showShareToast(msg, "error");
     } finally {
       shareConverting = false;
+      convertingFormat = undefined;
+      convertProgress = 0;
+      unlisten?.();
     }
     if (success && shareDeleteOriginal) {
       try {
@@ -432,6 +451,7 @@
 
     shareConverting = true;
     let success = false;
+    let unlisten: (() => void) | undefined;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
       // Extract the directory from the chosen output path
@@ -439,9 +459,19 @@
       const lastSep = outputPath.lastIndexOf(sep);
       const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";
 
+      const isWaveformConvert = isAudio && outputExt === "mp4";
+
+      if (isWaveformConvert) {
+        convertingFormat = outputExt;
+        convertProgress = 0;
+        unlisten = await listen<number>("conversion-progress", (event) => {
+          convertProgress = event.payload;
+        });
+      }
+
       if (sourceExt === outputExt) {
         await invokeCopyFile(filePath, outputPath);
-      } else if (isAudio && outputExt === "mp4") {
+      } else if (isWaveformConvert) {
         await invokeConvertAudioToWaveformVideo(
           filePath,
           outputDirFromSave,
@@ -466,6 +496,9 @@
       showShareToast(msg, "error");
     } finally {
       shareConverting = false;
+      convertingFormat = undefined;
+      convertProgress = 0;
+      unlisten?.();
     }
     if (success && shareDeleteOriginal) {
       try {
@@ -2768,8 +2801,10 @@
               <div class="share-grid share-grid-3">
                 <button
                   class="share-btn-wide"
+                  class:converting={convertingFormat === "mp4"}
+                  style:--progress="{convertProgress}%"
                   onclick={() => handleSaveAs("mp4")}
-                  disabled={shareConverting}>MP4</button
+                  disabled={shareConverting && convertingFormat !== "mp4"}>MP4</button
                 >
                 <button
                   class="share-btn-wide"
