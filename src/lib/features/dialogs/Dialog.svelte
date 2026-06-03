@@ -18,6 +18,9 @@
     invokeOpenInBrowser,
     invokeOpenWithDialog,
     invokeConvertMedia,
+    invokeConvertAudioToWaveformVideo,
+    invokeConvertImageToPdf,
+    invokeCopyFile,
     invokeCopyFileUnique,
     invokeDeleteFile,
   } from "$lib/features/media/tools";
@@ -320,12 +323,134 @@
     let success = false;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
+      const isImage = !isVideo && !isAudio && !isPdf;
       if (sourceExt === format) {
         await invokeCopyFileUnique(filePath, outputDir);
+      } else if (isAudio && format === "mp4") {
+        await invokeConvertAudioToWaveformVideo(filePath, outputDir);
+      } else if (isImage && format === "pdf") {
+        await invokeConvertImageToPdf(filePath, outputDir);
       } else {
         await invokeConvertMedia(filePath, outputDir, format, "Balanced");
       }
       showShareToast("Saved as " + format.toUpperCase(), "success");
+      success = true;
+    } catch (e: any) {
+      const msg = typeof e === "string" ? e : e?.message || "Conversion failed";
+      console.error("Save as failed:", e);
+      showShareToast(msg, "error");
+    } finally {
+      shareConverting = false;
+    }
+    if (success && shareDeleteOriginal) {
+      try {
+        await invokeDeleteFile(filePath);
+      } catch (e) {
+        console.error("Failed to delete original:", e);
+        showShareToast("Converted but couldn't delete original", "error");
+      }
+    }
+    closeShare();
+  }
+
+  async function handleSaveAsOther() {
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const isImage = !isVideo && !isAudio && !isPdf;
+
+    let filters: { name: string; extensions: string[] }[];
+    if (isImage) {
+      filters = [
+        {
+          name: "Images",
+          extensions: [
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+            "bmp",
+            "gif",
+            "tiff",
+            "tif",
+            "psd",
+          ],
+        },
+        { name: "Documents", extensions: ["pdf"] },
+      ];
+    } else if (isVideo) {
+      filters = [
+        {
+          name: "Video",
+          extensions: ["mp4", "mkv", "webm", "avi", "mov", "wmv", "m4v"],
+        },
+        {
+          name: "Audio",
+          extensions: ["mp3", "wav", "flac", "ogg", "aac", "opus", "m4a"],
+        },
+        { name: "Image", extensions: ["gif"] },
+      ];
+    } else {
+      filters = [
+        {
+          name: "Audio",
+          extensions: [
+            "mp3",
+            "wav",
+            "flac",
+            "ogg",
+            "aac",
+            "opus",
+            "m4a",
+            "wma",
+            "aiff",
+            "alac",
+          ],
+        },
+        { name: "Video", extensions: ["mp4", "mkv", "webm"] },
+      ];
+    }
+
+    const stem = fileName.replace(/\.[^.]+$/, "");
+    const defaultDir = shareOutputDir || parentFolder() || "";
+    const defaultPath = defaultDir ? `${defaultDir}\\${stem}` : stem;
+
+    const outputPath = await save({ defaultPath, filters });
+    if (!outputPath) return;
+
+    const outputExt = outputPath.split(".").pop()?.toLowerCase() || "";
+    if (!outputExt) {
+      showShareToast("No format selected", "error");
+      return;
+    }
+
+    shareConverting = true;
+    let success = false;
+    try {
+      const sourceExt = fileExt().toLowerCase().replace(".", "");
+      // Extract the directory from the chosen output path
+      const sep = outputPath.includes("\\") ? "\\" : "/";
+      const lastSep = outputPath.lastIndexOf(sep);
+      const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";
+
+      if (sourceExt === outputExt) {
+        await invokeCopyFile(filePath, outputPath);
+      } else if (isAudio && outputExt === "mp4") {
+        await invokeConvertAudioToWaveformVideo(
+          filePath,
+          outputDirFromSave,
+          outputPath,
+        );
+      } else if (isImage && outputExt === "pdf") {
+        await invokeConvertImageToPdf(filePath, outputDirFromSave, outputPath);
+      } else {
+        await invokeConvertMedia(
+          filePath,
+          outputDirFromSave,
+          outputExt,
+          "Balanced",
+          outputPath,
+        );
+      }
+      showShareToast("Saved as " + outputExt.toUpperCase(), "success");
       success = true;
     } catch (e: any) {
       const msg = typeof e === "string" ? e : e?.message || "Conversion failed";
@@ -2577,9 +2702,21 @@
                 >
               </div>
               <div class="share-grid share-grid-3">
-                <button class="share-btn-wide">MP3</button>
-                <button class="share-btn-wide">GIF</button>
-                <button class="share-btn-wide">Other…</button>
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("mp3")}
+                  disabled={shareConverting}>MP3</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("gif")}
+                  disabled={shareConverting}>GIF</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={handleSaveAsOther}
+                  disabled={shareConverting}>Other…</button
+                >
               </div>
             {:else if isAudio}
               <div class="share-grid share-grid-3">
@@ -2600,9 +2737,21 @@
                 >
               </div>
               <div class="share-grid share-grid-3">
-                <button class="share-btn-wide">MP4</button>
-                <button class="share-btn-wide">Opus</button>
-                <button class="share-btn-wide">Other…</button>
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("mp4")}
+                  disabled={shareConverting}>MP4</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("opus")}
+                  disabled={shareConverting}>Opus</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={handleSaveAsOther}
+                  disabled={shareConverting}>Other…</button
+                >
               </div>
             {:else}
               <div class="share-grid share-grid-3">
@@ -2623,9 +2772,21 @@
                 >
               </div>
               <div class="share-grid share-grid-3">
-                <button class="share-btn-wide">PSD</button>
-                <button class="share-btn-wide">PDF</button>
-                <button class="share-btn-wide">Other…</button>
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("psd")}
+                  disabled={shareConverting}>PSD</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("pdf")}
+                  disabled={shareConverting}>PDF</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={handleSaveAsOther}
+                  disabled={shareConverting}>Other…</button
+                >
               </div>
             {/if}
           </div>

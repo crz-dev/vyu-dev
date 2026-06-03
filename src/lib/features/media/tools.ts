@@ -206,12 +206,38 @@ export async function invokeConvertMedia(
   outputDir: string,
   format: string,
   preset: string,
+  customOutput?: string,
 ): Promise<string> {
   return invoke("convert_media", {
     path,
     outputDir,
     format,
     preset,
+    customOutput: customOutput ?? null,
+  });
+}
+
+export async function invokeConvertAudioToWaveformVideo(
+  path: string,
+  outputDir: string,
+  customOutput?: string,
+): Promise<string> {
+  return invoke("convert_audio_to_waveform_video", {
+    path,
+    outputDir,
+    customOutput: customOutput ?? null,
+  });
+}
+
+export async function invokeConvertImageToPdf(
+  path: string,
+  outputDir: string,
+  customOutput?: string,
+): Promise<string> {
+  return invoke("convert_image_to_pdf", {
+    path,
+    outputDir,
+    customOutput: customOutput ?? null,
   });
 }
 

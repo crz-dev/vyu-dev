@@ -1928,6 +1928,8 @@ pub fn run() {
             open_in_spotify,
             open_in_browser,
             open_with_dialog,
+            convert_audio_to_waveform_video,
+            convert_image_to_pdf,
         ])
         .setup(|app| {
             // Set AppUserModelID so Task Manager groups all WebView2 children under "Vyu"
@@ -2054,6 +2056,7 @@ fn convert_media(
     output_dir: String,
     format: String,
     preset: String,
+    custom_output: Option<String>,
 ) -> Result<String, String> {
     let input = PathBuf::from(&path);
     if !input.exists() {
@@ -2065,14 +2068,28 @@ fn convert_media(
         fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
     }
 
-    let base_name = input
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("output")
-        .to_string();
     let ext = format.to_lowercase();
-    let out_name = format!("{}_converted.{}", base_name, ext);
-    let output_path = unique_path(out_dir.join(&out_name));
+    let output_path = match custom_output {
+        Some(ref p) => {
+            let pb = PathBuf::from(p);
+            if let Some(parent) = pb.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| format!("Failed to create output folder: {e}"))?;
+                }
+            }
+            unique_path(pb)
+        }
+        None => {
+            let base_name = input
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("output")
+                .to_string();
+            let out_name = format!("{}_converted.{}", base_name, ext);
+            unique_path(out_dir.join(&out_name))
+        }
+    };
 
     let mut args: Vec<String> = vec![
         "-y".into(),
@@ -2122,6 +2139,10 @@ fn convert_media(
             args.push("-c:v".into());
             args.push("libwebp".into());
         }
+        "psd" => {
+            args.push("-c:v".into());
+            args.push("psd".into());
+        }
         // Audio formats
         "mp3" => {
             args.push("-c:a".into());
@@ -2166,6 +2187,7 @@ fn convert_media(
         && ext != "jpg"
         && ext != "jpeg"
         && ext != "webp"
+        && ext != "psd"
         && ext != "mp3"
         && ext != "wav"
         && ext != "flac"
@@ -2235,6 +2257,206 @@ fn convert_media(
     } else {
         Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
     }
+}
+
+#[tauri::command]
+fn convert_audio_to_waveform_video(
+    path: String,
+    output_dir: String,
+    custom_output: Option<String>,
+) -> Result<String, String> {
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Err("Source file does not exist".into());
+    }
+
+    let out_dir = PathBuf::from(&output_dir);
+    if !out_dir.exists() {
+        fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
+    }
+
+    let output_path = match custom_output {
+        Some(ref p) => {
+            let pb = PathBuf::from(p);
+            if let Some(parent) = pb.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| format!("Failed to create output folder: {e}"))?;
+                }
+            }
+            unique_path(pb)
+        }
+        None => {
+            let base_name = input
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("output")
+                .to_string();
+            let out_name = format!("{}_waveform.mp4", base_name);
+            unique_path(out_dir.join(&out_name))
+        }
+    };
+
+    let filter_complex =
+        "[0:a]showwaves=s=1920x1080:mode=cline:colors=white:rate=30,format=yuv420p[v]";
+
+    let output = Command::new("ffmpeg")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args([
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            &input.to_string_lossy(),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[v]",
+            "-map",
+            "0:a",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "23",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-movflags",
+            "+faststart",
+            "-shortest",
+        ])
+        .arg(output_path.to_string_lossy().to_string())
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+
+    if output.status.success() {
+        Ok(output_path.to_string_lossy().to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+#[tauri::command]
+fn convert_image_to_pdf(
+    path: String,
+    output_dir: String,
+    custom_output: Option<String>,
+) -> Result<String, String> {
+    use image::codecs::jpeg::JpegEncoder;
+
+    let input = PathBuf::from(&path);
+    if !input.exists() {
+        return Err("Source file does not exist".into());
+    }
+
+    let out_dir = PathBuf::from(&output_dir);
+    if !out_dir.exists() {
+        fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
+    }
+
+    let output_path = match custom_output {
+        Some(ref p) => {
+            let pb = PathBuf::from(p);
+            if let Some(parent) = pb.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)
+                        .map_err(|e| format!("Failed to create output folder: {e}"))?;
+                }
+            }
+            unique_path(pb)
+        }
+        None => {
+            let base_name = input
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("output")
+                .to_string();
+            let out_name = format!("{}_converted.pdf", base_name);
+            unique_path(out_dir.join(&out_name))
+        }
+    };
+
+    // Load image and encode as JPEG for PDF embedding
+    let img = image::open(&input).map_err(|e| format!("Failed to open image: {e}"))?;
+    let rgb = img.to_rgb8();
+    let (w, h) = rgb.dimensions();
+
+    let mut jpeg_data = Vec::new();
+    let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 90);
+    rgb.write_with_encoder(encoder)
+        .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
+
+    // Build minimal single-page PDF with embedded JPEG
+    let mut pdf: Vec<u8> = Vec::with_capacity(1024 + jpeg_data.len());
+    let mut offsets: Vec<usize> = Vec::new();
+
+    // Header
+    pdf.extend_from_slice(b"%PDF-1.4\n");
+
+    // 1: Catalog
+    offsets.push(pdf.len());
+    pdf.extend_from_slice(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+    // 2: Pages
+    offsets.push(pdf.len());
+    pdf.extend_from_slice(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+
+    // 3: Page
+    offsets.push(pdf.len());
+    let page = format!(
+        "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {w} {h}] \
+         /Resources << /XObject << /Img 5 0 R >> >> /Contents 4 0 R >>\nendobj\n"
+    );
+    pdf.extend_from_slice(page.as_bytes());
+
+    // 4: Content stream
+    offsets.push(pdf.len());
+    let content = format!("q\n{w} 0 0 {h} 0 0 cm\n/Img Do\nQ\n");
+    let content_stream = format!(
+        "4 0 obj\n<< /Length {} >>\nstream\n{}\nendstream\nendobj\n",
+        content.len(),
+        content
+    );
+    pdf.extend_from_slice(content_stream.as_bytes());
+
+    // 5: Image XObject
+    offsets.push(pdf.len());
+    let img_header = format!(
+        "5 0 obj\n<< /Type /XObject /Subtype /Image /Width {w} /Height {h} \
+         /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {len} >>\nstream\n",
+        w = w,
+        h = h,
+        len = jpeg_data.len()
+    );
+    pdf.extend_from_slice(img_header.as_bytes());
+    pdf.extend_from_slice(&jpeg_data);
+    pdf.extend_from_slice(b"\nendstream\nendobj\n");
+
+    // Cross-reference table
+    let xref_start = pdf.len();
+    pdf.extend_from_slice(b"xref\n");
+    let total = offsets.len() + 1;
+    pdf.extend_from_slice(format!("0 {total}\n").as_bytes());
+    // Free entry (object 0)
+    pdf.extend_from_slice(b"0000000000 65535 f \r\n");
+    for offset in &offsets {
+        let entry = format!("{:010} 00000 n \r\n", offset);
+        pdf.extend_from_slice(entry.as_bytes());
+    }
+
+    // Trailer
+    pdf.extend_from_slice(
+        format!("trailer\n<< /Size {total} /Root 1 0 R >>\nstartxref\n{xref_start}\n%%EOF\n")
+            .as_bytes(),
+    );
+
+    fs::write(&output_path, &pdf).map_err(|e| format!("Failed to write PDF: {e}"))?;
+
+    Ok(output_path.to_string_lossy().to_string())
 }
 
 fn add_dir_to_zip(
