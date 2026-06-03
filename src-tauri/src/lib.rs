@@ -1,20 +1,20 @@
-use std::fs;
-use std::hash::{Hash, Hasher};
-use std::path::{Path, PathBuf};
-use std::process::Command;
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use base64::Engine as _;
 use image::GenericImageView;
 use image::ImageEncoder;
+use std::fs;
+use std::hash::{Hash, Hasher};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{Listener, Manager, PhysicalPosition, PhysicalSize, Position, Size, WindowEvent};
 use tokio::sync::Semaphore;
 use windows::core::w;
-use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 use windows::Win32::System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED};
+use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 use xxhash_rust::xxh3::xxh3_64;
 
 #[derive(serde::Serialize)]
@@ -60,7 +60,10 @@ struct ThumbState {
 const WINDOW_STATE_FILE: &str = "window-state.json";
 
 fn window_state_path(app: &tauri::AppHandle) -> Option<PathBuf> {
-    app.path().app_config_dir().ok().map(|dir| dir.join(WINDOW_STATE_FILE))
+    app.path()
+        .app_config_dir()
+        .ok()
+        .map(|dir| dir.join(WINDOW_STATE_FILE))
 }
 
 fn load_window_state(app: &tauri::AppHandle) -> Option<SavedWindowState> {
@@ -79,12 +82,16 @@ fn persist_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool>) {
     };
 
     let maximized = window.is_maximized().unwrap_or(false);
-    let Ok(size) = window.inner_size() else { return };
+    let Ok(size) = window.inner_size() else {
+        return;
+    };
 
     let (x, y) = if maximized {
         (0, 0)
     } else {
-        let Ok(pos) = window.outer_position() else { return };
+        let Ok(pos) = window.outer_position() else {
+            return;
+        };
         (pos.x, pos.y)
     };
 
@@ -117,27 +124,23 @@ fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool>) {
         if state.width > 0 && state.height > 0 {
             let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
         }
-        let plausible = state.x > -3840 && state.x < 7680
-            && state.y > -2160 && state.y < 4320;
+        let plausible = state.x > -3840 && state.x < 7680 && state.y > -2160 && state.y < 4320;
         if plausible {
-            let _ = window.set_position(Position::Physical(
-                PhysicalPosition::new(state.x, state.y),
-            ));
+            let _ =
+                window.set_position(Position::Physical(PhysicalPosition::new(state.x, state.y)));
         }
         let _ = window.maximize();
     } else {
         let valid_size = state.width >= 400 && state.height >= 300;
-        let plausible = state.x > -3840 && state.x < 7680
-            && state.y > -2160 && state.y < 4320;
+        let plausible = state.x > -3840 && state.x < 7680 && state.y > -2160 && state.y < 4320;
 
         if valid_size {
             let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
         }
 
         if plausible {
-            let _ = window.set_position(Position::Physical(
-                PhysicalPosition::new(state.x, state.y),
-            ));
+            let _ =
+                window.set_position(Position::Physical(PhysicalPosition::new(state.x, state.y)));
         }
     }
 
@@ -161,7 +164,11 @@ fn format_clip_tag(seconds: f64) -> String {
 }
 
 fn sanitize_segments(mut segments: Vec<ClipSegment>) -> Vec<ClipSegment> {
-    segments.sort_by(|a, b| a.start.partial_cmp(&b.start).unwrap_or(std::cmp::Ordering::Equal));
+    segments.sort_by(|a, b| {
+        a.start
+            .partial_cmp(&b.start)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     segments
         .into_iter()
         .filter_map(|s| {
@@ -188,8 +195,15 @@ fn unique_path(path: PathBuf) -> PathBuf {
         .and_then(|s| s.to_str())
         .unwrap_or("output")
         .to_string();
-    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_string();
-    let parent = path.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_string();
+    let parent = path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .to_path_buf();
     for i in 1..10000 {
         let name = if ext.is_empty() {
             format!("{stem}({i})")
@@ -265,14 +279,44 @@ fn delete_file(path: String) -> Result<(), String> {
 
 #[tauri::command]
 fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
-    std::fs::rename(&old_path, &new_path)
-        .map_err(|e| format!("Failed to rename file: {e}"))
+    std::fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename file: {e}"))
 }
 
 #[tauri::command]
 fn copy_file(source: String, destination: String) -> Result<(), String> {
     std::fs::copy(&source, &destination)
         .map(|_| ())
+        .map_err(|e| format!("Failed to copy file: {e}"))
+}
+
+#[tauri::command]
+fn copy_file_unique(source: String, output_dir: String) -> Result<String, String> {
+    let src = PathBuf::from(&source);
+    if !src.exists() {
+        return Err("Source file does not exist".into());
+    }
+    let out_dir = PathBuf::from(&output_dir);
+    if !out_dir.exists() {
+        fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
+    }
+    let stem = src
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("file")
+        .to_string();
+    let ext = src
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_string();
+    let dest_name = if ext.is_empty() {
+        stem.clone()
+    } else {
+        format!("{stem}.{ext}")
+    };
+    let dest = unique_path(out_dir.join(&dest_name));
+    std::fs::copy(&src, &dest)
+        .map(|_| dest.to_string_lossy().to_string())
         .map_err(|e| format!("Failed to copy file: {e}"))
 }
 
@@ -287,9 +331,17 @@ fn hash_path_xxh3(path: &str) -> String {
     format!("{:016x}", xxh3_64(path.as_bytes()))
 }
 
-const IMAGE_EXTS_RUST: &[&str] = &["jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr"];
-const VIDEO_EXTS_RUST: &[&str] = &["mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v"];
-const AUDIO_EXTS_RUST: &[&str] = &["mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus", "aiff", "alac"];
+const IMAGE_EXTS_RUST: &[&str] = &[
+    "jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "tiff", "tif", "psd", "jxl", "heic",
+    "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef",
+    "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr",
+];
+const VIDEO_EXTS_RUST: &[&str] = &[
+    "mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v",
+];
+const AUDIO_EXTS_RUST: &[&str] = &[
+    "mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus", "aiff", "alac",
+];
 const DOCUMENT_EXTS_RUST: &[&str] = &["pdf"];
 
 /// Image formats that need ffmpeg for decoding/thumbnail generation.
@@ -305,12 +357,20 @@ fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>,
     let mut child = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
         .args([
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-ss", "1",
-            "-i", path,
-            "-vframes", "1",
-            "-vf", "scale=200:200:force_original_aspect_ratio=decrease",
-            "-q:v", "4",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            "1",
+            "-i",
+            path,
+            "-vframes",
+            "1",
+            "-vf",
+            "scale=200:200:force_original_aspect_ratio=decrease",
+            "-q:v",
+            "4",
             &thumb_path.to_string_lossy(),
         ])
         .spawn()
@@ -350,11 +410,18 @@ fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path) -> Result<Option<S
     let mut child = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
         .args([
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", path,
-            "-vframes", "1",
-            "-vf", "scale=200:200:force_original_aspect_ratio=decrease",
-            "-q:v", "4",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            path,
+            "-vframes",
+            "1",
+            "-vf",
+            "scale=200:200:force_original_aspect_ratio=decrease",
+            "-q:v",
+            "4",
             &thumb_path.to_string_lossy(),
         ])
         .spawn()
@@ -393,11 +460,17 @@ fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<S
     let mut child = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
         .args([
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", path,
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            path,
             "-an",
-            "-c:v", "copy",
-            "-q:v", "4",
+            "-c:v",
+            "copy",
+            "-q:v",
+            "4",
             &thumb_path.to_string_lossy(),
         ])
         .spawn()
@@ -438,10 +511,16 @@ fn generate_audio_waveform(path: &str, thumb_path: &Path) -> Result<Option<Strin
     let mut child = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
         .args([
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", path,
-            "-filter_complex", "showwavespic=s=640x200:colors=#ffffff",
-            "-frames:v", "1",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            path,
+            "-filter_complex",
+            "showwavespic=s=640x200:colors=#ffffff",
+            "-frames:v",
+            "1",
             &thumb_path.to_string_lossy(),
         ])
         .spawn()
@@ -501,11 +580,7 @@ async fn get_thumbnail(
     state: tauri::State<'_, ThumbState>,
     path: String,
 ) -> Result<String, String> {
-    let ext = path
-        .rsplit('.')
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
 
     let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
     let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
@@ -563,25 +638,27 @@ async fn get_thumbnail(
     let jpeg_bytes = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
         if use_image_crate {
             // ── In-process image crate decode ──
-            let img =
-                image::open(&path_c).map_err(|e| format!("Failed to open image: {e}"))?;
+            let img = image::open(&path_c).map_err(|e| format!("Failed to open image: {e}"))?;
             let (w, h) = img.dimensions();
             let short: u32 = 120;
             let (nw, nh) = if w > h {
                 // Landscape: short side = height
-                (((w as f64) * (short as f64) / (h as f64)).round() as u32, short)
+                (
+                    ((w as f64) * (short as f64) / (h as f64)).round() as u32,
+                    short,
+                )
             } else if h > w {
                 // Portrait: short side = width
-                (short, ((h as f64) * (short as f64) / (w as f64)).round() as u32)
+                (
+                    short,
+                    ((h as f64) * (short as f64) / (w as f64)).round() as u32,
+                )
             } else {
                 // Square
                 (short, short)
             };
-            let thumb = img.resize_exact(
-                nw.max(1),
-                nh.max(1),
-                image::imageops::FilterType::Triangle,
-            );
+            let thumb =
+                img.resize_exact(nw.max(1), nh.max(1), image::imageops::FilterType::Triangle);
             let mut jpeg_bytes: Vec<u8> = Vec::new();
             let mut encoder =
                 image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 55);
@@ -676,13 +753,15 @@ async fn clear_thumbnail_cache(app: tauri::AppHandle) -> Result<u64, String> {
 
 /// Image formats that browsers (WebView2/Edge) cannot render natively.
 /// These must be decoded server-side and served as PNG for display.
-const BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST: &[&str] = &["tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr"];
+const BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST: &[&str] = &[
+    "tiff", "tif", "psd", "jxl", "heic", "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf",
+    "sr2", "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr",
+];
 
 /// RAW camera formats — decoded via ffmpeg (libraw/libdcraw backend).
 const RAW_IMAGE_EXTS_RUST: &[&str] = &[
-    "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2",
-    "raf", "rw2", "orf", "pef", "3fr", "fff", "iiq", "kdc",
-    "mef", "mos", "x3f", "gpr",
+    "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef", "3fr",
+    "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr",
 ];
 
 /// Video formats that browsers cannot play natively.
@@ -691,8 +770,9 @@ const REMUX_VIDEO_EXTS_RUST: &[&str] = &["ts", "m2ts"];
 
 /// Video formats that browsers cannot play natively (beyond REMUX_VIDEO_EXTS).
 /// These must be re-encoded server-side (ffmpeg → WebM) for browser playback.
-const BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST: &[&str] =
-    &["mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v"];
+const BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST: &[&str] = &[
+    "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v",
+];
 
 /// Decodes a browser-unsupported image and returns a cached PNG path for display.
 /// Uses the image crate for formats it supports (TIFF), ffmpeg for PSD/JXL.
@@ -702,11 +782,7 @@ async fn prepare_display_image(
     app: tauri::AppHandle,
     path: String,
 ) -> Result<Option<String>, String> {
-    let ext = path
-        .rsplit('.')
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
 
     if !BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST.contains(&ext.as_str()) {
         return Ok(None);
@@ -724,12 +800,8 @@ async fn prepare_display_image(
 
     // Check if cached PNG is up-to-date
     if cached_png.exists() {
-        if let (Ok(src_meta), Ok(cached_meta)) =
-            (fs::metadata(&path), fs::metadata(&cached_png))
-        {
-            if let (Ok(src_time), Ok(cached_time)) =
-                (src_meta.modified(), cached_meta.modified())
-            {
+        if let (Ok(src_meta), Ok(cached_meta)) = (fs::metadata(&path), fs::metadata(&cached_png)) {
+            if let (Ok(src_time), Ok(cached_time)) = (src_meta.modified(), cached_meta.modified()) {
                 if cached_time >= src_time {
                     return Ok(Some(cached_png.to_string_lossy().to_string()));
                 }
@@ -740,7 +812,8 @@ async fn prepare_display_image(
     let path_clone = path.clone();
     let cached_clone = cached_png.clone();
     let ext_clone = ext.clone();
-    let is_ffmpeg = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str()) || RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let is_ffmpeg = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str())
+        || RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
     tauri::async_runtime::spawn_blocking(move || {
         if is_ffmpeg {
@@ -748,8 +821,12 @@ async fn prepare_display_image(
             let status = Command::new("ffmpeg")
                 .creation_flags(CREATE_NO_WINDOW)
                 .args([
-                    "-y", "-hide_banner", "-loglevel", "error",
-                    "-i", &path_clone,
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    &path_clone,
                     &cached_clone.to_string_lossy(),
                 ])
                 .status()
@@ -757,7 +834,10 @@ async fn prepare_display_image(
 
             if !status.success() {
                 let _ = fs::remove_file(&cached_clone);
-                return Err(format!("ffmpeg failed to convert {} for display", ext_clone));
+                return Err(format!(
+                    "ffmpeg failed to convert {} for display",
+                    ext_clone
+                ));
             }
             Ok(Some(cached_clone.to_string_lossy().to_string()))
         } else {
@@ -794,11 +874,7 @@ async fn prepare_video_display(
     app: tauri::AppHandle,
     path: String,
 ) -> Result<Option<String>, String> {
-    let ext = path
-        .rsplit('.')
-        .next()
-        .unwrap_or("")
-        .to_lowercase();
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
 
     if !REMUX_VIDEO_EXTS_RUST.contains(&ext.as_str()) {
         return Ok(None);
@@ -816,12 +892,8 @@ async fn prepare_video_display(
 
     // Check if cached MP4 is up-to-date
     if cached_mp4.exists() {
-        if let (Ok(src_meta), Ok(cached_meta)) =
-            (fs::metadata(&path), fs::metadata(&cached_mp4))
-        {
-            if let (Ok(src_time), Ok(cached_time)) =
-                (src_meta.modified(), cached_meta.modified())
-            {
+        if let (Ok(src_meta), Ok(cached_meta)) = (fs::metadata(&path), fs::metadata(&cached_mp4)) {
+            if let (Ok(src_time), Ok(cached_time)) = (src_meta.modified(), cached_meta.modified()) {
                 if cached_time >= src_time {
                     return Ok(Some(cached_mp4.to_string_lossy().to_string()));
                 }
@@ -837,10 +909,16 @@ async fn prepare_video_display(
         let status = Command::new("ffmpeg")
             .creation_flags(CREATE_NO_WINDOW)
             .args([
-                "-y", "-hide_banner", "-loglevel", "error",
-                "-i", &path_clone,
-                "-c", "copy",
-                "-movflags", "+faststart",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                &path_clone,
+                "-c",
+                "copy",
+                "-movflags",
+                "+faststart",
                 &cached_clone.to_string_lossy(),
             ])
             .status()
@@ -869,10 +947,7 @@ fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
 /// Extracts embedded album art from an audio file using ffmpeg.
 /// Returns the cached image path, or None if no cover art exists / ffmpeg fails.
 #[tauri::command]
-async fn extract_cover_art(
-    app: tauri::AppHandle,
-    path: String,
-) -> Result<Option<String>, String> {
+async fn extract_cover_art(app: tauri::AppHandle, path: String) -> Result<Option<String>, String> {
     let cache_dir = cover_art_cache_dir(&app);
     let hash = hash_path_xxh3(&path);
 
@@ -898,49 +973,59 @@ async fn extract_cover_art(
     let path_c = path.clone();
     let cached_c = cached_jpg.clone();
 
-    let result = tauri::async_runtime::spawn_blocking(move || -> Result<Option<PathBuf>, String> {
-        let mut child = Command::new("ffmpeg")
-            .creation_flags(CREATE_NO_WINDOW)
-            .args([
-                "-y", "-hide_banner", "-loglevel", "error",
-                "-i", &path_c,
-                "-an",
-                "-c:v", "copy",
-                "-q:v", "4",
-                &cached_c.to_string_lossy(),
-            ])
-            .spawn()
-            .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
+    let result =
+        tauri::async_runtime::spawn_blocking(move || -> Result<Option<PathBuf>, String> {
+            let mut child = Command::new("ffmpeg")
+                .creation_flags(CREATE_NO_WINDOW)
+                .args([
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    &path_c,
+                    "-an",
+                    "-c:v",
+                    "copy",
+                    "-q:v",
+                    "4",
+                    &cached_c.to_string_lossy(),
+                ])
+                .spawn()
+                .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
 
-        let start = Instant::now();
-        loop {
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    if status.success() && cached_c.exists() && cached_c.metadata().map(|m| m.len()).unwrap_or(0) > 0 {
-                        return Ok(Some(cached_c));
-                    }
-                    // ffmpeg succeeded but no cover art stream exists
-                    let _ = fs::remove_file(&cached_c);
-                    return Ok(None);
-                }
-                Ok(None) => {
-                    if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
-                        let _ = child.kill();
-                        let _ = child.wait();
+            let start = Instant::now();
+            loop {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        if status.success()
+                            && cached_c.exists()
+                            && cached_c.metadata().map(|m| m.len()).unwrap_or(0) > 0
+                        {
+                            return Ok(Some(cached_c));
+                        }
+                        // ffmpeg succeeded but no cover art stream exists
                         let _ = fs::remove_file(&cached_c);
                         return Ok(None);
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-                }
-                Err(e) => {
-                    let _ = fs::remove_file(&cached_c);
-                    return Err(format!("ffmpeg error: {e}"));
+                    Ok(None) => {
+                        if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            let _ = fs::remove_file(&cached_c);
+                            return Ok(None);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                    }
+                    Err(e) => {
+                        let _ = fs::remove_file(&cached_c);
+                        return Err(format!("ffmpeg error: {e}"));
+                    }
                 }
             }
-        }
-    })
-    .await
-    .map_err(|e| format!("Thread join error: {e}"))?;
+        })
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?;
 
     Ok(result?.map(|p| p.to_string_lossy().to_string()))
 }
@@ -975,23 +1060,27 @@ fn write_cover_art(audio_path: String, image_path: String) -> Result<String, Str
         .parent()
         .unwrap_or(Path::new("."))
         .join(format!(".vyu-cover-temp-{stamp}"))
-        .with_extension(
-            audio
-                .extension()
-                .and_then(|e| e.to_str())
-                .unwrap_or("tmp"),
-        );
+        .with_extension(audio.extension().and_then(|e| e.to_str()).unwrap_or("tmp"));
 
     let status = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
         .args([
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", &audio_path,
-            "-i", &image_path,
-            "-map", "0:a",
-            "-map", "1:v",
-            "-c", "copy",
-            "-disposition:v", "attached_pic",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            &audio_path,
+            "-i",
+            &image_path,
+            "-map",
+            "0:a",
+            "-map",
+            "1:v",
+            "-c",
+            "copy",
+            "-disposition:v",
+            "attached_pic",
             &temp_output.to_string_lossy(),
         ])
         .status()
@@ -1003,7 +1092,8 @@ fn write_cover_art(audio_path: String, image_path: String) -> Result<String, Str
     }
 
     // Replace original with temp output
-    fs::rename(&temp_output, &audio).map_err(|e| format!("Failed to replace original file: {e}"))?;
+    fs::rename(&temp_output, &audio)
+        .map_err(|e| format!("Failed to replace original file: {e}"))?;
 
     Ok(audio_path)
 }
@@ -1025,17 +1115,18 @@ fn backup_file(source: String) -> Result<String, String> {
         return Err("Source file does not exist".into());
     }
     let temp_dir = std::env::temp_dir().join("Vyu-temp").join("originals");
-    std::fs::create_dir_all(&temp_dir)
-        .map_err(|e| format!("Failed to create backup dir: {e}"))?;
+    std::fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create backup dir: {e}"))?;
 
-    let ext = source_path.extension().and_then(|e| e.to_str()).unwrap_or("bak");
+    let ext = source_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("bak");
     let hash = hash_path(&source);
     let backup_path = temp_dir.join(format!("{}.{}", hash, ext));
     if backup_path.exists() {
         let _ = std::fs::remove_file(&backup_path);
     }
-    std::fs::copy(&source_path, &backup_path)
-        .map_err(|e| format!("Failed to backup file: {e}"))?;
+    std::fs::copy(&source_path, &backup_path).map_err(|e| format!("Failed to backup file: {e}"))?;
     Ok(backup_path.to_string_lossy().to_string())
 }
 
@@ -1087,7 +1178,15 @@ fn get_media_properties(path: String) -> Result<MediaProperties, String> {
 
     let output = Command::new("ffprobe")
         .creation_flags(CREATE_NO_WINDOW)
-        .args(["-v", "error", "-print_format", "json", "-show_streams", "-show_format", &path])
+        .args([
+            "-v",
+            "error",
+            "-print_format",
+            "json",
+            "-show_streams",
+            "-show_format",
+            &path,
+        ])
         .output()
         .map_err(|e| format!("ffprobe not available: {e}"))?;
 
@@ -1095,29 +1194,70 @@ fn get_media_properties(path: String) -> Result<MediaProperties, String> {
         return Err(String::from_utf8_lossy(&output.stderr).to_string());
     }
 
-    let value: serde_json::Value =
-        serde_json::from_slice(&output.stdout).map_err(|e| format!("Invalid ffprobe output: {e}"))?;
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout)
+        .map_err(|e| format!("Invalid ffprobe output: {e}"))?;
 
-    let streams = value.get("streams").and_then(|s| s.as_array()).cloned().unwrap_or_default();
-    let video_stream = streams.iter().find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("video"));
-    let audio_stream = streams.iter().find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("audio"));
+    let streams = value
+        .get("streams")
+        .and_then(|s| s.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let video_stream = streams
+        .iter()
+        .find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("video"));
+    let audio_stream = streams
+        .iter()
+        .find(|s| s.get("codec_type").and_then(|t| t.as_str()) == Some("audio"));
 
     Ok(MediaProperties {
-        container: value.get("format").and_then(|f| f.get("format_name")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        video_codec: video_stream.and_then(|s| s.get("codec_name")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        audio_codec: audio_stream.and_then(|s| s.get("codec_name")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        pixel_format: video_stream.and_then(|s| s.get("pix_fmt")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        color_space: video_stream.and_then(|s| s.get("color_space")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        color_primaries: video_stream.and_then(|s| s.get("color_primaries")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        color_transfer: video_stream.and_then(|s| s.get("color_transfer")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        bit_depth: video_stream.and_then(|s| s.get("bits_per_raw_sample")).and_then(|n| n.as_str()).map(|s| s.to_string()),
-        frame_rate: video_stream.and_then(|s| s.get("r_frame_rate")).and_then(|n| n.as_str()).map(|s| s.to_string()),
+        container: value
+            .get("format")
+            .and_then(|f| f.get("format_name"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        video_codec: video_stream
+            .and_then(|s| s.get("codec_name"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        audio_codec: audio_stream
+            .and_then(|s| s.get("codec_name"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        pixel_format: video_stream
+            .and_then(|s| s.get("pix_fmt"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        color_space: video_stream
+            .and_then(|s| s.get("color_space"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        color_primaries: video_stream
+            .and_then(|s| s.get("color_primaries"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        color_transfer: video_stream
+            .and_then(|s| s.get("color_transfer"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        bit_depth: video_stream
+            .and_then(|s| s.get("bits_per_raw_sample"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
+        frame_rate: video_stream
+            .and_then(|s| s.get("r_frame_rate"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string()),
     })
 }
 
 #[tauri::command]
 fn check_ffprobe() -> bool {
-    Command::new("ffprobe").creation_flags(CREATE_NO_WINDOW).arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
+    Command::new("ffprobe")
+        .creation_flags(CREATE_NO_WINDOW)
+        .arg("-version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 #[tauri::command]
@@ -1126,7 +1266,13 @@ fn install_ffmpeg() -> Result<(), String> {
     {
         Command::new("winget")
             .creation_flags(CREATE_NO_WINDOW)
-            .args(["install", "--id", "Gyan.FFmpeg", "--accept-package-agreements", "--accept-source-agreements"])
+            .args([
+                "install",
+                "--id",
+                "Gyan.FFmpeg",
+                "--accept-package-agreements",
+                "--accept-source-agreements",
+            ])
             .spawn()
             .map_err(|e| format!("Failed to start FFmpeg install: {e}"))?;
         return Ok(());
@@ -1374,7 +1520,15 @@ fn copy_image_to_clipboard(path: String) -> Result<(), String> {
         let temp_png = std::env::temp_dir().join(format!("vyu_clipboard_{}.png", hash_path(&path)));
         Command::new("ffmpeg")
             .creation_flags(CREATE_NO_WINDOW)
-            .args(["-y", "-hide_banner", "-loglevel", "error", "-i", &path, temp_png.to_str().unwrap()])
+            .args([
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                &path,
+                temp_png.to_str().unwrap(),
+            ])
             .status()
             .map_err(|e| format!("Failed to run ffmpeg for RAW clipboard: {e}"))?;
         let decoded = image::open(&temp_png)
@@ -1413,7 +1567,11 @@ fn get_clipboard_file_path() -> Option<String> {
             .output()
             .ok()?;
         let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if path.is_empty() { None } else { Some(path) }
+        if path.is_empty() {
+            None
+        } else {
+            Some(path)
+        }
     }
     #[cfg(not(target_os = "windows"))]
     None
@@ -1493,13 +1651,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
     } else if is_video || is_audio || is_ffmpeg_image || is_raw {
         let output = Command::new("ffprobe")
             .creation_flags(CREATE_NO_WINDOW)
-            .args([
-                "-v",
-                "error",
-                "-show_streams",
-                "-show_format",
-                &path,
-            ])
+            .args(["-v", "error", "-show_streams", "-show_format", &path])
             .output();
 
         match output {
@@ -1508,8 +1660,13 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
                     // Check if stderr contains corruption warnings
                     let stderr = String::from_utf8_lossy(&out.stderr);
                     let corruption_keywords = [
-                        "corrupt", "invalid", "truncated", "incomplete",
-                        "malformed", "missing", "broken",
+                        "corrupt",
+                        "invalid",
+                        "truncated",
+                        "incomplete",
+                        "malformed",
+                        "missing",
+                        "broken",
                     ];
                     let lower = stderr.to_lowercase();
                     for kw in &corruption_keywords {
@@ -1557,10 +1714,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
 }
 
 #[tauri::command]
-fn fix_media(
-    path: String,
-    mode: String,
-) -> Result<FixResult, String> {
+fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
     let input = PathBuf::from(&path);
     if !input.exists() {
         return Ok(FixResult {
@@ -1583,7 +1737,10 @@ fn fix_media(
     let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
     let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
-    let parent = input.parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
+    let parent = input
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .to_path_buf();
     let stem = input
         .file_stem()
         .and_then(|s| s.to_str())
@@ -1663,7 +1820,8 @@ fn fix_media(
 
 fn fix_image(input: &Path, output: &Path) -> Result<(), String> {
     let img = image::open(input).map_err(|e| format!("Failed to open image: {e}"))?;
-    img.save(output).map_err(|e| format!("Failed to save fixed image: {e}"))
+    img.save(output)
+        .map_err(|e| format!("Failed to save fixed image: {e}"))
 }
 
 fn fix_video_audio(input: &Path, output: &Path) -> Result<(), String> {
@@ -1741,6 +1899,7 @@ pub fn run() {
             process_video_clips,
             rename_file,
             copy_file,
+            copy_file_unique,
             cleanup_temp_folder,
             backup_file,
             get_clipboard_file_path,
@@ -1817,21 +1976,20 @@ pub fn run() {
             let skip_for_events = skip_save.clone();
             let last_save = Arc::new(Mutex::new(Instant::now() - Duration::from_secs(60)));
 
-            window.on_window_event(move |event| {
-                match event {
-                    WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
-                        let mut last = last_save.lock()
-                            .expect("window state save mutex should not be poisoned");
-                        if last.elapsed() > Duration::from_millis(300) {
-                            persist_window_state(&window_for_events, &skip_for_events);
-                            *last = Instant::now();
-                        }
-                    }
-                    WindowEvent::CloseRequested { .. } => {
+            window.on_window_event(move |event| match event {
+                WindowEvent::Moved(_) | WindowEvent::Resized(_) => {
+                    let mut last = last_save
+                        .lock()
+                        .expect("window state save mutex should not be poisoned");
+                    if last.elapsed() > Duration::from_millis(300) {
                         persist_window_state(&window_for_events, &skip_for_events);
+                        *last = Instant::now();
                     }
-                    _ => {}
                 }
+                WindowEvent::CloseRequested { .. } => {
+                    persist_window_state(&window_for_events, &skip_for_events);
+                }
+                _ => {}
             });
 
             let window_for_close = window.clone();
@@ -1843,9 +2001,10 @@ pub fn run() {
 
             if args.len() > 1 {
                 let file_path = args.swap_remove(1);
-                let escaped = serde_json::to_string(&file_path)
-                    .expect("failed to JSON-escape file path");
-                window.eval(&format!("window.__INITIAL_FILE__ = {}", escaped))
+                let escaped =
+                    serde_json::to_string(&file_path).expect("failed to JSON-escape file path");
+                window
+                    .eval(&format!("window.__INITIAL_FILE__ = {}", escaped))
                     .expect("failed to set initial file via eval");
             }
             Ok(())
@@ -1860,13 +2019,32 @@ fn open_directory(path: String) -> Result<(), String> {
     if !p.exists() {
         return Err("Directory does not exist".into());
     }
-    let dir = if p.is_dir() { p } else { p.parent().unwrap_or(&p).to_path_buf() };
+    let dir = if p.is_dir() {
+        p
+    } else {
+        p.parent().unwrap_or(&p).to_path_buf()
+    };
     #[cfg(target_os = "windows")]
-    { Command::new("explorer").arg(dir).spawn().map_err(|e| e.to_string())?; }
+    {
+        Command::new("explorer")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
     #[cfg(target_os = "macos")]
-    { Command::new("open").arg(dir).spawn().map_err(|e| e.to_string())?; }
+    {
+        Command::new("open")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
     #[cfg(target_os = "linux")]
-    { Command::new("xdg-open").arg(dir).spawn().map_err(|e| e.to_string())?; }
+    {
+        Command::new("xdg-open")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
     Ok(())
 }
 
@@ -1887,7 +2065,11 @@ fn convert_media(
         fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
     }
 
-    let base_name = input.file_stem().and_then(|s| s.to_str()).unwrap_or("output").to_string();
+    let base_name = input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output")
+        .to_string();
     let ext = format.to_lowercase();
     let out_name = format!("{}_converted.{}", base_name, ext);
     let output_path = unique_path(out_dir.join(&out_name));
@@ -1940,10 +2122,57 @@ fn convert_media(
             args.push("-c:v".into());
             args.push("libwebp".into());
         }
+        // Audio formats
+        "mp3" => {
+            args.push("-c:a".into());
+            args.push("libmp3lame".into());
+            args.push("-q:a".into());
+            args.push("2".into());
+        }
+        "wav" => {
+            args.push("-c:a".into());
+            args.push("pcm_s16le".into());
+        }
+        "flac" => {
+            args.push("-c:a".into());
+            args.push("flac".into());
+            args.push("-compression_level".into());
+            args.push("5".into());
+        }
+        "ogg" => {
+            args.push("-c:a".into());
+            args.push("libvorbis".into());
+            args.push("-q:a".into());
+            args.push("4".into());
+        }
+        "aac" => {
+            args.push("-c:a".into());
+            args.push("aac".into());
+            args.push("-b:a".into());
+            args.push("192k".into());
+        }
+        "opus" => {
+            args.push("-c:a".into());
+            args.push("libopus".into());
+            args.push("-b:a".into());
+            args.push("128k".into());
+        }
         _ => {}
     }
 
-    if ext != "gif" && ext != "png" && ext != "jpg" && ext != "jpeg" && ext != "webp" {
+    // Apply video preset/crf only for video formats (not images, audio, or gif)
+    if ext != "gif"
+        && ext != "png"
+        && ext != "jpg"
+        && ext != "jpeg"
+        && ext != "webp"
+        && ext != "mp3"
+        && ext != "wav"
+        && ext != "flac"
+        && ext != "ogg"
+        && ext != "aac"
+        && ext != "opus"
+    {
         match preset.as_str() {
             "Fast" => {
                 args.push("-preset".into());
@@ -2017,7 +2246,9 @@ fn add_dir_to_zip(
     for entry in fs::read_dir(current).map_err(|e| format!("Read dir error: {e}"))? {
         let entry = entry.map_err(|e| format!("Dir entry error: {e}"))?;
         let path = entry.path();
-        let rel = path.strip_prefix(base).map_err(|e| format!("Strip prefix error: {e}"))?;
+        let rel = path
+            .strip_prefix(base)
+            .map_err(|e| format!("Strip prefix error: {e}"))?;
         let name = rel.to_string_lossy().replace('\\', "/");
         if path.is_file() {
             zip.start_file(name, options)
@@ -2060,15 +2291,24 @@ fn compress_media(
 
     let (source_path, zip_name) = if target == "folder" {
         let parent = input.parent().unwrap_or(&input).to_path_buf();
-        let name = parent.file_name().and_then(|s| s.to_str()).unwrap_or("archive").to_string();
+        let name = parent
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("archive")
+            .to_string();
         (parent, format!("{name}.zip"))
     } else {
-        let name = input.file_stem().and_then(|s| s.to_str()).unwrap_or("archive").to_string();
+        let name = input
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("archive")
+            .to_string();
         (input.clone(), format!("{name}.zip"))
     };
 
     let zip_path = unique_path(out_dir.join(&zip_name));
-    let file = fs::File::create(&zip_path).map_err(|e| format!("Failed to create zip file: {e}"))?;
+    let file =
+        fs::File::create(&zip_path).map_err(|e| format!("Failed to create zip file: {e}"))?;
     let mut zip = zip::ZipWriter::new(file);
 
     let options = zip::write::FileOptions::<()>::default()
@@ -2076,13 +2316,20 @@ fn compress_media(
         .compression_level(Some(compression_level));
 
     if source_path.is_file() {
-        let name = source_path.file_name().and_then(|s| s.to_str()).unwrap_or("file");
+        let name = source_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("file");
         zip.start_file(name, options)
             .map_err(|e| format!("Zip start file error: {e}"))?;
         let mut f = fs::File::open(&source_path).map_err(|e| format!("Open file error: {e}"))?;
         std::io::copy(&mut f, &mut zip).map_err(|e| format!("Zip write error: {e}"))?;
     } else {
-        let name = source_path.file_name().and_then(|s| s.to_str()).unwrap_or("archive").to_string();
+        let name = source_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("archive")
+            .to_string();
         if name != "." {
             zip.add_directory(name.clone() + "/", options)
                 .map_err(|e| format!("Zip add dir error: {e}"))?;
@@ -2090,7 +2337,8 @@ fn compress_media(
         add_dir_to_zip(&mut zip, &source_path, &source_path, options)?;
     }
 
-    zip.finish().map_err(|e| format!("Failed to finish zip: {e}"))?;
+    zip.finish()
+        .map_err(|e| format!("Failed to finish zip: {e}"))?;
     Ok(zip_path.to_string_lossy().to_string())
 }
 
@@ -2118,17 +2366,32 @@ fn process_video_clips(
     if !out_dir.exists() {
         fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
     }
-    let mut ext = input.extension().and_then(|e| e.to_str()).unwrap_or("mp4").to_string();
+    let mut ext = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("mp4")
+        .to_string();
     // Remux-needed formats (TS, M2TS) get MP4 output so clips are playable
     if REMUX_VIDEO_EXTS_RUST.contains(&ext.as_str()) {
         ext = "mp4".to_string();
     }
-    let base_name = input.file_stem().and_then(|s| s.to_str()).unwrap_or("video").to_string();
+    let base_name = input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("video")
+        .to_string();
     let mut outputs: Vec<String> = Vec::new();
 
     if mode == "separate" {
         for (idx, seg) in clean_segments.iter().enumerate() {
-            let file_name = format!("{}_clip_{:02}_{}_to_{}.{}", base_name, idx + 1, format_clip_tag(seg.start), format_clip_tag(seg.end), ext);
+            let file_name = format!(
+                "{}_clip_{:02}_{}_to_{}.{}",
+                base_name,
+                idx + 1,
+                format_clip_tag(seg.start),
+                format_clip_tag(seg.end),
+                ext
+            );
             let output_path = unique_path(out_dir.join(file_name));
             ffmpeg_extract_segment(&input, &output_path, seg.start, seg.end)?;
             outputs.push(output_path.to_string_lossy().to_string());
@@ -2136,12 +2399,22 @@ fn process_video_clips(
     } else if mode == "merge" {
         if clean_segments.len() == 1 {
             let seg = &clean_segments[0];
-            let file_name = format!("{}_clip_{:02}_{}_to_{}.{}", base_name, 1, format_clip_tag(seg.start), format_clip_tag(seg.end), ext);
+            let file_name = format!(
+                "{}_clip_{:02}_{}_to_{}.{}",
+                base_name,
+                1,
+                format_clip_tag(seg.start),
+                format_clip_tag(seg.end),
+                ext
+            );
             let output_path = unique_path(out_dir.join(file_name));
             ffmpeg_extract_segment(&input, &output_path, seg.start, seg.end)?;
             outputs.push(output_path.to_string_lossy().to_string());
         } else {
-            let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+            let stamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0);
             let temp_dir = std::env::temp_dir().join(format!("vyu-clips-{stamp}"));
             fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed creating temp dir: {e}"))?;
             let mut temp_files: Vec<PathBuf> = Vec::new();
@@ -2151,20 +2424,44 @@ fn process_video_clips(
                 temp_files.push(temp_file);
             }
             let list_file = temp_dir.join("concat-list.txt");
-            let list_text = temp_files.iter().map(|p| {
-                let escaped = p.to_string_lossy().replace('\\', "/").replace('\'', "'\\''");
-                format!("file '{escaped}'")
-            }).collect::<Vec<String>>().join("\n");
-            fs::write(&list_file, list_text).map_err(|e| format!("Failed writing concat list: {e}"))?;
+            let list_text = temp_files
+                .iter()
+                .map(|p| {
+                    let escaped = p
+                        .to_string_lossy()
+                        .replace('\\', "/")
+                        .replace('\'', "'\\''");
+                    format!("file '{escaped}'")
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+            fs::write(&list_file, list_text)
+                .map_err(|e| format!("Failed writing concat list: {e}"))?;
             let merged_name = format!("{}_clips_merged.{}", base_name, ext);
             let merged_output = unique_path(out_dir.join(merged_name));
             let merge_out = Command::new("ffmpeg")
                 .creation_flags(CREATE_NO_WINDOW)
-                .args(["-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", &list_file.to_string_lossy(), "-c", "copy", &merged_output.to_string_lossy()])
+                .args([
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-f",
+                    "concat",
+                    "-safe",
+                    "0",
+                    "-i",
+                    &list_file.to_string_lossy(),
+                    "-c",
+                    "copy",
+                    &merged_output.to_string_lossy(),
+                ])
                 .output()
                 .map_err(|e| format!("Failed to run ffmpeg merge: {e}"))?;
             if !merge_out.status.success() {
-                return Err(String::from_utf8_lossy(&merge_out.stderr).trim().to_string());
+                return Err(String::from_utf8_lossy(&merge_out.stderr)
+                    .trim()
+                    .to_string());
             }
             outputs.push(merged_output.to_string_lossy().to_string());
             let _ = fs::remove_dir_all(&temp_dir);
@@ -2175,7 +2472,8 @@ fn process_video_clips(
 
     let mut deleted_original = false;
     if delete_original {
-        fs::remove_file(&input).map_err(|e| format!("Clips were created, but deleting original failed: {e}"))?;
+        fs::remove_file(&input)
+            .map_err(|e| format!("Clips were created, but deleting original failed: {e}"))?;
         deleted_original = true;
     }
 
@@ -2243,7 +2541,7 @@ fn set_wallpaper(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use windows::Win32::UI::WindowsAndMessaging::{
-            SystemParametersInfoW, SPI_SETDESKWALLPAPER, SPIF_UPDATEINIFILE, SPIF_SENDCHANGE,
+            SystemParametersInfoW, SPIF_SENDCHANGE, SPIF_UPDATEINIFILE, SPI_SETDESKWALLPAPER,
         };
         let wide_path = windows::core::HSTRING::from(&path);
         unsafe {
@@ -2298,14 +2596,20 @@ fn set_lock_screen(path: String) -> Result<(), String> {
                 &mut key,
             );
             if open_err.0 != 0 {
-                return Err(format!("Failed to open registry key: error {:#x}", open_err.0));
+                return Err(format!(
+                    "Failed to open registry key: error {:#x}",
+                    open_err.0
+                ));
             }
 
             let data_bytes =
                 std::slice::from_raw_parts(wide_dest.as_ptr() as *const u8, wide_dest.len() * 2);
             let set_err = RegSetValueExW(key, w!("WallPaper"), 0, REG_SZ, Some(data_bytes));
             if set_err.0 != 0 {
-                return Err(format!("Failed to set registry value: error {:#x}", set_err.0));
+                return Err(format!(
+                    "Failed to set registry value: error {:#x}",
+                    set_err.0
+                ));
             }
         }
     }
@@ -2325,7 +2629,7 @@ fn create_desktop_shortcut(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use windows::core::Interface;
-        use windows::Win32::System::Com::{CoCreateInstance, CLSCTX_INPROC_SERVER, IPersistFile};
+        use windows::Win32::System::Com::{CoCreateInstance, IPersistFile, CLSCTX_INPROC_SERVER};
         use windows::Win32::UI::Shell::{IShellLinkW, ShellLink};
 
         unsafe {
@@ -2490,9 +2794,7 @@ fn open_in_vlc(path: String) -> Result<(), String> {
                     .map_err(|e| format!("Failed to launch VLC: {e}"))?;
             }
             None => {
-                return Err(
-                    "APP_NOT_FOUND:VLC:https://www.videolan.org/vlc/".into(),
-                );
+                return Err("APP_NOT_FOUND:VLC:https://www.videolan.org/vlc/".into());
             }
         }
     }
@@ -2539,16 +2841,13 @@ fn open_in_spotify(path: String) -> Result<(), String> {
                 }
             }
         }
-        fs::copy(&p, &dest)
-            .map_err(|e| format!("Failed to copy file to Music/Vyu: {e}"))?;
+        fs::copy(&p, &dest).map_err(|e| format!("Failed to copy file to Music/Vyu: {e}"))?;
 
         // Find and launch Spotify
         let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
         let spotify_exe = format!("{local_app}\\Spotify\\Spotify.exe");
         if !Path::new(&spotify_exe).exists() {
-            return Err(
-                "APP_NOT_FOUND:Spotify:https://www.spotify.com/download/".into(),
-            );
+            return Err("APP_NOT_FOUND:Spotify:https://www.spotify.com/download/".into());
         }
         Command::new(&spotify_exe)
             .creation_flags(CREATE_NO_WINDOW)
@@ -2582,8 +2881,7 @@ fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
     };
 
     let temp_dir = std::env::temp_dir().join("Vyu-temp").join("browser");
-    fs::create_dir_all(&temp_dir)
-        .map_err(|e| format!("Failed to create browser temp dir: {e}"))?;
+    fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create browser temp dir: {e}"))?;
 
     let input = PathBuf::from(path);
     let base_name = input
@@ -2658,8 +2956,7 @@ fn open_in_browser(path: String) -> Result<(), String> {
         let url = format!("file:///{}", open_path.replace('\\', "/"));
         let wide_url = windows::core::HSTRING::from(&url);
         unsafe {
-            let hinst =
-                ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
+            let hinst = ShellExecuteW(None, w!("open"), &wide_url, None, None, SW_SHOWDEFAULT);
             if hinst.is_invalid() {
                 return Err("Failed to open in browser".into());
             }

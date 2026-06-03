@@ -129,6 +129,13 @@ export async function invokeCopyFile(
   return invoke("copy_file", { source, destination });
 }
 
+export async function invokeCopyFileUnique(
+  source: string,
+  outputDir: string,
+): Promise<string> {
+  return invoke("copy_file_unique", { source, outputDir });
+}
+
 export async function invokeCopyImageToClipboard(path: string): Promise<void> {
   return invoke("copy_image_to_clipboard", { path });
 }

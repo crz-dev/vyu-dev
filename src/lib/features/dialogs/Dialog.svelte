@@ -17,8 +17,14 @@
     invokeOpenInSpotify,
     invokeOpenInBrowser,
     invokeOpenWithDialog,
+    invokeConvertMedia,
+    invokeCopyFileUnique,
+    invokeDeleteFile,
   } from "$lib/features/media/tools";
-  import { loadShareOutputDir, saveShareOutputDir } from "$lib/services/storage";
+  import {
+    loadShareOutputDir,
+    saveShareOutputDir,
+  } from "$lib/services/storage";
 
   let {
     contextMenu,
@@ -206,9 +212,13 @@
   let shareToastTimer: ReturnType<typeof setTimeout> | undefined;
   let shareOutputDir = $state(loadShareOutputDir());
   let shareDeleteOriginal = $state(false);
+  let shareConverting = $state(false);
 
   $effect(() => {
-    if (!shareOpen) shareDeleteOriginal = false;
+    if (!shareOpen) {
+      shareDeleteOriginal = false;
+      shareConverting = false;
+    }
   });
 
   $effect(() => {
@@ -262,7 +272,9 @@
     } catch (e: any) {
       const msg = typeof e === "string" ? e : e?.message || "Action failed";
       // Detect APP_NOT_FOUND:AppName:InstallUrl pattern from Rust commands
-      const appNotFoundMatch = msg.match(/^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/);
+      const appNotFoundMatch = msg.match(
+        /^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/,
+      );
       if (appNotFoundMatch) {
         showAppNotInstalledToast(appNotFoundMatch[1], appNotFoundMatch[2]);
       } else {
@@ -296,6 +308,41 @@
       shareOutputDir = dir as string;
       saveShareOutputDir(shareOutputDir);
     }
+  }
+
+  async function handleSaveAs(format: string) {
+    const outputDir = shareOutputDir || parentFolder();
+    if (!outputDir) {
+      showShareToast("Pick a save location", "error");
+      return;
+    }
+    shareConverting = true;
+    let success = false;
+    try {
+      const sourceExt = fileExt().toLowerCase().replace(".", "");
+      if (sourceExt === format) {
+        await invokeCopyFileUnique(filePath, outputDir);
+      } else {
+        await invokeConvertMedia(filePath, outputDir, format, "Balanced");
+      }
+      showShareToast("Saved as " + format.toUpperCase(), "success");
+      success = true;
+    } catch (e: any) {
+      const msg = typeof e === "string" ? e : e?.message || "Conversion failed";
+      console.error("Save as failed:", e);
+      showShareToast(msg, "error");
+    } finally {
+      shareConverting = false;
+    }
+    if (success && shareDeleteOriginal) {
+      try {
+        await invokeDeleteFile(filePath);
+      } catch (e) {
+        console.error("Failed to delete original:", e);
+        showShareToast("Converted but couldn't delete original", "error");
+      }
+    }
+    closeShare();
   }
 </script>
 
@@ -1029,9 +1076,10 @@
         <button
           class="share-toast-link"
           onclick={() => {
-            if (shareToast.installUrl) window.open(shareToast.installUrl, "_blank");
-          }}
-        >Get it</button>
+            if (shareToast.installUrl)
+              window.open(shareToast.installUrl, "_blank");
+          }}>Get it</button
+        >
       {/if}
       <button
         class="share-toast-dismiss"
@@ -1041,7 +1089,15 @@
           shareToast = { ...shareToast, visible: false };
         }}
       >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg
+        >
       </button>
     </div>
   </div>
@@ -2019,7 +2075,11 @@
           </p>
           <div class="share-grid share-grid-4">
             {#if isVideo || isAudio}
-              <button class="share-btn" onclick={() => shareAction(() => openInDefaultApp(), "Cast opened")}>
+              <button
+                class="share-btn"
+                onclick={() =>
+                  shareAction(() => openInDefaultApp(), "Cast opened")}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M2 16.1A5 5 0 015.9 20M2 12.05A9 9 0 019.95 20M2 8V6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2h-6"
@@ -2040,7 +2100,14 @@
                 Cast
               </button>
             {:else}
-              <button class="share-btn" onclick={() => shareAction(() => invokePrintFile(filePath), "Print dialog opened")}>
+              <button
+                class="share-btn"
+                onclick={() =>
+                  shareAction(
+                    () => invokePrintFile(filePath),
+                    "Print dialog opened",
+                  )}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><polyline
                     points="6 9 6 2 18 2 18 9"
@@ -2067,7 +2134,11 @@
                 Printer
               </button>
             {/if}
-            <button class="share-btn" onclick={() => shareAction(() => openInDefaultApp(), "Shared via device")}>
+            <button
+              class="share-btn"
+              onclick={() =>
+                shareAction(() => openInDefaultApp(), "Shared via device")}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
                   d="M8.5 16.5a5 5 0 017 0"
@@ -2089,7 +2160,14 @@
               Device
             </button>
             {#if isAudio}
-              <button class="share-btn" onclick={() => shareAction(() => invokeSendBluetooth(filePath), "Bluetooth wizard opened")}>
+              <button
+                class="share-btn"
+                onclick={() =>
+                  shareAction(
+                    () => invokeSendBluetooth(filePath),
+                    "Bluetooth wizard opened",
+                  )}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><polyline
                     points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"
@@ -2135,7 +2213,13 @@
               </button>
             {/if}
             {#if isAudio}
-              <button class="share-btn" onclick={() => { showShareToast("Transcription coming soon", "success"); closeShare(); }}>
+              <button
+                class="share-btn"
+                onclick={() => {
+                  showShareToast("Transcription coming soon", "success");
+                  closeShare();
+                }}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"
@@ -2167,7 +2251,14 @@
                 Transcriptor
               </button>
             {:else}
-              <button class="share-btn" onclick={() => shareAction(() => invokeSetLockScreen(filePath), "Lock screen set")}>
+              <button
+                class="share-btn"
+                onclick={() =>
+                  shareAction(
+                    () => invokeSetLockScreen(filePath),
+                    "Lock screen set",
+                  )}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><rect
                     x="3"
@@ -2187,7 +2278,14 @@
                 Lock Screen
               </button>
             {/if}
-            <button class="share-btn" onclick={() => shareAction(() => invokeCreateDesktopShortcut(filePath), "Shortcut created on Desktop")}>
+            <button
+              class="share-btn"
+              onclick={() =>
+                shareAction(
+                  () => invokeCreateDesktopShortcut(filePath),
+                  "Shortcut created on Desktop",
+                )}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><rect
                   x="2"
@@ -2245,7 +2343,11 @@
             Open with...
           </p>
           <div class="share-grid share-grid-4">
-            <button class="share-btn-circle" onclick={() => shareAction(() => openInDefaultApp(), "Opened in default app")}>
+            <button
+              class="share-btn-circle"
+              onclick={() =>
+                shareAction(() => openInDefaultApp(), "Opened in default app")}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
                   d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
@@ -2273,7 +2375,14 @@
               Default app
             </button>
             {#if isAudio}
-              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInSpotify(filePath), "Copied to Spotify Local Files")}>
+              <button
+                class="share-btn-circle"
+                onclick={() =>
+                  shareAction(
+                    () => invokeOpenInSpotify(filePath),
+                    "Copied to Spotify Local Files",
+                  )}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><circle
                     cx="12"
@@ -2301,7 +2410,14 @@
                 Spotify
               </button>
             {:else}
-              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInPhotos(filePath), "Opened in Photos")}>
+              <button
+                class="share-btn-circle"
+                onclick={() =>
+                  shareAction(
+                    () => invokeOpenInPhotos(filePath),
+                    "Opened in Photos",
+                  )}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><rect
                     x="3"
@@ -2328,7 +2444,14 @@
               </button>
             {/if}
             {#if !isVideo && !isAudio}
-              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInPaint(filePath), "Opened in Paint")}>
+              <button
+                class="share-btn-circle"
+                onclick={() =>
+                  shareAction(
+                    () => invokeOpenInPaint(filePath),
+                    "Opened in Paint",
+                  )}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M18.37 2.63a2.12 2.12 0 013 3L14 13l-4 1 1-4 7.37-7.37z"
@@ -2347,7 +2470,11 @@
                 Paint
               </button>
             {:else}
-              <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInVlc(filePath), "Opened in VLC")}>
+              <button
+                class="share-btn-circle"
+                onclick={() =>
+                  shareAction(() => invokeOpenInVlc(filePath), "Opened in VLC")}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><polygon
                     points="5 3 19 12 5 21 5 3"
@@ -2360,7 +2487,14 @@
                 VLC
               </button>
             {/if}
-            <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenInBrowser(filePath), "Opened in browser")}>
+            <button
+              class="share-btn-circle"
+              onclick={() =>
+                shareAction(
+                  () => invokeOpenInBrowser(filePath),
+                  "Opened in browser",
+                )}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><circle
                   cx="12"
@@ -2383,7 +2517,14 @@
               >
               Browser
             </button>
-            <button class="share-btn-circle" onclick={() => shareAction(() => invokeOpenWithDialog(filePath), "Open With dialog shown")}>
+            <button
+              class="share-btn-circle"
+              onclick={() =>
+                shareAction(
+                  () => invokeOpenWithDialog(filePath),
+                  "Open With dialog shown",
+                )}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><circle cx="5" cy="12" r="1.5" fill="currentColor" /><circle
                   cx="12"
@@ -2399,63 +2540,96 @@
 
         <div class="ctx-sep"></div>
 
-        <div class="share-section">
-          <p class="share-section-label">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path
-                d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"
-              /><polyline points="7 10 12 15 17 10" /><line
-                x1="12"
-                y1="15"
-                x2="12"
-                y2="3"
-              /></svg
-            >
-            Save as...
-          </p>
-          {#if isVideo}
-            <div class="share-grid share-grid-3">
-              <button class="share-btn-wide">MP4</button>
-              <button class="share-btn-wide">MKV</button>
-              <button class="share-btn-wide">WebM</button>
-            </div>
-            <div class="share-grid share-grid-3">
-              <button class="share-btn-wide">MP3</button>
-              <button class="share-btn-wide">GIF</button>
-              <button class="share-btn-wide">Other…</button>
-            </div>
-          {:else if isAudio}
-            <div class="share-grid share-grid-3">
-              <button class="share-btn-wide">MP3</button>
-              <button class="share-btn-wide">WAV</button>
-              <button class="share-btn-wide">FLAC</button>
-            </div>
-            <div class="share-grid share-grid-3">
-              <button class="share-btn-wide">MP4</button>
-              <button class="share-btn-wide">Opus</button>
-              <button class="share-btn-wide">Other…</button>
-            </div>
-          {:else}
-            <div class="share-grid share-grid-3">
-              <button class="share-btn-wide">JPG</button>
-              <button class="share-btn-wide">PNG</button>
-              <button class="share-btn-wide">WebP</button>
-            </div>
-            <div class="share-grid share-grid-3">
-              <button class="share-btn-wide">PSD</button>
-              <button class="share-btn-wide">PDF</button>
-              <button class="share-btn-wide">Other…</button>
-            </div>
-          {/if}
-        </div>
+        {#if !isPdf}
+          <div class="share-section">
+            <p class="share-section-label">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
+                  points="7 10 12 15 17 10"
+                /><line x1="12" y1="15" x2="12" y2="3" /></svg
+              >
+              Save as...
+            </p>
+            {#if isVideo}
+              <div class="share-grid share-grid-3">
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("mp4")}
+                  disabled={shareConverting}>MP4</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("mkv")}
+                  disabled={shareConverting}>MKV</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("webm")}
+                  disabled={shareConverting}>WebM</button
+                >
+              </div>
+              <div class="share-grid share-grid-3">
+                <button class="share-btn-wide">MP3</button>
+                <button class="share-btn-wide">GIF</button>
+                <button class="share-btn-wide">Other…</button>
+              </div>
+            {:else if isAudio}
+              <div class="share-grid share-grid-3">
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("mp3")}
+                  disabled={shareConverting}>MP3</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("wav")}
+                  disabled={shareConverting}>WAV</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("flac")}
+                  disabled={shareConverting}>FLAC</button
+                >
+              </div>
+              <div class="share-grid share-grid-3">
+                <button class="share-btn-wide">MP4</button>
+                <button class="share-btn-wide">Opus</button>
+                <button class="share-btn-wide">Other…</button>
+              </div>
+            {:else}
+              <div class="share-grid share-grid-3">
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("jpg")}
+                  disabled={shareConverting}>JPG</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("png")}
+                  disabled={shareConverting}>PNG</button
+                >
+                <button
+                  class="share-btn-wide"
+                  onclick={() => handleSaveAs("webp")}
+                  disabled={shareConverting}>WebP</button
+                >
+              </div>
+              <div class="share-grid share-grid-3">
+                <button class="share-btn-wide">PSD</button>
+                <button class="share-btn-wide">PDF</button>
+                <button class="share-btn-wide">Other…</button>
+              </div>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <div class="share-dest-bar">
@@ -2478,7 +2652,10 @@
           >
           Save to:
         </span>
-        <span class="tooltip-above" data-tooltip={shareOutputDir || parentFolder()}>
+        <span
+          class="tooltip-above"
+          data-tooltip={shareOutputDir || parentFolder()}
+        >
           <button class="share-dest-btn" onclick={handleShareLocation}>
             {shareOutputDir || parentFolder()}
           </button>
