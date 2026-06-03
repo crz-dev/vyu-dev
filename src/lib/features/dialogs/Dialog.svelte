@@ -58,9 +58,9 @@
     ctxProperties,
     ctxShare,
     ctxEdit,
-    ctxProcess,
-    ctxDelete,
+    ctxMarkup,
     ctxClearMarkers,
+    ctxDelete,
     clipDeleteConfirm,
     deleteConfirm,
     propertiesOpen,
@@ -154,7 +154,7 @@
     ctxProperties: () => void;
     ctxShare: () => void;
     ctxEdit: () => void;
-    ctxProcess: () => void;
+    ctxMarkup: () => void;
     ctxClearMarkers: () => void;
     ctxDelete: () => void;
     clipDeleteConfirm: { visible: boolean; mode: "separate" | "merge" | null };
@@ -860,48 +860,46 @@
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
-            d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.1 0 2-.9 2-2 0-.51-.2-.98-.54-1.34-.31-.33-.49-.76-.49-1.16 0-.88.72-1.5 1.6-1.5H16c3.31 0 6-2.69 6-6 0-5.17-4.37-9-10-9z"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
+          /><circle cx="7.5" cy="11.5" r="1.5" fill="currentColor" /><circle
+            cx="10.5"
+            cy="7.5"
+            r="1.5"
+            fill="currentColor"
+          /><circle cx="15.5" cy="7.5" r="1.5" fill="currentColor" /><circle
+            cx="18"
+            cy="11"
+            r="1.5"
+            fill="currentColor"
           /></svg
         >
         Edit
       </button>
       <button
         class="ctx-item blue"
-        onclick={ctxProcess}
+        onclick={ctxMarkup}
         role="menuitem"
         style="animation-delay: 165ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
-            d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          /><path
-            d="M14 2v6h6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          /><path
-            d="M12 18v-6"
+            d="M12 20h9"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
           /><path
-            d="M9 15l3 3 3-3"
+            d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
           /></svg
         >
-        Process
+        Markup
       </button>
       <div class="ctx-sep"></div>
       <button
@@ -1052,48 +1050,46 @@
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
-            d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.1 0 2-.9 2-2 0-.51-.2-.98-.54-1.34-.31-.33-.49-.76-.49-1.16 0-.88.72-1.5 1.6-1.5H16c3.31 0 6-2.69 6-6 0-5.17-4.37-9-10-9z"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
+          /><circle cx="7.5" cy="11.5" r="1.5" fill="currentColor" /><circle
+            cx="10.5"
+            cy="7.5"
+            r="1.5"
+            fill="currentColor"
+          /><circle cx="15.5" cy="7.5" r="1.5" fill="currentColor" /><circle
+            cx="18"
+            cy="11"
+            r="1.5"
+            fill="currentColor"
           /></svg
         >
         Edit
       </button>
       <button
         class="ctx-item blue"
-        onclick={ctxProcess}
+        onclick={ctxMarkup}
         role="menuitem"
         style="animation-delay: 165ms"
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
           ><path
-            d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          /><path
-            d="M14 2v6h6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          /><path
-            d="M12 18v-6"
+            d="M12 20h9"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
           /><path
-            d="M9 15l3 3 3-3"
+            d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
           /></svg
         >
-        Process
+        Markup
       </button>
       <div class="ctx-sep"></div>
       <button

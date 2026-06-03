@@ -288,7 +288,7 @@
               </p>
               <p>
                 <strong>Can I edit files?</strong> — Yes, use the Edit menu to crop,
-                rotate, flip, and adjust colors. Use Process to convert or compress.
+                rotate, flip, and adjust colors. Use Markup to annotate.
               </p>
               <p>
                 <strong>Where are converted files saved?</strong> — You pick the location.
@@ -382,7 +382,7 @@
               </p>
               <p>
                 <strong>FFmpeg missing?</strong> — Install FFmpeg via the prompt in
-                Properties or Process menus for advanced features.
+                Properties menu for advanced features.
               </p>
               <p>
                 <strong>Performance issues?</strong> — Try disabling hardware acceleration

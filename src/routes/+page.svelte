@@ -156,7 +156,7 @@
   let propertiesOpen = $state(false);
   let shareOpen = $state(false);
   let editMenuVisible = $state(false);
-  let processMenuVisible = $state(false);
+  let markupMenuVisible = $state(false);
   let slideshowMenuVisible = $state(false);
   let appDropdownVisible = $state(false);
   let settingsOpen = $state(false);
@@ -294,7 +294,7 @@
       appDropdownVisible ||
       slideshowMenuVisible ||
       editMenuVisible ||
-      processMenuVisible ||
+      markupMenuVisible ||
       settingsOpen ||
       accessibilityOpen ||
       helpOpen ||
@@ -1824,7 +1824,7 @@
       propertiesOpen ||
       shareOpen ||
       editMenuVisible ||
-      processMenuVisible ||
+      markupMenuVisible ||
       slideshowMenuVisible ||
       appDropdownVisible ||
       settingsOpen ||
@@ -1842,7 +1842,7 @@
       propertiesOpen = false;
       shareOpen = false;
       editMenuVisible = false;
-      processMenuVisible = false;
+      markupMenuVisible = false;
       slideshowMenuVisible = false;
       appDropdownVisible = false;
       settingsOpen = false;
@@ -1929,17 +1929,12 @@
   function closeEditMenu() {
     editMenuVisible = false;
   }
-  function openProcessMenu() {
+  function openMarkupMenu() {
     closeContextMenu();
-    processMenuVisible = true;
-    if (!ffprobeChecked)
-      void refreshFfprobeAvailability({
-        setFfprobeChecked: (v) => (ffprobeChecked = v),
-        setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-      });
+    markupMenuVisible = true;
   }
-  function closeProcessMenu() {
-    processMenuVisible = false;
+  function closeMarkupMenu() {
+    markupMenuVisible = false;
   }
   function toggleSlideshowMenu() {
     slideshowMenuVisible = !slideshowMenuVisible;
@@ -2000,8 +1995,8 @@
   function ctxEdit() {
     openEditMenu();
   }
-  function ctxProcess() {
-    openProcessMenu();
+  function ctxMarkup() {
+    openMarkupMenu();
   }
   function ctxProperties() {
     closeContextMenu();
@@ -2313,12 +2308,12 @@
     )
       closeEditMenu();
     if (
-      processMenuVisible &&
+      markupMenuVisible &&
       e.button === 2 &&
-      !target.closest(".process-menu") &&
-      !document.querySelector(".process-menu.pinned")
+      !target.closest(".markup-menu-wrapper") &&
+      !document.querySelector(".edit-menu.pinned")
     )
-      closeProcessMenu();
+      closeMarkupMenu();
     if (
       slideshowMenuVisible &&
       e.button === 2 &&
@@ -2473,8 +2468,8 @@
   onUndo={handleUndo}
   onReset={handleReset}
   {closeEditMenu}
-  {processMenuVisible}
-  {closeProcessMenu}
+  {markupMenuVisible}
+  {closeMarkupMenu}
   {ffprobeChecked}
   {ffprobeAvailable}
   {ffmpegInstalling}
@@ -2563,7 +2558,7 @@
   {ctxRotate}
   {ctxFlip}
   {ctxEdit}
-  {ctxProcess}
+  {ctxMarkup}
   ctxShowInExplorer={ctxShowInExplorerFn}
   {ctxProperties}
   {ctxShare}

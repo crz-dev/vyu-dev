@@ -58,16 +58,16 @@
     closeSortMenu,
     onSortChange,
     editMenuVisible = false,
-    processMenuVisible = false,
+    markupMenuVisible = false,
     editMenuMoved = false,
-    processMenuMoved = false,
+    markupMenuMoved = false,
     clipMenuMoved = false,
     clipMenuResetKey = 0,
     onClipMenuMoved,
     onClipMenuDismissed,
     clipMenuDismissed = false,
     editMenuStyleOverride = "",
-    processMenuStyleOverride = "",
+    markupMenuStyleOverride = "",
     clipMenuStyleOverride = "",
   }: {
     fileListLength: number;
@@ -114,16 +114,16 @@
       desc: boolean,
     ) => void;
     editMenuVisible?: boolean;
-    processMenuVisible?: boolean;
+    markupMenuVisible?: boolean;
     editMenuMoved?: boolean;
-    processMenuMoved?: boolean;
+    markupMenuMoved?: boolean;
     clipMenuMoved?: boolean;
     clipMenuResetKey?: number;
     onClipMenuMoved?: () => void;
     onClipMenuDismissed?: () => void;
     clipMenuDismissed?: boolean;
     editMenuStyleOverride?: string;
-    processMenuStyleOverride?: string;
+    markupMenuStyleOverride?: string;
     clipMenuStyleOverride?: string;
   } = $props();
 

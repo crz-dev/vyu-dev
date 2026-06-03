@@ -5,7 +5,7 @@
   import Dialog from "$lib/features/dialogs/Dialog.svelte";
   import Tooltip from "$lib/shared/Tooltip.svelte";
   import EditMenu from "$lib/features/menus/EditMenu.svelte";
-  import ProcessMenu from "$lib/features/menus/ProcessMenu.svelte";
+  import MarkupMenu from "$lib/features/menus/MarkupMenu.svelte";
   import SettingsDialog from "$lib/features/dialogs/SettingsDialog.svelte";
   import AccessibilityDialog from "$lib/features/dialogs/AccessibilityDialog.svelte";
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
@@ -96,8 +96,8 @@
     onUndo,
     onReset,
     closeEditMenu,
-    processMenuVisible,
-    closeProcessMenu,
+    markupMenuVisible,
+    closeMarkupMenu,
     ffprobeChecked,
     ffprobeAvailable,
     ffmpegInstalling,
@@ -155,7 +155,7 @@
     ctxRotate,
     ctxFlip,
     ctxEdit,
-    ctxProcess,
+    ctxMarkup,
     ctxShowInExplorer,
     ctxProperties,
     ctxShare,
@@ -275,8 +275,8 @@
     onUndo: () => void;
     onReset: () => void;
     closeEditMenu: () => void;
-    processMenuVisible: boolean;
-    closeProcessMenu: () => void;
+    markupMenuVisible: boolean;
+    closeMarkupMenu: () => void;
     ffprobeChecked: boolean;
     ffprobeAvailable: boolean;
     ffmpegInstalling: boolean;
@@ -334,7 +334,7 @@
     ctxRotate: () => void;
     ctxFlip: () => void;
     ctxEdit: () => void;
-    ctxProcess: () => void;
+    ctxMarkup: () => void;
     ctxShowInExplorer: () => void;
     ctxProperties: () => void;
     ctxShare: () => void;
@@ -371,7 +371,7 @@
   } = $props();
 
   let editMenuMoved = $state(false);
-  let processMenuMoved = $state(false);
+  let markupMenuMoved = $state(false);
   let clipMenuMoved = $state(false);
   let clipMenuDismissed = $state(false);
 
@@ -380,7 +380,7 @@
   });
 
   $effect(() => {
-    if (!processMenuVisible) processMenuMoved = false;
+    if (!markupMenuVisible) markupMenuMoved = false;
   });
 
   $effect(() => {
@@ -405,46 +405,46 @@
 
   const layoutOffsets = $derived.by(() => {
     const editOpen = editMenuVisible && !editMenuMoved;
-    const processOpen = processMenuVisible && !processMenuMoved;
+    const markupOpen = markupMenuVisible && !markupMenuMoved;
     const clipOpen = clipMenuActive && !clipMenuMoved;
 
-    // Edit/process affect each other
+    // Edit/markup affect each other
     let editOffset = 0;
-    let processOffset = 0;
+    let markupOffset = 0;
 
-    if (editOpen && processOpen) {
+    if (editOpen && markupOpen) {
       const halfGap = (MENU_WIDTH + GAP) / 2;
       editOffset = -halfGap;
-      processOffset = halfGap;
+      markupOffset = halfGap;
     }
 
-    // Clip shifts based on edit/process presence
+    // Clip shifts based on edit/markup presence
     let clipOffset = 0;
     if (clipOpen) {
-      const editOnly = editOpen && !processOpen;
-      const processOnly = !editOpen && processOpen;
-      const bothOpen = editOpen && processOpen;
+      const editOnly = editOpen && !markupOpen;
+      const markupOnly = !editOpen && markupOpen;
+      const bothOpen = editOpen && markupOpen;
 
       if (editOnly) {
         // edit left, clip right — gap centered
         const halfGap = (MENU_WIDTH + GAP) / 2;
         editOffset = -halfGap;
         clipOffset = halfGap;
-      } else if (processOnly) {
-        // clip left, process right — gap centered
+      } else if (markupOnly) {
+        // clip left, markup right — gap centered
         const halfGap = (MENU_WIDTH + GAP) / 2;
         clipOffset = -halfGap;
-        processOffset = halfGap;
+        markupOffset = halfGap;
       } else if (bothOpen) {
-        // edit left, clip center, process right
+        // edit left, clip center, markup right
         const fullGap = MENU_WIDTH + GAP;
         editOffset = -fullGap;
         clipOffset = 0;
-        processOffset = fullGap;
+        markupOffset = fullGap;
       }
     }
 
-    return { edit: editOffset, clip: clipOffset, process: processOffset };
+    return { edit: editOffset, clip: clipOffset, markup: markupOffset };
   });
 
   const editMenuStyle = $derived.by(() => {
@@ -454,13 +454,13 @@
     return "";
   });
 
-  const processMenuStyle = $derived.by(() => {
+  const markupMenuStyle = $derived.by(() => {
     if (
-      processMenuVisible &&
-      !processMenuMoved &&
-      layoutOffsets.process !== 0
+      markupMenuVisible &&
+      !markupMenuMoved &&
+      layoutOffsets.markup !== 0
     ) {
-      return `left: calc(50% + ${layoutOffsets.process}px);`;
+      return `left: calc(50% + ${layoutOffsets.markup}px);`;
     }
     return "";
   });
@@ -552,16 +552,16 @@
     {closeSortMenu}
     {onSortChange}
     {editMenuVisible}
-    {processMenuVisible}
+    {markupMenuVisible}
     {editMenuMoved}
-    {processMenuMoved}
+    {markupMenuMoved}
     {clipMenuMoved}
     {clipMenuResetKey}
     onClipMenuMoved={() => (clipMenuMoved = true)}
     onClipMenuDismissed={() => (clipMenuDismissed = true)}
     clipMenuDismissed
     editMenuStyleOverride={editMenuStyle}
-    processMenuStyleOverride={processMenuStyle}
+    markupMenuStyleOverride={markupMenuStyle}
     clipMenuStyleOverride={clipMenuStyle}
     fullscreen={viewerStateIsFullscreen}
   />
@@ -631,7 +631,7 @@
     {ctxRotate}
     {ctxFlip}
     {ctxEdit}
-    {ctxProcess}
+    {ctxMarkup}
     {ctxShowInExplorer}
     {ctxProperties}
     {ctxShare}
@@ -666,24 +666,11 @@
     {onReset}
   />
 
-  <ProcessMenu
-    visible={processMenuVisible}
-    onClose={closeProcessMenu}
-    onMoved={() => (processMenuMoved = true)}
-    styleOverride={processMenuStyle}
-    {isVideo}
-    {isAudio}
-    {isPdf}
-    {filePath}
-    {fileName}
-    {ffprobeChecked}
-    {ffprobeAvailable}
-    {ffmpegInstalling}
-    {ffmpegInstallError}
-    {installFfmpegAndWait}
-    {refreshFfprobeAvailability}
-    {openConvertedFile}
-    {showInExplorer}
+  <MarkupMenu
+    visible={markupMenuVisible}
+    onClose={closeMarkupMenu}
+    onMoved={() => (markupMenuMoved = true)}
+    styleOverride={markupMenuStyle}
   />
 
   {#key settingsOpen}
