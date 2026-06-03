@@ -105,6 +105,9 @@
           Feedback
         </p>
         <p class="delete-subtitle">Help us make vyu better for everyone</p>
+        <button class="dialog-close-x" onclick={closeFeedback} aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+        </button>
       </div>
 
       <div class="feedback-content">
@@ -1054,53 +1057,12 @@
                     /></svg
                   >
                   Yes
-                </button>
+        </button>
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="feedback-submit-wrap">
-          <button
-            class="settings-action-btn blue feedback-send-btn"
-            class:faded={atLimit}
-            disabled={atLimit}
-            onclick={submit}
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg
-            >
-            Send feedback
-          </button>
-          <span class="feedback-weekly-note">
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><circle cx="12" cy="12" r="10" /><line
-                x1="12"
-                y1="8"
-                x2="12"
-                y2="12"
-              /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
-            >
-            You can only send feedback once a week.
-          </span>
-        </div>
       </div>
+    </div>
 
       <div class="delete-actions feedback-footer">
         <span class="feedback-privacy">
@@ -1114,12 +1076,30 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             ><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path
-              d="M7 11V7a5 5 0 0 1 10 0v4"
+              d="M7 11V7a5 5 0 0110 0v4"
             /></svg
           >
           Used only to improve the app. Nothing is tied to your identity.
         </span>
-        <button class="delete-cancel" onclick={closeFeedback}>Close</button>
+        <button
+          class="settings-action-btn blue feedback-send-btn"
+          class:faded={atLimit}
+          disabled={atLimit}
+          onclick={submit}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg
+          >
+          Send feedback
+        </button>
       </div>
     </div>
   </div>

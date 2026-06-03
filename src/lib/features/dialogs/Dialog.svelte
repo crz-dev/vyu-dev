@@ -587,8 +587,8 @@
         aria-label="Close"
       >
         <svg
-          width="9"
-          height="9"
+          width="11"
+          height="11"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -1228,6 +1228,9 @@
           <p class="delete-title">Properties</p>
           <p class="delete-subtitle">{fileName}</p>
         </div>
+        <button class="dialog-close-x" onclick={closeProperties} aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+        </button>
       </div>
       <div class="props-list">
         <div
@@ -1780,9 +1783,6 @@
           Copy properties
         </button>
       </div>
-      <div class="delete-actions">
-        <button class="delete-cancel" onclick={closeProperties}> Close </button>
-      </div>
     </div>
   </div>
 {/if}
@@ -1815,6 +1815,9 @@
           <p class="delete-title">Share</p>
           <p class="delete-subtitle">{fileName}</p>
         </div>
+        <button class="dialog-close-x" onclick={closeShare} aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+        </button>
       </div>
 
       <div class="share-card">
@@ -2484,10 +2487,6 @@
             <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
           </svg>
         </button>
-      </div>
-
-      <div class="delete-actions">
-        <button class="delete-cancel" onclick={closeShare}> Close </button>
       </div>
     </div>
   </div>

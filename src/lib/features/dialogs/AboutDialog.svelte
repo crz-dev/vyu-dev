@@ -39,6 +39,9 @@
           About Vyu
         </p>
         <p class="delete-subtitle">Version: v{__APP_VERSION__}</p>
+        <button class="dialog-close-x" onclick={closeAbout} aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+        </button>
       </div>
 
       <div class="about-content">
@@ -190,26 +193,6 @@
           <span class="about-credits-sep">|</span>
           <span>Icon design by <strong>wamu</strong></span>
         </div>
-      </div>
-
-      <div class="delete-actions about-delete-actions">
-        <button class="settings-action-btn blue" onclick={() => {}}>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M23 4v6h-6" /><path d="M1 20v-6h6" /><path
-              d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
-            /></svg
-          >
-          Check for updates
-        </button>
-        <button class="delete-cancel" onclick={closeAbout}>Close</button>
       </div>
     </div>
   </div>

@@ -113,6 +113,9 @@
           Help
         </p>
         <p class="delete-subtitle">Learn how to use vyu</p>
+        <button class="dialog-close-x" onclick={closeHelp} aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+        </button>
       </div>
 
       <div class="help-tabs">
@@ -430,11 +433,41 @@
         </div>
       </div>
 
-      <div class="delete-actions">
+      <div class="delete-actions settings-footer">
         <div class="settings-footer-left">
-          <button class="settings-action-btn">Restart tutorial</button>
+          <button class="settings-action-btn" onclick={() => {}}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="12" cy="12" r="10" /><polyline
+                points="12 6 12 12 16 14"
+              /></svg
+            >
+            Check for updates
+          </button>
         </div>
-        <button class="delete-cancel" onclick={closeHelp}>Close</button>
+        <button class="settings-action-btn" onclick={closeHelp}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path
+              d="M3 3v5h5"
+            /></svg
+          >
+          Restart tutorial
+        </button>
       </div>
     </div>
   </div>

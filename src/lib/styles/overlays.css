@@ -66,11 +66,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
+  width: 20px;
+  height: 20px;
   background: transparent;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
   color: #666666;
   cursor: pointer;
   padding: 0;
@@ -78,6 +78,10 @@
   transition:
     color 0.12s,
     background 0.12s;
+}
+.ctx-close svg {
+  width: 11px;
+  height: 11px;
 }
 .ctx-close:hover {
   color: #ef4444;
@@ -677,10 +681,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 10px;
+  padding: 18px 20px 10px;
+  padding-right: 48px;
   border-bottom: 0.5px solid var(--bg-elevated);
+  position: relative;
 }
-.share-header-bar svg {
+.share-header-bar > svg {
   color: var(--green);
   flex-shrink: 0;
 }
@@ -689,11 +695,6 @@
 }
 .share-header-bar .delete-subtitle {
   margin: 0;
-}
-.share-dialog .delete-actions {
-  justify-content: flex-end;
-  padding-top: 10px;
-  border-top: 0.5px solid var(--bg-elevated);
 }
 .share-card {
   border: 0.5px solid var(--bg-elevated);
@@ -955,10 +956,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-bottom: 10px;
+  padding: 18px 20px 10px;
+  padding-right: 48px;
   border-bottom: 0.5px solid var(--bg-elevated);
+  position: relative;
 }
-.props-header-bar svg {
+.props-header-bar > svg {
   color: var(--yellow-soft);
   flex-shrink: 0;
 }
@@ -973,12 +976,6 @@
   font-size: 10px;
   color: var(--text-hint);
   font-family: var(--font-family);
-}
-
-.props-dialog .delete-actions {
-  justify-content: flex-end;
-  padding-top: 10px;
-  border-top: 0.5px solid var(--bg-elevated);
 }
 
 .delete-file-dialog .delete-header-bar {
@@ -1663,10 +1660,43 @@
 
 .settings-header-bar {
   padding: 18px 20px 12px;
+  padding-right: 48px;
   border-bottom: 0.5px solid var(--bg-elevated);
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative;
+}
+
+/* Dialog close X button — positioned top-right of any header bar */
+.dialog-close-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+.dialog-close-x svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.dialog-close-x:hover {
+  color: var(--red);
+  background: var(--red-bg-faint);
 }
 
 .settings-header-bar .delete-title {
@@ -3026,35 +3056,6 @@
   color: var(--bg-border);
 }
 
-/* Footer */
-.about-delete-actions {
-  padding: 10px 20px 14px;
-  border-top: 0.5px solid var(--bg-elevated);
-  margin: 0;
-  justify-content: space-between;
-}
-
-.about-delete-actions .settings-action-btn {
-  padding: 7px 14px;
-  border-radius: 7px;
-  border: 0.5px solid var(--bg-border);
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-  font-size: 12px;
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    color 0.2s;
-  gap: 6px;
-  min-width: 0;
-}
-
-.about-delete-actions .settings-action-btn:hover {
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
-}
-
 /* Profile dropdown */
 .profile-dropdown {
   background: var(--bg-secondary);
@@ -3799,15 +3800,6 @@
 .feedback-freq-btn.red.active {
   background: var(--red-bg-faint);
   color: var(--red);
-}
-
-/* Submit wrap */
-.feedback-submit-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4px 0 2px;
-  gap: 6px;
 }
 
 .feedback-weekly-note {
