@@ -182,6 +182,7 @@
       </button>
     </div>
 
+    <div class="edit-menu-card">
     <div class="slideshow-section interval-section">
       <span class="slideshow-label">
         <svg
@@ -559,6 +560,7 @@
           Stop
         </button>
       {/if}
+    </div>
     </div>
   </div>
 {/if}

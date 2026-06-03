@@ -198,6 +198,7 @@
         </button>
       </div>
 
+      <div class="edit-menu-card">
       <div class="edit-menu-row">
         <button
           class="edit-menu-btn red"
@@ -374,6 +375,7 @@
           </button>
         </div>
       {/if}
+      </div>
     </div>
   </div>
 {/if}

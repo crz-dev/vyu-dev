@@ -364,6 +364,7 @@
         </svg>
       </button>
     </div>
+    <div class="edit-menu-card">
     <button
       class="clip-main-btn"
       onclick={triggerClipSegments}
@@ -441,6 +442,7 @@
         >
         <span>Merge Segments</span>
       </button>
+    </div>
     </div>
     {#if clipJobRunning}
       <div class="clip-job-progress">
