@@ -359,6 +359,7 @@
               />
             </svg>
           </div>
+          <div class="edit-menu-card">
           <div class="loop-drop-grid">
             <button
               class="loop-drop-btn"
@@ -473,6 +474,7 @@
               </svg>
               Shuffle
             </button>
+          </div>
           </div>
         </div>
       {/if}
@@ -818,6 +820,7 @@
               />
             </svg>
           </div>
+          <div class="edit-menu-card">
           {#if hasAnyMarkers}
             {#if !tsDeleteConfirm}
               <button
@@ -1010,7 +1013,8 @@
             </svg>
             Add Timestamp
           </button>
-        </div>
+          </div>
+          </div>
       {/if}
     </div>
     <button
@@ -1239,6 +1243,7 @@
               />
             </svg>
           </div>
+          <div class="edit-menu-card">
           <div class="loop-drop-grid">
             <button
               class="loop-drop-btn"
@@ -1353,6 +1358,7 @@
               </svg>
               Shuffle
             </button>
+          </div>
           </div>
         </div>
       {/if}
@@ -1698,6 +1704,7 @@
               />
             </svg>
           </div>
+          <div class="edit-menu-card">
           {#if hasAnyMarkers}
             {#if !tsDeleteConfirm}
               <button
@@ -1890,7 +1897,8 @@
             </svg>
             Add Timestamp
           </button>
-        </div>
+          </div>
+          </div>
       {/if}
     </div>
     <button

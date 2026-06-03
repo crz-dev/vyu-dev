@@ -3228,6 +3228,7 @@
                               <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                           </div>
+                          <div class="edit-menu-card">
                           <div class="loop-drop-grid">
                             <button class="loop-drop-btn" class:active={loopMode === "stop"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms" onclick={() => { setLoopMode("stop"); loopMenuOpen = false; }} role="menuitem">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" /></svg>
@@ -3255,6 +3256,7 @@
                               </svg>
                               Shuffle
                             </button>
+                          </div>
                           </div>
                         </div>
                       {/if}
@@ -3288,12 +3290,13 @@
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
                               <polygon points="12,2 22,12 12,22 2,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
-                          </div>
-                          {#if timestamps.length > 0 || clips.clipBoundaries.length > 0 || resumePoint !== null || loopStart !== null || loopEnd !== null}
-                            {#if !tsDeleteConfirm}
-                              <button
-                                class="ts-drop-item ts-drop-red"
-                                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
+                           </div>
+                           <div class="edit-menu-card">
+                           {#if timestamps.length > 0 || clips.clipBoundaries.length > 0 || resumePoint !== null || loopStart !== null || loopEnd !== null}
+                             {#if !tsDeleteConfirm}
+                               <button
+                                 class="ts-drop-item ts-drop-red"
+                                 style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
                                 onclick={() => { tsDeleteConfirm = true; }}
                                 role="menuitem"
                               >
@@ -3358,6 +3361,7 @@
                             </svg>
                             Add Timestamp
                           </button>
+                        </div>
                         </div>
                       {/if}
                   </div>
@@ -3473,6 +3477,7 @@
                             <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                           </svg>
                         </div>
+                        <div class="edit-menu-card">
                         <div class="loop-drop-grid">
                           <button class="loop-drop-btn" class:active={loopMode === "stop"} style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms" onclick={() => { setLoopMode("stop"); loopMenuOpen = false; }} role="menuitem">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" /></svg>
@@ -3499,7 +3504,8 @@
                               <path d="M17 13l4 4-4 4" />
                             </svg>
                             Shuffle
-                          </button>
+                            </button>
+                        </div>
                         </div>
                       </div>
                     {/if}
@@ -3758,6 +3764,7 @@
                             <polygon points="12,2 22,12 12,22 2,12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                           </svg>
                         </div>
+                        <div class="edit-menu-card">
                         {#if timestamps.length > 0 || clips.clipBoundaries.length > 0 || resumePoint !== null || loopStart !== null || loopEnd !== null}
                           {#if !tsDeleteConfirm}
                             <button
@@ -3827,6 +3834,7 @@
                           </svg>
                           Add Timestamp
                         </button>
+                      </div>
                       </div>
                     {/if}
                   </div>
