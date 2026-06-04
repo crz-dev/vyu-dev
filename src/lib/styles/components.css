@@ -2064,6 +2064,11 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .edit-menu-btn.green:hover {
   background: var(--green-bg-active);
 }
+.edit-menu-btn.green.active {
+  background: var(--green-bg-strong);
+  border-color: var(--green-border-strong);
+  color: var(--green-soft);
+}
 .edit-menu-btn.grey {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.22);
@@ -3392,6 +3397,18 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   align-items: center;
   gap: 4px;
   position: relative;
+}
+
+/* Thickness & opacity sliders — track line previews draw settings */
+.markup-slider-panel .color-slider-track::before {
+  height: var(--track-thickness, 4px);
+  border-radius: calc(var(--track-thickness, 4px) / 2);
+  opacity: var(--track-opacity, 1);
+}
+.markup-slider-panel .color-slider-fill {
+  height: var(--track-thickness, 4px);
+  border-radius: calc(var(--track-thickness, 4px) / 2);
+  opacity: var(--track-opacity, 1);
 }
 
 /* Markup disabled button (Shapes placeholder) */

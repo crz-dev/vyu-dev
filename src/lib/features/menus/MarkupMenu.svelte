@@ -665,6 +665,7 @@
             <div
               class="color-slider-track"
               bind:this={thicknessTrackEl}
+              style="--track-thickness: {Math.max(2, localThickness)}px"
               role="slider"
               tabindex="0"
               aria-valuemin={1}
@@ -727,6 +728,7 @@
             <div
               class="color-slider-track"
               bind:this={opacityTrackEl}
+              style="--track-opacity: {Math.max(0.1, localOpacity)}"
               role="slider"
               tabindex="0"
               aria-valuemin={0.1}
