@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { MediaProperties, ClipJobResult } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
 import type { EditSnapshot } from "$lib/features/editing/editing.svelte";
+import type { DrawStroke } from "$lib/features/markup/markup.svelte";
 
 export async function exportCroppedImage(
   filePath: string,
@@ -393,6 +394,82 @@ export async function exportEditedImage(
   const arrayBuffer = await outBlob.arrayBuffer();
   const { writeFile } = await import("@tauri-apps/plugin-fs");
   await writeFile(outputPath, new Uint8Array(arrayBuffer));
+}
+
+export async function renderMarkupOnImage(
+  filePath: string,
+  strokes: DrawStroke[],
+  outputPath: string,
+) {
+  const { readFile } = await import("@tauri-apps/plugin-fs");
+  const bytes = await readFile(filePath);
+  const blob = new Blob([bytes]);
+  const url = URL.createObjectURL(blob);
+
+  const img = new Image();
+  img.src = url;
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to load image"));
+  });
+  URL.revokeObjectURL(url);
+
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not create canvas context");
+
+  ctx.drawImage(img, 0, 0, w, h);
+
+  for (const stroke of strokes) {
+    if (stroke.points.length < 1) continue;
+    ctx.beginPath();
+    ctx.globalAlpha = stroke.opacity;
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = stroke.thickness;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    const pts = stroke.points;
+    if (pts.length === 1) {
+      ctx.arc(
+        pts[0].x * w,
+        pts[0].y * h,
+        stroke.thickness / 2,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fillStyle = stroke.color;
+      ctx.fill();
+    } else {
+      ctx.moveTo(pts[0].x * w, pts[0].y * h);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i].x * w, pts[i].y * h);
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  const ext = getFileExt(outputPath) || "png";
+  const mimeType =
+    ext === "jpg" || ext === "jpeg"
+      ? "image/jpeg"
+      : ext === "webp"
+        ? "image/webp"
+        : "image/png";
+
+  const outBlob2 = await new Promise<Blob>((resolve) => {
+    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
+  });
+
+  const arrayBuffer2 = await outBlob2.arrayBuffer();
+  const { writeFile } = await import("@tauri-apps/plugin-fs");
+  await writeFile(outputPath, new Uint8Array(arrayBuffer2));
 }
 
 export async function invokeExportEditedMedia(

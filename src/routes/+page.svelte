@@ -56,6 +56,7 @@
     invokeCleanupTempFolder,
     exportEditedImage,
     invokeExportEditedMedia,
+    renderMarkupOnImage,
     invokeCheckMediaIntegrity,
     invokeFixMedia,
     invokeProcessVideoClips,
@@ -2214,6 +2215,44 @@
     await editing.reset();
     toast.showFrameCopyToast("Edits reset", "info");
   }
+
+  async function handleMarkupApply() {
+    if (markup.strokes.length === 0) return;
+    try {
+      stopWatching();
+      await renderMarkupOnImage(filePath, markup.strokes, filePath);
+      markup.clearAllStrokes();
+      await loadFile(filePath);
+      startWatching(getParentFolder(filePath) || "");
+      toast.showFrameCopyToast("Markup applied", "success");
+    } catch (err) {
+      startWatching(getParentFolder(filePath) || "");
+      const message =
+        err instanceof Error ? err.message : "Failed to apply markup";
+      toast.showFrameCopyToast(message, "error");
+    }
+  }
+
+  async function handleMarkupExport() {
+    if (markup.strokes.length === 0) return;
+    try {
+      const ext = getFileExt(filePath) || "png";
+      const defaultName =
+        fileName.replace(/\.[^.]+$/, "") + "_marked." + ext;
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const outputPath = await save({
+        defaultPath: defaultName,
+        filters: [{ name: "Image", extensions: [ext] }],
+      });
+      if (!outputPath) return;
+      await renderMarkupOnImage(filePath, markup.strokes, outputPath);
+      toast.showFrameCopyToast("Markup exported", "success");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to export markup";
+      toast.showFrameCopyToast(message, "error");
+    }
+  }
   async function ctxDelete() {
     closeContextMenu();
     if (loadSkipDeleteConfirmation()) performDelete();
@@ -2476,6 +2515,8 @@
   onExport={handleExportEdits}
   onUndo={handleUndo}
   onReset={handleReset}
+  onMarkupApply={handleMarkupApply}
+  onMarkupExport={handleMarkupExport}
   {closeEditMenu}
   {markupMenuVisible}
   {closeMarkupMenu}

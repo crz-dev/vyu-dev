@@ -95,6 +95,8 @@
     onExport,
     onUndo,
     onReset,
+    onMarkupApply,
+    onMarkupExport,
     closeEditMenu,
     markupMenuVisible,
     closeMarkupMenu,
@@ -274,6 +276,8 @@
     onExport: () => void;
     onUndo: () => void;
     onReset: () => void;
+    onMarkupApply: () => void;
+    onMarkupExport: () => void;
     closeEditMenu: () => void;
     markupMenuVisible: boolean;
     closeMarkupMenu: () => void;
@@ -673,8 +677,8 @@
     styleOverride={markupMenuStyle}
     {onUndo}
     {onReset}
-    {onApply}
-    {onExport}
+    onApply={onMarkupApply}
+    onExport={onMarkupExport}
   />
 
   {#key settingsOpen}

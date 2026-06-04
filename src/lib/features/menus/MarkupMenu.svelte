@@ -241,7 +241,7 @@
           class="edit-action-btn blue tooltip-ctrl"
           class:inactive={!canUndo}
           disabled={!canUndo}
-          onclick={onUndo}
+          onclick={() => markup.undoLastStroke()}
           data-tooltip="Undo"
           aria-label="Undo"
         >
@@ -263,7 +263,7 @@
         <button
           class="edit-action-btn red tooltip-ctrl"
           disabled={!hasEdits}
-          onclick={onReset}
+          onclick={() => markup.clearAllStrokes()}
           data-tooltip="Reset"
           aria-label="Reset"
         >
