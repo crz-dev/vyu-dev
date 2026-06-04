@@ -294,3 +294,22 @@ export function loadShareOutputDir(): string {
 export function saveShareOutputDir(dir: string): void {
   localStorage.setItem("vyu-share-output-dir", dir);
 }
+
+// ── Markup custom draw colors ────────────────────────────
+export function loadMarkupCustomColors(): string[] {
+  try {
+    const raw = localStorage.getItem("vyu-markup-custom-colors");
+    if (!raw) return ["", "", ""];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length === 3) {
+      return parsed.map((c) => (typeof c === "string" ? c : ""));
+    }
+  } catch {
+    /* ignore */
+  }
+  return ["", "", ""];
+}
+
+export function saveMarkupCustomColors(colors: string[]): void {
+  localStorage.setItem("vyu-markup-custom-colors", JSON.stringify(colors));
+}

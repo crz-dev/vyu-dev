@@ -619,19 +619,40 @@
 
         {#if activeDrawTool === "color"}
           <div
-            class="markup-color-row"
+            class="markup-color-cards-row"
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            {#each DRAW_COLORS as color, i}
-              <button
-                class="markup-color-swatch"
-                class:active={markup.drawColor === color}
-                style="background: {color}"
-                onclick={() => markup.setDrawColor(color)}
-                aria-label={`Color ${i + 1}`}
-              ></button>
-            {/each}
+            <div class="markup-color-card">
+              {#each DRAW_COLORS as color, i}
+                <button
+                  class="markup-color-swatch"
+                  class:active={markup.drawColor === color}
+                  style="background: {color}"
+                  onclick={() => { markup.setDrawColor(color); }}
+                  aria-label={`Color ${i + 1}`}
+                ></button>
+              {/each}
+            </div>
+            <div class="markup-color-card">
+              {#each markup.customColors as color, i}
+                <label
+                  class="markup-color-swatch"
+                  class:markup-color-swatch-empty={!color}
+                  class:active={markup.drawColor === color && color !== ""}
+                  style={color ? `background: ${color}` : ""}
+                  aria-label={`Custom color ${i + 1}`}
+                  oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); markup.setCustomColor(i, ""); }}
+                >
+                  <input
+                    type="color"
+                    value={color || "#000000"}
+                    oninput={(e) => { markup.setCustomColor(i, (e.target as HTMLInputElement).value); }}
+                    class="markup-color-native-input"
+                  />
+                </label>
+              {/each}
+            </div>
           </div>
         {/if}
 

@@ -13,6 +13,11 @@ export const DRAW_COLORS = [
   "#ffffff", // White
 ];
 
+import {
+  loadMarkupCustomColors,
+  saveMarkupCustomColors,
+} from "$lib/services/storage";
+
 export interface DrawPoint {
   x: number;
   y: number;
@@ -32,6 +37,7 @@ function createMarkupStore() {
   let drawOpacity = $state(1);
   let strokes = $state<DrawStroke[]>([]);
   let currentStroke = $state<DrawStroke | null>(null);
+  let customColors = $state<string[]>(loadMarkupCustomColors());
 
   function toggleDraw() {
     drawActive = !drawActive;
@@ -47,6 +53,14 @@ function createMarkupStore() {
 
   function setDrawOpacity(v: number) {
     drawOpacity = v;
+  }
+
+  function setCustomColor(index: number, color: string) {
+    const next = [...customColors];
+    next[index] = color;
+    customColors = next;
+    saveMarkupCustomColors(next);
+    drawColor = color;
   }
 
   function startStroke(x: number, y: number) {
@@ -112,8 +126,12 @@ function createMarkupStore() {
     get currentStroke() {
       return currentStroke;
     },
+    get customColors() {
+      return customColors;
+    },
     toggleDraw,
     setDrawColor,
+    setCustomColor,
     setDrawThickness,
     setDrawOpacity,
     startStroke,

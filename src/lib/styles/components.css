@@ -3307,7 +3307,24 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform-origin: bottom center;
 }
 
-/* Markup draw tool — horizontal color swatch row */
+/* Markup draw tool — color swatch cards row */
+.markup-color-cards-row {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  padding: 6px 4px;
+}
+.markup-color-card {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+}
+/* Markup draw tool — horizontal color swatch row (legacy) */
 .markup-color-row {
   display: flex;
   flex-direction: row;
@@ -3318,12 +3335,14 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 .markup-color-swatch {
+  display: inline-block;
   width: 20px;
   height: 20px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   padding: 0;
+  position: relative;
   transition:
     transform 0.15s,
     border-color 0.15s,
@@ -3341,6 +3360,23 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
     0 0 0 2px var(--bg-secondary),
     0 0 0 3.5px currentColor;
   transform: scale(1.15);
+}
+
+.markup-color-swatch-empty {
+  background: var(--bg-primary);
+  border: 1.5px dashed var(--bg-border);
+  cursor: pointer;
+}
+
+/* Markup color native input — hidden inside custom swatch */
+.markup-color-native-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
 }
 
 /* Markup slider panels — compact variant of color-slider-panel */
