@@ -1,15 +1,24 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { markup, DRAW_COLORS } from "$lib/features/markup/markup.svelte";
 
   let {
     visible,
     onClose,
     onMoved,
+    onUndo,
+    onReset,
+    onApply,
+    onExport,
     styleOverride = "",
   }: {
     visible: boolean;
     onClose: () => void;
     onMoved?: () => void;
+    onUndo: () => void;
+    onReset: () => void;
+    onApply: () => void;
+    onExport: () => void;
     styleOverride?: string;
   } = $props();
 
@@ -20,6 +29,15 @@
   let pinned = $state(false);
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
 
+  // Draw sub-tool state
+  let activeDrawTool: "color" | "thickness" | "opacity" | null = $state(null);
+  let thicknessTrackEl: HTMLDivElement | null = $state(null);
+  let isThicknessDragging = $state(false);
+  let localThickness = $state(3);
+  let opacityTrackEl: HTMLDivElement | null = $state(null);
+  let isOpacityDragging = $state(false);
+  let localOpacity = $state(1);
+
   $effect(() => {
     if (!visible) {
       if (openTimeout) clearTimeout(openTimeout);
@@ -29,7 +47,16 @@
       drawRowOpen = false;
       textRowOpen = false;
       pinned = false;
+      activeDrawTool = null;
     }
+  });
+
+  $effect(() => {
+    localThickness = markup.drawThickness;
+  });
+
+  $effect(() => {
+    localOpacity = markup.drawOpacity;
   });
 
   function closeAllRows() {
@@ -39,12 +66,17 @@
     textRowOpen = false;
   }
 
+  function closeDrawSubTools() {
+    activeDrawTool = null;
+  }
+
   function toggleEraser() {
     if (eraserRowOpen) {
       closeAllRows();
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
+      closeDrawSubTools();
       openTimeout = setTimeout(() => {
         eraserRowOpen = true;
         openTimeout = null;
@@ -58,6 +90,7 @@
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
+      closeDrawSubTools();
       openTimeout = setTimeout(() => {
         highlightRowOpen = true;
         openTimeout = null;
@@ -68,11 +101,15 @@
   function toggleDraw() {
     if (drawRowOpen) {
       closeAllRows();
+      closeDrawSubTools();
+      markup.drawActive = false;
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
+      closeDrawSubTools();
       openTimeout = setTimeout(() => {
         drawRowOpen = true;
+        markup.drawActive = true;
         openTimeout = null;
       }, 100);
     }
@@ -84,16 +121,173 @@
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
+      closeDrawSubTools();
       openTimeout = setTimeout(() => {
         textRowOpen = true;
         openTimeout = null;
       }, 100);
     }
   }
+
+  function toggleDrawSubTool(tool: "color" | "thickness" | "opacity") {
+    if (activeDrawTool === tool) {
+      activeDrawTool = null;
+    } else {
+      activeDrawTool = tool;
+    }
+  }
+
+  // Thickness slider
+  function updateThicknessFromX(clientX: number) {
+    if (!thicknessTrackEl) return;
+    const rect = thicknessTrackEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const val = Math.round(1 + pct * 19);
+    localThickness = val;
+    markup.setDrawThickness(val);
+  }
+
+  function handleThicknessPointerDown(e: PointerEvent) {
+    if (!thicknessTrackEl) return;
+    isThicknessDragging = true;
+    thicknessTrackEl.setPointerCapture(e.pointerId);
+    updateThicknessFromX(e.clientX);
+  }
+
+  function handleThicknessPointerMove(e: PointerEvent) {
+    if (!isThicknessDragging || !thicknessTrackEl) return;
+    e.preventDefault();
+    updateThicknessFromX(e.clientX);
+  }
+
+  function handleThicknessPointerUp(e: PointerEvent) {
+    if (!isThicknessDragging || !thicknessTrackEl) return;
+    isThicknessDragging = false;
+    thicknessTrackEl.releasePointerCapture(e.pointerId);
+  }
+
+  const thicknessScrubberPct = $derived(
+    ((localThickness - 1) / 19) * 100,
+  );
+
+  // Opacity slider
+  function updateOpacityFromX(clientX: number) {
+    if (!opacityTrackEl) return;
+    const rect = opacityTrackEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const val = Math.round(pct * 100) / 100;
+    const clamped = Math.max(0.1, Math.min(1, val));
+    localOpacity = clamped;
+    markup.setDrawOpacity(clamped);
+  }
+
+  function handleOpacityPointerDown(e: PointerEvent) {
+    if (!opacityTrackEl) return;
+    isOpacityDragging = true;
+    opacityTrackEl.setPointerCapture(e.pointerId);
+    updateOpacityFromX(e.clientX);
+  }
+
+  function handleOpacityPointerMove(e: PointerEvent) {
+    if (!isOpacityDragging || !opacityTrackEl) return;
+    e.preventDefault();
+    updateOpacityFromX(e.clientX);
+  }
+
+  function handleOpacityPointerUp(e: PointerEvent) {
+    if (!isOpacityDragging || !opacityTrackEl) return;
+    isOpacityDragging = false;
+    opacityTrackEl.releasePointerCapture(e.pointerId);
+  }
+
+  const opacityScrubberPct = $derived((localOpacity / 1) * 100);
+
+  const thicknessMarkers = [
+    { val: 1, pct: 0 },
+    { val: 10, pct: ((10 - 1) / 19) * 100 },
+    { val: 20, pct: 100 },
+  ];
+
+  const opacityMarkers = [
+    { val: 0.1, pct: 0 },
+    { val: 0.5, pct: 50 },
+    { val: 1, pct: 100 },
+  ];
+
+  function jumpToThickness(val: number) {
+    localThickness = val;
+    markup.setDrawThickness(val);
+  }
+
+  function jumpToOpacity(val: number) {
+    localOpacity = val;
+    markup.setDrawOpacity(val);
+  }
+
+  const canUndo = $derived(markup.strokes.length > 0);
+  const hasEdits = $derived(markup.strokes.length > 0);
 </script>
 
 {#if visible}
   <div class="markup-menu-wrapper" style={styleOverride}>
+    {#if hasEdits}
+      <div
+        class="edit-actions-bar edit-actions-left"
+        transition:fly={{ x: 60, duration: 180, opacity: 0.08 }}
+      >
+        <button
+          class="edit-action-btn blue tooltip-ctrl"
+          class:inactive={!canUndo}
+          disabled={!canUndo}
+          onclick={onUndo}
+          data-tooltip="Undo"
+          aria-label="Undo"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+          <span class="edit-action-label">Undo</span>
+        </button>
+        <button
+          class="edit-action-btn red tooltip-ctrl"
+          disabled={!hasEdits}
+          onclick={onReset}
+          data-tooltip="Reset"
+          aria-label="Reset"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+          </svg>
+          <span class="edit-action-label">Reset</span>
+        </button>
+      </div>
+    {/if}
+
     <div
       class="edit-menu"
       class:pinned
@@ -245,6 +439,7 @@
         </button>
         <button
           class="edit-menu-btn green"
+          class:active={markup.drawActive}
           class:sub-open={eraserRowOpen || highlightRowOpen || textRowOpen}
           onclick={toggleDraw}
         >
@@ -379,7 +574,11 @@
           in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
           out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
         >
-          <button class="edit-menu-btn green sub">
+          <button
+            class="edit-menu-btn green sub"
+            class:active={activeDrawTool === "color"}
+            onclick={() => toggleDrawSubTool("color")}
+          >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z" />
               <circle cx="7.5" cy="10" r="1.5" fill="currentColor" stroke="none" />
@@ -387,20 +586,28 @@
             </svg>
             <span>Color</span>
           </button>
-          <button class="edit-menu-btn green sub">
+          <button
+            class="edit-menu-btn green sub"
+            class:active={activeDrawTool === "thickness"}
+            onclick={() => toggleDrawSubTool("thickness")}
+          >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
               <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
             </svg>
             <span>Thickness</span>
           </button>
-          <button class="edit-menu-btn green sub">
+          <button
+            class="edit-menu-btn green sub"
+            class:active={activeDrawTool === "opacity"}
+            onclick={() => toggleDrawSubTool("opacity")}
+          >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
             </svg>
             <span>Opacity</span>
           </button>
-          <button class="edit-menu-btn green sub">
+          <button class="edit-menu-btn green sub disabled-btn">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7" />
               <circle cx="17.5" cy="6.5" r="3.5" />
@@ -409,6 +616,148 @@
             <span>Shapes</span>
           </button>
         </div>
+
+        {#if activeDrawTool === "color"}
+          <div
+            class="markup-color-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            {#each DRAW_COLORS as color, i}
+              <button
+                class="markup-color-swatch"
+                class:active={markup.drawColor === color}
+                style="background: {color}"
+                onclick={() => markup.setDrawColor(color)}
+                aria-label={`Color ${i + 1}`}
+              ></button>
+            {/each}
+          </div>
+        {/if}
+
+        {#if activeDrawTool === "thickness"}
+          <div
+            class="markup-slider-panel"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <div
+              class="color-slider-track"
+              bind:this={thicknessTrackEl}
+              role="slider"
+              tabindex="0"
+              aria-valuemin={1}
+              aria-valuemax={20}
+              aria-valuenow={localThickness}
+              aria-label="Thickness"
+              onpointerdown={handleThicknessPointerDown}
+              onpointermove={handleThicknessPointerMove}
+              onpointerup={handleThicknessPointerUp}
+              onpointercancel={handleThicknessPointerUp}
+            >
+              <div
+                class="color-slider-fill"
+                style="width: {thicknessScrubberPct}%"
+              ></div>
+              {#each thicknessMarkers as marker}
+                <div
+                  class="color-slider-marker"
+                  class:center-marker={marker.val === 10}
+                  style="left: {marker.pct}%"
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onclick={() => jumpToThickness(marker.val)}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      jumpToThickness(marker.val);
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Set thickness to {marker.val}"
+                ></div>
+              {/each}
+              <div
+                class="color-slider-scrubber"
+                style="left: {thicknessScrubberPct}%"
+                role="button"
+                tabindex="0"
+                aria-label="Scrubber"
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  if (!thicknessTrackEl) return;
+                  isThicknessDragging = true;
+                  thicknessTrackEl.setPointerCapture(e.pointerId);
+                }}
+              ></div>
+            </div>
+            <div class="color-scrubber-tooltip" style="left: {thicknessScrubberPct}%">
+              <span>{localThickness}px</span>
+            </div>
+          </div>
+        {/if}
+
+        {#if activeDrawTool === "opacity"}
+          <div
+            class="markup-slider-panel"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <div
+              class="color-slider-track"
+              bind:this={opacityTrackEl}
+              role="slider"
+              tabindex="0"
+              aria-valuemin={0.1}
+              aria-valuemax={1}
+              aria-valuenow={localOpacity}
+              aria-label="Opacity"
+              onpointerdown={handleOpacityPointerDown}
+              onpointermove={handleOpacityPointerMove}
+              onpointerup={handleOpacityPointerUp}
+              onpointercancel={handleOpacityPointerUp}
+            >
+              <div
+                class="color-slider-fill"
+                style="width: {opacityScrubberPct}%"
+              ></div>
+              {#each opacityMarkers as marker}
+                <div
+                  class="color-slider-marker"
+                  class:center-marker={marker.val === 0.5}
+                  style="left: {marker.pct}%"
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onclick={() => jumpToOpacity(marker.val)}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      jumpToOpacity(marker.val);
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Set opacity to {Math.round(marker.val * 100)}%"
+                ></div>
+              {/each}
+              <div
+                class="color-slider-scrubber"
+                style="left: {opacityScrubberPct}%"
+                role="button"
+                tabindex="0"
+                aria-label="Scrubber"
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  if (!opacityTrackEl) return;
+                  isOpacityDragging = true;
+                  opacityTrackEl.setPointerCapture(e.pointerId);
+                }}
+              ></div>
+            </div>
+            <div class="color-scrubber-tooltip" style="left: {opacityScrubberPct}%">
+              <span>{Math.round(localOpacity * 100)}%</span>
+            </div>
+          </div>
+        {/if}
       {/if}
 
       {#if textRowOpen}
@@ -458,5 +807,57 @@
       {/if}
       </div>
     </div>
+
+    {#if hasEdits}
+      <div
+        class="edit-actions-bar edit-actions-right"
+        transition:fly={{ x: -60, duration: 180, opacity: 0.08 }}
+      >
+        <button
+          class="edit-action-btn yellow tooltip-ctrl"
+          disabled={!hasEdits}
+          onclick={onExport}
+          data-tooltip="Export"
+          aria-label="Export"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17,8 12,3 7,8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <span class="edit-action-label">Export</span>
+        </button>
+        <button
+          class="edit-action-btn green tooltip-ctrl"
+          disabled={!hasEdits}
+          onclick={onApply}
+          data-tooltip="Apply"
+          aria-label="Apply"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          <span class="edit-action-label">Apply</span>
+        </button>
+      </div>
+    {/if}
   </div>
 {/if}

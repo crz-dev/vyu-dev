@@ -78,6 +78,8 @@
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import CropOverlay from "$lib/features/editing/CropOverlay.svelte";
+  import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
+  import { markup } from "$lib/features/markup/markup.svelte";
   import TimelineMarkers from "$lib/features/timeline/TimelineMarkers.svelte";
   import PlaybackControls from "$lib/features/media/PlaybackControls.svelte";
   import Shell from "$lib/shared/Shell.svelte";
@@ -286,7 +288,11 @@
   );
   const panCursor = $derived(viewer.getPanCursor());
   const fsCursor = $derived(
-    !viewer.state.fsControlsVisible && !tsEditMenu.visible ? "none" : panCursor,
+    markup.drawActive
+      ? "crosshair"
+      : !viewer.state.fsControlsVisible && !tsEditMenu.visible
+        ? "none"
+        : panCursor,
   );
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
   const anyMenuOpen = $derived(
@@ -1391,7 +1397,9 @@
       if (newPath) {
         editing.switchFile(newPath);
       } else {
-        editing.cleanup();
+    editing.cleanup();
+    markup.cleanup();
+        markup.cleanup();
       }
       editMenuVisible = false;
     },
@@ -1858,6 +1866,7 @@
       pendingEditAction = null;
       exportFormatOverride = null;
       corruptionWarning = false;
+      markup.drawActive = false;
     },
     navigateToEdge,
     navigate,
@@ -2611,13 +2620,13 @@
         onmouseenter={() => (hoverZone = "sidebar")}
         onmouseleave={() => (hoverZone = "none")}
         onwheel={handleViewerScroll}
-        onmousedown={!isVideo && !isPdf ? startPan : undefined}
+        onmousedown={!isVideo && !isPdf && !markup.drawActive ? startPan : undefined}
         ontouchstart={(e) => {
           if (e.touches.length === 2) e.preventDefault();
         }}
         ontouchmove={viewer.handleTouchZoom}
         ontouchend={viewer.handleTouchEnd}
-        style="cursor: {!isVideo && !isPdf ? panCursor : 'default'}"
+        style="cursor: {markup.drawActive ? 'crosshair' : !isVideo && !isPdf ? panCursor : 'default'}"
         role="presentation"
       >
         {#if fileSrc && !isVideo && !isAudio && !isPdf}
@@ -2644,6 +2653,7 @@
               </div>
             {/key}
             <CropOverlay containerEl={cropContainerEl} mediaEl={imageEl} />
+            <DrawOverlay containerEl={cropContainerEl} mediaEl={imageEl} />
           </div>
         {:else if fileSrc && isVideo}
           <div
@@ -2652,8 +2662,8 @@
             role="presentation"
             onmouseenter={() => (hoverZone = "video")}
             onmouseleave={() => (hoverZone = "none")}
-            onmousedown={startPan}
-            style="{videoWrapperTransform} cursor: {panCursor}"
+            onmousedown={markup.drawActive ? undefined : startPan}
+            style="{videoWrapperTransform} cursor: {markup.drawActive ? 'crosshair' : panCursor}"
           >
             <div
               class="video-inner"
@@ -2702,6 +2712,7 @@
               {/key}
             </div>
             <CropOverlay containerEl={cropContainerEl} mediaEl={videoInnerEl} />
+            <DrawOverlay containerEl={cropContainerEl} mediaEl={videoInnerEl} />
             <div
               class="video-controls"
               class:gif-only={isGifVideo}
@@ -3937,7 +3948,7 @@
         role="button"
         tabindex="0"
         onwheel={handleViewerScroll}
-        onmousedown={startPan}
+        onmousedown={markup.drawActive ? undefined : startPan}
         ontouchstart={(e) => {
           if (e.touches.length === 2) e.preventDefault();
         }}

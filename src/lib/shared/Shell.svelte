@@ -671,6 +671,10 @@
     onClose={closeMarkupMenu}
     onMoved={() => (markupMenuMoved = true)}
     styleOverride={markupMenuStyle}
+    {onUndo}
+    {onReset}
+    {onApply}
+    {onExport}
   />
 
   {#key settingsOpen}
