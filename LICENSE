@@ -1,0 +1,86 @@
+Copyright (c) 2026 crz-dev. All rights reserved.
+
+================================================================================
+                              VYU — ALPHA LICENSE
+================================================================================
+
+Vyu is currently in alpha. This license governs use of the project until the
+first stable release. At that point, this file will be replaced with the full
+text of the GNU General Public License, version 3 (GPL-3.0).
+
+--------------------------------------------------------------------------------
+1. GRANT OF RIGHTS — VIEWING ONLY
+--------------------------------------------------------------------------------
+
+During the alpha period, the source code in this repository is made available
+solely for the purpose of personal viewing and reference. You may:
+
+  - Read, download, and clone the repository for personal inspection.
+  - Submit bug reports, feature requests, and feedback through the project's
+    official channels (e.g. GitHub Issues, the in-app feedback menu).
+
+You may NOT, without prior written permission from crz-dev:
+
+  - Copy, reproduce, or redistribute the source code, in whole or in part.
+  - Modify, port, translate, reverse-engineer, or create derivative works
+    based on the source code.
+  - Use the source code, in whole or in part, in any other project, product,
+    or service (whether commercial or non-commercial).
+  - Sublicense, sell, rent, lease, or otherwise transfer rights to the
+    source code.
+
+--------------------------------------------------------------------------------
+2. NAME, ICON, AND BRANDING
+--------------------------------------------------------------------------------
+
+The name "Vyu" (and any related marks, logos, product names, or service
+names), together with the project's icons, artwork, and other visual identity
+elements, are the exclusive property of crz-dev and are protected by
+trademark and copyright law.
+
+You may NOT, without prior written permission from crz-dev:
+
+  - Use the name "Vyu" or any confusingly similar name for any project,
+    product, service, domain, account, or organization.
+  - Use the project's icons, logos, or other visual identity elements.
+  - Imply endorsement, affiliation, sponsorship, or origin from crz-dev or
+    the Vyu project.
+
+This restriction applies during the alpha period and survives any later
+relicensing of the source code under GPL-3.0: the trademark and branding
+terms are independent of, and not granted by, any later open-source license.
+
+--------------------------------------------------------------------------------
+3. NO WARRANTY
+--------------------------------------------------------------------------------
+
+THE SOURCE CODE, NAME, ICONS, AND ALL OTHER MATERIALS IN THIS REPOSITORY ARE
+PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL crz-dev BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE MATERIALS OR THE USE OR OTHER
+DEALINGS IN THE MATERIALS.
+
+--------------------------------------------------------------------------------
+4. FUTURE RELICENSING
+--------------------------------------------------------------------------------
+
+At the first stable release of Vyu, the source code in this repository will
+be released under the GNU General Public License, version 3 (GPL-3.0). When
+that happens, this file will be replaced with the full GPL-3.0 license text.
+
+Sections 1 and 2 of this Alpha License continue to apply to:
+  - The name "Vyu" and all related marks (Section 2).
+  - The icons, artwork, and other visual identity elements (Section 2).
+  - Any version of the source code published prior to the first stable
+    release (Section 1).
+
+--------------------------------------------------------------------------------
+5. CONTACT
+--------------------------------------------------------------------------------
+
+For permissions, licensing questions, or other inquiries, please open an
+Issue on the project's GitHub repository.

@@ -2,6 +2,20 @@
 
 Thanks for your interest in Vyu! Here's how things work.
 
+## License Status
+
+Vyu is currently in **alpha**. The repository is made public for transparency and
+visibility, but it is **not yet open source**:
+
+- **Copyright:** © crz-dev. All rights reserved.
+- **Name, icon, and branding:** The name "Vyu" and the project's icons and visual
+  identity are trademarks of crz-dev and may not be used without permission.
+- **Code:** You may read the source for personal reference, but copying,
+  modifying, redistributing, or building on it is **not** permitted during alpha.
+
+At the first stable release, this project will be relicensed under **GPL-3.0**.
+Until that release, the proprietary terms in `LICENSE` apply.
+
 ## Code Contributions
 
 Vyu does not currently accept pull requests or code contributions.
@@ -11,14 +25,12 @@ allows Vyu to remain flexible: future licensing changes (like partnering with
 a Linux distro or offering a commercial build) require the copyright to stay
 consolidated. Accepting external code would complicate that significantly.
 
-The source will always remain public and forkable under GPL-3.0.
-
 ## What You Can Do
 
 - **Report bugs** — open an Issue, please be as detailed as possible and include images/videos
 - **Request features** — Issues are great for this too! We'll consider every single one
 - **Share ideas** — the in-app feedback menu is the best place for quick thoughts, and rewards you with a unique theme!
-- **Fork it** — GPL-3.0 means you're free to build on Vyu for your own use, in case you would like to personalize something further
+- **Fork it (after release)** — once Vyu ships under GPL-3.0 at first stable release, you'll be free to build on it for your own use
 
 ## Why GPL-3.0 Then?
 
