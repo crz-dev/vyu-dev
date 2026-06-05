@@ -1,5 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
+  import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
 
   let {
     fullscreen = false,
@@ -121,7 +123,6 @@
     speedDragging: boolean;
   } = $props();
   let tsMenuOpen = $state(false);
-  let tsDeleteConfirm = $state(false);
   let loopMenuOpen = $state(false);
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
@@ -130,8 +131,11 @@
     onTsMenuChange?.(tsMenuOpen);
   });
 
-  function handleDeleteMarkersClick() {
-    tsDeleteConfirm = true;
+  function closeLoopDropdown() {
+    loopMenuOpen = false;
+  }
+  function closeTsDropdown() {
+    tsMenuOpen = false;
   }
 
   function handleVolumeRightClick(e: MouseEvent) {
@@ -325,159 +329,12 @@
           </svg>
         {/if}
       </button>
-      {#if loopMenuOpen}
-        <div class="loop-drop-menu" role="menu">
-          <div
-            class="loop-drop-header"
-            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <rect
-                x="4"
-                y="4"
-                width="16"
-                height="16"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <span>After playback</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <rect
-                x="4"
-                y="4"
-                width="16"
-                height="16"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-          <div class="edit-menu-card">
-          <div class="loop-drop-grid">
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "stop"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-              onclick={() => {
-                setLoopMode("stop");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-              Stop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "next"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                setLoopMode("next");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
-                <rect
-                  x="19"
-                  y="4"
-                  width="2"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-              Play next
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "loop"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                setLoopMode("loop");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M17 2L21 6L17 10"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M3 11V9C3 7.9 3.9 7 5 7H21"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M7 22L3 18L7 14"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M21 13V15C21 16.1 20.1 17 19 17H3"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Loop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "shuffle"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
-              onclick={() => {
-                setLoopMode("shuffle");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 7h5l9 10h4" />
-                <path d="M3 17h5l2-2.2" />
-                <path d="M17 5l4 4-4 4" />
-                <path d="M17 13l4 4-4 4" />
-              </svg>
-              Shuffle
-            </button>
-          </div>
-          </div>
-        </div>
-      {/if}
+      <LoopDropdown
+        open={loopMenuOpen}
+        onClose={closeLoopDropdown}
+        {looping}
+        {setLoopMode}
+      />
     </div>
     <div
       class="volume-control"
@@ -759,7 +616,6 @@
         class:ts-menu-open={tsMenuOpen}
         onclick={() => {
           tsMenuOpen = !tsMenuOpen;
-          tsDeleteConfirm = false;
         }}
         aria-label="markers menu"
       >
@@ -794,228 +650,17 @@
           </g>
         </svg>
       </button>
-      {#if tsMenuOpen}
-        <div class="ts-drop-menu" role="menu">
-          <div
-            class="ts-drop-header"
-            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <polygon
-                points="12,2 22,12 12,22 2,12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <span>Markers</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <polygon
-                points="12,2 22,12 12,22 2,12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-          <div class="edit-menu-card">
-          {#if hasAnyMarkers}
-            {#if !tsDeleteConfirm}
-              <button
-                class="ts-drop-item ts-drop-red"
-                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-                onclick={handleDeleteMarkersClick}
-                role="menuitem"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                  <polyline
-                    points="3 6 5 6 21 6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M19 6l-1 14H6L5 6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M10 11v6M14 11v6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M9 6V4h6v2"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                Delete Markers
-              </button>
-            {:else}
-              <button
-                class="ts-drop-item ts-drop-red-confirm"
-                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-                onclick={() => {
-                  deleteAllMarkers();
-                }}
-                role="menuitem"
-              >
-                Confirm Delete
-              </button>
-            {/if}
-          {/if}
-          <div class="ts-drop-split">
-            <button
-              class="ts-drop-half ts-drop-green"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                addLoopStart();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <text
-                  x="12"
-                  y="12"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  font-size="11"
-                  font-weight="700"
-                  fill="currentColor"
-                  font-family="var(--font-family)">A</text
-                >
-              </svg>
-              Loop start
-            </button>
-            <button
-              class="ts-drop-half ts-drop-green"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                addLoopEnd();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <text
-                  x="12"
-                  y="12"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  font-size="11"
-                  font-weight="700"
-                  fill="currentColor"
-                  font-family="var(--font-family)">B</text
-                >
-              </svg>
-              Loop end
-            </button>
-          </div>
-          <div class="ts-drop-split">
-            <button
-              class="ts-drop-half ts-drop-blue"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                addClipStart();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                ><circle
-                  cx="7"
-                  cy="8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><circle
-                  cx="7"
-                  cy="15.8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><path
-                  d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /></svg
-              >
-              Clip start
-            </button>
-            <button
-              class="ts-drop-half ts-drop-blue"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                addClipEnd();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                ><circle
-                  cx="17"
-                  cy="8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><circle
-                  cx="17"
-                  cy="15.8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><path
-                  d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /></svg
-              >
-              Clip end
-            </button>
-          </div>
-          <button
-            class="ts-drop-item ts-drop-yellow"
-            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
-            onclick={() => {
-              addTimestamp();
-              tsDeleteConfirm = false;
-            }}
-            role="menuitem"
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-            </svg>
-            Add Timestamp
-          </button>
-          </div>
-          </div>
-      {/if}
+      <MarkerDropdown
+        open={tsMenuOpen}
+        onClose={closeTsDropdown}
+        {hasAnyMarkers}
+        {addTimestamp}
+        {addLoopStart}
+        {addLoopEnd}
+        {addClipStart}
+        {addClipEnd}
+        {deleteAllMarkers}
+      />
     </div>
     <button
       class="time-display tooltip-ctrl"
@@ -1209,159 +854,12 @@
           </svg>
         {/if}
       </button>
-      {#if loopMenuOpen}
-        <div class="loop-drop-menu" role="menu">
-          <div
-            class="loop-drop-header"
-            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <rect
-                x="4"
-                y="4"
-                width="16"
-                height="16"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <span>After playback</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <rect
-                x="4"
-                y="4"
-                width="16"
-                height="16"
-                rx="2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-          <div class="edit-menu-card">
-          <div class="loop-drop-grid">
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "stop"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-              onclick={() => {
-                setLoopMode("stop");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-              Stop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "next"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                setLoopMode("next");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path d="M5 4l10 8-10 8V4z" fill="currentColor" />
-                <rect
-                  x="19"
-                  y="4"
-                  width="2"
-                  height="16"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-              Play next
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "loop"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                setLoopMode("loop");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M17 2L21 6L17 10"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M3 11V9C3 7.9 3.9 7 5 7H21"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M7 22L3 18L7 14"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-                <path
-                  d="M21 13V15C21 16.1 20.1 17 19 17H3"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-              Loop
-            </button>
-            <button
-              class="loop-drop-btn"
-              class:active={looping === "shuffle"}
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
-              onclick={() => {
-                setLoopMode("shuffle");
-                loopMenuOpen = false;
-              }}
-              role="menuitem"
-            >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 7h5l9 10h4" />
-                <path d="M3 17h5l2-2.2" />
-                <path d="M17 5l4 4-4 4" />
-                <path d="M17 13l4 4-4 4" />
-              </svg>
-              Shuffle
-            </button>
-          </div>
-          </div>
-        </div>
-      {/if}
+      <LoopDropdown
+        open={loopMenuOpen}
+        onClose={closeLoopDropdown}
+        {looping}
+        {setLoopMode}
+      />
     </div>
     <div
       class="volume-control"
@@ -1643,7 +1141,6 @@
         class:ts-menu-open={tsMenuOpen}
         onclick={() => {
           tsMenuOpen = !tsMenuOpen;
-          tsDeleteConfirm = false;
         }}
         aria-label="markers menu"
       >
@@ -1678,228 +1175,17 @@
           </g>
         </svg>
       </button>
-      {#if tsMenuOpen}
-        <div class="ts-drop-menu" role="menu">
-          <div
-            class="ts-drop-header"
-            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 0ms"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <polygon
-                points="12,2 22,12 12,22 2,12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <span>Markers</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
-              <polygon
-                points="12,2 22,12 12,22 2,12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-          <div class="edit-menu-card">
-          {#if hasAnyMarkers}
-            {#if !tsDeleteConfirm}
-              <button
-                class="ts-drop-item ts-drop-red"
-                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-                onclick={handleDeleteMarkersClick}
-                role="menuitem"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                  <polyline
-                    points="3 6 5 6 21 6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M19 6l-1 14H6L5 6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M10 11v6M14 11v6"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <path
-                    d="M9 6V4h6v2"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                Delete Markers
-              </button>
-            {:else}
-              <button
-                class="ts-drop-item ts-drop-red-confirm"
-                style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 55ms"
-                onclick={() => {
-                  deleteAllMarkers();
-                }}
-                role="menuitem"
-              >
-                Confirm Delete
-              </button>
-            {/if}
-          {/if}
-          <div class="ts-drop-split">
-            <button
-              class="ts-drop-half ts-drop-green"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                addLoopStart();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <text
-                  x="12"
-                  y="12"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  font-size="11"
-                  font-weight="700"
-                  fill="currentColor"
-                  font-family="var(--font-family)">A</text
-                >
-              </svg>
-              Loop start
-            </button>
-            <button
-              class="ts-drop-half ts-drop-green"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 110ms"
-              onclick={() => {
-                addLoopEnd();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <text
-                  x="12"
-                  y="12"
-                  text-anchor="middle"
-                  dominant-baseline="central"
-                  font-size="11"
-                  font-weight="700"
-                  fill="currentColor"
-                  font-family="var(--font-family)">B</text
-                >
-              </svg>
-              Loop end
-            </button>
-          </div>
-          <div class="ts-drop-split">
-            <button
-              class="ts-drop-half ts-drop-blue"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                addClipStart();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                ><circle
-                  cx="7"
-                  cy="8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><circle
-                  cx="7"
-                  cy="15.8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><path
-                  d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /></svg
-              >
-              Clip start
-            </button>
-            <button
-              class="ts-drop-half ts-drop-blue"
-              style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 165ms"
-              onclick={() => {
-                addClipEnd();
-              }}
-              role="menuitem"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                ><circle
-                  cx="17"
-                  cy="8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><circle
-                  cx="17"
-                  cy="15.8"
-                  r="2.2"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /><path
-                  d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                /></svg
-              >
-              Clip end
-            </button>
-          </div>
-          <button
-            class="ts-drop-item ts-drop-yellow"
-            style="animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: 220ms"
-            onclick={() => {
-              addTimestamp();
-              tsDeleteConfirm = false;
-            }}
-            role="menuitem"
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-            </svg>
-            Add Timestamp
-          </button>
-          </div>
-          </div>
-      {/if}
+      <MarkerDropdown
+        open={tsMenuOpen}
+        onClose={closeTsDropdown}
+        {hasAnyMarkers}
+        {addTimestamp}
+        {addLoopStart}
+        {addLoopEnd}
+        {addClipStart}
+        {addClipEnd}
+        {deleteAllMarkers}
+      />
     </div>
     <button
       class="fs-time tooltip-ctrl"
