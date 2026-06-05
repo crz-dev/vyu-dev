@@ -104,7 +104,7 @@ A few choices shaped Vyu's architecture, and it's worth knowing the reasoning be
 
 **Custom title bar.** `decorations: false` in `tauri.conf.json` — Vyu draws its own title bar so it can blend the window controls with the current theme and put the current filename there for inline rename.
 
-**One file, lots of features.** `+page.svelte` is around 2,400 lines. The reason: the app is one continuous experience (viewer, controls, timeline, dialogs all share state), and splitting it across many files would have meant passing the same state objects around everywhere. The backend in `src-tauri/src/lib.rs` follows the same philosophy — every Tauri command in one file.
+**Features live in their own modules.** Each concern — viewer, editing, playback, clips, PDF, markup, theme, file watching — is a self-contained feature module under `src/lib/features/`. `src/routes/+page.svelte` is a layout shell that wires them together; new state and handlers belong in a feature module, not in the page. The backend in `src-tauri/src/lib.rs` is currently one file by convenience; that's slated for an upcoming split.
 
 ## Tech stack
 
@@ -170,7 +170,7 @@ src-tauri/              # Backend (Rust)
 └── capabilities/       # Tauri 2 capability permissions
 ```
 
-A more detailed data-flow reference (file open, navigation, video lifecycle, localStorage key map) lives in [DATAFLOW.md](./DATAFLOW.md).
+The module ownership map and data flow live in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Contributing
 

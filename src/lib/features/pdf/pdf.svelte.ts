@@ -1,8 +1,6 @@
-// DATAFLOW: createPdf manages PDF.js document loading and per-page canvas rendering.
+// Worker is disabled (disableWorker: true): Tauri's asset:// protocol is not
+// supported by WebView2 Web Workers. Rendering runs on the main thread instead.
 // Pages are rendered lazily via IntersectionObserver for large documents.
-// Zoom re-renders visible pages at the new scale.
-// Worker is disabled (disableWorker: true) because Tauri's custom protocol (asset://)
-// is not supported by WebView2 for Web Workers. Runs on main thread instead.
 import { convertFileSrc } from "@tauri-apps/api/core";
 
 export interface PdfPage {

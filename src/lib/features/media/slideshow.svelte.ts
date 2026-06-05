@@ -1,16 +1,8 @@
-// DATAFLOW: bind() receives live refs from +page.svelte. schedule() uses setTimeout
-// (images) or 'ended' event (videos). advanceFn → +page.svelte:advanceSlide → media.displayFile.
-import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
-import { getFileExt } from "$lib/services/files";
+import { isDocument, isTimedMedia } from "$lib/shared/media-kind";
 
 export type SlideshowOrder = "next" | "shuffle";
 export type SlideshowVideoMode = "skip" | "full";
 export type SlideshowTransition = "none" | "fade" | "slide";
-
-function getIsTimedMedia(path: string): boolean {
-  const ext = getFileExt(path);
-  return VIDEO_EXTS.includes(ext) || AUDIO_EXTS.includes(ext);
-}
 
 export function createSlideshow() {
   let active = $state(false);
@@ -78,11 +70,11 @@ export function createSlideshow() {
     const currentIndex = bound.getCurrentIndex();
     if (fileList.length === 0) return;
     const path = fileList[currentIndex];
-    const isTimed = getIsTimedMedia(path);
-    const isDocument = DOCUMENT_EXTS.includes(getFileExt(path));
+    const timed = isTimedMedia(path);
+    const document = isDocument(path);
 
     // Always skip documents (PDFs) in slideshow
-    if (isDocument) {
+    if (document) {
       if (fileList.length === 1) {
         stop();
         return;
@@ -95,7 +87,7 @@ export function createSlideshow() {
       return;
     }
 
-    if (isTimed && videoMode === "skip") {
+    if (timed && videoMode === "skip") {
       if (fileList.length === 1) {
         timer = setTimeout(() => {
           if (!active || paused) return;
@@ -111,7 +103,7 @@ export function createSlideshow() {
       return;
     }
 
-    if (isTimed && videoMode === "full") {
+    if (timed && videoMode === "full") {
       const mediaEl = bound.getMediaEl();
       if (mediaEl) {
         clearVideoListener();

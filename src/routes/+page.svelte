@@ -1,5 +1,4 @@
-<!-- DATAFLOW: loadFile → media.loadFile → displayFile → services.
-  navigate → media.navigate → displayFile. videoEl bound and injected into viewer/playback/slideshow. -->
+<!-- Layout shell: wires feature modules into the template. State and handlers live in src/lib/features/*/. -->
 <script lang="ts">
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -74,7 +73,7 @@
     clearFolderCache,
     rescanFolder,
   } from "$lib/services/files";
-  import { createMedia } from "$lib/features/media/media";
+  import { createMedia } from "$lib/features/media/media.svelte";
   import { viewer } from "$lib/features/viewer/viewer.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
@@ -1320,7 +1319,7 @@
 
   // ── File loading / navigation ──────────────────────────
   function setMediaState(
-    data: Partial<import("$lib/features/media/media").MediaState>,
+    data: Partial<import("$lib/features/media/media.svelte").MediaState>,
   ) {
     if (data.filePath !== undefined) filePath = data.filePath;
     if (data.fileSrc !== undefined) fileSrc = data.fileSrc;

@@ -1,6 +1,3 @@
-// DATAFLOW: readMediaFilesInFolder (line 40) scans parent dir for sibling media —
-// called by media.ts:loadFile (line 172) on initial file open only.
-// rescanFolder (line 80) re-reads a folder bypassing cache — used by the file watcher.
 import { readDir, stat } from "@tauri-apps/plugin-fs";
 import { ALL_EXTS } from "$lib/shared/constants";
 import type { SortMode } from "$lib/shared/constants";

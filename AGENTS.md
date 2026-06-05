@@ -1,99 +1,73 @@
 # Vyu — Agent Notes
 
-## Quick Commands
+Tauri 2 + Svelte 5 (runes) + TypeScript + pnpm. Windows desktop media viewer.
 
-| Task                        | Command                                                                              |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| Install deps                | `pnpm install`                                                                       |
-| Dev (Tauri + SvelteKit SPA) | `pnpm tauri dev`                                                                     |
-| Production build            | `pnpm tauri build`                                                                   |
-| Type check                  | `pnpm check` (runs `svelte-kit sync && svelte-check`)                                |
-| Format                      | `pnpm prettier --write .` (Prettier + `prettier-plugin-svelte`)                      |
-| Lint                        | ESLint is config-only (`eslint-config-prettier`) — no rules, just disables conflicts |
+See `ARCHITECTURE.md` for module ownership, state patterns, and where to put new code.
 
-**Prerequisites:** Rust toolchain (Tauri backend) + FFmpeg on PATH (video processing, thumbnails, format conversion). FFmpeg is **not bundled** — the app checks via `check_ffprobe()` and offers `install_ffmpeg()` (winget on Windows only).
+## Commands
 
-## Architecture
+| Task       | Command                   |
+| ---------- | ------------------------- |
+| Install    | `pnpm install`            |
+| Dev        | `pnpm tauri dev`          |
+| Build      | `pnpm tauri build`        |
+| Type check | `pnpm check`              |
+| Format     | `pnpm prettier --write .` |
 
-**Tauri 2** desktop app with a **SvelteKit static SPA** frontend. Single-page app — `adapter-static` with `fallback: "index.html"`, no SSR.
+Lint is config-only (`eslint-config-prettier`) — no rules, just disables conflicts.
 
-### Two halves
+**Prereqs:** Rust toolchain + FFmpeg on PATH (video processing, thumbnails, conversion). FFmpeg is not bundled; the app offers `install_ffmpeg()` via winget on Windows when missing.
 
-| Layer                     | Location                             | Role                                                                                                   |
-| ------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Frontend (Svelte 5 runes) | `src/`                               | UI, state machines, viewer logic, all in-browser rendering                                             |
-| Backend (Rust)            | `src-tauri/src/lib.rs` (~1753 lines) | Tauri commands: file I/O, FFmpeg orchestration, thumbnails, clipboard, trash, zip, media integrity/fix |
+## Hard rules
 
-### Frontend structure
+These are non-negotiable. If a task seems to require breaking one of them, stop and ask.
 
-- **`src/routes/+page.svelte`** (~2416 lines) — the entire app. All state, keybinds, template.
-- **`src/lib/features/`** — feature modules with `.svelte.ts` state files and `.svelte` components:
-  - `viewer/` — zoom, pan, rotate, flip, crop state + fullscreen overlay
-  - `timeline/` — timestamp markers on video scrubber
-  - `media/` — core file loading, playback, clips, slideshow, Tauri invoke wrappers
-  - `pdf/` — PDF.js document loading, per-page canvas rendering (`pdf.svelte.ts`)
-  - `navigation/` — thumbnail bar
-  - `dialogs/` — settings, about, help, feedback, accessibility, file properties
-  - `menus/` — floating edit/process/slideshow/dropdown menus
-  - `editing/` — crop overlay
-- **`src/lib/services/`** — backend-agnostic utilities: file scanning, localStorage, clipboard, context menus
-- **`src/lib/shared/`** — constants (4 extension lists: image/video/audio/document), types, keybinds, Tooltip
-- **`src/lib/styles/`** — modular CSS (variables, layout, components, overlays, tooltips, animations)
+- **Do not add state, handlers, or business logic to `src/routes/+page.svelte`.** It is a layout shell. New state goes in a feature module under `src/lib/features/*/`. See `ARCHITECTURE.md` for the ownership map.
+- **Do not add SvelteKit routes.** This is intentionally a single-page app.
+- **Do not bundle FFmpeg.** The backend shells out to `ffmpeg` on PATH.
+- **Do not add new icons in the top-level toolbar that don't already exist in the design.** The shell bar is fixed.
+- **Do not introduce a new top-level dependency** (npm, cargo) without an explicit reason in the PR description.
 
-### Supported media
+## Conventions
 
-| Type     | Extensions                                                                     | Notes                                                                     |
-| -------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Image    | JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, 24 RAW formats | Unsupported formats decoded via Rust `image` crate or FFmpeg → cached PNG |
-| Video    | MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V                             | TS/M2TS remuxed to MP4 via `ffmpeg -c copy` for browser playback          |
-| Audio    | MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC                           | Waveform thumbnails via FFmpeg                                            |
-| Document | PDF                                                                            | Rendered with pdfjs-dist (dynamically imported, code-split)               |
+- **Svelte 5 runes** — `$state`, `$derived`, `$effect`. No legacy `let`/`$:` reactivity.
+- **TypeScript strict** — `tsconfig.json` extends `.svelte-kit/tsconfig.json` with `strict: true`.
+- **No SSR** — `+layout.ts` exports `ssr = false`.
+- **localStorage** — all user state uses `vyu-` prefix. See `ARCHITECTURE.md` for the key scheme.
+- **Vite port 1420** — hardcoded in `vite.config.js` and `tauri.conf.json` with `strictPort: true`.
+- **Window decorations disabled** — `decorations: false` in `tauri.conf.json`; the app draws its own title bar.
+- **Asset protocol enabled** — `assetProtocol` with scope `**` in `tauri.conf.json` for local media.
+- **Extension lists stay in sync** — `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` have matching `*_RUST` constants in `src-tauri/src/lib.rs`. Same for `BROWSER_UNSUPPORTED_IMAGE_EXTS` and `REMUX_VIDEO_EXTS`.
+- **Cache locations** — thumbnails at `%LOCALAPPDATA%/vyu/cache/thumbnails/`, display images at `%LOCALAPPDATA%/vyu/cache/displays/`, temp at `%TEMP%/Vyu-temp/`.
+- **pdfjs-dist is dynamically imported** — only loaded when a PDF is opened (code-split). Worker is injected via `globalThis.pdfjsWorker`.
 
-### Backend (Rust)
+## Style
 
-All Tauri commands in `src-tauri/src/lib.rs`. Key capabilities:
+The codebase is meant to read like a careful senior wrote it, not a model. The rules below exist because each one was the result of accumulated cruft from previous AI sessions.
 
-- Thumbnail generation (video frames, image resize, audio waveform)
-- Display image prep (decode TIFF/PSD/JXL/RAW/HEIC → cached PNG in `%LOCALAPPDATA%/vyu/cache/displays/`)
-- Video remuxing (TS/M2TS → MP4)
+- No decorative `// ── ... ──` ASCII section headers in source files. The folder structure is the section header.
+- No `// DATAFLOW:` or `<!-- DATAFLOW -->` flow comments in source files. The module exports are the doc.
+- No JSDoc on private helpers. Comments explain _why_, never _what_.
+- No defensive null chains that re-check what an earlier guard already covered.
+- Prefer early returns over nested `if`/`else`.
+- One blank line between functions; none between a function and its return statement.
+- Imports grouped: stdlib, third-party, `$lib/*` — single blank line between groups.
+- Use `let` for `$state` declarations; never mix `const x = $state(...)` with non-state declarations on adjacent lines.
+- No emoji, no exclamation points in user-facing strings. Vyu's tone is terse.
+- No logging on the happy path. `console.error` only for caught-and-swallowed failures.
+- Prefer `===` and `!==`. Never `==` or `!=`.
+- Prefer named functions over anonymous arrow functions in event handlers (`onclick={handleClick}`, not `onclick={() => doThing()}`) unless the closure captures something specific.
+
+## Backend (Rust)
+
+All Tauri commands currently live in `src-tauri/src/lib.rs`. This is a known wart — it will be split by domain in a later refactor. Until then:
+
+- Thumbnail generation: video frames, image resize, audio waveform
+- Display image prep: TIFF/PSD/JXL/RAW/HEIC → cached PNG
+- Video remuxing: TS/M2TS → MP4
 - Clip extraction, merge, export
 - Media conversion (format + preset) and compression (zip)
 - Crop/edit export via FFmpeg filters
 - Media integrity check and fix
-- File delete, trash, rename, copy, backup, show in explorer
-- Window state persistence (position/size/maximized)
-
-## Key Conventions
-
-- **Svelte 5 runes mode** — `$state`, `$derived`, `$effect`. No legacy `let`/`$:` syntax.
-- **TypeScript strict** — `tsconfig.json` extends `.svelte-kit/tsconfig.json` with `strict: true`.
-- **No SSR** — `+layout.ts` exports `ssr = false`.
-- **LocalStorage persistence** — all user state uses `vyu-` prefix. Stale entries capped at 500 per group on startup. See `DATAFLOW.md` for full key map.
-- **Vite port 1420** — hardcoded in `vite.config.js` and `tauri.conf.json` with `strictPort: true`. Must be available.
-- **Window decorations disabled** — `decorations: false` in `tauri.conf.json`; app draws its own title bar.
-- **Asset protocol enabled** — `assetProtocol` with scope `**` in `tauri.conf.json` for loading local media.
-
-## Important Files
-
-| File                                       | Why it matters                                                               |
-| ------------------------------------------ | ---------------------------------------------------------------------------- |
-| `src/routes/+page.svelte`                  | Main app entry — all state, keybinds, template                               |
-| `src-tauri/src/lib.rs`                     | All Tauri `#[tauri::command]` handlers                                       |
-| `src/lib/features/media/media.svelte.ts`   | Core file loading, navigation, display state                                 |
-| `src/lib/features/viewer/viewer.svelte.ts` | Image/video viewer state machine                                             |
-| `src/lib/features/pdf/pdf.svelte.ts`       | PDF.js loading, canvas rendering, scale control                              |
-| `src/lib/services/storage.ts`              | localStorage read/write for all persisted state                              |
-| `src/lib/services/files.ts`                | Folder scanning with LRU cache (max 50 folders)                              |
-| `src/lib/shared/constants.ts`              | Extension lists, constants — must match `*_RUST` in `lib.rs`                 |
-| `DATAFLOW.md`                              | Detailed data flow: file open, navigation, video lifecycle, localStorage map |
-
-## Gotchas
-
-- **Do not add SvelteKit routes** — intentionally a single-page app. All UI goes in `+page.svelte` or `src/lib/` components.
-- **FFmpeg uses `Command::new("ffmpeg")`** — relies on system PATH, not bundled.
-- **Extension lists must stay in sync** — `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `constants.ts` have matching `*_RUST` constants in `lib.rs`. Also `BROWSER_UNSUPPORTED_IMAGE_EXTS`, `REMUX_VIDEO_EXTS` and their Rust counterparts.
-- **Thumbnail cache** — `%LOCALAPPDATA%/vyu/cache/thumbnails/`, hashed by path, invalidated by source mtime.
-- **Display cache** — `%LOCALAPPDATA%/vyu/cache/displays/` as PNGs for unsupported images.
-- **Temp backups** — `%TEMP%/Vyu-temp/`, cleaned on app start and close.
-- **pdfjs-dist is dynamically imported** — only loaded when a PDF is opened (code-split). Worker is injected via `globalThis.pdfjsWorker`.
-- **Slideshow skips PDFs** — documents are never auto-advanced in slideshow mode.
+- File ops: delete, trash, rename, copy, backup, show in explorer
+- Window state persistence

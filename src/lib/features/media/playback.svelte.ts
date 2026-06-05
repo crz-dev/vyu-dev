@@ -1,5 +1,3 @@
-// DATAFLOW: createPlaybackActions monitors <video> element via videoElRef callback.
-// Progress is polled via requestAnimationFrame in +page.svelte.
 import { VOLUME_SEGMENTS } from "$lib/shared/constants";
 
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 2, 3];

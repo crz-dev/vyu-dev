@@ -1,45 +1,19 @@
-// DATAFLOW: loadFile/displayFile → services/files + services/storage.
-// navigate → displayFile (no folder rescan). closeFile → releaseMediaResources + reset state.
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
-import {
-  VIDEO_EXTS,
-  AUDIO_EXTS,
-  DOCUMENT_EXTS,
-  BROWSER_UNSUPPORTED_IMAGE_EXTS,
-  REMUX_VIDEO_EXTS,
-} from "$lib/shared/constants";
-import {
-  readMediaFilesInFolder,
-  getFileName,
-  getFileExt,
-} from "$lib/services/files";
+import { getFileName } from "$lib/services/files";
 import {
   readTimestamps,
   readClipBoundaries,
   loadResumePoint,
 } from "$lib/services/storage";
+import {
+  isVideo as pathIsVideo,
+  isAudio as pathIsAudio,
+  isPdf as pathIsPdf,
+  isBrowserUnsupportedImage,
+  needsRemux,
+} from "$lib/shared/media-kind";
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatMetaDate(value: unknown): string {
-  if (value === null || value === undefined) return "Unknown";
-  const asNumber = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(asNumber)) return "Unknown";
-  const ms = asNumber < 10_000_000_000 ? asNumber * 1000 : asNumber;
-  const d = new Date(ms);
-  if (Number.isNaN(d.getTime())) return "Unknown";
-  return d.toLocaleString();
-}
-
-function getMetaValue(obj: unknown, key: string): unknown {
-  if (!obj || typeof obj !== "object") return undefined;
-  return (obj as Record<string, unknown>)[key];
-}
 
 export interface MediaState {
   filePath: string;
@@ -69,6 +43,26 @@ export interface MediaState {
   timestamps: VideoMarker[];
   clipBoundaries: ClipBoundary[];
   resumePoint: number | null;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatMetaDate(value: unknown): string {
+  if (value === null || value === undefined) return "Unknown";
+  const asNumber = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(asNumber)) return "Unknown";
+  const ms = asNumber < 10_000_000_000 ? asNumber * 1000 : asNumber;
+  const d = new Date(ms);
+  if (Number.isNaN(d.getTime())) return "Unknown";
+  return d.toLocaleString();
+}
+
+function getMetaValue(obj: unknown, key: string): unknown {
+  if (!obj || typeof obj !== "object") return undefined;
+  return (obj as Record<string, unknown>)[key];
 }
 
 export function createMedia(
@@ -127,10 +121,9 @@ export function createMedia(
   ): Promise<void> {
     releaseMediaResources();
 
-    const ext = getFileExt(path);
-    const isVideo = VIDEO_EXTS.includes(ext);
-    const isAudio = AUDIO_EXTS.includes(ext);
-    const isPdf = DOCUMENT_EXTS.includes(ext);
+    const isVideo = pathIsVideo(path);
+    const isAudio = pathIsAudio(path);
+    const isPdf = pathIsPdf(path);
 
     set({
       filePath: path,
@@ -162,46 +155,7 @@ export function createMedia(
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    // For browser-unsupported image formats (TIFF, PSD, JXL, HEIC),
-    // decode server-side and serve a cached PNG for display.
-    if (BROWSER_UNSUPPORTED_IMAGE_EXTS.has(ext)) {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const displayPath = await invoke<string | null>(
-          "prepare_display_image",
-          { path },
-        );
-        if (displayPath) {
-          set({ fileSrc: convertFileSrc(displayPath) });
-        } else {
-          set({ fileSrc: convertFileSrc(path) });
-        }
-      } catch (e) {
-        console.error("prepare_display_image failed:", e);
-        set({ fileSrc: convertFileSrc(path) });
-      }
-    }
-    // For remux-needed video formats (TS, M2TS),
-    // remux to MP4 server-side for browser playback.
-    else if (REMUX_VIDEO_EXTS.has(ext)) {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        const displayPath = await invoke<string | null>(
-          "prepare_video_display",
-          { path },
-        );
-        set({
-          fileSrc: displayPath
-            ? convertFileSrc(displayPath)
-            : convertFileSrc(path),
-        });
-      } catch (e) {
-        console.error("prepare_video_display failed:", e);
-        set({ fileSrc: convertFileSrc(path) });
-      }
-    } else {
-      set({ fileSrc: convertFileSrc(path) });
-    }
+    set({ fileSrc: convertFileSrc(await prepareDisplayPath(path)) });
 
     try {
       let info = statCache.get(path);
@@ -245,6 +199,7 @@ export function createMedia(
     set({ isLoadingFile: true, loadingFadingOut: false });
     await displayFile(path, set);
     try {
+      const { readMediaFilesInFolder } = await import("$lib/services/files");
       const list = await readMediaFilesInFolder(path, sortMode, sortDesc);
       setFileList(list, list.indexOf(path));
     } catch (e) {
@@ -334,12 +289,9 @@ export function createMedia(
   ): void {
     const videoEl = videoElRef();
     if (!videoEl) return;
-    const volume = getVolume();
-    const muted = getMuted();
-    const looping = getLooping();
-    videoEl.volume = volume;
-    videoEl.muted = muted;
-    videoEl.loop = looping;
+    videoEl.volume = getVolume();
+    videoEl.muted = getMuted();
+    videoEl.loop = getLooping();
     set({
       fileDimensions: `${videoEl.videoWidth} × ${videoEl.videoHeight}`,
       fileInfoLoading: false,
@@ -361,4 +313,32 @@ export function createMedia(
     onVideoLoad,
     finishLoading,
   };
+}
+
+async function prepareDisplayPath(path: string): Promise<string> {
+  if (isBrowserUnsupportedImage(path)) {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const displayPath = await invoke<string | null>("prepare_display_image", {
+        path,
+      });
+      return displayPath ?? path;
+    } catch (e) {
+      console.error("prepare_display_image failed:", e);
+      return path;
+    }
+  }
+  if (needsRemux(path)) {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const displayPath = await invoke<string | null>("prepare_video_display", {
+        path,
+      });
+      return displayPath ?? path;
+    } catch (e) {
+      console.error("prepare_video_display failed:", e);
+      return path;
+    }
+  }
+  return path;
 }
