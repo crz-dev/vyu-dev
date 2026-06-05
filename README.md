@@ -1,62 +1,135 @@
+<div align="center">
+
 # Vyu
 
-A local-first media viewer for Windows. No telemetry, no cloud, no accounts — just your files, in one window.
+**A local-first media viewer for Windows. No telemetry, no cloud, no accounts — just your files, in one window.**
 
-## About
+![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078d4)
+![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)
+![License: Vyu Alpha](https://img.shields.io/badge/license-Vyu%20Alpha-blueviolet)
 
-Vyu is a lightweight alternative to Windows Photos and the built-in Media Player. It opens images, videos, audio files, and PDFs from your local disk — nothing leaves your machine. All preferences, clip boundaries, and resume points stay in your browser's localStorage. No network requests, ever. Works entirely offline.
+</div>
+
+---
+
+Vyu is a small, fast replacement for Windows Photos. It opens images, videos, audio files, and PDFs from your local disk — and that's the whole pitch. Nothing leaves your machine, nothing is sent anywhere, and the app keeps working the moment you disconnect from the internet. Your preferences, clip boundaries, resume points, and bookmarks all live in your browser's localStorage.
+
+It's built for people who want a viewer that gets out of the way: keyboard-friendly, theme-aware, and quick to open whatever you double-click on.
+
+## Screenshots
+
+> Drop real screenshots into a `docs/screenshots/` folder and reference them here. Suggested shots: the main image viewer, video timeline with markers, audio player with waveform, PDF page view, and the settings dialog.
+
+<!-- ![Main viewer](docs/screenshots/viewer.png) -->
+<!-- ![Video timeline](docs/screenshots/timeline.png) -->
+<!-- ![Audio waveform](docs/screenshots/audio.png) -->
+<!-- ![PDF view](docs/screenshots/pdf.png) -->
 
 ## Features
 
-- **Browse images** — JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, and 24 RAW camera formats. Unsupported formats are decoded and cached as PNG automatically.
-- **Play videos** — MP4, WebM, MKV, AVI, MOV, WMV, MPEG, TS, M2TS, M4V. TS/M2TS files are remuxed to MP4 so they play in the browser.
-- **Listen to audio** — MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC with waveform thumbnails.
-- **View PDFs** — Rendered page by page, loaded only when you open a PDF.
-- **Fullscreen mode** — Overlay controls that hide after a moment of inactivity.
-- **Zoom, pan, rotate, flip** — Scroll to zoom, drag to pan, keyboard shortcuts for rotation and flipping.
-- **Image adjustments** — Brightness, contrast, saturation, and hue sliders.
-- **Crop overlay** — Click-drag handles on corners and edges, with aspect ratio lock.
-- **Video timeline** — Frame-accurate scrubber with timestamp markers and clip boundaries.
-- **Timestamp markers** — Bookmark points in a video with optional labels. Saved per file.
-- **Clip boundaries** — Mark start/end segments on a video and export them (separate files or merged).
-- **A-B loop region** — Set a loop range for repeat playback.
-- **Slideshow** — Configurable interval, next/shuffle order, skip-or-play-videos mode, fade/slide/none transitions.
-- **Volume control** — Stepped diamond buttons or continuous slider, with keyboard shortcuts.
-- **Playback speed** — Step through 0.25x–3x, with diamond and slider controls.
-- **Keyboard navigation** — Arrow keys to browse, Ctrl+Arrow to jump to ends, Alt+Arrow to always navigate. Space to play/pause. F for fullscreen. Comma/period for frame stepping.
-- **Context menus** — Right-click to copy image, copy video frame (as PNG), copy file path, show in explorer, view file properties, delete or trash.
-- **Inline rename** — Click the filename in the title bar to rename the file on disk.
-- **Thumbnail bar** — Browse sibling files in the same folder.
-- **Process menu** — Convert media between formats (with presets) and compress files.
-- **Media properties** — Dialog showing codec info, container, dimensions, bit depth, frame rate, and more (requires FFmpeg).
-- **FFmpeg auto-install** — Detects if FFmpeg is available and offers to install it via winget.
-- **Media integrity check & fix** — Detect corruption and attempt repair via FFmpeg.
-- **Drag-and-drop** — Open files by dragging them onto the window.
-- **Clipboard paste** — Open files copied to your clipboard.
-- **Three themes** — Dark, light, and system-following, with animated transitions.
-- **Custom title bar** — Drawn by the app, with window controls and the current filename.
-- **Window state persistence** — Remembers position, size, and maximized state across sessions.
-- **All state in localStorage** — Volume, timestamps, clips, loop mode, theme, slider mode, resume points — all survive restarts.
+### Images
 
-## Tech Stack
+Vyu handles just about any image you can throw at it — including the formats browsers don't render natively.
 
-| Layer                  | Tool                                    |
-| ---------------------- | --------------------------------------- |
-| Desktop shell          | Tauri 2                                 |
-| UI framework           | Svelte 5 (runes mode)                   |
-| Meta-framework         | SvelteKit (static SPA, no SSR)          |
-| Language               | TypeScript (strict)                     |
-| Package manager        | pnpm                                    |
-| Video/image processing | FFmpeg (system PATH, not bundled)       |
-| PDF rendering          | pdfjs-dist (code-split, dynamic import) |
-| State persistence      | localStorage                            |
+- **Wide format support** — JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, and 24 RAW camera formats (CR2, CR3, NEF, ARW, DNG, RAF, RW2, and friends).
+- **Auto-decode for unsupported formats** — TIFF, PSD, JXL, HEIC, and RAW files are decoded by the backend and cached as PNGs so they open instantly the second time.
+- **Zoom, pan, rotate, flip** — scroll to zoom, drag to pan, keyboard shortcuts for rotation and mirroring.
+- **Adjustments** — brightness, contrast, saturation, and hue sliders, with live preview.
+- **Crop overlay** — drag handles on the corners and edges, with an aspect-ratio lock.
+- **Copy & paste** — right-click to copy the image, or paste an image from your clipboard to open it.
 
-## Getting Started
+### Video
+
+A clean player with the tools you'd actually use, none of the bloat.
+
+- **Wide format support** — MP4, WebM, MKV, AVI, MOV, WMV, MPEG, M4V, plus TS and M2TS (remuxed to MP4 on the fly so they play in-browser).
+- **Frame-accurate timeline** — scrubber with timestamp markers, clip boundaries, and an A-B loop region.
+- **Timestamp bookmarks** — drop labelled markers on a video, saved per file, ready when you come back.
+- **Clip export** — mark in/out points, export as separate files or merge into one.
+- **Playback speed** — 0.25x to 3x, with both stepped buttons and a continuous slider.
+- **Frame stepping** — comma and period nudge the playhead one frame at a time.
+- **Copy current frame** — grab a PNG of whatever's on screen, right from the context menu.
+
+### Audio
+
+Plays the formats you'd expect, and shows you what you're listening to.
+
+- **Wide format support** — MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC.
+- **Waveform thumbnails** — generated by FFmpeg so you can see the shape of a track before opening it.
+- **Loop modes** — loop the current track, stop at the end, auto-advance, or shuffle.
+- **Volume control** — stepped diamond buttons or a continuous slider, with a mute toggle.
+
+### PDFs
+
+- **Page-by-page rendering** — only loaded when you actually open a PDF (code-split, so the rest of the app stays light).
+- **Zoom and pan** — same controls as the image viewer.
+
+### Across the app
+
+These are the things that make Vyu feel like one cohesive tool, not four viewers duct-taped together.
+
+- **Slideshow** — configurable interval, next or shuffle order, optional video playback, with fade, slide, or hard-cut transitions. PDFs are skipped automatically.
+- **Three themes** — dark, light, or follow the system, with smooth animated transitions.
+- **Custom title bar** — drawn by the app itself, with the current filename inlined so you can rename files in place.
+- **Drag-and-drop** — drop files onto the window to open them.
+- **Clipboard paste** — paste a file path or copied file to open it.
+- **Right-click context menus** — copy image, copy video frame, copy file path, show in Explorer, view properties, delete, or trash.
+- **Thumbnail bar** — see and jump to siblings in the same folder.
+- **Sort options** — by name, date modified, date created, size, or type.
+- **Window state persistence** — position, size, and maximized state survive restarts.
+- **FFmpeg auto-install** — if FFmpeg isn't on your PATH, Vyu notices and offers to install it through winget.
+- **Media integrity check & fix** — detect corruption and attempt a repair via FFmpeg.
+- **File properties dialog** — codec, container, dimensions, bit depth, frame rate, and more.
+- **Convert & compress** — convert media between formats (with presets) or zip up a folder.
+- **Accessibility** — larger text, reduced motion, and other tweaks in the accessibility dialog.
+- **Keyboard-driven** — arrow keys to browse, Space to play/pause, F for fullscreen, and full keybind coverage for almost everything else.
+
+---
+
+# For developers
+
+The first half of this README is for people who just want to use the app. This half is for people who want to build it, modify it, or understand how it's put together.
+
+## Design decisions
+
+A few choices shaped Vyu's architecture, and it's worth knowing the reasoning before you start changing things.
+
+**Tauri, not Electron.** The native shell is built with Tauri 2, which means the binary is small, the memory footprint is low, and we get direct access to the file system and FFmpeg without bundling a second browser engine. The trade-off is a Rust toolchain as a prerequisite.
+
+**SvelteKit as a static SPA.** The frontend is SvelteKit with `adapter-static` and `fallback: "index.html"` — no SSR, no server, just a single-page app served to the Tauri webview. This keeps the build pipeline simple and means the frontend is fully testable in a regular browser.
+
+**Svelte 5 runes, no legacy syntax.** The codebase uses `$state`, `$derived`, and `$effect` throughout. If you reach for `let` and `$:`, you're in the wrong decade.
+
+**localStorage for persistence.** All user state — volume, theme, timestamps, clip boundaries, loop mode, slider mode, resume points — lives in the browser's localStorage with a `vyu-` prefix. This is intentional: there's no backend, no database, and no need for one. It also means the app is fully offline by construction. The downside is that state is bound to the browser profile, so wiping browser data wipes Vyu's state too. For a single-user desktop app, that's a fair trade.
+
+**FFmpeg on PATH, not bundled.** Vyu shells out to `ffmpeg` and `ffprobe` for video thumbnails, remuxing (TS/M2TS → MP4), audio waveforms, integrity checks, format conversion, and exporting clips. Bundling FFmpeg would have made the installer much larger; relying on PATH keeps it lean. The app checks for FFmpeg on startup and offers a one-click install via winget if it's missing.
+
+**Single-page app, no router.** Intentionally no SvelteKit routes. All UI lives in `src/routes/+page.svelte` and `src/lib/`. Adding routes would just add complexity for no real benefit at this scale.
+
+**Custom title bar.** `decorations: false` in `tauri.conf.json` — Vyu draws its own title bar so it can blend the window controls with the current theme and put the current filename there for inline rename.
+
+**One file, lots of features.** `+page.svelte` is around 2,400 lines. It looks intimidating, but it's deliberate: the app is one continuous experience (viewer, controls, timeline, dialogs all share state), and splitting it across many files would have meant passing the same state objects around everywhere. The backend in `src-tauri/src/lib.rs` follows the same philosophy — every Tauri command in one file.
+
+## Tech stack
+
+| Layer | Tool |
+| --- | --- |
+| Desktop shell | Tauri 2 |
+| UI framework | Svelte 5 (runes mode) |
+| Meta-framework | SvelteKit (static SPA, no SSR) |
+| Language | TypeScript (strict) |
+| Package manager | pnpm |
+| Video / image processing | FFmpeg (system PATH, not bundled) |
+| PDF rendering | pdfjs-dist (code-split, dynamic import) |
+| State persistence | localStorage |
+
+## Getting started
 
 ### Prerequisites
 
-- **Rust toolchain** — needed to compile Tauri's native backend. Install from [rustup.rs](https://rustup.rs).
-- **FFmpeg** — used for video processing, thumbnails, and format conversion. Not bundled with the app. If missing, Vyu will prompt to install it via winget.
+- **Rust toolchain** — required to compile the Tauri native backend. Get it from [rustup.rs](https://rustup.rs).
+- **Node.js + pnpm** — for the frontend. Install pnpm with `npm install -g pnpm` or [corepack](https://nodejs.org/api/corepack.html).
+- **FFmpeg** — used for video processing, thumbnails, and format conversion. Not bundled. If it's not on your PATH, Vyu will offer to install it via winget on first launch.
 
 ### Install and run
 
@@ -64,49 +137,61 @@ Vyu is a lightweight alternative to Windows Photos and the built-in Media Player
 # Install dependencies
 pnpm install
 
-# Run in development mode
+# Run in development mode (Tauri + SvelteKit dev server)
 pnpm tauri dev
 
-# Build for production
+# Build a production binary
 pnpm tauri build
 ```
 
-## Project Structure
+The dev server is pinned to port **1420** (with `strictPort: true`) in both `vite.config.js` and `tauri.conf.json`. Make sure it's free.
+
+### Useful commands
+
+| Task | Command |
+| --- | --- |
+| Type check | `pnpm check` |
+| Format | `pnpm prettier --write .` |
+
+## Project structure
 
 ```
 src/                    # Frontend (Svelte + TypeScript)
 ├── routes/
-│   ├── +page.svelte    # Single-page app — all state and template
+│   ├── +page.svelte    # The whole app — state, keybinds, template
 │   └── +layout.ts      # Disables SSR
 ├── lib/
-│   ├── features/       # Feature modules with state files (.svelte.ts) and components
-│   │   ├── media/      # File loading, playback, clips, slideshow
-│   │   ├── viewer/     # Zoom, pan, rotate, fullscreen
-│   │   ├── timeline/   # Timestamp markers on video scrubber
-│   │   ├── editing/    # Crop overlay and image adjustments
-│   │   ├── pdf/        # PDF document loading and rendering
-│   │   ├── navigation/ # Thumbnail bar
-│   │   ├── dialogs/    # Settings, about, help, feedback, accessibility, file properties
-│   │   ├── menus/      # Edit, process, slideshow, app menus
-│   │   └── theme/      # Dark/light/system theme with transitions
+│   ├── features/       # Feature modules: media, viewer, timeline, editing, pdf, navigation, dialogs, menus
 │   ├── services/       # Folder scanning, localStorage, clipboard, context menus
 │   ├── shared/         # Constants, types, keybinds, tooltip, shell, toast
-│   └── styles/         # Modular CSS (variables, layout, components, overlays)
+│   └── styles/         # Modular CSS — variables, layout, components, overlays, animations
+└── static/             # Static assets served as-is
+
 src-tauri/              # Backend (Rust)
-├── src/lib.rs          # All Tauri commands (~1750 lines)
-├── tauri.conf.json     # Tauri configuration
+├── src/lib.rs          # All Tauri commands (~1,750 lines)
+├── tauri.conf.json     # App config, file associations, bundle
 ├── Cargo.toml          # Rust dependencies
 └── capabilities/       # Tauri 2 capability permissions
 ```
 
-A detailed data flow reference is in [DATAFLOW.md](./DATAFLOW.md).
+A more detailed data-flow reference (file open, navigation, video lifecycle, localStorage key map) lives in [DATAFLOW.md](./DATAFLOW.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md). The short version: open an issue before sending a PR for anything non-trivial, follow the existing patterns (Svelte 5 runes, single-page, one main file), and keep the diff focused.
+
+## License
+
+Vyu is released under the [Vyu Alpha License](./LICENSE) — see the file for the full terms.
 
 ## Roadmap
+
+A short, honest list of what's next. No dates, no promises.
 
 - Multi-monitor fullscreen support
 - Video rotation metadata handling
 - Batch clip export queue
-- SRT/subtitle overlay for videos
+- SRT / subtitle overlay for videos
 - Color-managed display (ICC profile support)
 - Touchpad gesture navigation (swipe between files)
 - Linux support
