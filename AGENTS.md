@@ -1,73 +1,61 @@
+> Read `SESSION.md` before anything else. It has current state, last change, and what's next.
+
 # Vyu — Agent Notes
 
-Tauri 2 + Svelte 5 (runes) + TypeScript + pnpm. Windows desktop media viewer.
+Tauri 2 + Svelte 5 (runes) + TypeScript + pnpm. Windows desktop media viewer. Replaces Windows Photos. Private by architecture — no telemetry, no internet, files never leave the device.
 
-See `ARCHITECTURE.md` for module ownership, state patterns, and where to put new code.
+See `ARCHITECTURE.md` for module map and where new code goes.
 
 ## Commands
 
 | Task       | Command                   |
 | ---------- | ------------------------- |
-| Install    | `pnpm install`            |
 | Dev        | `pnpm tauri dev`          |
 | Build      | `pnpm tauri build`        |
 | Type check | `pnpm check`              |
 | Format     | `pnpm prettier --write .` |
 
-Lint is config-only (`eslint-config-prettier`) — no rules, just disables conflicts.
+**Prereqs:** Rust toolchain + FFmpeg on PATH. Not bundled — `install_ffmpeg()` via winget when missing.
 
-**Prereqs:** Rust toolchain + FFmpeg on PATH (video processing, thumbnails, conversion). FFmpeg is not bundled; the app offers `install_ffmpeg()` via winget on Windows when missing.
+## Hard rules — read first, read last
 
-## Hard rules
-
-These are non-negotiable. If a task seems to require breaking one of them, stop and ask.
-
-- **Do not add state, handlers, or business logic to `src/routes/+page.svelte`.** It is a layout shell. New state goes in a feature module under `src/lib/features/*/`. See `ARCHITECTURE.md` for the ownership map.
-- **Do not add SvelteKit routes.** This is intentionally a single-page app.
-- **Do not bundle FFmpeg.** The backend shells out to `ffmpeg` on PATH.
-- **Do not add new icons in the top-level toolbar that don't already exist in the design.** The shell bar is fixed.
-- **Do not introduce a new top-level dependency** (npm, cargo) without an explicit reason in the PR description.
+- **State goes in `src/lib/features/*/` only.** `src/routes/+page.svelte` is a layout shell.
+- **New top-level dependencies (npm, cargo) need an explicit reason stated before adding.**
+- **SvelteKit routes stay as-is.** This is intentionally a single-page app.
+- **FFmpeg stays external.** Backend shells out to `ffmpeg` on PATH.
+- **Top-level toolbar icons stay fixed.** Shell bar design is locked.
 
 ## Conventions
 
-- **Svelte 5 runes** — `$state`, `$derived`, `$effect`. No legacy `let`/`$:` reactivity.
-- **TypeScript strict** — `tsconfig.json` extends `.svelte-kit/tsconfig.json` with `strict: true`.
-- **No SSR** — `+layout.ts` exports `ssr = false`.
-- **localStorage** — all user state uses `vyu-` prefix. See `ARCHITECTURE.md` for the key scheme.
-- **Vite port 1420** — hardcoded in `vite.config.js` and `tauri.conf.json` with `strictPort: true`.
-- **Window decorations disabled** — `decorations: false` in `tauri.conf.json`; the app draws its own title bar.
-- **Asset protocol enabled** — `assetProtocol` with scope `**` in `tauri.conf.json` for local media.
-- **Extension lists stay in sync** — `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` have matching `*_RUST` constants in `src-tauri/src/lib.rs`. Same for `BROWSER_UNSUPPORTED_IMAGE_EXTS` and `REMUX_VIDEO_EXTS`.
-- **Cache locations** — thumbnails at `%LOCALAPPDATA%/vyu/cache/thumbnails/`, display images at `%LOCALAPPDATA%/vyu/cache/displays/`, temp at `%TEMP%/Vyu-temp/`.
-- **pdfjs-dist is dynamically imported** — only loaded when a PDF is opened (code-split). Worker is injected via `globalThis.pdfjsWorker`.
+- Svelte 5 runes — `$state`, `$derived`, `$effect`. No legacy `let`/`$:` reactivity.
+- TypeScript strict mode. `tsconfig.json` extends `.svelte-kit/tsconfig.json`.
+- No SSR — `+layout.ts` exports `ssr = false`.
+- `localStorage` keys use `vyu-` prefix.
+- Vite port 1420, `strictPort: true`. Window decorations disabled — app draws its own title bar.
+- `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` must stay in sync with `*_RUST` constants in `src-tauri/src/lib.rs`.
+- Cache: thumbnails → `%LOCALAPPDATA%/vyu/cache/thumbnails/`, displays → `%LOCALAPPDATA%/vyu/cache/displays/`, temp → `%TEMP%/Vyu-temp/`.
+- `pdfjs-dist` is dynamically imported — only loads when a PDF opens.
 
 ## Style
 
-The codebase is meant to read like a careful senior wrote it, not a model. The rules below exist because each one was the result of accumulated cruft from previous AI sessions.
-
-- No decorative `// ── ... ──` ASCII section headers in source files. The folder structure is the section header.
-- No `// DATAFLOW:` or `<!-- DATAFLOW -->` flow comments in source files. The module exports are the doc.
+- No decorative ASCII section headers (`// ── ... ──`). Folder structure is the section header.
+- No `// DATAFLOW:` comments. Module exports are the doc.
 - No JSDoc on private helpers. Comments explain _why_, never _what_.
-- No defensive null chains that re-check what an earlier guard already covered.
-- Prefer early returns over nested `if`/`else`.
-- One blank line between functions; none between a function and its return statement.
-- Imports grouped: stdlib, third-party, `$lib/*` — single blank line between groups.
-- Use `let` for `$state` declarations; never mix `const x = $state(...)` with non-state declarations on adjacent lines.
-- No emoji, no exclamation points in user-facing strings. Vyu's tone is terse.
-- No logging on the happy path. `console.error` only for caught-and-swallowed failures.
-- Prefer `===` and `!==`. Never `==` or `!=`.
-- Prefer named functions over anonymous arrow functions in event handlers (`onclick={handleClick}`, not `onclick={() => doThing()}`) unless the closure captures something specific.
+- No defensive null chains re-checking what an earlier guard already covered.
+- Early returns over nested if/else.
+- One blank line between functions. None between a function and its return.
+- Imports: stdlib → third-party → `$lib/*`, single blank line between groups.
+- `let` for `$state` declarations.
+- No emoji or exclamation points in user-facing strings. Tone is terse.
+- `console.error` only for caught-and-swallowed failures. No logging on the happy path.
+- Named functions over anonymous arrows in event handlers unless the closure captures something specific.
 
 ## Backend (Rust)
 
-All Tauri commands currently live in `src-tauri/src/lib.rs`. This is a known wart — it will be split by domain in a later refactor. Until then:
+All Tauri commands in `src-tauri/src/lib.rs` — known wart, will split by domain later.
+Covers: thumbnails, display image prep (TIFF/PSD/JXL/RAW/HEIC → PNG), video remuxing, clip extraction, conversion, compression, crop/edit, integrity check, file ops, window state.
 
-- Thumbnail generation: video frames, image resize, audio waveform
-- Display image prep: TIFF/PSD/JXL/RAW/HEIC → cached PNG
-- Video remuxing: TS/M2TS → MP4
-- Clip extraction, merge, export
-- Media conversion (format + preset) and compression (zip)
-- Crop/edit export via FFmpeg filters
-- Media integrity check and fix
-- File ops: delete, trash, rename, copy, backup, show in explorer
-- Window state persistence
+## Hard rules — repeated for recency
+
+- **State goes in `src/lib/features/*/` only.**
+- **New top-level dependencies need an explicit reason stated before adding.**
