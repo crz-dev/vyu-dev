@@ -55,7 +55,6 @@
     invokeExportEditedMedia,
     renderMarkupOnImage,
     invokeCheckMediaIntegrity,
-    invokeFixMedia,
     invokeProcessVideoClips,
     invokeExtractCoverArt,
   } from "$lib/features/media/tools";
@@ -95,6 +94,7 @@
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
   import AudioPlayer from "$lib/features/media/AudioPlayer.svelte";
   import Marquee from "$lib/shared/Marquee.svelte";
+  import { corruption } from "$lib/features/media/corruption.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -249,10 +249,6 @@
     visible: false,
     filePath: null,
   });
-  let corruptionWarning = $state(false);
-  let corruptionReason = $state("");
-  let corruptionFixing = $state(false);
-  let corruptionFixError = $state("");
 
   // ── Derived ────────────────────────────────────────────
   const imageScale = $derived(viewer.state.zoomLevel / 100);
@@ -306,7 +302,7 @@
       tsMenuOpen ||
       editApplyConfirm ||
       editTransparencyConfirm ||
-      corruptionWarning ||
+      corruption.state.warning ||
       sortMenuVisible,
   );
   function currentTimeDisplay(): string {
@@ -1573,9 +1569,7 @@
     mediaProps = null;
     mediaPropsLoading = false;
     clearFolderCache();
-    corruptionWarning = false;
-    corruptionReason = "";
-    corruptionFixError = "";
+    corruption.reset();
   }
 
   // ── File watcher ─────────────────────────────────────
@@ -1677,75 +1671,6 @@
     sortMenuVisible = !sortMenuVisible;
   }
 
-  // ── Corruption detection ────────────────────────────────
-  function onImageError() {
-    corruptionWarning = true;
-    corruptionReason =
-      "This image may be corrupted or in an unsupported format.";
-  }
-
-  function onVideoError() {
-    const err = videoEl?.error;
-    const reason = err
-      ? `Video decode error (code: ${err.code})`
-      : "This video may be corrupted.";
-    corruptionWarning = true;
-    corruptionReason = reason;
-  }
-
-  function onAudioError() {
-    const err = audioEl?.error;
-    const reason = err
-      ? `Audio decode error (code: ${err.code})`
-      : "This audio file may be corrupted.";
-    corruptionWarning = true;
-    corruptionReason = reason;
-  }
-
-  function dismissCorruption() {
-    corruptionWarning = false;
-    corruptionReason = "";
-  }
-
-  async function fixCopy() {
-    corruptionFixing = true;
-    corruptionFixError = "";
-    try {
-      const result = await invokeFixMedia(filePath, "copy");
-      if (result.success) {
-        corruptionWarning = false;
-        toast.showFrameCopyToast(
-          `Fixed copy saved: ${result.output_path}`,
-          "success",
-        );
-      } else {
-        corruptionFixError = result.error || "Failed to fix media";
-      }
-    } catch (e) {
-      corruptionFixError =
-        e instanceof Error ? e.message : "Failed to fix media";
-    }
-    corruptionFixing = false;
-  }
-
-  async function fixReplace() {
-    corruptionFixing = true;
-    corruptionFixError = "";
-    try {
-      const result = await invokeFixMedia(filePath, "replace");
-      if (result.success) {
-        corruptionWarning = false;
-        await loadFile(result.output_path);
-        toast.showFrameCopyToast("File fixed and replaced", "success");
-      } else {
-        corruptionFixError = result.error || "Failed to fix media";
-      }
-    } catch (e) {
-      corruptionFixError =
-        e instanceof Error ? e.message : "Failed to fix media";
-    }
-    corruptionFixing = false;
-  }
   function advanceSlide(nextIndex: number) {
     if (fileList.length === 0) return;
     editing.exitCropMode();
@@ -1856,7 +1781,7 @@
       tsEditMenu.visible ||
       tsMenuOpen ||
       clipDeleteConfirm.visible ||
-      corruptionWarning,
+      corruption.state.warning,
     closeDialogs: () => {
       contextMenu.visible = false;
       deleteConfirm = false;
@@ -1878,7 +1803,7 @@
       editTransparencyConfirm = false;
       pendingEditAction = null;
       exportFormatOverride = null;
-      corruptionWarning = false;
+      corruption.hide();
       markup.drawActive = false;
     },
     navigateToEdge,
@@ -2619,13 +2544,22 @@
   {copyPropValue}
   {performDelete}
   {runClipAction}
-  {corruptionWarning}
-  {corruptionReason}
-  {corruptionFixing}
-  {corruptionFixError}
-  {dismissCorruption}
-  {fixCopy}
-  {fixReplace}
+  corruptionWarning={corruption.state.warning}
+  corruptionReason={corruption.state.reason}
+  corruptionFixing={corruption.state.fixing}
+  corruptionFixError={corruption.state.fixError}
+  dismissCorruption={corruption.dismiss}
+  fixCopy={() =>
+    corruption.fixCopy({
+      filePath,
+      showFrameCopyToast: toast.showFrameCopyToast,
+    })}
+  fixReplace={() =>
+    corruption.fixReplace({
+      filePath,
+      loadFile,
+      showFrameCopyToast: toast.showFrameCopyToast,
+    })}
 >
   {#snippet children()}
     <div class="content">
@@ -2680,7 +2614,7 @@
                   alt={fileName}
                   decoding="async"
                   onload={onImageLoad}
-                  onerror={onImageError}
+                  onerror={corruption.onImageError}
                   style={imageStyle}
                 />
               </div>
@@ -2718,7 +2652,7 @@
                     preload="metadata"
                     autoplay
                     onloadedmetadata={onVideoLoad}
-                    onerror={onVideoError}
+                    onerror={() => corruption.onVideoError(videoEl)}
                     onended={onMediaEnded}
                   >
                     <track kind="captions" srclang="en" label="English" />
@@ -2852,7 +2786,7 @@
             {coverArtSrc}
             bind:audioEl
             {onAudioLoad}
-            {onAudioError}
+            onAudioError={() => corruption.onAudioError(audioEl)}
             onAudioEnded={onMediaEnded}
             bind:playing
             {loopMode}
