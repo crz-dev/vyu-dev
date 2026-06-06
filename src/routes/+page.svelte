@@ -50,7 +50,6 @@
     getFileExt,
     clearFolderCache,
   } from "$lib/services/files";
-  import { createMedia } from "$lib/features/media/media.svelte";
   import { viewer } from "$lib/features/viewer/viewer.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
@@ -90,7 +89,6 @@
   import AudioPlayer from "$lib/features/media/AudioPlayer.svelte";
   import Marquee from "$lib/shared/Marquee.svelte";
   import { corruption } from "$lib/features/media/corruption.svelte";
-  import { createFolderWatcher } from "$lib/features/navigation/folderWatcher.svelte";
   import { sort } from "$lib/features/navigation/sort.svelte";
   import {
     minimizeWindow,
@@ -98,7 +96,10 @@
     closeWindow,
   } from "$lib/features/window/windowControls";
   import { createFileOpenActions } from "$lib/features/fileActions/fileOpen";
+  import { createNavigation } from "$lib/features/fileActions/navigation.svelte";
   import { createPanDrag } from "$lib/features/viewer/panDrag";
+  import { createViewerEffects } from "$lib/features/viewer/viewerEffects.svelte";
+  import { createViewerStyle } from "$lib/features/viewer/viewerStyle.svelte";
   import { loadCdColorForFile } from "$lib/features/media/cdColor";
   import {
     createDeleteActions,
@@ -204,37 +205,7 @@
   });
 
   // ── Derived ────────────────────────────────────────────
-  const imageScale = $derived(viewer.state.zoomLevel / 100);
-  const cropClipPath = $derived.by(() => {
-    const bounds = editing.getCropBounds();
-    if (!bounds) return "";
-    return `inset(${(bounds.top * 100).toFixed(2)}% ${(bounds.right * 100).toFixed(2)}% ${(bounds.bottom * 100).toFixed(2)}% ${(bounds.left * 100).toFixed(2)}%)`;
-  });
-  const colorFilter = $derived.by(() => {
-    const parts: string[] = [];
-    const s = editing.snapshot;
-    if (s.brightness !== 1) parts.push(`brightness(${s.brightness})`);
-    if (s.contrast !== 1) parts.push(`contrast(${s.contrast})`);
-    if (s.saturation !== 1) parts.push(`saturate(${s.saturation})`);
-    if (s.hue !== 0) parts.push(`hue-rotate(${s.hue}deg)`);
-    return parts.length ? ` filter: ${parts.join(" ")};` : "";
-  });
-  const imageStyle = $derived(
-    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${editing.snapshot.rotation}deg) scaleX(${editing.snapshot.flipped ? -1 : 1}) scaleY(${editing.snapshot.flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
-  );
-  const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
-  const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
-  const videoInnerStyle = $derived(
-    `${videoInnerTransform}${colorFilter}${cropClipPath ? `; clip-path: ${cropClipPath}` : ""}`,
-  );
-  const panCursor = $derived(viewer.getPanCursor());
-  const fsCursor = $derived(
-    markup.drawActive
-      ? "crosshair"
-      : !viewer.state.fsControlsVisible && !markerStore.tsEditMenu.visible
-        ? "none"
-        : panCursor,
-  );
+  const style = createViewerStyle();
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
   const clips = createClips({
     getFilePath: () => filePath,
@@ -306,62 +277,19 @@
   });
 
   // ── Viewer helpers ─────────────────────────────────────
-  $effect(() => {
-    viewer.setVideoEl(videoEl);
+  const viewerFx = createViewerEffects({
+    getVideoEl: () => videoEl,
+    getViewerEl: () => viewerEl,
+    getFileSrc: () => fileSrc,
+    getIsVideo: () => isVideo,
+    getImageNaturalWidth: () => imageNaturalWidth,
+    getImageNaturalHeight: () => imageNaturalHeight,
+    getThumbnailBarVisible: () => thumbnailBarVisible,
+    getIsFullscreen: () => viewer.state.isFullscreen,
   });
-  function getViewerContentSize(): { width: number; height: number } {
-    if (!viewerEl) return { width: 0, height: 0 };
-    const style = getComputedStyle(viewerEl);
-    const padH = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-    const padV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    return {
-      width: viewerEl.clientWidth - padH,
-      height: viewerEl.clientHeight - padV,
-    };
-  }
-  $effect(() => {
-    if (!viewerEl) return;
-    const el = viewerEl;
-    const observer = new ResizeObserver(() => {
-      if (
-        fileSrc &&
-        !isVideo &&
-        imageNaturalWidth > 0 &&
-        imageNaturalHeight > 0
-      ) {
-        if (
-          Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
-        ) {
-          const { width, height } = getViewerContentSize();
-          viewer.fitToScreen(
-            width,
-            height,
-            imageNaturalWidth,
-            imageNaturalHeight,
-          );
-        }
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  });
-  // Re-fit image when thumbnail bar visibility or rotation changes.
-  // Both values are tracked as reactive dependencies but not used in the calculation.
-  $effect(() => {
-    void thumbnailBarVisible;
-    void editing.snapshot.rotation;
-    if (
-      viewerEl &&
-      fileSrc &&
-      !isVideo &&
-      !viewer.state.isFullscreen &&
-      imageNaturalWidth > 0 &&
-      imageNaturalHeight > 0
-    ) {
-      const { width, height } = getViewerContentSize();
-      viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
-    }
-  });
+  $effect(viewerFx.setVideoElEffect);
+  $effect(viewerFx.resizeObserverEffect);
+  $effect(viewerFx.refitOnChangeEffect);
   // ── Smooth progress via requestAnimationFrame ──────────
   $effect(
     createPlaybackPoller({
@@ -376,40 +304,13 @@
       setPlaying: (v) => (playing = v),
     }),
   );
-  function toggleFullscreen() {
-    viewer.toggleFullscreen();
-  }
-  function resetZoom() {
-    if (
-      viewer.state.zoomLocked ||
-      !viewerEl ||
-      imageNaturalWidth <= 0 ||
-      imageNaturalHeight <= 0
-    ) {
-      viewer.resetZoom();
-    } else {
-      const { width, height } = getViewerContentSize();
-      viewer.fitToScreen(width, height, imageNaturalWidth, imageNaturalHeight);
-    }
-  }
-  function handleToggleZoomLock() {
-    const wasLocked = viewer.state.zoomLocked;
-    viewer.toggleZoomLock();
-    if (wasLocked && !viewer.state.zoomLocked) {
-      if (viewerEl && imageNaturalWidth > 0 && imageNaturalHeight > 0) {
-        const { width, height } = getViewerContentSize();
-        viewer.fitToScreen(
-          width,
-          height,
-          imageNaturalWidth,
-          imageNaturalHeight,
-        );
-      }
-    }
-  }
-  function handleViewerScroll(e: WheelEvent) {
-    viewer.handleViewerScroll(e, fileSrc);
-  }
+  const {
+    getViewerContentSize,
+    resetZoom,
+    handleToggleZoomLock,
+    handleViewerScroll,
+    toggleFullscreen,
+  } = viewerFx;
 
   // ── Playback ───────────────────────────────────────────
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
@@ -539,275 +440,89 @@
   } = markerActions;
 
   // ── File loading / navigation ──────────────────────────
-  function setMediaState(
-    data: Partial<import("$lib/features/media/media.svelte").MediaState>,
-  ) {
-    if (data.filePath !== undefined) filePath = data.filePath;
-    if (data.fileSrc !== undefined) fileSrc = data.fileSrc;
-    if (data.fileName !== undefined) fileName = data.fileName;
-    if (data.isVideo !== undefined) isVideo = data.isVideo;
-    if (data.isAudio !== undefined) isAudio = data.isAudio;
-    if (data.isAudio && data.filePath) {
-      loadCdColorForFile(data.filePath, {
-        setCdColor: (v) => (cdColor = v),
-        setCdColorIndex: (v) => (cdColorIndex = v),
-        setCoverArtSrc: (v) => (coverArtSrc = v),
-      });
-    }
-    if (data.isPdf !== undefined) isPdf = data.isPdf;
-    if (data.fileList !== undefined) fileList = data.fileList;
-    if (data.currentIndex !== undefined) currentIndex = data.currentIndex;
-    if (data.fileSize !== undefined) fileSize = data.fileSize;
-    if (data.fileSizeBytes !== undefined) fileSizeBytes = data.fileSizeBytes;
-    if (data.fileDimensions !== undefined) fileDimensions = data.fileDimensions;
-    if (data.fileCreated !== undefined) fileCreated = data.fileCreated;
-    if (data.fileModified !== undefined) fileModified = data.fileModified;
-    if (data.fileInfoLoading !== undefined)
-      fileInfoLoading = data.fileInfoLoading;
-    if (data.isLoadingFile !== undefined) isLoadingFile = data.isLoadingFile;
-    if (data.loadingFadingOut !== undefined)
-      loadingFadingOut = data.loadingFadingOut;
-    if (data.imageRotation !== undefined)
-      editing.setRotation(data.imageRotation);
-    if (data.imageFlipped !== undefined)
-      editing.snapshot.flipped = data.imageFlipped;
-    if (data.imageNaturalWidth !== undefined)
-      imageNaturalWidth = data.imageNaturalWidth;
-    if (data.imageNaturalHeight !== undefined)
-      imageNaturalHeight = data.imageNaturalHeight;
-    if (data.rawCurrentSecs !== undefined) rawCurrentSecs = data.rawCurrentSecs;
-    if (data.rawDurationSecs !== undefined)
-      rawDurationSecs = data.rawDurationSecs;
-    if (data.progress !== undefined) progress = data.progress;
-    if (data.playing !== undefined) playing = data.playing;
-    if (data.timestamps !== undefined) markerStore.timestamps = data.timestamps;
-    if (data.clipBoundaries !== undefined)
-      clips.setBoundaries(data.clipBoundaries);
-    if (data.resumePoint !== undefined)
-      markerStore.resumePoint = data.resumePoint;
-  }
-  const media = createMedia(
-    () => videoEl,
-    () => audioEl,
-    () => volume,
-    () => muted,
-    () => loopModeStore.loopMode === "loop",
-    (newPath?: string) => {
-      markerStore.tsTooltip = { ...markerStore.tsTooltip, visible: false };
-      markerStore.tsEditMenu = { ...markerStore.tsEditMenu, visible: false };
-      markerStore.loopStart = null;
-      markerStore.loopEnd = null;
-      resetZoom();
-      viewer.state.baseZoomLevel = 100;
-      if (newPath) {
-        editing.switchFile(newPath);
-      } else {
-        editing.cleanup();
-        markup.cleanup();
-        markup.cleanup();
-      }
-      menuStore.editMenuVisible = false;
-    },
-  );
+  const pdf = createPdf();
+  const navigation = createNavigation({
+    setFilePath: (v) => (filePath = v),
+    setFileSrc: (v) => (fileSrc = v),
+    setFileName: (v) => (fileName = v),
+    setIsVideo: (v) => (isVideo = v),
+    setIsAudio: (v) => (isAudio = v),
+    setIsPdf: (v) => (isPdf = v),
+    setFileList: (v) => (fileList = v),
+    setCurrentIndex: (v) => (currentIndex = v),
+    setFileSize: (v) => (fileSize = v),
+    setFileSizeBytes: (v) => (fileSizeBytes = v),
+    setFileDimensions: (v) => (fileDimensions = v),
+    setFileCreated: (v) => (fileCreated = v),
+    setFileModified: (v) => (fileModified = v),
+    setFileInfoLoading: (v) => (fileInfoLoading = v),
+    setIsLoadingFile: (v) => (isLoadingFile = v),
+    setLoadingFadingOut: (v) => (loadingFadingOut = v),
+    setImageNaturalWidth: (v) => (imageNaturalWidth = v),
+    setImageNaturalHeight: (v) => (imageNaturalHeight = v),
+    setRawCurrentSecs: (v) => (rawCurrentSecs = v),
+    setRawDurationSecs: (v) => (rawDurationSecs = v),
+    setProgress: (v) => (progress = v),
+    setPlaying: (v) => (playing = v),
+    setRotation: (v) => editing.setRotation(v),
+    setFlipped: (v) => (editing.snapshot.flipped = v),
+    setCdColor: (v) => (cdColor = v),
+    setCdColorIndex: (v) => (cdColorIndex = v),
+    setCoverArtSrc: (v) => (coverArtSrc = v),
+    setMediaProps: (v) => (mediaProps = v),
+    setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+    setBoundaries: (v) => clips.setBoundaries(v),
+    getFilePath: () => filePath,
+    getFileList: () => fileList,
+    getCurrentIndex: () => currentIndex,
+    getIsLoadingFile: () => isLoadingFile,
+    getVolume: () => volume,
+    getMuted: () => muted,
+    getLoopMode: () => loopModeStore.loopMode,
+    getVideoEl: () => videoEl,
+    getAudioEl: () => audioEl,
+    getFsPillEl: () => fsPillEl,
+    getPendingPlay: () => pendingPlay,
+    getCropContainerEl: () => cropContainerEl,
+    getSortMode: () => sort.mode,
+    getSortDesc: () => sort.desc,
+    getPlaybackUI: () => playbackUI,
+    getViewerEl: () => viewerEl,
+    getViewerContentSize,
+    getLastPrevClickTime: () => lastPrevClickTime,
+    getThumbnailBarVisible: () => thumbnailBarVisible,
+    getResetZoom: () => resetZoom,
+    setLastPrevClickTime: (v) => (lastPrevClickTime = v),
+    setThumbnailBarVisible: (v) => (thumbnailBarVisible = v),
+    setHoverZone: (v) => (hoverZone = v),
+    pdf,
+  });
+  const {
+    loadFile,
+    navigate,
+    navigateToIndex,
+    navigateToEdge,
+    navigateToAudioFile,
+    handlePrevClick,
+    handleNextClick,
+    toggleThumbnailBar,
+    closeFile,
+    onImageLoad,
+    onVideoLoad,
+    onAudioLoad,
+    onSortChange,
+    handleFsPillContext,
+    advanceSlide,
+    setMediaState,
+    folderWatcher,
+    media,
+  } = navigation;
   slideshow.bind(
     () => fileList,
     () => currentIndex,
     advanceSlide,
     () => (isVideo ? videoEl : isAudio ? audioEl : null),
   );
-
-  // ── PDF ─────────────────────────────────────────────────
-  const pdf = createPdf();
-  function onImageLoad(e: Event) {
-    media.onImageLoad(e, isLoadingFile, setMediaState, () =>
-      media.finishLoading(setMediaState),
-    );
-    const img = e.target as HTMLImageElement;
-    if (viewerEl && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      const { width, height } = getViewerContentSize();
-      viewer.fitToScreen(width, height, img.naturalWidth, img.naturalHeight);
-    }
-    if (slideshow.active) slideshow.onMediaLoaded();
-  }
-  function onVideoLoad() {
-    media.onVideoLoad(isLoadingFile, setMediaState, () =>
-      media.finishLoading(setMediaState),
-    );
-    viewer.resetZoom();
-    viewer.state.baseZoomLevel = 100;
-    if (slideshow.active) slideshow.onMediaLoaded();
-    // After metadata load, video intrinsic size may have changed.
-    // If the mouse is no longer over the video wrapper, reset hover state
-    // so arrow keys don't seek in a stale hover zone.
-    if (cropContainerEl && !cropContainerEl.matches(":hover")) {
-      hoverZone = "none";
-    }
-  }
-  function onAudioLoad() {
-    const el = audioEl;
-    if (!el) return;
-    el.volume = volume;
-    el.muted = muted;
-    el.loop = loopModeStore.loopMode === "loop";
-    playbackUI.initSliderMode(true, true);
-    setMediaState({
-      fileDimensions: "",
-      fileInfoLoading: false,
-      rawCurrentSecs: 0,
-      rawDurationSecs: el.duration || 0,
-      progress: 0,
-      playing: !el.paused,
-    });
-    if (isLoadingFile) media.finishLoading(setMediaState);
-    if (slideshow.active) slideshow.onMediaLoaded();
-    // After metadata load, if the mouse is no longer over the audio wrapper,
-    // reset hover state so arrow keys don't seek in a stale hover zone.
-    if (audioEl?.parentElement && !audioEl.parentElement.matches(":hover")) {
-      hoverZone = "none";
-    }
-  }
-  async function loadFile(path: string) {
-    slideshow.stop();
-    editing.exitCropMode();
-    await media.loadFile(
-      path,
-      setMediaState,
-      (list, index) => {
-        fileList = list;
-        currentIndex = index >= 0 ? index : 0;
-      },
-      sort.mode,
-      sort.desc,
-    );
-    // Start watching the parent folder
-    const folder = getParentFolder(path);
-    if (folder) folderWatcher.startWatching(folder);
-  }
-  function navigate(direction: number) {
-    if (fileList.length === 0) return;
-    slideshow.stop();
-    editing.exitCropMode();
-    const next = (currentIndex + direction + fileList.length) % fileList.length;
-    currentIndex = media.navigate(
-      direction,
-      fileList,
-      currentIndex,
-      setMediaState,
-    );
-  }
-  function navigateToIndex(index: number) {
-    if (fileList.length === 0 || index === currentIndex) return;
-    slideshow.stop();
-    editing.exitCropMode();
-    currentIndex = index;
-    media.displayFile(fileList[index], setMediaState);
-  }
-  function navigateToEdge(first: boolean) {
-    if (fileList.length === 0) return;
-    slideshow.stop();
-    editing.exitCropMode();
-    currentIndex = media.navigateToEdge(first, fileList, setMediaState);
-  }
-  /** Navigate to the next/previous audio file in the file list, skipping non-audio files. */
-  function navigateToAudioFile(direction: number): void {
-    if (fileList.length === 0) return;
-    let idx = (currentIndex + direction + fileList.length) % fileList.length;
-    const startIdx = idx;
-    do {
-      const ext = getFileExt(fileList[idx]);
-      if (AUDIO_EXTS.includes(ext)) {
-        slideshow.stop();
-        editing.exitCropMode();
-        currentIndex = idx;
-        media.displayFile(fileList[idx], setMediaState);
-        return;
-      }
-      idx = (idx + direction + fileList.length) % fileList.length;
-    } while (idx !== startIdx);
-    // No other audio file found — do nothing
-  }
-
-  function handlePrevClick() {
-    const now = Date.now();
-    if (now - lastPrevClickTime < PREV_DOUBLE_CLICK_MS) {
-      // Double-click: navigate to previous audio file
-      navigateToAudioFile(-1);
-    } else {
-      // Single click: restart current audio from beginning
-      if (audioEl && audioEl.duration) {
-        audioEl.currentTime = 0;
-        audioEl.play().catch(() => {});
-        playing = true;
-      }
-    }
-    lastPrevClickTime = now;
-  }
-
-  function handleNextClick() {
-    navigateToAudioFile(1);
-  }
-
-  function toggleThumbnailBar() {
-    thumbnailBarVisible = !thumbnailBarVisible;
-  }
-  function closeFile() {
-    slideshow.stop();
-    folderWatcher.stopWatching();
-    clearTimeout(pendingPlay);
-    markerStore.resumeTooltipVisible = false;
-    editing.cleanup();
-    viewer.state.zoomLevel = 100;
-    viewer.state.baseZoomLevel = 100;
-    viewer.state.translateX = 0;
-    viewer.state.translateY = 0;
-    media.closeFile(setMediaState);
-    pdf.cleanup();
-    mediaProps = null;
-    mediaPropsLoading = false;
-    clearFolderCache();
-    corruption.reset();
-  }
-
-  // ── File watcher ─────────────────────────────────────
-  const folderWatcher = createFolderWatcher({
-    getFilePath: () => filePath,
-    getFileList: () => fileList,
-    getCurrentIndex: () => currentIndex,
-    getSortMode: () => sort.mode,
-    getSortDesc: () => sort.desc,
-    setFileList: (v) => (fileList = v),
-    setCurrentIndex: (v) => (currentIndex = v),
-    loadFile: (path) => loadFile(path),
-    closeFile: () => closeFile(),
-  });
-
-  // ── Sort ─────────────────────────────────────────────
-  function onSortChange(mode: SortMode, desc: boolean) {
-    sort.change(mode, desc);
-    // Re-sort the current folder
-    if (filePath) {
-      const folder = getParentFolder(filePath);
-      if (folder) folderWatcher.onFolderChanged(folder);
-    }
-  }
-  function handleFsPillContext(e: MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (fileList.length === 0) return;
-    if (fsPillEl) {
-      const rect = fsPillEl.getBoundingClientRect();
-      sort.toggleAt(rect.left, window.innerHeight - rect.top + 4);
-    } else {
-      sort.toggle();
-    }
-  }
-
-  function advanceSlide(nextIndex: number) {
-    if (fileList.length === 0) return;
-    editing.exitCropMode();
-    currentIndex = nextIndex;
-    media.displayFile(fileList[nextIndex], setMediaState);
-  }
 
   // ── PDF load effect ─────────────────────────────────────
   $effect(() => {
@@ -1378,7 +1093,7 @@
         style="cursor: {markup.drawActive
           ? 'crosshair'
           : !isVideo && !isPdf
-            ? panCursor
+            ? style.panCursor
             : 'default'}"
         role="presentation"
       >
@@ -1401,7 +1116,7 @@
                   decoding="async"
                   onload={onImageLoad}
                   onerror={corruption.onImageError}
-                  style={imageStyle}
+                  style={style.imageStyle}
                 />
               </div>
             {/key}
@@ -1416,14 +1131,14 @@
             onmouseenter={() => (hoverZone = "video")}
             onmouseleave={() => (hoverZone = "none")}
             onmousedown={markup.drawActive ? undefined : startPan}
-            style="{videoWrapperTransform} cursor: {markup.drawActive
+            style="{style.videoWrapperTransform} cursor: {markup.drawActive
               ? 'crosshair'
-              : panCursor}"
+              : style.panCursor}"
           >
             <div
               class="video-inner"
               bind:this={videoInnerEl}
-              style={videoInnerStyle}
+              style={style.videoInnerStyle}
             >
               {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
                 <div
@@ -1714,7 +1429,7 @@
         }}
         ontouchmove={viewer.handleTouchZoom}
         ontouchend={viewer.handleTouchEnd}
-        style="cursor: {fsCursor}"
+        style="cursor: {style.fsCursor}"
       >
         <div class="fs-topbar">
           <span class="fs-filename"
