@@ -3,7 +3,6 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { open } from "@tauri-apps/plugin-dialog";
   import { invoke, convertFileSrc } from "@tauri-apps/api/core";
-  import { watchImmediate } from "@tauri-apps/plugin-fs";
   import {
     createPlaybackActions,
     createPlaybackUI,
@@ -64,7 +63,6 @@
     getParentFolder,
     getFileExt,
     clearFolderCache,
-    rescanFolder,
   } from "$lib/services/files";
   import { createMedia } from "$lib/features/media/media.svelte";
   import { viewer } from "$lib/features/viewer/viewer.svelte";
@@ -95,6 +93,7 @@
   import AudioPlayer from "$lib/features/media/AudioPlayer.svelte";
   import Marquee from "$lib/shared/Marquee.svelte";
   import { corruption } from "$lib/features/media/corruption.svelte";
+  import { createFolderWatcher } from "$lib/features/navigation/folderWatcher.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -1485,7 +1484,7 @@
     );
     // Start watching the parent folder
     const folder = getParentFolder(path);
-    if (folder) startWatching(folder);
+    if (folder) folderWatcher.startWatching(folder);
   }
   function navigate(direction: number) {
     if (fileList.length === 0) return;
@@ -1556,7 +1555,7 @@
   }
   function closeFile() {
     slideshow.stop();
-    stopWatching();
+    folderWatcher.stopWatching();
     clearTimeout(pendingPlay);
     resumeTooltipVisible = false;
     editing.cleanup();
@@ -1573,72 +1572,17 @@
   }
 
   // ── File watcher ─────────────────────────────────────
-  let unwatchFn: (() => void) | null = null;
-  let watchDebounce: ReturnType<typeof setTimeout> | null = null;
-
-  function startWatching(folderPath: string) {
-    stopWatching();
-    watchImmediate(
-      folderPath,
-      () => {
-        // Debounce: reset timer on every event
-        if (watchDebounce) clearTimeout(watchDebounce);
-        watchDebounce = setTimeout(() => {
-          watchDebounce = null;
-          onFolderChanged(folderPath);
-        }, 300);
-      },
-      { recursive: false },
-    )
-      .then((unwatch) => {
-        unwatchFn = unwatch;
-      })
-      .catch((e) => {
-        console.warn("Failed to start file watcher:", e);
-      });
-  }
-
-  function stopWatching() {
-    if (watchDebounce) {
-      clearTimeout(watchDebounce);
-      watchDebounce = null;
-    }
-    if (unwatchFn) {
-      unwatchFn();
-      unwatchFn = null;
-    }
-  }
-
-  async function onFolderChanged(folderPath: string) {
-    const prevPath = filePath;
-    const prevList = [...fileList];
-    const prevIndex = currentIndex;
-
-    try {
-      const newList = await rescanFolder(folderPath, sortMode, sortDesc);
-
-      // Current file still exists in the folder
-      const stillHere = newList.indexOf(prevPath);
-      if (stillHere !== -1) {
-        fileList = newList;
-        currentIndex = stillHere;
-        return;
-      }
-
-      // Current file was removed — advance to nearest neighbor
-      if (newList.length > 0) {
-        const nextIdx = Math.min(prevIndex, newList.length - 1);
-        fileList = newList;
-        await loadFile(newList[nextIdx]);
-        return;
-      }
-
-      // Folder is now empty
-      closeFile();
-    } catch (e) {
-      console.error("onFolderChanged failed:", e);
-    }
-  }
+  const folderWatcher = createFolderWatcher({
+    getFilePath: () => filePath,
+    getFileList: () => fileList,
+    getCurrentIndex: () => currentIndex,
+    getSortMode: () => sortMode,
+    getSortDesc: () => sortDesc,
+    setFileList: (v) => (fileList = v),
+    setCurrentIndex: (v) => (currentIndex = v),
+    loadFile: (path) => loadFile(path),
+    closeFile: () => closeFile(),
+  });
 
   // ── Sort ─────────────────────────────────────────────
   function toggleSortMenu() {
@@ -1656,7 +1600,7 @@
     // Re-sort the current folder
     if (filePath) {
       const folder = getParentFolder(filePath);
-      if (folder) onFolderChanged(folder);
+      if (folder) folderWatcher.onFolderChanged(folder);
     }
   }
   function handleFsPillContext(e: MouseEvent) {
@@ -2156,14 +2100,14 @@
   async function handleMarkupApply() {
     if (markup.strokes.length === 0) return;
     try {
-      stopWatching();
+      folderWatcher.stopWatching();
       await renderMarkupOnImage(filePath, markup.strokes, filePath);
       markup.clearAllStrokes();
       await loadFile(filePath);
-      startWatching(getParentFolder(filePath) || "");
+      folderWatcher.startWatching(getParentFolder(filePath) || "");
       toast.showFrameCopyToast("Markup applied", "success");
     } catch (err) {
-      startWatching(getParentFolder(filePath) || "");
+      folderWatcher.startWatching(getParentFolder(filePath) || "");
       const message =
         err instanceof Error ? err.message : "Failed to apply markup";
       toast.showFrameCopyToast(message, "error");
