@@ -1,6 +1,5 @@
 <!-- Layout shell: wires feature modules into the template. State and handlers live in src/lib/features/*/. -->
 <script lang="ts">
-  import { open } from "@tauri-apps/plugin-dialog";
   import { invoke, convertFileSrc } from "@tauri-apps/api/core";
   import {
     createPlaybackActions,
@@ -30,7 +29,6 @@
     saveVolume,
     saveLoopMode,
     saveSliderMode,
-    saveClipPreferences,
     loadAudioLayoutMode,
   } from "$lib/services/storage";
   import {
@@ -39,7 +37,6 @@
     invokeExportEditedMedia,
     renderMarkupOnImage,
     invokeCheckMediaIntegrity,
-    invokeProcessVideoClips,
   } from "$lib/features/media/tools";
   import { computeContextMenuPosition } from "$lib/services/session";
   import {
@@ -177,24 +174,6 @@
   let fsPillEl: HTMLButtonElement | null = $state(null);
   let volumeSliderMode = $state(false);
   let speedSliderMode = $state(false);
-  let clipOutputDir = $state("");
-  let clipDeleteOriginal = $state(false);
-  let clipUseCustomPath = $state(false);
-  let clipMergeSegments = $state(false);
-  let clipJobRunning = $state(false);
-  let clipJobLabel = $state("");
-  let clipMenuResetKey = $state(0);
-  let clipDeleteConfirm = $state<{
-    visible: boolean;
-    mode: "separate" | "merge" | null;
-  }>({ visible: false, mode: null });
-  let clipToast = $state<{
-    visible: boolean;
-    tone: "success" | "error";
-    message: string;
-    outputDir: string;
-  }>({ visible: false, tone: "success", message: "", outputDir: "" });
-  let clipToastTimer: ReturnType<typeof setTimeout> | undefined;
   let mediaProps = $state<MediaProperties | null>(null);
   let mediaPropsLoading = $state(false);
   let ffprobeAvailable = $state(true);
@@ -257,6 +236,37 @@
         : panCursor,
   );
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
+  const clips = createClips({
+    getFilePath: () => filePath,
+    getRawDurationSecs: () => rawDurationSecs,
+    getIsVideo: () => isVideo,
+    getVideoEl: () => videoEl,
+    getAudioEl: () => audioEl,
+    getFileParentFolder: () => getParentFolder(filePath),
+    ensureFfprobe: async () => {
+      if (!ffprobeChecked) {
+        await refreshFfprobeAvailability({
+          setFfprobeChecked: (v) => (ffprobeChecked = v),
+          setFfprobeAvailable: (v) => (ffprobeAvailable = v),
+        });
+      }
+      if (!ffprobeAvailable) {
+        await installFfmpegAndWait({
+          setFfmpegInstallError: (v) => (ffmpegInstallError = v),
+          setFfmpegInstalling: (v) => (ffmpegInstalling = v),
+          setFfprobeAvailable: (v) => (ffprobeAvailable = v),
+          setFfprobeChecked: (v) => (ffprobeChecked = v),
+          loadMediaProperties: () =>
+            loadMediaProperties({
+              filePath,
+              setMediaProps: (v) => (mediaProps = v),
+              setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+            }),
+        });
+      }
+      return ffprobeAvailable;
+    },
+  });
   const anyMenuOpen = $derived(
     contextMenu.visible ||
       menuStore.appDropdownVisible ||
@@ -272,7 +282,7 @@
       deleteStore.deleteConfirm ||
       propertiesOpen ||
       shareOpen ||
-      clipDeleteConfirm.visible ||
+      clips.clipDeleteConfirm.visible ||
       menuStore.tsMenuOpen ||
       editApplyConfirm ||
       editTransparencyConfirm ||
@@ -665,19 +675,6 @@
     speedSliderMode = playbackUI.speedSliderMode;
     saveSliderMode({ volume: volumeSliderMode, speed: speedSliderMode });
   }
-
-  const clips = createClips(() => filePath);
-  function addClipBoundary(kind: "start" | "end") {
-    const mediaEl = isVideo ? videoEl : audioEl;
-    if (!mediaEl || rawDurationSecs <= 0) return;
-    clips.addClipBoundary(
-      kind,
-      Math.max(0, Math.min(mediaEl.currentTime, rawDurationSecs)),
-    );
-  }
-  function clearAllSegments() {
-    clips.clearBoundaries();
-  }
   const markerActions = createMarkerActions({
     getFilePath: () => filePath,
     getRawDurationSecs: () => rawDurationSecs,
@@ -685,7 +682,7 @@
     getMediaEl: () => (isVideo ? videoEl : isAudio ? audioEl : null),
     formatTime,
     clips,
-    onClipMenuReopen: () => clipMenuResetKey++,
+    onClipMenuReopen: () => clips.bumpMenuResetKey(),
     setRawCurrentSecs: (v: number) => (rawCurrentSecs = v),
     setProgress: (v: number) => (progress = v),
   });
@@ -728,120 +725,6 @@
     removeClipBoundary,
   } = markerActions;
 
-
-  // ── Clip jobs ──────────────────────────────────────────
-  function persistClipPrefs() {
-    saveClipPreferences({
-      deleteOriginal: clipDeleteOriginal,
-      useCustomPath: clipUseCustomPath,
-      mergeSegments: clipMergeSegments,
-    });
-  }
-  function getClipTargetDir(): string {
-    return clipUseCustomPath
-      ? clipOutputDir || getParentFolder(filePath)
-      : getParentFolder(filePath);
-  }
-  function showClipToast(
-    message: string,
-    tone: "success" | "error",
-    outputDir: string = clipOutputDir || getParentFolder(filePath),
-  ) {
-    clearTimeout(clipToastTimer);
-    clipToast = { visible: true, tone, message, outputDir };
-    clipToastTimer = setTimeout(() => {
-      clipToast = { ...clipToast, visible: false };
-    }, 4200);
-  }
-  function sanitizeClipPairs(): { start: number; end: number }[] {
-    return clips.clipPairs.map((p) => ({ start: p.start, end: p.end }));
-  }
-  function extractInvokeErrorMessage(e: unknown): string {
-    if (e instanceof Error && e.message) return e.message;
-    if (typeof e === "string" && e.trim()) return e;
-    if (e && typeof e === "object") {
-      const msg = (e as { message?: unknown }).message;
-      if (typeof msg === "string" && msg.trim()) return msg;
-    }
-    try {
-      return JSON.stringify(e);
-    } catch {
-      return "Unknown error";
-    }
-  }
-  async function runClipAction(mode: "separate" | "merge") {
-    // planned feature — not yet implemented
-  }
-  async function toggleClipPathSelection() {
-    const dir = await open({ directory: true });
-    if (dir) {
-      clipOutputDir = dir as string;
-    }
-  }
-  function toggleClipDeleteOriginal() {
-    clipDeleteOriginal = !clipDeleteOriginal;
-    persistClipPrefs();
-  }
-  function toggleClipMergeSegments() {
-    clipMergeSegments = !clipMergeSegments;
-    persistClipPrefs();
-  }
-  async function triggerClipSegments() {
-    if (!ffprobeChecked) {
-      await refreshFfprobeAvailability({
-        setFfprobeChecked: (v) => (ffprobeChecked = v),
-        setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-      });
-    }
-    if (!ffprobeAvailable) {
-      await installFfmpegAndWait({
-        setFfmpegInstallError: (v) => (ffmpegInstallError = v),
-        setFfmpegInstalling: (v) => (ffmpegInstalling = v),
-        setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-        setFfprobeChecked: (v) => (ffprobeChecked = v),
-        loadMediaProperties: () =>
-          loadMediaProperties({
-            filePath,
-            setMediaProps: (v) => (mediaProps = v),
-            setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-          }),
-      });
-      if (!ffprobeAvailable) return;
-    }
-
-    const segments = sanitizeClipPairs();
-    if (segments.length === 0) {
-      showClipToast(
-        "No clip segments defined. Add clip markers first.",
-        "error",
-      );
-      return;
-    }
-
-    const mode = clipMergeSegments ? "merge" : "separate";
-    clipJobRunning = true;
-    clipJobLabel = `Clipping ${segments.length} segment${segments.length > 1 ? "s" : ""}...`;
-
-    try {
-      const result = await invokeProcessVideoClips(
-        filePath,
-        getClipTargetDir(),
-        segments,
-        mode,
-        clipDeleteOriginal,
-      );
-      showClipToast(
-        `${result.outputs.length} clip${result.outputs.length > 1 ? "s" : ""} saved`,
-        "success",
-        result.output_dir,
-      );
-    } catch (err) {
-      showClipToast(extractInvokeErrorMessage(err), "error");
-    } finally {
-      clipJobRunning = false;
-      clipJobLabel = "";
-    }
-  }
 
   // ── File loading / navigation ──────────────────────────
   function setMediaState(
@@ -1148,7 +1031,7 @@
       menuStore.feedbackOpen ||
       markerStore.tsEditMenu.visible ||
       menuStore.tsMenuOpen ||
-      clipDeleteConfirm.visible ||
+      clips.clipDeleteConfirm.visible ||
       corruption.state.warning,
     closeDialogs: () => {
       contextMenu.visible = false;
@@ -1166,7 +1049,7 @@
       menuStore.feedbackOpen = false;
       markerStore.tsEditMenu.visible = false;
       menuStore.tsMenuOpen = false;
-      clipDeleteConfirm.visible = false;
+      clips.clipDeleteConfirm.visible = false;
       editApplyConfirm = false;
       editTransparencyConfirm = false;
       pendingEditAction = null;
@@ -1261,7 +1144,7 @@
   function ctxClearMarkers() {
     closeContextMenu();
     clearAllTimestamps();
-    clearAllSegments();
+    clips.clearBoundaries();
     removeResumePoint();
   }
   async function ctxShowInExplorerFn() {
@@ -1582,22 +1465,7 @@
       get: () => speedSliderMode,
       set: (v) => (speedSliderMode = v),
     },
-    clipOutputDir: {
-      get: () => clipOutputDir,
-      set: (v) => (clipOutputDir = v),
-    },
-    clipDeleteOriginal: {
-      get: () => clipDeleteOriginal,
-      set: (v) => (clipDeleteOriginal = v),
-    },
-    clipUseCustomPath: {
-      get: () => clipUseCustomPath,
-      set: (v) => (clipUseCustomPath = v),
-    },
-    clipMergeSegments: {
-      get: () => clipMergeSegments,
-      set: (v) => (clipMergeSegments = v),
-    },
+    clips: { loadPrefs: clips.loadPrefs },
     isVideo: { get: () => isVideo },
     isAudio: { get: () => isAudio },
     isPdf: { get: () => isPdf },
@@ -1640,17 +1508,17 @@
   {resetZoom}
   toggleZoomLock={handleToggleZoomLock}
   clipCount={clips.clipCount}
-  {clipMenuResetKey}
-  {triggerClipSegments}
-  {clipJobRunning}
-  {clipDeleteOriginal}
-  {clipUseCustomPath}
-  {clipMergeSegments}
-  {getClipTargetDir}
-  {toggleClipDeleteOriginal}
-  {toggleClipPathSelection}
-  {toggleClipMergeSegments}
-  {clipJobLabel}
+  clipMenuResetKey={clips.clipMenuResetKey}
+  triggerClipSegments={clips.triggerSegments}
+  clipJobRunning={clips.clipJobRunning}
+  clipDeleteOriginal={clips.clipDeleteOriginal}
+  clipUseCustomPath={clips.clipUseCustomPath}
+  clipMergeSegments={clips.clipMergeSegments}
+  getClipTargetDir={clips.getTargetDir}
+  toggleClipDeleteOriginal={clips.toggleDeleteOriginal}
+  toggleClipPathSelection={clips.togglePathSelection}
+  toggleClipMergeSegments={clips.toggleMergeSegments}
+  clipJobLabel={clips.clipJobLabel}
   {toggleSlideshowMenu}
   slideshowMenuVisible={menuStore.slideshowMenuVisible}
   {closeSlideshowMenu}
@@ -1742,8 +1610,10 @@
   }}
   onSaveClipboardFile={toast.saveClipboardFile}
   onDismissClipboardToast={toast.dismissClipboardToast}
-  onCloseClipDeleteConfirm={() =>
-    (clipDeleteConfirm = { visible: false, mode: null })}
+  onCloseClipDeleteConfirm={() => {
+    clips.clipDeleteConfirm.visible = false;
+    clips.clipDeleteConfirm.mode = null;
+  }}
   onCloseDeleteConfirm={() => (deleteStore.deleteConfirm = false)}
   onCloseProperties={() => (propertiesOpen = false)}
   onCloseShare={() => (shareOpen = false)}
@@ -1776,10 +1646,10 @@
   resumePoint={markerStore.resumePoint}
   {frameCopyToast}
   {imageCopyToast}
-  {clipToast}
+  clipToast={clips.clipToast}
   {exportToast}
   {clipboardToast}
-  {clipOutputDir}
+  clipOutputDir={clips.clipOutputDir}
   parentFolder={() => getParentFolder(filePath)}
   {invokeOpenDirectory}
   ctxCopyImage={ctxCopyImageFn}
@@ -1794,7 +1664,7 @@
   {ctxShare}
   {ctxDelete}
   {ctxClearMarkers}
-  {clipDeleteConfirm}
+  clipDeleteConfirm={clips.clipDeleteConfirm}
   deleteConfirm={deleteStore.deleteConfirm}
   deleteNoAsk={deleteStore.deleteNoAsk}
   deletePermanently={deleteStore.deletePermanently}
@@ -1812,7 +1682,7 @@
   {propsCopyAll}
   {copyPropValue}
   {performDelete}
-  {runClipAction}
+  runClipAction={clips.runClipAction}
   corruptionWarning={corruption.state.warning}
   corruptionReason={corruption.state.reason}
   corruptionFixing={corruption.state.fixing}
@@ -2001,8 +1871,8 @@
                 handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
                 startSpeedDrag={playbackUI.startSpeedDrag}
                 {addTimestamp}
-                addClipStart={() => addClipBoundary("start")}
-                addClipEnd={() => addClipBoundary("end")}
+                addClipStart={() => clips.addClipBoundaryFromMedia("start")}
+                addClipEnd={() => clips.addClipBoundaryFromMedia("end")}
                 {addLoopStart}
                 {addLoopEnd}
                 hasLoopStart={markerStore.loopStart !== null}
@@ -2014,7 +1884,7 @@
                   markerStore.loopEnd !== null}
                 deleteAllMarkers={() => {
                   clearAllTimestamps();
-                  clearAllSegments();
+                  clips.clearBoundaries();
                   removeResumePoint();
                   clearLoopMarkers();
                 }}
@@ -2091,9 +1961,9 @@
             {addTimestamp}
             {addLoopStart}
             {addLoopEnd}
-            {addClipBoundary}
+            addClipBoundary={clips.addClipBoundaryFromMedia}
             {clearAllTimestamps}
-            {clearAllSegments}
+            clearAllSegments={clips.clearBoundaries}
             {removeResumePoint}
             {clearLoopMarkers}
             {fileList}
@@ -2299,8 +2169,8 @@
               handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
               startSpeedDrag={playbackUI.startSpeedDrag}
               {addTimestamp}
-              addClipStart={() => addClipBoundary("start")}
-              addClipEnd={() => addClipBoundary("end")}
+              addClipStart={() => clips.addClipBoundaryFromMedia("start")}
+              addClipEnd={() => clips.addClipBoundaryFromMedia("end")}
               {addLoopStart}
               {addLoopEnd}
               hasLoopStart={markerStore.loopStart !== null}
@@ -2312,7 +2182,7 @@
                 markerStore.loopEnd !== null}
               deleteAllMarkers={() => {
                 clearAllTimestamps();
-                clearAllSegments();
+                clips.clearBoundaries();
                 removeResumePoint();
                 clearLoopMarkers();
               }}

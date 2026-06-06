@@ -7,7 +7,6 @@ import {
   loadVolume,
   loadLoopMode,
   loadSliderMode,
-  loadClipPreferences,
   saveResumePoint,
   deleteResumePoint,
 } from "$lib/services/storage";
@@ -24,10 +23,7 @@ export interface InitState {
   };
   volumeSliderMode: { get: () => boolean; set: (v: boolean) => void };
   speedSliderMode: { get: () => boolean; set: (v: boolean) => void };
-  clipOutputDir: { get: () => string; set: (v: string) => void };
-  clipDeleteOriginal: { get: () => boolean; set: (v: boolean) => void };
-  clipUseCustomPath: { get: () => boolean; set: (v: boolean) => void };
-  clipMergeSegments: { get: () => boolean; set: (v: boolean) => void };
+  clips: { loadPrefs: () => void };
   isVideo: { get: () => boolean };
   isAudio: { get: () => boolean };
   isPdf: { get: () => boolean };
@@ -59,11 +55,7 @@ export function setupInit(s: InitState) {
       s.volumeSliderMode.get(),
       s.speedSliderMode.get(),
     );
-    const prefs = loadClipPreferences();
-    s.clipOutputDir.set(prefs.outputDir);
-    s.clipDeleteOriginal.set(prefs.deleteOriginal);
-    s.clipUseCustomPath.set(prefs.useCustomPath);
-    s.clipMergeSegments.set(prefs.mergeSegments);
+    const prefs = s.clips.loadPrefs();
 
     function saveResumeBeforeUnload() {
       if (
