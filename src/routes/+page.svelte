@@ -21,7 +21,6 @@
     type SortMode,
   } from "$lib/shared/constants";
   import type {
-    ContextMenu,
     ClipBoundary,
     MediaProperties,
   } from "$lib/shared/types";
@@ -38,7 +37,7 @@
     renderMarkupOnImage,
     invokeCheckMediaIntegrity,
   } from "$lib/features/media/tools";
-  import { computeContextMenuPosition } from "$lib/services/session";
+
   import {
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -67,8 +66,16 @@
     ctxCopyFrame,
     ctxCopyPath,
     ctxShowInExplorer,
+    ctxRotate,
+    ctxFlip,
+    ctxClearMarkers,
+    ctxEdit,
+    ctxMarkup,
+    ctxProperties,
+    ctxShare,
   } from "$lib/features/dialogs/contextActions";
   import { createPropertiesActions } from "$lib/features/dialogs/propertiesActions";
+  import { contextMenuStore } from "$lib/features/dialogs/contextMenu.svelte";
   import ApplyEditDialog from "$lib/features/dialogs/ApplyEditDialog.svelte";
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
   import {
@@ -143,7 +150,6 @@
   let lastLeftClickTime = 0;
   let pendingPlay: ReturnType<typeof setTimeout> | undefined;
   let isScrubbing = $state(false);
-  let contextMenu = $state<ContextMenu>({ x: 0, y: 0, visible: false });
   let editApplyConfirm = $state(false);
   let editTransparencyConfirm = $state(false);
   let pendingEditAction = $state<"apply" | "export" | null>(null);
@@ -151,7 +157,7 @@
   let propertiesOpen = $state(false);
   let shareOpen = $state(false);
   const menuActions = createMenuActions({
-    closeContextMenu: () => (contextMenu.visible = false),
+    closeContextMenu: () => contextMenuStore.close(),
     getFilePath: () => filePath,
   });
   const {
@@ -268,7 +274,7 @@
     },
   });
   const anyMenuOpen = $derived(
-    contextMenu.visible ||
+    contextMenuStore.isOpen ||
       menuStore.appDropdownVisible ||
       menuStore.slideshowMenuVisible ||
       menuStore.editMenuVisible ||
@@ -1016,7 +1022,7 @@
   // ── Keybinds ───────────────────────────────────────────
   const configuredKeydown = createKeybindHandler({
     areDialogsOpen: () =>
-      contextMenu.visible ||
+      contextMenuStore.isOpen ||
       deleteStore.deleteConfirm ||
       propertiesOpen ||
       shareOpen ||
@@ -1034,7 +1040,7 @@
       clips.clipDeleteConfirm.visible ||
       corruption.state.warning,
     closeDialogs: () => {
-      contextMenu.visible = false;
+      contextMenuStore.close();
       deleteStore.deleteConfirm = false;
       propertiesOpen = false;
       shareOpen = false;
@@ -1089,16 +1095,10 @@
     if (!fileSrc) return;
     const menuW = 200;
     const menuH = isVideo || isAudio ? 300 : 260;
-    const { x, y } = computeContextMenuPosition(
-      e.clientX,
-      e.clientY,
-      menuW,
-      menuH,
-    );
-    contextMenu = { x, y, visible: true };
+    contextMenuStore.open(e, menuW, menuH);
   }
   function closeContextMenu() {
-    contextMenu = { ...contextMenu, visible: false };
+    contextMenuStore.close();
   }
 
   // ── Context menu actions ───────────────────────────────
@@ -1123,62 +1123,61 @@
       showFrameCopyToast: toast.showFrameCopyToast,
     });
   }
-  function ctxRotate() {
-    closeContextMenu();
-    editing.pushUndo();
-    viewer.rotate();
-  }
-  function ctxFlip() {
-    closeContextMenu();
-    editing.pushUndo();
-    viewer.flip();
-  }
-  function ctxToggleLoop() {
-    closeContextMenu();
-    cycleLoopMode();
-  }
-  function ctxAddTimestamp() {
-    closeContextMenu();
-    addTimestamp();
-  }
-  function ctxClearMarkers() {
-    closeContextMenu();
-    clearAllTimestamps();
-    clips.clearBoundaries();
-    removeResumePoint();
-  }
   async function ctxShowInExplorerFn() {
     await ctxShowInExplorer({ filePath, closeContextMenu });
   }
-  function ctxEdit() {
-    openEditMenu();
+  function ctxRotateFn() {
+    ctxRotate({
+      closeContextMenu,
+      pushUndo: () => editing.pushUndo(),
+      rotate: () => viewer.rotate(),
+    });
   }
-  function ctxMarkup() {
-    openMarkupMenu();
+  function ctxFlipFn() {
+    ctxFlip({
+      closeContextMenu,
+      pushUndo: () => editing.pushUndo(),
+      flip: () => viewer.flip(),
+    });
   }
-  function ctxProperties() {
-    closeContextMenu();
-    propertiesOpen = true;
-    mediaProps = null;
-    ffmpegInstallError = "";
-    void (async () => {
-      await refreshFfprobeAvailability({
-        setFfprobeChecked: (v) => (ffprobeChecked = v),
-        setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-      });
-      // Bail if the user closed the dialog while ffprobe was being checked
-      if (!propertiesOpen) return;
-      if (ffprobeAvailable)
-        await loadMediaProperties({
-          filePath,
-          setMediaProps: (v) => (mediaProps = v),
-          setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+  function ctxClearMarkersFn() {
+    ctxClearMarkers({
+      closeContextMenu,
+      clearAllTimestamps,
+      clearBoundaries: () => clips.clearBoundaries(),
+      removeResumePoint,
+    });
+  }
+  function ctxEditFn() {
+    ctxEdit({ openEditMenu });
+  }
+  function ctxMarkupFn() {
+    ctxMarkup({ openMarkupMenu });
+  }
+  function ctxPropertiesFn() {
+    ctxProperties({
+      closeContextMenu,
+      setPropertiesOpen: (v) => (propertiesOpen = v),
+      clearMediaProps: () => (mediaProps = null),
+      clearFfmpegError: () => (ffmpegInstallError = ""),
+      isStillOpen: () => propertiesOpen,
+      ensureFfprobeAndLoad: async () => {
+        await refreshFfprobeAvailability({
+          setFfprobeChecked: (v) => (ffprobeChecked = v),
+          setFfprobeAvailable: (v) => (ffprobeAvailable = v),
         });
-    })();
+        if (ffprobeAvailable) {
+          await loadMediaProperties({
+            filePath,
+            setMediaProps: (v) => (mediaProps = v),
+            setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+          });
+        }
+      },
+    });
   }
-  function ctxShare() {
-    closeContextMenu();
-    shareOpen = true;
+  function ctxShareFn() {
+    ctxShare({ closeContextMenu, setShareOpen: (v) => (shareOpen = v) });
   }
   function needsTransparencyDialog(): boolean {
     if (isVideo) return false;
@@ -1405,7 +1404,7 @@
   function handleGlobalMouseDown(e: MouseEvent) {
     const target = e.target as HTMLElement;
     if (
-      contextMenu.visible &&
+      contextMenuStore.isOpen &&
       !target.closest(".context-menu") &&
       !document.querySelector(".context-menu.pinned")
     )
@@ -1556,7 +1555,7 @@
   closeAbout={() => (menuStore.aboutOpen = false)}
   feedbackOpen={menuStore.feedbackOpen}
   closeFeedback={() => (menuStore.feedbackOpen = false)}
-  {contextMenu}
+  contextMenu={contextMenuStore.contextMenu}
   onOpenContextMenu={openContextMenu}
   editMenuVisible={menuStore.editMenuVisible}
   onApply={handleApplyEdits}
@@ -1655,15 +1654,15 @@
   ctxCopyImage={ctxCopyImageFn}
   ctxCopyFrame={ctxCopyFrameFn}
   ctxCopyPath={ctxCopyPathFn}
-  {ctxRotate}
-  {ctxFlip}
-  {ctxEdit}
-  {ctxMarkup}
+  ctxRotate={ctxRotateFn}
+  ctxFlip={ctxFlipFn}
+  ctxEdit={ctxEditFn}
+  ctxMarkup={ctxMarkupFn}
   ctxShowInExplorer={ctxShowInExplorerFn}
-  {ctxProperties}
-  {ctxShare}
+  ctxProperties={ctxPropertiesFn}
+  ctxShare={ctxShareFn}
   {ctxDelete}
-  {ctxClearMarkers}
+  ctxClearMarkers={ctxClearMarkersFn}
   clipDeleteConfirm={clips.clipDeleteConfirm}
   deleteConfirm={deleteStore.deleteConfirm}
   deleteNoAsk={deleteStore.deleteNoAsk}

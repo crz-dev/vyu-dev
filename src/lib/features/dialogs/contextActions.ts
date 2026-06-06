@@ -71,6 +71,88 @@ export async function ctxShowInExplorer(opts: {
   }
 }
 
+export function ctxRotate(opts: {
+  closeContextMenu: () => void;
+  pushUndo: () => void;
+  rotate: () => void;
+}) {
+  opts.closeContextMenu();
+  opts.pushUndo();
+  opts.rotate();
+}
+
+export function ctxFlip(opts: {
+  closeContextMenu: () => void;
+  pushUndo: () => void;
+  flip: () => void;
+}) {
+  opts.closeContextMenu();
+  opts.pushUndo();
+  opts.flip();
+}
+
+export function ctxToggleLoop(opts: {
+  closeContextMenu: () => void;
+  cycleLoopMode: () => void;
+}) {
+  opts.closeContextMenu();
+  opts.cycleLoopMode();
+}
+
+export function ctxAddTimestamp(opts: {
+  closeContextMenu: () => void;
+  addTimestamp: () => void;
+}) {
+  opts.closeContextMenu();
+  opts.addTimestamp();
+}
+
+export function ctxClearMarkers(opts: {
+  closeContextMenu: () => void;
+  clearAllTimestamps: () => void;
+  clearBoundaries: () => void;
+  removeResumePoint: () => void;
+}) {
+  opts.closeContextMenu();
+  opts.clearAllTimestamps();
+  opts.clearBoundaries();
+  opts.removeResumePoint();
+}
+
+export function ctxEdit(opts: { openEditMenu: () => void }) {
+  opts.openEditMenu();
+}
+
+export function ctxMarkup(opts: { openMarkupMenu: () => void }) {
+  opts.openMarkupMenu();
+}
+
+export function ctxProperties(opts: {
+  closeContextMenu: () => void;
+  setPropertiesOpen: (v: boolean) => void;
+  clearMediaProps: () => void;
+  clearFfmpegError: () => void;
+  isStillOpen: () => boolean;
+  ensureFfprobeAndLoad: () => Promise<void>;
+}) {
+  opts.closeContextMenu();
+  opts.setPropertiesOpen(true);
+  opts.clearMediaProps();
+  opts.clearFfmpegError();
+  void (async () => {
+    await opts.ensureFfprobeAndLoad();
+    if (!opts.isStillOpen()) return;
+  })();
+}
+
+export function ctxShare(opts: {
+  closeContextMenu: () => void;
+  setShareOpen: (v: boolean) => void;
+}) {
+  opts.closeContextMenu();
+  opts.setShareOpen(true);
+}
+
 export async function handleApplyCrop(opts: {
   filePath: string;
   fileName: string;
