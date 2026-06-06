@@ -5,7 +5,7 @@ import {
 import { invokeOpenFolder } from "$lib/features/media/tools";
 import { getFileExt } from "$lib/services/files";
 import type { MediaProperties } from "$lib/shared/types";
-import type { ToastTone } from "$lib/shared/toast";
+import type { ToastTone } from "$lib/features/toast/toast.svelte";
 
 export interface PropertiesFileSnapshot {
   fileName: string;

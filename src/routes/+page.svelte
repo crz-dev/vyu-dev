@@ -57,11 +57,10 @@
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
   import { createMarkupActions } from "$lib/features/markup/markupActions";
-  import TimelineMarkers from "$lib/features/timeline/TimelineMarkers.svelte";
-  import PlaybackControls from "$lib/features/media/PlaybackControls.svelte";
+  import Controls from "$lib/shared/Controls.svelte";
   import Shell from "$lib/shared/Shell.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
-  import { createToastHelpers } from "$lib/shared/toast";
+  import { createToastHelpers, toastStore } from "$lib/features/toast/toast.svelte";
   import {
     ctxCopyImage,
     ctxCopyFrame,
@@ -187,22 +186,65 @@
   let ffprobeChecked = $state(false);
   let ffmpegInstalling = $state(false);
   let ffmpegInstallError = $state("");
-  let frameCopyToast = $state<{
-    visible: boolean;
-    message: string;
-    tone: "success" | "error" | "info";
-  }>({ visible: false, message: "", tone: "success" });
-  let frameCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
-  let imageCopyToast = $state<{
-    visible: boolean;
-    message: string;
-    tone: "success" | "error" | "info";
-  }>({ visible: false, message: "", tone: "success" });
-  let imageCopyToastTimer: ReturnType<typeof setTimeout> | undefined;
-  let clipboardToast = $state<{ visible: boolean; filePath: string | null }>({
-    visible: false,
-    filePath: null,
-  });
+
+  // ── Menu + media-prop prop bundles ──────────────────────
+  const menuBindings = {
+    get appDropdownVisible() {
+      return menuStore.appDropdownVisible;
+    },
+    toggleAppDropdown: () =>
+      (menuStore.appDropdownVisible = !menuStore.appDropdownVisible),
+    closeAppDropdown: () => (menuStore.appDropdownVisible = false),
+    openSettings: () => (menuStore.settingsOpen = true),
+    openAccessibility: () => (menuStore.accessibilityOpen = true),
+    openHelp: () => (menuStore.helpOpen = true),
+    openAbout: () => (menuStore.aboutOpen = true),
+    openFeedback: () => (menuStore.feedbackOpen = true),
+    get settingsOpen() {
+      return menuStore.settingsOpen;
+    },
+    closeSettings: () => (menuStore.settingsOpen = false),
+    get accessibilityOpen() {
+      return menuStore.accessibilityOpen;
+    },
+    closeAccessibility: () => (menuStore.accessibilityOpen = false),
+    get helpOpen() {
+      return menuStore.helpOpen;
+    },
+    closeHelp: () => (menuStore.helpOpen = false),
+    get aboutOpen() {
+      return menuStore.aboutOpen;
+    },
+    closeAbout: () => (menuStore.aboutOpen = false),
+    get feedbackOpen() {
+      return menuStore.feedbackOpen;
+    },
+    closeFeedback: () => (menuStore.feedbackOpen = false),
+  };
+  const ffmpegSetters = {
+    setFfmpegInstallError: (v: string) => (ffmpegInstallError = v),
+    setFfmpegInstalling: (v: boolean) => (ffmpegInstalling = v),
+    setFfprobeAvailable: (v: boolean) => (ffprobeAvailable = v),
+    setFfprobeChecked: (v: boolean) => (ffprobeChecked = v),
+  };
+  const ffprobeSetters = {
+    setFfprobeChecked: (v: boolean) => (ffprobeChecked = v),
+    setFfprobeAvailable: (v: boolean) => (ffprobeAvailable = v),
+  };
+  const mediaPropsSetters = {
+    get filePath() {
+      return filePath;
+    },
+    setMediaProps: (v: MediaProperties | null) => (mediaProps = v),
+    setMediaPropsLoading: (v: boolean) => (mediaPropsLoading = v),
+  };
+  const runInstallFfmpeg = () =>
+    installFfmpegAndWait({
+      ...ffmpegSetters,
+      loadMediaProperties: () => loadMediaProperties(mediaPropsSetters),
+    });
+  const runRefreshFfprobe = () => refreshFfprobeAvailability(ffprobeSetters);
+  const runLoadMediaProperties = () => loadMediaProperties(mediaPropsSetters);
 
   // ── Derived ────────────────────────────────────────────
   const style = createViewerStyle();
@@ -263,18 +305,7 @@
   const durationDisplay = $derived(formatTime(rawDurationSecs));
 
   // ── Toast helpers ──────────────────────────────────────
-  const toast = createToastHelpers({
-    getFrameCopyToast: () => frameCopyToast,
-    setFrameCopyToast: (v) => (frameCopyToast = v),
-    getFrameCopyToastTimer: () => frameCopyToastTimer,
-    setFrameCopyToastTimer: (v) => (frameCopyToastTimer = v),
-    getImageCopyToast: () => imageCopyToast,
-    setImageCopyToast: (v) => (imageCopyToast = v),
-    getImageCopyToastTimer: () => imageCopyToastTimer,
-    setImageCopyToastTimer: (v) => (imageCopyToastTimer = v),
-    getClipboardToast: () => clipboardToast,
-    setClipboardToast: (v) => (clipboardToast = v),
-  });
+  const toast = createToastHelpers();
 
   // ── Viewer helpers ─────────────────────────────────────
   const viewerFx = createViewerEffects({
@@ -438,6 +469,112 @@
     getTitleEditorWidthCh,
     removeClipBoundary,
   } = markerActions;
+
+  // ── Timeline + playback prop bundles ────────────────────
+  const timelineProps = $derived({
+    progress,
+    currentTimeSecs: rawCurrentSecs,
+    isGifVideo,
+    clipPairs: clips.clipPairs,
+    clipBoundaries: clips.clipBoundaries,
+    timestamps: markerStore.timestamps,
+    abLoopRegion: markerStore.abLoopRegion,
+    loopStart: markerStore.loopStart,
+    loopEnd: markerStore.loopEnd,
+    resumePoint: markerStore.resumePoint,
+    durationSecs: rawDurationSecs,
+    clipMarkerJustDragged: clips.clipMarkerJustDragged,
+    tsEditMenuVisible: markerStore.tsEditMenu.visible,
+    startScrubbing,
+    getTimestampPct,
+    startClipMarkerDrag,
+    removeClipBoundary,
+    showClipBoundaryTooltip,
+    hideTsTooltip,
+    seekToTimestamp,
+    openSegmentEditor,
+    startTimestampDrag,
+    timestampDragJustEnded: markerStore.timestampDragJustEnded,
+    removeTimestamp,
+    showTimestampTooltip,
+    openTimestampEditor,
+    showResumeTooltip,
+    hideResumeTooltip,
+    seekToResumePoint,
+    removeResumePoint,
+    clearABLoop,
+    formatTime,
+    startLoopMarkerDrag,
+    loopMarkerJustDragged: markerStore.loopMarkerJustDragged,
+    showLoopMarkerTooltip,
+  });
+  const playbackProps = $derived({
+    isGifVideo,
+    playing,
+    looping: loopModeStore.loopMode,
+    muted,
+    volume,
+    volumeHovered: playbackUI.volumeHovered,
+    volumeSegments: VOLUME_SEGMENTS,
+    togglePlay,
+    setLoopMode,
+    toggleMute,
+    showVolumeOverlay: playbackUI.showVolumeOverlay,
+    handleVolumeAreaLeave: playbackUI.handleVolumeAreaLeave,
+    handleVolumeScroll: playbackUI.handleVolumeScroll,
+    startVolumeDrag: playbackUI.startVolumeDrag,
+    handleVolumeDiamondHover: playbackUI.handleVolumeDiamondHover,
+    setVolume,
+    playbackSpeed: playbackUI.playbackSpeed,
+    speedHovered: playbackUI.speedHovered,
+    setPlaybackSpeed: playbackUI.setPlaybackSpeed,
+    showSpeedOverlay: playbackUI.showSpeedOverlay,
+    handleSpeedAreaLeave: playbackUI.handleSpeedAreaLeave,
+    handleSpeedScroll: playbackUI.handleSpeedScroll,
+    handleSpeedDiamondHover: playbackUI.handleSpeedDiamondHover,
+    startSpeedDrag: playbackUI.startSpeedDrag,
+    addTimestamp,
+    addClipStart: () => clips.addClipBoundaryFromMedia("start"),
+    addClipEnd: () => clips.addClipBoundaryFromMedia("end"),
+    addLoopStart,
+    addLoopEnd,
+    hasLoopStart: markerStore.loopStart !== null,
+    hasLoopEnd: markerStore.loopEnd !== null,
+    hasAnyMarkers:
+      markerStore.timestamps.length > 0 ||
+      clips.clipBoundaries.length > 0 ||
+      markerStore.resumePoint !== null ||
+      markerStore.loopStart !== null ||
+      markerStore.loopEnd !== null,
+    deleteAllMarkers: () => {
+      clearAllTimestamps();
+      clips.clearBoundaries();
+      removeResumePoint();
+      clearLoopMarkers();
+    },
+    toggleTimer,
+    currentTimeDisplay,
+    durationDisplay,
+    timerTooltip,
+    toggleFullscreen,
+    onTsMenuChange: (v: boolean) => (menuStore.tsMenuOpen = v),
+    volumeSliderMode: playbackUI.volumeSliderMode || volumeSliderMode,
+    speedSliderMode: playbackUI.speedSliderMode || speedSliderMode,
+    volumeSliderValue: playbackUI.volumeSliderValue,
+    speedSliderValue: playbackUI.speedSliderValue,
+    toggleVolumeSliderMode,
+    toggleSpeedSliderMode,
+    startVolumeSliderDrag: playbackUI.startVolumeSliderDrag,
+    startSpeedSliderDrag: playbackUI.startSpeedSliderDrag,
+    handleVolumeSliderChange: playbackUI.handleVolumeSliderChange,
+    handleSpeedSliderChange: playbackUI.handleSpeedSliderChange,
+    showVolumeSliderTooltip: playbackUI.showVolumeSliderTooltip,
+    hideVolumeSliderTooltip: playbackUI.hideVolumeSliderTooltip,
+    showSpeedSliderTooltip: playbackUI.showSpeedSliderTooltip,
+    hideSpeedSliderTooltip: playbackUI.hideSpeedSliderTooltip,
+    volumeDragging: playbackUI.volumeDragging,
+    speedDragging: playbackUI.speedDragging,
+  });
 
   // ── File loading / navigation ──────────────────────────
   const pdf = createPdf();
@@ -829,8 +966,8 @@
     rawCurrentSecs: { get: () => rawCurrentSecs },
     rawDurationSecs: { get: () => rawDurationSecs },
     clipboardToast: {
-      get: () => clipboardToast,
-      set: (v) => (clipboardToast = v),
+      get: () => toastStore.clipboardToast,
+      set: (v) => toastStore.setClipboardToast(v),
     },
     playbackUI,
     loadFile,
@@ -894,25 +1031,7 @@
   {minimizeWindow}
   {maximizeWindow}
   {closeWindow}
-  appDropdownVisible={menuStore.appDropdownVisible}
-  toggleAppDropdown={() =>
-    (menuStore.appDropdownVisible = !menuStore.appDropdownVisible)}
-  closeAppDropdown={() => (menuStore.appDropdownVisible = false)}
-  openSettings={() => (menuStore.settingsOpen = true)}
-  openAccessibility={() => (menuStore.accessibilityOpen = true)}
-  openHelp={() => (menuStore.helpOpen = true)}
-  openAbout={() => (menuStore.aboutOpen = true)}
-  openFeedback={() => (menuStore.feedbackOpen = true)}
-  settingsOpen={menuStore.settingsOpen}
-  closeSettings={() => (menuStore.settingsOpen = false)}
-  accessibilityOpen={menuStore.accessibilityOpen}
-  closeAccessibility={() => (menuStore.accessibilityOpen = false)}
-  helpOpen={menuStore.helpOpen}
-  closeHelp={() => (menuStore.helpOpen = false)}
-  aboutOpen={menuStore.aboutOpen}
-  closeAbout={() => (menuStore.aboutOpen = false)}
-  feedbackOpen={menuStore.feedbackOpen}
-  closeFeedback={() => (menuStore.feedbackOpen = false)}
+  {...menuBindings}
   contextMenu={contextMenuStore.contextMenu}
   onOpenContextMenu={openContextMenu}
   editMenuVisible={menuStore.editMenuVisible}
@@ -929,33 +1048,12 @@
   {ffprobeAvailable}
   {ffmpegInstalling}
   {ffmpegInstallError}
-  installFfmpegAndWait={() =>
-    installFfmpegAndWait({
-      setFfmpegInstallError: (v) => (ffmpegInstallError = v),
-      setFfmpegInstalling: (v) => (ffmpegInstalling = v),
-      setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-      setFfprobeChecked: (v) => (ffprobeChecked = v),
-      loadMediaProperties: () =>
-        loadMediaProperties({
-          filePath,
-          setMediaProps: (v) => (mediaProps = v),
-          setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-        }),
-    })}
-  refreshFfprobeAvailability={() =>
-    refreshFfprobeAvailability({
-      setFfprobeChecked: (v) => (ffprobeChecked = v),
-      setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-    })}
+  installFfmpegAndWait={runInstallFfmpeg}
+  refreshFfprobeAvailability={runRefreshFfprobe}
   {openConvertedFile}
   showInExplorer={ctxShowInExplorerFn}
   {showValue}
-  loadMediaProperties={() =>
-    loadMediaProperties({
-      filePath,
-      setMediaProps: (v) => (mediaProps = v),
-      setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-    })}
+  loadMediaProperties={runLoadMediaProperties}
   onRenamed={async (newPath: string) => {
     clearFolderCache(getParentFolder(newPath));
     await loadFile(newPath);
@@ -1006,11 +1104,11 @@
   timestamps={markerStore.timestamps}
   clipBoundaries={clips.clipBoundaries}
   resumePoint={markerStore.resumePoint}
-  {frameCopyToast}
-  {imageCopyToast}
+  frameCopyToast={toastStore.frameCopyToast}
+  imageCopyToast={toastStore.imageCopyToast}
   clipToast={clips.clipToast}
   exportToast={editDialogStore.exportToast}
-  {clipboardToast}
+  clipboardToast={toastStore.clipboardToast}
   clipOutputDir={clips.clipOutputDir}
   parentFolder={() => getParentFolder(filePath)}
   {invokeOpenDirectory}
@@ -1168,111 +1266,10 @@
               class:gif-only={isGifVideo}
               class:editor-open={markerStore.tsEditMenu.visible}
             >
-              <TimelineMarkers
+              <Controls
                 fullscreen={false}
-                {progress}
-                currentTimeSecs={rawCurrentSecs}
-                {isGifVideo}
-                clipPairs={clips.clipPairs}
-                clipBoundaries={clips.clipBoundaries}
-                timestamps={markerStore.timestamps}
-                abLoopRegion={markerStore.abLoopRegion}
-                loopStart={markerStore.loopStart}
-                loopEnd={markerStore.loopEnd}
-                resumePoint={markerStore.resumePoint}
-                durationSecs={rawDurationSecs}
-                clipMarkerJustDragged={clips.clipMarkerJustDragged}
-                tsEditMenuVisible={markerStore.tsEditMenu.visible}
-                {startScrubbing}
-                {getTimestampPct}
-                {startClipMarkerDrag}
-                {removeClipBoundary}
-                {showClipBoundaryTooltip}
-                {hideTsTooltip}
-                {seekToTimestamp}
-                {openSegmentEditor}
-                {startTimestampDrag}
-                timestampDragJustEnded={markerStore.timestampDragJustEnded}
-                {removeTimestamp}
-                {showTimestampTooltip}
-                {openTimestampEditor}
-                {showResumeTooltip}
-                {hideResumeTooltip}
-                {seekToResumePoint}
-                {removeResumePoint}
-                {clearABLoop}
-                {formatTime}
-                {startLoopMarkerDrag}
-                loopMarkerJustDragged={markerStore.loopMarkerJustDragged}
-                {showLoopMarkerTooltip}
-              />
-              <PlaybackControls
-                fullscreen={false}
-                {isGifVideo}
-                {playing}
-                looping={loopModeStore.loopMode}
-                {muted}
-                {volume}
-                volumeHovered={playbackUI.volumeHovered}
-                volumeSegments={VOLUME_SEGMENTS}
-                {togglePlay}
-                {setLoopMode}
-                {toggleMute}
-                showVolumeOverlay={playbackUI.showVolumeOverlay}
-                handleVolumeAreaLeave={playbackUI.handleVolumeAreaLeave}
-                handleVolumeScroll={playbackUI.handleVolumeScroll}
-                startVolumeDrag={playbackUI.startVolumeDrag}
-                handleVolumeDiamondHover={playbackUI.handleVolumeDiamondHover}
-                {setVolume}
-                playbackSpeed={playbackUI.playbackSpeed}
-                speedHovered={playbackUI.speedHovered}
-                setPlaybackSpeed={playbackUI.setPlaybackSpeed}
-                showSpeedOverlay={playbackUI.showSpeedOverlay}
-                handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
-                handleSpeedScroll={playbackUI.handleSpeedScroll}
-                handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
-                startSpeedDrag={playbackUI.startSpeedDrag}
-                {addTimestamp}
-                addClipStart={() => clips.addClipBoundaryFromMedia("start")}
-                addClipEnd={() => clips.addClipBoundaryFromMedia("end")}
-                {addLoopStart}
-                {addLoopEnd}
-                hasLoopStart={markerStore.loopStart !== null}
-                hasLoopEnd={markerStore.loopEnd !== null}
-                hasAnyMarkers={markerStore.timestamps.length > 0 ||
-                  clips.clipBoundaries.length > 0 ||
-                  markerStore.resumePoint !== null ||
-                  markerStore.loopStart !== null ||
-                  markerStore.loopEnd !== null}
-                deleteAllMarkers={() => {
-                  clearAllTimestamps();
-                  clips.clearBoundaries();
-                  removeResumePoint();
-                  clearLoopMarkers();
-                }}
-                {toggleTimer}
-                {currentTimeDisplay}
-                {durationDisplay}
-                {timerTooltip}
-                {toggleFullscreen}
-                onTsMenuChange={(v) => (menuStore.tsMenuOpen = v)}
-                volumeSliderMode={playbackUI.volumeSliderMode ||
-                  volumeSliderMode}
-                speedSliderMode={playbackUI.speedSliderMode || speedSliderMode}
-                volumeSliderValue={playbackUI.volumeSliderValue}
-                speedSliderValue={playbackUI.speedSliderValue}
-                {toggleVolumeSliderMode}
-                {toggleSpeedSliderMode}
-                startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
-                startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
-                handleVolumeSliderChange={playbackUI.handleVolumeSliderChange}
-                handleSpeedSliderChange={playbackUI.handleSpeedSliderChange}
-                showVolumeSliderTooltip={playbackUI.showVolumeSliderTooltip}
-                hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
-                showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
-                hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
-                volumeDragging={playbackUI.volumeDragging}
-                speedDragging={playbackUI.speedDragging}
+                timelineProps={timelineProps}
+                playbackProps={playbackProps}
               />
             </div>
           </div>
@@ -1467,110 +1464,10 @@
         </div>
         {#if isVideo && videoEl}
           <div class="fs-controls" class:gif-only={isGifVideo}>
-            <TimelineMarkers
+            <Controls
               fullscreen={true}
-              {progress}
-              currentTimeSecs={rawCurrentSecs}
-              {isGifVideo}
-              clipPairs={clips.clipPairs}
-              clipBoundaries={clips.clipBoundaries}
-              timestamps={markerStore.timestamps}
-              abLoopRegion={markerStore.abLoopRegion}
-              loopStart={markerStore.loopStart}
-              loopEnd={markerStore.loopEnd}
-              resumePoint={markerStore.resumePoint}
-              durationSecs={rawDurationSecs}
-              clipMarkerJustDragged={clips.clipMarkerJustDragged}
-              tsEditMenuVisible={markerStore.tsEditMenu.visible}
-              {startScrubbing}
-              {getTimestampPct}
-              {startClipMarkerDrag}
-              {removeClipBoundary}
-              {showClipBoundaryTooltip}
-              {hideTsTooltip}
-              {seekToTimestamp}
-              {openSegmentEditor}
-              {startTimestampDrag}
-              timestampDragJustEnded={markerStore.timestampDragJustEnded}
-              {removeTimestamp}
-              {showTimestampTooltip}
-              {openTimestampEditor}
-              {showResumeTooltip}
-              {hideResumeTooltip}
-              {seekToResumePoint}
-              {removeResumePoint}
-              {clearABLoop}
-              {formatTime}
-              {startLoopMarkerDrag}
-              loopMarkerJustDragged={markerStore.loopMarkerJustDragged}
-              {showLoopMarkerTooltip}
-            />
-            <PlaybackControls
-              fullscreen={true}
-              {isGifVideo}
-              {playing}
-              looping={loopModeStore.loopMode}
-              {muted}
-              {volume}
-              volumeHovered={playbackUI.volumeHovered}
-              volumeSegments={VOLUME_SEGMENTS}
-              {togglePlay}
-              {setLoopMode}
-              {toggleMute}
-              showVolumeOverlay={playbackUI.showVolumeOverlay}
-              handleVolumeAreaLeave={playbackUI.handleVolumeAreaLeave}
-              handleVolumeScroll={playbackUI.handleVolumeScroll}
-              startVolumeDrag={playbackUI.startVolumeDrag}
-              handleVolumeDiamondHover={playbackUI.handleVolumeDiamondHover}
-              {setVolume}
-              playbackSpeed={playbackUI.playbackSpeed}
-              speedHovered={playbackUI.speedHovered}
-              setPlaybackSpeed={playbackUI.setPlaybackSpeed}
-              showSpeedOverlay={playbackUI.showSpeedOverlay}
-              handleSpeedAreaLeave={playbackUI.handleSpeedAreaLeave}
-              handleSpeedScroll={playbackUI.handleSpeedScroll}
-              handleSpeedDiamondHover={playbackUI.handleSpeedDiamondHover}
-              startSpeedDrag={playbackUI.startSpeedDrag}
-              {addTimestamp}
-              addClipStart={() => clips.addClipBoundaryFromMedia("start")}
-              addClipEnd={() => clips.addClipBoundaryFromMedia("end")}
-              {addLoopStart}
-              {addLoopEnd}
-              hasLoopStart={markerStore.loopStart !== null}
-              hasLoopEnd={markerStore.loopEnd !== null}
-              hasAnyMarkers={markerStore.timestamps.length > 0 ||
-                clips.clipBoundaries.length > 0 ||
-                markerStore.resumePoint !== null ||
-                markerStore.loopStart !== null ||
-                markerStore.loopEnd !== null}
-              deleteAllMarkers={() => {
-                clearAllTimestamps();
-                clips.clearBoundaries();
-                removeResumePoint();
-                clearLoopMarkers();
-              }}
-              {toggleTimer}
-              {currentTimeDisplay}
-              {durationDisplay}
-              {timerTooltip}
-              {toggleFullscreen}
-              onTsMenuChange={(v) => (menuStore.tsMenuOpen = v)}
-              volumeSliderMode={playbackUI.volumeSliderMode || volumeSliderMode}
-              speedSliderMode={playbackUI.speedSliderMode || speedSliderMode}
-              volumeSliderValue={playbackUI.volumeSliderValue}
-              speedSliderValue={playbackUI.speedSliderValue}
-              {toggleVolumeSliderMode}
-              {toggleSpeedSliderMode}
-              startVolumeSliderDrag={playbackUI.startVolumeSliderDrag}
-              startSpeedSliderDrag={playbackUI.startSpeedSliderDrag}
-              handleVolumeSliderChange={playbackUI.handleVolumeSliderChange}
-              handleSpeedSliderChange={playbackUI.handleSpeedSliderChange}
-              showVolumeSliderTooltip={playbackUI.showVolumeSliderTooltip}
-              hideVolumeSliderTooltip={playbackUI.hideVolumeSliderTooltip}
-              showSpeedSliderTooltip={playbackUI.showSpeedSliderTooltip}
-              hideSpeedSliderTooltip={playbackUI.hideSpeedSliderTooltip}
-              volumeDragging={playbackUI.volumeDragging}
-              speedDragging={playbackUI.speedDragging}
+              timelineProps={timelineProps}
+              playbackProps={playbackProps}
             />
           </div>
         {:else}
