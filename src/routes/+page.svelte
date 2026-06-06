@@ -8,13 +8,20 @@
   } from "$lib/features/media/playback.svelte";
   import { createClips } from "$lib/features/media/clips.svelte";
   import {
+    createScrubbingActions,
+    discScrubStore,
+  } from "$lib/features/media/scrubbing.svelte";
+  import { loopModeStore } from "$lib/features/media/loopMode.svelte";
+  import { timerStore } from "$lib/features/media/timer.svelte";
+  import { createPlaybackBridge } from "$lib/features/media/playbackBridge";
+  import { createPlaybackPoller } from "$lib/features/media/playbackPoller.svelte";
+  import {
     markerStore,
     createMarkerActions,
   } from "$lib/features/markers/markers.svelte";
   import { createKeybindHandler } from "$lib/shared/keybinds";
   import {
     VOLUME_SEGMENTS,
-    LOOP_MODES,
     ALL_EXTS,
     AUDIO_EXTS,
     type LoopMode,
@@ -136,11 +143,9 @@
   let pdfContainerEl = $state<HTMLElement | null>(null);
   let playing = $state(false);
   let muted = $state(false);
-  let loopMode = $state<LoopMode>("loop");
   let progress = $state(0);
   let rawCurrentSecs = $state(0);
   let rawDurationSecs = $state(0);
-  let timerShowRemaining = $state(false);
   let imageNaturalWidth = $state(0);
   let imageNaturalHeight = $state(0);
   let volume = $state(1);
@@ -284,17 +289,7 @@
       corruption.state.warning ||
       sort.menuVisible,
   );
-  function currentTimeDisplay(): string {
-    if (!timerShowRemaining) return formatTime(rawCurrentSecs);
-    return `-${formatTime(rawDurationSecs - rawCurrentSecs)}`;
-  }
   const durationDisplay = $derived(formatTime(rawDurationSecs));
-  const audioBitrateDisplay = $derived.by(() => {
-    if (!isAudio || fileSizeBytes <= 0 || rawDurationSecs <= 0) return "";
-    const kbps = Math.round((fileSizeBytes * 8) / rawDurationSecs / 1000);
-    return `${kbps} kbps`;
-  });
-  const timerTooltip = $derived(timerShowRemaining ? "Remaining" : "Elapsed");
 
   // ── Toast helpers ──────────────────────────────────────
   const toast = createToastHelpers({
@@ -368,57 +363,19 @@
     }
   });
   // ── Smooth progress via requestAnimationFrame ──────────
-  $effect(() => {
-    const mediaEl = isVideo ? videoEl : isAudio ? audioEl : null;
-    if (!mediaEl) return;
-
-    let rafId: number;
-
-    function poll() {
-      const el = mediaEl;
-      if (!el) return;
-
-      if (!isScrubbing) {
-        rawCurrentSecs = el.currentTime;
-        rawDurationSecs = el.duration || 0;
-        progress =
-          rawDurationSecs > 0 ? (rawCurrentSecs / rawDurationSecs) * 100 : 0;
-        playing = !el.paused;
-
-        // AB loop enforcement
-        if (
-          markerStore.abLoopRegion &&
-          el.currentTime >= markerStore.abLoopRegion.end
-        ) {
-          el.currentTime = markerStore.abLoopRegion.start;
-        }
-      }
-
-      rafId = requestAnimationFrame(poll);
-    }
-
-    function onPlay() {
-      rafId = requestAnimationFrame(poll);
-    }
-
-    function onPause() {
-      cancelAnimationFrame(rafId);
-    }
-
-    mediaEl.addEventListener("play", onPlay);
-    mediaEl.addEventListener("pause", onPause);
-
-    // If already playing (e.g. autoplay), start RAF loop immediately
-    if (!mediaEl.paused) {
-      rafId = requestAnimationFrame(poll);
-    }
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      mediaEl.removeEventListener("play", onPlay);
-      mediaEl.removeEventListener("pause", onPause);
-    };
-  });
+  $effect(
+    createPlaybackPoller({
+      getIsVideo: () => isVideo,
+      getIsAudio: () => isAudio,
+      getVideoEl: () => videoEl,
+      getAudioEl: () => audioEl,
+      getIsScrubbing: () => isScrubbing,
+      setRawCurrentSecs: (v) => (rawCurrentSecs = v),
+      setRawDurationSecs: (v) => (rawDurationSecs = v),
+      setProgress: (v) => (progress = v),
+      setPlaying: (v) => (playing = v),
+    }),
+  );
   function toggleFullscreen() {
     viewer.toggleFullscreen();
   }
@@ -456,35 +413,50 @@
 
   // ── Playback ───────────────────────────────────────────
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
-  const playback = createPlaybackActions(getMediaEl);
-  const playbackUI = createPlaybackUI(getMediaEl, () => volume, setVolume);
-  function togglePlay() {
-    playback.togglePlay();
-    playing = !playing;
-  }
-  function toggleMute() {
-    playback.toggleMute((v) => (muted = v), muted);
+  const playbackUI = createPlaybackUI(getMediaEl, () => volume, () => {});
+  const scrubbing = createScrubbingActions({
+    getIsVideo: () => isVideo,
+    getAudioEl: () => audioEl,
+    getVideoEl: () => videoEl,
+    setRawCurrentSecs: (v) => (rawCurrentSecs = v),
+    setProgress: (v) => (progress = v),
+    setIsScrubbing: (v) => (isScrubbing = v),
+  });
+  const { startScrubbing, startDiscScrubbing } = scrubbing;
+  const playbackBridge = createPlaybackBridge({
+    getMediaEl,
+    getPlaying: () => playing,
+    setPlaying: (v) => (playing = v),
+    getMuted: () => muted,
+    setMuted: (v) => (muted = v),
+    setVolume: (v) => (volume = v),
+    getVolumeSliderMode: () => volumeSliderMode,
+    setVolumeSliderMode: (v) => (volumeSliderMode = v),
+    getSpeedSliderMode: () => speedSliderMode,
+    setSpeedSliderMode: (v) => (speedSliderMode = v),
+    playbackUI,
+  });
+  const {
+    togglePlay,
+    toggleMute,
+    setVolume,
+    toggleVolumeSliderMode,
+    toggleSpeedSliderMode,
+  } = playbackBridge;
+  function setLoopMode(mode: LoopMode) {
+    loopModeStore.setLoopMode(mode, () => videoEl, () => audioEl);
   }
   function cycleLoopMode() {
-    const idx = LOOP_MODES.indexOf(loopMode);
-    loopMode = LOOP_MODES[(idx + 1) % LOOP_MODES.length];
-    saveLoopMode(loopMode);
-    if (videoEl) videoEl.loop = loopMode === "loop";
-    if (audioEl) audioEl.loop = loopMode === "loop";
-  }
-  function setLoopMode(mode: LoopMode) {
-    loopMode = mode;
-    saveLoopMode(loopMode);
-    if (videoEl) videoEl.loop = loopMode === "loop";
-    if (audioEl) audioEl.loop = loopMode === "loop";
+    loopModeStore.cycleLoopMode(() => videoEl, () => audioEl);
   }
   function onMediaEnded() {
     if (slideshow.active) return;
-    if (loopMode === "stop") {
+    const mode = loopModeStore.loopMode;
+    if (mode === "stop") {
       playing = false;
-    } else if (loopMode === "next") {
+    } else if (mode === "next") {
       navigate(1);
-    } else if (loopMode === "shuffle") {
+    } else if (mode === "shuffle") {
       if (fileList.length > 1) {
         let idx;
         do {
@@ -500,183 +472,26 @@
     }
   }
   function toggleTimer() {
-    timerShowRemaining = !timerShowRemaining;
+    timerStore.toggleTimer();
   }
-  function startScrubbing(e: MouseEvent) {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const mediaEl = isVideo ? videoEl : audioEl;
-    if (!mediaEl || !mediaEl.duration) return;
-    const bar = e.currentTarget as HTMLElement;
-    const wasPlaying = !mediaEl.paused;
-    mediaEl.pause();
-    isScrubbing = true;
-
-    // Cache rect at drag start to avoid forced layouts on every mousemove
-    const barRect = bar.getBoundingClientRect();
-    const SEEK_THROTTLE_MS = 100; // max ~10 seeks/sec during drag — prevents overwhelming 4K decoder
-    let pendingTime: number | null = null;
-    let seekInProgress = false;
-    let lastSeekTime = 0;
-
-    const computeTime = (clientX: number): number => {
-      const ratio = Math.max(
-        0,
-        Math.min(1, (clientX - barRect.left) / barRect.width),
-      );
-      return ratio * mediaEl!.duration;
-    };
-
-    const doSeek = (time: number) => {
-      seekInProgress = true;
-      mediaEl!.currentTime = time;
-      // Update UI immediately from intended position — don't read back
-      // currentTime (may lag behind the synchronous setter on some engines).
-      rawCurrentSecs = time;
-      progress = (time / mediaEl!.duration) * 100;
-    };
-
-    const onSeeked = () => {
-      seekInProgress = false;
-      if (pendingTime !== null) {
-        const t = pendingTime;
-        pendingTime = null;
-        lastSeekTime = Date.now();
-        doSeek(t);
-      }
-    };
-
-    mediaEl.addEventListener("seeked", onSeeked);
-    doSeek(computeTime(e.clientX));
-
-    function onMouseMove(ev: MouseEvent) {
-      const time = computeTime(ev.clientX);
-      // Always update UI immediately — keeps the playhead tracking the mouse smoothly
-      rawCurrentSecs = time;
-      progress = (time / mediaEl!.duration) * 100;
-
-      if (seekInProgress) {
-        // A seek is in flight — coalesce into pendingTime; the seeked
-        // handler will pick it up.
-        pendingTime = time;
-      } else if (Date.now() - lastSeekTime >= SEEK_THROTTLE_MS) {
-        // Enough time since last seek — fire one now
-        doSeek(time);
-        lastSeekTime = Date.now();
-      } else {
-        // Within throttle window — queue for the next seeked or mouseup
-        pendingTime = time;
-      }
-    }
-
-    function onMouseUp() {
-      isScrubbing = false;
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-      mediaEl!.removeEventListener("seeked", onSeeked);
-      // Final seek to the last pending position.
-      // Cancels any in-flight seek — the browser will decode the new target.
-      if (pendingTime !== null) {
-        seekInProgress = true;
-        mediaEl!.currentTime = pendingTime;
-        rawCurrentSecs = pendingTime;
-        progress = (pendingTime / mediaEl!.duration) * 100;
-      }
-      if (wasPlaying) mediaEl!.play();
-    }
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+  function currentTimeDisplay(): string {
+    return timerStore.currentTimeDisplay(
+      () => rawCurrentSecs,
+      () => rawDurationSecs,
+    );
   }
-  function startDiscScrubbing(e: MouseEvent | TouchEvent) {
-    if (!audioEl || !audioEl.duration) return;
-    const wasPlaying = !audioEl.paused;
-    audioEl.pause();
-    isScrubbing = true;
-
-    const SEEK_THROTTLE_MS = 100;
-    let pendingTime: number | null = null;
-    let seekInProgress = false;
-    let lastSeekTime = 0;
-
-    const doSeek = (time: number) => {
-      seekInProgress = true;
-      audioEl!.currentTime = time;
-      rawCurrentSecs = time;
-      progress = (time / audioEl!.duration) * 100;
-    };
-
-    const onSeeked = () => {
-      seekInProgress = false;
-      if (pendingTime !== null) {
-        const t = pendingTime;
-        pendingTime = null;
-        lastSeekTime = Date.now();
-        doSeek(t);
-      }
-    };
-
-    audioEl.addEventListener("seeked", onSeeked);
-
-    discScrubHandlers.onScrubMove = (
-      e: MouseEvent | TouchEvent,
-      newProgress: number,
-    ) => {
-      const time = (newProgress / 100) * audioEl!.duration;
-      rawCurrentSecs = time;
-      progress = newProgress;
-
-      if (seekInProgress) {
-        pendingTime = time;
-      } else if (Date.now() - lastSeekTime >= SEEK_THROTTLE_MS) {
-        doSeek(time);
-        lastSeekTime = Date.now();
-      } else {
-        pendingTime = time;
-      }
-    };
-
-    discScrubHandlers.onScrubEnd = () => {
-      isScrubbing = false;
-      audioEl!.removeEventListener("seeked", onSeeked);
-      if (pendingTime !== null) {
-        seekInProgress = true;
-        audioEl!.currentTime = pendingTime;
-        rawCurrentSecs = pendingTime;
-        progress = (pendingTime / audioEl!.duration) * 100;
-      }
-      if (wasPlaying) audioEl!.play();
-      // Reset handlers
-      discScrubHandlers.onScrubMove = () => {};
-      discScrubHandlers.onScrubEnd = () => {};
-    };
-  }
-  let discScrubHandlers = $state<{
-    onScrubMove: (e: MouseEvent | TouchEvent, newProgress: number) => void;
-    onScrubEnd: () => void;
-  }>({ onScrubMove: () => {}, onScrubEnd: () => {} });
-  function setVolume(val: number) {
-    playback.setVolume(val, ({ volume: v, muted: m }) => {
-      volume = v;
-      muted = m;
-    });
-    saveVolume(volume);
-  }
-  function toggleVolumeSliderMode() {
-    playbackUI.toggleVolumeSliderMode();
-    volumeSliderMode = playbackUI.volumeSliderMode;
-    saveSliderMode({ volume: volumeSliderMode, speed: speedSliderMode });
-  }
-  function toggleSpeedSliderMode() {
-    playbackUI.toggleSpeedSliderMode();
-    speedSliderMode = playbackUI.speedSliderMode;
-    saveSliderMode({ volume: volumeSliderMode, speed: speedSliderMode });
-  }
+  const audioBitrateDisplay = $derived(
+    timerStore.audioBitrateDisplay(
+      () => fileSizeBytes,
+      () => rawDurationSecs,
+      () => isAudio,
+    ),
+  );
+  const timerTooltip = $derived(timerStore.timerTooltip());
   const markerActions = createMarkerActions({
     getFilePath: () => filePath,
     getRawDurationSecs: () => rawDurationSecs,
-    getLoopMode: () => loopMode,
+    getLoopMode: () => loopModeStore.loopMode,
     getMediaEl: () => (isVideo ? videoEl : isAudio ? audioEl : null),
     formatTime,
     clips,
@@ -776,7 +591,7 @@
     () => audioEl,
     () => volume,
     () => muted,
-    () => loopMode === "loop",
+    () => loopModeStore.loopMode === "loop",
     (newPath?: string) => {
       markerStore.tsTooltip = { ...markerStore.tsTooltip, visible: false };
       markerStore.tsEditMenu = { ...markerStore.tsEditMenu, visible: false };
@@ -833,7 +648,7 @@
     if (!el) return;
     el.volume = volume;
     el.muted = muted;
-    el.loop = loopMode === "loop";
+    el.loop = loopModeStore.loopMode === "loop";
     playbackUI.initSliderMode(true, true);
     setMediaState({
       fileDimensions: "",
@@ -1279,8 +1094,8 @@
   setupInit({
     volume: { get: () => volume, set: (v) => (volume = v) },
     loopMode: {
-      get: () => loopMode,
-      set: (v) => (loopMode = v),
+      get: () => loopModeStore.loopMode,
+      set: (v) => loopModeStore.setLoopMode(v, () => videoEl, () => audioEl),
       save: saveLoopMode,
     },
     volumeSliderMode: {
@@ -1680,7 +1495,7 @@
                 fullscreen={false}
                 {isGifVideo}
                 {playing}
-                looping={loopMode}
+                looping={loopModeStore.loopMode}
                 {muted}
                 {volume}
                 volumeHovered={playbackUI.volumeHovered}
@@ -1760,7 +1575,7 @@
             onAudioError={() => corruption.onAudioError(audioEl)}
             onAudioEnded={onMediaEnded}
             bind:playing
-            {loopMode}
+            loopMode={loopModeStore.loopMode}
             {setLoopMode}
             {muted}
             {volume}
@@ -1778,7 +1593,7 @@
             {rawDurationSecs}
             {isScrubbing}
             {startDiscScrubbing}
-            {discScrubHandlers}
+            discScrubHandlers={discScrubStore.discScrubHandlers}
             {startScrubbing}
             {clips}
             timestamps={markerStore.timestamps}
@@ -1979,7 +1794,7 @@
               fullscreen={true}
               {isGifVideo}
               {playing}
-              looping={loopMode}
+              looping={loopModeStore.loopMode}
               {muted}
               {volume}
               volumeHovered={playbackUI.volumeHovered}
