@@ -38,10 +38,6 @@
     saveClipPreferences,
     loadCdColor,
     saveCdColor,
-    loadSortMode,
-    saveSortMode,
-    loadSortDesc,
-    saveSortDesc,
     loadAudioLayoutMode,
     saveAudioLayoutMode,
   } from "$lib/services/storage";
@@ -94,6 +90,7 @@
   import Marquee from "$lib/shared/Marquee.svelte";
   import { corruption } from "$lib/features/media/corruption.svelte";
   import { createFolderWatcher } from "$lib/features/navigation/folderWatcher.svelte";
+  import { sort } from "$lib/features/navigation/sort.svelte";
 
   // ── State ──────────────────────────────────────────────
   let filePath = $state("");
@@ -168,12 +165,7 @@
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
   let thumbnailBarVisible = $state(false);
-  let sortMode: SortMode = $state(loadSortMode());
-  let sortDesc = $state(loadSortDesc());
-  let sortMenuVisible = $state(false);
   let fsPillEl: HTMLButtonElement | null = $state(null);
-  let fsSortMenuX = $state(0);
-  let fsSortMenuY = $state(0);
   let volumeSliderMode = $state(false);
   let speedSliderMode = $state(false);
   let resumePoint = $state<number | null>(null);
@@ -302,7 +294,7 @@
       editApplyConfirm ||
       editTransparencyConfirm ||
       corruption.state.warning ||
-      sortMenuVisible,
+      sort.menuVisible,
   );
   function currentTimeDisplay(): string {
     if (!timerShowRemaining) return formatTime(rawCurrentSecs);
@@ -1479,8 +1471,8 @@
         fileList = list;
         currentIndex = index >= 0 ? index : 0;
       },
-      sortMode,
-      sortDesc,
+      sort.mode,
+      sort.desc,
     );
     // Start watching the parent folder
     const folder = getParentFolder(path);
@@ -1576,8 +1568,8 @@
     getFilePath: () => filePath,
     getFileList: () => fileList,
     getCurrentIndex: () => currentIndex,
-    getSortMode: () => sortMode,
-    getSortDesc: () => sortDesc,
+    getSortMode: () => sort.mode,
+    getSortDesc: () => sort.desc,
     setFileList: (v) => (fileList = v),
     setCurrentIndex: (v) => (currentIndex = v),
     loadFile: (path) => loadFile(path),
@@ -1585,18 +1577,8 @@
   });
 
   // ── Sort ─────────────────────────────────────────────
-  function toggleSortMenu() {
-    sortMenuVisible = !sortMenuVisible;
-  }
-  function closeSortMenu() {
-    sortMenuVisible = false;
-  }
   function onSortChange(mode: SortMode, desc: boolean) {
-    sortMode = mode;
-    sortDesc = desc;
-    saveSortMode(mode);
-    saveSortDesc(desc);
-    sortMenuVisible = false;
+    sort.change(mode, desc);
     // Re-sort the current folder
     if (filePath) {
       const folder = getParentFolder(filePath);
@@ -1609,10 +1591,10 @@
     if (fileList.length === 0) return;
     if (fsPillEl) {
       const rect = fsPillEl.getBoundingClientRect();
-      fsSortMenuX = rect.left;
-      fsSortMenuY = window.innerHeight - rect.top + 4;
+      sort.toggleAt(rect.left, window.innerHeight - rect.top + 4);
+    } else {
+      sort.toggle();
     }
-    sortMenuVisible = !sortMenuVisible;
   }
 
   function advanceSlide(nextIndex: number) {
@@ -2330,11 +2312,11 @@
   {slideshowMenuVisible}
   {closeSlideshowMenu}
   {toggleThumbnailBar}
-  {sortMode}
-  {sortDesc}
-  {sortMenuVisible}
-  {toggleSortMenu}
-  {closeSortMenu}
+  sortMode={sort.mode}
+  sortDesc={sort.desc}
+  sortMenuVisible={sort.menuVisible}
+  toggleSortMenu={sort.toggle}
+  closeSortMenu={sort.close}
   {onSortChange}
   {navigate}
   {startDrag}
@@ -3047,14 +3029,14 @@
             oncontextmenu={handleFsPillContext}
             >{currentIndex + 1} / {fileList.length}</button
           >{/if}
-        {#if sortMenuVisible}
+        {#if sort.menuVisible}
           <SortMenu
-            visible={sortMenuVisible}
-            onClose={closeSortMenu}
-            x={fsSortMenuX}
-            y={fsSortMenuY}
-            {sortMode}
-            {sortDesc}
+            visible={sort.menuVisible}
+            onClose={sort.close}
+            x={sort.menuX}
+            y={sort.menuY}
+            sortMode={sort.mode}
+            sortDesc={sort.desc}
             {onSortChange}
           />
         {/if}
