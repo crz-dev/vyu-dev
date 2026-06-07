@@ -57,11 +57,7 @@
   onmousedown={drawActive ? undefined : startPan}
   style="{videoWrapperTransform} cursor: {drawActive ? 'crosshair' : panCursor}"
 >
-  <div
-    class="video-inner"
-    bind:this={videoInnerEl}
-    style={videoInnerStyle}
-  >
+  <div class="video-inner" bind:this={videoInnerEl} style={videoInnerStyle}>
     {#key slideshowActive && slideshowTransition !== "none" ? currentIndex : null}
       <div
         class={slideshowActive && slideshowTransition !== "none"
@@ -90,10 +86,6 @@
     class:gif-only={isGifVideo}
     class:editor-open={tsEditMenuVisible}
   >
-    <Controls
-      fullscreen={false}
-      {timelineProps}
-      {playbackProps}
-    />
+    <Controls fullscreen={false} {timelineProps} {playbackProps} />
   </div>
 </div>

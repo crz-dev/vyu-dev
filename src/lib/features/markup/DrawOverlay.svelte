@@ -57,7 +57,13 @@
 
       const pts = stroke.points;
       if (pts.length === 1) {
-        ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
+        ctx.arc(
+          pts[0].x * w,
+          pts[0].y * h,
+          stroke.thickness / 2,
+          0,
+          Math.PI * 2,
+        );
         ctx.fillStyle = stroke.color;
         ctx.fill();
       } else {

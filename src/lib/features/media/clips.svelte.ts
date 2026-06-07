@@ -89,15 +89,10 @@ export function createClips(deps: ClipsDeps) {
   }
 
   function addClipBoundaryFromMedia(kind: "start" | "end") {
-    const mediaEl = deps.getIsVideo()
-      ? deps.getVideoEl()
-      : deps.getAudioEl();
+    const mediaEl = deps.getIsVideo() ? deps.getVideoEl() : deps.getAudioEl();
     const duration = deps.getRawDurationSecs();
     if (!mediaEl || duration <= 0) return;
-    addClipBoundary(
-      kind,
-      Math.max(0, Math.min(mediaEl.currentTime, duration)),
-    );
+    addClipBoundary(kind, Math.max(0, Math.min(mediaEl.currentTime, duration)));
   }
 
   function removeClipBoundary(id: string) {

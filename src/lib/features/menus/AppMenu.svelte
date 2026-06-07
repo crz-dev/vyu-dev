@@ -107,7 +107,8 @@
       }
     }
     document.addEventListener("mousedown", onGlobalMouseDown, true);
-    return () => document.removeEventListener("mousedown", onGlobalMouseDown, true);
+    return () =>
+      document.removeEventListener("mousedown", onGlobalMouseDown, true);
   });
 </script>
 
@@ -158,7 +159,12 @@
       onmouseenter={showFilenameTooltip}
       onmouseleave={hideFilenameTooltip}
       onclick={fileSrc ? startEditing : undefined}
-      aria-label="Rename file"><Marquee text={fileName} scrollOnHover class="filename-marquee" /></button
+      aria-label="Rename file"
+      ><Marquee
+        text={fileName}
+        scrollOnHover
+        class="filename-marquee"
+      /></button
     >
   {/if}
   {#if fileSrc}

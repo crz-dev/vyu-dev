@@ -19,7 +19,9 @@
   let trackEl = $state<HTMLElement | null>(null);
   let isOverflowing = $state(false);
   let isHovering = $state(false);
-  let shouldScroll = $derived(!scrollOnHover ? isOverflowing : isOverflowing && isHovering);
+  let shouldScroll = $derived(
+    !scrollOnHover ? isOverflowing : isOverflowing && isHovering,
+  );
   let marqueeDur = $state(8);
 
   function measure() {

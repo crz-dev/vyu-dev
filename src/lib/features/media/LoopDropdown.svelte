@@ -33,10 +33,7 @@
 
 {#if open}
   <div class="loop-drop-menu" role="menu">
-    <div
-      class="loop-drop-header"
-      style={animStyle(0)}
-    >
+    <div class="loop-drop-header" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <rect
           x="4"

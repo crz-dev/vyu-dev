@@ -81,9 +81,18 @@ function createMenuVisibilityStore() {
       loopMenuOpen = v;
     },
     get isAnyOpen() {
-      return !!(editMenuVisible || markupMenuVisible || slideshowMenuVisible ||
-        appDropdownVisible || settingsOpen || accessibilityOpen ||
-        helpOpen || aboutOpen || feedbackOpen || tsMenuOpen);
+      return !!(
+        editMenuVisible ||
+        markupMenuVisible ||
+        slideshowMenuVisible ||
+        appDropdownVisible ||
+        settingsOpen ||
+        accessibilityOpen ||
+        helpOpen ||
+        aboutOpen ||
+        feedbackOpen ||
+        tsMenuOpen
+      );
     },
     closeAll() {
       editMenuVisible = false;

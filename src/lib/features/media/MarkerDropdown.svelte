@@ -52,10 +52,7 @@
 
 {#if open}
   <div class="ts-drop-menu" role="menu">
-    <div
-      class="ts-drop-header"
-      style={animStyle(0)}
-    >
+    <div class="ts-drop-header" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <polygon
           points="12,2 22,12 12,22 2,12"

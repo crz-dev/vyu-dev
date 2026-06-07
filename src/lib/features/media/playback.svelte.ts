@@ -318,7 +318,10 @@ export function createPlaybackUI(
 
   // ── Continuous slider tooltip helpers ──────────────────
 
-  function showVolumeSliderTooltip(trackEl: HTMLDivElement | null, vertical = false) {
+  function showVolumeSliderTooltip(
+    trackEl: HTMLDivElement | null,
+    vertical = false,
+  ) {
     if (!trackEl) return;
     const rect = trackEl.getBoundingClientRect();
     if (vertical) {
@@ -333,7 +336,10 @@ export function createPlaybackUI(
   function hideVolumeSliderTooltip() {
     volumeTooltipVisible = false;
   }
-  function showSpeedSliderTooltip(trackEl: HTMLDivElement | null, vertical = false) {
+  function showSpeedSliderTooltip(
+    trackEl: HTMLDivElement | null,
+    vertical = false,
+  ) {
     if (!trackEl) return;
     const rect = trackEl.getBoundingClientRect();
     if (vertical) {
@@ -354,7 +360,11 @@ export function createPlaybackUI(
     speedSliderMode = speed;
   }
 
-  function startVolumeSliderDrag(e: PointerEvent, track: HTMLDivElement, vertical = false) {
+  function startVolumeSliderDrag(
+    e: PointerEvent,
+    track: HTMLDivElement,
+    vertical = false,
+  ) {
     e.preventDefault();
     track.setPointerCapture(e.pointerId);
     volumeDragging = true;
@@ -393,7 +403,11 @@ export function createPlaybackUI(
     track.addEventListener("pointerup", onUp);
   }
 
-  function startSpeedSliderDrag(e: PointerEvent, track: HTMLDivElement, vertical = false) {
+  function startSpeedSliderDrag(
+    e: PointerEvent,
+    track: HTMLDivElement,
+    vertical = false,
+  ) {
     e.preventDefault();
     track.setPointerCapture(e.pointerId);
     speedDragging = true;

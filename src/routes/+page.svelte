@@ -10,7 +10,10 @@
     discScrubStore,
   } from "$lib/features/media/scrubbing.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
-  import { createOnMediaEnded, createFrameStep } from "$lib/features/media/playbackHelpers";
+  import {
+    createOnMediaEnded,
+    createFrameStep,
+  } from "$lib/features/media/playbackHelpers";
   import { timerStore } from "$lib/features/media/timer.svelte";
   import { createPlaybackBridge } from "$lib/features/media/playbackBridge";
   import { createPlaybackPoller } from "$lib/features/media/playbackPoller.svelte";
@@ -19,15 +22,9 @@
     createMarkerActions,
   } from "$lib/features/markers/markers.svelte";
   import { createKeybindHandler } from "$lib/shared/keybinds";
-  import {
-    VOLUME_SEGMENTS,
-    type LoopMode,
-  } from "$lib/shared/constants";
+  import { VOLUME_SEGMENTS, type LoopMode } from "$lib/shared/constants";
   import type { MediaProperties } from "$lib/shared/types";
-  import {
-    saveLoopMode,
-    loadAudioLayoutMode,
-  } from "$lib/services/storage";
+  import { saveLoopMode, loadAudioLayoutMode } from "$lib/services/storage";
   import {
     createFfmpegHelpers,
     createEnsureFfprobe,
@@ -53,7 +50,10 @@
   import PDFView from "$lib/features/viewer/PDFView.svelte";
   import { createMarkupActions } from "$lib/features/markup/markupActions";
   import Shell from "$lib/shared/Shell.svelte";
-  import { createToastHelpers, toastStore } from "$lib/features/toast/toast.svelte";
+  import {
+    createToastHelpers,
+    toastStore,
+  } from "$lib/features/toast/toast.svelte";
   import { createContextActionFns } from "$lib/features/dialogs/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/dialogs/propertiesActions";
   import { contextMenuStore } from "$lib/features/dialogs/contextMenu.svelte";
@@ -259,7 +259,11 @@
 
   // ── Playback ───────────────────────────────────────────
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
-  const playbackUI = createPlaybackUI(getMediaEl, () => volume, () => {});
+  const playbackUI = createPlaybackUI(
+    getMediaEl,
+    () => volume,
+    () => {},
+  );
   const scrubbing = createScrubbingActions({
     getIsVideo: () => isVideo,
     getAudioEl: () => audioEl,
@@ -290,7 +294,11 @@
     toggleSpeedSliderMode,
   } = playbackBridge;
   function setLoopMode(mode: LoopMode) {
-    loopModeStore.setLoopMode(mode, () => videoEl, () => audioEl);
+    loopModeStore.setLoopMode(
+      mode,
+      () => videoEl,
+      () => audioEl,
+    );
   }
   function toggleTimer() {
     timerStore.toggleTimer();
@@ -751,25 +759,65 @@
 
   // ── Shell shorthand prop bundle ─────────────────────────
   const _shellProps = $derived({
-    fileName, fileSrc, filePath, fileList, currentIndex,
-    isVideo, isAudio, isPdf, fileDimensions, fileSize,
-    fileInfoLoading, isLoadingFile, loadingFadingOut,
-    anyMenuOpen, thumbnailBarVisible, resetZoom,
-    toggleSlideshowMenu, closeSlideshowMenu, toggleThumbnailBar,
-    onSortChange, navigate, startDrag,
-    showFilenameTooltip, hideFilenameTooltip,
-    closeFile, openFileDialog,
-    minimizeWindow, maximizeWindow, closeWindow,
-    closeEditMenu, closeMarkupMenu,
-    ffprobeChecked, ffprobeAvailable, ffmpegInstalling, ffmpegInstallError,
-    openConvertedFile, showValue,
-    muted, volume, propertiesOpen, shareOpen,
-    fileCreated, fileModified, durationDisplay, audioBitrateDisplay,
-    mediaPropsLoading, mediaProps,
-    propsCopyPath, propsOpenFolder, propsCopyAll, copyPropValue,
-    performDelete, ctxDelete,
-    getTitleEditorWidthCh, updateEditorTitle, closeTimestampEditor,
-    onEditorScissor, onEditorDeleteTimestamp, onEditorDeleteSegment,
+    fileName,
+    fileSrc,
+    filePath,
+    fileList,
+    currentIndex,
+    isVideo,
+    isAudio,
+    isPdf,
+    fileDimensions,
+    fileSize,
+    fileInfoLoading,
+    isLoadingFile,
+    loadingFadingOut,
+    anyMenuOpen,
+    thumbnailBarVisible,
+    resetZoom,
+    toggleSlideshowMenu,
+    closeSlideshowMenu,
+    toggleThumbnailBar,
+    onSortChange,
+    navigate,
+    startDrag,
+    showFilenameTooltip,
+    hideFilenameTooltip,
+    closeFile,
+    openFileDialog,
+    minimizeWindow,
+    maximizeWindow,
+    closeWindow,
+    closeEditMenu,
+    closeMarkupMenu,
+    ffprobeChecked,
+    ffprobeAvailable,
+    ffmpegInstalling,
+    ffmpegInstallError,
+    openConvertedFile,
+    showValue,
+    muted,
+    volume,
+    propertiesOpen,
+    shareOpen,
+    fileCreated,
+    fileModified,
+    durationDisplay,
+    audioBitrateDisplay,
+    mediaPropsLoading,
+    mediaProps,
+    propsCopyPath,
+    propsOpenFolder,
+    propsCopyAll,
+    copyPropValue,
+    performDelete,
+    ctxDelete,
+    getTitleEditorWidthCh,
+    updateEditorTitle,
+    closeTimestampEditor,
+    onEditorScissor,
+    onEditorDeleteTimestamp,
+    onEditorDeleteSegment,
     invokeOpenDirectory,
   });
 
@@ -778,7 +826,12 @@
     volume: { get: () => volume, set: (v) => (volume = v) },
     loopMode: {
       get: () => loopModeStore.loopMode,
-      set: (v) => loopModeStore.setLoopMode(v, () => videoEl, () => audioEl),
+      set: (v) =>
+        loopModeStore.setLoopMode(
+          v,
+          () => videoEl,
+          () => audioEl,
+        ),
       save: saveLoopMode,
     },
     volumeSliderMode: {
@@ -935,39 +988,99 @@
 >
   {#snippet children()}
     <ViewerArea
-      {fileSrc} {isVideo} {isAudio} {isPdf} {fileName} {filePath}
-      bind:viewerEl bind:imageEl bind:videoEl bind:audioEl
-      bind:cropContainerEl bind:pdfContainerEl bind:hoverZone
-      {viewer} {style} {markup} {corruption} {slideshow}
-      {markerStore} {menuStore} {sort} {discScrubStore}
-      {loopModeStore} {playbackUI} {pickAudioFile}
-      {currentIndex} {fileList} {isGifVideo} {playing} {muted} {volume}
+      {fileSrc}
+      {isVideo}
+      {isAudio}
+      {isPdf}
+      {fileName}
+      {filePath}
+      bind:viewerEl
+      bind:imageEl
+      bind:videoEl
+      bind:audioEl
+      bind:cropContainerEl
+      bind:pdfContainerEl
+      bind:hoverZone
+      {viewer}
+      {style}
+      {markup}
+      {corruption}
+      {slideshow}
+      {markerStore}
+      {menuStore}
+      {sort}
+      {discScrubStore}
+      {loopModeStore}
+      {playbackUI}
+      {pickAudioFile}
+      {currentIndex}
+      {fileList}
+      {isGifVideo}
+      {playing}
+      {muted}
+      {volume}
       {isScrubbing}
-      bind:volumeTrackEl bind:speedTrackEl
-      bind:audioLayoutMode bind:cassetteFilenameOverflow
+      bind:volumeTrackEl
+      bind:speedTrackEl
+      bind:audioLayoutMode
+      bind:cassetteFilenameOverflow
       bind:cassetteInfoRowEl
-      bind:cdColor bind:cdColorIndex bind:showCdColorPicker
+      bind:cdColor
+      bind:cdColorIndex
+      bind:showCdColorPicker
       {coverArtSrc}
-      {navigate} {openFileDialog} {toggleThumbnailBar}
-      {handleFsPillContext} {minimizeWindow} {maximizeWindow}
-      {closeWindow} {startPan} {handleViewerScroll}
-      {toggleFullscreen} {fsPillEl}
-      {onImageLoad} {onVideoLoad} {onAudioLoad} {onMediaEnded}
-      {timelineProps} {playbackProps} {clips}
-      {setLoopMode} {setVolume} {toggleMute} {togglePlay}
-      {addTimestamp} {addLoopStart} {addLoopEnd}
-      {clearAllTimestamps} {clearLoopMarkers} {removeResumePoint}
-      {handlePrevClick} {handleNextClick} {toggleTimer}
-      {currentTimeDisplay} {durationDisplay} {timerTooltip}
+      {navigate}
+      {openFileDialog}
+      {toggleThumbnailBar}
+      {handleFsPillContext}
+      {minimizeWindow}
+      {maximizeWindow}
+      {closeWindow}
+      {startPan}
+      {handleViewerScroll}
+      {toggleFullscreen}
+      {fsPillEl}
+      {onImageLoad}
+      {onVideoLoad}
+      {onAudioLoad}
+      {onMediaEnded}
+      {timelineProps}
+      {playbackProps}
+      {clips}
+      {setLoopMode}
+      {setVolume}
+      {toggleMute}
+      {togglePlay}
+      {addTimestamp}
+      {addLoopStart}
+      {addLoopEnd}
+      {clearAllTimestamps}
+      {clearLoopMarkers}
+      {removeResumePoint}
+      {handlePrevClick}
+      {handleNextClick}
+      {toggleTimer}
+      {currentTimeDisplay}
+      {durationDisplay}
+      {timerTooltip}
       {setMediaState}
-      {startScrubbing} {startDiscScrubbing}
-      {toggleVolumeSliderMode} {toggleSpeedSliderMode}
-      {progress} {rawCurrentSecs} {rawDurationSecs}
+      {startScrubbing}
+      {startDiscScrubbing}
+      {toggleVolumeSliderMode}
+      {toggleSpeedSliderMode}
+      {progress}
+      {rawCurrentSecs}
+      {rawDurationSecs}
       {onSortChange}
       {pdf}
-      {fileDimensions} {fileSize} {fileInfoLoading}
-      {isLoadingFile} {loadingFadingOut}
-      {anyMenuOpen} {thumbnailBarVisible} {resetZoom}
+      {fileDimensions}
+      {fileSize}
+      {fileInfoLoading}
+      {isLoadingFile}
+      {loadingFadingOut}
+      {anyMenuOpen}
+      {thumbnailBarVisible}
+      {resetZoom}
     />
   {/snippet}
 </Shell>

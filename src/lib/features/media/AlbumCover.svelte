@@ -51,7 +51,9 @@
         <circle cx="18" cy="16" r="3" />
       </svg>
       {#if fileName}
-        <span class="album-cover-xlarge-filename"><Marquee text={fileName} class="album-marquee" /></span>
+        <span class="album-cover-xlarge-filename"
+          ><Marquee text={fileName} class="album-marquee" /></span
+        >
       {/if}
       {#if duration}
         <span class="album-cover-xlarge-duration">{duration}</span>
@@ -89,22 +91,12 @@
         <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
     {:else if playing}
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-      >
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
         <rect x="5" y="4" width="5" height="16" rx="1" />
         <rect x="14" y="4" width="5" height="16" rx="1" />
       </svg>
     {:else}
-      <svg
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-      >
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
         <polygon points="6,3 20,12 6,21" />
       </svg>
     {/if}

@@ -189,9 +189,7 @@
     thicknessTrackEl.releasePointerCapture(e.pointerId);
   }
 
-  const thicknessScrubberPct = $derived(
-    ((localThickness - 1) / 19) * 100,
-  );
+  const thicknessScrubberPct = $derived(((localThickness - 1) / 19) * 100);
 
   // Opacity slider
   function updateOpacityFromX(clientX: number) {
@@ -415,520 +413,809 @@
       </div>
 
       <div class="edit-menu-card">
-      <div class="edit-menu-row">
-        <button
-          class="edit-menu-btn red"
-          class:sub-open={highlightRowOpen || drawRowOpen || textRowOpen}
-          onclick={toggleEraser}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 20H7L3 16l9-9 8 8-4 4" />
-            <path d="M6.5 13.5l5-5" />
-          </svg>
-          <span>Erase</span>
-        </button>
-        <button
-          class="edit-menu-btn yellow"
-          class:sub-open={eraserRowOpen || drawRowOpen || textRowOpen}
-          onclick={toggleHighlight}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 20h9" />
-            <path
-              d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
-            />
-            <path d="M2 22l1-4 3 3-1 4H2z" opacity="0.5" />
-          </svg>
-          <span>Highlight</span>
-        </button>
-        <button
-          class="edit-menu-btn green"
-          class:active={markup.drawActive}
-          class:sub-open={eraserRowOpen || highlightRowOpen || textRowOpen}
-          onclick={toggleDraw}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 19l7-7 3 3-7 7-3-3z" />
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
-            <path d="M2 2l7.586 7.586" />
-            <circle cx="11" cy="11" r="2" />
-          </svg>
-          <span>Draw</span>
-        </button>
-        <button
-          class="edit-menu-btn blue"
-          class:sub-open={eraserRowOpen || highlightRowOpen || drawRowOpen}
-          onclick={toggleText}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="4 7 4 4 20 4 20 7" />
-            <line x1="9" y1="20" x2="15" y2="20" />
-            <line x1="12" y1="4" x2="12" y2="20" />
-          </svg>
-          <span>Text</span>
-        </button>
-      </div>
-
-      {#if eraserRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <button class="edit-menu-btn red sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="8" y1="8" x2="16" y2="16" />
-              <line x1="16" y1="8" x2="8" y2="16" />
-            </svg>
-            <span>Remove</span>
-          </button>
-          <button class="edit-menu-btn red sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="5 9 2 12 5 15" />
-              <polyline points="9 5 12 2 15 5" />
-              <polyline points="15 19 12 22 9 19" />
-              <polyline points="19 9 22 12 19 15" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <line x1="12" y1="2" x2="12" y2="22" />
-            </svg>
-            <span>Move</span>
-          </button>
-          <button class="edit-menu-btn red sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-            <span>Hide</span>
-          </button>
-          <button class="edit-menu-btn red sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-              <path d="M10 11v6" />
-              <path d="M14 11v6" />
-              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-            </svg>
-            <span>Clear all</span>
-          </button>
-        </div>
-      {/if}
-
-      {#if highlightRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <button class="edit-menu-btn yellow sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z" />
-              <circle cx="7.5" cy="10" r="1.5" fill="currentColor" stroke="none" />
-              <circle cx="16.5" cy="8" r="1.5" fill="currentColor" stroke="none" />
-            </svg>
-            <span>Color</span>
-          </button>
-          <button class="edit-menu-btn yellow sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
-              <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
-            </svg>
-            <span>Thickness</span>
-          </button>
-          <button class="edit-menu-btn yellow sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
-            </svg>
-            <span>Opacity</span>
-          </button>
-          <button class="edit-menu-btn yellow sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="2" width="20" height="20" rx="5" />
-              <rect x="6" y="6" width="12" height="12" rx="2" opacity="0.5" />
-            </svg>
-            <span>Mode</span>
-          </button>
-        </div>
-      {/if}
-
-      {#if drawRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
+        <div class="edit-menu-row">
           <button
-            class="edit-menu-btn green sub"
-            class:active={activeDrawTool === "color"}
-            onclick={() => toggleDrawSubTool("color")}
+            class="edit-menu-btn red"
+            class:sub-open={highlightRowOpen || drawRowOpen || textRowOpen}
+            onclick={toggleEraser}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z" />
-              <circle cx="7.5" cy="10" r="1.5" fill="currentColor" stroke="none" />
-              <circle cx="16.5" cy="8" r="1.5" fill="currentColor" stroke="none" />
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M20 20H7L3 16l9-9 8 8-4 4" />
+              <path d="M6.5 13.5l5-5" />
             </svg>
-            <span>Color</span>
+            <span>Erase</span>
           </button>
           <button
-            class="edit-menu-btn green sub"
-            class:active={activeDrawTool === "thickness"}
-            onclick={() => toggleDrawSubTool("thickness")}
+            class="edit-menu-btn yellow"
+            class:sub-open={eraserRowOpen || drawRowOpen || textRowOpen}
+            onclick={toggleHighlight}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
-              <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              <path d="M2 22l1-4 3 3-1 4H2z" opacity="0.5" />
             </svg>
-            <span>Thickness</span>
+            <span>Highlight</span>
           </button>
           <button
-            class="edit-menu-btn green sub"
-            class:active={activeDrawTool === "opacity"}
-            onclick={() => toggleDrawSubTool("opacity")}
+            class="edit-menu-btn green"
+            class:active={markup.drawActive}
+            class:sub-open={eraserRowOpen || highlightRowOpen || textRowOpen}
+            onclick={toggleDraw}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 19l7-7 3 3-7 7-3-3z" />
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+              <path d="M2 2l7.586 7.586" />
+              <circle cx="11" cy="11" r="2" />
             </svg>
-            <span>Opacity</span>
+            <span>Draw</span>
           </button>
           <button
-            class="edit-menu-btn green sub"
-            class:sub-open={shapesRowOpen}
-            onclick={toggleShapes}
-            aria-label="Shapes"
+            class="edit-menu-btn blue"
+            class:sub-open={eraserRowOpen || highlightRowOpen || drawRowOpen}
+            onclick={toggleText}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7" />
-              <circle cx="17.5" cy="6.5" r="3.5" />
-              <polygon points="7 21 12 14 17 21" />
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="4 7 4 4 20 4 20 7" />
+              <line x1="9" y1="20" x2="15" y2="20" />
+              <line x1="12" y1="4" x2="12" y2="20" />
             </svg>
-            <span>Shapes</span>
+            <span>Text</span>
           </button>
         </div>
 
-        {#if shapesRowOpen}
+        {#if eraserRowOpen}
           <div class="edit-menu-separator"></div>
           <div
             class="edit-menu-row"
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            <button class="edit-menu-btn green sub" aria-label="Square">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
+            <button class="edit-menu-btn red sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="8" y1="8" x2="16" y2="16" />
+                <line x1="16" y1="8" x2="8" y2="16" />
               </svg>
+              <span>Remove</span>
             </button>
-            <button class="edit-menu-btn green sub" aria-label="Circle">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="9" />
-              </svg>
-            </button>
-            <button class="edit-menu-btn green sub" aria-label="Triangle">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12,3 22,21 2,21" />
-              </svg>
-            </button>
-            <div class="edit-menu-divider"></div>
-            <button
-              class="edit-menu-btn sub"
-              class:green={roundedCorners}
-              class:grey={!roundedCorners}
-              class:active={roundedCorners}
-              onclick={() => { roundedCorners = !roundedCorners; }}
-              aria-pressed={roundedCorners}
-              aria-label="Rounded corners"
-              data-tooltip="Rounded corners"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" stroke-dasharray="2 2" opacity="0.45" />
-                <path d="M3 9 V5 Q3 3 5 3 H9" />
-              </svg>
-            </button>
-            <button
-              class="edit-menu-btn sub"
-              class:green={pathMode}
-              class:grey={!pathMode}
-              class:active={pathMode}
-              onclick={() => { pathMode = !pathMode; }}
-              aria-pressed={pathMode}
-              aria-label="Path"
-              data-tooltip="Path"
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 14 Q6 8 9 14 T15 14 T21 14" />
-              </svg>
-            </button>
-            <div class="edit-menu-divider"></div>
-            <button class="edit-menu-btn green sub" aria-label="Line">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="4" y1="12" x2="20" y2="12" />
-              </svg>
-            </button>
-            <button class="edit-menu-btn green sub" aria-label="Arrow">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <polyline points="14,6 20,12 14,18" />
-              </svg>
-            </button>
-            <button class="edit-menu-btn green sub" aria-label="Bidirectional arrow">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="8,6 2,12 8,18" />
+            <button class="edit-menu-btn red sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="5 9 2 12 5 15" />
+                <polyline points="9 5 12 2 15 5" />
+                <polyline points="15 19 12 22 9 19" />
+                <polyline points="19 9 22 12 19 15" />
                 <line x1="2" y1="12" x2="22" y2="12" />
-                <polyline points="16,6 22,12 16,18" />
+                <line x1="12" y1="2" x2="12" y2="22" />
               </svg>
+              <span>Move</span>
+            </button>
+            <button class="edit-menu-btn red sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+              <span>Hide</span>
+            </button>
+            <button class="edit-menu-btn red sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+              </svg>
+              <span>Clear all</span>
             </button>
           </div>
         {/if}
 
-        {#if activeDrawTool === "color"}
+        {#if highlightRowOpen}
+          <div class="edit-menu-separator"></div>
           <div
-            class="markup-color-cards-row"
+            class="edit-menu-row"
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            <div class="markup-color-card">
-              {#each DRAW_COLORS as color, i}
-                <button
-                  class="markup-color-swatch"
-                  class:active={markup.drawColor === color}
-                  style="background: {color}"
-                  onclick={() => { markup.setDrawColor(color); }}
-                  aria-label={`Color ${i + 1}`}
-                ></button>
-              {/each}
-            </div>
-            <div class="markup-color-card">
-              {#each markup.customColors as color, i}
-                <label
-                  class="markup-color-swatch"
-                  class:markup-color-swatch-empty={!color}
-                  class:active={markup.drawColor === color && color !== ""}
-                  style={color ? `background: ${color}` : ""}
-                  aria-label={`Custom color ${i + 1}`}
-                  oncontextmenu={(e) => { e.preventDefault(); e.stopPropagation(); markup.setCustomColor(i, ""); }}
+            <button class="edit-menu-btn yellow sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z"
+                />
+                <circle
+                  cx="7.5"
+                  cy="10"
+                  r="1.5"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="16.5"
+                  cy="8"
+                  r="1.5"
+                  fill="currentColor"
+                  stroke="none"
+                />
+              </svg>
+              <span>Color</span>
+            </button>
+            <button class="edit-menu-btn yellow sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
+                <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
+              </svg>
+              <span>Thickness</span>
+            </button>
+            <button class="edit-menu-btn yellow sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+              </svg>
+              <span>Opacity</span>
+            </button>
+            <button class="edit-menu-btn yellow sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="2" width="20" height="20" rx="5" />
+                <rect x="6" y="6" width="12" height="12" rx="2" opacity="0.5" />
+              </svg>
+              <span>Mode</span>
+            </button>
+          </div>
+        {/if}
+
+        {#if drawRowOpen}
+          <div class="edit-menu-separator"></div>
+          <div
+            class="edit-menu-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <button
+              class="edit-menu-btn green sub"
+              class:active={activeDrawTool === "color"}
+              onclick={() => toggleDrawSubTool("color")}
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z"
+                />
+                <circle
+                  cx="7.5"
+                  cy="10"
+                  r="1.5"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="16.5"
+                  cy="8"
+                  r="1.5"
+                  fill="currentColor"
+                  stroke="none"
+                />
+              </svg>
+              <span>Color</span>
+            </button>
+            <button
+              class="edit-menu-btn green sub"
+              class:active={activeDrawTool === "thickness"}
+              onclick={() => toggleDrawSubTool("thickness")}
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
+                <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
+              </svg>
+              <span>Thickness</span>
+            </button>
+            <button
+              class="edit-menu-btn green sub"
+              class:active={activeDrawTool === "opacity"}
+              onclick={() => toggleDrawSubTool("opacity")}
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+              </svg>
+              <span>Opacity</span>
+            </button>
+            <button
+              class="edit-menu-btn green sub"
+              class:sub-open={shapesRowOpen}
+              onclick={toggleShapes}
+              aria-label="Shapes"
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <circle cx="17.5" cy="6.5" r="3.5" />
+                <polygon points="7 21 12 14 17 21" />
+              </svg>
+              <span>Shapes</span>
+            </button>
+          </div>
+
+          {#if shapesRowOpen}
+            <div class="edit-menu-separator"></div>
+            <div
+              class="edit-menu-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <button class="edit-menu-btn green sub" aria-label="Square">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <input
-                    type="color"
-                    value={color || "#000000"}
-                    oninput={(e) => { markup.setCustomColor(i, (e.target as HTMLInputElement).value); }}
-                    class="markup-color-native-input"
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                </svg>
+              </button>
+              <button class="edit-menu-btn green sub" aria-label="Circle">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+              </button>
+              <button class="edit-menu-btn green sub" aria-label="Triangle">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="12,3 22,21 2,21" />
+                </svg>
+              </button>
+              <div class="edit-menu-divider"></div>
+              <button
+                class="edit-menu-btn sub"
+                class:green={roundedCorners}
+                class:grey={!roundedCorners}
+                class:active={roundedCorners}
+                onclick={() => {
+                  roundedCorners = !roundedCorners;
+                }}
+                aria-pressed={roundedCorners}
+                aria-label="Rounded corners"
+                data-tooltip="Rounded corners"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    stroke-dasharray="2 2"
+                    opacity="0.45"
                   />
-                </label>
-              {/each}
+                  <path d="M3 9 V5 Q3 3 5 3 H9" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn sub"
+                class:green={pathMode}
+                class:grey={!pathMode}
+                class:active={pathMode}
+                onclick={() => {
+                  pathMode = !pathMode;
+                }}
+                aria-pressed={pathMode}
+                aria-label="Path"
+                data-tooltip="Path"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 14 Q6 8 9 14 T15 14 T21 14" />
+                </svg>
+              </button>
+              <div class="edit-menu-divider"></div>
+              <button class="edit-menu-btn green sub" aria-label="Line">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                </svg>
+              </button>
+              <button class="edit-menu-btn green sub" aria-label="Arrow">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <polyline points="14,6 20,12 14,18" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn green sub"
+                aria-label="Bidirectional arrow"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="8,6 2,12 8,18" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <polyline points="16,6 22,12 16,18" />
+                </svg>
+              </button>
             </div>
-          </div>
-        {/if}
+          {/if}
 
-        {#if activeDrawTool === "thickness"}
-          <div
-            class="markup-slider-panel"
-            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-          >
+          {#if activeDrawTool === "color"}
             <div
-              class="color-slider-track"
-              bind:this={thicknessTrackEl}
-              style="--track-thickness: {Math.max(2, localThickness)}px"
-              role="slider"
-              tabindex="0"
-              aria-valuemin={1}
-              aria-valuemax={20}
-              aria-valuenow={localThickness}
-              aria-label="Thickness"
-              onpointerdown={handleThicknessPointerDown}
-              onpointermove={handleThicknessPointerMove}
-              onpointerup={handleThicknessPointerUp}
-              onpointercancel={handleThicknessPointerUp}
+              class="markup-color-cards-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <div class="markup-color-card">
+                {#each DRAW_COLORS as color, i}
+                  <button
+                    class="markup-color-swatch"
+                    class:active={markup.drawColor === color}
+                    style="background: {color}"
+                    onclick={() => {
+                      markup.setDrawColor(color);
+                    }}
+                    aria-label={`Color ${i + 1}`}
+                  ></button>
+                {/each}
+              </div>
+              <div class="markup-color-card">
+                {#each markup.customColors as color, i}
+                  <label
+                    class="markup-color-swatch"
+                    class:markup-color-swatch-empty={!color}
+                    class:active={markup.drawColor === color && color !== ""}
+                    style={color ? `background: ${color}` : ""}
+                    aria-label={`Custom color ${i + 1}`}
+                    oncontextmenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      markup.setCustomColor(i, "");
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={color || "#000000"}
+                      oninput={(e) => {
+                        markup.setCustomColor(
+                          i,
+                          (e.target as HTMLInputElement).value,
+                        );
+                      }}
+                      class="markup-color-native-input"
+                    />
+                  </label>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          {#if activeDrawTool === "thickness"}
+            <div
+              class="markup-slider-panel"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
             >
               <div
-                class="color-slider-fill"
-                style="width: {thicknessScrubberPct}%"
-              ></div>
-              {#each thicknessMarkers as marker}
+                class="color-slider-track"
+                bind:this={thicknessTrackEl}
+                style="--track-thickness: {Math.max(2, localThickness)}px"
+                role="slider"
+                tabindex="0"
+                aria-valuemin={1}
+                aria-valuemax={20}
+                aria-valuenow={localThickness}
+                aria-label="Thickness"
+                onpointerdown={handleThicknessPointerDown}
+                onpointermove={handleThicknessPointerMove}
+                onpointerup={handleThicknessPointerUp}
+                onpointercancel={handleThicknessPointerUp}
+              >
                 <div
-                  class="color-slider-marker"
-                  class:center-marker={marker.val === 10}
-                  style="left: {marker.pct}%"
-                  onpointerdown={(e) => e.stopPropagation()}
-                  onclick={() => jumpToThickness(marker.val)}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      jumpToThickness(marker.val);
-                    }
-                  }}
+                  class="color-slider-fill"
+                  style="width: {thicknessScrubberPct}%"
+                ></div>
+                {#each thicknessMarkers as marker}
+                  <div
+                    class="color-slider-marker"
+                    class:center-marker={marker.val === 10}
+                    style="left: {marker.pct}%"
+                    onpointerdown={(e) => e.stopPropagation()}
+                    onclick={() => jumpToThickness(marker.val)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        jumpToThickness(marker.val);
+                      }
+                    }}
+                    role="button"
+                    tabindex="0"
+                    aria-label="Set thickness to {marker.val}"
+                  ></div>
+                {/each}
+                <div
+                  class="color-slider-scrubber"
+                  style="left: {thicknessScrubberPct}%"
                   role="button"
                   tabindex="0"
-                  aria-label="Set thickness to {marker.val}"
+                  aria-label="Scrubber"
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    if (!thicknessTrackEl) return;
+                    isThicknessDragging = true;
+                    thicknessTrackEl.setPointerCapture(e.pointerId);
+                  }}
                 ></div>
-              {/each}
+              </div>
               <div
-                class="color-slider-scrubber"
+                class="color-scrubber-tooltip"
                 style="left: {thicknessScrubberPct}%"
-                role="button"
+              >
+                <span>{localThickness}px</span>
+              </div>
+            </div>
+          {/if}
+
+          {#if activeDrawTool === "opacity"}
+            <div
+              class="markup-slider-panel"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <div
+                class="color-slider-track"
+                bind:this={opacityTrackEl}
+                style="--track-opacity: {Math.max(0.1, localOpacity)}"
+                role="slider"
                 tabindex="0"
-                aria-label="Scrubber"
-                onpointerdown={(e) => {
-                  e.stopPropagation();
-                  if (!thicknessTrackEl) return;
-                  isThicknessDragging = true;
-                  thicknessTrackEl.setPointerCapture(e.pointerId);
-                }}
-              ></div>
+                aria-valuemin={0.1}
+                aria-valuemax={1}
+                aria-valuenow={localOpacity}
+                aria-label="Opacity"
+                onpointerdown={handleOpacityPointerDown}
+                onpointermove={handleOpacityPointerMove}
+                onpointerup={handleOpacityPointerUp}
+                onpointercancel={handleOpacityPointerUp}
+              >
+                <div
+                  class="color-slider-fill"
+                  style="width: {opacityScrubberPct}%"
+                ></div>
+                {#each opacityMarkers as marker}
+                  <div
+                    class="color-slider-marker"
+                    class:center-marker={marker.val === 0.5}
+                    style="left: {marker.pct}%"
+                    onpointerdown={(e) => e.stopPropagation()}
+                    onclick={() => jumpToOpacity(marker.val)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        jumpToOpacity(marker.val);
+                      }
+                    }}
+                    role="button"
+                    tabindex="0"
+                    aria-label="Set opacity to {Math.round(marker.val * 100)}%"
+                  ></div>
+                {/each}
+                <div
+                  class="color-slider-scrubber"
+                  style="left: {opacityScrubberPct}%"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Scrubber"
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    if (!opacityTrackEl) return;
+                    isOpacityDragging = true;
+                    opacityTrackEl.setPointerCapture(e.pointerId);
+                  }}
+                ></div>
+              </div>
+              <div
+                class="color-scrubber-tooltip"
+                style="left: {opacityScrubberPct}%"
+              >
+                <span>{Math.round(localOpacity * 100)}%</span>
+              </div>
             </div>
-            <div class="color-scrubber-tooltip" style="left: {thicknessScrubberPct}%">
-              <span>{localThickness}px</span>
-            </div>
-          </div>
+          {/if}
         {/if}
 
-        {#if activeDrawTool === "opacity"}
+        {#if textRowOpen}
+          <div class="edit-menu-separator"></div>
           <div
-            class="markup-slider-panel"
+            class="edit-menu-row"
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            <div
-              class="color-slider-track"
-              bind:this={opacityTrackEl}
-              style="--track-opacity: {Math.max(0.1, localOpacity)}"
-              role="slider"
-              tabindex="0"
-              aria-valuemin={0.1}
-              aria-valuemax={1}
-              aria-valuenow={localOpacity}
-              aria-label="Opacity"
-              onpointerdown={handleOpacityPointerDown}
-              onpointermove={handleOpacityPointerMove}
-              onpointerup={handleOpacityPointerUp}
-              onpointercancel={handleOpacityPointerUp}
-            >
-              <div
-                class="color-slider-fill"
-                style="width: {opacityScrubberPct}%"
-              ></div>
-              {#each opacityMarkers as marker}
-                <div
-                  class="color-slider-marker"
-                  class:center-marker={marker.val === 0.5}
-                  style="left: {marker.pct}%"
-                  onpointerdown={(e) => e.stopPropagation()}
-                  onclick={() => jumpToOpacity(marker.val)}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      jumpToOpacity(marker.val);
-                    }
-                  }}
-                  role="button"
-                  tabindex="0"
-                  aria-label="Set opacity to {Math.round(marker.val * 100)}%"
-                ></div>
-              {/each}
-              <div
-                class="color-slider-scrubber"
-                style="left: {opacityScrubberPct}%"
-                role="button"
-                tabindex="0"
-                aria-label="Scrubber"
-                onpointerdown={(e) => {
-                  e.stopPropagation();
-                  if (!opacityTrackEl) return;
-                  isOpacityDragging = true;
-                  opacityTrackEl.setPointerCapture(e.pointerId);
-                }}
-              ></div>
-            </div>
-            <div class="color-scrubber-tooltip" style="left: {opacityScrubberPct}%">
-              <span>{Math.round(localOpacity * 100)}%</span>
-            </div>
+            <button class="edit-menu-btn blue sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z"
+                />
+                <circle
+                  cx="7.5"
+                  cy="10"
+                  r="1.5"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <circle
+                  cx="16.5"
+                  cy="8"
+                  r="1.5"
+                  fill="currentColor"
+                  stroke="none"
+                />
+              </svg>
+              <span>Color</span>
+            </button>
+            <button class="edit-menu-btn blue sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="4 7 4 4 20 4 20 7" />
+                <line x1="9" y1="20" x2="15" y2="20" />
+                <line x1="12" y1="4" x2="12" y2="20" />
+                <path d="M2 7h2" />
+                <path d="M20 7h2" />
+              </svg>
+              <span>Font</span>
+            </button>
+            <button class="edit-menu-btn blue sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M5 4v16M5 12h4a4 4 0 0 0 0-8H5M5 12h4a4 4 0 0 1 0 8H5"
+                />
+                <line x1="16" y1="6" x2="16" y2="18" />
+                <line x1="14" y1="6" x2="18" y2="6" />
+                <line x1="14" y1="18" x2="18" y2="18" />
+              </svg>
+              <span>Style</span>
+            </button>
+            <button class="edit-menu-btn blue sub">
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="17" y1="10" x2="3" y2="10" />
+                <line x1="21" y1="6" x2="3" y2="6" />
+                <line x1="21" y1="14" x2="3" y2="14" />
+                <line x1="17" y1="18" x2="3" y2="18" />
+              </svg>
+              <span>Alignment</span>
+            </button>
           </div>
         {/if}
-      {/if}
-
-      {#if textRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <button class="edit-menu-btn blue sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.66 0 3-1.34 3-3 0-.55-.15-1.07-.44-1.51-.29-.44-.46-.96-.46-1.49 0-1.1.9-2 2-2H18.5c2.49 0 4.5-2.01 4.5-4.5C23 6.08 18.08 2 12 2z" />
-              <circle cx="7.5" cy="10" r="1.5" fill="currentColor" stroke="none" />
-              <circle cx="16.5" cy="8" r="1.5" fill="currentColor" stroke="none" />
-            </svg>
-            <span>Color</span>
-          </button>
-          <button class="edit-menu-btn blue sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4 7 4 4 20 4 20 7" />
-              <line x1="9" y1="20" x2="15" y2="20" />
-              <line x1="12" y1="4" x2="12" y2="20" />
-              <path d="M2 7h2" />
-              <path d="M20 7h2" />
-            </svg>
-            <span>Font</span>
-          </button>
-          <button class="edit-menu-btn blue sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 4v16M5 12h4a4 4 0 0 0 0-8H5M5 12h4a4 4 0 0 1 0 8H5" />
-              <line x1="16" y1="6" x2="16" y2="18" />
-              <line x1="14" y1="6" x2="18" y2="6" />
-              <line x1="14" y1="18" x2="18" y2="18" />
-            </svg>
-            <span>Style</span>
-          </button>
-          <button class="edit-menu-btn blue sub">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="17" y1="10" x2="3" y2="10" />
-              <line x1="21" y1="6" x2="3" y2="6" />
-              <line x1="21" y1="14" x2="3" y2="14" />
-              <line x1="17" y1="18" x2="3" y2="18" />
-            </svg>
-            <span>Alignment</span>
-          </button>
-        </div>
-      {/if}
       </div>
     </div>
 

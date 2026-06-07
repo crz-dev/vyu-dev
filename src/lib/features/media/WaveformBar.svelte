@@ -144,14 +144,8 @@
   tabindex="0"
   aria-label="Seek audio"
 >
-  <canvas
-    bind:this={canvasEl}
-    class="waveform-canvas"
-  ></canvas>
-  <div
-    class="audio-progress-playhead"
-    style="left: {progress}%"
-  ></div>
+  <canvas bind:this={canvasEl} class="waveform-canvas"></canvas>
+  <div class="audio-progress-playhead" style="left: {progress}%"></div>
   {#each timestamps as ts (ts.id)}
     <div
       class="audio-marker audio-ts-marker"
@@ -202,10 +196,18 @@
     opacity: 0.8;
     transform: translateX(-1px);
   }
-  .audio-ts-marker { background: var(--yellow); }
-  .audio-loop-marker { background: var(--green); }
-  .audio-clip-marker { background: var(--blue); }
-  .audio-resume-marker { background: rgba(150, 150, 150, 0.5); }
+  .audio-ts-marker {
+    background: var(--yellow);
+  }
+  .audio-loop-marker {
+    background: var(--green);
+  }
+  .audio-clip-marker {
+    background: var(--blue);
+  }
+  .audio-resume-marker {
+    background: rgba(150, 150, 150, 0.5);
+  }
   .waveform-canvas {
     width: 100%;
     height: 32px;

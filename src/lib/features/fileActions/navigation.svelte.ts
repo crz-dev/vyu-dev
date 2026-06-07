@@ -7,8 +7,16 @@ import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
 import { menuStore } from "$lib/features/dialogs/menuVisibility.svelte";
 import { corruption } from "$lib/features/media/corruption.svelte";
-import { clearFolderCache, getParentFolder, getFileExt } from "$lib/services/files";
-import { AUDIO_EXTS, type LoopMode, type SortMode } from "$lib/shared/constants";
+import {
+  clearFolderCache,
+  getParentFolder,
+  getFileExt,
+} from "$lib/services/files";
+import {
+  AUDIO_EXTS,
+  type LoopMode,
+  type SortMode,
+} from "$lib/shared/constants";
 import { sort } from "$lib/features/navigation/sort.svelte";
 import { createPlaybackUI } from "$lib/features/media/playback.svelte";
 import {
@@ -246,10 +254,7 @@ export function createNavigation(deps: NavigationDeps) {
     if (slideshow.active) slideshow.onMediaLoaded();
     // After metadata load, if the mouse is no longer over the audio wrapper,
     // reset hover state so arrow keys don't seek in a stale hover zone.
-    if (
-      audioEl?.parentElement &&
-      !audioEl.parentElement.matches(":hover")
-    ) {
+    if (audioEl?.parentElement && !audioEl.parentElement.matches(":hover")) {
       deps.setHoverZone("none");
     }
   }

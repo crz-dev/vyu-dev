@@ -54,14 +54,16 @@ export function createSetMediaState(s: SetMediaStateSetters) {
     if (data.fileList !== undefined) s.setFileList(data.fileList);
     if (data.currentIndex !== undefined) s.setCurrentIndex(data.currentIndex);
     if (data.fileSize !== undefined) s.setFileSize(data.fileSize);
-    if (data.fileSizeBytes !== undefined) s.setFileSizeBytes(data.fileSizeBytes);
+    if (data.fileSizeBytes !== undefined)
+      s.setFileSizeBytes(data.fileSizeBytes);
     if (data.fileDimensions !== undefined)
       s.setFileDimensions(data.fileDimensions);
     if (data.fileCreated !== undefined) s.setFileCreated(data.fileCreated);
     if (data.fileModified !== undefined) s.setFileModified(data.fileModified);
     if (data.fileInfoLoading !== undefined)
       s.setFileInfoLoading(data.fileInfoLoading);
-    if (data.isLoadingFile !== undefined) s.setIsLoadingFile(data.isLoadingFile);
+    if (data.isLoadingFile !== undefined)
+      s.setIsLoadingFile(data.isLoadingFile);
     if (data.loadingFadingOut !== undefined)
       s.setLoadingFadingOut(data.loadingFadingOut);
     if (data.imageRotation !== undefined) s.setRotation(data.imageRotation);
@@ -76,8 +78,7 @@ export function createSetMediaState(s: SetMediaStateSetters) {
       s.setRawDurationSecs(data.rawDurationSecs);
     if (data.progress !== undefined) s.setProgress(data.progress);
     if (data.playing !== undefined) s.setPlaying(data.playing);
-    if (data.timestamps !== undefined)
-      markerStore.timestamps = data.timestamps;
+    if (data.timestamps !== undefined) markerStore.timestamps = data.timestamps;
     if (data.clipBoundaries !== undefined) s.setBoundaries(data.clipBoundaries);
     if (data.resumePoint !== undefined)
       markerStore.resumePoint = data.resumePoint;

@@ -142,10 +142,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
 
     audioEl.addEventListener("seeked", onSeeked);
 
-    discScrubStore.discScrubHandlers.onScrubMove = (
-      _e,
-      newProgress,
-    ) => {
+    discScrubStore.discScrubHandlers.onScrubMove = (_e, newProgress) => {
       const time = (newProgress / 100) * audioEl!.duration;
       deps.setRawCurrentSecs(time);
       deps.setProgress(newProgress);

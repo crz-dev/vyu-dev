@@ -108,16 +108,16 @@ A few choices shaped Vyu's architecture, and it's worth knowing the reasoning be
 
 ## Tech stack
 
-| Layer | Tool |
-| --- | --- |
-| Desktop shell | Tauri 2 |
-| UI framework | Svelte 5 (runes mode) |
-| Meta-framework | SvelteKit (static SPA, no SSR) |
-| Language | TypeScript (strict) |
-| Package manager | pnpm |
-| Video / image processing | FFmpeg (system PATH, not bundled) |
-| PDF rendering | pdfjs-dist (code-split, dynamic import) |
-| State persistence | localStorage |
+| Layer                    | Tool                                    |
+| ------------------------ | --------------------------------------- |
+| Desktop shell            | Tauri 2                                 |
+| UI framework             | Svelte 5 (runes mode)                   |
+| Meta-framework           | SvelteKit (static SPA, no SSR)          |
+| Language                 | TypeScript (strict)                     |
+| Package manager          | pnpm                                    |
+| Video / image processing | FFmpeg (system PATH, not bundled)       |
+| PDF rendering            | pdfjs-dist (code-split, dynamic import) |
+| State persistence        | localStorage                            |
 
 ## Getting started
 
@@ -144,10 +144,10 @@ The dev server is pinned to port **1420** (with `strictPort: true`) in both `vit
 
 ### Useful commands
 
-| Task | Command |
-| --- | --- |
-| Type check | `pnpm check` |
-| Format | `pnpm prettier --write .` |
+| Task       | Command                   |
+| ---------- | ------------------------- |
+| Type check | `pnpm check`              |
+| Format     | `pnpm prettier --write .` |
 
 ## Project structure
 

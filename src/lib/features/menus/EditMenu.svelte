@@ -539,197 +539,11 @@
       </div>
 
       <div class="edit-menu-card">
-      <div class="edit-menu-row">
-        <button
-          class="edit-menu-btn red"
-          class:sub-open={rotateRowOpen || flipRowOpen || colorRowOpen}
-          onclick={handleCropClick}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="speed-mode-icon"
-          >
-            <path d="M6 2h12v20H6z" opacity="0.3" />
-            <path d="M2 6h20M2 18h20M6 2v20M18 2v20" />
-          </svg>
-          <span>Crop</span>
-        </button>
-        <button
-          class="edit-menu-btn yellow"
-          class:sub-open={cropRowOpen || flipRowOpen || colorRowOpen}
-          onclick={() => {
-            if (rotateRowOpen) {
-              rotateRowOpen = false;
-              activeRotateTool = null;
-            } else {
-              if (openTimeout) clearTimeout(openTimeout);
-              if (editing.cropMode) editing.exitCropMode();
-              colorRowOpen = false;
-              activeColorTool = null;
-              flipRowOpen = false;
-              cropRowOpen = false;
-              activeCropTool = null;
-              openTimeout = setTimeout(() => {
-                rotateRowOpen = true;
-                openTimeout = null;
-              }, 100);
-            }
-          }}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M21 2v6h-6" />
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-            <path d="M3 22v-6h6" />
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-          </svg>
-          <span>Rotate</span>
-        </button>
-        <button
-          class="edit-menu-btn green"
-          class:sub-open={cropRowOpen || rotateRowOpen || colorRowOpen}
-          onclick={() => {
-            if (flipRowOpen) {
-              flipRowOpen = false;
-            } else {
-              if (openTimeout) clearTimeout(openTimeout);
-              if (editing.cropMode) editing.exitCropMode();
-              colorRowOpen = false;
-              activeColorTool = null;
-              rotateRowOpen = false;
-              activeRotateTool = null;
-              cropRowOpen = false;
-              activeCropTool = null;
-              openTimeout = setTimeout(() => {
-                flipRowOpen = true;
-                openTimeout = null;
-              }, 100);
-            }
-          }}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 3v18" />
-            <path d="M16 7l4 5-4 5" />
-            <path d="M8 7l-4 5 4 5" />
-          </svg>
-          <span>Flip</span>
-        </button>
-        <button
-          class="edit-menu-btn blue"
-          class:sub-open={cropRowOpen || rotateRowOpen || flipRowOpen}
-          onclick={() => {
-            if (colorRowOpen) {
-              colorRowOpen = false;
-              activeColorTool = null;
-            } else {
-              if (openTimeout) clearTimeout(openTimeout);
-              if (editing.cropMode) editing.exitCropMode();
-              rotateRowOpen = false;
-              activeRotateTool = null;
-              flipRowOpen = false;
-              cropRowOpen = false;
-              activeCropTool = null;
-              openTimeout = setTimeout(() => {
-                colorRowOpen = true;
-                openTimeout = null;
-              }, 100);
-            }
-          }}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path
-              d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"
-              fill="currentColor"
-              opacity="0.25"
-            />
-          </svg>
-          <span>Color</span>
-        </button>
-      </div>
-
-      {#if cropRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
+        <div class="edit-menu-row">
           <button
-            class="edit-menu-btn red sub"
-            class:active={activeCropTool === "16-9"}
-            onclick={() => selectCropTool("16-9", 16 / 9)}
-          >
-            <span>16:9</span>
-          </button>
-          <button
-            class="edit-menu-btn red sub"
-            class:active={activeCropTool === "9-16"}
-            onclick={() => selectCropTool("9-16", 9 / 16)}
-          >
-            <span>9:16</span>
-          </button>
-          <button
-            class="edit-menu-btn red sub"
-            class:active={activeCropTool === "1-1"}
-            onclick={() => selectCropTool("1-1", 1)}
-          >
-            <span>1:1</span>
-          </button>
-          <button
-            class="edit-menu-btn red sub"
-            class:active={activeCropTool === "custom"}
-            onclick={() => selectCropTool("custom", null)}
-          >
-            <span>Custom</span>
-          </button>
-        </div>
-      {/if}
-
-      {#if colorRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <button
-            class="edit-menu-btn grey sub"
-            class:active={activeColorTool === "brightness"}
-            onclick={() => toggleColorTool("brightness")}
+            class="edit-menu-btn red"
+            class:sub-open={rotateRowOpen || flipRowOpen || colorRowOpen}
+            onclick={handleCropClick}
           >
             <svg
               width="13"
@@ -740,213 +554,34 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              class="speed-mode-icon"
             >
-              <circle cx="12" cy="12" r="5" />
-              <path
-                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-              />
+              <path d="M6 2h12v20H6z" opacity="0.3" />
+              <path d="M2 6h20M2 18h20M6 2v20M18 2v20" />
             </svg>
-            <span>Brightness</span>
+            <span>Crop</span>
           </button>
           <button
-            class="edit-menu-btn grey sub"
-            class:active={activeColorTool === "contrast"}
-            onclick={() => toggleColorTool("contrast")}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path
-                d="M12 2a10 10 0 0 1 0 20z"
-                fill="currentColor"
-                opacity="0.3"
-              />
-            </svg>
-            <span>Contrast</span>
-          </button>
-          <button
-            class="edit-menu-btn grey sub"
-            class:active={activeColorTool === "saturation"}
-            onclick={() => toggleColorTool("saturation")}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
-                fill="currentColor"
-                opacity="0.3"
-              />
-            </svg>
-            <span>Saturation</span>
-          </button>
-          <button
-            class="edit-menu-btn grey sub"
-            class:active={activeColorTool === "hue"}
-            onclick={() => toggleColorTool("hue")}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 2a10 10 0 0 1 0 20" />
-              <path d="M12 12l5-2" />
-              <path d="M12 12l1 5" />
-            </svg>
-            <span>Hue</span>
-          </button>
-        </div>
-      {/if}
-
-      {#if activeColorTool}
-        <div
-          class="color-slider-panel"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <div
-            class="color-slider-track"
-            bind:this={trackEl}
-            role="slider"
-            tabindex="0"
-            aria-valuemin={activeColorTool === "hue" ? -180 : 0}
-            aria-valuemax={activeColorTool === "hue" ? 180 : 2}
-            aria-valuenow={activeColorTool === "hue"
-              ? localHue
-              : activeColorTool === "contrast"
-                ? localContrast
-                : activeColorTool === "saturation"
-                  ? localSaturation
-                  : localBrightness}
-            aria-label={activeColorTool
-              ? activeColorTool.charAt(0).toUpperCase() +
-                activeColorTool.slice(1)
-              : "Color"}
-            onpointerdown={handleTrackPointerDown}
-            onpointermove={handleTrackPointerMove}
-            onpointerup={handleTrackPointerUp}
-            onpointercancel={handleTrackPointerUp}
-            onmouseenter={() => (sliderHovered = true)}
-            onmouseleave={() => (sliderHovered = false)}
-          >
-            <div class="color-slider-fill" style="width: {scrubberPct}%"></div>
-            {#each activeMarkers as marker}
-              <div
-                class="color-slider-marker"
-                class:center-marker={marker.val ===
-                  (activeColorTool === "hue" ? 0 : 1)}
-                style="left: {marker.pct}%"
-                onpointerdown={(e) => e.stopPropagation()}
-                onclick={() => jumpToValue(marker.val)}
-                onkeydown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    jumpToValue(marker.val);
-                  }
-                }}
-                role="button"
-                tabindex="0"
-                aria-label="Set {activeColorTool} to {marker.val}"
-              ></div>
-            {/each}
-            <div
-              class="color-slider-scrubber"
-              style="left: {scrubberPct}%"
-              role="button"
-              tabindex="0"
-              aria-label="Scrubber"
-              onpointerdown={(e) => {
-                e.stopPropagation();
-                if (!trackEl) return;
-                isDragging = true;
-                trackEl.setPointerCapture(e.pointerId);
-              }}
-            ></div>
-          </div>
-          {#if scrubberTooltipVisible}
-            <div class="color-scrubber-tooltip" style="left: {scrubberPct}%">
-              <span>{displayValue}</span>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      {#if rotateRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <button
-            class="edit-menu-btn yellow sub"
-            class:active={activeRotateTool === "90-right"}
-            class:flash={flashTarget === "90-right"}
-            onclick={() => toggleRotateTool("90-right")}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 2v6h-6" />
-              <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-            </svg>
-            <span>90 Right</span>
-          </button>
-          <button
-            class="edit-menu-btn yellow sub"
-            class:active={activeRotateTool === "90-left"}
-            class:flash={flashTarget === "90-left"}
-            onclick={() => toggleRotateTool("90-left")}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 2v6h6" />
-              <path d="M21 12a9 9 0 0 0-15-6.7L3 8" />
-            </svg>
-            <span>90 Left</span>
-          </button>
-          <button
-            class="edit-menu-btn yellow sub"
-            class:active={activeRotateTool === "180"}
-            class:flash={flashTarget === "180"}
-            onclick={() => toggleRotateTool("180")}
+            class="edit-menu-btn yellow"
+            class:sub-open={cropRowOpen || flipRowOpen || colorRowOpen}
+            onclick={() => {
+              if (rotateRowOpen) {
+                rotateRowOpen = false;
+                activeRotateTool = null;
+              } else {
+                if (openTimeout) clearTimeout(openTimeout);
+                if (editing.cropMode) editing.exitCropMode();
+                colorRowOpen = false;
+                activeColorTool = null;
+                flipRowOpen = false;
+                cropRowOpen = false;
+                activeCropTool = null;
+                openTimeout = setTimeout(() => {
+                  rotateRowOpen = true;
+                  openTimeout = null;
+                }, 100);
+              }
+            }}
           >
             <svg
               width="13"
@@ -963,116 +598,29 @@
               <path d="M3 22v-6h6" />
               <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
             </svg>
-            <span>180 Full</span>
+            <span>Rotate</span>
           </button>
           <button
-            class="edit-menu-btn yellow sub"
-            class:active={activeRotateTool === "custom"}
-            class:flash={flashTarget === "custom"}
-            onclick={() => toggleRotateTool("custom")}
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-            <span>Custom</span>
-          </button>
-        </div>
-      {/if}
-
-      {#if activeRotateTool === "custom"}
-        <div
-          class="color-slider-panel"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <div
-            class="color-slider-track"
-            bind:this={rotateTrackEl}
-            role="slider"
-            tabindex="0"
-            aria-valuemin="-180"
-            aria-valuemax="180"
-            aria-valuenow={localRotationAngle}
-            aria-label="Rotation angle"
-            onpointerdown={handleRotateTrackPointerDown}
-            onpointermove={handleRotateTrackPointerMove}
-            onpointerup={handleRotateTrackPointerUp}
-            onpointercancel={handleRotateTrackPointerUp}
-          >
-            <div
-              class="color-slider-fill"
-              style="width: {rotateScrubberPct}%"
-            ></div>
-            {#each rotateMarkers as marker}
-              <div
-                class="color-slider-marker"
-                class:center-marker={marker.val === 0}
-                style="left: {marker.pct}%"
-                onpointerdown={(e) => e.stopPropagation()}
-                onclick={() => {
-                  editing.pushUndo();
-                  localRotationAngle = marker.val;
-                  editing.setRotation(marker.val);
-                }}
-                onkeydown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    editing.pushUndo();
-                    localRotationAngle = marker.val;
-                    editing.setRotation(marker.val);
-                  }
-                }}
-                role="button"
-                tabindex="0"
-                aria-label="Set rotation to {marker.val}"
-              ></div>
-            {/each}
-            <div
-              class="color-slider-scrubber"
-              style="left: {rotateScrubberPct}%"
-              role="button"
-              tabindex="0"
-              aria-label="Scrubber"
-              onpointerdown={(e) => {
-                e.stopPropagation();
-                if (!rotateTrackEl) return;
-                isRotateDragging = true;
-                rotateTrackEl.setPointerCapture(e.pointerId);
-              }}
-            ></div>
-          </div>
-          {#if rotateScrubberTooltipVisible}
-            <div
-              class="color-scrubber-tooltip"
-              style="left: {rotateScrubberPct}%"
-            >
-              <span>{rotateDisplayValue}</span>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      {#if flipRowOpen}
-        <div class="edit-menu-separator"></div>
-        <div
-          class="edit-menu-row"
-          in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
-          out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
-        >
-          <button
-            class="edit-menu-btn green sub"
-            class:flash={flashTarget === "horizontal"}
-            onclick={() => toggleFlip("horizontal")}
+            class="edit-menu-btn green"
+            class:sub-open={cropRowOpen || rotateRowOpen || colorRowOpen}
+            onclick={() => {
+              if (flipRowOpen) {
+                flipRowOpen = false;
+              } else {
+                if (openTimeout) clearTimeout(openTimeout);
+                if (editing.cropMode) editing.exitCropMode();
+                colorRowOpen = false;
+                activeColorTool = null;
+                rotateRowOpen = false;
+                activeRotateTool = null;
+                cropRowOpen = false;
+                activeCropTool = null;
+                openTimeout = setTimeout(() => {
+                  flipRowOpen = true;
+                  openTimeout = null;
+                }, 100);
+              }
+            }}
           >
             <svg
               width="13"
@@ -1088,12 +636,29 @@
               <path d="M16 7l4 5-4 5" />
               <path d="M8 7l-4 5 4 5" />
             </svg>
-            <span>Horizontally</span>
+            <span>Flip</span>
           </button>
           <button
-            class="edit-menu-btn green sub"
-            class:flash={flashTarget === "vertical"}
-            onclick={() => toggleFlip("vertical")}
+            class="edit-menu-btn blue"
+            class:sub-open={cropRowOpen || rotateRowOpen || flipRowOpen}
+            onclick={() => {
+              if (colorRowOpen) {
+                colorRowOpen = false;
+                activeColorTool = null;
+              } else {
+                if (openTimeout) clearTimeout(openTimeout);
+                if (editing.cropMode) editing.exitCropMode();
+                rotateRowOpen = false;
+                activeRotateTool = null;
+                flipRowOpen = false;
+                cropRowOpen = false;
+                activeCropTool = null;
+                openTimeout = setTimeout(() => {
+                  colorRowOpen = true;
+                  openTimeout = null;
+                }, 100);
+              }
+            }}
           >
             <svg
               width="13"
@@ -1105,14 +670,452 @@
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M3 12h18" />
-              <path d="M7 8l5-4 5 4" />
-              <path d="M7 16l5 4 5-4" />
+              <circle cx="12" cy="12" r="10" />
+              <path
+                d="M12 2a10 10 0 0 1 0 20 10 10 0 0 1 0-20"
+                fill="currentColor"
+                opacity="0.25"
+              />
             </svg>
-            <span>Vertically</span>
+            <span>Color</span>
           </button>
         </div>
-      {/if}
+
+        {#if cropRowOpen}
+          <div class="edit-menu-separator"></div>
+          <div
+            class="edit-menu-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <button
+              class="edit-menu-btn red sub"
+              class:active={activeCropTool === "16-9"}
+              onclick={() => selectCropTool("16-9", 16 / 9)}
+            >
+              <span>16:9</span>
+            </button>
+            <button
+              class="edit-menu-btn red sub"
+              class:active={activeCropTool === "9-16"}
+              onclick={() => selectCropTool("9-16", 9 / 16)}
+            >
+              <span>9:16</span>
+            </button>
+            <button
+              class="edit-menu-btn red sub"
+              class:active={activeCropTool === "1-1"}
+              onclick={() => selectCropTool("1-1", 1)}
+            >
+              <span>1:1</span>
+            </button>
+            <button
+              class="edit-menu-btn red sub"
+              class:active={activeCropTool === "custom"}
+              onclick={() => selectCropTool("custom", null)}
+            >
+              <span>Custom</span>
+            </button>
+          </div>
+        {/if}
+
+        {#if colorRowOpen}
+          <div class="edit-menu-separator"></div>
+          <div
+            class="edit-menu-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <button
+              class="edit-menu-btn grey sub"
+              class:active={activeColorTool === "brightness"}
+              onclick={() => toggleColorTool("brightness")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="5" />
+                <path
+                  d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                />
+              </svg>
+              <span>Brightness</span>
+            </button>
+            <button
+              class="edit-menu-btn grey sub"
+              class:active={activeColorTool === "contrast"}
+              onclick={() => toggleColorTool("contrast")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path
+                  d="M12 2a10 10 0 0 1 0 20z"
+                  fill="currentColor"
+                  opacity="0.3"
+                />
+              </svg>
+              <span>Contrast</span>
+            </button>
+            <button
+              class="edit-menu-btn grey sub"
+              class:active={activeColorTool === "saturation"}
+              onclick={() => toggleColorTool("saturation")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
+                  fill="currentColor"
+                  opacity="0.3"
+                />
+              </svg>
+              <span>Saturation</span>
+            </button>
+            <button
+              class="edit-menu-btn grey sub"
+              class:active={activeColorTool === "hue"}
+              onclick={() => toggleColorTool("hue")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2a10 10 0 0 1 0 20" />
+                <path d="M12 12l5-2" />
+                <path d="M12 12l1 5" />
+              </svg>
+              <span>Hue</span>
+            </button>
+          </div>
+        {/if}
+
+        {#if activeColorTool}
+          <div
+            class="color-slider-panel"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <div
+              class="color-slider-track"
+              bind:this={trackEl}
+              role="slider"
+              tabindex="0"
+              aria-valuemin={activeColorTool === "hue" ? -180 : 0}
+              aria-valuemax={activeColorTool === "hue" ? 180 : 2}
+              aria-valuenow={activeColorTool === "hue"
+                ? localHue
+                : activeColorTool === "contrast"
+                  ? localContrast
+                  : activeColorTool === "saturation"
+                    ? localSaturation
+                    : localBrightness}
+              aria-label={activeColorTool
+                ? activeColorTool.charAt(0).toUpperCase() +
+                  activeColorTool.slice(1)
+                : "Color"}
+              onpointerdown={handleTrackPointerDown}
+              onpointermove={handleTrackPointerMove}
+              onpointerup={handleTrackPointerUp}
+              onpointercancel={handleTrackPointerUp}
+              onmouseenter={() => (sliderHovered = true)}
+              onmouseleave={() => (sliderHovered = false)}
+            >
+              <div
+                class="color-slider-fill"
+                style="width: {scrubberPct}%"
+              ></div>
+              {#each activeMarkers as marker}
+                <div
+                  class="color-slider-marker"
+                  class:center-marker={marker.val ===
+                    (activeColorTool === "hue" ? 0 : 1)}
+                  style="left: {marker.pct}%"
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onclick={() => jumpToValue(marker.val)}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      jumpToValue(marker.val);
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Set {activeColorTool} to {marker.val}"
+                ></div>
+              {/each}
+              <div
+                class="color-slider-scrubber"
+                style="left: {scrubberPct}%"
+                role="button"
+                tabindex="0"
+                aria-label="Scrubber"
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  if (!trackEl) return;
+                  isDragging = true;
+                  trackEl.setPointerCapture(e.pointerId);
+                }}
+              ></div>
+            </div>
+            {#if scrubberTooltipVisible}
+              <div class="color-scrubber-tooltip" style="left: {scrubberPct}%">
+                <span>{displayValue}</span>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        {#if rotateRowOpen}
+          <div class="edit-menu-separator"></div>
+          <div
+            class="edit-menu-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeRotateTool === "90-right"}
+              class:flash={flashTarget === "90-right"}
+              onclick={() => toggleRotateTool("90-right")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 2v6h-6" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+              </svg>
+              <span>90 Right</span>
+            </button>
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeRotateTool === "90-left"}
+              class:flash={flashTarget === "90-left"}
+              onclick={() => toggleRotateTool("90-left")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 2v6h6" />
+                <path d="M21 12a9 9 0 0 0-15-6.7L3 8" />
+              </svg>
+              <span>90 Left</span>
+            </button>
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeRotateTool === "180"}
+              class:flash={flashTarget === "180"}
+              onclick={() => toggleRotateTool("180")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 2v6h-6" />
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                <path d="M3 22v-6h6" />
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+              </svg>
+              <span>180 Full</span>
+            </button>
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeRotateTool === "custom"}
+              class:flash={flashTarget === "custom"}
+              onclick={() => toggleRotateTool("custom")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span>Custom</span>
+            </button>
+          </div>
+        {/if}
+
+        {#if activeRotateTool === "custom"}
+          <div
+            class="color-slider-panel"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <div
+              class="color-slider-track"
+              bind:this={rotateTrackEl}
+              role="slider"
+              tabindex="0"
+              aria-valuemin="-180"
+              aria-valuemax="180"
+              aria-valuenow={localRotationAngle}
+              aria-label="Rotation angle"
+              onpointerdown={handleRotateTrackPointerDown}
+              onpointermove={handleRotateTrackPointerMove}
+              onpointerup={handleRotateTrackPointerUp}
+              onpointercancel={handleRotateTrackPointerUp}
+            >
+              <div
+                class="color-slider-fill"
+                style="width: {rotateScrubberPct}%"
+              ></div>
+              {#each rotateMarkers as marker}
+                <div
+                  class="color-slider-marker"
+                  class:center-marker={marker.val === 0}
+                  style="left: {marker.pct}%"
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onclick={() => {
+                    editing.pushUndo();
+                    localRotationAngle = marker.val;
+                    editing.setRotation(marker.val);
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      editing.pushUndo();
+                      localRotationAngle = marker.val;
+                      editing.setRotation(marker.val);
+                    }
+                  }}
+                  role="button"
+                  tabindex="0"
+                  aria-label="Set rotation to {marker.val}"
+                ></div>
+              {/each}
+              <div
+                class="color-slider-scrubber"
+                style="left: {rotateScrubberPct}%"
+                role="button"
+                tabindex="0"
+                aria-label="Scrubber"
+                onpointerdown={(e) => {
+                  e.stopPropagation();
+                  if (!rotateTrackEl) return;
+                  isRotateDragging = true;
+                  rotateTrackEl.setPointerCapture(e.pointerId);
+                }}
+              ></div>
+            </div>
+            {#if rotateScrubberTooltipVisible}
+              <div
+                class="color-scrubber-tooltip"
+                style="left: {rotateScrubberPct}%"
+              >
+                <span>{rotateDisplayValue}</span>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        {#if flipRowOpen}
+          <div class="edit-menu-separator"></div>
+          <div
+            class="edit-menu-row"
+            in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+            out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+          >
+            <button
+              class="edit-menu-btn green sub"
+              class:flash={flashTarget === "horizontal"}
+              onclick={() => toggleFlip("horizontal")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 3v18" />
+                <path d="M16 7l4 5-4 5" />
+                <path d="M8 7l-4 5 4 5" />
+              </svg>
+              <span>Horizontally</span>
+            </button>
+            <button
+              class="edit-menu-btn green sub"
+              class:flash={flashTarget === "vertical"}
+              onclick={() => toggleFlip("vertical")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12h18" />
+                <path d="M7 8l5-4 5 4" />
+                <path d="M7 16l5 4 5-4" />
+              </svg>
+              <span>Vertically</span>
+            </button>
+          </div>
+        {/if}
       </div>
     </div>
 

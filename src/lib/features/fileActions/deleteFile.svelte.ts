@@ -1,7 +1,4 @@
-import {
-  invokeDeleteFile,
-  invokeTrashFile,
-} from "$lib/features/media/tools";
+import { invokeDeleteFile, invokeTrashFile } from "$lib/features/media/tools";
 import {
   loadSkipDeleteConfirmation,
   saveSkipDeleteConfirmation,

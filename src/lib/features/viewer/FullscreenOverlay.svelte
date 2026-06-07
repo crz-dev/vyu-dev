@@ -100,10 +100,8 @@
         ><Marquee text={fileName} scrollOnHover class="fs-marquee" /></span
       >
       <div class="fs-window-controls">
-        <button
-          class="fs-wc-btn"
-          onclick={minimizeWindow}
-          aria-label="minimize">−</button
+        <button class="fs-wc-btn" onclick={minimizeWindow} aria-label="minimize"
+          >−</button
         ><button
           class="fs-wc-btn"
           onclick={maximizeWindow}
@@ -131,11 +129,7 @@
     </div>
     {#if isVideo && videoEl}
       <div class="fs-controls" class:gif-only={isGifVideo}>
-        <Controls
-          fullscreen={true}
-          timelineProps={timelineProps}
-          playbackProps={playbackProps}
-        />
+        <Controls fullscreen={true} {timelineProps} {playbackProps} />
       </div>
     {:else}
       <div class="fs-controls image-only">
@@ -178,8 +172,8 @@
         onClose={sortClose}
         x={sortMenuX}
         y={sortMenuY}
-        sortMode={sortMode}
-        sortDesc={sortDesc}
+        {sortMode}
+        {sortDesc}
         {onSortChange}
       />
     {/if}

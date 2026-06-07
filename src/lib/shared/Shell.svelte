@@ -459,11 +459,7 @@
   });
 
   const markupMenuStyle = $derived.by(() => {
-    if (
-      markupMenuVisible &&
-      !markupMenuMoved &&
-      layoutOffsets.markup !== 0
-    ) {
+    if (markupMenuVisible && !markupMenuMoved && layoutOffsets.markup !== 0) {
       return `left: calc(50% + ${layoutOffsets.markup}px);`;
     }
     return "";

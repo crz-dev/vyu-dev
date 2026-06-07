@@ -10,8 +10,7 @@ export function createCorruption() {
 
   function onImageError() {
     state.warning = true;
-    state.reason =
-      "This image may be corrupted or in an unsupported format.";
+    state.reason = "This image may be corrupted or in an unsupported format.";
   }
 
   function onVideoError(videoEl: HTMLVideoElement | null) {

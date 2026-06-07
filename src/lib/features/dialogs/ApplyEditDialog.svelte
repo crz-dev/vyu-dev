@@ -74,10 +74,7 @@
         created, but you cannot undo after closing the file or app.
       </div>
       <div class="edit-confirm-actions edit-confirm-actions-horizontal">
-        <button
-          class="edit-confirm-btn-export"
-          onclick={onExportInstead}
-        >
+        <button class="edit-confirm-btn-export" onclick={onExportInstead}>
           <svg
             width="13"
             height="13"

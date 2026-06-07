@@ -181,7 +181,11 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
         clearABLoop();
       }
     }
-    timeline.removeTimestamp(id, markerStore.timestamps, (v) => (markerStore.timestamps = v));
+    timeline.removeTimestamp(
+      id,
+      markerStore.timestamps,
+      (v) => (markerStore.timestamps = v),
+    );
     saveTimestamps();
   }
 
@@ -201,7 +205,10 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
       (v) => (markerStore.timestamps = v),
     );
     saveTimestamps();
-    if (markerStore.tsTooltip.visible && markerStore.tsTooltip.targetId === id) {
+    if (
+      markerStore.tsTooltip.visible &&
+      markerStore.tsTooltip.targetId === id
+    ) {
       markerStore.tsTooltip = { ...markerStore.tsTooltip, title: title.trim() };
     }
   }
@@ -233,7 +240,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     ) as HTMLElement | null;
     if (!bar) return;
     const barRect = bar.getBoundingClientRect();
-    const pct = deps.getRawDurationSecs() > 0 ? ts.time / deps.getRawDurationSecs() : 0;
+    const pct =
+      deps.getRawDurationSecs() > 0 ? ts.time / deps.getRawDurationSecs() : 0;
     markerStore.tsEditMenu = {
       visible: true,
       x: barRect.left + pct * barRect.width,
@@ -253,7 +261,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     ) as HTMLElement | null;
     if (!bar) return;
     const barRect = bar.getBoundingClientRect();
-    const pct = deps.getRawDurationSecs() > 0 ? b.time / deps.getRawDurationSecs() : 0;
+    const pct =
+      deps.getRawDurationSecs() > 0 ? b.time / deps.getRawDurationSecs() : 0;
     markerStore.tsEditMenu = {
       visible: true,
       x: barRect.left + pct * barRect.width,
@@ -355,7 +364,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
 
   function showLoopMarkerTooltip(e: MouseEvent, which: "start" | "end") {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const time = which === "start" ? markerStore.loopStart : markerStore.loopEnd;
+    const time =
+      which === "start" ? markerStore.loopStart : markerStore.loopEnd;
     markerStore.tsTooltip = {
       visible: true,
       x: rect.left + rect.width / 2,
@@ -382,7 +392,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
       document.querySelector(".progress-bar");
     if (!bar) return;
     const barRect = bar.getBoundingClientRect();
-    const pct = deps.getRawDurationSecs() > 0 ? time / deps.getRawDurationSecs() : 0;
+    const pct =
+      deps.getRawDurationSecs() > 0 ? time / deps.getRawDurationSecs() : 0;
     markerStore.tsTooltip = {
       visible: true,
       x: barRect.left + pct * barRect.width,
