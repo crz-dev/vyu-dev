@@ -11,6 +11,7 @@ Find the closest existing module before creating anything new.
 | ----------------------------------------------- | ---------------------------------------------------------------------------------- |
 | Open/close, navigate, display state             | `features/media/media.svelte.ts`                                                   |
 | Zoom, pan, fit, fullscreen                      | `features/viewer/viewer.svelte.ts`                                                 |
+| Media view components (image, video, PDF)       | `features/viewer/ImageView.svelte`, `features/viewer/VideoView.svelte`, `features/viewer/PDFView.svelte` |
 | Rotation, flip, brightness, crop, export        | `features/editing/editing.svelte.ts`                                               |
 | Video play/pause, volume, speed, scrub          | `features/media/playback.svelte.ts`                                                |
 | Clip boundaries, in/out points, jobs            | `features/media/clips.svelte.ts`                                                   |

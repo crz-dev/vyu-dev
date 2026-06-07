@@ -27,18 +27,13 @@
     type LoopMode,
     type SortMode,
   } from "$lib/shared/constants";
-  import type { ClipBoundary, MediaProperties } from "$lib/shared/types";
+  import type { MediaProperties } from "$lib/shared/types";
   import {
-    saveVolume,
     saveLoopMode,
-    saveSliderMode,
     loadAudioLayoutMode,
   } from "$lib/services/storage";
-  import {
-    invokeOpenDirectory,
-    renderMarkupOnImage,
-    invokeCheckMediaIntegrity,
-  } from "$lib/features/media/tools";
+  import { createFfmpegHelpers } from "$lib/features/media/ffmpegHelpers";
+  import { invokeOpenDirectory } from "$lib/features/media/tools";
 
   import {
     showFilenameTooltip,
@@ -53,28 +48,17 @@
   import { viewer } from "$lib/features/viewer/viewer.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
-  import CropOverlay from "$lib/features/editing/CropOverlay.svelte";
-  import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
+  import ImageView from "$lib/features/viewer/ImageView.svelte";
+  import VideoView from "$lib/features/viewer/VideoView.svelte";
+  import PDFView from "$lib/features/viewer/PDFView.svelte";
   import { createMarkupActions } from "$lib/features/markup/markupActions";
-  import Controls from "$lib/shared/Controls.svelte";
   import Shell from "$lib/shared/Shell.svelte";
   import { createToastHelpers, toastStore } from "$lib/features/toast/toast.svelte";
-  import {
-    ctxCopyImage,
-    ctxCopyFrame,
-    ctxCopyPath,
-    ctxShowInExplorer,
-    ctxRotate,
-    ctxFlip,
-    ctxClearMarkers,
-    ctxEdit,
-    ctxMarkup,
-    ctxProperties,
-    ctxShare,
-  } from "$lib/features/dialogs/contextActions";
+  import { createContextActionFns } from "$lib/features/dialogs/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/dialogs/propertiesActions";
   import { contextMenuStore } from "$lib/features/dialogs/contextMenu.svelte";
+  import { createGlobalMouseHandler } from "$lib/features/dialogs/globalMouseHandler";
   import ApplyEditDialog from "$lib/features/dialogs/ApplyEditDialog.svelte";
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
   import {
@@ -98,7 +82,6 @@
   import { createViewerEffects } from "$lib/features/viewer/viewerEffects.svelte";
   import { createViewerStyle } from "$lib/features/viewer/viewerStyle.svelte";
   import FullscreenOverlay from "$lib/features/viewer/FullscreenOverlay.svelte";
-  import { loadCdColorForFile } from "$lib/features/media/cdColor";
   import {
     createDeleteActions,
     deleteStore,
@@ -106,6 +89,7 @@
   import {
     menuStore,
     createMenuActions,
+    createMenuBindings,
   } from "$lib/features/dialogs/menuVisibility.svelte";
   import {
     editDialogStore,
@@ -137,7 +121,6 @@
   let audioEl = $state<HTMLAudioElement | null>(null);
   let cropContainerEl = $state<HTMLElement | null>(null);
   let imageEl = $state<HTMLImageElement | null>(null);
-  let videoInnerEl = $state<HTMLDivElement | null>(null);
   let viewerEl = $state<HTMLElement | null>(null);
   let pdfContainerEl = $state<HTMLElement | null>(null);
   let playing = $state(false);
@@ -172,7 +155,6 @@
   let cassetteInfoRowEl = $state<HTMLElement | null>(null);
   let lastPrevClickTime = $state(0);
   const PREV_DOUBLE_CLICK_MS = 1200;
-  let tsDeleteConfirm = $state(false);
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
   let thumbnailBarVisible = $state(false);
@@ -187,63 +169,23 @@
   let ffmpegInstallError = $state("");
 
   // ── Menu + media-prop prop bundles ──────────────────────
-  const menuBindings = {
-    get appDropdownVisible() {
-      return menuStore.appDropdownVisible;
-    },
-    toggleAppDropdown: () =>
-      (menuStore.appDropdownVisible = !menuStore.appDropdownVisible),
-    closeAppDropdown: () => (menuStore.appDropdownVisible = false),
-    openSettings: () => (menuStore.settingsOpen = true),
-    openAccessibility: () => (menuStore.accessibilityOpen = true),
-    openHelp: () => (menuStore.helpOpen = true),
-    openAbout: () => (menuStore.aboutOpen = true),
-    openFeedback: () => (menuStore.feedbackOpen = true),
-    get settingsOpen() {
-      return menuStore.settingsOpen;
-    },
-    closeSettings: () => (menuStore.settingsOpen = false),
-    get accessibilityOpen() {
-      return menuStore.accessibilityOpen;
-    },
-    closeAccessibility: () => (menuStore.accessibilityOpen = false),
-    get helpOpen() {
-      return menuStore.helpOpen;
-    },
-    closeHelp: () => (menuStore.helpOpen = false),
-    get aboutOpen() {
-      return menuStore.aboutOpen;
-    },
-    closeAbout: () => (menuStore.aboutOpen = false),
-    get feedbackOpen() {
-      return menuStore.feedbackOpen;
-    },
-    closeFeedback: () => (menuStore.feedbackOpen = false),
-  };
-  const ffmpegSetters = {
-    setFfmpegInstallError: (v: string) => (ffmpegInstallError = v),
-    setFfmpegInstalling: (v: boolean) => (ffmpegInstalling = v),
-    setFfprobeAvailable: (v: boolean) => (ffprobeAvailable = v),
-    setFfprobeChecked: (v: boolean) => (ffprobeChecked = v),
-  };
-  const ffprobeSetters = {
-    setFfprobeChecked: (v: boolean) => (ffprobeChecked = v),
-    setFfprobeAvailable: (v: boolean) => (ffprobeAvailable = v),
-  };
-  const mediaPropsSetters = {
-    get filePath() {
-      return filePath;
-    },
-    setMediaProps: (v: MediaProperties | null) => (mediaProps = v),
-    setMediaPropsLoading: (v: boolean) => (mediaPropsLoading = v),
-  };
-  const runInstallFfmpeg = () =>
-    installFfmpegAndWait({
-      ...ffmpegSetters,
-      loadMediaProperties: () => loadMediaProperties(mediaPropsSetters),
-    });
-  const runRefreshFfprobe = () => refreshFfprobeAvailability(ffprobeSetters);
-  const runLoadMediaProperties = () => loadMediaProperties(mediaPropsSetters);
+  const menuBindings = createMenuBindings();
+  const {
+    ffmpegSetters,
+    ffprobeSetters,
+    mediaPropsSetters,
+    runInstallFfmpeg,
+    runRefreshFfprobe,
+    runLoadMediaProperties,
+  } = createFfmpegHelpers({
+    filePath: () => filePath,
+    setMediaProps: (v) => (mediaProps = v),
+    setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+    setFfmpegInstallError: (v) => (ffmpegInstallError = v),
+    setFfmpegInstalling: (v) => (ffmpegInstalling = v),
+    setFfprobeChecked: (v) => (ffprobeChecked = v),
+    setFfprobeAvailable: (v) => (ffprobeAvailable = v),
+  });
 
   // ── Derived ────────────────────────────────────────────
   const style = createViewerStyle();
@@ -757,83 +699,6 @@
   }
 
   // ── Context menu actions ───────────────────────────────
-  async function ctxCopyImageFn() {
-    await ctxCopyImage({
-      filePath,
-      closeContextMenu,
-      showImageCopyToast: toast.showImageCopyToast,
-    });
-  }
-  async function ctxCopyFrameFn() {
-    await ctxCopyFrame({
-      videoEl,
-      closeContextMenu,
-      showFrameCopyToast: toast.showFrameCopyToast,
-    });
-  }
-  async function ctxCopyPathFn() {
-    await ctxCopyPath({
-      filePath,
-      closeContextMenu,
-      showFrameCopyToast: toast.showFrameCopyToast,
-    });
-  }
-  async function ctxShowInExplorerFn() {
-    await ctxShowInExplorer({ filePath, closeContextMenu });
-  }
-  function ctxRotateFn() {
-    ctxRotate({
-      closeContextMenu,
-      pushUndo: () => editing.pushUndo(),
-      rotate: () => viewer.rotate(),
-    });
-  }
-  function ctxFlipFn() {
-    ctxFlip({
-      closeContextMenu,
-      pushUndo: () => editing.pushUndo(),
-      flip: () => viewer.flip(),
-    });
-  }
-  function ctxClearMarkersFn() {
-    ctxClearMarkers({
-      closeContextMenu,
-      clearAllTimestamps,
-      clearBoundaries: () => clips.clearBoundaries(),
-      removeResumePoint,
-    });
-  }
-  function ctxEditFn() {
-    ctxEdit({ openEditMenu });
-  }
-  function ctxMarkupFn() {
-    ctxMarkup({ openMarkupMenu });
-  }
-  function ctxPropertiesFn() {
-    ctxProperties({
-      closeContextMenu,
-      setPropertiesOpen: (v) => (propertiesOpen = v),
-      clearMediaProps: () => (mediaProps = null),
-      clearFfmpegError: () => (ffmpegInstallError = ""),
-      isStillOpen: () => propertiesOpen,
-      ensureFfprobeAndLoad: async () => {
-        await refreshFfprobeAvailability({
-          setFfprobeChecked: (v) => (ffprobeChecked = v),
-          setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-        });
-        if (ffprobeAvailable) {
-          await loadMediaProperties({
-            filePath,
-            setMediaProps: (v) => (mediaProps = v),
-            setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-          });
-        }
-      },
-    });
-  }
-  function ctxShareFn() {
-    ctxShare({ closeContextMenu, setShareOpen: (v) => (shareOpen = v) });
-  }
   const editActions = createEditActions({
     getFilePath: () => filePath,
     getFileName: () => fileName,
@@ -872,7 +737,42 @@
     showFrameCopyToast: toast.showFrameCopyToast,
   });
   const { performDelete } = deleteActions;
-  const ctxDelete = () => deleteActions.ctxDelete(closeContextMenu);
+  const {
+    ctxCopyImageFn,
+    ctxCopyFrameFn,
+    ctxCopyPathFn,
+    ctxShowInExplorerFn,
+    ctxRotateFn,
+    ctxFlipFn,
+    ctxClearMarkersFn,
+    ctxEditFn,
+    ctxMarkupFn,
+    ctxPropertiesFn,
+    ctxShareFn,
+    ctxDelete,
+  } = createContextActionFns({
+    filePath: () => filePath,
+    videoEl: () => videoEl,
+    closeContextMenu,
+    toast,
+    editing,
+    viewer,
+    clips,
+    clearAllTimestamps,
+    removeResumePoint,
+    openEditMenu,
+    openMarkupMenu,
+    propertiesOpen: () => propertiesOpen,
+    setPropertiesOpen: (v) => (propertiesOpen = v),
+    setMediaProps: (v) => (mediaProps = v),
+    setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+    clearFfmpegError: () => (ffmpegInstallError = ""),
+    ffprobeAvailable: () => ffprobeAvailable,
+    setFfprobeChecked: (v) => (ffprobeChecked = v),
+    setFfprobeAvailable: (v) => (ffprobeAvailable = v),
+    setShareOpen: (v) => (shareOpen = v),
+    deleteActions,
+  });
 
   // ── Properties dialog ──────────────────────────────────
   const { propsCopyPath, propsOpenFolder, propsCopyAll, copyPropValue } =
@@ -894,52 +794,56 @@
     });
 
   // ── Global mouse ───────────────────────────────────────
-  function handleGlobalMouseDown(e: MouseEvent) {
-    const target = e.target as HTMLElement;
-    if (
-      contextMenuStore.isOpen &&
-      !target.closest(".context-menu") &&
-      !document.querySelector(".context-menu.pinned")
-    )
-      closeContextMenu();
-    if (
-      menuStore.editMenuVisible &&
-      e.button === 2 &&
-      !target.closest(".edit-menu") &&
-      !target.closest(".edit-menu-wrapper") &&
-      !document.querySelector(".edit-menu.pinned")
-    )
-      closeEditMenu();
-    if (
-      menuStore.markupMenuVisible &&
-      e.button === 2 &&
-      !target.closest(".markup-menu-wrapper") &&
-      !document.querySelector(".edit-menu.pinned")
-    )
-      closeMarkupMenu();
-    if (
-      menuStore.slideshowMenuVisible &&
-      e.button === 2 &&
-      !target.closest(".slideshow-menu") &&
-      !target.closest(".slideshow-btn") &&
-      !document.querySelector(".slideshow-menu.pinned")
-    )
-      closeSlideshowMenu();
-    if (
-      markerStore.tsEditMenu.visible &&
-      !target.closest(".ts-edit-menu") &&
-      !target.closest(".ts-marker") &&
-      !target.closest(".clip-marker") &&
-      !target.closest(".fs-clip-marker")
-    )
-      closeTimestampEditor();
-    if (
-      menuStore.appDropdownVisible &&
-      !target.closest(".app-dropdown-menu") &&
-      !target.closest(".app-dropdown-toggle")
-    )
-      menuStore.appDropdownVisible = false;
-  }
+  const handleGlobalMouseDown = createGlobalMouseHandler({
+    contextMenuStore,
+    menuStore: {
+      get editMenuVisible() {
+        return menuStore.editMenuVisible;
+      },
+      get markupMenuVisible() {
+        return menuStore.markupMenuVisible;
+      },
+      get slideshowMenuVisible() {
+        return menuStore.slideshowMenuVisible;
+      },
+      get appDropdownVisible() {
+        return menuStore.appDropdownVisible;
+      },
+    },
+    markerStore: {
+      get tsEditMenu() {
+        return markerStore.tsEditMenu;
+      },
+    },
+    closeEditMenu,
+    closeMarkupMenu,
+    closeSlideshowMenu,
+    closeTimestampEditor,
+  });
+
+  // ── Shell shorthand prop bundle ─────────────────────────
+  const _shellProps = $derived({
+    fileName, fileSrc, filePath, fileList, currentIndex,
+    isVideo, isAudio, isPdf, fileDimensions, fileSize,
+    fileInfoLoading, isLoadingFile, loadingFadingOut,
+    anyMenuOpen, thumbnailBarVisible, resetZoom,
+    toggleSlideshowMenu, closeSlideshowMenu, toggleThumbnailBar,
+    onSortChange, navigate, startDrag,
+    showFilenameTooltip, hideFilenameTooltip,
+    closeFile, openFileDialog,
+    minimizeWindow, maximizeWindow, closeWindow,
+    closeEditMenu, closeMarkupMenu,
+    ffprobeChecked, ffprobeAvailable, ffmpegInstalling, ffmpegInstallError,
+    openConvertedFile, showValue,
+    muted, volume, propertiesOpen, shareOpen,
+    fileCreated, fileModified, durationDisplay, audioBitrateDisplay,
+    mediaPropsLoading, mediaProps,
+    propsCopyPath, propsOpenFolder, propsCopyAll, copyPropValue,
+    performDelete, ctxDelete,
+    getTitleEditorWidthCh, updateEditorTitle, closeTimestampEditor,
+    onEditorScissor, onEditorDeleteTimestamp, onEditorDeleteSegment,
+    invokeOpenDirectory,
+  });
 
   // ── Lifecycle ──────────────────────────────────────────
   setupInit({
@@ -976,28 +880,13 @@
 </script>
 
 <Shell
-  {fileName}
-  {fileSrc}
-  {filePath}
-  {fileList}
-  {currentIndex}
-  {isVideo}
-  {isAudio}
-  {isPdf}
-  {fileDimensions}
-  {fileSize}
-  {fileInfoLoading}
-  {isLoadingFile}
-  {loadingFadingOut}
-  {anyMenuOpen}
+  {..._shellProps}
   viewerStateIsFullscreen={viewer.state.isFullscreen}
   viewerFsControlsVisible={viewer.state.fsControlsVisible}
   viewerResetFsTimer={viewer.resetFsTimer}
   viewerToggleFullscreen={toggleFullscreen}
-  {thumbnailBarVisible}
   zoomLevel={viewer.state.zoomLevel}
   zoomLocked={viewer.state.zoomLocked}
-  {resetZoom}
   toggleZoomLock={handleToggleZoomLock}
   clipCount={clips.clipCount}
   clipMenuResetKey={clips.clipMenuResetKey}
@@ -1011,25 +900,12 @@
   toggleClipPathSelection={clips.togglePathSelection}
   toggleClipMergeSegments={clips.toggleMergeSegments}
   clipJobLabel={clips.clipJobLabel}
-  {toggleSlideshowMenu}
   slideshowMenuVisible={menuStore.slideshowMenuVisible}
-  {closeSlideshowMenu}
-  {toggleThumbnailBar}
   sortMode={sort.mode}
   sortDesc={sort.desc}
   sortMenuVisible={sort.menuVisible}
   toggleSortMenu={sort.toggle}
   closeSortMenu={sort.close}
-  {onSortChange}
-  {navigate}
-  {startDrag}
-  {showFilenameTooltip}
-  {hideFilenameTooltip}
-  {closeFile}
-  {openFileDialog}
-  {minimizeWindow}
-  {maximizeWindow}
-  {closeWindow}
   {...menuBindings}
   contextMenu={contextMenuStore.contextMenu}
   onOpenContextMenu={openContextMenu}
@@ -1040,18 +916,10 @@
   onReset={handleReset}
   onMarkupApply={handleMarkupApply}
   onMarkupExport={handleMarkupExport}
-  {closeEditMenu}
   markupMenuVisible={menuStore.markupMenuVisible}
-  {closeMarkupMenu}
-  {ffprobeChecked}
-  {ffprobeAvailable}
-  {ffmpegInstalling}
-  {ffmpegInstallError}
   installFfmpegAndWait={runInstallFfmpeg}
   refreshFfprobeAvailability={runRefreshFfprobe}
-  {openConvertedFile}
   showInExplorer={ctxShowInExplorerFn}
-  {showValue}
   loadMediaProperties={runLoadMediaProperties}
   onRenamed={async (newPath: string) => {
     clearFolderCache(getParentFolder(newPath));
@@ -1085,12 +953,6 @@
   editingTimestamp={getActiveEditorTimestamp()}
   editingSegment={getActiveEditorSegment()}
   currentTitle={getEditorTitle()}
-  {getTitleEditorWidthCh}
-  {updateEditorTitle}
-  {closeTimestampEditor}
-  {onEditorScissor}
-  {onEditorDeleteTimestamp}
-  {onEditorDeleteSegment}
   volumeTooltipVisible={playbackUI.volumeTooltipVisible}
   volumeTooltipX={playbackUI.volumeTooltipX}
   volumeTooltipY={playbackUI.volumeTooltipY}
@@ -1098,8 +960,6 @@
   speedTooltipX={playbackUI.speedTooltipX}
   speedTooltipY={playbackUI.speedTooltipY}
   playbackSpeed={playbackUI.playbackSpeed}
-  {muted}
-  {volume}
   timestamps={markerStore.timestamps}
   clipBoundaries={clips.clipBoundaries}
   resumePoint={markerStore.resumePoint}
@@ -1121,26 +981,12 @@
   ctxShowInExplorer={ctxShowInExplorerFn}
   ctxProperties={ctxPropertiesFn}
   ctxShare={ctxShareFn}
-  {ctxDelete}
   ctxClearMarkers={ctxClearMarkersFn}
   clipDeleteConfirm={clips.clipDeleteConfirm}
   deleteConfirm={deleteStore.deleteConfirm}
   deleteNoAsk={deleteStore.deleteNoAsk}
   deletePermanently={deleteStore.deletePermanently}
-  {propertiesOpen}
-  {shareOpen}
   fileExt={() => getFileExt(filePath)}
-  {fileCreated}
-  {fileModified}
-  {durationDisplay}
-  {audioBitrateDisplay}
-  {mediaPropsLoading}
-  {mediaProps}
-  {propsCopyPath}
-  {propsOpenFolder}
-  {propsCopyAll}
-  {copyPropValue}
-  {performDelete}
   runClipAction={clips.runClipAction}
   corruptionWarning={corruption.state.warning}
   corruptionReason={corruption.state.reason}
@@ -1195,83 +1041,49 @@
         role="presentation"
       >
         {#if fileSrc && !isVideo && !isAudio && !isPdf}
-          <div
-            class="media-container"
-            bind:this={cropContainerEl}
-            style="position: relative; display: flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
-          >
-            {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
-              <div
-                class={slideshow.active && slideshow.transition !== "none"
-                  ? `transition-${slideshow.transition}`
-                  : ""}
-              >
-                <img
-                  bind:this={imageEl}
-                  src={fileSrc}
-                  alt={fileName}
-                  decoding="async"
-                  onload={onImageLoad}
-                  onerror={corruption.onImageError}
-                  style={style.imageStyle}
-                />
-              </div>
-            {/key}
-            <CropOverlay containerEl={cropContainerEl} mediaEl={imageEl} />
-            <DrawOverlay containerEl={cropContainerEl} mediaEl={imageEl} />
-          </div>
+          <ImageView
+            {fileSrc}
+            {fileName}
+            bind:imageEl
+            {onImageLoad}
+            onImageError={corruption.onImageError}
+            imageStyle={style.imageStyle}
+            bind:cropContainerEl
+            slideshowActive={slideshow.active}
+            slideshowTransition={slideshow.transition}
+            {currentIndex}
+          />
         {:else if fileSrc && isVideo}
-          <div
-            class="video-wrapper"
-            bind:this={cropContainerEl}
-            role="presentation"
-            onmouseenter={() => (hoverZone = "video")}
-            onmouseleave={() => (hoverZone = "none")}
-            onmousedown={markup.drawActive ? undefined : startPan}
-            style="{style.videoWrapperTransform} cursor: {markup.drawActive
-              ? 'crosshair'
-              : style.panCursor}"
-          >
-            <div
-              class="video-inner"
-              bind:this={videoInnerEl}
-              style={style.videoInnerStyle}
-            >
-              {#key slideshow.active && slideshow.transition !== "none" ? currentIndex : null}
-                <div
-                  class={slideshow.active && slideshow.transition !== "none"
-                    ? `transition-${slideshow.transition}`
-                    : ""}
-                >
-                  <video
-                    bind:this={videoEl}
-                    src={fileSrc}
-                    crossorigin="anonymous"
-                    preload="metadata"
-                    autoplay
-                    onloadedmetadata={onVideoLoad}
-                    onerror={() => corruption.onVideoError(videoEl)}
-                    onended={onMediaEnded}
-                  >
-                    <track kind="captions" srclang="en" label="English" />
-                  </video>
-                </div>
-              {/key}
-            </div>
-            <CropOverlay containerEl={cropContainerEl} mediaEl={videoInnerEl} />
-            <DrawOverlay containerEl={cropContainerEl} mediaEl={videoInnerEl} />
-            <div
-              class="video-controls"
-              class:gif-only={isGifVideo}
-              class:editor-open={markerStore.tsEditMenu.visible}
-            >
-              <Controls
-                fullscreen={false}
-                timelineProps={timelineProps}
-                playbackProps={playbackProps}
-              />
-            </div>
-          </div>
+          <VideoView
+            {fileSrc}
+            bind:videoEl
+            {onVideoLoad}
+            onVideoError={() => corruption.onVideoError(videoEl)}
+            {onMediaEnded}
+            bind:cropContainerEl
+            drawActive={markup.drawActive}
+            {startPan}
+            videoWrapperTransform={style.videoWrapperTransform}
+            videoInnerStyle={style.videoInnerStyle}
+            panCursor={style.panCursor}
+            {isGifVideo}
+            bind:hoverZone
+            tsEditMenuVisible={markerStore.tsEditMenu.visible}
+            {timelineProps}
+            {playbackProps}
+            slideshowActive={slideshow.active}
+            slideshowTransition={slideshow.transition}
+            {currentIndex}
+          />
+        {:else if fileSrc && isPdf}
+          <PDFView
+            bind:pdfContainerEl
+            loading={pdf.state.loading}
+            error={pdf.state.error}
+            pages={pdf.state.pages}
+            scale={pdf.state.scale}
+            setScale={pdf.setScale}
+          />
         {:else if fileSrc && isAudio}
           <AudioPlayer
             {fileSrc}
@@ -1340,54 +1152,6 @@
             bind:cassetteFilenameOverflow
             bind:cassetteInfoRowEl
           />
-        {:else if fileSrc && isPdf}
-          <div
-            class="pdf-viewer"
-            bind:this={pdfContainerEl}
-            role="region"
-            aria-label="PDF viewer"
-          >
-            {#if pdf.state.loading}
-              <div class="pdf-loading">
-                <div class="pdf-spinner"></div>
-                <span>Loading PDF...</span>
-              </div>
-            {:else if pdf.state.error}
-              <div class="pdf-error">{pdf.state.error}</div>
-            {:else}
-              {#each pdf.state.pages as page, i}
-                <div class="pdf-page-wrapper">
-                  <canvas bind:this={page.canvasRef} class="pdf-canvas"
-                  ></canvas>
-                </div>
-                {#if i < pdf.state.pages.length - 1}
-                  <div class="pdf-page-separator"></div>
-                {/if}
-              {/each}
-            {/if}
-          </div>
-          <div class="pdf-zoom-controls">
-            <button
-              class="pdf-zoom-btn"
-              onclick={() => pdf.setScale(pdf.state.scale - 0.25)}
-              disabled={pdf.state.scale <= 0.25}
-              aria-label="Zoom out">−</button
-            >
-            <span class="pdf-zoom-label"
-              >{Math.round(pdf.state.scale * 100)}%</span
-            >
-            <button
-              class="pdf-zoom-btn"
-              onclick={() => pdf.setScale(pdf.state.scale + 0.25)}
-              disabled={pdf.state.scale >= 5}
-              aria-label="Zoom in">+</button
-            >
-            <button
-              class="pdf-zoom-btn pdf-zoom-reset"
-              onclick={() => pdf.setScale(1)}
-              aria-label="Reset zoom">Reset</button
-            >
-          </div>
         {:else}
           <button class="empty" onclick={openFileDialog}
             ><span class="empty-icon">+</span><span class="empty-text"

@@ -127,3 +127,39 @@ export function createMenuActions(deps: MenuActionsDeps) {
     closeSlideshowMenu,
   };
 }
+
+export function createMenuBindings() {
+  return {
+    get appDropdownVisible() {
+      return menuStore.appDropdownVisible;
+    },
+    toggleAppDropdown: () =>
+      (menuStore.appDropdownVisible = !menuStore.appDropdownVisible),
+    closeAppDropdown: () => (menuStore.appDropdownVisible = false),
+    openSettings: () => (menuStore.settingsOpen = true),
+    openAccessibility: () => (menuStore.accessibilityOpen = true),
+    openHelp: () => (menuStore.helpOpen = true),
+    openAbout: () => (menuStore.aboutOpen = true),
+    openFeedback: () => (menuStore.feedbackOpen = true),
+    get settingsOpen() {
+      return menuStore.settingsOpen;
+    },
+    closeSettings: () => (menuStore.settingsOpen = false),
+    get accessibilityOpen() {
+      return menuStore.accessibilityOpen;
+    },
+    closeAccessibility: () => (menuStore.accessibilityOpen = false),
+    get helpOpen() {
+      return menuStore.helpOpen;
+    },
+    closeHelp: () => (menuStore.helpOpen = false),
+    get aboutOpen() {
+      return menuStore.aboutOpen;
+    },
+    closeAbout: () => (menuStore.aboutOpen = false),
+    get feedbackOpen() {
+      return menuStore.feedbackOpen;
+    },
+    closeFeedback: () => (menuStore.feedbackOpen = false),
+  };
+}
