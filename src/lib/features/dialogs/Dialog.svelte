@@ -1287,12 +1287,25 @@
           </svg>
         </button>
       </div>
-      <div class="edit-confirm-body-box">
-        This will move the file to the Recycle Bin.
-      </div>
-      <div style="padding: 0 16px 12px; display: flex; flex-direction: column; gap: 8px;">
+      <div class="delete-toggles">
         <label class="toggle-row">
-          <span class="toggle-label">Delete permanently</span>
+          <span class="toggle-label"
+            ><svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><polyline points="3 6 5 6 21 6" /><path
+                d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"
+              /><path d="M10 11v6" /><path d="M14 11v6" /><path
+                d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
+              /></svg
+            >Delete permanently</span
+          >
           <input
             type="checkbox"
             checked={deletePermanently}
@@ -1303,7 +1316,21 @@
           ></span>
         </label>
         <label class="toggle-row">
-          <span class="toggle-label">Don't ask again</span>
+          <span class="toggle-label"
+            ><svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path
+                d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
+              /><line x1="1" y1="1" x2="23" y2="23" /></svg
+            >Don't ask again</span
+          >
           <input
             type="checkbox"
             checked={deleteNoAsk}
@@ -1314,13 +1341,39 @@
           ></span>
         </label>
       </div>
-      <div class="edit-confirm-actions edit-confirm-actions-horizontal">
-        <button class="delete-cancel" onclick={closeDeleteConfirm}>
-          Cancel
-        </button>
-        <button class="delete-confirm-btn" onclick={performDelete}>
-          Delete
-        </button>
+      <div class="delete-actions-card">
+        <div class="edit-confirm-actions edit-confirm-actions-horizontal">
+          <button class="delete-cancel" onclick={closeDeleteConfirm}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M18 6L6 18M6 6l12 12" /></svg
+            >Cancel
+          </button>
+          <button class="delete-confirm-btn" onclick={performDelete}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><polyline points="3 6 5 6 21 6" /><path
+                d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"
+              /><path d="M10 11v6" /><path d="M14 11v6" /><path
+                d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
+              /></svg
+            >Delete
+          </button>
+        </div>
       </div>
     </div>
   </div>

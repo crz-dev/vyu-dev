@@ -349,6 +349,11 @@
   border: 0.5px solid var(--bg-elevated);
   border-radius: 10px;
 }
+.delete-toggles .toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .toggle-row {
   display: flex;
   align-items: center;
@@ -395,6 +400,14 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+.delete-actions-card {
+  border: 0.5px solid var(--bg-elevated);
+  border-radius: 10px;
+  padding: 8px;
+  background: var(--bg-primary);
+  width: fit-content;
+  align-self: center;
 }
 .delete-cancel {
   padding: 7px 16px;
@@ -1072,6 +1085,7 @@
   justify-content: center;
 }
 .edit-confirm-actions .delete-cancel,
+.edit-confirm-actions .delete-confirm-btn,
 .edit-confirm-btn-primary,
 .edit-confirm-btn-blue,
 .edit-confirm-btn-export,

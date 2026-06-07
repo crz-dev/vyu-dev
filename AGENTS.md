@@ -35,6 +35,7 @@ See `ARCHITECTURE.md` for module map and where new code goes.
 - `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` must stay in sync with `*_RUST` constants in `src-tauri/src/lib.rs`.
 - Cache: thumbnails → `%LOCALAPPDATA%/vyu/cache/thumbnails/`, displays → `%LOCALAPPDATA%/vyu/cache/displays/`, temp → `%TEMP%/Vyu-temp/`.
 - `pdfjs-dist` is dynamically imported — only loads when a PDF opens.
+- When you need to ask something, use the `questions` tool instead of asking directly in conversation.
 
 ## Style
 
@@ -59,7 +60,3 @@ Covers: thumbnails, display image prep (TIFF/PSD/JXL/RAW/HEIC → PNG), video re
 
 - **State goes in `src/lib/features/*/` only.**
 - **New top-level dependencies need an explicit reason stated before adding.**
-
-## QA
-
-- When you need to ask something, use the `questions` tool instead of asking directly in conversation.

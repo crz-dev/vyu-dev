@@ -3,12 +3,10 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-07
 
 ## Last change
-Fixed double-click fullscreen toggle bug in `panDrag.ts` (reset `lastLeftClickTime` after a double-click fires, preventing rapid single-click toggling). Added delete confirmation dialog to `Dialog.svelte` — the right-click context menu Delete button was setting `deleteStore.deleteConfirm = true` but no dialog existed to show it; now shows file name, "Delete permanently" and "Don't ask again" toggles, Cancel/Delete buttons. Added QA section to `AGENTS.md` reminding agents to use the `questions` tool. Both `pnpm check` and `cargo check` pass with 0 errors, 0 warnings.
+Polished the "Delete file" confirmation dialog in `Dialog.svelte` and `overlays.css`. Removed the "This will move the file to the Recycle Bin." body box. Wrapped the "Delete permanently" and "Don't ask again" toggles into the existing `.delete-toggles` card. Wrapped Cancel/Delete buttons into a new `.delete-actions-card` that shrink-wraps to button width. Added inline SVG icons to all four labels/buttons. Added CSS for `.delete-toggles .toggle-label` (inline-flex with gap) and `.edit-confirm-actions .delete-confirm-btn` (inline-flex with gap) to align icons with text.
 
 ## Status
-- Double-click fullscreen — now requires 2 clicks to fullscreen and 2 to unfullscreen (working)
-- Context menu Delete — now shows confirmation dialog instead of doing nothing (working)
-- Delete confirmation dialog — file name displayed, toggles work, delete calls performDelete (working)
+- Delete confirmation dialog — toggles and buttons have icons, toggles on a card, buttons on their own card, no more explanation text (working)
 - All other modules — untouched, still working
 
 ## Next
@@ -18,7 +16,7 @@ Extract createNavigation config into a navigationHelpers factory (largest remain
 - None.
 
 ## Current commit
-feat: add delete confirmation dialog to context menu
+style: polish delete confirmation dialog with cards and icons
 
 ## Architecture update
 _Only if a genuinely new module/concern was added this session that has no existing row in ARCHITECTURE.md —
