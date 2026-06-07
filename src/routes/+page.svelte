@@ -1,8 +1,6 @@
 <!-- Layout shell: wires feature modules into the template. State and handlers live in src/lib/features/*/. -->
 <script lang="ts">
-  import { invoke, convertFileSrc } from "@tauri-apps/api/core";
   import {
-    createPlaybackActions,
     createPlaybackUI,
     formatTime,
   } from "$lib/features/media/playback.svelte";
@@ -12,6 +10,7 @@
     discScrubStore,
   } from "$lib/features/media/scrubbing.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
+  import { createOnMediaEnded, createFrameStep } from "$lib/features/media/playbackHelpers";
   import { timerStore } from "$lib/features/media/timer.svelte";
   import { createPlaybackBridge } from "$lib/features/media/playbackBridge";
   import { createPlaybackPoller } from "$lib/features/media/playbackPoller.svelte";
@@ -22,17 +21,17 @@
   import { createKeybindHandler } from "$lib/shared/keybinds";
   import {
     VOLUME_SEGMENTS,
-    ALL_EXTS,
-    AUDIO_EXTS,
     type LoopMode,
-    type SortMode,
   } from "$lib/shared/constants";
   import type { MediaProperties } from "$lib/shared/types";
   import {
     saveLoopMode,
     loadAudioLayoutMode,
   } from "$lib/services/storage";
-  import { createFfmpegHelpers } from "$lib/features/media/ffmpegHelpers";
+  import {
+    createFfmpegHelpers,
+    createEnsureFfprobe,
+  } from "$lib/features/media/ffmpegHelpers";
   import { invokeOpenDirectory } from "$lib/features/media/tools";
 
   import {
@@ -61,11 +60,6 @@
   import { createGlobalMouseHandler } from "$lib/features/dialogs/globalMouseHandler";
   import ApplyEditDialog from "$lib/features/dialogs/ApplyEditDialog.svelte";
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
-  import {
-    loadMediaProperties,
-    refreshFfprobeAvailability,
-    installFfmpegAndWait,
-  } from "$lib/features/media/ffmpeg";
   import { setupInit } from "./init";
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
   import AudioPlayer from "$lib/features/media/AudioPlayer.svelte";
@@ -81,7 +75,7 @@
   import { createPanDrag } from "$lib/features/viewer/panDrag";
   import { createViewerEffects } from "$lib/features/viewer/viewerEffects.svelte";
   import { createViewerStyle } from "$lib/features/viewer/viewerStyle.svelte";
-  import FullscreenOverlay from "$lib/features/viewer/FullscreenOverlay.svelte";
+  import ViewerArea from "$lib/features/viewer/ViewerArea.svelte";
   import {
     createDeleteActions,
     deleteStore,
@@ -197,47 +191,26 @@
     getVideoEl: () => videoEl,
     getAudioEl: () => audioEl,
     getFileParentFolder: () => getParentFolder(filePath),
-    ensureFfprobe: async () => {
-      if (!ffprobeChecked) {
-        await refreshFfprobeAvailability({
-          setFfprobeChecked: (v) => (ffprobeChecked = v),
-          setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-        });
-      }
-      if (!ffprobeAvailable) {
-        await installFfmpegAndWait({
-          setFfmpegInstallError: (v) => (ffmpegInstallError = v),
-          setFfmpegInstalling: (v) => (ffmpegInstalling = v),
-          setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-          setFfprobeChecked: (v) => (ffprobeChecked = v),
-          loadMediaProperties: () =>
-            loadMediaProperties({
-              filePath,
-              setMediaProps: (v) => (mediaProps = v),
-              setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-            }),
-        });
-      }
-      return ffprobeAvailable;
-    },
+    ensureFfprobe: createEnsureFfprobe({
+      getFfprobeChecked: () => ffprobeChecked,
+      getFfprobeAvailable: () => ffprobeAvailable,
+      setFfprobeChecked: (v) => (ffprobeChecked = v),
+      setFfprobeAvailable: (v) => (ffprobeAvailable = v),
+      setFfmpegInstallError: (v) => (ffmpegInstallError = v),
+      setFfmpegInstalling: (v) => (ffmpegInstalling = v),
+      filePath: () => filePath,
+      setMediaProps: (v) => (mediaProps = v),
+      setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+    }),
   });
   const anyMenuOpen = $derived(
     contextMenuStore.isOpen ||
-      menuStore.appDropdownVisible ||
-      menuStore.slideshowMenuVisible ||
-      menuStore.editMenuVisible ||
-      menuStore.markupMenuVisible ||
-      menuStore.settingsOpen ||
-      menuStore.accessibilityOpen ||
-      menuStore.helpOpen ||
-      menuStore.aboutOpen ||
-      menuStore.feedbackOpen ||
+      menuStore.isAnyOpen ||
       markerStore.tsEditMenu.visible ||
       deleteStore.deleteConfirm ||
       propertiesOpen ||
       shareOpen ||
       clips.clipDeleteConfirm.visible ||
-      menuStore.tsMenuOpen ||
       editDialogStore.editApplyConfirm ||
       editDialogStore.editTransparencyConfirm ||
       corruption.state.warning ||
@@ -319,31 +292,6 @@
   function setLoopMode(mode: LoopMode) {
     loopModeStore.setLoopMode(mode, () => videoEl, () => audioEl);
   }
-  function cycleLoopMode() {
-    loopModeStore.cycleLoopMode(() => videoEl, () => audioEl);
-  }
-  function onMediaEnded() {
-    if (slideshow.active) return;
-    const mode = loopModeStore.loopMode;
-    if (mode === "stop") {
-      playing = false;
-    } else if (mode === "next") {
-      navigate(1);
-    } else if (mode === "shuffle") {
-      if (fileList.length > 1) {
-        let idx;
-        do {
-          idx = Math.floor(Math.random() * fileList.length);
-        } while (idx === currentIndex);
-        currentIndex = media.navigate(
-          idx - currentIndex,
-          fileList,
-          currentIndex,
-          setMediaState,
-        );
-      }
-    }
-  }
   function toggleTimer() {
     timerStore.toggleTimer();
   }
@@ -376,10 +324,7 @@
     addTimestamp,
     removeTimestamp,
     clearAllTimestamps,
-    updateTimestampTitle,
-    getTimestampById,
     getTimestampPct,
-    setABLoop,
     clearABLoop,
     addLoopStart,
     addLoopEnd,
@@ -396,7 +341,6 @@
     showLoopMarkerTooltip,
     showClipBoundaryTooltip,
     hideTsTooltip,
-    updateTooltipDuringDrag,
     openTimestampEditor,
     openSegmentEditor,
     closeTimestampEditor,
@@ -601,6 +545,16 @@
     advanceSlide,
     () => (isVideo ? videoEl : isAudio ? audioEl : null),
   );
+  const onMediaEnded = createOnMediaEnded({
+    slideshow,
+    loopModeStore,
+    setPlaying: (v) => (playing = v),
+    navigate,
+    getFileList: () => fileList,
+    getCurrentIndex: () => currentIndex,
+    media,
+    setMediaState,
+  });
 
   // ── PDF load effect ─────────────────────────────────────
   $effect(() => {
@@ -623,38 +577,20 @@
   const configuredKeydown = createKeybindHandler({
     areDialogsOpen: () =>
       contextMenuStore.isOpen ||
+      menuStore.isAnyOpen ||
+      markerStore.tsEditMenu.visible ||
       deleteStore.deleteConfirm ||
       propertiesOpen ||
       shareOpen ||
-      menuStore.editMenuVisible ||
-      menuStore.markupMenuVisible ||
-      menuStore.slideshowMenuVisible ||
-      menuStore.appDropdownVisible ||
-      menuStore.settingsOpen ||
-      menuStore.accessibilityOpen ||
-      menuStore.helpOpen ||
-      menuStore.aboutOpen ||
-      menuStore.feedbackOpen ||
-      markerStore.tsEditMenu.visible ||
-      menuStore.tsMenuOpen ||
       clips.clipDeleteConfirm.visible ||
       corruption.state.warning,
     closeDialogs: () => {
       contextMenuStore.close();
+      menuStore.closeAll();
       deleteStore.deleteConfirm = false;
       propertiesOpen = false;
       shareOpen = false;
-      menuStore.editMenuVisible = false;
-      menuStore.markupMenuVisible = false;
-      menuStore.slideshowMenuVisible = false;
-      menuStore.appDropdownVisible = false;
-      menuStore.settingsOpen = false;
-      menuStore.accessibilityOpen = false;
-      menuStore.helpOpen = false;
-      menuStore.aboutOpen = false;
-      menuStore.feedbackOpen = false;
       markerStore.tsEditMenu.visible = false;
-      menuStore.tsMenuOpen = false;
       clips.clipDeleteConfirm.visible = false;
       editDialogStore.closeAll();
       corruption.hide();
@@ -671,13 +607,7 @@
     getHoverZone: () => hoverZone,
     isFullscreen: () => viewer.state.isFullscreen,
     togglePlay,
-    frameStep: (direction) => {
-      if (!videoEl) return;
-      videoEl.currentTime = Math.max(
-        0,
-        Math.min(videoEl.currentTime + direction * (1 / 30), videoEl.duration),
-      );
-    },
+    frameStep: createFrameStep({ getVideoEl: () => videoEl }),
   });
   function handleKeydown(e: KeyboardEvent) {
     configuredKeydown(e);
@@ -708,8 +638,6 @@
     showFrameCopyToast: toast.showFrameCopyToast,
   });
   const {
-    performApply,
-    performExport,
     handleApplyEdits,
     handleExportEdits,
     handleTransparencyChoice,
@@ -1006,209 +934,40 @@
     })}
 >
   {#snippet children()}
-    <div class="content">
-      <div
-        class="sidebar left"
-        onmouseenter={() => (hoverZone = "sidebar")}
-        onmouseleave={() => (hoverZone = "none")}
-        role="presentation"
-      >
-        <button
-          class="nav-btn"
-          onclick={() => navigate(-1)}
-          aria-label="previous file">‹</button
-        >
-      </div>
-      <div
-        class="viewer"
-        bind:this={viewerEl}
-        onmouseenter={() => (hoverZone = "sidebar")}
-        onmouseleave={() => (hoverZone = "none")}
-        onwheel={handleViewerScroll}
-        onmousedown={!isVideo && !isPdf && !markup.drawActive
-          ? startPan
-          : undefined}
-        ontouchstart={(e) => {
-          if (e.touches.length === 2) e.preventDefault();
-        }}
-        ontouchmove={viewer.handleTouchZoom}
-        ontouchend={viewer.handleTouchEnd}
-        style="cursor: {markup.drawActive
-          ? 'crosshair'
-          : !isVideo && !isPdf
-            ? style.panCursor
-            : 'default'}"
-        role="presentation"
-      >
-        {#if fileSrc && !isVideo && !isAudio && !isPdf}
-          <ImageView
-            {fileSrc}
-            {fileName}
-            bind:imageEl
-            {onImageLoad}
-            onImageError={corruption.onImageError}
-            imageStyle={style.imageStyle}
-            bind:cropContainerEl
-            slideshowActive={slideshow.active}
-            slideshowTransition={slideshow.transition}
-            {currentIndex}
-          />
-        {:else if fileSrc && isVideo}
-          <VideoView
-            {fileSrc}
-            bind:videoEl
-            {onVideoLoad}
-            onVideoError={() => corruption.onVideoError(videoEl)}
-            {onMediaEnded}
-            bind:cropContainerEl
-            drawActive={markup.drawActive}
-            {startPan}
-            videoWrapperTransform={style.videoWrapperTransform}
-            videoInnerStyle={style.videoInnerStyle}
-            panCursor={style.panCursor}
-            {isGifVideo}
-            bind:hoverZone
-            tsEditMenuVisible={markerStore.tsEditMenu.visible}
-            {timelineProps}
-            {playbackProps}
-            slideshowActive={slideshow.active}
-            slideshowTransition={slideshow.transition}
-            {currentIndex}
-          />
-        {:else if fileSrc && isPdf}
-          <PDFView
-            bind:pdfContainerEl
-            loading={pdf.state.loading}
-            error={pdf.state.error}
-            pages={pdf.state.pages}
-            scale={pdf.state.scale}
-            setScale={pdf.setScale}
-          />
-        {:else if fileSrc && isAudio}
-          <AudioPlayer
-            {fileSrc}
-            {filePath}
-            {fileName}
-            bind:cdColor
-            bind:cdColorIndex
-            bind:showCdColorPicker
-            {coverArtSrc}
-            bind:audioEl
-            {onAudioLoad}
-            onAudioError={() => corruption.onAudioError(audioEl)}
-            onAudioEnded={onMediaEnded}
-            bind:playing
-            loopMode={loopModeStore.loopMode}
-            {setLoopMode}
-            {muted}
-            {volume}
-            {setVolume}
-            {toggleMute}
-            {togglePlay}
-            {handlePrevClick}
-            {handleNextClick}
-            {toggleTimer}
-            {currentTimeDisplay}
-            {durationDisplay}
-            {timerTooltip}
-            {progress}
-            {rawCurrentSecs}
-            {rawDurationSecs}
-            {isScrubbing}
-            {startDiscScrubbing}
-            discScrubHandlers={discScrubStore.discScrubHandlers}
-            {startScrubbing}
-            {clips}
-            timestamps={markerStore.timestamps}
-            loopStart={markerStore.loopStart}
-            loopEnd={markerStore.loopEnd}
-            resumePoint={markerStore.resumePoint}
-            tsEditMenuVisible={markerStore.tsEditMenu.visible}
-            tsMenuOpen={menuStore.tsMenuOpen}
-            loopMenuOpen={menuStore.loopMenuOpen}
-            onTsMenuChange={(v) => (menuStore.tsMenuOpen = v)}
-            onLoopMenuChange={(v) => (menuStore.loopMenuOpen = v)}
-            {addTimestamp}
-            {addLoopStart}
-            {addLoopEnd}
-            addClipBoundary={clips.addClipBoundaryFromMedia}
-            {clearAllTimestamps}
-            clearAllSegments={clips.clearBoundaries}
-            {removeResumePoint}
-            {clearLoopMarkers}
-            {fileList}
-            bind:currentIndex
-            {setMediaState}
-            {navigate}
-            slideshowActive={slideshow.active}
-            volumeSegments={VOLUME_SEGMENTS}
-            {playbackUI}
-            {pickAudioFile}
-            bind:volumeTrackEl
-            bind:speedTrackEl
-            {toggleVolumeSliderMode}
-            {toggleSpeedSliderMode}
-            bind:audioLayoutMode
-            bind:cassetteFilenameOverflow
-            bind:cassetteInfoRowEl
-          />
-        {:else}
-          <button class="empty" onclick={openFileDialog}
-            ><span class="empty-icon">+</span><span class="empty-text"
-              >open a file</span
-            ></button
-          >
-        {/if}
-      </div>
-      <div
-        class="sidebar right"
-        onmouseenter={() => (hoverZone = "sidebar")}
-        onmouseleave={() => (hoverZone = "none")}
-        role="presentation"
-      >
-        <button
-          class="nav-btn"
-          onclick={() => navigate(1)}
-          aria-label="next file">›</button
-        >
-      </div>
-    </div>
-
-    <FullscreenOverlay
-      isFullscreen={viewer.state.isFullscreen && !!fileSrc}
-      fsControlsVisible={viewer.state.fsControlsVisible}
-      tsEditMenuVisible={markerStore.tsEditMenu.visible}
-      isAudio={isAudio}
-      fileName={fileName}
-      handleViewerScroll={handleViewerScroll}
-      drawActive={markup.drawActive}
-      startPan={startPan}
-      handleTouchZoom={viewer.handleTouchZoom}
-      handleTouchEnd={viewer.handleTouchEnd}
-      fsCursor={style.fsCursor}
-      minimizeWindow={minimizeWindow}
-      maximizeWindow={maximizeWindow}
-      closeWindow={closeWindow}
-      navigate={navigate}
-      isVideo={isVideo}
-      videoEl={videoEl}
-      isGifVideo={isGifVideo}
-      timelineProps={timelineProps}
-      playbackProps={playbackProps}
-      toggleFullscreen={viewer.toggleFullscreen}
-      fileListLength={fileList.length}
-      currentIndex={currentIndex}
-      fsPillEl={fsPillEl}
-      slideshowActive={slideshow.active}
-      toggleThumbnailBar={toggleThumbnailBar}
-      handleFsPillContext={handleFsPillContext}
-      sortMenuVisible={sort.menuVisible}
-      sortMenuX={sort.menuX}
-      sortMenuY={sort.menuY}
-      sortMode={sort.mode}
-      sortDesc={sort.desc}
-      onSortChange={onSortChange}
-      sortClose={sort.close}
+    <ViewerArea
+      {fileSrc} {isVideo} {isAudio} {isPdf} {fileName} {filePath}
+      bind:viewerEl bind:imageEl bind:videoEl bind:audioEl
+      bind:cropContainerEl bind:pdfContainerEl bind:hoverZone
+      {viewer} {style} {markup} {corruption} {slideshow}
+      {markerStore} {menuStore} {sort} {discScrubStore}
+      {loopModeStore} {playbackUI} {pickAudioFile}
+      {currentIndex} {fileList} {isGifVideo} {playing} {muted} {volume}
+      {isScrubbing}
+      bind:volumeTrackEl bind:speedTrackEl
+      bind:audioLayoutMode bind:cassetteFilenameOverflow
+      bind:cassetteInfoRowEl
+      bind:cdColor bind:cdColorIndex bind:showCdColorPicker
+      {coverArtSrc}
+      {navigate} {openFileDialog} {toggleThumbnailBar}
+      {handleFsPillContext} {minimizeWindow} {maximizeWindow}
+      {closeWindow} {startPan} {handleViewerScroll}
+      {toggleFullscreen} {fsPillEl}
+      {onImageLoad} {onVideoLoad} {onAudioLoad} {onMediaEnded}
+      {timelineProps} {playbackProps} {clips}
+      {setLoopMode} {setVolume} {toggleMute} {togglePlay}
+      {addTimestamp} {addLoopStart} {addLoopEnd}
+      {clearAllTimestamps} {clearLoopMarkers} {removeResumePoint}
+      {handlePrevClick} {handleNextClick} {toggleTimer}
+      {currentTimeDisplay} {durationDisplay} {timerTooltip}
+      {setMediaState}
+      {startScrubbing} {startDiscScrubbing}
+      {toggleVolumeSliderMode} {toggleSpeedSliderMode}
+      {progress} {rawCurrentSecs} {rawDurationSecs}
+      {onSortChange}
+      {pdf}
+      {fileDimensions} {fileSize} {fileInfoLoading}
+      {isLoadingFile} {loadingFadingOut}
+      {anyMenuOpen} {thumbnailBarVisible} {resetZoom}
     />
   {/snippet}
 </Shell>

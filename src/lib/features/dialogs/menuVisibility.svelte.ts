@@ -80,6 +80,23 @@ function createMenuVisibilityStore() {
     set loopMenuOpen(v: boolean) {
       loopMenuOpen = v;
     },
+    get isAnyOpen() {
+      return !!(editMenuVisible || markupMenuVisible || slideshowMenuVisible ||
+        appDropdownVisible || settingsOpen || accessibilityOpen ||
+        helpOpen || aboutOpen || feedbackOpen || tsMenuOpen);
+    },
+    closeAll() {
+      editMenuVisible = false;
+      markupMenuVisible = false;
+      slideshowMenuVisible = false;
+      appDropdownVisible = false;
+      settingsOpen = false;
+      accessibilityOpen = false;
+      helpOpen = false;
+      aboutOpen = false;
+      feedbackOpen = false;
+      tsMenuOpen = false;
+    },
   };
 }
 

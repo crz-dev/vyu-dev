@@ -3,23 +3,25 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-06
 
 ## Last change
-Refactored +page.svelte from 1466 lines to 1230 lines by extracting logic into feature modules and components. Extracted: ffmpeg config setters into ffmpegHelpers.ts, menuBindings into menuVisibility.svelte.ts, handleGlobalMouseDown into globalMouseHandler.ts, context menu action wrappers into contextActionWrappers.ts, and template branches (image, video, PDF) into ImageView.svelte, VideoView.svelte, PDFView.svelte. Bundled ~55 shorthand Shell props into a single $derived. Removed dead imports and variables.
+Reduced +page.svelte from 1230 to 989 lines (under 1000 target met). Extracted: ensureFfprobe into ffmpegHelpers.ts, isAnyOpen/closeAll into menuVisibility.svelte.ts, onMediaEnded and frameStep into playbackHelpers.ts, entire children snippet (~205 lines) into ViewerArea.svelte component. Removed dead code including unused imports (ALL_EXTS, AUDIO_EXTS, createPlaybackActions, invoke, convertFileSrc, SortMode), unused variables (cycleLoopMode, performApply, performExport, updateTimestampTitle, getTimestampById, setABLoop, updateTooltipDuringDrag). TypeScript strict, 0 errors.
 
 ## Status
-- +page.svelte — working (reduced from 1466 to 1230 lines)
-- ImageView, VideoView, PDFView — working
-- ffmpegHelpers, globalMouseHandler, contextActionWrappers — working
-- menuBindings factory — working
+- +page.svelte — working (989 lines, under 1000)
+- ViewerArea.svelte — working
+- playbackHelpers — working
+- menuVisibility (isAnyOpen/closeAll) — working
+- ffmpegHelpers (createEnsureFfprobe) — working
 
 ## Next
-Continue reducing +page.svelte by extracting createNavigation config, createKeybindHandler config, and setupInit call into modules. These require changing existing module interfaces.
+Extract createNavigation config into a navigationHelpers factory (largest remaining inline config block, ~55 lines). Requires careful handling of SetMediaStateSetters interface mapping.
 
 ## Bugs found this session
 - None
 
 ## Current commit
-refactor: extract page logic into feature modules and components
+refactor: extract page content into ViewerArea and playback helpers
 
 ## Architecture update
-### New rows added to module ownership table
-| Media view components (image, video, PDF) | `features/viewer/ImageView.svelte`, `features/viewer/VideoView.svelte`, `features/viewer/PDFView.svelte` |
+_Only if a genuinely new module/concern was added this session that has no existing row in ARCHITECTURE.md —
+add the minimum rows needed to the module ownership table. Do not rewrite, reformat, or touch anything else._
+- None needed — playbackHelpers are part of existing playback concern, ViewerArea is a view layout container
