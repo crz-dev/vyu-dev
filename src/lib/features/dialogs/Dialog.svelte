@@ -1233,6 +1233,99 @@
   </div>
 {/if}
 
+{#if deleteConfirm}
+  <div
+    class="delete-overlay"
+    role="presentation"
+    onmousedown={(e) => e.stopPropagation()}
+  >
+    <div
+      class="delete-dialog edit-confirm-dialog"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      onmousedown={(e) => e.stopPropagation()}
+    >
+      <div class="edit-confirm-header">
+        <div class="edit-confirm-header-left">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+          </svg>
+          <div>
+            <p class="delete-title">Delete file</p>
+            <p class="delete-subtitle">{fileName}</p>
+          </div>
+        </div>
+        <button
+          class="edit-confirm-header-close"
+          onclick={closeDeleteConfirm}
+          aria-label="Cancel"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="edit-confirm-body-box">
+        This will move the file to the Recycle Bin.
+      </div>
+      <div style="padding: 0 16px 12px; display: flex; flex-direction: column; gap: 8px;">
+        <label class="toggle-row">
+          <span class="toggle-label">Delete permanently</span>
+          <input
+            type="checkbox"
+            checked={deletePermanently}
+            onchange={(e) => updateDeletePermanently(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={deletePermanently}
+            ><span class="toggle-thumb"></span
+          ></span>
+        </label>
+        <label class="toggle-row">
+          <span class="toggle-label">Don't ask again</span>
+          <input
+            type="checkbox"
+            checked={deleteNoAsk}
+            onchange={(e) => updateDeleteNoAsk(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={deleteNoAsk}
+            ><span class="toggle-thumb"></span
+          ></span>
+        </label>
+      </div>
+      <div class="edit-confirm-actions edit-confirm-actions-horizontal">
+        <button class="delete-cancel" onclick={closeDeleteConfirm}>
+          Cancel
+        </button>
+        <button class="delete-confirm-btn" onclick={performDelete}>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 {#if propertiesOpen}
   <div
     class="delete-overlay"

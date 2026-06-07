@@ -59,3 +59,7 @@ Covers: thumbnails, display image prep (TIFF/PSD/JXL/RAW/HEIC → PNG), video re
 
 - **State goes in `src/lib/features/*/` only.**
 - **New top-level dependencies need an explicit reason stated before adding.**
+
+## QA
+
+- When you need to ask something, use the `questions` tool instead of asking directly in conversation.

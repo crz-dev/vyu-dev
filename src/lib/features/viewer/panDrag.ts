@@ -47,11 +47,15 @@ export function createPanDrag(deps: PanDragDeps) {
           if (timeSinceLast < 300) {
             clearTimeout(pendingPlay);
             deps.toggleFullscreen();
+            lastLeftClickTime = 0;
           } else {
             pendingPlay = setTimeout(deps.togglePlay, 150);
           }
         } else {
-          if (timeSinceLast < 300) deps.toggleFullscreen();
+          if (timeSinceLast < 300) {
+            deps.toggleFullscreen();
+            lastLeftClickTime = 0;
+          }
         }
       }
       window.removeEventListener("mousemove", onMove);

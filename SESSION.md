@@ -3,13 +3,12 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-07
 
 ## Last change
-Replaced all 9 placeholder Debug section rows (logs, FPS toggle, experimental features, software rendering toggle, reinstall FFmpeg) with 7 working debug tools: FFmpeg Status (Check/Reinstall buttons), App Info (copy to clipboard), Thumbnail Cache (clear, shares handler with Library section), Temp Folder (clean), Open Webview DevTools, Toggle Flags (localStorage key viewer), Reset All Settings (two-click confirmation then reload). Added `open_devtools` Rust command to `lib.rs`. Added CSS for debug-status badge, flags list layout, disabled action buttons, and settings-control gap. Removed dead `experimentalFeatures`, `showFpsCounter`, `forceSoftwareRendering` state. Updated section description. Both `pnpm check` and `cargo check` pass with 0 errors, 0 warnings.
+Fixed double-click fullscreen toggle bug in `panDrag.ts` (reset `lastLeftClickTime` after a double-click fires, preventing rapid single-click toggling). Added delete confirmation dialog to `Dialog.svelte` — the right-click context menu Delete button was setting `deleteStore.deleteConfirm = true` but no dialog existed to show it; now shows file name, "Delete permanently" and "Don't ask again" toggles, Cancel/Delete buttons. Added QA section to `AGENTS.md` reminding agents to use the `questions` tool. Both `pnpm check` and `cargo check` pass with 0 errors, 0 warnings.
 
 ## Status
-- Debug section — all 7 buttons wired with handlers (working)
-- Open DevTools — works in debug builds (Rust command registered)
-- Reset All Settings — two-click confirm then reloads (working)
-- Toggle Flags viewer — shows all vyu-* localStorage keys inline (working)
+- Double-click fullscreen — now requires 2 clicks to fullscreen and 2 to unfullscreen (working)
+- Context menu Delete — now shows confirmation dialog instead of doing nothing (working)
+- Delete confirmation dialog — file name displayed, toggles work, delete calls performDelete (working)
 - All other modules — untouched, still working
 
 ## Next
@@ -19,7 +18,7 @@ Extract createNavigation config into a navigationHelpers factory (largest remain
 - None.
 
 ## Current commit
-feat: wire debug section buttons with working handlers
+feat: add delete confirmation dialog to context menu
 
 ## Architecture update
 _Only if a genuinely new module/concern was added this session that has no existing row in ARCHITECTURE.md —
