@@ -2,7 +2,7 @@
 
 # View YOUR universe (Vyu)
 
-**A media viewer actually built for this decade.**
+**A media viewer actually built for this decade — and for you.**
 
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078d4)
 ![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)

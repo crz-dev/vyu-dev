@@ -3,10 +3,10 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-07
 
 ## Last change
-Lowercased "Universe" in README heading: `# View YOUR universe (Vyu)`.
+Updated README tagline: "A media viewer actually built for this decade" → "A media viewer actually built for this decade — and for you."
 
 ## Status
-- README.md: heading text tweaked (lowercase "universe")
+- README.md: tagline updated
 
 ## Next
 Pick up the next open issue or feature request.
@@ -15,7 +15,7 @@ Pick up the next open issue or feature request.
 - None.
 
 ## Current commit
-style: lowercase "universe" in README heading
+style: update README tagline
 
 ## Architecture update
 None — no new modules added.
