@@ -1202,7 +1202,7 @@
   <div
     class="delete-overlay"
     role="presentation"
-    onmousedown={(e) => e.stopPropagation()}
+    onmousedown={closeDeleteConfirm}
   >
     <div
       class="delete-dialog edit-confirm-dialog"
