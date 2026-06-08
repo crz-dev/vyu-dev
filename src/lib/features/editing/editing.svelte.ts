@@ -74,11 +74,18 @@ function createEditingStore() {
   let isApplying = $state(false);
   let cropMode = $state(false);
   let _cropShouldCenter = $state(false);
+  const SESSION_EDITS_MAX = 100;
   const sessionEdits = new Map<string, EditSnapshot>();
+  const sessionEditsOrder: string[] = [];
 
   function saveCurrentToSession() {
     if (filePath && getHasEdits()) {
       sessionEdits.set(filePath, cloneSnapshot(snapshot));
+      sessionEditsOrder.push(filePath);
+      if (sessionEditsOrder.length > SESSION_EDITS_MAX) {
+        const oldest = sessionEditsOrder.shift();
+        if (oldest !== undefined) sessionEdits.delete(oldest);
+      }
     }
   }
 

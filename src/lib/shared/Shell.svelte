@@ -233,7 +233,7 @@
       mode: "name" | "date-modified" | "date-created" | "size" | "type",
       desc: boolean,
     ) => void;
-    onRenamed: any;
+    onRenamed: (newPath: string) => Promise<void>;
     navigate: (dir: number) => void;
     startDrag: (e: MouseEvent) => void;
     showFilenameTooltip: (e: MouseEvent) => void;

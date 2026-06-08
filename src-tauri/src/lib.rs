@@ -374,10 +374,46 @@ const FFMPEG_THUMB_TIMEOUT: Duration = Duration::from_secs(8);
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+/// Spawns ffmpeg with the given args, polls completion with a timeout, and returns
+/// `Ok(Some(path))` on success, `Ok(None)` on failure/timeout, or `Err` on system error.
+/// Cleans up `output_path` on any non-success outcome.
+fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Result<Option<String>, String> {
     let mut child = Command::new("ffmpeg")
         .creation_flags(CREATE_NO_WINDOW)
-        .args([
+        .args(args)
+        .spawn()
+        .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
+
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => {
+                return Ok(Some(output_path.to_string_lossy().to_string()));
+            }
+            Ok(Some(_)) => {
+                let _ = fs::remove_file(output_path);
+                return Ok(None);
+            }
+            Ok(None) => {
+                if start.elapsed() > timeout {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    let _ = fs::remove_file(output_path);
+                    return Ok(None);
+                }
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            Err(e) => {
+                let _ = fs::remove_file(output_path);
+                return Err(format!("ffmpeg error: {e}"));
+            }
+        }
+    }
+}
+
+fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+    run_ffmpeg(
+        &[
             "-y",
             "-hide_banner",
             "-loglevel",
@@ -393,44 +429,18 @@ fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>,
             "-q:v",
             "4",
             &thumb_path.to_string_lossy(),
-        ])
-        .spawn()
-        .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
-
-    let start = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                return Ok(Some(thumb_path.to_string_lossy().to_string()));
-            }
-            Ok(Some(_)) => {
-                let _ = fs::remove_file(thumb_path);
-                return Ok(None);
-            }
-            Ok(None) => {
-                if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    let _ = fs::remove_file(thumb_path);
-                    return Ok(None);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            Err(e) => {
-                let _ = fs::remove_file(thumb_path);
-                return Err(format!("ffmpeg error: {e}"));
-            }
-        }
-    }
+        ],
+        thumb_path,
+        FFMPEG_THUMB_TIMEOUT,
+    )
 }
 
 /// Thumbnail for single-frame ffmpeg-based images (PSD, JXL, etc.).
 /// Unlike generate_video_frame this does NOT seek (-ss), since
 /// single-frame images have only frame at position 0.
 fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
-    let mut child = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
-        .args([
+    run_ffmpeg(
+        &[
             "-y",
             "-hide_banner",
             "-loglevel",
@@ -444,43 +454,17 @@ fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path) -> Result<Option<S
             "-q:v",
             "4",
             &thumb_path.to_string_lossy(),
-        ])
-        .spawn()
-        .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
-
-    let start = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                return Ok(Some(thumb_path.to_string_lossy().to_string()));
-            }
-            Ok(Some(_)) => {
-                let _ = fs::remove_file(thumb_path);
-                return Ok(None);
-            }
-            Ok(None) => {
-                if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    let _ = fs::remove_file(thumb_path);
-                    return Ok(None);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            Err(e) => {
-                let _ = fs::remove_file(thumb_path);
-                return Err(format!("ffmpeg error: {e}"));
-            }
-        }
-    }
+        ],
+        thumb_path,
+        FFMPEG_THUMB_TIMEOUT,
+    )
 }
 
 /// Tries to extract embedded cover art from an audio file and write it to `thumb_path`.
 /// Returns `Ok(Some(path))` if cover art was found, `Ok(None)` if not, or `Err` on ffmpeg failure.
 fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
-    let mut child = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
-        .args([
+    let result = run_ffmpeg(
+        &[
             "-y",
             "-hide_banner",
             "-loglevel",
@@ -493,45 +477,25 @@ fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<S
             "-q:v",
             "4",
             &thumb_path.to_string_lossy(),
-        ])
-        .spawn()
-        .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
+        ],
+        thumb_path,
+        FFMPEG_THUMB_TIMEOUT,
+    )?;
 
-    let start = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                if status.success()
-                    && thumb_path.exists()
-                    && thumb_path.metadata().map(|m| m.len()).unwrap_or(0) > 0
-                {
-                    return Ok(Some(thumb_path.to_string_lossy().to_string()));
-                }
-                // No cover art stream or empty output — clean up
-                let _ = fs::remove_file(thumb_path);
-                return Ok(None);
-            }
-            Ok(None) => {
-                if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    let _ = fs::remove_file(thumb_path);
-                    return Ok(None);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            Err(e) => {
-                let _ = fs::remove_file(thumb_path);
-                return Err(format!("ffmpeg error: {e}"));
-            }
-        }
+    // Cover art might be absent — ffmpeg succeeds but writes nothing. Verify output.
+    if result.is_some()
+        && thumb_path.exists()
+        && thumb_path.metadata().map(|m| m.len()).unwrap_or(0) > 0
+    {
+        return Ok(result);
     }
+    let _ = fs::remove_file(thumb_path);
+    Ok(None)
 }
 
 fn generate_audio_waveform(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
-    let mut child = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
-        .args([
+    run_ffmpeg(
+        &[
             "-y",
             "-hide_banner",
             "-loglevel",
@@ -543,35 +507,10 @@ fn generate_audio_waveform(path: &str, thumb_path: &Path) -> Result<Option<Strin
             "-frames:v",
             "1",
             &thumb_path.to_string_lossy(),
-        ])
-        .spawn()
-        .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
-
-    let start = Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(status)) if status.success() => {
-                return Ok(Some(thumb_path.to_string_lossy().to_string()));
-            }
-            Ok(Some(_)) => {
-                let _ = fs::remove_file(thumb_path);
-                return Ok(None);
-            }
-            Ok(None) => {
-                if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                    let _ = fs::remove_file(thumb_path);
-                    return Ok(None);
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            Err(e) => {
-                let _ = fs::remove_file(thumb_path);
-                return Err(format!("ffmpeg error: {e}"));
-            }
-        }
-    }
+        ],
+        thumb_path,
+        FFMPEG_THUMB_TIMEOUT,
+    )
 }
 
 fn format_data_url(bytes: &[u8]) -> String {
@@ -602,20 +541,14 @@ async fn get_thumbnail(
     path: String,
 ) -> Result<String, String> {
     let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    let kind = MediaKind::from_ext(&ext);
 
-    let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
-    let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
-    let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
-    let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
-    let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
-    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
-
-    if !is_image && !is_video && !is_audio && !is_document {
+    if !kind.is_image && !kind.is_video && !kind.is_audio && !kind.is_document {
         return Ok(String::new());
     }
 
     // Documents are handled on the frontend (no Rust thumbnail)
-    if is_document {
+    if kind.is_document {
         return Ok(String::new());
     }
 
@@ -642,8 +575,7 @@ async fn get_thumbnail(
         }
     }
 
-    let use_ffmpeg = is_video || is_audio || is_ffmpeg_image || is_raw;
-    let use_image_crate = !use_ffmpeg && is_image;
+    let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
 
     // Acquire semaphore permit — caps concurrent decode work to 4
     let _permit = state
@@ -658,74 +590,9 @@ async fn get_thumbnail(
 
     let jpeg_bytes = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
         if use_image_crate {
-            // In-process image crate decode
-            let img = image::open(&path_c).map_err(|e| format!("Failed to open image: {e}"))?;
-            let (w, h) = img.dimensions();
-            let short: u32 = 120;
-            let (nw, nh) = if w > h {
-                // Landscape: short side = height
-                (
-                    ((w as f64) * (short as f64) / (h as f64)).round() as u32,
-                    short,
-                )
-            } else if h > w {
-                // Portrait: short side = width
-                (
-                    short,
-                    ((h as f64) * (short as f64) / (w as f64)).round() as u32,
-                )
-            } else {
-                // Square
-                (short, short)
-            };
-            let thumb =
-                img.resize_exact(nw.max(1), nh.max(1), image::imageops::FilterType::Triangle);
-            let mut jpeg_bytes: Vec<u8> = Vec::new();
-            let mut encoder =
-                image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 55);
-            encoder
-                .encode(
-                    thumb.as_bytes(),
-                    thumb.width(),
-                    thumb.height(),
-                    thumb.color().into(),
-                )
-                .map_err(|e| format!("JPEG encode error: {e}"))?;
-            // Write to disk cache
-            let _ = fs::write(&thumb_path_c, &jpeg_bytes);
-            let _ = fs::write(&src_path_c, &path_c);
-            Ok(jpeg_bytes)
+            thumbnail_via_image_crate(Path::new(&path_c), &thumb_path_c, &src_path_c)
         } else {
-            // FFmpeg path (video / audio / unsupported image)
-            let result = if is_video {
-                generate_video_frame(&path_c, &thumb_path_c)
-            } else if is_ffmpeg_image || is_raw {
-                generate_ffmpeg_image_frame(&path_c, &thumb_path_c)
-            } else if is_audio {
-                // Try embedded cover art first, fall back to waveform
-                match try_extract_audio_cover_art(&path_c, &thumb_path_c) {
-                    Ok(Some(_)) => Ok(Some(thumb_path_c.to_string_lossy().to_string())),
-                    _ => generate_audio_waveform(&path_c, &thumb_path_c),
-                }
-            } else {
-                return Err("Unsupported media type for thumbnail".into());
-            };
-            match result {
-                Ok(Some(_)) => {
-                    let _ = fs::write(&src_path_c, &path_c);
-                    fs::read(&thumb_path_c)
-                        .map_err(|e| format!("Failed to read FFmpeg output: {e}"))
-                }
-                Ok(None) => {
-                    // FFmpeg failed to produce output (timeout, etc.)
-                    let _ = fs::remove_file(&thumb_path_c);
-                    Err("FFmpeg thumbnail generation failed (no output)".into())
-                }
-                Err(e) => {
-                    let _ = fs::remove_file(&thumb_path_c);
-                    Err(e)
-                }
-            }
+            thumbnail_via_ffmpeg(&path_c, &thumb_path_c, &src_path_c, &kind)
         }
     })
     .await
@@ -794,6 +661,107 @@ const REMUX_VIDEO_EXTS_RUST: &[&str] = &["ts", "m2ts"];
 const BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST: &[&str] = &[
     "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v",
 ];
+
+/// Short side in pixels for thumbnail resize.
+const THUMB_SHORT_SIDE: u32 = 120;
+/// JPEG quality for thumbnail encoding.
+const THUMB_JPEG_QUALITY: u8 = 55;
+
+/// Bundles the boolean checks that repeat at the top of most Tauri commands.
+/// Construct via `MediaKind::from_ext(ext)`.
+struct MediaKind {
+    is_image: bool,
+    is_video: bool,
+    is_audio: bool,
+    is_document: bool,
+    is_ffmpeg_image: bool,
+    is_raw: bool,
+}
+
+impl MediaKind {
+    fn from_ext(ext: &str) -> Self {
+        Self {
+            is_image: IMAGE_EXTS_RUST.contains(&ext),
+            is_video: VIDEO_EXTS_RUST.contains(&ext),
+            is_audio: AUDIO_EXTS_RUST.contains(&ext),
+            is_document: DOCUMENT_EXTS_RUST.contains(&ext),
+            is_ffmpeg_image: FFMPEG_IMAGE_EXTS_RUST.contains(&ext),
+            is_raw: RAW_IMAGE_EXTS_RUST.contains(&ext),
+        }
+    }
+}
+
+/// In-process image-crate thumbnail: decode, resize to `THUMB_SHORT_SIDE`, encode as JPEG.
+fn thumbnail_via_image_crate(path: &Path, thumb_path: &Path, src_path: &Path) -> Result<Vec<u8>, String> {
+    let img = image::open(path).map_err(|e| format!("Failed to open image: {e}"))?;
+    let (w, h) = img.dimensions();
+    let (nw, nh) = if w > h {
+        // Landscape: short side = height
+        (
+            ((w as f64) * (THUMB_SHORT_SIDE as f64) / (h as f64)).round() as u32,
+            THUMB_SHORT_SIDE,
+        )
+    } else if h > w {
+        // Portrait: short side = width
+        (
+            THUMB_SHORT_SIDE,
+            ((h as f64) * (THUMB_SHORT_SIDE as f64) / (w as f64)).round() as u32,
+        )
+    } else {
+        // Square
+        (THUMB_SHORT_SIDE, THUMB_SHORT_SIDE)
+    };
+    let thumb = img.resize_exact(nw.max(1), nh.max(1), image::imageops::FilterType::Triangle);
+    let mut jpeg_bytes: Vec<u8> = Vec::new();
+    let mut encoder =
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, THUMB_JPEG_QUALITY);
+    encoder
+        .encode(
+            thumb.as_bytes(),
+            thumb.width(),
+            thumb.height(),
+            thumb.color().into(),
+        )
+        .map_err(|e| format!("JPEG encode error: {e}"))?;
+    let _ = fs::write(thumb_path, &jpeg_bytes);
+    let _ = fs::write(src_path, path.to_string_lossy().as_ref());
+    Ok(jpeg_bytes)
+}
+
+/// FFmpeg-based thumbnail: dispatches to the right helper based on media kind.
+fn thumbnail_via_ffmpeg(
+    path: &str,
+    thumb_path: &Path,
+    src_path: &Path,
+    kind: &MediaKind,
+) -> Result<Vec<u8>, String> {
+    let result = if kind.is_video {
+        generate_video_frame(path, thumb_path)
+    } else if kind.is_ffmpeg_image || kind.is_raw {
+        generate_ffmpeg_image_frame(path, thumb_path)
+    } else if kind.is_audio {
+        match try_extract_audio_cover_art(path, thumb_path) {
+            Ok(Some(_)) => Ok(Some(thumb_path.to_string_lossy().to_string())),
+            _ => generate_audio_waveform(path, thumb_path),
+        }
+    } else {
+        return Err("Unsupported media type for thumbnail".into());
+    };
+    match result {
+        Ok(Some(_)) => {
+            let _ = fs::write(src_path, path);
+            fs::read(thumb_path).map_err(|e| format!("Failed to read FFmpeg output: {e}"))
+        }
+        Ok(None) => {
+            let _ = fs::remove_file(thumb_path);
+            Err("FFmpeg thumbnail generation failed (no output)".into())
+        }
+        Err(e) => {
+            let _ = fs::remove_file(thumb_path);
+            Err(e)
+        }
+    }
+}
 
 /// Decodes a browser-unsupported image and returns a cached PNG path for display.
 /// Uses the image crate for formats it supports (TIFF), ffmpeg for PSD/JXL.
@@ -996,9 +964,8 @@ async fn extract_cover_art(app: tauri::AppHandle, path: String) -> Result<Option
 
     let result =
         tauri::async_runtime::spawn_blocking(move || -> Result<Option<PathBuf>, String> {
-            let mut child = Command::new("ffmpeg")
-                .creation_flags(CREATE_NO_WINDOW)
-                .args([
+            let out = run_ffmpeg(
+                &[
                     "-y",
                     "-hide_banner",
                     "-loglevel",
@@ -1011,39 +978,20 @@ async fn extract_cover_art(app: tauri::AppHandle, path: String) -> Result<Option
                     "-q:v",
                     "4",
                     &cached_c.to_string_lossy(),
-                ])
-                .spawn()
-                .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
+                ],
+                &cached_c,
+                FFMPEG_THUMB_TIMEOUT,
+            )?;
 
-            let start = Instant::now();
-            loop {
-                match child.try_wait() {
-                    Ok(Some(status)) => {
-                        if status.success()
-                            && cached_c.exists()
-                            && cached_c.metadata().map(|m| m.len()).unwrap_or(0) > 0
-                        {
-                            return Ok(Some(cached_c));
-                        }
-                        // ffmpeg succeeded but no cover art stream exists
-                        let _ = fs::remove_file(&cached_c);
-                        return Ok(None);
-                    }
-                    Ok(None) => {
-                        if start.elapsed() > FFMPEG_THUMB_TIMEOUT {
-                            let _ = child.kill();
-                            let _ = child.wait();
-                            let _ = fs::remove_file(&cached_c);
-                            return Ok(None);
-                        }
-                        std::thread::sleep(std::time::Duration::from_millis(100));
-                    }
-                    Err(e) => {
-                        let _ = fs::remove_file(&cached_c);
-                        return Err(format!("ffmpeg error: {e}"));
-                    }
-                }
+            // Cover art might be absent — ffmpeg succeeds but writes nothing.
+            if out.is_some()
+                && cached_c.exists()
+                && cached_c.metadata().map(|m| m.len()).unwrap_or(0) > 0
+            {
+                return Ok(Some(cached_c));
             }
+            let _ = fs::remove_file(&cached_c);
+            Ok(None)
         })
         .await
         .map_err(|e| format!("Thread join error: {e}"))?;
@@ -1565,14 +1513,9 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
         .unwrap_or("")
         .to_lowercase();
 
-    let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
-    let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
-    let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
-    let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
-    let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
-    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let kind = MediaKind::from_ext(&ext);
 
-    if is_document {
+    if kind.is_document {
         // For PDF, check magic bytes (%PDF-) without reading the entire file.
         let mut magic = [0u8; 5];
         let bytes_ok = fs::File::open(&path)
@@ -1590,7 +1533,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
         });
     }
 
-    if is_image && !is_ffmpeg_image && !is_raw {
+    if kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw {
         match image::open(&path) {
             Ok(img) => {
                 let (w, h) = img.dimensions();
@@ -1610,7 +1553,7 @@ fn check_media_integrity(path: String) -> Result<MediaIntegrity, String> {
                 reason: format!("Image decode failed: {e}"),
             }),
         }
-    } else if is_video || is_audio || is_ffmpeg_image || is_raw {
+    } else if kind.is_video || kind.is_audio || kind.is_ffmpeg_image || kind.is_raw {
         let output = Command::new("ffprobe")
             .creation_flags(CREATE_NO_WINDOW)
             .args(["-v", "error", "-show_streams", "-show_format", &path])
@@ -1692,12 +1635,7 @@ fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
         .unwrap_or("")
         .to_lowercase();
 
-    let is_image = IMAGE_EXTS_RUST.contains(&ext.as_str());
-    let is_video = VIDEO_EXTS_RUST.contains(&ext.as_str());
-    let is_audio = AUDIO_EXTS_RUST.contains(&ext.as_str());
-    let is_document = DOCUMENT_EXTS_RUST.contains(&ext.as_str());
-    let is_ffmpeg_image = FFMPEG_IMAGE_EXTS_RUST.contains(&ext.as_str());
-    let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
+    let kind = MediaKind::from_ext(&ext);
 
     let parent = input
         .parent()
@@ -1727,11 +1665,11 @@ fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
         tmp
     };
 
-    let fix_result: Result<(), String> = if is_image && !is_ffmpeg_image && !is_raw {
+    let fix_result: Result<(), String> = if kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw {
         fix_image(&input, &output_path)
-    } else if is_video || is_audio || is_ffmpeg_image || is_raw {
+    } else if kind.is_video || kind.is_audio || kind.is_ffmpeg_image || kind.is_raw {
         fix_video_audio(&input, &output_path)
-    } else if is_document {
+    } else if kind.is_document {
         fix_document(&input, &output_path)
     } else {
         Err(format!("Unsupported file type: .{ext}"))
