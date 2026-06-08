@@ -3,11 +3,12 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-07
 
 ## Last change
-Fixed markup state leak in `closeFile()` (`navigation.svelte.ts` line 196) — `markup.cleanup()` was never called when closing a file, so opening a new file after drawing strokes inherited the old annotations. Also removed the duplicate `markup.cleanup()` call on line 78 (harmless no-op). Verified with `pnpm check` — zero errors.
+Audited repo files outside `src/` and `src-tauri/` for hygiene: removed empty `.vscode/tasks.json`, deleted dead `eslint.config.js` (imported `eslint-config-prettier` which wasn't in `package.json` or the lockfile). Ran `pnpm prettier --write .` — 106 files checked, SESSION.md formatted, rest unchanged. No type-check impact.
 
 ## Status
-- Frontend: markup cleanup now fires on both file-switch and file-close paths
-- Type check: clean
+- Hygiene: two dead files removed, repo is clean
+- Format: prettier applied project-wide
+- Type check: untouched, prior session reported clean
 
 ## Next
 Pick up the next open issue or feature request.
@@ -16,7 +17,7 @@ Pick up the next open issue or feature request.
 - None.
 
 ## Current commit
-fix: add markup.cleanup() to closeFile(), remove duplicate call
+chore: remove empty tasks.json and dead eslint config, run formatter
 
 ## Architecture update
 None.
