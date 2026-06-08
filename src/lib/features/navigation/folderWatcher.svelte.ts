@@ -45,7 +45,7 @@ export function createFolderWatcher(opts: {
         unwatchFn = unwatch;
       })
       .catch((e) => {
-        console.warn("Failed to start file watcher:", e);
+        console.error("Failed to start file watcher:", e);
       });
   }
 

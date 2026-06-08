@@ -199,7 +199,10 @@ export function areDialogsOpen(deps: {
   propertiesOpen: boolean;
   shareOpen: boolean;
   clips: { clipDeleteConfirm: { visible: boolean } };
-  editDialogStore: { editApplyConfirm: boolean; editTransparencyConfirm: boolean };
+  editDialogStore: {
+    editApplyConfirm: boolean;
+    editTransparencyConfirm: boolean;
+  };
   corruption: { state: { warning: boolean } };
   sort: { menuVisible: boolean };
 }): boolean {

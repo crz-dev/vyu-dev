@@ -2,6 +2,10 @@
 // supported by WebView2 Web Workers. Rendering runs on the main thread instead.
 // Pages are rendered lazily via IntersectionObserver for large documents.
 import { convertFileSrc } from "@tauri-apps/api/core";
+import type {
+  PDFDocumentProxy,
+  PDFPageProxy,
+} from "pdfjs-dist/types/src/display/api";
 
 export interface PdfPage {
   pageNum: number;
@@ -33,7 +37,7 @@ export function createPdf() {
     error: "",
   });
 
-  let pdfDoc: any = null;
+  let pdfDoc: PDFDocumentProxy | null = null;
   let observer: IntersectionObserver | null = null;
   let renderTimers: Map<number, ReturnType<typeof setTimeout>> = new Map();
   let pdfContainerEl: HTMLElement | null = null;
@@ -63,7 +67,7 @@ export function createPdf() {
     }
   }
 
-  function scheduleRender(pdfPage: any, page: PdfPage) {
+  function scheduleRender(pdfPage: PDFPageProxy, page: PdfPage) {
     const pageNum = page.pageNum;
     const existing = renderTimers.get(pageNum);
     if (existing) clearTimeout(existing);
@@ -76,7 +80,7 @@ export function createPdf() {
     renderTimers.set(pageNum, timer);
   }
 
-  async function renderPage(pdfPage: any, page: PdfPage) {
+  async function renderPage(pdfPage: PDFPageProxy, page: PdfPage) {
     if (disposed) return;
     const canvas = page.canvasRef;
     if (!canvas || !pdfPage) return;
@@ -118,7 +122,7 @@ export function createPdf() {
             // Try to get the page object from the pdfDoc
             pdfDoc
               ?.getPage(page.pageNum)
-              ?.then((p: any) => scheduleRender(p, page))
+              ?.then((p: PDFPageProxy) => scheduleRender(p, page))
               ?.catch(() => {});
           }
           observer?.unobserve(canvas);
@@ -175,7 +179,7 @@ export function createPdf() {
       state.pageCount = numPages;
 
       // Pre-fetch all pages
-      const pagePromises: Promise<any>[] = [];
+      const pagePromises: Promise<PDFPageProxy>[] = [];
       for (let i = 1; i <= numPages; i++) {
         pagePromises.push(pdfDoc.getPage(i));
       }

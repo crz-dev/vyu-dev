@@ -12,7 +12,17 @@
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
   import Toast from "$lib/shared/Toast.svelte";
-  import type { ContextMenu } from "$lib/shared/types";
+  import type {
+    ContextMenu,
+    VideoMarker,
+    ClipBoundary,
+    MediaProperties,
+  } from "$lib/shared/types";
+  import type { ClipDeleteConfirmState } from "$lib/features/media/clips.svelte";
+  import type {
+    MarkerTooltip,
+    MarkerEditMenu,
+  } from "$lib/features/markers/markers.svelte";
 
   let {
     children,
@@ -277,8 +287,8 @@
     ffprobeAvailable: boolean;
     ffmpegInstalling: boolean;
     ffmpegInstallError: string;
-    installFfmpegAndWait: any;
-    refreshFfprobeAvailability: any;
+    installFfmpegAndWait: () => Promise<void>;
+    refreshFfprobeAvailability: () => Promise<void>;
     openConvertedFile: (path: string) => Promise<void>;
     showInExplorer: (path: string) => Promise<void>;
     onSelect: (index: number) => void;
@@ -289,11 +299,11 @@
     onUpdateDeleteNoAsk: (v: boolean) => void;
     onUpdateDeletePermanently: (v: boolean) => void;
     onCloseContextMenu: () => void;
-    tsTooltip: any;
+    tsTooltip: MarkerTooltip;
     tsEditMenuVisible: boolean;
-    tsEditMenu: any;
-    editingTimestamp: any;
-    editingSegment: any;
+    tsEditMenu: MarkerEditMenu;
+    editingTimestamp: VideoMarker | undefined;
+    editingSegment: ClipBoundary | undefined;
     currentTitle: string;
     getTitleEditorWidthCh: (title: string) => number;
     updateEditorTitle: (v: string) => void;
@@ -310,8 +320,8 @@
     playbackSpeed: number;
     muted: boolean;
     volume: number;
-    timestamps: any[];
-    clipBoundaries: any[];
+    timestamps: VideoMarker[];
+    clipBoundaries: ClipBoundary[];
     resumePoint: number | null;
     clipOutputDir: string;
     parentFolder: () => string;
@@ -328,7 +338,7 @@
     ctxShare: () => void;
     ctxDelete: () => void;
     ctxClearMarkers: () => void;
-    clipDeleteConfirm: any;
+    clipDeleteConfirm: ClipDeleteConfirmState;
     deleteConfirm: boolean;
     deleteNoAsk: boolean;
     deletePermanently: boolean;
@@ -340,8 +350,8 @@
     durationDisplay: string;
     audioBitrateDisplay: string;
     mediaPropsLoading: boolean;
-    mediaProps: any;
-    loadMediaProperties: any;
+    mediaProps: MediaProperties | null;
+    loadMediaProperties: () => Promise<void>;
     showValue: (v: string | undefined) => string;
     propsCopyPath: () => void;
     propsOpenFolder: () => void;

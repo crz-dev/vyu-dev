@@ -9,9 +9,9 @@ import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
 
 const timeline = createTimeline();
 
-export type MarkerTooltipTone = "yellow" | "blue" | "green" | "red" | "grey";
+export type MarkerTooltipTone = "yellow" | "blue" | "green" | "grey";
 
-interface MarkerTooltip {
+export interface MarkerTooltip {
   visible: boolean;
   x: number;
   y: number;
@@ -21,7 +21,7 @@ interface MarkerTooltip {
   targetId?: string;
 }
 
-interface MarkerEditMenu {
+export interface MarkerEditMenu {
   visible: boolean;
   x: number;
   y: number;

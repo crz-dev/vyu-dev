@@ -24,6 +24,7 @@ import {
   type SetMediaState,
   type SetMediaStateSetters,
 } from "./setMediaState";
+import type { PdfState } from "$lib/features/pdf/pdf.svelte";
 
 const PREV_DOUBLE_CLICK_MS = 1200;
 
@@ -51,7 +52,7 @@ export interface NavigationDeps extends SetMediaStateSetters {
   setLastPrevClickTime: (v: number) => void;
   setThumbnailBarVisible: (v: boolean) => void;
   setHoverZone: (v: string) => void;
-  pdf: { state: any; cleanup: () => void };
+  pdf: { state: PdfState; cleanup: () => void };
 }
 
 export function createNavigation(deps: NavigationDeps) {

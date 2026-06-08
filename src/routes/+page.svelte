@@ -129,7 +129,6 @@
   let cassetteFilenameOverflow = $state(false);
   let cassetteInfoRowEl = $state<HTMLElement | null>(null);
   let lastPrevClickTime = $state(0);
-  const PREV_DOUBLE_CLICK_MS = 1200;
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
   let thumbnailBarVisible = $state(false);

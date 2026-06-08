@@ -4,10 +4,7 @@ import {
   invokeGetMediaProperties,
   invokeInstallFfmpeg,
 } from "$lib/features/media/tools";
-import {
-  isBrowserUnsupportedImage,
-  needsRemux,
-} from "$lib/shared/media-kind";
+import { isBrowserUnsupportedImage, needsRemux } from "$lib/shared/media-kind";
 
 export async function fetchMediaProperties(
   filePath: string,

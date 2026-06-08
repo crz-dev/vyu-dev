@@ -22,7 +22,7 @@ pub fn copy_image_to_clipboard(path: String) -> Result<(), String> {
                 "error",
                 "-i",
                 &path,
-                temp_png.to_str().unwrap(),
+                temp_png.to_str().ok_or("Temp path is not valid UTF-8")?,
             ])
             .status()
             .map_err(|e| format!("Failed to run ffmpeg for RAW clipboard: {e}"))?;
