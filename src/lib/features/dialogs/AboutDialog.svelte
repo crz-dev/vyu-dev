@@ -64,8 +64,8 @@
         </h2>
 
         <p class="about-desc">
-          A modern media viewer that prioritizes ease, privacy, and a seamless
-          viewing experience
+          A media viewer actually built for this decade — editing, format
+          support, zero telemetry.
         </p>
 
         <div class="about-panel">

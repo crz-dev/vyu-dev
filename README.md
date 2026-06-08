@@ -1,6 +1,6 @@
 <div align="center">
 
-# Vyu
+<h1>Vyu — View <u>Your</u> Universe</h1>
 
 **A media viewer actually built for this decade.**
 
