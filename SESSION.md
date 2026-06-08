@@ -3,12 +3,10 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-07
 
 ## Last change
-Updated README heading to "Vyu — View Your Universe" and About dialog description to "A media viewer actually built for this decade — editing, format support, zero telemetry."
+Updated README heading from `<h1>Vyu — View <u>Your</u> Universe</h1>` to `# View **Your** Universe (Vyu)`.
 
 ## Status
-- README.md: updated heading and tagline
-- AboutDialog.svelte: updated description copy
-- Type-check: 0 errors
+- README.md: heading reformatted, no content change
 
 ## Next
 Pick up the next open issue or feature request.
@@ -17,7 +15,7 @@ Pick up the next open issue or feature request.
 - None.
 
 ## Current commit
-chore: update branding and about dialog copy
+style: update README heading format
 
 ## Architecture update
 None — no new modules added.
