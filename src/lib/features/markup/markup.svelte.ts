@@ -148,4 +148,5 @@ function createMarkupStore() {
   };
 }
 
+export type MarkupStore = typeof markup;
 export const markup = createMarkupStore();

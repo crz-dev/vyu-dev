@@ -8,7 +8,7 @@ use std::os::windows::process::CommandExt;
 use crate::constants::{
     BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST, CREATE_NO_WINDOW,
 };
-use crate::util::{hash_path_xxh3, resolve_output_path, unique_path};
+use crate::util::{ffmpeg_command, hash_path_xxh3, resolve_output_path, unique_path};
 
 /// Write a minimal flat (single-layer, no transparency) PSD file.
 /// Image data is raw planar: all R, then all G, then all B.
@@ -70,6 +70,8 @@ fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
     };
 
     let temp_dir = std::env::temp_dir().join("Vyu-temp").join("browser");
+    // Clean up any stale files from previous browser conversions
+    let _ = fs::remove_dir_all(&temp_dir);
     fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create browser temp dir: {e}"))?;
 
     let input = PathBuf::from(path);
@@ -109,8 +111,7 @@ fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
 
     args.push(output_path.to_string_lossy().to_string());
 
-    let output = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let output = ffmpeg_command()
         .args(&args)
         .output()
         .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
@@ -296,8 +297,7 @@ pub fn convert_media(
 
     args.push(output_path.to_string_lossy().to_string());
 
-    let output = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let output = ffmpeg_command()
         .args(&args)
         .output()
         .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
@@ -333,8 +333,7 @@ pub fn convert_audio_to_waveform_video(
     let temp_image = temp_dir.join(format!("vyu_wave_{}.jpg", hash_path_xxh3(&path)));
 
     // Try embedded artwork first
-    let has_artwork = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let has_artwork = ffmpeg_command()
         .args([
             "-y", "-hide_banner", "-loglevel", "error",
             "-i", &input.to_string_lossy(),
@@ -350,8 +349,7 @@ pub fn convert_audio_to_waveform_video(
         .unwrap_or(false);
 
     if !has_artwork {
-        let wf_output = Command::new("ffmpeg")
-            .creation_flags(CREATE_NO_WINDOW)
+        let wf_output = ffmpeg_command()
             .args([
                 "-y", "-hide_banner", "-loglevel", "error",
                 "-i", &input.to_string_lossy(),
@@ -434,8 +432,7 @@ pub fn convert_audio_to_waveform_video(
     ];
     args.push(output_path.to_string_lossy().to_string());
 
-    let mut child = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let mut child = ffmpeg_command()
         .args(&args)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())

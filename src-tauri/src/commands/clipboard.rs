@@ -5,7 +5,7 @@ use std::process::Command;
 use std::os::windows::process::CommandExt;
 
 use crate::constants::{CREATE_NO_WINDOW, RAW_IMAGE_EXTS_RUST};
-use crate::util::hash_path_xxh3;
+use crate::util::{ffmpeg_command, hash_path_xxh3};
 
 #[tauri::command]
 pub fn copy_image_to_clipboard(path: String) -> Result<(), String> {
@@ -14,8 +14,7 @@ pub fn copy_image_to_clipboard(path: String) -> Result<(), String> {
 
     let img = if is_raw {
         let temp_png = std::env::temp_dir().join(format!("vyu_clipboard_{}.png", hash_path_xxh3(&path)));
-        Command::new("ffmpeg")
-            .creation_flags(CREATE_NO_WINDOW)
+        ffmpeg_command()
             .args([
                 "-y",
                 "-hide_banner",

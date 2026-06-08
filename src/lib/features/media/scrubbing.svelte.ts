@@ -11,6 +11,7 @@ function createDiscScrubStore() {
   };
 }
 
+export type DiscScrubStore = typeof discScrubStore;
 export const discScrubStore = createDiscScrubStore();
 
 export interface ScrubbingDeps {

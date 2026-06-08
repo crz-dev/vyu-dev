@@ -70,4 +70,5 @@ export function createSort() {
   };
 }
 
+export type SortStore = typeof sort;
 export const sort = createSort();

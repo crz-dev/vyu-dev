@@ -102,4 +102,5 @@ export function createCorruption() {
   };
 }
 
+export type CorruptionStore = typeof corruption;
 export const corruption = createCorruption();

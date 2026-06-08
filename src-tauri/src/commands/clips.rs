@@ -1,13 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
-use crate::constants::{CREATE_NO_WINDOW, REMUX_VIDEO_EXTS_RUST};
+use crate::constants::REMUX_VIDEO_EXTS_RUST;
 use crate::types::{ClipProcessResult, ClipSegment};
-use crate::util::{format_clip_tag, sanitize_segments, unique_path};
+use crate::util::{ffmpeg_command, format_clip_tag, sanitize_segments, unique_path};
 
 #[tauri::command]
 pub fn process_video_clips(
@@ -107,8 +104,7 @@ pub fn process_video_clips(
                 .map_err(|e| format!("Failed writing concat list: {e}"))?;
             let merged_name = format!("{}_clips_merged.{}", base_name, ext);
             let merged_output = unique_path(out_dir.join(merged_name));
-            let merge_out = Command::new("ffmpeg")
-                .creation_flags(CREATE_NO_WINDOW)
+            let merge_out = ffmpeg_command()
                 .args([
                     "-y",
                     "-hide_banner",

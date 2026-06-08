@@ -98,12 +98,19 @@ pub fn unique_path(path: PathBuf) -> PathBuf {
     path
 }
 
+/// Returns a `Command` pre-configured to run ffmpeg without a console window.
+pub fn ffmpeg_command() -> Command {
+    let mut cmd = Command::new("ffmpeg");
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd
+}
+
 /// Spawns ffmpeg with the given args, polls completion with a timeout, and returns
 /// `Ok(Some(path))` on success, `Ok(None)` on failure/timeout, or `Err` on system error.
 /// Cleans up `output_path` on any non-success outcome.
 pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Result<Option<String>, String> {
-    let mut child = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let mut child = ffmpeg_command()
         .args(args)
         .spawn()
         .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
@@ -238,8 +245,7 @@ pub fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool
 
 /// Extracts a segment from a video using ffmpeg stream copy, falling back to re-encode.
 pub fn ffmpeg_extract_segment(input: &Path, output: &Path, start: f64, end: f64) -> Result<(), String> {
-    let fast_err = match std::process::Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let fast_err = match ffmpeg_command()
         .args([
             "-y",
             "-hide_banner",
@@ -262,8 +268,7 @@ pub fn ffmpeg_extract_segment(input: &Path, output: &Path, start: f64, end: f64)
         Err(e) => format!("Failed to start ffmpeg: {e}"),
     };
 
-    let fallback = std::process::Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let fallback = ffmpeg_command()
         .args([
             "-y",
             "-hide_banner",

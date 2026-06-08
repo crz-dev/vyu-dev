@@ -120,6 +120,7 @@ function createMarkerStore() {
   };
 }
 
+export type MarkersStore = typeof markerStore;
 export const markerStore = createMarkerStore();
 
 export interface ClipsBridge {
@@ -144,6 +145,11 @@ export interface MarkerActionsDeps {
   onClipMenuReopen: () => void;
   setRawCurrentSecs: (v: number) => void;
   setProgress: (v: number) => void;
+}
+
+function getProgressBar(): HTMLElement | null {
+  return (document.querySelector(".fs-progress") ??
+    document.querySelector(".progress-bar")) as HTMLElement | null;
 }
 
 export function createMarkerActions(deps: MarkerActionsDeps) {
@@ -387,9 +393,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     title: string | undefined,
     targetId: string | undefined,
   ) {
-    const bar =
-      document.querySelector(".fs-progress") ??
-      document.querySelector(".progress-bar");
+    const bar = getProgressBar();
     if (!bar) return;
     const barRect = bar.getBoundingClientRect();
     const pct =
@@ -418,9 +422,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     if (!startTs) return;
     const dragTitle = startTs.title;
 
-    const bar =
-      document.querySelector(".fs-progress") ??
-      document.querySelector(".progress-bar");
+    const bar = getProgressBar();
     if (!bar) return;
 
     updateTooltipDuringDrag(startTs.time, "yellow", dragTitle, id);
@@ -530,9 +532,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     if (which === "start" && markerStore.loopStart === null) return;
     if (which === "end" && markerStore.loopEnd === null) return;
 
-    const bar =
-      document.querySelector(".fs-progress") ??
-      document.querySelector(".progress-bar");
+    const bar = getProgressBar();
     if (!bar) return;
 
     function timeFromClientX(clientX: number): number {
@@ -595,9 +595,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     if (!boundary) return;
     const dragTitle = boundary.title;
 
-    const bar =
-      document.querySelector(".fs-progress") ??
-      document.querySelector(".progress-bar");
+    const bar = getProgressBar();
     if (!bar) return;
 
     updateTooltipDuringDrag(boundary.time, "blue", dragTitle, id);

@@ -49,6 +49,8 @@ function applyVolume(el: HTMLMediaElement, vol: number) {
   el.volume = Math.max(0, Math.min(1, vol));
 }
 
+export type PlaybackUIStore = ReturnType<typeof createPlaybackUI>;
+
 export function createPlaybackUI(
   mediaElRef: () => HTMLMediaElement | null,
   getVolume: () => number,

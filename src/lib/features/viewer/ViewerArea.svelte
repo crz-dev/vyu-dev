@@ -9,6 +9,19 @@
     type LoopMode,
     type SortMode,
   } from "$lib/shared/constants";
+  import type { ViewerStore } from "./viewer.svelte";
+  import type { ViewerStyleStore } from "./viewerStyle.svelte";
+  import type { MarkupStore } from "$lib/features/markup/markup.svelte";
+  import type { CorruptionStore } from "$lib/features/media/corruption.svelte";
+  import type { SlideshowStore } from "$lib/features/media/slideshow.svelte";
+  import type { MarkersStore } from "$lib/features/markers/markers.svelte";
+  import type { MenuVisibilityStore } from "$lib/features/dialogs/menuVisibility.svelte";
+  import type { SortStore } from "$lib/features/navigation/sort.svelte";
+  import type { DiscScrubStore } from "$lib/features/media/scrubbing.svelte";
+  import type { LoopModeStoreType } from "$lib/features/media/loopMode.svelte";
+  import type { PlaybackUIStore } from "$lib/features/media/playback.svelte";
+  import type { ClipsStore } from "$lib/features/media/clips.svelte";
+  import type { PdfStore } from "$lib/features/pdf/pdf.svelte";
 
   let {
     fileSrc,
@@ -118,21 +131,18 @@
     cropContainerEl: HTMLElement | null;
     pdfContainerEl: HTMLElement | null;
     hoverZone: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    viewer: any;
-    style: any;
-    markup: any;
-    corruption: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    slideshow: any;
-    markerStore: any;
-    menuStore: any;
-    sort: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    discScrubStore: any;
-    loopModeStore: any;
-    playbackUI: any;
-    clips: any;
+    viewer: ViewerStore;
+    style: ViewerStyleStore;
+    markup: MarkupStore;
+    corruption: CorruptionStore;
+    slideshow: SlideshowStore;
+    markerStore: MarkersStore;
+    menuStore: MenuVisibilityStore;
+    sort: SortStore;
+    discScrubStore: DiscScrubStore;
+    loopModeStore: LoopModeStoreType;
+    playbackUI: PlaybackUIStore;
+    clips: ClipsStore;
     pickAudioFile: () => void;
     currentIndex: number;
     fileList: string[];
@@ -192,7 +202,7 @@
     rawDurationSecs: number;
     onSortChange: (m: SortMode, d: boolean) => void;
     onAudioLoad: () => void;
-    pdf: Record<string, unknown>;
+    pdf: PdfStore;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -223,21 +233,18 @@
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
     onwheel={handleViewerScroll}
-    onmousedown={!isVideo &&
-    !isPdf &&
-    !(markup as { drawActive: boolean }).drawActive
+    onmousedown={!isVideo && !isPdf && !markup.drawActive
       ? startPan
       : undefined}
     ontouchstart={(e) => {
       if (e.touches.length === 2) e.preventDefault();
     }}
-    ontouchmove={(viewer as { handleTouchZoom: (e: TouchEvent) => void })
-      .handleTouchZoom}
-    ontouchend={(viewer as { handleTouchEnd: () => void }).handleTouchEnd}
-    style="cursor: {(markup as { drawActive: boolean }).drawActive
+    ontouchmove={viewer.handleTouchZoom}
+    ontouchend={viewer.handleTouchEnd}
+    style="cursor: {markup.drawActive
       ? 'crosshair'
       : !isVideo && !isPdf
-        ? (style as { panCursor: string }).panCursor
+        ? style.panCursor
         : 'default'}"
     role="presentation"
   >
@@ -247,12 +254,11 @@
         {fileName}
         bind:imageEl
         {onImageLoad}
-        onImageError={(corruption as { onImageError: (e: Event) => void })
-          .onImageError}
-        imageStyle={(style as { imageStyle: string }).imageStyle}
+        onImageError={corruption.onImageError}
+        imageStyle={style.imageStyle}
         bind:cropContainerEl
-        slideshowActive={(slideshow as { active: boolean }).active}
-        slideshowTransition={(slideshow as { transition: string }).transition}
+        slideshowActive={slideshow.active}
+        slideshowTransition={slideshow.transition}
         {currentIndex}
       />
     {:else if fileSrc && isVideo}
@@ -260,40 +266,31 @@
         {fileSrc}
         bind:videoEl
         {onVideoLoad}
-        onVideoError={() =>
-          (
-            corruption as {
-              onVideoError: (ve: HTMLVideoElement | null) => void;
-            }
-          ).onVideoError(videoEl)}
+        onVideoError={() => corruption.onVideoError(videoEl)}
         {onMediaEnded}
         bind:cropContainerEl
-        drawActive={(markup as { drawActive: boolean }).drawActive}
+        drawActive={markup.drawActive}
         {startPan}
-        videoWrapperTransform={(style as { videoWrapperTransform: string })
-          .videoWrapperTransform}
-        videoInnerStyle={(style as { videoInnerStyle: string }).videoInnerStyle}
-        panCursor={(style as { panCursor: string }).panCursor}
+        videoWrapperTransform={style.videoWrapperTransform}
+        videoInnerStyle={style.videoInnerStyle}
+        panCursor={style.panCursor}
         {isGifVideo}
         bind:hoverZone
-        tsEditMenuVisible={(markerStore as { tsEditMenu: { visible: boolean } })
-          .tsEditMenu.visible}
+        tsEditMenuVisible={markerStore.tsEditMenu.visible}
         {timelineProps}
         {playbackProps}
-        slideshowActive={(slideshow as { active: boolean }).active}
-        slideshowTransition={(slideshow as { transition: string }).transition}
+        slideshowActive={slideshow.active}
+        slideshowTransition={slideshow.transition}
         {currentIndex}
       />
     {:else if fileSrc && isPdf}
       <PDFView
         bind:pdfContainerEl
-        loading={(pdf as { state: { loading: boolean } }).state.loading}
-        error={(pdf as { state: { error: string } }).state.error}
-        pages={(
-          pdf as { state: { pages: { canvasRef: HTMLCanvasElement | null }[] } }
-        ).state.pages}
-        scale={(pdf as { state: { scale: number } }).state.scale}
-        setScale={(pdf as { setScale: (s: number) => void }).setScale}
+        loading={pdf.state.loading}
+        error={pdf.state.error}
+        pages={pdf.state.pages}
+        scale={pdf.state.scale}
+        setScale={pdf.setScale}
       />
     {:else if fileSrc && isAudio}
       <AudioPlayer
@@ -306,15 +303,10 @@
         {coverArtSrc}
         bind:audioEl
         {onAudioLoad}
-        onAudioError={() =>
-          (
-            corruption as {
-              onAudioError: (ae: HTMLAudioElement | null) => void;
-            }
-          ).onAudioError(audioEl)}
+        onAudioError={() => corruption.onAudioError(audioEl)}
         onAudioEnded={onMediaEnded}
         bind:playing
-        loopMode={(loopModeStore as { loopMode: LoopMode }).loopMode}
+        loopMode={loopModeStore.loopMode}
         {setLoopMode}
         {muted}
         {volume}
@@ -332,38 +324,31 @@
         {rawDurationSecs}
         {isScrubbing}
         {startDiscScrubbing}
-        discScrubHandlers={(discScrubStore as any).discScrubHandlers}
+        discScrubHandlers={discScrubStore.discScrubHandlers}
         {startScrubbing}
         {clips}
-        timestamps={(markerStore as any).timestamps}
-        loopStart={(markerStore as { loopStart: number | null }).loopStart}
-        loopEnd={(markerStore as { loopEnd: number | null }).loopEnd}
-        resumePoint={(markerStore as { resumePoint: number | null })
-          .resumePoint}
-        tsEditMenuVisible={(markerStore as { tsEditMenu: { visible: boolean } })
-          .tsEditMenu.visible}
-        tsMenuOpen={(menuStore as { tsMenuOpen: boolean }).tsMenuOpen}
-        loopMenuOpen={(menuStore as { loopMenuOpen: boolean }).loopMenuOpen}
-        onTsMenuChange={(v: boolean) =>
-          ((menuStore as { tsMenuOpen: boolean }).tsMenuOpen = v)}
-        onLoopMenuChange={(v: boolean) =>
-          ((menuStore as { loopMenuOpen: boolean }).loopMenuOpen = v)}
+        timestamps={markerStore.timestamps}
+        loopStart={markerStore.loopStart}
+        loopEnd={markerStore.loopEnd}
+        resumePoint={markerStore.resumePoint}
+        tsEditMenuVisible={markerStore.tsEditMenu.visible}
+        tsMenuOpen={menuStore.tsMenuOpen}
+        loopMenuOpen={menuStore.loopMenuOpen}
+        onTsMenuChange={(v: boolean) => (menuStore.tsMenuOpen = v)}
+        onLoopMenuChange={(v: boolean) => (menuStore.loopMenuOpen = v)}
         {addTimestamp}
         {addLoopStart}
         {addLoopEnd}
-        addClipBoundary={(
-          clips as { addClipBoundaryFromMedia: (side: "start" | "end") => void }
-        ).addClipBoundaryFromMedia}
+        addClipBoundary={clips.addClipBoundaryFromMedia}
         {clearAllTimestamps}
-        clearAllSegments={(clips as { clearBoundaries: () => void })
-          .clearBoundaries}
+        clearAllSegments={clips.clearBoundaries}
         {removeResumePoint}
         {clearLoopMarkers}
         {fileList}
         bind:currentIndex
         {setMediaState}
         {navigate}
-        slideshowActive={(slideshow as { active: boolean }).active}
+        slideshowActive={slideshow.active}
         volumeSegments={VOLUME_SEGMENTS}
         {playbackUI}
         {pickAudioFile}
@@ -396,21 +381,17 @@
 </div>
 
 <FullscreenOverlay
-  isFullscreen={(viewer as { state: { isFullscreen: boolean } }).state
-    .isFullscreen && !!fileSrc}
-  fsControlsVisible={(viewer as { state: { fsControlsVisible: boolean } }).state
-    .fsControlsVisible}
-  tsEditMenuVisible={(markerStore as { tsEditMenu: { visible: boolean } })
-    .tsEditMenu.visible}
+  isFullscreen={viewer.state.isFullscreen && !!fileSrc}
+  fsControlsVisible={viewer.state.fsControlsVisible}
+  tsEditMenuVisible={markerStore.tsEditMenu.visible}
   {isAudio}
   {fileName}
   {handleViewerScroll}
-  drawActive={(markup as { drawActive: boolean }).drawActive}
+  drawActive={markup.drawActive}
   {startPan}
-  handleTouchZoom={(viewer as { handleTouchZoom: (e: TouchEvent) => void })
-    .handleTouchZoom}
-  handleTouchEnd={(viewer as { handleTouchEnd: () => void }).handleTouchEnd}
-  fsCursor={(style as { fsCursor: string }).fsCursor}
+  handleTouchZoom={viewer.handleTouchZoom}
+  handleTouchEnd={viewer.handleTouchEnd}
+  fsCursor={style.fsCursor}
   {minimizeWindow}
   {maximizeWindow}
   {closeWindow}
@@ -420,19 +401,18 @@
   {isGifVideo}
   {timelineProps}
   {playbackProps}
-  toggleFullscreen={(viewer as { toggleFullscreen: () => void })
-    .toggleFullscreen}
+  toggleFullscreen={viewer.toggleFullscreen}
   fileListLength={fileList.length}
   {currentIndex}
   {fsPillEl}
-  slideshowActive={(slideshow as { active: boolean }).active}
+  slideshowActive={slideshow.active}
   {toggleThumbnailBar}
   {handleFsPillContext}
-  sortMenuVisible={(sort as { menuVisible: boolean }).menuVisible}
-  sortMenuX={(sort as { menuX: number }).menuX}
-  sortMenuY={(sort as { menuY: number }).menuY}
-  sortMode={(sort as { mode: SortMode }).mode}
-  sortDesc={(sort as { desc: boolean }).desc}
+  sortMenuVisible={sort.menuVisible}
+  sortMenuX={sort.menuX}
+  sortMenuY={sort.menuY}
+  sortMode={sort.mode}
+  sortDesc={sort.desc}
   {onSortChange}
-  sortClose={(sort as { close: () => void }).close}
+  sortClose={sort.close}
 />

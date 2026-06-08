@@ -232,4 +232,5 @@ export function createSlideshow() {
   };
 }
 
+export type SlideshowStore = typeof slideshow;
 export const slideshow = createSlideshow();

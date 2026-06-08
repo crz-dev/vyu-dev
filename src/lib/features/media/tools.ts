@@ -4,11 +4,7 @@ import { getFileExt } from "$lib/services/files";
 import type { EditSnapshot } from "$lib/features/editing/editing.svelte";
 import type { DrawStroke } from "$lib/features/markup/markup.svelte";
 
-export async function exportCroppedImage(
-  filePath: string,
-  bounds: { left: number; top: number; right: number; bottom: number },
-  outputPath: string,
-) {
+async function loadImageAsElement(filePath: string): Promise<HTMLImageElement> {
   const { readFile } = await import("@tauri-apps/plugin-fs");
   const bytes = await readFile(filePath);
   const blob = new Blob([bytes]);
@@ -20,9 +16,36 @@ export async function exportCroppedImage(
     img.onload = () => resolve();
     img.onerror = () => reject(new Error("Failed to load image"));
   });
-
   URL.revokeObjectURL(url);
+  return img;
+}
 
+async function saveCanvasToFile(
+  canvas: HTMLCanvasElement,
+  outputPath: string,
+): Promise<void> {
+  const ext = getFileExt(outputPath) || "png";
+  const mimeType =
+    ext === "jpg" || ext === "jpeg"
+      ? "image/jpeg"
+      : ext === "webp"
+        ? "image/webp"
+        : "image/png";
+
+  const outBlob = await new Promise<Blob>((resolve) => {
+    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
+  });
+  const arrayBuffer = await outBlob.arrayBuffer();
+  const { writeFile } = await import("@tauri-apps/plugin-fs");
+  await writeFile(outputPath, new Uint8Array(arrayBuffer));
+}
+
+export async function exportCroppedImage(
+  filePath: string,
+  bounds: { left: number; top: number; right: number; bottom: number },
+  outputPath: string,
+) {
+  const img = await loadImageAsElement(filePath);
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   const cropX = Math.round(bounds.left * w);
@@ -37,21 +60,7 @@ export async function exportCroppedImage(
   if (!ctx) throw new Error("Could not create canvas context");
   ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-  const ext = getFileExt(outputPath) || "png";
-  const mimeType =
-    ext === "jpg" || ext === "jpeg"
-      ? "image/jpeg"
-      : ext === "webp"
-        ? "image/webp"
-        : "image/png";
-
-  const outBlob = await new Promise<Blob>((resolve) => {
-    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
-  });
-
-  const arrayBuffer = await outBlob.arrayBuffer();
-  const { writeFile } = await import("@tauri-apps/plugin-fs");
-  await writeFile(outputPath, new Uint8Array(arrayBuffer));
+  await saveCanvasToFile(canvas, outputPath);
 }
 
 export async function invokeGetThumbnail(path: string): Promise<string> {
@@ -219,19 +228,7 @@ export async function exportEditedImage(
   snapshot: EditSnapshot,
   outputPath: string,
 ) {
-  const { readFile } = await import("@tauri-apps/plugin-fs");
-  const bytes = await readFile(filePath);
-  const blob = new Blob([bytes]);
-  const url = URL.createObjectURL(blob);
-
-  const img = new Image();
-  img.src = url;
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Failed to load image"));
-  });
-  URL.revokeObjectURL(url);
-
+  const img = await loadImageAsElement(filePath);
   const w = img.naturalWidth;
   const h = img.naturalHeight;
 
@@ -324,21 +321,7 @@ export async function exportEditedImage(
 
   ctx.restore();
 
-  const ext = getFileExt(outputPath) || "png";
-  const mimeType =
-    ext === "jpg" || ext === "jpeg"
-      ? "image/jpeg"
-      : ext === "webp"
-        ? "image/webp"
-        : "image/png";
-
-  const outBlob = await new Promise<Blob>((resolve) => {
-    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
-  });
-
-  const arrayBuffer = await outBlob.arrayBuffer();
-  const { writeFile } = await import("@tauri-apps/plugin-fs");
-  await writeFile(outputPath, new Uint8Array(arrayBuffer));
+  await saveCanvasToFile(canvas, outputPath);
 }
 
 export async function renderMarkupOnImage(
@@ -346,18 +329,7 @@ export async function renderMarkupOnImage(
   strokes: DrawStroke[],
   outputPath: string,
 ) {
-  const { readFile } = await import("@tauri-apps/plugin-fs");
-  const bytes = await readFile(filePath);
-  const blob = new Blob([bytes]);
-  const url = URL.createObjectURL(blob);
-
-  const img = new Image();
-  img.src = url;
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Failed to load image"));
-  });
-  URL.revokeObjectURL(url);
+  const img = await loadImageAsElement(filePath);
 
   const w = img.naturalWidth;
   const h = img.naturalHeight;
@@ -394,21 +366,7 @@ export async function renderMarkupOnImage(
   }
   ctx.globalAlpha = 1;
 
-  const ext = getFileExt(outputPath) || "png";
-  const mimeType =
-    ext === "jpg" || ext === "jpeg"
-      ? "image/jpeg"
-      : ext === "webp"
-        ? "image/webp"
-        : "image/png";
-
-  const outBlob2 = await new Promise<Blob>((resolve) => {
-    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
-  });
-
-  const arrayBuffer2 = await outBlob2.arrayBuffer();
-  const { writeFile } = await import("@tauri-apps/plugin-fs");
-  await writeFile(outputPath, new Uint8Array(arrayBuffer2));
+  await saveCanvasToFile(canvas, outputPath);
 }
 
 export async function invokeExportEditedMedia(

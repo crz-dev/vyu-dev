@@ -216,4 +216,5 @@ function createViewer() {
   };
 }
 
+export type ViewerStore = typeof viewer;
 export const viewer = createViewer();

@@ -1,10 +1,6 @@
 use std::path::PathBuf;
-use std::process::Command;
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
-use crate::constants::CREATE_NO_WINDOW;
-use crate::util::{canonicalize_path, hash_path_xxh3};
+use crate::util::{canonicalize_path, ffmpeg_command, hash_path_xxh3};
 
 /// Exports the currently visible crop region of an image using ffmpeg.
 #[tauri::command]
@@ -46,8 +42,7 @@ pub fn export_cropped_media(
         return Err("Crop area is too small".into());
     }
 
-    let output = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let output = ffmpeg_command()
         .args([
             "-y",
             "-hide_banner",
@@ -68,8 +63,7 @@ pub fn export_cropped_media(
         return Ok(());
     }
 
-    let fallback = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let fallback = ffmpeg_command()
         .args([
             "-y",
             "-hide_banner",
@@ -187,8 +181,7 @@ pub fn export_edited_media(
         filters.join(",")
     };
 
-    let output = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let output = ffmpeg_command()
         .args([
             "-y",
             "-hide_banner",
@@ -209,8 +202,7 @@ pub fn export_edited_media(
         return Ok(());
     }
 
-    let fallback = Command::new("ffmpeg")
-        .creation_flags(CREATE_NO_WINDOW)
+    let fallback = ffmpeg_command()
         .args([
             "-y",
             "-hide_banner",

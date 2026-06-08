@@ -22,6 +22,8 @@ export interface PdfState {
 const RENDER_DEBOUNCE_MS = 60;
 const LOAD_TIMEOUT_MS = 45_000;
 
+export type PdfStore = ReturnType<typeof createPdf>;
+
 export function createPdf() {
   const state = $state<PdfState>({
     pages: [],

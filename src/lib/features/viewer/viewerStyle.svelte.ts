@@ -3,6 +3,8 @@ import { editing } from "$lib/features/editing/editing.svelte";
 import { markup } from "$lib/features/markup/markup.svelte";
 import { markerStore } from "$lib/features/markers/markers.svelte";
 
+export type ViewerStyleStore = ReturnType<typeof createViewerStyle>;
+
 export function createViewerStyle() {
   const imageScale = $derived(viewer.state.zoomLevel / 100);
   const cropClipPath = $derived.by(() => {

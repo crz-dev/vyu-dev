@@ -109,6 +109,7 @@ function createMenuVisibilityStore() {
   };
 }
 
+export type MenuVisibilityStore = typeof menuStore;
 export const menuStore = createMenuVisibilityStore();
 
 export interface MenuActionsDeps {

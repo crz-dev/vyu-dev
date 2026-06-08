@@ -27,6 +27,8 @@ export interface ClipsDeps {
   ensureFfprobe: () => Promise<boolean>;
 }
 
+export type ClipsStore = ReturnType<typeof createClips>;
+
 export function createClips(deps: ClipsDeps) {
   let clipBoundaries = $state<ClipBoundary[]>([]);
   let clipMarkerJustDragged = $state(false);

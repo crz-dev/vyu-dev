@@ -44,7 +44,6 @@ pub fn run() {
             prepare_video_display,
             extract_cover_art,
             copy_image_to_clipboard,
-            check_media_integrity,
             fix_media,
             print_file,
             send_bluetooth,

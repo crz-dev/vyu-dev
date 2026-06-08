@@ -1,15 +1,13 @@
 use std::fs;
 use std::path::{Path, PathBuf};
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 use image::ImageEncoder;
 use tauri::Manager;
 
 use crate::constants::{
-    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, CREATE_NO_WINDOW, FFMPEG_IMAGE_EXTS_RUST,
+    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, FFMPEG_IMAGE_EXTS_RUST,
     RAW_IMAGE_EXTS_RUST, REMUX_VIDEO_EXTS_RUST,
 };
-use crate::util::{check_cache, hash_path_xxh3};
+use crate::util::{check_cache, ffmpeg_command, hash_path_xxh3};
 
 fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     let dir = app
@@ -58,8 +56,7 @@ pub async fn prepare_display_image(
 
     tauri::async_runtime::spawn_blocking(move || {
         if is_ffmpeg {
-            let status = std::process::Command::new("ffmpeg")
-                .creation_flags(CREATE_NO_WINDOW)
+            let status = ffmpeg_command()
                 .args([
                     "-y",
                     "-hide_banner",
@@ -138,8 +135,7 @@ pub async fn prepare_video_display(
     let cached_clone = cached_mp4.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
-        let status = std::process::Command::new("ffmpeg")
-            .creation_flags(CREATE_NO_WINDOW)
+        let status = ffmpeg_command()
             .args([
                 "-y",
                 "-hide_banner",

@@ -41,4 +41,5 @@ function createLoopModeStore() {
   };
 }
 
+export type LoopModeStoreType = typeof loopModeStore;
 export const loopModeStore = createLoopModeStore();

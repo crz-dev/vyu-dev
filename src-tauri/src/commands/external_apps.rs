@@ -111,7 +111,7 @@ pub fn set_lock_screen(path: String) -> Result<(), String> {
             let open_err = windows::Win32::System::Registry::RegOpenKeyExW(
                 windows::Win32::System::Registry::HKEY_CURRENT_USER,
                 windows::core::w!(r"Software\Microsoft\Windows\CurrentVersion\Lock Screen"),
-                0,
+                Some(0),
                 windows::Win32::System::Registry::KEY_SET_VALUE,
                 &mut key,
             );
@@ -127,7 +127,7 @@ pub fn set_lock_screen(path: String) -> Result<(), String> {
             let set_err = windows::Win32::System::Registry::RegSetValueExW(
                 key,
                 windows::core::w!("Wallpaper"),
-                0,
+                Some(0),
                 windows::Win32::System::Registry::REG_SZ,
                 Some(data_bytes),
             );

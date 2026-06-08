@@ -38,12 +38,6 @@ pub struct SavedWindowState {
 }
 
 #[derive(serde::Serialize)]
-pub struct MediaIntegrity {
-    pub corrupted: bool,
-    pub reason: String,
-}
-
-#[derive(serde::Serialize)]
 pub struct FixResult {
     pub success: bool,
     pub output_path: String,
