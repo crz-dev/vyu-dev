@@ -75,7 +75,6 @@ export function createNavigation(deps: NavigationDeps) {
       } else {
         editing.cleanup();
         markup.cleanup();
-        markup.cleanup();
       }
       menuStore.editMenuVisible = false;
     },
@@ -194,6 +193,7 @@ export function createNavigation(deps: NavigationDeps) {
     clearTimeout(deps.getPendingPlay());
     markerStore.resumeTooltipVisible = false;
     editing.cleanup();
+    markup.cleanup();
     viewer.state.zoomLevel = 100;
     viewer.state.baseZoomLevel = 100;
     viewer.state.translateX = 0;

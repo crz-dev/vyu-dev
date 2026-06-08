@@ -64,8 +64,7 @@
         </h2>
 
         <p class="about-desc">
-          A media viewer actually built for this decade — editing, format
-          support, zero telemetry.
+          A modern media viewer actually built for this decade. And for you.
         </p>
 
         <div class="about-panel">
