@@ -101,9 +101,7 @@ A few choices shaped Vyu's architecture. Worth knowing before you start changing
 | PDF rendering            | pdfjs-dist (code-split, dynamic import) |
 | State persistence        | localStorage                            |
 
-## Getting started
-
-**Prerequisites**
+## Prerequisites
 
 - **Rust toolchain** — [rustup.rs](https://rustup.rs)
 - **Node.js + pnpm** — `npm install -g pnpm` or [corepack](https://nodejs.org/api/corepack.html)
@@ -142,7 +140,7 @@ src-tauri/              # Backend (Rust)
 └── capabilities/       # Tauri 2 capability permissions
 ```
 
-Module ownership map lives in [ARCHITECTURE.md](./ARCHITECTURE.md).
+Module ownership map lives in [BLUEPRINT.md](./BLUEPRINT.md).
 
 ## Contributing
 
@@ -151,10 +149,3 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Open an issue before sending a PR for 
 ## License
 
 Vyu is in alpha. The [Vyu Alpha License](./LICENSE) lets you read and learn from the source, but modifications, redistribution, and reuse in other projects aren't permitted yet. Moving to GPL-3.0 with the first stable release.
-
-## Roadmap
-
-- SRT / subtitle overlay for videos
-- Touchpad gesture navigation
-- Linux support
-- Mac support

@@ -3,10 +3,13 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-07
 
 ## Last change
-Updated README tagline: "A media viewer actually built for this decade" → "A media viewer actually built for this decade — and for you."
+Renamed ARCHITECTURE.md → BLUEPRINT.md. Updated all cross-references in AGENTS.md and README.md.
 
 ## Status
-- README.md: tagline updated
+- AGENTS.md: reference updated to BLUEPRINT.md
+- README.md: reference updated, section headers consolidated (Getting Started / Prerequisites), Roadmap section removed
+- ARCHITECTURE.md: deleted (moved to BLUEPRINT.md)
+- BLUEPRINT.md: new file (identical content, new name)
 
 ## Next
 Pick up the next open issue or feature request.
@@ -15,7 +18,7 @@ Pick up the next open issue or feature request.
 - None.
 
 ## Current commit
-style: update README tagline
+refactor: rename ARCHITECTURE.md to BLUEPRINT.md
 
 ## Architecture update
-None — no new modules added.
+None — no new modules added. File renamed, content unchanged.
