@@ -1,6 +1,6 @@
 <div align="center">
 
-# View **Your** Universe (Vyu)
+# View YOUR Universe (Vyu)
 
 **A media viewer actually built for this decade.**
 
