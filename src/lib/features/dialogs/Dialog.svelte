@@ -201,6 +201,7 @@
 
   function printPdf() {
     window.print();
+    showToast({ message: "Print dialog opened", color: "blue" });
   }
 
   // Share: Send to handlers
@@ -320,7 +321,10 @@
         await invokeDeleteFile(filePath);
       } catch (e) {
         console.error("Failed to delete original:", e);
-        showToast({ message: "Converted but couldn't delete original", color: "red" });
+        showToast({
+          message: "Converted but couldn't delete original",
+          color: "red",
+        });
       }
     }
     closeShare();
@@ -469,7 +473,10 @@
         await invokeDeleteFile(filePath);
       } catch (e) {
         console.error("Failed to delete original:", e);
-        showToast({ message: "Converted but couldn't delete original", color: "red" });
+        showToast({
+          message: "Converted but couldn't delete original",
+          color: "red",
+        });
       }
     }
     closeShare();
@@ -1270,8 +1277,8 @@
             onchange={(e) => updateDeletePermanently(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={deletePermanently}
-            ><span class="toggle-thumb"></span
-          ></span>
+            ><span class="toggle-thumb"></span></span
+          >
         </label>
         <label class="toggle-row">
           <span class="toggle-label"
@@ -1284,7 +1291,9 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              ><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" /><path
+              ><path
+                d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"
+              /><path
                 d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
               /><line x1="1" y1="1" x2="23" y2="23" /></svg
             >Don't ask again</span
@@ -1295,8 +1304,8 @@
             onchange={(e) => updateDeleteNoAsk(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={deleteNoAsk}
-            ><span class="toggle-thumb"></span
-          ></span>
+            ><span class="toggle-thumb"></span></span
+          >
         </label>
       </div>
       <div class="delete-actions-card">
@@ -1310,8 +1319,7 @@
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path d="M18 6L6 18M6 6l12 12" /></svg
+              stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg
             >Cancel
           </button>
           <button class="delete-confirm-btn" onclick={performDelete}>

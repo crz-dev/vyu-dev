@@ -16,7 +16,8 @@
             <div class="toast-actions">
               {#each toast.actions as action}
                 <button
-                  class="toast-action-btn toast-action-{action.variant ?? 'default'}"
+                  class="toast-action-btn toast-action-{action.variant ??
+                    'default'}"
                   onclick={action.onClick}
                 >
                   {#if action.icon}{@html action.icon}{/if}

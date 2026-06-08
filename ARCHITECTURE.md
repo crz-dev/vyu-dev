@@ -29,7 +29,7 @@ Find the closest existing module before creating anything new.
 | Extension lists, loop modes, time constants     | `shared/constants.ts`                                                                                    |
 | Domain types (`VideoMarker`, `ClipBoundary`, …) | `shared/types.ts`                                                                                        |
 | Keybinds dispatch                               | `shared/keybinds.ts`                                                                                     |
-| Toast system (store + component)                | `features/toast/toast.svelte.ts`, `shared/Toast.svelte`                                                 |
+| Toast system (store + component)                | `features/toast/toast.svelte.ts`, `shared/Toast.svelte`                                                  |
 | Media-kind detection                            | `shared/media-kind.ts`                                                                                   |
 | Generic primitives (Shell, Tooltip, Marquee)    | `shared/*.svelte`                                                                                        |
 | Dialogs (settings, about, help, feedback, …)    | `features/dialogs/*`                                                                                     |

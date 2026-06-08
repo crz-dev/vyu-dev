@@ -6,6 +6,7 @@
     invokeInstallFfmpeg,
     invokeCleanupTempFolder,
   } from "$lib/features/media/tools";
+  import { showToast } from "$lib/features/toast/toast.svelte";
 
   let {
     settingsOpen,
@@ -41,23 +42,7 @@
     }
   });
 
-  let appInfoTimeout: ReturnType<typeof setTimeout> | null = null;
   let resetConfirmTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  $effect(() => {
-    if (appInfoCopied) {
-      appInfoTimeout = setTimeout(() => {
-        appInfoCopied = false;
-        appInfoTimeout = null;
-      }, 2000);
-    }
-    return () => {
-      if (appInfoTimeout) {
-        clearTimeout(appInfoTimeout);
-        appInfoTimeout = null;
-      }
-    };
-  });
 
   $effect(() => {
     if (resetConfirming) {
@@ -277,9 +262,9 @@
       ]);
       const text = `Vyu v${version} · Tauri ${tauriVersion} · ${navigator.platform}`;
       await navigator.clipboard.writeText(text);
-      appInfoCopied = true;
+      showToast({ message: "App info copied", color: "green" });
     } catch {
-      // clipboard write may fail in some contexts
+      showToast({ message: "Failed to copy app info", color: "red" });
     }
   }
 
@@ -323,7 +308,6 @@
   let ffmpegChecking = $state(false);
   let ffmpegStatusText = $state("");
   let ffmpegInstalling = $state(false);
-  let appInfoCopied = $state(false);
   let cleaningTempFolder = $state(false);
   let flagsOpen = $state(false);
   let resetConfirming = $state(false);
@@ -2375,10 +2359,18 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleCheckFfmpeg} disabled={ffmpegChecking}>
+                <button
+                  class="settings-action-btn"
+                  onclick={handleCheckFfmpeg}
+                  disabled={ffmpegChecking}
+                >
                   {ffmpegChecking ? "Checking\u2026" : "Check"}
                 </button>
-                <button class="settings-action-btn" onclick={handleReinstallFfmpeg} disabled={ffmpegInstalling}>
+                <button
+                  class="settings-action-btn"
+                  onclick={handleReinstallFfmpeg}
+                  disabled={ffmpegInstalling}
+                >
                   {ffmpegInstalling ? "Installing\u2026" : "Reinstall"}
                 </button>
                 {#if ffmpegStatusText}
@@ -2403,8 +2395,7 @@
                     y1="16"
                     x2="12"
                     y2="12"
-                  /><line x1="12" y1="8" x2="12.01"
-                  y2="8" /></svg
+                  /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
                 >
                 <div class="settings-label-text">
                   <span class="settings-label">App Info</span>
@@ -2415,7 +2406,7 @@
               </div>
               <div class="settings-control">
                 <button class="settings-action-btn" onclick={handleCopyAppInfo}>
-                  {appInfoCopied ? "Copied" : "Copy"}
+                  Copy
                 </button>
               </div>
             </div>
@@ -2443,7 +2434,11 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleClearThumbnailCache} disabled={clearingThumbnailCache}>
+                <button
+                  class="settings-action-btn"
+                  onclick={handleClearThumbnailCache}
+                  disabled={clearingThumbnailCache}
+                >
                   {clearingThumbnailCache ? "Clearing\u2026" : "Clear"}
                 </button>
               </div>
@@ -2468,13 +2463,15 @@
                 >
                 <div class="settings-label-text">
                   <span class="settings-label">Temp Folder</span>
-                  <span class="settings-hint"
-                    >Temporary processing files</span
-                  >
+                  <span class="settings-hint">Temporary processing files</span>
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleCleanTempFolder} disabled={cleaningTempFolder}>
+                <button
+                  class="settings-action-btn"
+                  onclick={handleCleanTempFolder}
+                  disabled={cleaningTempFolder}
+                >
                   {cleaningTempFolder ? "Cleaning\u2026" : "Clean"}
                 </button>
               </div>
@@ -2511,7 +2508,9 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleOpenDevTools}>Open</button>
+                <button class="settings-action-btn" onclick={handleOpenDevTools}
+                  >Open</button
+                >
               </div>
             </div>
             <div class="settings-row">
@@ -2527,30 +2526,41 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><line x1="8" y1="6" x2="21" y2="6" /><line
-                    x1="8" y1="12" x2="21" y2="12" /><line
-                    x1="8" y1="18" x2="21" y2="18" /><line
-                    x1="3" y1="6" x2="3.01" y2="6" /><line
-                    x1="3" y1="12" x2="3.01" y2="12" /><line
-                    x1="3" y1="18" x2="3.01" y2="18"
+                    x1="8"
+                    y1="12"
+                    x2="21"
+                    y2="12"
+                  /><line x1="8" y1="18" x2="21" y2="18" /><line
+                    x1="3"
+                    y1="6"
+                    x2="3.01"
+                    y2="6"
+                  /><line x1="3" y1="12" x2="3.01" y2="12" /><line
+                    x1="3"
+                    y1="18"
+                    x2="3.01"
+                    y2="18"
                   /></svg
                 >
                 <div class="settings-label-text">
                   <span class="settings-label">Toggle Flags</span>
-                  <span class="settings-hint"
-                    >View all localStorage keys</span
-                  >
+                  <span class="settings-hint">View all localStorage keys</span>
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleToggleFlags}>{flagsOpen ? "Close" : "View"}</button>
+                <button class="settings-action-btn" onclick={handleToggleFlags}
+                  >{flagsOpen ? "Close" : "View"}</button
+                >
               </div>
             </div>
             {#if flagsOpen}
               <div class="flags-list">
-                {#each Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).filter((k): k is string => k !== null && k.startsWith("vyu-")) as key}
+                {#each Array.from( { length: localStorage.length }, (_, i) => localStorage.key(i), ).filter((k): k is string => k !== null && k.startsWith("vyu-")) as key}
                   <div class="flag-row">
                     <code>{key}</code>
-                    <code>{(localStorage.getItem(key) ?? "").slice(0, 120)}</code>
+                    <code
+                      >{(localStorage.getItem(key) ?? "").slice(0, 120)}</code
+                    >
                   </div>
                 {/each}
               </div>
@@ -2579,7 +2589,11 @@
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn red" onclick={handleResetConfirm}>{resetConfirming ? "Confirm?" : "Reset"}</button>
+                <button
+                  class="settings-action-btn red"
+                  onclick={handleResetConfirm}
+                  >{resetConfirming ? "Confirm?" : "Reset"}</button
+                >
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invokeRenameFile } from "$lib/features/media/tools";
+  import { showToast } from "$lib/features/toast/toast.svelte";
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
   import Marquee from "$lib/shared/Marquee.svelte";
 
@@ -70,7 +71,7 @@
 
     // Sanitize: reject names containing path separators or traversal
     if (/[/\\]/.test(newName) || newName === ".." || newName === ".") {
-      console.error("Rename rejected: invalid characters in filename");
+      showToast({ message: "Invalid filename", color: "red" });
       return;
     }
 
@@ -80,15 +81,16 @@
 
     // Ensure the resolved path stays within the original directory
     if (!newPath.startsWith(dir + sep)) {
-      console.error("Rename rejected: path traversal detected");
+      showToast({ message: "Invalid filename", color: "red" });
       return;
     }
 
     try {
       await invokeRenameFile(filePath, newPath);
       onRenamed(newPath);
+      showToast({ message: "File renamed", color: "green" });
     } catch (e) {
-      console.error("Rename failed:", e);
+      showToast({ message: "Rename failed", color: "red" });
     }
   }
 

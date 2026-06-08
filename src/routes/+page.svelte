@@ -45,6 +45,7 @@
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
   import { createMarkupActions } from "$lib/features/markup/markupActions";
+  import { showToast } from "$lib/features/toast/toast.svelte";
   import Shell from "$lib/shared/Shell.svelte";
   import { createContextActionFns } from "$lib/features/dialogs/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/dialogs/propertiesActions";
@@ -155,19 +156,16 @@
     closeSlideshowMenu,
   } = menuActions;
   const menuBindings = createMenuBindings();
-  const {
-    runInstallFfmpeg,
-    runRefreshFfprobe,
-    runLoadMediaProperties,
-  } = createFfmpegHelpers({
-    filePath: () => filePath,
-    setMediaProps: (v) => (mediaProps = v),
-    setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-    setFfmpegInstallError: (v) => (ffmpegInstallError = v),
-    setFfmpegInstalling: (v) => (ffmpegInstalling = v),
-    setFfprobeChecked: (v) => (ffprobeChecked = v),
-    setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-  });
+  const { runInstallFfmpeg, runRefreshFfprobe, runLoadMediaProperties } =
+    createFfmpegHelpers({
+      filePath: () => filePath,
+      setMediaProps: (v) => (mediaProps = v),
+      setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+      setFfmpegInstallError: (v) => (ffmpegInstallError = v),
+      setFfmpegInstalling: (v) => (ffmpegInstalling = v),
+      setFfprobeChecked: (v) => (ffprobeChecked = v),
+      setFfprobeAvailable: (v) => (ffprobeAvailable = v),
+    });
 
   // Feature modules: viewer and media foundation
   const style = createViewerStyle();
@@ -428,6 +426,7 @@
       clips.clearBoundaries();
       removeResumePoint();
       clearLoopMarkers();
+      showToast({ message: "Markers cleared", color: "yellow" });
     },
     toggleTimer,
     currentTimeDisplay,

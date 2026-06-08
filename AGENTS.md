@@ -35,7 +35,6 @@ See `ARCHITECTURE.md` for module map and where new code goes.
 - `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` must stay in sync with `*_RUST` constants in `src-tauri/src/lib.rs`.
 - Cache: thumbnails → `%LOCALAPPDATA%/vyu/cache/thumbnails/`, displays → `%LOCALAPPDATA%/vyu/cache/displays/`, temp → `%TEMP%/Vyu-temp/`.
 - `pdfjs-dist` is dynamically imported — only loads when a PDF opens.
-- When you need to ask something, use the `questions` tool instead of asking directly in conversation.
 
 ## Style
 
@@ -55,6 +54,13 @@ See `ARCHITECTURE.md` for module map and where new code goes.
 
 All Tauri commands in `src-tauri/src/lib.rs` — known wart, will split by domain later.
 Covers: thumbnails, display image prep (TIFF/PSD/JXL/RAW/HEIC → PNG), video remuxing, clip extraction, conversion, compression, crop/edit, integrity check, file ops, window state.
+
+## Agent Rules
+
+- Reply `Done.` and stop. No follow-up questions unless the task requires it.
+- When you need to ask something/require a design decision, use the `questions` tool.
+- No re-checking completed steps. No summarizing unless asked.
+- `Token-efficient` — no redundant reads, no restating known context.
 
 ## Hard rules — repeated for recency
 

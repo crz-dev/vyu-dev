@@ -17,6 +17,7 @@ import {
   loadMarkupCustomColors,
   saveMarkupCustomColors,
 } from "$lib/services/storage";
+import { showToast } from "$lib/features/toast/toast.svelte";
 
 export interface DrawPoint {
   x: number;
@@ -86,8 +87,12 @@ function createMarkupStore() {
   }
 
   function undoLastStroke() {
-    if (strokes.length === 0) return;
+    if (strokes.length === 0) {
+      showToast({ message: "Nothing to undo", color: "yellow" });
+      return;
+    }
     strokes = strokes.slice(0, -1);
+    showToast({ message: "Stroke undone", color: "blue" });
   }
 
   function clearAllStrokes() {

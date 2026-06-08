@@ -1,6 +1,9 @@
 import { onMount } from "svelte";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { invokeGetClipboardFilePath, invokeCopyFile } from "$lib/features/media/tools";
+import {
+  invokeGetClipboardFilePath,
+  invokeCopyFile,
+} from "$lib/features/media/tools";
 import { theme } from "$lib/features/theme/theme.svelte";
 import {
   cleanupStaleStorageEntries,
@@ -131,7 +134,10 @@ export function setupInit(s: InitState) {
                       showToast({ message: "File saved", color: "green" });
                     } catch (err) {
                       console.error("Failed to save file:", err);
-                      showToast({ message: "Failed to save file", color: "red" });
+                      showToast({
+                        message: "Failed to save file",
+                        color: "red",
+                      });
                     }
                   },
                 },

@@ -250,7 +250,12 @@ export function createEditActions(deps: EditActionsDeps) {
   }
 
   function handleUndo() {
+    if (!editing.getCanUndo()) {
+      showToast({ message: "Nothing to undo", color: "yellow" });
+      return;
+    }
     editing.undo();
+    showToast({ message: "Edit undone", color: "blue" });
   }
 
   async function handleReset() {

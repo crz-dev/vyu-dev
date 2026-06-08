@@ -8,6 +8,7 @@
   import Marquee from "$lib/shared/Marquee.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
+  import { showToast } from "$lib/features/toast/toast.svelte";
 
   let {
     fileName,
@@ -177,6 +178,7 @@
     clearAllSegments();
     removeResumePoint();
     clearLoopMarkers();
+    showToast({ message: "Markers cleared", color: "yellow" });
   }
 
   function handleVolumeRightClick(e: MouseEvent) {
