@@ -2061,6 +2061,11 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .edit-menu-btn.yellow:hover {
   background: var(--yellow-bg-active);
 }
+.edit-menu-btn.yellow.active {
+  background: var(--yellow-bg-strong);
+  border-color: var(--yellow-border-strong);
+  color: var(--yellow-soft);
+}
 .edit-menu-btn.green {
   background: var(--green-bg-default);
   border-color: var(--green-border);

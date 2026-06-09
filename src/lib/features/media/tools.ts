@@ -8,6 +8,8 @@ import type {
   PlacedShape,
   PlacedLine,
   FreehandStroke,
+  HighlightFreehand,
+  HighlightStraight,
 } from "$lib/features/markup/markup.svelte";
 
 async function loadImageAsElement(filePath: string): Promise<HTMLImageElement> {
@@ -355,6 +357,23 @@ export async function renderMarkupOnImage(
       renderShape(ctx, stroke, w, h);
     } else if (stroke.type === "line") {
       renderLine(ctx, stroke, w, h);
+    } else if (stroke.type === "highlight") {
+      if (stroke.mode === "free") {
+        renderHighlightFreehand(ctx, stroke, w, h);
+      } else {
+        renderHighlightStraightBar(
+          ctx,
+          stroke.x1,
+          stroke.y1,
+          stroke.x2,
+          stroke.y2,
+          w,
+          h,
+          stroke.color,
+          stroke.thickness,
+          stroke.opacity,
+        );
+      }
     }
   }
   ctx.globalAlpha = 1;
@@ -408,6 +427,68 @@ function renderFreehand(
     }
     ctx.stroke();
   }
+  ctx.globalAlpha = 1;
+}
+
+function renderHighlightFreehand(
+  ctx: CanvasRenderingContext2D,
+  stroke: HighlightFreehand,
+  w: number,
+  h: number,
+) {
+  const pts = stroke.points;
+  if (pts.length < 1) return;
+  ctx.beginPath();
+  ctx.globalAlpha = stroke.opacity;
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = stroke.thickness;
+  ctx.lineCap = "butt";
+  ctx.lineJoin = "miter";
+
+  if (pts.length === 1) {
+    ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
+    ctx.fillStyle = stroke.color;
+    ctx.fill();
+  } else {
+    ctx.moveTo(pts[0].x * w, pts[0].y * h);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x * w, pts[i].y * h);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function renderHighlightStraightBar(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  w: number,
+  h: number,
+  color: string,
+  thickness: number,
+  opacity: number,
+) {
+  const px1 = x1 * w;
+  const py1 = y1 * h;
+  const px2 = x2 * w;
+  const py2 = y2 * h;
+  const angle = Math.atan2(py2 - py1, px2 - px1);
+  const halfThick = thickness / 2;
+  const cos = Math.cos(angle + Math.PI / 2);
+  const sin = Math.sin(angle + Math.PI / 2);
+
+  ctx.beginPath();
+  ctx.globalAlpha = opacity;
+  ctx.fillStyle = color;
+  ctx.moveTo(px1 + cos * halfThick, py1 + sin * halfThick);
+  ctx.lineTo(px2 + cos * halfThick, py2 + sin * halfThick);
+  ctx.lineTo(px2 - cos * halfThick, py2 - sin * halfThick);
+  ctx.lineTo(px1 - cos * halfThick, py1 - sin * halfThick);
+  ctx.closePath();
+  ctx.fill();
   ctx.globalAlpha = 1;
 }
 

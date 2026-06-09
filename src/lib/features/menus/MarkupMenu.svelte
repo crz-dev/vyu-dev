@@ -1,6 +1,10 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
-  import { markup, DRAW_COLORS } from "$lib/features/markup/markup.svelte";
+  import {
+    markup,
+    DRAW_COLORS,
+    HIGHLIGHT_COLORS,
+  } from "$lib/features/markup/markup.svelte";
 
   let {
     visible,
@@ -27,6 +31,7 @@
   let drawRowOpen = $state(false);
   let textRowOpen = $state(false);
   let shapesRowOpen = $state(false);
+  let highlightModeRowOpen = $state(false);
   let pinned = $state(false);
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
 
@@ -39,6 +44,17 @@
   let isOpacityDragging = $state(false);
   let localOpacity = $state(1);
 
+  // Highlight sub-tool state
+  let activeHighlightTool: "color" | "thickness" | "opacity" | null = $state(
+    null,
+  );
+  let highlightThicknessTrackEl: HTMLDivElement | null = $state(null);
+  let isHighlightThicknessDragging = $state(false);
+  let localHighlightThickness = $state(20);
+  let highlightOpacityTrackEl: HTMLDivElement | null = $state(null);
+  let isHighlightOpacityDragging = $state(false);
+  let localHighlightOpacity = $state(0.4);
+
   $effect(() => {
     if (!visible) {
       if (openTimeout) clearTimeout(openTimeout);
@@ -48,8 +64,10 @@
       drawRowOpen = false;
       textRowOpen = false;
       shapesRowOpen = false;
+      highlightModeRowOpen = false;
       pinned = false;
       activeDrawTool = null;
+      activeHighlightTool = null;
       markup.setActiveTool("freehand");
       markup.setRoundedCorner(false);
       markup.setPathMode(false);
@@ -64,6 +82,14 @@
     localOpacity = markup.drawOpacity;
   });
 
+  $effect(() => {
+    localHighlightThickness = markup.highlightThickness;
+  });
+
+  $effect(() => {
+    localHighlightOpacity = markup.highlightOpacity;
+  });
+
   function closeAllRows() {
     eraserRowOpen = false;
     highlightRowOpen = false;
@@ -76,6 +102,10 @@
     activeDrawTool = null;
   }
 
+  function closeHighlightSubTools() {
+    activeHighlightTool = null;
+  }
+
   function toggleEraser() {
     if (eraserRowOpen) {
       closeAllRows();
@@ -83,6 +113,7 @@
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
       closeDrawSubTools();
+      closeHighlightSubTools();
       openTimeout = setTimeout(() => {
         eraserRowOpen = true;
         openTimeout = null;
@@ -93,12 +124,17 @@
   function toggleHighlight() {
     if (highlightRowOpen) {
       closeAllRows();
+      closeHighlightSubTools();
+      markup.highlightActive = false;
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
       closeDrawSubTools();
+      closeHighlightSubTools();
+      markup.drawActive = false;
       openTimeout = setTimeout(() => {
         highlightRowOpen = true;
+        markup.highlightActive = true;
         openTimeout = null;
       }, 100);
     }
@@ -113,6 +149,8 @@
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
       closeDrawSubTools();
+      closeHighlightSubTools();
+      markup.highlightActive = false;
       openTimeout = setTimeout(() => {
         drawRowOpen = true;
         markup.drawActive = true;
@@ -128,6 +166,7 @@
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
       closeDrawSubTools();
+      closeHighlightSubTools();
       openTimeout = setTimeout(() => {
         textRowOpen = true;
         openTimeout = null;
@@ -153,6 +192,24 @@
       activeDrawTool = null;
     } else {
       activeDrawTool = tool;
+    }
+  }
+
+  function toggleHighlightSubTool(tool: "color" | "thickness" | "opacity") {
+    if (activeHighlightTool === tool) {
+      activeHighlightTool = null;
+    } else {
+      activeHighlightTool = tool;
+      highlightModeRowOpen = false;
+    }
+  }
+
+  function toggleHighlightMode() {
+    if (highlightModeRowOpen) {
+      highlightModeRowOpen = false;
+    } else {
+      highlightModeRowOpen = true;
+      activeHighlightTool = null;
     }
   }
 
@@ -220,6 +277,97 @@
   }
 
   const opacityScrubberPct = $derived((localOpacity / 1) * 100);
+
+  // Highlight thickness slider
+  function updateHighlightThicknessFromX(clientX: number) {
+    if (!highlightThicknessTrackEl) return;
+    const rect = highlightThicknessTrackEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const val = Math.round(pct * 40);
+    localHighlightThickness = val;
+    markup.setHighlightThickness(val);
+  }
+
+  function handleHighlightThicknessPointerDown(e: PointerEvent) {
+    if (!highlightThicknessTrackEl) return;
+    isHighlightThicknessDragging = true;
+    highlightThicknessTrackEl.setPointerCapture(e.pointerId);
+    updateHighlightThicknessFromX(e.clientX);
+  }
+
+  function handleHighlightThicknessPointerMove(e: PointerEvent) {
+    if (!isHighlightThicknessDragging || !highlightThicknessTrackEl) return;
+    e.preventDefault();
+    updateHighlightThicknessFromX(e.clientX);
+  }
+
+  function handleHighlightThicknessPointerUp(e: PointerEvent) {
+    if (!isHighlightThicknessDragging || !highlightThicknessTrackEl) return;
+    isHighlightThicknessDragging = false;
+    highlightThicknessTrackEl.releasePointerCapture(e.pointerId);
+  }
+
+  const highlightThicknessScrubberPct = $derived(
+    (localHighlightThickness / 40) * 100,
+  );
+
+  // Highlight opacity slider
+  function updateHighlightOpacityFromX(clientX: number) {
+    if (!highlightOpacityTrackEl) return;
+    const rect = highlightOpacityTrackEl.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const val = Math.round(pct * 100) / 100;
+    const clamped = Math.max(0, Math.min(0.8, val));
+    localHighlightOpacity = clamped;
+    markup.setHighlightOpacity(clamped);
+  }
+
+  function handleHighlightOpacityPointerDown(e: PointerEvent) {
+    if (!highlightOpacityTrackEl) return;
+    isHighlightOpacityDragging = true;
+    highlightOpacityTrackEl.setPointerCapture(e.pointerId);
+    updateHighlightOpacityFromX(e.clientX);
+  }
+
+  function handleHighlightOpacityPointerMove(e: PointerEvent) {
+    if (!isHighlightOpacityDragging || !highlightOpacityTrackEl) return;
+    e.preventDefault();
+    updateHighlightOpacityFromX(e.clientX);
+  }
+
+  function handleHighlightOpacityPointerUp(e: PointerEvent) {
+    if (!isHighlightOpacityDragging || !highlightOpacityTrackEl) return;
+    isHighlightOpacityDragging = false;
+    highlightOpacityTrackEl.releasePointerCapture(e.pointerId);
+  }
+
+  const highlightOpacityScrubberPct = $derived(
+    (localHighlightOpacity / 0.8) * 100,
+  );
+
+  const highlightThicknessMarkers = [
+    { val: 0, pct: 0 },
+    { val: 20, pct: 50 },
+    { val: 40, pct: 100 },
+  ];
+
+  const highlightOpacityMarkers = [
+    { val: 0, pct: 0 },
+    { val: 0.4, pct: 50 },
+    { val: 0.8, pct: 100 },
+  ];
+
+  function jumpToHighlightThickness(val: number) {
+    localHighlightThickness = val;
+    markup.setHighlightThickness(val);
+  }
+
+  function jumpToHighlightOpacity(val: number) {
+    localHighlightOpacity = val;
+    markup.setHighlightOpacity(val);
+  }
 
   const thicknessMarkers = [
     { val: 1, pct: 0 },
@@ -433,6 +581,7 @@
           </button>
           <button
             class="edit-menu-btn yellow"
+            class:active={markup.highlightActive}
             class:sub-open={eraserRowOpen || drawRowOpen || textRowOpen}
             onclick={toggleHighlight}
           >
@@ -587,7 +736,11 @@
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            <button class="edit-menu-btn yellow sub">
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeHighlightTool === "color"}
+              onclick={() => toggleHighlightSubTool("color")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -618,7 +771,11 @@
               </svg>
               <span>Color</span>
             </button>
-            <button class="edit-menu-btn yellow sub">
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeHighlightTool === "thickness"}
+              onclick={() => toggleHighlightSubTool("thickness")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -634,7 +791,11 @@
               </svg>
               <span>Thickness</span>
             </button>
-            <button class="edit-menu-btn yellow sub">
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={activeHighlightTool === "opacity"}
+              onclick={() => toggleHighlightSubTool("opacity")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -649,7 +810,12 @@
               </svg>
               <span>Opacity</span>
             </button>
-            <button class="edit-menu-btn yellow sub">
+            <button
+              class="edit-menu-btn yellow sub"
+              class:active={highlightModeRowOpen}
+              onclick={toggleHighlightMode}
+              data-tooltip="Mode"
+            >
               <svg
                 width="11"
                 height="11"
@@ -666,6 +832,238 @@
               <span>Mode</span>
             </button>
           </div>
+
+          {#if highlightModeRowOpen}
+            <div class="edit-menu-separator"></div>
+            <div
+              class="edit-menu-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <button
+                class="edit-menu-btn yellow sub"
+                class:active={markup.highlightMode === "free"}
+                onclick={() => markup.setHighlightMode("free")}
+                data-tooltip="Freehand"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 14 Q6 8 9 14 T15 14 T21 14" />
+                </svg>
+                <span>Free</span>
+              </button>
+              <button
+                class="edit-menu-btn yellow sub"
+                class:active={markup.highlightMode === "straight"}
+                onclick={() => markup.setHighlightMode("straight")}
+                data-tooltip="Straight"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="4" y1="20" x2="20" y2="4" />
+                </svg>
+                <span>Straight</span>
+              </button>
+            </div>
+          {/if}
+
+          {#if activeHighlightTool === "color"}
+            <div
+              class="markup-color-cards-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <div class="markup-color-card">
+                {#each HIGHLIGHT_COLORS as color, i}
+                  <button
+                    class="markup-color-swatch"
+                    class:active={markup.highlightColor === color}
+                    style="background: {color}"
+                    onclick={() => {
+                      markup.setHighlightColor(color);
+                    }}
+                    aria-label={`Color ${i + 1}`}
+                  ></button>
+                {/each}
+              </div>
+              <div class="markup-color-card">
+                {#each markup.highlightCustomColors as color, i}
+                  <label
+                    class="markup-color-swatch"
+                    class:markup-color-swatch-empty={!color}
+                    class:active={markup.highlightColor === color && color !== ""}
+                    style={color ? `background: ${color}` : ""}
+                    aria-label={`Custom color ${i + 1}`}
+                    oncontextmenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      markup.setHighlightCustomColor(i, "");
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={color || "#f5c518"}
+                      oninput={(e) => {
+                        markup.setHighlightCustomColor(
+                          i,
+                          (e.target as HTMLInputElement).value,
+                        );
+                      }}
+                      class="markup-color-native-input"
+                    />
+                  </label>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          {#if activeHighlightTool === "thickness"}
+            <div
+              class="markup-slider-panel"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <div
+                class="color-slider-track"
+                bind:this={highlightThicknessTrackEl}
+                style="--track-thickness: {Math.max(2, localHighlightThickness)}px"
+                role="slider"
+                tabindex="0"
+                aria-valuemin={0}
+                aria-valuemax={40}
+                aria-valuenow={localHighlightThickness}
+                aria-label="Highlight thickness"
+                onpointerdown={handleHighlightThicknessPointerDown}
+                onpointermove={handleHighlightThicknessPointerMove}
+                onpointerup={handleHighlightThicknessPointerUp}
+                onpointercancel={handleHighlightThicknessPointerUp}
+              >
+                <div
+                  class="color-slider-fill"
+                  style="width: {highlightThicknessScrubberPct}%"
+                ></div>
+                {#each highlightThicknessMarkers as marker}
+                  <div
+                    class="color-slider-marker"
+                    class:center-marker={marker.val === 24}
+                    style="left: {marker.pct}%"
+                    onpointerdown={(e) => e.stopPropagation()}
+                    onclick={() => jumpToHighlightThickness(marker.val)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        jumpToHighlightThickness(marker.val);
+                      }
+                    }}
+                    role="button"
+                    tabindex="0"
+                    aria-label="Set thickness to {marker.val}"
+                  ></div>
+                {/each}
+                <div
+                  class="color-slider-scrubber"
+                  style="left: {highlightThicknessScrubberPct}%"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Scrubber"
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    if (!highlightThicknessTrackEl) return;
+                    isHighlightThicknessDragging = true;
+                    highlightThicknessTrackEl.setPointerCapture(e.pointerId);
+                  }}
+                ></div>
+              </div>
+              <div
+                class="color-scrubber-tooltip"
+                style="left: {highlightThicknessScrubberPct}%"
+              >
+                <span>{localHighlightThickness}px</span>
+              </div>
+            </div>
+          {/if}
+
+          {#if activeHighlightTool === "opacity"}
+            <div
+              class="markup-slider-panel"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <div
+                class="color-slider-track"
+                bind:this={highlightOpacityTrackEl}
+                style="--track-opacity: {Math.max(0.1, localHighlightOpacity)}"
+                role="slider"
+                tabindex="0"
+                aria-valuemin={0}
+                aria-valuemax={0.8}
+                aria-valuenow={localHighlightOpacity}
+                aria-label="Highlight opacity"
+                onpointerdown={handleHighlightOpacityPointerDown}
+                onpointermove={handleHighlightOpacityPointerMove}
+                onpointerup={handleHighlightOpacityPointerUp}
+                onpointercancel={handleHighlightOpacityPointerUp}
+              >
+                <div
+                  class="color-slider-fill"
+                  style="width: {highlightOpacityScrubberPct}%"
+                ></div>
+                {#each highlightOpacityMarkers as marker}
+                  <div
+                    class="color-slider-marker"
+                    class:center-marker={marker.val === 0.4}
+                    style="left: {marker.pct}%"
+                    onpointerdown={(e) => e.stopPropagation()}
+                    onclick={() => jumpToHighlightOpacity(marker.val)}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        jumpToHighlightOpacity(marker.val);
+                      }
+                    }}
+                    role="button"
+                    tabindex="0"
+                    aria-label="Set opacity to {Math.round(marker.val * 100)}%"
+                  ></div>
+                {/each}
+                <div
+                  class="color-slider-scrubber"
+                  style="left: {highlightOpacityScrubberPct}%"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Scrubber"
+                  onpointerdown={(e) => {
+                    e.stopPropagation();
+                    if (!highlightOpacityTrackEl) return;
+                    isHighlightOpacityDragging = true;
+                    highlightOpacityTrackEl.setPointerCapture(e.pointerId);
+                  }}
+                ></div>
+              </div>
+              <div
+                class="color-scrubber-tooltip"
+                style="left: {highlightOpacityScrubberPct}%"
+              >
+                <span>{Math.round(localHighlightOpacity * 100)}%</span>
+              </div>
+            </div>
+          {/if}
         {/if}
 
         {#if drawRowOpen}

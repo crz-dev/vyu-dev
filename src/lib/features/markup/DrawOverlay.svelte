@@ -4,6 +4,8 @@
     type PlacedShape,
     type PlacedLine,
     type FreehandStroke,
+    type HighlightFreehand,
+    type HighlightStraight,
     type ShapeKind,
     type LineKind,
     type MarkupTool,
@@ -27,6 +29,10 @@
   // Shape drag state
   let shapeDragStart = $state<{ x: number; y: number } | null>(null);
   let shapePreviewEnd = $state<{ x: number; y: number } | null>(null);
+
+  // Straight highlight drag state
+  let highlightStraightStart = $state<{ x: number; y: number } | null>(null);
+  let highlightStraightPreview = $state<{ x: number; y: number } | null>(null);
 
   // Transform handle drag state
   type HandleType = "left" | "right" | "top" | "bottom" | "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | "rotate" | "delete";
@@ -274,6 +280,74 @@
       }
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawHighlightFreehand(
+    ctx: CanvasRenderingContext2D,
+    stroke: HighlightFreehand,
+    w: number,
+    h: number,
+  ) {
+    const pts = stroke.points;
+    if (pts.length < 1) return;
+    ctx.beginPath();
+    ctx.globalAlpha = stroke.opacity;
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = stroke.thickness;
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "miter";
+
+    if (pts.length === 1) {
+      ctx.arc(
+        pts[0].x * w,
+        pts[0].y * h,
+        stroke.thickness / 2,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fillStyle = stroke.color;
+      ctx.fill();
+    } else {
+      ctx.moveTo(pts[0].x * w, pts[0].y * h);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i].x * w, pts[i].y * h);
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawHighlightStraightBar(
+    ctx: CanvasRenderingContext2D,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    w: number,
+    h: number,
+    color: string,
+    thickness: number,
+    opacity: number,
+  ) {
+    const px1 = x1 * w;
+    const py1 = y1 * h;
+    const px2 = x2 * w;
+    const py2 = y2 * h;
+    const angle = Math.atan2(py2 - py1, px2 - px1);
+    const halfThick = thickness / 2;
+    const cos = Math.cos(angle + Math.PI / 2);
+    const sin = Math.sin(angle + Math.PI / 2);
+
+    ctx.beginPath();
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = color;
+    ctx.moveTo(px1 + cos * halfThick, py1 + sin * halfThick);
+    ctx.lineTo(px2 + cos * halfThick, py2 + sin * halfThick);
+    ctx.lineTo(px2 - cos * halfThick, py2 - sin * halfThick);
+    ctx.lineTo(px1 - cos * halfThick, py1 - sin * halfThick);
+    ctx.closePath();
+    ctx.fill();
     ctx.globalAlpha = 1;
   }
 
@@ -668,6 +742,23 @@
         drawPlacedShape(ctx, stroke, w, h);
       } else if (stroke.type === "line") {
         drawPlacedLine(ctx, stroke, w, h);
+      } else if (stroke.type === "highlight") {
+        if (stroke.mode === "free") {
+          drawHighlightFreehand(ctx, stroke, w, h);
+        } else {
+          drawHighlightStraightBar(
+            ctx,
+            stroke.x1,
+            stroke.y1,
+            stroke.x2,
+            stroke.y2,
+            w,
+            h,
+            stroke.color,
+            stroke.thickness,
+            stroke.opacity,
+          );
+        }
       }
     }
 
@@ -685,6 +776,12 @@
           markup.activeTool,
         );
       }
+    }
+
+    // Draw in-progress highlight freehand stroke
+    const curHL = markup.currentHighlight;
+    if (curHL && curHL.mode === "free") {
+      drawHighlightFreehand(ctx, curHL, w, h);
     }
 
     // Draw non-path line preview during drag
@@ -713,6 +810,22 @@
       );
     }
 
+    // Draw straight highlight preview during drag
+    if (highlightStraightStart && highlightStraightPreview) {
+      drawHighlightStraightBar(
+        ctx,
+        highlightStraightStart.x,
+        highlightStraightStart.y,
+        highlightStraightPreview.x,
+        highlightStraightPreview.y,
+        w,
+        h,
+        markup.highlightColor,
+        markup.highlightThickness,
+        markup.highlightOpacity,
+      );
+    }
+
     // Draw transform handles for selected shape
     const sel = markup.selectedIndex;
     if (sel !== null) {
@@ -728,7 +841,7 @@
   // ── Lifecycle ─────────────────────────────────────────
 
   $effect(() => {
-    if (markup.drawActive && mediaEl && containerEl) {
+    if ((markup.drawActive || markup.highlightActive) && mediaEl && containerEl) {
       updateOverlayRect();
       if (!resizeObs) {
         resizeObs = new ResizeObserver(() => {
@@ -743,27 +856,31 @@
         resizeObs.disconnect();
         resizeObs = null;
       }
-      // Reset drag state when draw deactivated
+      // Reset drag state when draw/highlight deactivated
       lineStart = null;
       previewEnd = null;
       shapeDragStart = null;
       shapePreviewEnd = null;
       isMovingShape = false;
       moveOrigin = null;
+      highlightStraightStart = null;
+      highlightStraightPreview = null;
     }
   });
 
   $effect(() => {
-    // Redraw when strokes, current stroke, tool, or path mode change
+    // Redraw when strokes, current stroke, tool, path mode, or highlight state change
     const _strokes = markup.strokes;
     const _current = markup.currentStroke;
     const _tool = markup.activeTool;
     const _path = markup.pathMode;
+    const _hlActive = markup.highlightActive;
+    const _hlCur = markup.currentHighlight;
     redrawAll();
   });
 
   $effect(() => {
-    if (markup.drawActive && canvasEl) {
+    if ((markup.drawActive || markup.highlightActive) && canvasEl) {
       canvasEl.focus();
     }
   });
@@ -889,11 +1006,24 @@
   // ── Pointer handlers ──────────────────────────────────
 
   function handlePointerDown(e: PointerEvent) {
-    if (!markup.drawActive) return;
+    if (!markup.drawActive && !markup.highlightActive) return;
     e.preventDefault();
     e.stopPropagation();
     isPointerDown = true;
     const p = toNormal(e.clientX, e.clientY);
+
+    // Highlight mode — handle separately
+    if (markup.highlightActive) {
+      if (markup.highlightMode === "free") {
+        markup.startHighlightStroke(p.x, p.y);
+      } else {
+        highlightStraightStart = p;
+        highlightStraightPreview = p;
+      }
+      canvasEl?.setPointerCapture(e.pointerId);
+      return;
+    }
+
     const tool = markup.activeTool;
     // Convert normalized coords to CSS-pixel positions relative to overlay (canvas)
     const rawPx = p.x * overlayRect.width;
@@ -963,7 +1093,7 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
-    if (!markup.drawActive) return;
+    if (!markup.drawActive && !markup.highlightActive) return;
     // Handle drag takes priority
     if (dragHandle) {
       handleDragMove(e);
@@ -977,6 +1107,20 @@
       const idx = markup.selectedIndex;
       if (idx !== null) {
         markup.updateShape(idx, { cx: moveStartCx + dx, cy: moveStartCy + dy });
+        redrawAll();
+      }
+      return;
+    }
+
+    // Highlight mode — handle separately
+    if (markup.highlightActive && isPointerDown) {
+      e.preventDefault();
+      const p = toNormal(e.clientX, e.clientY);
+      if (markup.highlightMode === "free") {
+        markup.addHighlightPoint(p.x, p.y);
+        redrawAll();
+      } else if (highlightStraightStart) {
+        highlightStraightPreview = p;
         redrawAll();
       }
       return;
@@ -1045,6 +1189,31 @@
       canvasEl?.releasePointerCapture(e.pointerId);
       return;
     }
+
+    // Highlight mode — finalize
+    if (markup.highlightActive && isPointerDown) {
+      isPointerDown = false;
+      if (markup.highlightMode === "free") {
+        markup.endHighlightStroke();
+      } else if (highlightStraightStart && highlightStraightPreview) {
+        const dx = Math.abs(highlightStraightPreview.x - highlightStraightStart.x);
+        const dy = Math.abs(highlightStraightPreview.y - highlightStraightStart.y);
+        if (dx > 0.002 || dy > 0.002) {
+          markup.placeHighlightLine(
+            highlightStraightStart.x,
+            highlightStraightStart.y,
+            highlightStraightPreview.x,
+            highlightStraightPreview.y,
+          );
+        }
+        highlightStraightStart = null;
+        highlightStraightPreview = null;
+      }
+      redrawAll();
+      canvasEl?.releasePointerCapture(e.pointerId);
+      return;
+    }
+
     if (!isPointerDown) return;
     isPointerDown = false;
     const tool = markup.activeTool;
@@ -1092,7 +1261,7 @@
   // Cursor is provided by markup.cursorStyle (avoids duplicating SVG URLs)
 </script>
 
-{#if markup.drawActive && overlayRect.width > 0 && overlayRect.height > 0}
+{#if (markup.drawActive || markup.highlightActive) && overlayRect.width > 0 && overlayRect.height > 0}
   <canvas
     bind:this={canvasEl}
     class="draw-overlay"

@@ -13,9 +13,23 @@ export const DRAW_COLORS = [
   "#ffffff", // White
 ];
 
+/** Highlighter colors — bright, saturated tones typical of marker pens. */
+export const HIGHLIGHT_COLORS = [
+  "#f5c518", // Yellow (default)
+  "#4ade80", // Green
+  "#06b6d4", // Cyan
+  "#3b82f6", // Blue
+  "#ec4899", // Pink
+  "#f97316", // Orange
+  "#a855f7", // Purple
+  "#f87171", // Red
+];
+
 import {
   loadMarkupCustomColors,
   saveMarkupCustomColors,
+  loadHighlightCustomColors,
+  saveHighlightCustomColors,
 } from "$lib/services/storage";
 import { showToast } from "$lib/features/toast/toast.svelte";
 
@@ -67,7 +81,33 @@ export interface PlacedLine {
   opacity: number;
 }
 
-export type MarkupStroke = FreehandStroke | PlacedShape | PlacedLine;
+export interface HighlightFreehand {
+  type: "highlight";
+  mode: "free";
+  points: DrawPoint[];
+  color: string;
+  thickness: number;
+  opacity: number;
+}
+
+export interface HighlightStraight {
+  type: "highlight";
+  mode: "straight";
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+  thickness: number;
+  opacity: number;
+}
+
+export type HighlightStroke = HighlightFreehand | HighlightStraight;
+export type MarkupStroke =
+  | FreehandStroke
+  | PlacedShape
+  | PlacedLine
+  | HighlightStroke;
 
 function createMarkupStore() {
   let drawActive = $state(false);
@@ -85,6 +125,15 @@ function createMarkupStore() {
 
   // Selection state
   let selectedIndex = $state<number | null>(null);
+
+  // Highlight state
+  let highlightActive = $state(false);
+  let highlightColor = $state("#f5c518");
+  let highlightThickness = $state(20);
+  let highlightOpacity = $state(0.4);
+  let highlightMode = $state<"free" | "straight">("free");
+  let highlightCustomColors = $state<string[]>(loadHighlightCustomColors());
+  let currentHighlight = $state<HighlightFreehand | null>(null);
 
   function setActiveTool(tool: MarkupTool) {
     activeTool = activeTool === tool ? "freehand" : tool;
@@ -266,6 +315,82 @@ function createMarkupStore() {
     currentStroke = null;
   }
 
+  function toggleHighlight() {
+    highlightActive = !highlightActive;
+  }
+
+  function setHighlightColor(color: string) {
+    highlightColor = color;
+  }
+
+  function setHighlightThickness(v: number) {
+    highlightThickness = v;
+  }
+
+  function setHighlightOpacity(v: number) {
+    highlightOpacity = v;
+  }
+
+  function setHighlightMode(mode: "free" | "straight") {
+    highlightMode = mode;
+  }
+
+  function setHighlightCustomColor(index: number, color: string) {
+    const next = [...highlightCustomColors];
+    next[index] = color;
+    highlightCustomColors = next;
+    saveHighlightCustomColors(next);
+    highlightColor = color;
+  }
+
+  function startHighlightStroke(x: number, y: number) {
+    if (highlightMode === "free") {
+      currentHighlight = {
+        type: "highlight",
+        mode: "free",
+        points: [{ x, y }],
+        color: highlightColor,
+        thickness: highlightThickness,
+        opacity: highlightOpacity,
+      };
+    }
+  }
+
+  function addHighlightPoint(x: number, y: number) {
+    if (currentHighlight && currentHighlight.mode === "free") {
+      currentHighlight.points = [...currentHighlight.points, { x, y }];
+    }
+  }
+
+  function endHighlightStroke() {
+    if (currentHighlight && currentHighlight.mode === "free") {
+      if (currentHighlight.points.length > 0) {
+        strokes = [...strokes, currentHighlight];
+      }
+    }
+    currentHighlight = null;
+  }
+
+  function placeHighlightLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ) {
+    const stroke: HighlightStraight = {
+      type: "highlight",
+      mode: "straight",
+      x1,
+      y1,
+      x2,
+      y2,
+      color: highlightColor,
+      thickness: highlightThickness,
+      opacity: highlightOpacity,
+    };
+    strokes = [...strokes, stroke];
+  }
+
   function undoLastStroke() {
     if (strokes.length === 0) {
       showToast({ message: "Nothing to undo", color: "yellow" });
@@ -306,6 +431,12 @@ function createMarkupStore() {
     roundedCorner = false;
     pathMode = false;
     selectedIndex = null;
+    highlightActive = false;
+    highlightColor = "#f5c518";
+    highlightThickness = 20;
+    highlightOpacity = 0.4;
+    highlightMode = "free";
+    currentHighlight = null;
   }
 
   return {
@@ -345,8 +476,33 @@ function createMarkupStore() {
     get selectedIndex() {
       return selectedIndex;
     },
+    get highlightActive() {
+      return highlightActive;
+    },
+    set highlightActive(v: boolean) {
+      highlightActive = v;
+    },
+    get highlightColor() {
+      return highlightColor;
+    },
+    get highlightThickness() {
+      return highlightThickness;
+    },
+    get highlightOpacity() {
+      return highlightOpacity;
+    },
+    get highlightMode() {
+      return highlightMode;
+    },
+    get highlightCustomColors() {
+      return highlightCustomColors;
+    },
+    get currentHighlight() {
+      return currentHighlight;
+    },
     get cursorStyle(): string {
-      if (!drawActive) return "default";
+      if (!drawActive && !highlightActive) return "default";
+      if (highlightActive) return "crosshair";
       if (activeTool === "freehand") return "crosshair";
 
       const svgs: Record<string, string> = {
@@ -389,6 +545,16 @@ function createMarkupStore() {
     placeShapeSized,
     placeLine,
     endPathLine,
+    toggleHighlight,
+    setHighlightColor,
+    setHighlightCustomColor,
+    setHighlightThickness,
+    setHighlightOpacity,
+    setHighlightMode,
+    startHighlightStroke,
+    addHighlightPoint,
+    endHighlightStroke,
+    placeHighlightLine,
   };
 }
 

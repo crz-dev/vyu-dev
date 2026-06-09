@@ -295,3 +295,22 @@ export function loadMarkupCustomColors(): string[] {
 export function saveMarkupCustomColors(colors: string[]): void {
   localStorage.setItem("vyu-markup-custom-colors", JSON.stringify(colors));
 }
+
+// Highlight custom colors
+export function loadHighlightCustomColors(): string[] {
+  try {
+    const raw = localStorage.getItem("vyu-highlight-custom-colors");
+    if (!raw) return ["", "", "", "", "", ""];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length >= 6) {
+      return parsed.map((c) => (typeof c === "string" ? c : ""));
+    }
+  } catch {
+    /* ignore */
+  }
+  return ["", "", "", "", "", ""];
+}
+
+export function saveHighlightCustomColors(colors: string[]): void {
+  localStorage.setItem("vyu-highlight-custom-colors", JSON.stringify(colors));
+}
