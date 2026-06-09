@@ -2,7 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import type { MediaProperties, ClipJobResult } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
 import type { EditSnapshot } from "$lib/features/editing/editing.svelte";
-import type { DrawStroke } from "$lib/features/markup/markup.svelte";
+import type {
+  DrawStroke,
+  MarkupStroke,
+  PlacedShape,
+  PlacedLine,
+  FreehandStroke,
+} from "$lib/features/markup/markup.svelte";
 
 async function loadImageAsElement(filePath: string): Promise<HTMLImageElement> {
   const { readFile } = await import("@tauri-apps/plugin-fs");
@@ -326,7 +332,7 @@ export async function exportEditedImage(
 
 export async function renderMarkupOnImage(
   filePath: string,
-  strokes: DrawStroke[],
+  strokes: MarkupStroke[],
   outputPath: string,
 ) {
   const img = await loadImageAsElement(filePath);
@@ -343,30 +349,163 @@ export async function renderMarkupOnImage(
   ctx.drawImage(img, 0, 0, w, h);
 
   for (const stroke of strokes) {
-    if (stroke.points.length < 1) continue;
-    ctx.beginPath();
-    ctx.globalAlpha = stroke.opacity;
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.thickness;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-
-    const pts = stroke.points;
-    if (pts.length === 1) {
-      ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
-      ctx.fillStyle = stroke.color;
-      ctx.fill();
-    } else {
-      ctx.moveTo(pts[0].x * w, pts[0].y * h);
-      for (let i = 1; i < pts.length; i++) {
-        ctx.lineTo(pts[i].x * w, pts[i].y * h);
-      }
-      ctx.stroke();
+    if (stroke.type === "freehand") {
+      renderFreehand(ctx, stroke, w, h);
+    } else if (stroke.type === "shape") {
+      renderShape(ctx, stroke, w, h);
+    } else if (stroke.type === "line") {
+      renderLine(ctx, stroke, w, h);
     }
   }
   ctx.globalAlpha = 1;
 
   await saveCanvasToFile(canvas, outputPath);
+}
+
+function arrowSize(thickness: number) {
+  return Math.max(10, thickness * 4);
+}
+
+function drawArrowhead(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  size: number,
+) {
+  const a = Math.PI / 6;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - size * Math.cos(angle - a), y - size * Math.sin(angle - a));
+  ctx.lineTo(x - size * Math.cos(angle + a), y - size * Math.sin(angle + a));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function renderFreehand(
+  ctx: CanvasRenderingContext2D,
+  stroke: FreehandStroke,
+  w: number,
+  h: number,
+) {
+  const pts = stroke.points;
+  if (pts.length < 1) return;
+  ctx.beginPath();
+  ctx.globalAlpha = stroke.opacity;
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = stroke.thickness;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (pts.length === 1) {
+    ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
+    ctx.fillStyle = stroke.color;
+    ctx.fill();
+  } else {
+    ctx.moveTo(pts[0].x * w, pts[0].y * h);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x * w, pts[i].y * h);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function renderShape(
+  ctx: CanvasRenderingContext2D,
+  s: PlacedShape,
+  w: number,
+  h: number,
+) {
+  const cx = s.cx * w;
+  const cy = s.cy * h;
+  const dim = s.size * Math.min(w, h);
+  const half = dim / 2;
+  ctx.beginPath();
+  ctx.globalAlpha = s.opacity;
+  ctx.strokeStyle = s.color;
+  ctx.lineWidth = s.thickness;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (s.shape === "square") {
+    if (s.rounded) {
+      const r = dim * 0.2;
+      ctx.roundRect(cx - half, cy - half, dim, dim, r);
+    } else {
+      ctx.rect(cx - half, cy - half, dim, dim);
+    }
+    ctx.stroke();
+  } else if (s.shape === "circle") {
+    ctx.arc(cx, cy, half, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (s.shape === "triangle") {
+    ctx.moveTo(cx, cy - half);
+    ctx.lineTo(cx + half, cy + half);
+    ctx.lineTo(cx - half, cy + half);
+    ctx.closePath();
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function renderLine(
+  ctx: CanvasRenderingContext2D,
+  l: PlacedLine,
+  w: number,
+  h: number,
+) {
+  ctx.beginPath();
+  ctx.globalAlpha = l.opacity;
+  ctx.strokeStyle = l.color;
+  ctx.lineWidth = l.thickness;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.fillStyle = l.color;
+
+  if (!l.isPath) {
+    const x1 = l.x1 * w,
+      y1 = l.y1 * h;
+    const x2 = l.x2 * w,
+      y2 = l.y2 * h;
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    const aSize = arrowSize(l.thickness);
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    if (l.lineType === "arrow" || l.lineType === "bidirectional-arrow") {
+      drawArrowhead(ctx, x2, y2, angle, aSize);
+    }
+    if (l.lineType === "bidirectional-arrow") {
+      drawArrowhead(ctx, x1, y1, angle + Math.PI, aSize);
+    }
+  } else {
+    const pts = l.points;
+    if (pts.length < 1) return;
+    ctx.moveTo(pts[0].x * w, pts[0].y * h);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x * w, pts[i].y * h);
+    }
+    ctx.stroke();
+
+    if (pts.length >= 2) {
+      const aSize = arrowSize(l.thickness);
+      const last = pts[pts.length - 1];
+      const prev = pts[pts.length - 2];
+      const endAngle = Math.atan2(last.y - prev.y, last.x - prev.x);
+      if (l.lineType === "arrow" || l.lineType === "bidirectional-arrow") {
+        drawArrowhead(ctx, last.x * w, last.y * h, endAngle, aSize);
+      }
+      if (l.lineType === "bidirectional-arrow") {
+        const first = pts[0];
+        const second = pts.length > 1 ? pts[1] : pts[0];
+        const startAngle = Math.atan2(first.y - second.y, first.x - second.x);
+        drawArrowhead(ctx, first.x * w, first.y * h, startAngle, aSize);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 export async function invokeExportEditedMedia(

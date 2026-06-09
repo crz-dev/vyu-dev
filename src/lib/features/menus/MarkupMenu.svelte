@@ -39,10 +39,6 @@
   let isOpacityDragging = $state(false);
   let localOpacity = $state(1);
 
-  // Shape toggle state
-  let roundedCorners = $state(false);
-  let pathMode = $state(false);
-
   $effect(() => {
     if (!visible) {
       if (openTimeout) clearTimeout(openTimeout);
@@ -54,8 +50,9 @@
       shapesRowOpen = false;
       pinned = false;
       activeDrawTool = null;
-      roundedCorners = false;
-      pathMode = false;
+      markup.setActiveTool("freehand");
+      markup.setRoundedCorner(false);
+      markup.setPathMode(false);
     }
   });
 
@@ -783,7 +780,12 @@
               in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
               out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
             >
-              <button class="edit-menu-btn green sub" aria-label="Square">
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "square"}
+                onclick={() => markup.setActiveTool("square")}
+                aria-label="Square"
+              >
                 <svg
                   width="11"
                   height="11"
@@ -797,7 +799,12 @@
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                 </svg>
               </button>
-              <button class="edit-menu-btn green sub" aria-label="Circle">
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "circle"}
+                onclick={() => markup.setActiveTool("circle")}
+                aria-label="Circle"
+              >
                 <svg
                   width="11"
                   height="11"
@@ -811,7 +818,12 @@
                   <circle cx="12" cy="12" r="9" />
                 </svg>
               </button>
-              <button class="edit-menu-btn green sub" aria-label="Triangle">
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "triangle"}
+                onclick={() => markup.setActiveTool("triangle")}
+                aria-label="Triangle"
+              >
                 <svg
                   width="11"
                   height="11"
@@ -828,13 +840,13 @@
               <div class="edit-menu-divider"></div>
               <button
                 class="edit-menu-btn sub"
-                class:green={roundedCorners}
-                class:grey={!roundedCorners}
-                class:active={roundedCorners}
+                class:green={markup.roundedCorner}
+                class:grey={!markup.roundedCorner}
+                class:active={markup.roundedCorner}
                 onclick={() => {
-                  roundedCorners = !roundedCorners;
+                  markup.setRoundedCorner(!markup.roundedCorner);
                 }}
-                aria-pressed={roundedCorners}
+                aria-pressed={markup.roundedCorner}
                 aria-label="Rounded corners"
                 data-tooltip="Rounded corners"
               >
@@ -861,13 +873,13 @@
               </button>
               <button
                 class="edit-menu-btn sub"
-                class:green={pathMode}
-                class:grey={!pathMode}
-                class:active={pathMode}
+                class:green={markup.pathMode}
+                class:grey={!markup.pathMode}
+                class:active={markup.pathMode}
                 onclick={() => {
-                  pathMode = !pathMode;
+                  markup.setPathMode(!markup.pathMode);
                 }}
-                aria-pressed={pathMode}
+                aria-pressed={markup.pathMode}
                 aria-label="Path"
                 data-tooltip="Path"
               >
@@ -885,7 +897,12 @@
                 </svg>
               </button>
               <div class="edit-menu-divider"></div>
-              <button class="edit-menu-btn green sub" aria-label="Line">
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "line"}
+                onclick={() => markup.setActiveTool("line")}
+                aria-label="Line"
+              >
                 <svg
                   width="11"
                   height="11"
@@ -899,7 +916,12 @@
                   <line x1="4" y1="12" x2="20" y2="12" />
                 </svg>
               </button>
-              <button class="edit-menu-btn green sub" aria-label="Arrow">
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "arrow"}
+                onclick={() => markup.setActiveTool("arrow")}
+                aria-label="Arrow"
+              >
                 <svg
                   width="11"
                   height="11"
@@ -916,6 +938,8 @@
               </button>
               <button
                 class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "bidirectional-arrow"}
+                onclick={() => markup.setActiveTool("bidirectional-arrow")}
                 aria-label="Bidirectional arrow"
               >
                 <svg

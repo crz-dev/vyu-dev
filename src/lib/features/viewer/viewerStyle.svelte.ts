@@ -32,7 +32,7 @@ export function createViewerStyle() {
   const panCursor = $derived(viewer.getPanCursor());
   const fsCursor = $derived(
     markup.drawActive
-      ? "crosshair"
+      ? markup.cursorStyle
       : !viewer.state.fsControlsVisible && !markerStore.tsEditMenu.visible
         ? "none"
         : panCursor,

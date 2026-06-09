@@ -242,7 +242,7 @@
     ontouchmove={viewer.handleTouchZoom}
     ontouchend={viewer.handleTouchEnd}
     style="cursor: {markup.drawActive
-      ? 'crosshair'
+      ? markup.cursorStyle
       : !isVideo && !isPdf
         ? style.panCursor
         : 'default'}"
@@ -270,6 +270,7 @@
         {onMediaEnded}
         bind:cropContainerEl
         drawActive={markup.drawActive}
+        markupCursor={markup.cursorStyle}
         {startPan}
         videoWrapperTransform={style.videoWrapperTransform}
         videoInnerStyle={style.videoInnerStyle}

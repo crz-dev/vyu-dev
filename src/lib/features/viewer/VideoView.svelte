@@ -11,6 +11,7 @@
     onMediaEnded,
     cropContainerEl = $bindable(null),
     drawActive,
+    markupCursor = "crosshair",
     startPan,
     videoWrapperTransform,
     videoInnerStyle,
@@ -31,6 +32,7 @@
     onMediaEnded: () => void;
     cropContainerEl: HTMLElement | null;
     drawActive: boolean;
+    markupCursor?: string;
     startPan: (e: MouseEvent) => void;
     videoWrapperTransform: string;
     videoInnerStyle: string;
@@ -55,7 +57,7 @@
   onmouseenter={() => (hoverZone = "video")}
   onmouseleave={() => (hoverZone = "none")}
   onmousedown={drawActive ? undefined : startPan}
-  style="{videoWrapperTransform} cursor: {drawActive ? 'crosshair' : panCursor}"
+  style="{videoWrapperTransform} cursor: {drawActive ? markupCursor : panCursor}"
 >
   <div class="video-inner" bind:this={videoInnerEl} style={videoInnerStyle}>
     {#key slideshowActive && slideshowTransition !== "none" ? currentIndex : null}
