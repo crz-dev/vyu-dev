@@ -89,6 +89,12 @@
   opacity: 0 !important;
   transition: opacity 0.1s ease;
 }
+.menu-open .edit-menu [data-tooltip]::after {
+  top: calc(100% + 6px);
+}
+.menu-open .edit-menu [data-tooltip]:hover::after {
+  opacity: 1 !important;
+}
 
 .loop-btn.loop-menu-open::after {
   opacity: 0 !important;

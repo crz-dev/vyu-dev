@@ -781,64 +781,6 @@
               out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
             >
               <button
-                class="edit-menu-btn green sub"
-                class:active={markup.activeTool === "square"}
-                onclick={() => markup.setActiveTool("square")}
-                aria-label="Square"
-              >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                </svg>
-              </button>
-              <button
-                class="edit-menu-btn green sub"
-                class:active={markup.activeTool === "circle"}
-                onclick={() => markup.setActiveTool("circle")}
-                aria-label="Circle"
-              >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="9" />
-                </svg>
-              </button>
-              <button
-                class="edit-menu-btn green sub"
-                class:active={markup.activeTool === "triangle"}
-                onclick={() => markup.setActiveTool("triangle")}
-                aria-label="Triangle"
-              >
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polygon points="12,3 22,21 2,21" />
-                </svg>
-              </button>
-              <div class="edit-menu-divider"></div>
-              <button
                 class="edit-menu-btn sub"
                 class:green={markup.roundedCorner}
                 class:grey={!markup.roundedCorner}
@@ -847,8 +789,8 @@
                   markup.toggleSelectedCornerRadius();
                 }}
                 aria-pressed={markup.roundedCorner}
-                aria-label="Rounded corners"
-                data-tooltip="Rounded corners"
+                aria-label="Rounded shapes"
+                data-tooltip="Rounded shapes"
               >
                 <svg
                   width="11"
@@ -871,17 +813,13 @@
                   <path d="M3 9 V5 Q3 3 5 3 H9" />
                 </svg>
               </button>
+              <div class="edit-menu-divider"></div>
               <button
-                class="edit-menu-btn sub"
-                class:green={markup.pathMode}
-                class:grey={!markup.pathMode}
-                class:active={markup.pathMode}
-                onclick={() => {
-                  markup.setPathMode(!markup.pathMode);
-                }}
-                aria-pressed={markup.pathMode}
-                aria-label="Path"
-                data-tooltip="Path"
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "square"}
+                onclick={() => markup.setActiveTool("square")}
+                aria-label="Square"
+                data-tooltip="Square"
               >
                 <svg
                   width="11"
@@ -893,7 +831,47 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <path d="M3 14 Q6 8 9 14 T15 14 T21 14" />
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "circle"}
+                onclick={() => markup.setActiveTool("circle")}
+                aria-label="Circle"
+                data-tooltip="Circle"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn green sub"
+                class:active={markup.activeTool === "triangle"}
+                onclick={() => markup.setActiveTool("triangle")}
+                aria-label="Triangle"
+                data-tooltip="Triangle"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="12,3 22,21 2,21" />
                 </svg>
               </button>
               <div class="edit-menu-divider"></div>
@@ -902,6 +880,7 @@
                 class:active={markup.activeTool === "line"}
                 onclick={() => markup.setActiveTool("line")}
                 aria-label="Line"
+                data-tooltip="Line"
               >
                 <svg
                   width="11"
@@ -921,6 +900,7 @@
                 class:active={markup.activeTool === "arrow"}
                 onclick={() => markup.setActiveTool("arrow")}
                 aria-label="Arrow"
+                data-tooltip="Arrow"
               >
                 <svg
                   width="11"
@@ -941,6 +921,7 @@
                 class:active={markup.activeTool === "bidirectional-arrow"}
                 onclick={() => markup.setActiveTool("bidirectional-arrow")}
                 aria-label="Bidirectional arrow"
+                data-tooltip="Bidirectional"
               >
                 <svg
                   width="11"
@@ -955,6 +936,32 @@
                   <polyline points="8,6 2,12 8,18" />
                   <line x1="2" y1="12" x2="22" y2="12" />
                   <polyline points="16,6 22,12 16,18" />
+                </svg>
+              </button>
+              <div class="edit-menu-divider"></div>
+              <button
+                class="edit-menu-btn sub"
+                class:green={markup.pathMode}
+                class:grey={!markup.pathMode}
+                class:active={markup.pathMode}
+                onclick={() => {
+                  markup.setPathMode(!markup.pathMode);
+                }}
+                aria-pressed={markup.pathMode}
+                aria-label="Path"
+                data-tooltip="Freeform lines"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 14 Q6 8 9 14 T15 14 T21 14" />
                 </svg>
               </button>
             </div>

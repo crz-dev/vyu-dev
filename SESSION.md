@@ -3,7 +3,7 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-09
 
 ## Last change
-Live shape property editing: selecting a shape syncs its color/thickness/opacity into menu controls; changing a control updates the selected shape live. `selectShape`, `setDrawColor`, `setDrawThickness`, `setDrawOpacity`, `setCustomColor` all updated. Drag-to-size shape placement (click=default, drag=sized). Click existing shape to select for transform. Shape-aware handle sets (circle gets all 8 with corners on ellipse edge, triangle gets 6, square all 8). 4 corner resize handles. Rotation-aware handle rendering, hit-test, and drag deltas. Hover enlarge animation via rAF lerp. White diamond handles. Shape move drag via interior click. Red X delete handle (top-right). Backspace/Delete key to remove selected shape. Tool buttons toggle off. White selection outline removed. `deleteSelectedShape` added to store.
+Reordered markup shapes menu to: Rounded toggle | Square, Circle, Triangle | Line, Arrow, Bidirectional | Freeform toggle. Added `data-tooltip` to all shape and line buttons. Fixed tooltip visibility in `.menu-open` context (`tooltips.css` override). Fixed tooltip snapping by setting `top` on the base rule.
 
 ## Status
 - Type check: clean (0 errors, 0 warnings)
@@ -14,10 +14,12 @@ Live shape property editing: selecting a shape syncs its color/thickness/opacity
 Pick up the next open issue or feature request.
 
 ## Bugs found this session
-- Hover detection stopped working after handle drag because `isPointerDown` was never cleared in the handle-drag finalize branch. Fixed.
+- Tooltips didn't appear inside the markup menu because `.menu-open [data-tooltip]::after { opacity: 0 !important; }` suppressed them globally. Fixed by adding `.menu-open .edit-menu [data-tooltip]:hover::after` override.
+- Tooltips appeared at the wrong position (on top of the button) because no `top` was set on the `::after` pseudo-element. Fixed by adding `top: calc(100% + 6px)` to the override base rule.
+- Tooltips flickered/jumped on hover because `top` was only set on `:hover::after`, causing a position snap when the property was applied. Fixed by moving `top` to the base rule (always present) so only `opacity` transitions.
 
 ## Current commit
-feat: live shape property editing, drag-to-size placement, improved transform handles
+fix: reorder markup shapes menu and add tooltips with proper positioning
 
 ## Architecture update
 - None.
