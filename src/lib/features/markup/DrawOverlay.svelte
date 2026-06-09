@@ -1273,6 +1273,11 @@
     onpointercancel={handlePointerUp}
     onpointerleave={() => { hoveredHandle = null; startHoverAnim(0); }}
     onkeydown={(e) => {
+      if (e.ctrlKey && e.key === "z") {
+        e.preventDefault();
+        markup.undoLastStroke();
+        redrawAll();
+      }
       if ((e.key === "Backspace" || e.key === "Delete") && markup.selectedIndex !== null) {
         e.preventDefault();
         markup.deleteSelectedShape();
