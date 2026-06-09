@@ -3,7 +3,7 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-08
 
 ## Last change
-Implemented the Shapes submenu inside the Markup Draw tool. Added `PlacedShape` and `PlacedLine` types to stroke union, new store state (`activeTool`, `roundedCorner`, `pathMode`, `cursorStyle`), and methods (`placeShape`, `placeLine`, `endPathLine`). Rewrote `DrawOverlay.svelte` to dispatch shape placement (click), line drawing (click-drag), and path-mode line drawing (freehand with arrowheads). Updated `renderMarkupOnImage` in `tools.ts` for apply/export. Wired all 6 buttons and 2 toggles in `MarkupMenu.svelte`. Dynamic SVG cursors for every tool. Cursors updated in `viewerStyle.svelte.ts`, `ViewerArea.svelte`, `VideoView.svelte`.
+Added transform handles on placed shapes. `PlacedShape` interface updated: `size` → `width`/`height`, added `rotation` (radians), `rounded` → `cornerRadius`. Selection state (`selectedIndex`) with auto-select on place. Four resize handles (left/right/top/bottom), corner-radius handle (squares only), rotation handle above top-center. All handles draggable via canvas pointer events; opposite edge stays fixed during resize. `drawTransformHandles` renders dashed bounding box + colored handles. `renderShape` in tools.ts supports rotation and ellipse. Rounded-corner toggle in MarkupMenu affects selected square.
 
 ## Status
 - Type check: clean (0 errors, 0 warnings)
@@ -14,10 +14,10 @@ Implemented the Shapes submenu inside the Markup Draw tool. Added `PlacedShape` 
 Pick up the next open issue or feature request.
 
 ## Bugs found this session
-- None.
+- Transforms added don't work on shapes, adding shapes takes priority. Fixed: hit-test raw pixel coordinates used `overlayRect.left` (container-offset) instead of canvas-relative position, causing coordinate mismatch. Switched to `p.x * overlayRect.width`.
 
 ## Current commit
-feat: implement Markup Shapes - shapes, lines, arrowheads, path mode
+feat: transform handles on placed shapes - resize, rotate, corner-radius
 
 ## Architecture update
 - None.

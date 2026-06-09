@@ -24,6 +24,19 @@
   let lineStart = $state<{ x: number; y: number } | null>(null);
   let previewEnd = $state<{ x: number; y: number } | null>(null);
 
+  // Transform handle drag state
+  type HandleType = "left" | "right" | "top" | "bottom" | "corner" | "rotate";
+  let dragHandle = $state<HandleType | null>(null);
+  let dragOrigin = $state<{ x: number; y: number } | null>(null);
+  let dragStartShape = $state<{
+    width: number;
+    height: number;
+    rotation: number;
+    cornerRadius: number;
+    cx: number;
+    cy: number;
+  } | null>(null);
+
   // ── Helpers ───────────────────────────────────────────
 
   function isShapeTool(tool: MarkupTool): tool is ShapeKind {
@@ -73,33 +86,40 @@
   ) {
     const cx = s.cx * w;
     const cy = s.cy * h;
-    const dim = s.size * Math.min(w, h);
-    const half = dim / 2;
-    ctx.beginPath();
+    const halfW = (s.width * w) / 2;
+    const halfH = (s.height * h) / 2;
+    const sw = s.width * w;
+    const sh = s.height * h;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(s.rotation);
     ctx.globalAlpha = s.opacity;
     ctx.strokeStyle = s.color;
     ctx.lineWidth = s.thickness;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    ctx.beginPath();
 
     if (s.shape === "square") {
-      if (s.rounded) {
-        const r = dim * 0.2;
-        ctx.roundRect(cx - half, cy - half, dim, dim, r);
+      if (s.cornerRadius > 0) {
+        const r = s.cornerRadius * Math.min(sw, sh);
+        ctx.roundRect(-halfW, -halfH, sw, sh, r);
       } else {
-        ctx.rect(cx - half, cy - half, dim, dim);
+        ctx.rect(-halfW, -halfH, sw, sh);
       }
       ctx.stroke();
     } else if (s.shape === "circle") {
-      ctx.arc(cx, cy, half, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2);
       ctx.stroke();
     } else if (s.shape === "triangle") {
-      ctx.moveTo(cx, cy - half);
-      ctx.lineTo(cx + half, cy + half);
-      ctx.lineTo(cx - half, cy + half);
+      ctx.moveTo(0, -halfH);
+      ctx.lineTo(halfW, halfH);
+      ctx.lineTo(-halfW, halfH);
       ctx.closePath();
       ctx.stroke();
     }
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
@@ -295,6 +315,114 @@
     ctx.globalAlpha = 1;
   }
 
+  // ── Transform handle helpers ─────────────────────────
+
+  /** Compute handle positions in CSS pixels for a shape at given overlay dims. */
+  function getHandlePositions(s: PlacedShape, w: number, h: number) {
+    const cx = s.cx * w;
+    const cy = s.cy * h;
+    const hw = (s.width * w) / 2;
+    const hh = (s.height * h) / 2;
+    const hs = 8; // handle half-size in CSS px
+    return {
+      left: { x: cx - hw, y: cy, hs },
+      right: { x: cx + hw, y: cy, hs },
+      top: { x: cx, y: cy - hh, hs },
+      bottom: { x: cx, y: cy + hh, hs },
+      corner: { x: cx - hw, y: cy - hh, hs },
+      rotate: { x: cx, y: cy - hh - 24, hs },
+    };
+  }
+
+  function drawTransformHandles(
+    ctx: CanvasRenderingContext2D,
+    s: PlacedShape,
+    w: number,
+    h: number,
+  ) {
+    const cx = s.cx * w;
+    const cy = s.cy * h;
+    const hw = (s.width * w) / 2;
+    const hh = (s.height * h) / 2;
+
+    // Dashed bounding box
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "#3b82f6";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx - hw, cy - hh, hw * 2, hh * 2);
+    ctx.setLineDash([]);
+
+    // Width/height handles (blue squares)
+    ctx.fillStyle = "#3b82f6";
+    const hSize = 4;
+    // Left
+    ctx.fillRect(cx - hw - hSize, cy - hSize, hSize * 2, hSize * 2);
+    // Right
+    ctx.fillRect(cx + hw - hSize, cy - hSize, hSize * 2, hSize * 2);
+    // Top
+    ctx.fillRect(cx - hSize, cy - hh - hSize, hSize * 2, hSize * 2);
+    // Bottom
+    ctx.fillRect(cx - hSize, cy + hh - hSize, hSize * 2, hSize * 2);
+
+    // Corner-radius handle (green circle) — only for squares with cornerRadius > 0
+    if (s.shape === "square" && s.cornerRadius > 0) {
+      ctx.fillStyle = "#10b981";
+      ctx.beginPath();
+      ctx.arc(cx - hw, cy - hh, hSize + 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Rotation handle (amber circle + line)
+    const rotY = cy - hh - 24;
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - hh);
+    ctx.lineTo(cx, rotY);
+    ctx.stroke();
+
+    ctx.fillStyle = "#f59e0b";
+    ctx.beginPath();
+    ctx.arc(cx, rotY, hSize + 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  /** Returns which handle is within HIT_RADIUS CSS px of (px, py), or null. */
+  const HIT_RADIUS = 10;
+
+  function hitTestHandle(
+    s: PlacedShape,
+    w: number,
+    h: number,
+    px: number,
+    py: number,
+  ): HandleType | null {
+    const handles = getHandlePositions(s, w, h);
+    for (const [key, pos] of Object.entries(handles)) {
+      if (key === "corner" && !(s.shape === "square" && s.cornerRadius > 0))
+        continue;
+      const dx = px - pos.x;
+      const dy = py - pos.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= HIT_RADIUS) return key as HandleType;
+    }
+    return null;
+  }
+
+  /** Check if normalized point (nx, ny) is inside the shape's bounding box. */
+  function isInsideShapeBounds(s: PlacedShape, nx: number, ny: number) {
+    const halfW = s.width / 2;
+    const halfH = s.height / 2;
+    return (
+      nx >= s.cx - halfW &&
+      nx <= s.cx + halfW &&
+      ny >= s.cy - halfH &&
+      ny <= s.cy + halfH
+    );
+  }
+
   // ── Overlay geometry ──────────────────────────────────
 
   function updateOverlayRect() {
@@ -369,6 +497,15 @@
       );
     }
 
+    // Draw transform handles for selected shape
+    const sel = markup.selectedIndex;
+    if (sel !== null) {
+      const stroke = markup.strokes[sel];
+      if (stroke && stroke.type === "shape") {
+        drawTransformHandles(ctx, stroke, w, h);
+      }
+    }
+
     ctx.globalAlpha = 1;
   }
 
@@ -419,6 +556,81 @@
     };
   }
 
+  // ── Transform handle drag ────────────────────────────
+
+  function handleDragMove(e: PointerEvent) {
+    if (!dragHandle || !canvasEl) return;
+    e.preventDefault();
+    const p = toNormal(e.clientX, e.clientY);
+    const sel = markup.selectedIndex;
+    if (sel === null || !dragStartShape) return;
+    const stroke = markup.strokes[sel];
+    if (!stroke || stroke.type !== "shape") return;
+
+    const update: Partial<PlacedShape> = {};
+    const dx = p.x - (dragOrigin?.x ?? 0);
+    const dy = p.y - (dragOrigin?.y ?? 0);
+
+    switch (dragHandle) {
+      case "left": {
+        // Left edge follows pointer, right edge stays → center shifts by dx/2
+        const newW = Math.max(0.01, dragStartShape.width - dx);
+        update.width = newW;
+        update.cx = dragStartShape.cx + dx / 2;
+        break;
+      }
+      case "right": {
+        // Right edge follows pointer, left edge stays
+        const newW = Math.max(0.01, dragStartShape.width + dx);
+        update.width = newW;
+        update.cx = dragStartShape.cx + dx / 2;
+        break;
+      }
+      case "top": {
+        // Top edge follows pointer, bottom edge stays
+        const newH = Math.max(0.01, dragStartShape.height - dy);
+        update.height = newH;
+        update.cy = dragStartShape.cy + dy / 2;
+        break;
+      }
+      case "bottom": {
+        // Bottom edge follows pointer, top edge stays
+        const newH = Math.max(0.01, dragStartShape.height + dy);
+        update.height = newH;
+        update.cy = dragStartShape.cy + dy / 2;
+        break;
+      }
+      case "corner": {
+        const maxR = 0.5;
+        const diag = Math.sqrt(
+          dragStartShape.width * dragStartShape.width +
+            dragStartShape.height * dragStartShape.height,
+        );
+        const proj = (-dx * dragStartShape.width + -dy * dragStartShape.height) / (diag || 1);
+        update.cornerRadius = Math.max(
+          0,
+          Math.min(maxR, dragStartShape.cornerRadius + proj / diag),
+        );
+        break;
+      }
+      case "rotate": {
+        const ocx = dragStartShape.cx;
+        const ocy = dragStartShape.cy;
+        const currentAngle = Math.atan2(p.y - ocy, p.x - ocx);
+        const startAngle = Math.atan2(
+          (dragOrigin?.y ?? 0) - ocy,
+          (dragOrigin?.x ?? 0) - ocx,
+        );
+        update.rotation = dragStartShape.rotation + (currentAngle - startAngle);
+        break;
+      }
+    }
+    if (Object.keys(update).length > 0) {
+      markup.updateShape(sel, update);
+    }
+    redrawAll();
+  }
+
   // ── Pointer handlers ──────────────────────────────────
 
   function handlePointerDown(e: PointerEvent) {
@@ -428,6 +640,36 @@
     isPointerDown = true;
     const p = toNormal(e.clientX, e.clientY);
     const tool = markup.activeTool;
+    // Convert normalized coords to CSS-pixel positions relative to overlay (canvas)
+    const rawPx = p.x * overlayRect.width;
+    const rawPy = p.y * overlayRect.height;
+
+    // Check transform handle hit first — takes priority over all tools
+    const sel = markup.selectedIndex;
+    if (sel !== null) {
+      const stroke = markup.strokes[sel];
+      if (stroke && stroke.type === "shape") {
+        const hit = hitTestHandle(stroke, overlayRect.width, overlayRect.height, rawPx, rawPy);
+        if (hit) {
+          dragHandle = hit;
+          dragOrigin = p;
+          dragStartShape = {
+            width: stroke.width,
+            height: stroke.height,
+            rotation: stroke.rotation,
+            cornerRadius: stroke.cornerRadius,
+            cx: stroke.cx,
+            cy: stroke.cy,
+          };
+          canvasEl?.setPointerCapture(e.pointerId);
+          return; // skip normal tool dispatch
+        }
+        // Click outside shape bounds → deselect
+        if (!isInsideShapeBounds(stroke, p.x, p.y)) {
+          markup.selectShape(null);
+        }
+      }
+    }
 
     if (isShapeTool(tool)) {
       // Shape placement — instant on click
@@ -447,7 +689,13 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
-    if (!isPointerDown || !markup.drawActive) return;
+    if (!markup.drawActive) return;
+    // Handle drag takes priority
+    if (dragHandle) {
+      handleDragMove(e);
+      return;
+    }
+    if (!isPointerDown) return;
     e.preventDefault();
     const p = toNormal(e.clientX, e.clientY);
     const tool = markup.activeTool;
@@ -468,6 +716,14 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
+    if (dragHandle) {
+      // Finalize handle drag
+      dragHandle = null;
+      dragOrigin = null;
+      dragStartShape = null;
+      canvasEl?.releasePointerCapture(e.pointerId);
+      return;
+    }
     if (!isPointerDown) return;
     isPointerDown = false;
     const tool = markup.activeTool;

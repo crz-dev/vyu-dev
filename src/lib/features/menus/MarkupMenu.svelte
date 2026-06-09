@@ -844,7 +844,7 @@
                 class:grey={!markup.roundedCorner}
                 class:active={markup.roundedCorner}
                 onclick={() => {
-                  markup.setRoundedCorner(!markup.roundedCorner);
+                  markup.toggleSelectedCornerRadius();
                 }}
                 aria-pressed={markup.roundedCorner}
                 aria-label="Rounded corners"

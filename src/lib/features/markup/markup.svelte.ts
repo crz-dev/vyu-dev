@@ -44,8 +44,10 @@ export interface PlacedShape {
   shape: ShapeKind;
   cx: number;
   cy: number;
-  size: number;
-  rounded: boolean;
+  width: number;
+  height: number;
+  rotation: number;
+  cornerRadius: number;
   color: string;
   thickness: number;
   opacity: number;
@@ -81,6 +83,9 @@ function createMarkupStore() {
   let roundedCorner = $state(false);
   let pathMode = $state(false);
 
+  // Selection state
+  let selectedIndex = $state<number | null>(null);
+
   function setActiveTool(tool: MarkupTool) {
     activeTool = tool;
   }
@@ -91,6 +96,29 @@ function createMarkupStore() {
 
   function setPathMode(v: boolean) {
     pathMode = v;
+  }
+
+  function selectShape(index: number | null) {
+    selectedIndex = index;
+  }
+
+  function updateShape(index: number, props: Partial<PlacedShape>) {
+    const s = strokes[index];
+    if (!s || s.type !== "shape") return;
+    const next = [...strokes];
+    next[index] = { ...s, ...props };
+    strokes = next;
+  }
+
+  function toggleSelectedCornerRadius() {
+    const newVal = !roundedCorner;
+    roundedCorner = newVal;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "shape" && s.shape === "square") {
+        updateShape(selectedIndex, { cornerRadius: newVal ? 0.2 : 0 });
+      }
+    }
   }
 
   function toggleDraw() {
@@ -140,20 +168,23 @@ function createMarkupStore() {
     currentStroke = null;
   }
 
-  /** Place a shape at normalized (cx, cy). Size is 8 % of the smaller view axis. */
+  /** Place a shape at normalized (cx, cy). Auto-selects the new shape. */
   function placeShape(cx: number, cy: number) {
     const stroke: PlacedShape = {
       type: "shape",
       shape: activeTool as ShapeKind,
       cx,
       cy,
-      size: 0.08,
-      rounded: roundedCorner,
+      width: 0.08,
+      height: 0.08,
+      rotation: 0,
+      cornerRadius: roundedCorner ? 0.2 : 0,
       color: drawColor,
       thickness: drawThickness,
       opacity: drawOpacity,
     };
     strokes = [...strokes, stroke];
+    selectedIndex = strokes.length - 1;
   }
 
   /** Place a straight line between two normalized points. */
@@ -209,13 +240,21 @@ function createMarkupStore() {
       showToast({ message: "Nothing to undo", color: "yellow" });
       return;
     }
+    const removedIndex = strokes.length - 1;
     strokes = strokes.slice(0, -1);
+    if (
+      selectedIndex !== null &&
+      (selectedIndex === removedIndex || selectedIndex >= strokes.length)
+    ) {
+      selectedIndex = null;
+    }
     showToast({ message: "Stroke undone", color: "blue" });
   }
 
   function clearAllStrokes() {
     strokes = [];
     currentStroke = null;
+    selectedIndex = null;
   }
 
   function cleanup() {
@@ -228,6 +267,7 @@ function createMarkupStore() {
     activeTool = "freehand";
     roundedCorner = false;
     pathMode = false;
+    selectedIndex = null;
   }
 
   return {
@@ -263,6 +303,9 @@ function createMarkupStore() {
     },
     get pathMode() {
       return pathMode;
+    },
+    get selectedIndex() {
+      return selectedIndex;
     },
     get cursorStyle(): string {
       if (!drawActive) return "default";
@@ -300,6 +343,9 @@ function createMarkupStore() {
     setActiveTool,
     setRoundedCorner,
     setPathMode,
+    selectShape,
+    updateShape,
+    toggleSelectedCornerRadius,
     placeShape,
     placeLine,
     endPathLine,

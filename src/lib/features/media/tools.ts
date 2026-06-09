@@ -419,33 +419,40 @@ function renderShape(
 ) {
   const cx = s.cx * w;
   const cy = s.cy * h;
-  const dim = s.size * Math.min(w, h);
-  const half = dim / 2;
-  ctx.beginPath();
+  const halfW = (s.width * w) / 2;
+  const halfH = (s.height * h) / 2;
+  const sw = s.width * w;
+  const sh = s.height * h;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(s.rotation);
   ctx.globalAlpha = s.opacity;
   ctx.strokeStyle = s.color;
   ctx.lineWidth = s.thickness;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  ctx.beginPath();
 
   if (s.shape === "square") {
-    if (s.rounded) {
-      const r = dim * 0.2;
-      ctx.roundRect(cx - half, cy - half, dim, dim, r);
+    if (s.cornerRadius > 0) {
+      const r = s.cornerRadius * Math.min(sw, sh);
+      ctx.roundRect(-halfW, -halfH, sw, sh, r);
     } else {
-      ctx.rect(cx - half, cy - half, dim, dim);
+      ctx.rect(-halfW, -halfH, sw, sh);
     }
     ctx.stroke();
   } else if (s.shape === "circle") {
-    ctx.arc(cx, cy, half, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2);
     ctx.stroke();
   } else if (s.shape === "triangle") {
-    ctx.moveTo(cx, cy - half);
-    ctx.lineTo(cx + half, cy + half);
-    ctx.lineTo(cx - half, cy + half);
+    ctx.moveTo(0, -halfH);
+    ctx.lineTo(halfW, halfH);
+    ctx.lineTo(-halfW, halfH);
     ctx.closePath();
     ctx.stroke();
   }
+  ctx.restore();
   ctx.globalAlpha = 1;
 }
 
