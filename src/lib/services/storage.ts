@@ -314,3 +314,22 @@ export function loadHighlightCustomColors(): string[] {
 export function saveHighlightCustomColors(colors: string[]): void {
   localStorage.setItem("vyu-highlight-custom-colors", JSON.stringify(colors));
 }
+
+// Text custom colors
+export function loadTextCustomColors(): string[] {
+  try {
+    const raw = localStorage.getItem("vyu-text-custom-colors");
+    if (!raw) return [""];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length >= 1) {
+      return parsed.map((c) => (typeof c === "string" ? c : ""));
+    }
+  } catch {
+    /* ignore */
+  }
+  return [""];
+}
+
+export function saveTextCustomColors(colors: string[]): void {
+  localStorage.setItem("vyu-text-custom-colors", JSON.stringify(colors));
+}

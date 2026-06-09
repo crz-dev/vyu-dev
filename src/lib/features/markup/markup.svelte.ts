@@ -30,6 +30,8 @@ import {
   saveMarkupCustomColors,
   loadHighlightCustomColors,
   saveHighlightCustomColors,
+  loadTextCustomColors,
+  saveTextCustomColors,
 } from "$lib/services/storage";
 import { showToast } from "$lib/features/toast/toast.svelte";
 
@@ -134,6 +136,19 @@ function createMarkupStore() {
   let highlightMode = $state<"free" | "straight">("free");
   let highlightCustomColors = $state<string[]>(loadHighlightCustomColors());
   let currentHighlight = $state<HighlightFreehand | null>(null);
+
+  // Text state
+  let textColor = $state("#000000");
+  let textBgColor = $state("#ffffff");
+  let textBgEnabled = $state(false);
+  let textCustomColors = $state<string[]>(loadTextCustomColors());
+  let textFontFamily = $state("Arial");
+  let textFontSize = $state(16);
+  let textBold = $state(false);
+  let textItalic = $state(false);
+  let textUnderline = $state(false);
+  let textStrikethrough = $state(false);
+  let textAlign = $state<"left" | "center" | "right" | "justify">("left");
 
   function setActiveTool(tool: MarkupTool) {
     activeTool = activeTool === tool ? "freehand" : tool;
@@ -343,6 +358,53 @@ function createMarkupStore() {
     highlightColor = color;
   }
 
+  function setTextColor(color: string) {
+    textColor = color;
+  }
+
+  function setTextBgColor(color: string) {
+    textBgColor = color;
+  }
+
+  function setTextBgEnabled(v: boolean) {
+    textBgEnabled = v;
+  }
+
+  function setTextCustomColor(index: number, color: string) {
+    const next = [...textCustomColors];
+    next[index] = color;
+    textCustomColors = next;
+    saveTextCustomColors(next);
+  }
+
+  function setTextFontFamily(family: string) {
+    textFontFamily = family;
+  }
+
+  function setTextFontSize(size: number) {
+    textFontSize = Math.max(6, Math.min(72, Math.round(size)));
+  }
+
+  function setTextBold(v: boolean) {
+    textBold = v;
+  }
+
+  function setTextItalic(v: boolean) {
+    textItalic = v;
+  }
+
+  function setTextUnderline(v: boolean) {
+    textUnderline = v;
+  }
+
+  function setTextStrikethrough(v: boolean) {
+    textStrikethrough = v;
+  }
+
+  function setTextAlign(align: "left" | "center" | "right" | "justify") {
+    textAlign = align;
+  }
+
   function startHighlightStroke(x: number, y: number) {
     if (highlightMode === "free") {
       currentHighlight = {
@@ -371,12 +433,7 @@ function createMarkupStore() {
     currentHighlight = null;
   }
 
-  function placeHighlightLine(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-  ) {
+  function placeHighlightLine(x1: number, y1: number, x2: number, y2: number) {
     const stroke: HighlightStraight = {
       type: "highlight",
       mode: "straight",
@@ -437,6 +494,16 @@ function createMarkupStore() {
     highlightOpacity = 0.4;
     highlightMode = "free";
     currentHighlight = null;
+    textColor = "#000000";
+    textBgColor = "#ffffff";
+    textBgEnabled = false;
+    textFontFamily = "Arial";
+    textFontSize = 16;
+    textBold = false;
+    textItalic = false;
+    textUnderline = false;
+    textStrikethrough = false;
+    textAlign = "left";
   }
 
   return {
@@ -500,6 +567,39 @@ function createMarkupStore() {
     get currentHighlight() {
       return currentHighlight;
     },
+    get textColor() {
+      return textColor;
+    },
+    get textBgColor() {
+      return textBgColor;
+    },
+    get textBgEnabled() {
+      return textBgEnabled;
+    },
+    get textCustomColors() {
+      return textCustomColors;
+    },
+    get textFontFamily() {
+      return textFontFamily;
+    },
+    get textFontSize() {
+      return textFontSize;
+    },
+    get textBold() {
+      return textBold;
+    },
+    get textItalic() {
+      return textItalic;
+    },
+    get textUnderline() {
+      return textUnderline;
+    },
+    get textStrikethrough() {
+      return textStrikethrough;
+    },
+    get textAlign() {
+      return textAlign;
+    },
     get cursorStyle(): string {
       if (!drawActive && !highlightActive) return "default";
       if (highlightActive) return "crosshair";
@@ -512,8 +612,7 @@ function createMarkupStore() {
           "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='8' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E",
         triangle:
           "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpolygon points='12,4 20,20 4,20' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E",
-        line:
-          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cline x1='4' y1='12' x2='20' y2='12' stroke='black' stroke-width='2'/%3E%3C/svg%3E",
+        line: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cline x1='4' y1='12' x2='20' y2='12' stroke='black' stroke-width='2'/%3E%3C/svg%3E",
         arrow:
           "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cline x1='4' y1='12' x2='20' y2='12' stroke='black' stroke-width='2'/%3E%3Cpolyline points='14,6 20,12 14,18' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E",
         "bidirectional-arrow":
@@ -555,6 +654,17 @@ function createMarkupStore() {
     addHighlightPoint,
     endHighlightStroke,
     placeHighlightLine,
+    setTextColor,
+    setTextBgColor,
+    setTextBgEnabled,
+    setTextCustomColor,
+    setTextFontFamily,
+    setTextFontSize,
+    setTextBold,
+    setTextItalic,
+    setTextUnderline,
+    setTextStrikethrough,
+    setTextAlign,
   };
 }
 

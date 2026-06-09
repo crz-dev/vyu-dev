@@ -35,6 +35,21 @@
   let pinned = $state(false);
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
 
+  // Text sub-tool state
+  let activeTextTool: "color" | "font" | "style" | "alignment" | null =
+    $state(null);
+  let textFontDropdownOpen = $state(false);
+
+  const TEXT_FONTS = [
+    "Arial",
+    "Times New Roman",
+    "Segoe UI",
+    "Verdana",
+    "Georgia",
+    "Courier New",
+  ];
+  const TEXT_APP_FONTS = ["Geist", "Satoshi"];
+
   // Draw sub-tool state
   let activeDrawTool: "color" | "thickness" | "opacity" | null = $state(null);
   let thicknessTrackEl: HTMLDivElement | null = $state(null);
@@ -45,9 +60,8 @@
   let localOpacity = $state(1);
 
   // Highlight sub-tool state
-  let activeHighlightTool: "color" | "thickness" | "opacity" | null = $state(
-    null,
-  );
+  let activeHighlightTool: "color" | "thickness" | "opacity" | null =
+    $state(null);
   let highlightThicknessTrackEl: HTMLDivElement | null = $state(null);
   let isHighlightThicknessDragging = $state(false);
   let localHighlightThickness = $state(20);
@@ -68,6 +82,8 @@
       pinned = false;
       activeDrawTool = null;
       activeHighlightTool = null;
+      activeTextTool = null;
+      textFontDropdownOpen = false;
       markup.setActiveTool("freehand");
       markup.setRoundedCorner(false);
       markup.setPathMode(false);
@@ -106,6 +122,11 @@
     activeHighlightTool = null;
   }
 
+  function closeTextSubTools() {
+    activeTextTool = null;
+    textFontDropdownOpen = false;
+  }
+
   function toggleEraser() {
     if (eraserRowOpen) {
       closeAllRows();
@@ -114,6 +135,7 @@
       closeAllRows();
       closeDrawSubTools();
       closeHighlightSubTools();
+      closeTextSubTools();
       openTimeout = setTimeout(() => {
         eraserRowOpen = true;
         openTimeout = null;
@@ -131,6 +153,7 @@
       closeAllRows();
       closeDrawSubTools();
       closeHighlightSubTools();
+      closeTextSubTools();
       markup.drawActive = false;
       openTimeout = setTimeout(() => {
         highlightRowOpen = true;
@@ -150,6 +173,7 @@
       closeAllRows();
       closeDrawSubTools();
       closeHighlightSubTools();
+      closeTextSubTools();
       markup.highlightActive = false;
       openTimeout = setTimeout(() => {
         drawRowOpen = true;
@@ -162,11 +186,15 @@
   function toggleText() {
     if (textRowOpen) {
       closeAllRows();
+      closeTextSubTools();
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
       closeDrawSubTools();
       closeHighlightSubTools();
+      closeTextSubTools();
+      markup.drawActive = false;
+      markup.highlightActive = false;
       openTimeout = setTimeout(() => {
         textRowOpen = true;
         openTimeout = null;
@@ -210,6 +238,16 @@
     } else {
       highlightModeRowOpen = true;
       activeHighlightTool = null;
+    }
+  }
+
+  function toggleTextSubTool(tool: "color" | "font" | "style" | "alignment") {
+    if (activeTextTool === tool) {
+      activeTextTool = null;
+      textFontDropdownOpen = false;
+    } else {
+      activeTextTool = tool;
+      textFontDropdownOpen = false;
     }
   }
 
@@ -907,7 +945,8 @@
                   <label
                     class="markup-color-swatch"
                     class:markup-color-swatch-empty={!color}
-                    class:active={markup.highlightColor === color && color !== ""}
+                    class:active={markup.highlightColor === color &&
+                      color !== ""}
                     style={color ? `background: ${color}` : ""}
                     aria-label={`Custom color ${i + 1}`}
                     oncontextmenu={(e) => {
@@ -942,7 +981,10 @@
               <div
                 class="color-slider-track"
                 bind:this={highlightThicknessTrackEl}
-                style="--track-thickness: {Math.max(2, localHighlightThickness)}px"
+                style="--track-thickness: {Math.max(
+                  2,
+                  localHighlightThickness,
+                )}px"
                 role="slider"
                 tabindex="0"
                 aria-valuemin={0}
@@ -1555,7 +1597,11 @@
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            <button class="edit-menu-btn blue sub">
+            <button
+              class="edit-menu-btn blue sub"
+              class:active={activeTextTool === "color"}
+              onclick={() => toggleTextSubTool("color")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -1586,7 +1632,11 @@
               </svg>
               <span>Color</span>
             </button>
-            <button class="edit-menu-btn blue sub">
+            <button
+              class="edit-menu-btn blue sub"
+              class:active={activeTextTool === "font"}
+              onclick={() => toggleTextSubTool("font")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -1605,7 +1655,11 @@
               </svg>
               <span>Font</span>
             </button>
-            <button class="edit-menu-btn blue sub">
+            <button
+              class="edit-menu-btn blue sub"
+              class:active={activeTextTool === "style"}
+              onclick={() => toggleTextSubTool("style")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -1625,7 +1679,11 @@
               </svg>
               <span>Style</span>
             </button>
-            <button class="edit-menu-btn blue sub">
+            <button
+              class="edit-menu-btn blue sub"
+              class:active={activeTextTool === "alignment"}
+              onclick={() => toggleTextSubTool("alignment")}
+            >
               <svg
                 width="11"
                 height="11"
@@ -1644,6 +1702,337 @@
               <span>Alignment</span>
             </button>
           </div>
+
+          {#if activeTextTool === "color"}
+            <div
+              class="text-color-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <div class="markup-color-card">
+                {#each DRAW_COLORS as color, i}
+                  <button
+                    class="markup-color-swatch"
+                    class:active={markup.textColor === color}
+                    style="background: {color}"
+                    onclick={() => markup.setTextColor(color)}
+                    aria-label={`Color ${i + 1}`}
+                  ></button>
+                {/each}
+              </div>
+              <div class="markup-color-card">
+                {#each markup.textCustomColors as color, i}
+                  <label
+                    class="markup-color-swatch"
+                    class:markup-color-swatch-empty={!color}
+                    class:active={markup.textColor === color && color !== ""}
+                    style={color ? `background: ${color}` : ""}
+                    aria-label={`Custom color ${i + 1}`}
+                    oncontextmenu={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      markup.setTextCustomColor(i, "");
+                    }}
+                  >
+                    <input
+                      type="color"
+                      value={color || "#000000"}
+                      oninput={(e) => {
+                        markup.setTextCustomColor(
+                          i,
+                          (e.target as HTMLInputElement).value,
+                        );
+                      }}
+                      class="markup-color-native-input"
+                    />
+                  </label>
+                {/each}
+              </div>
+              <button
+                class="text-bg-color-btn"
+                class:active={markup.textBgEnabled}
+                onclick={() => markup.setTextBgEnabled(!markup.textBgEnabled)}
+                data-tooltip="Background color"
+                aria-label="Toggle text background"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="7" y1="8" x2="17" y2="8" />
+                  <line x1="7" y1="12" x2="14" y2="12" />
+                  <line x1="7" y1="16" x2="11" y2="16" />
+                </svg>
+              </button>
+            </div>
+          {/if}
+
+          {#if activeTextTool === "font"}
+            <div
+              class="text-font-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <span class="text-font-label">Font:</span>
+              <div class="text-font-anchor">
+                <button
+                  class="text-font-btn"
+                  onclick={() => {
+                    textFontDropdownOpen = !textFontDropdownOpen;
+                  }}
+                >
+                  <span
+                    style="font-family: '{markup.textFontFamily}', sans-serif"
+                  >
+                    {markup.textFontFamily}
+                  </span>
+                  <svg
+                    width="8"
+                    height="8"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                {#if textFontDropdownOpen}
+                  <div
+                    class="text-font-dropdown"
+                    in:fly={{ y: -6, duration: 120, opacity: 0.08 }}
+                    out:fly={{ y: -6, duration: 80, opacity: 0.08 }}
+                  >
+                    {#each TEXT_FONTS as font}
+                      <button
+                        class="text-font-item"
+                        class:active={markup.textFontFamily === font}
+                        onclick={() => {
+                          markup.setTextFontFamily(font);
+                          textFontDropdownOpen = false;
+                        }}
+                      >
+                        <span style="font-family: '{font}', sans-serif"
+                          >{font}</span
+                        >
+                      </button>
+                    {/each}
+                    <div class="text-font-separator"></div>
+                    {#each TEXT_APP_FONTS as font}
+                      <button
+                        class="text-font-item"
+                        class:active={markup.textFontFamily === font}
+                        onclick={() => {
+                          markup.setTextFontFamily(font);
+                          textFontDropdownOpen = false;
+                        }}
+                      >
+                        <span style="font-family: '{font}', sans-serif"
+                          >{font}</span
+                        >
+                      </button>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+              <div class="edit-menu-divider"></div>
+              <span class="text-font-label">Size:</span>
+              <button
+                class="text-size-btn"
+                onclick={() => markup.setTextFontSize(markup.textFontSize - 1)}
+                aria-label="Decrease font size"
+              >
+                <svg
+                  width="7"
+                  height="7"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+              <input
+                type="number"
+                class="text-size-input"
+                value={markup.textFontSize}
+                min="6"
+                max="72"
+                oninput={(e) => {
+                  const val = parseInt((e.target as HTMLInputElement).value);
+                  if (!isNaN(val)) markup.setTextFontSize(val);
+                }}
+              />
+              <button
+                class="text-size-btn"
+                onclick={() => markup.setTextFontSize(markup.textFontSize + 1)}
+                aria-label="Increase font size"
+              >
+                <svg
+                  width="7"
+                  height="7"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            </div>
+          {/if}
+
+          {#if activeTextTool === "style"}
+            <div
+              class="edit-menu-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <button
+                class="edit-menu-btn blue sub text-style-btn"
+                class:active={markup.textBold}
+                onclick={() => markup.setTextBold(!markup.textBold)}
+                data-tooltip="Bold"
+                aria-label="Bold"
+              >
+                <span style="font-weight: 700">B</span>
+              </button>
+              <button
+                class="edit-menu-btn blue sub text-style-btn"
+                class:active={markup.textItalic}
+                onclick={() => markup.setTextItalic(!markup.textItalic)}
+                data-tooltip="Italic"
+                aria-label="Italic"
+              >
+                <span style="font-style: italic">I</span>
+              </button>
+              <button
+                class="edit-menu-btn blue sub text-style-btn"
+                class:active={markup.textUnderline}
+                onclick={() => markup.setTextUnderline(!markup.textUnderline)}
+                data-tooltip="Underline"
+                aria-label="Underline"
+              >
+                <span style="text-decoration: underline">U</span>
+              </button>
+              <button
+                class="edit-menu-btn blue sub text-style-btn"
+                class:active={markup.textStrikethrough}
+                onclick={() =>
+                  markup.setTextStrikethrough(!markup.textStrikethrough)}
+                data-tooltip="Strikethrough"
+                aria-label="Strikethrough"
+              >
+                <span style="text-decoration: line-through">S</span>
+              </button>
+            </div>
+          {/if}
+
+          {#if activeTextTool === "alignment"}
+            <div
+              class="edit-menu-row"
+              in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
+              out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
+            >
+              <button
+                class="edit-menu-btn blue sub"
+                class:active={markup.textAlign === "left"}
+                onclick={() => markup.setTextAlign("left")}
+                data-tooltip="Left"
+                aria-label="Align left"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="15" y2="12" />
+                  <line x1="3" y1="18" x2="18" y2="18" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn blue sub"
+                class:active={markup.textAlign === "center"}
+                onclick={() => markup.setTextAlign("center")}
+                data-tooltip="Center"
+                aria-label="Align center"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="6" y1="12" x2="18" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn blue sub"
+                class:active={markup.textAlign === "right"}
+                onclick={() => markup.setTextAlign("right")}
+                data-tooltip="Right"
+                aria-label="Align right"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="9" y1="12" x2="21" y2="12" />
+                  <line x1="6" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <button
+                class="edit-menu-btn blue sub"
+                class:active={markup.textAlign === "justify"}
+                onclick={() => markup.setTextAlign("justify")}
+                data-tooltip="Justify"
+                aria-label="Justify"
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                >
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+            </div>
+          {/if}
         {/if}
       </div>
     </div>
