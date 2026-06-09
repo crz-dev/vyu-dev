@@ -1,9 +1,9 @@
 # Session state
 _Overwrite this file completely at end of every session. Never append._
-Updated: 2026-06-08
+Updated: 2026-06-09
 
 ## Last change
-Added transform handles on placed shapes. `PlacedShape` interface updated: `size` → `width`/`height`, added `rotation` (radians), `rounded` → `cornerRadius`. Selection state (`selectedIndex`) with auto-select on place. Four resize handles (left/right/top/bottom), corner-radius handle (squares only), rotation handle above top-center. All handles draggable via canvas pointer events; opposite edge stays fixed during resize. `drawTransformHandles` renders dashed bounding box + colored handles. `renderShape` in tools.ts supports rotation and ellipse. Rounded-corner toggle in MarkupMenu affects selected square.
+Live shape property editing: selecting a shape syncs its color/thickness/opacity into menu controls; changing a control updates the selected shape live. `selectShape`, `setDrawColor`, `setDrawThickness`, `setDrawOpacity`, `setCustomColor` all updated. Drag-to-size shape placement (click=default, drag=sized). Click existing shape to select for transform. Shape-aware handle sets (circle gets all 8 with corners on ellipse edge, triangle gets 6, square all 8). 4 corner resize handles. Rotation-aware handle rendering, hit-test, and drag deltas. Hover enlarge animation via rAF lerp. White diamond handles. Shape move drag via interior click. Red X delete handle (top-right). Backspace/Delete key to remove selected shape. Tool buttons toggle off. White selection outline removed. `deleteSelectedShape` added to store.
 
 ## Status
 - Type check: clean (0 errors, 0 warnings)
@@ -14,10 +14,10 @@ Added transform handles on placed shapes. `PlacedShape` interface updated: `size
 Pick up the next open issue or feature request.
 
 ## Bugs found this session
-- Transforms added don't work on shapes, adding shapes takes priority. Fixed: hit-test raw pixel coordinates used `overlayRect.left` (container-offset) instead of canvas-relative position, causing coordinate mismatch. Switched to `p.x * overlayRect.width`.
+- Hover detection stopped working after handle drag because `isPointerDown` was never cleared in the handle-drag finalize branch. Fixed.
 
 ## Current commit
-feat: transform handles on placed shapes - resize, rotate, corner-radius
+feat: live shape property editing, drag-to-size placement, improved transform handles
 
 ## Architecture update
 - None.

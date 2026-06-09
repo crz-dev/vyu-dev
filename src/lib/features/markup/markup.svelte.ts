@@ -87,7 +87,7 @@ function createMarkupStore() {
   let selectedIndex = $state<number | null>(null);
 
   function setActiveTool(tool: MarkupTool) {
-    activeTool = tool;
+    activeTool = activeTool === tool ? "freehand" : tool;
   }
 
   function setRoundedCorner(v: boolean) {
@@ -100,6 +100,15 @@ function createMarkupStore() {
 
   function selectShape(index: number | null) {
     selectedIndex = index;
+    // Sync selected shape's properties into the draw defaults
+    if (index !== null) {
+      const s = strokes[index];
+      if (s && s.type === "shape") {
+        drawColor = s.color;
+        drawThickness = s.thickness;
+        drawOpacity = s.opacity;
+      }
+    }
   }
 
   function updateShape(index: number, props: Partial<PlacedShape>) {
@@ -127,14 +136,23 @@ function createMarkupStore() {
 
   function setDrawColor(color: string) {
     drawColor = color;
+    if (selectedIndex !== null) {
+      updateShape(selectedIndex, { color });
+    }
   }
 
   function setDrawThickness(v: number) {
     drawThickness = v;
+    if (selectedIndex !== null) {
+      updateShape(selectedIndex, { thickness: v });
+    }
   }
 
   function setDrawOpacity(v: number) {
     drawOpacity = v;
+    if (selectedIndex !== null) {
+      updateShape(selectedIndex, { opacity: v });
+    }
   }
 
   function setCustomColor(index: number, color: string) {
@@ -143,6 +161,9 @@ function createMarkupStore() {
     customColors = next;
     saveMarkupCustomColors(next);
     drawColor = color;
+    if (selectedIndex !== null) {
+      updateShape(selectedIndex, { color });
+    }
   }
 
   function startStroke(x: number, y: number) {
@@ -168,15 +189,25 @@ function createMarkupStore() {
     currentStroke = null;
   }
 
-  /** Place a shape at normalized (cx, cy). Auto-selects the new shape. */
+  /** Place a shape at normalized (cx, cy) with default size. Auto-selects the new shape. */
   function placeShape(cx: number, cy: number) {
+    placeShapeSized(cx, cy, 0.08, 0.08);
+  }
+
+  /** Place a shape at normalized (cx, cy) with explicit width/height. Auto-selects. */
+  function placeShapeSized(
+    cx: number,
+    cy: number,
+    width: number,
+    height: number,
+  ) {
     const stroke: PlacedShape = {
       type: "shape",
       shape: activeTool as ShapeKind,
       cx,
       cy,
-      width: 0.08,
-      height: 0.08,
+      width: Math.max(0.005, width),
+      height: Math.max(0.005, height),
       rotation: 0,
       cornerRadius: roundedCorner ? 0.2 : 0,
       color: drawColor,
@@ -249,6 +280,13 @@ function createMarkupStore() {
       selectedIndex = null;
     }
     showToast({ message: "Stroke undone", color: "blue" });
+  }
+
+  function deleteSelectedShape() {
+    if (selectedIndex === null) return;
+    const next = strokes.filter((_, i) => i !== selectedIndex);
+    strokes = next;
+    selectedIndex = null;
   }
 
   function clearAllStrokes() {
@@ -338,6 +376,7 @@ function createMarkupStore() {
     addPoint,
     endStroke,
     undoLastStroke,
+    deleteSelectedShape,
     clearAllStrokes,
     cleanup,
     setActiveTool,
@@ -347,6 +386,7 @@ function createMarkupStore() {
     updateShape,
     toggleSelectedCornerRadius,
     placeShape,
+    placeShapeSized,
     placeLine,
     endPathLine,
   };
