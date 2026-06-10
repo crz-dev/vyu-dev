@@ -3,6 +3,7 @@
     markup,
     type PlacedShape,
     type PlacedLine,
+    type PlacedText,
     type FreehandStroke,
     type HighlightFreehand,
     type HighlightStraight,
@@ -35,7 +36,17 @@
   let highlightStraightPreview = $state<{ x: number; y: number } | null>(null);
 
   // Transform handle drag state
-  type HandleType = "left" | "right" | "top" | "bottom" | "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | "rotate" | "delete";
+  type HandleType =
+    | "left"
+    | "right"
+    | "top"
+    | "bottom"
+    | "topLeft"
+    | "topRight"
+    | "bottomLeft"
+    | "bottomRight"
+    | "rotate"
+    | "delete";
   let dragHandle = $state<HandleType | null>(null);
   let dragOrigin = $state<{ x: number; y: number } | null>(null);
   let dragStartShape = $state<{
@@ -55,6 +66,22 @@
   let moveOrigin = $state<{ x: number; y: number } | null>(null);
   let moveStartCx = $state(0);
   let moveStartCy = $state(0);
+
+  // Text box sizing constants
+  const TEXT_PADDING = 6; // CSS px padding around text for hit area
+  let hasTextStrokes = $derived(markup.strokes.some((s) => s.type === "text"));
+
+  // Inline editing state
+  let editingTextIndex = $state<number | null>(null);
+
+  function exitEditing() {
+    if (editingTextIndex === null) return;
+    const s = markup.strokes[editingTextIndex];
+    if (s && s.type === "text" && s.text.length === 0) {
+      markup.deleteSelectedShape();
+    }
+    editingTextIndex = null;
+  }
 
   // ── Helpers ───────────────────────────────────────────
 
@@ -85,9 +112,7 @@
 
   function isLineTool(tool: MarkupTool): tool is LineKind {
     return (
-      tool === "line" ||
-      tool === "arrow" ||
-      tool === "bidirectional-arrow"
+      tool === "line" || tool === "arrow" || tool === "bidirectional-arrow"
     );
   }
 
@@ -106,14 +131,8 @@
     const a = Math.PI / 6;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(
-      x - size * Math.cos(angle - a),
-      y - size * Math.sin(angle - a),
-    );
-    ctx.lineTo(
-      x - size * Math.cos(angle + a),
-      y - size * Math.sin(angle + a),
-    );
+    ctx.lineTo(x - size * Math.cos(angle - a), y - size * Math.sin(angle - a));
+    ctx.lineTo(x - size * Math.cos(angle + a), y - size * Math.sin(angle + a));
     ctx.closePath();
     ctx.fill();
   }
@@ -189,10 +208,7 @@
 
       const aSize = arrowSize(l.thickness);
       const angle = Math.atan2(y2 - y1, x2 - x1);
-      if (
-        l.lineType === "arrow" ||
-        l.lineType === "bidirectional-arrow"
-      ) {
+      if (l.lineType === "arrow" || l.lineType === "bidirectional-arrow") {
         drawArrowhead(ctx, x2, y2, angle, aSize);
       }
       if (l.lineType === "bidirectional-arrow") {
@@ -212,36 +228,15 @@
         const aSize = arrowSize(l.thickness);
         const last = pts[pts.length - 1];
         const prev = pts[pts.length - 2];
-        const endAngle = Math.atan2(
-          last.y - prev.y,
-          last.x - prev.x,
-        );
-        if (
-          l.lineType === "arrow" ||
-          l.lineType === "bidirectional-arrow"
-        ) {
-          drawArrowhead(
-            ctx,
-            last.x * w,
-            last.y * h,
-            endAngle,
-            aSize,
-          );
+        const endAngle = Math.atan2(last.y - prev.y, last.x - prev.x);
+        if (l.lineType === "arrow" || l.lineType === "bidirectional-arrow") {
+          drawArrowhead(ctx, last.x * w, last.y * h, endAngle, aSize);
         }
         if (l.lineType === "bidirectional-arrow") {
           const first = pts[0];
           const second = pts.length > 1 ? pts[1] : pts[0];
-          const startAngle = Math.atan2(
-            first.y - second.y,
-            first.x - second.x,
-          );
-          drawArrowhead(
-            ctx,
-            first.x * w,
-            first.y * h,
-            startAngle,
-            aSize,
-          );
+          const startAngle = Math.atan2(first.y - second.y, first.x - second.x);
+          drawArrowhead(ctx, first.x * w, first.y * h, startAngle, aSize);
         }
       }
     }
@@ -264,13 +259,7 @@
     ctx.lineJoin = "round";
 
     if (pts.length === 1) {
-      ctx.arc(
-        pts[0].x * w,
-        pts[0].y * h,
-        stroke.thickness / 2,
-        0,
-        Math.PI * 2,
-      );
+      ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
       ctx.fillStyle = stroke.color;
       ctx.fill();
     } else {
@@ -299,13 +288,7 @@
     ctx.lineJoin = "miter";
 
     if (pts.length === 1) {
-      ctx.arc(
-        pts[0].x * w,
-        pts[0].y * h,
-        stroke.thickness / 2,
-        0,
-        Math.PI * 2,
-      );
+      ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
       ctx.fillStyle = stroke.color;
       ctx.fill();
     } else {
@@ -351,6 +334,145 @@
     ctx.globalAlpha = 1;
   }
 
+  function drawPlacedText(
+    ctx: CanvasRenderingContext2D,
+    t: PlacedText,
+    w: number,
+    h: number,
+  ) {
+    const px = t.x * w;
+    const py = t.y * h;
+    const fontSize = t.fontSize;
+    const fontWeight = t.bold ? "bold" : "normal";
+    const fontStyle = t.italic ? "italic" : "normal";
+    const fontStr = `${fontStyle} ${fontWeight} ${fontSize}px "${t.fontFamily}"`;
+    ctx.font = fontStr;
+    ctx.textBaseline = "middle";
+
+    const align = t.align === "justify" ? "left" : t.align;
+    ctx.textAlign = align;
+
+    const text = t.text || "";
+    const metrics = ctx.measureText(text);
+    const textWidth = metrics.width;
+    const lineHeight = fontSize * 1.2;
+    const pad = TEXT_PADDING * (fontSize / 16);
+    const boxW = textWidth + pad * 2;
+    const boxH = lineHeight + pad;
+
+    const boxLeft = px - boxW / 2;
+    const boxTop = py - boxH / 2;
+
+    let drawX: number;
+    if (align === "left") drawX = boxLeft + pad;
+    else if (align === "right") drawX = boxLeft + boxW - pad;
+    else drawX = px;
+
+    const drawY = boxTop + pad;
+
+    // Background
+    if (t.bgEnabled) {
+      ctx.fillStyle = t.bgColor;
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(boxLeft, boxTop, boxW, boxH);
+      ctx.globalAlpha = 1;
+    }
+
+    // Text
+    ctx.fillStyle = t.color;
+    ctx.fillText(text, drawX, drawY + lineHeight / 2);
+
+    // Underline
+    if (t.underline) {
+      const underlineY = drawY + lineHeight / 2 + 2;
+      ctx.strokeStyle = t.color;
+      ctx.lineWidth = Math.max(1, fontSize / 14);
+      ctx.beginPath();
+      const ulX =
+        align === "left"
+          ? drawX
+          : align === "right"
+            ? drawX - textWidth
+            : drawX - textWidth / 2;
+      ctx.moveTo(ulX, underlineY);
+      ctx.lineTo(ulX + textWidth, underlineY);
+      ctx.stroke();
+    }
+
+    // Strikethrough
+    if (t.strikethrough) {
+      const strikeY = drawY + lineHeight / 2 - fontSize * 0.3;
+      ctx.strokeStyle = t.color;
+      ctx.lineWidth = Math.max(1, fontSize / 14);
+      ctx.beginPath();
+      const stX =
+        align === "left"
+          ? drawX
+          : align === "right"
+            ? drawX - textWidth
+            : drawX - textWidth / 2;
+      ctx.moveTo(stX, strikeY);
+      ctx.lineTo(stX + textWidth, strikeY);
+      ctx.stroke();
+    }
+  }
+
+  /** Estimate text width in CSS px (capped by char count × font size). */
+  function estimateTextWidth(t: PlacedText, w: number, h: number): number {
+    const fontSize = t.fontSize;
+    const text = t.text || "";
+    // Rough estimate: average char width ~0.6 * fontSize
+    const estCharWidth = fontSize * 0.6;
+    const computed = text.length * estCharWidth;
+    return Math.max(computed, fontSize * 1.5); // minimum width for empty hit area
+  }
+
+  /** Get the bounding rect for a PlacedText in CSS px coords. Uses ctx for precision if available, falls back to estimate. */
+  function getTextBbox(
+    t: PlacedText,
+    w: number,
+    h: number,
+    ctx?: CanvasRenderingContext2D,
+  ): { left: number; right: number; top: number; bottom: number } {
+    const fontSize = t.fontSize;
+    let textWidth: number;
+    if (ctx) {
+      const fontWeight = t.bold ? "bold" : "normal";
+      const fontStyle = t.italic ? "italic" : "normal";
+      ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px "${t.fontFamily}"`;
+      const text = t.text || "";
+      textWidth = ctx.measureText(text).width;
+    } else {
+      textWidth = estimateTextWidth(t, w, h);
+    }
+    const pad = TEXT_PADDING * (fontSize / 16);
+    const boxW = textWidth + pad * 2;
+    const boxH = fontSize * 1.2 + pad;
+    const left = t.x * w - boxW / 2;
+    const top = t.y * h - boxH / 2;
+    return { left, right: left + boxW, top, bottom: top + boxH };
+  }
+
+  function drawTextSelectionHighlight(
+    ctx: CanvasRenderingContext2D,
+    t: PlacedText,
+    w: number,
+    h: number,
+  ) {
+    const bbox = getTextBbox(t, w, h, ctx);
+    ctx.save();
+    ctx.strokeStyle = "#3b82f6";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(
+      bbox.left,
+      bbox.top,
+      bbox.right - bbox.left,
+      bbox.bottom - bbox.top,
+    );
+    ctx.restore();
+  }
+
   function drawCurrentStrokePathPreview(
     ctx: CanvasRenderingContext2D,
     stroke: FreehandStroke,
@@ -364,20 +486,14 @@
     const aSize = arrowSize(stroke.thickness);
     const last = pts[pts.length - 1];
     const prev = pts[pts.length - 2];
-    const endAngle = Math.atan2(
-      last.y - prev.y,
-      last.x - prev.x,
-    );
+    const endAngle = Math.atan2(last.y - prev.y, last.x - prev.x);
     if (lineType === "arrow" || lineType === "bidirectional-arrow") {
       drawArrowhead(ctx, last.x * w, last.y * h, endAngle, aSize);
     }
     if (lineType === "bidirectional-arrow") {
       const first = pts[0];
       const second = pts.length > 1 ? pts[1] : pts[0];
-      const startAngle = Math.atan2(
-        first.y - second.y,
-        first.x - second.x,
-      );
+      const startAngle = Math.atan2(first.y - second.y, first.x - second.x);
       drawArrowhead(ctx, first.x * w, first.y * h, startAngle, aSize);
     }
   }
@@ -411,10 +527,7 @@
     ctx.fillStyle = markup.drawColor;
     const aSize = arrowSize(markup.drawThickness);
     const angle = Math.atan2(py2 - py1, px2 - px1);
-    if (
-      activeTool === "arrow" ||
-      activeTool === "bidirectional-arrow"
-    ) {
+    if (activeTool === "arrow" || activeTool === "bidirectional-arrow") {
       drawArrowhead(ctx, px2, py2, angle, aSize);
     }
     if (activeTool === "bidirectional-arrow") {
@@ -693,10 +806,7 @@
     const localX = cos * dx - sin * dy;
     const localY = sin * dx + cos * dy;
     return (
-      localX >= -halfW &&
-      localX <= halfW &&
-      localY >= -halfH &&
-      localY <= halfH
+      localX >= -halfW && localX <= halfW && localY >= -halfH && localY <= halfH
     );
   }
 
@@ -759,6 +869,8 @@
             stroke.opacity,
           );
         }
+      } else if (stroke.type === "text") {
+        drawPlacedText(ctx, stroke, w, h);
       }
     }
 
@@ -768,13 +880,7 @@
       drawFreehand(ctx, cur, w, h);
       // If in path mode with a line tool, overlay arrowhead preview
       if (markup.pathMode && isLineTool(markup.activeTool)) {
-        drawCurrentStrokePathPreview(
-          ctx,
-          cur,
-          w,
-          h,
-          markup.activeTool,
-        );
+        drawCurrentStrokePathPreview(ctx, cur, w, h, markup.activeTool);
       }
     }
 
@@ -826,12 +932,14 @@
       );
     }
 
-    // Draw transform handles for selected shape
+    // Draw transform handles for selected shape or selection highlight for text
     const sel = markup.selectedIndex;
     if (sel !== null) {
       const stroke = markup.strokes[sel];
       if (stroke && stroke.type === "shape") {
         drawTransformHandles(ctx, stroke, w, h);
+      } else if (stroke && stroke.type === "text") {
+        drawTextSelectionHighlight(ctx, stroke, w, h);
       }
     }
 
@@ -841,7 +949,14 @@
   // ── Lifecycle ─────────────────────────────────────────
 
   $effect(() => {
-    if ((markup.drawActive || markup.highlightActive) && mediaEl && containerEl) {
+    if (
+      (markup.drawActive ||
+        markup.highlightActive ||
+        markup.textActive ||
+        hasTextStrokes) &&
+      mediaEl &&
+      containerEl
+    ) {
       updateOverlayRect();
       if (!resizeObs) {
         resizeObs = new ResizeObserver(() => {
@@ -869,18 +984,25 @@
   });
 
   $effect(() => {
-    // Redraw when strokes, current stroke, tool, path mode, or highlight state change
+    // Redraw when strokes, current stroke, tool, path mode, highlight, or text state change
     const _strokes = markup.strokes;
     const _current = markup.currentStroke;
     const _tool = markup.activeTool;
     const _path = markup.pathMode;
     const _hlActive = markup.highlightActive;
     const _hlCur = markup.currentHighlight;
+    const _hasTextStrokes = hasTextStrokes;
     redrawAll();
   });
 
   $effect(() => {
-    if ((markup.drawActive || markup.highlightActive) && canvasEl) {
+    if (
+      (markup.drawActive ||
+        markup.highlightActive ||
+        markup.textActive ||
+        hasTextStrokes) &&
+      canvasEl
+    ) {
       canvasEl.focus();
     }
   });
@@ -1003,10 +1125,41 @@
     redrawAll();
   }
 
+  /** Find the topmost text box under the given normalized point, or null. */
+  function findTextAtPoint(nx: number, ny: number): number | null {
+    const strokesArr = markup.strokes;
+    // Get a temporary context for measurement
+    const canvas = canvasEl;
+    const tempCtx = canvas?.getContext("2d") ?? undefined;
+    for (let i = strokesArr.length - 1; i >= 0; i--) {
+      const s = strokesArr[i];
+      if (s.type === "text") {
+        const bbox = getTextBbox(
+          s,
+          overlayRect.width,
+          overlayRect.height,
+          tempCtx,
+        );
+        const cssX = nx * overlayRect.width;
+        const cssY = ny * overlayRect.height;
+        if (
+          cssX >= bbox.left &&
+          cssX <= bbox.right &&
+          cssY >= bbox.top &&
+          cssY <= bbox.bottom
+        ) {
+          return i;
+        }
+      }
+    }
+    return null;
+  }
+
   // ── Pointer handlers ──────────────────────────────────
 
   function handlePointerDown(e: PointerEvent) {
-    if (!markup.drawActive && !markup.highlightActive) return;
+    if (!markup.drawActive && !markup.highlightActive && !markup.textActive)
+      return;
     e.preventDefault();
     e.stopPropagation();
     isPointerDown = true;
@@ -1024,6 +1177,28 @@
       return;
     }
 
+    // Text mode — click to place, click to select, enter inline editing
+    if (markup.textActive) {
+      isPointerDown = false;
+      // Finalize any in-progress edit first
+      if (editingTextIndex !== null) exitEditing();
+      const hitIdx = findTextAtPoint(p.x, p.y);
+      if (hitIdx !== null) {
+        markup.selectShape(hitIdx);
+        editingTextIndex = hitIdx;
+        canvasEl?.focus();
+        redrawAll();
+        return;
+      }
+      // Click outside existing text — place new empty text box and start editing
+      markup.selectShape(null);
+      markup.placeText(p.x, p.y);
+      editingTextIndex = markup.strokes.length - 1;
+      canvasEl?.focus();
+      redrawAll();
+      return;
+    }
+
     const tool = markup.activeTool;
     // Convert normalized coords to CSS-pixel positions relative to overlay (canvas)
     const rawPx = p.x * overlayRect.width;
@@ -1034,7 +1209,13 @@
     if (sel !== null) {
       const stroke = markup.strokes[sel];
       if (stroke && stroke.type === "shape") {
-        const hit = hitTestHandle(stroke, overlayRect.width, overlayRect.height, rawPx, rawPy);
+        const hit = hitTestHandle(
+          stroke,
+          overlayRect.width,
+          overlayRect.height,
+          rawPx,
+          rawPy,
+        );
         if (hit === "delete") {
           markup.deleteSelectedShape();
           redrawAll();
@@ -1093,7 +1274,8 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
-    if (!markup.drawActive && !markup.highlightActive) return;
+    if (!markup.drawActive && !markup.highlightActive && !markup.textActive)
+      return;
     // Handle drag takes priority
     if (dragHandle) {
       handleDragMove(e);
@@ -1135,7 +1317,13 @@
           const p = toNormal(e.clientX, e.clientY);
           const rawPx = p.x * overlayRect.width;
           const rawPy = p.y * overlayRect.height;
-          const hit = hitTestHandle(stroke, overlayRect.width, overlayRect.height, rawPx, rawPy);
+          const hit = hitTestHandle(
+            stroke,
+            overlayRect.width,
+            overlayRect.height,
+            rawPx,
+            rawPy,
+          );
           if (hit !== hoveredHandle) {
             hoveredHandle = hit;
             startHoverAnim(hit ? 1 : 0);
@@ -1173,6 +1361,10 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
+    if (markup.textActive) {
+      isPointerDown = false;
+      return;
+    }
     if (dragHandle) {
       // Finalize handle drag
       dragHandle = null;
@@ -1196,8 +1388,12 @@
       if (markup.highlightMode === "free") {
         markup.endHighlightStroke();
       } else if (highlightStraightStart && highlightStraightPreview) {
-        const dx = Math.abs(highlightStraightPreview.x - highlightStraightStart.x);
-        const dy = Math.abs(highlightStraightPreview.y - highlightStraightStart.y);
+        const dx = Math.abs(
+          highlightStraightPreview.x - highlightStraightStart.x,
+        );
+        const dy = Math.abs(
+          highlightStraightPreview.y - highlightStraightStart.y,
+        );
         if (dx > 0.002 || dy > 0.002) {
           markup.placeHighlightLine(
             highlightStraightStart.x,
@@ -1261,7 +1457,7 @@
   // Cursor is provided by markup.cursorStyle (avoids duplicating SVG URLs)
 </script>
 
-{#if (markup.drawActive || markup.highlightActive) && overlayRect.width > 0 && overlayRect.height > 0}
+{#if (markup.drawActive || markup.highlightActive || markup.textActive || hasTextStrokes) && overlayRect.width > 0 && overlayRect.height > 0}
   <canvas
     bind:this={canvasEl}
     class="draw-overlay"
@@ -1271,17 +1467,76 @@
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
     onpointercancel={handlePointerUp}
-    onpointerleave={() => { hoveredHandle = null; startHoverAnim(0); }}
+    onpointerleave={() => {
+      hoveredHandle = null;
+      startHoverAnim(0);
+    }}
     onkeydown={(e) => {
+      // Inline text editing — capture keyboard into the text box
+      if (editingTextIndex !== null) {
+        const s = markup.strokes[editingTextIndex];
+        if (s && s.type === "text") {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            exitEditing();
+            redrawAll();
+            return;
+          }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            exitEditing();
+            redrawAll();
+            return;
+          }
+          if (e.key === "Backspace") {
+            e.preventDefault();
+            const nextText = s.text.slice(0, -1);
+            if (nextText.length === 0) {
+              markup.deleteSelectedShape();
+              editingTextIndex = null;
+              markup.selectShape(null);
+            } else {
+              markup.updateText(editingTextIndex, { text: nextText });
+            }
+            redrawAll();
+            return;
+          }
+          // Printable character
+          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            e.preventDefault();
+            markup.updateText(editingTextIndex, { text: s.text + e.key });
+            redrawAll();
+            return;
+          }
+          // Paste
+          if (e.ctrlKey && e.key === "v") {
+            e.preventDefault();
+            const idx = editingTextIndex;
+            navigator.clipboard.readText().then((txt) => {
+              markup.updateText(idx, { text: s.text + txt });
+              redrawAll();
+            });
+            return;
+          }
+        }
+        return;
+      }
+
+      // Non-editing keyboard shortcuts
       if (e.ctrlKey && e.key === "z") {
         e.preventDefault();
         markup.undoLastStroke();
         redrawAll();
+        return;
       }
-      if ((e.key === "Backspace" || e.key === "Delete") && markup.selectedIndex !== null) {
+      if (
+        (e.key === "Backspace" || e.key === "Delete") &&
+        markup.selectedIndex !== null
+      ) {
         e.preventDefault();
         markup.deleteSelectedShape();
         redrawAll();
+        return;
       }
     }}
   ></canvas>

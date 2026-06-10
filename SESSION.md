@@ -3,7 +3,7 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-09
 
 ## Last change
-Added Ctrl+Z keyboard shortcut to undo the last markup stroke in DrawOverlay. Works when the draw overlay is focused (markup mode active), alongside the existing Backspace/Delete handler.
+Added inline text editing: newly placed text boxes are empty, accept keystrokes immediately, auto-delete if nothing typed on exit. Text boxes remain visible on the overlay after closing the text menu.
 
 ## Status
 - Type check: clean
@@ -11,13 +11,13 @@ Added Ctrl+Z keyboard shortcut to undo the last markup stroke in DrawOverlay. Wo
 - Rust build: untested
 
 ## Next
-Text placement interaction in DrawOverlay (click-to-place text, inline editing, drag to move/resize).
+Drag to move/resize text boxes. Strikethrough text rendering for export.
 
 ## Bugs found this session
 - None.
 
 ## Current commit
-feat: add ctrl+z undo for markup strokes
+feat: add inline text editing and persistent text box visibility
 
 ## Architecture update
 - None.

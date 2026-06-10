@@ -7,6 +7,7 @@ import type {
   MarkupStroke,
   PlacedShape,
   PlacedLine,
+  PlacedText,
   FreehandStroke,
   HighlightFreehand,
   HighlightStraight,
@@ -374,6 +375,8 @@ export async function renderMarkupOnImage(
           stroke.opacity,
         );
       }
+    } else if (stroke.type === "text") {
+      renderText(ctx, stroke, w, h);
     }
   }
   ctx.globalAlpha = 1;
@@ -594,6 +597,89 @@ function renderLine(
     }
   }
   ctx.globalAlpha = 1;
+}
+
+function renderText(
+  ctx: CanvasRenderingContext2D,
+  t: PlacedText,
+  w: number,
+  h: number,
+) {
+  const px = t.x * w;
+  const py = t.y * h;
+  const fontSize = t.fontSize;
+  const fontWeight = t.bold ? "bold" : "normal";
+  const fontStyle = t.italic ? "italic" : "normal";
+  const fontStr = `${fontStyle} ${fontWeight} ${fontSize}px "${t.fontFamily}"`;
+  ctx.font = fontStr;
+  ctx.textBaseline = "middle";
+
+  const align = t.align === "justify" ? "left" : t.align;
+  ctx.textAlign = align;
+
+  const text = t.text || "";
+  const metrics = ctx.measureText(text);
+  const textWidth = metrics.width;
+  const lineHeight = fontSize * 1.2;
+  const pad = 6 * (fontSize / 16);
+  const boxW = textWidth + pad * 2;
+  const boxH = lineHeight + pad;
+
+  const boxLeft = px - boxW / 2;
+  const boxTop = py - boxH / 2;
+
+  let drawX: number;
+  if (align === "left") drawX = boxLeft + pad;
+  else if (align === "right") drawX = boxLeft + boxW - pad;
+  else drawX = px;
+
+  const drawY = boxTop + pad;
+
+  // Background
+  if (t.bgEnabled) {
+    ctx.fillStyle = t.bgColor;
+    ctx.globalAlpha = 0.85;
+    ctx.fillRect(boxLeft, boxTop, boxW, boxH);
+    ctx.globalAlpha = 1;
+  }
+
+  // Text
+  ctx.fillStyle = t.color;
+  ctx.fillText(text, drawX, drawY + lineHeight / 2);
+
+  // Underline
+  if (t.underline) {
+    const underlineY = drawY + lineHeight / 2 + 2;
+    ctx.strokeStyle = t.color;
+    ctx.lineWidth = Math.max(1, fontSize / 14);
+    ctx.beginPath();
+    const ulX =
+      align === "left"
+        ? drawX
+        : align === "right"
+          ? drawX - textWidth
+          : drawX - textWidth / 2;
+    ctx.moveTo(ulX, underlineY);
+    ctx.lineTo(ulX + textWidth, underlineY);
+    ctx.stroke();
+  }
+
+  // Strikethrough
+  if (t.strikethrough) {
+    const strikeY = drawY + lineHeight / 2 - fontSize * 0.3;
+    ctx.strokeStyle = t.color;
+    ctx.lineWidth = Math.max(1, fontSize / 14);
+    ctx.beginPath();
+    const stX =
+      align === "left"
+        ? drawX
+        : align === "right"
+          ? drawX - textWidth
+          : drawX - textWidth / 2;
+    ctx.moveTo(stX, strikeY);
+    ctx.lineTo(stX + textWidth, strikeY);
+    ctx.stroke();
+  }
 }
 
 export async function invokeExportEditedMedia(

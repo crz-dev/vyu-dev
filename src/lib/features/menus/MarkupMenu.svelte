@@ -87,6 +87,7 @@
       markup.setActiveTool("freehand");
       markup.setRoundedCorner(false);
       markup.setPathMode(false);
+      markup.textActive = false;
     }
   });
 
@@ -187,6 +188,7 @@
     if (textRowOpen) {
       closeAllRows();
       closeTextSubTools();
+      markup.textActive = false;
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
@@ -195,6 +197,7 @@
       closeTextSubTools();
       markup.drawActive = false;
       markup.highlightActive = false;
+      markup.textActive = true;
       openTimeout = setTimeout(() => {
         textRowOpen = true;
         openTimeout = null;

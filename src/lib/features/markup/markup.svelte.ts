@@ -104,12 +104,30 @@ export interface HighlightStraight {
   opacity: number;
 }
 
+export interface PlacedText {
+  type: "text";
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  fontFamily: string;
+  fontSize: number;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  strikethrough: boolean;
+  align: "left" | "center" | "right" | "justify";
+  bgColor: string;
+  bgEnabled: boolean;
+}
+
 export type HighlightStroke = HighlightFreehand | HighlightStraight;
 export type MarkupStroke =
   | FreehandStroke
   | PlacedShape
   | PlacedLine
-  | HighlightStroke;
+  | HighlightStroke
+  | PlacedText;
 
 function createMarkupStore() {
   let drawActive = $state(false);
@@ -138,6 +156,7 @@ function createMarkupStore() {
   let currentHighlight = $state<HighlightFreehand | null>(null);
 
   // Text state
+  let textActive = $state(false);
   let textColor = $state("#000000");
   let textBgColor = $state("#ffffff");
   let textBgEnabled = $state(false);
@@ -172,12 +191,32 @@ function createMarkupStore() {
         drawThickness = s.thickness;
         drawOpacity = s.opacity;
       }
+      if (s && s.type === "text") {
+        textColor = s.color;
+        textFontFamily = s.fontFamily;
+        textFontSize = s.fontSize;
+        textBold = s.bold;
+        textItalic = s.italic;
+        textUnderline = s.underline;
+        textStrikethrough = s.strikethrough;
+        textAlign = s.align;
+        textBgColor = s.bgColor;
+        textBgEnabled = s.bgEnabled;
+      }
     }
   }
 
   function updateShape(index: number, props: Partial<PlacedShape>) {
     const s = strokes[index];
     if (!s || s.type !== "shape") return;
+    const next = [...strokes];
+    next[index] = { ...s, ...props };
+    strokes = next;
+  }
+
+  function updateText(index: number, props: Partial<PlacedText>) {
+    const s = strokes[index];
+    if (!s || s.type !== "text") return;
     const next = [...strokes];
     next[index] = { ...s, ...props };
     strokes = next;
@@ -282,6 +321,28 @@ function createMarkupStore() {
     selectedIndex = strokes.length - 1;
   }
 
+  /** Place a text box at normalized (x, y) center. Auto-selects. */
+  function placeText(x: number, y: number) {
+    const stroke: PlacedText = {
+      type: "text",
+      x,
+      y,
+      text: "",
+      color: textColor,
+      fontFamily: textFontFamily,
+      fontSize: textFontSize,
+      bold: textBold,
+      italic: textItalic,
+      underline: textUnderline,
+      strikethrough: textStrikethrough,
+      align: textAlign,
+      bgColor: textBgColor,
+      bgEnabled: textBgEnabled,
+    };
+    strokes = [...strokes, stroke];
+    selectedIndex = strokes.length - 1;
+  }
+
   /** Place a straight line between two normalized points. */
   function placeLine(
     x1: number,
@@ -360,14 +421,26 @@ function createMarkupStore() {
 
   function setTextColor(color: string) {
     textColor = color;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { color });
+    }
   }
 
   function setTextBgColor(color: string) {
     textBgColor = color;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { bgColor: color });
+    }
   }
 
   function setTextBgEnabled(v: boolean) {
     textBgEnabled = v;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { bgEnabled: v });
+    }
   }
 
   function setTextCustomColor(index: number, color: string) {
@@ -379,30 +452,61 @@ function createMarkupStore() {
 
   function setTextFontFamily(family: string) {
     textFontFamily = family;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text")
+        updateText(selectedIndex, { fontFamily: family });
+    }
   }
 
   function setTextFontSize(size: number) {
     textFontSize = Math.max(6, Math.min(72, Math.round(size)));
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text")
+        updateText(selectedIndex, { fontSize: textFontSize });
+    }
   }
 
   function setTextBold(v: boolean) {
     textBold = v;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { bold: v });
+    }
   }
 
   function setTextItalic(v: boolean) {
     textItalic = v;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { italic: v });
+    }
   }
 
   function setTextUnderline(v: boolean) {
     textUnderline = v;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { underline: v });
+    }
   }
 
   function setTextStrikethrough(v: boolean) {
     textStrikethrough = v;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text")
+        updateText(selectedIndex, { strikethrough: v });
+    }
   }
 
   function setTextAlign(align: "left" | "center" | "right" | "justify") {
     textAlign = align;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
+      if (s && s.type === "text") updateText(selectedIndex, { align });
+    }
   }
 
   function startHighlightStroke(x: number, y: number) {
@@ -494,6 +598,7 @@ function createMarkupStore() {
     highlightOpacity = 0.4;
     highlightMode = "free";
     currentHighlight = null;
+    textActive = false;
     textColor = "#000000";
     textBgColor = "#ffffff";
     textBgEnabled = false;
@@ -600,7 +705,14 @@ function createMarkupStore() {
     get textAlign() {
       return textAlign;
     },
+    get textActive() {
+      return textActive;
+    },
+    set textActive(v: boolean) {
+      textActive = v;
+    },
     get cursorStyle(): string {
+      if (textActive) return "text";
       if (!drawActive && !highlightActive) return "default";
       if (highlightActive) return "crosshair";
       if (activeTool === "freehand") return "crosshair";
@@ -639,6 +751,8 @@ function createMarkupStore() {
     setPathMode,
     selectShape,
     updateShape,
+    updateText,
+    placeText,
     toggleSelectedCornerRadius,
     placeShape,
     placeShapeSized,
