@@ -4,6 +4,7 @@ export function createGlobalMouseHandler(deps: {
     editMenuVisible: boolean;
     markupMenuVisible: boolean;
     effectsMenuVisible: boolean;
+    equalizerMenuVisible: boolean;
     slideshowMenuVisible: boolean;
     appDropdownVisible: boolean;
   };
@@ -11,6 +12,7 @@ export function createGlobalMouseHandler(deps: {
   closeEditMenu: () => void;
   closeMarkupMenu: () => void;
   closeEffectsMenu: () => void;
+  closeEqualizerMenu: () => void;
   closeSlideshowMenu: () => void;
   closeTimestampEditor: () => void;
 }) {
@@ -44,6 +46,13 @@ export function createGlobalMouseHandler(deps: {
       !document.querySelector(".edit-menu.pinned")
     )
       deps.closeEffectsMenu();
+    if (
+      deps.menuStore.equalizerMenuVisible &&
+      e.button === 2 &&
+      !target.closest(".equalizer-wrapper") &&
+      !document.querySelector(".edit-menu.pinned")
+    )
+      deps.closeEqualizerMenu();
     if (
       deps.menuStore.slideshowMenuVisible &&
       e.button === 2 &&

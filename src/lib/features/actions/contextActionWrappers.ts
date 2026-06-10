@@ -31,6 +31,7 @@ export interface ContextActionDeps {
   openEditMenu: () => void;
   openMarkupMenu: () => void;
   openEffectsMenu: () => void;
+  openEqualizerMenu: () => void;
   propertiesOpen: () => boolean;
   setPropertiesOpen: (v: boolean) => void;
   setMediaProps: (v: MediaProperties | null) => void;
@@ -100,7 +101,7 @@ export function createContextActionFns(deps: ContextActionDeps) {
     ctxEffects({ openEffectsMenu: deps.openEffectsMenu });
   }
   function ctxEqualizerFn() {
-    ctxEqualizer();
+    ctxEqualizer({ openEqualizerMenu: deps.openEqualizerMenu });
   }
   function ctxPropertiesFn() {
     ctxProperties({

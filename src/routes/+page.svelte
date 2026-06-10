@@ -154,6 +154,8 @@
     closeMarkupMenu,
     openEffectsMenu,
     closeEffectsMenu,
+    openEqualizerMenu,
+    closeEqualizerMenu,
     toggleSlideshowMenu,
     closeSlideshowMenu,
   } = menuActions;
@@ -683,6 +685,7 @@
     openEditMenu,
     openMarkupMenu,
     openEffectsMenu,
+    openEqualizerMenu,
     propertiesOpen: () => propertiesOpen,
     setPropertiesOpen: (v) => (propertiesOpen = v),
     setMediaProps: (v) => (mediaProps = v),
@@ -722,6 +725,9 @@
       get effectsMenuVisible() {
         return menuStore.effectsMenuVisible;
       },
+      get equalizerMenuVisible() {
+        return menuStore.equalizerMenuVisible;
+      },
       get slideshowMenuVisible() {
         return menuStore.slideshowMenuVisible;
       },
@@ -737,6 +743,7 @@
     closeEditMenu,
     closeMarkupMenu,
     closeEffectsMenu,
+    closeEqualizerMenu,
     closeSlideshowMenu,
     closeTimestampEditor,
   });
@@ -880,6 +887,8 @@
   onMarkupExport={handleMarkupExport}
   markupMenuVisible={menuStore.markupMenuVisible}
   effectsMenuVisible={menuStore.effectsMenuVisible}
+  equalizerMenuVisible={menuStore.equalizerMenuVisible}
+  closeEqualizerMenu={() => (menuStore.equalizerMenuVisible = false)}
   installFfmpegAndWait={runInstallFfmpeg}
   refreshFfprobeAvailability={runRefreshFfprobe}
   showInExplorer={ctxShowInExplorerFn}

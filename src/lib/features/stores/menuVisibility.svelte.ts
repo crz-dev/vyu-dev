@@ -4,6 +4,7 @@ function createMenuVisibilityStore() {
   let editMenuVisible = $state(false);
   let markupMenuVisible = $state(false);
   let effectsMenuVisible = $state(false);
+  let equalizerMenuVisible = $state(false);
   let slideshowMenuVisible = $state(false);
   let appDropdownVisible = $state(false);
   let settingsOpen = $state(false);
@@ -32,6 +33,12 @@ function createMenuVisibilityStore() {
     },
     set effectsMenuVisible(v: boolean) {
       effectsMenuVisible = v;
+    },
+    get equalizerMenuVisible() {
+      return equalizerMenuVisible;
+    },
+    set equalizerMenuVisible(v: boolean) {
+      equalizerMenuVisible = v;
     },
     get slideshowMenuVisible() {
       return slideshowMenuVisible;
@@ -92,6 +99,7 @@ function createMenuVisibilityStore() {
         editMenuVisible ||
         markupMenuVisible ||
         effectsMenuVisible ||
+        equalizerMenuVisible ||
         slideshowMenuVisible ||
         appDropdownVisible ||
         settingsOpen ||
@@ -106,6 +114,7 @@ function createMenuVisibilityStore() {
       editMenuVisible = false;
       markupMenuVisible = false;
       effectsMenuVisible = false;
+      equalizerMenuVisible = false;
       slideshowMenuVisible = false;
       appDropdownVisible = false;
       settingsOpen = false;
@@ -155,6 +164,15 @@ export function createMenuActions(deps: MenuActionsDeps) {
     menuStore.effectsMenuVisible = false;
   }
 
+  function openEqualizerMenu() {
+    deps.closeContextMenu();
+    menuStore.equalizerMenuVisible = true;
+  }
+
+  function closeEqualizerMenu() {
+    menuStore.equalizerMenuVisible = false;
+  }
+
   function toggleSlideshowMenu() {
     menuStore.slideshowMenuVisible = !menuStore.slideshowMenuVisible;
   }
@@ -170,6 +188,8 @@ export function createMenuActions(deps: MenuActionsDeps) {
     closeMarkupMenu,
     openEffectsMenu,
     closeEffectsMenu,
+    openEqualizerMenu,
+    closeEqualizerMenu,
     toggleSlideshowMenu,
     closeSlideshowMenu,
   };

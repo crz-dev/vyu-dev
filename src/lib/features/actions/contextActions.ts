@@ -109,8 +109,8 @@ export function ctxEffects(opts: { openEffectsMenu: () => void }) {
   opts.openEffectsMenu();
 }
 
-export function ctxEqualizer() {
-  // Placeholder — equalizer not yet implemented
+export function ctxEqualizer(opts: { openEqualizerMenu: () => void }) {
+  opts.openEqualizerMenu();
 }
 
 export function ctxProperties(opts: {

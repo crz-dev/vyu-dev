@@ -7,6 +7,7 @@
   import EditMenu from "$lib/features/menus/EditMenu.svelte";
   import MarkupMenu from "$lib/features/menus/MarkupMenu.svelte";
   import EffectsMenu from "$lib/features/menus/EffectsMenu.svelte";
+  import EqualizerMenu from "$lib/features/menus/EqualizerMenu.svelte";
   import SettingsDialog from "$lib/features/dialogs/SettingsDialog.svelte";
   import AccessibilityDialog from "$lib/features/dialogs/AccessibilityDialog.svelte";
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
@@ -114,6 +115,8 @@
     closeMarkupMenu,
     effectsMenuVisible,
     closeEffectsMenu,
+    equalizerMenuVisible,
+    closeEqualizerMenu,
     ffprobeChecked,
     ffprobeAvailable,
     ffmpegInstalling,
@@ -290,6 +293,8 @@
     closeMarkupMenu: () => void;
     effectsMenuVisible: boolean;
     closeEffectsMenu: () => void;
+    equalizerMenuVisible: boolean;
+    closeEqualizerMenu: () => void;
     ffprobeChecked: boolean;
     ffprobeAvailable: boolean;
     ffmpegInstalling: boolean;
@@ -379,6 +384,7 @@
   let editMenuMoved = $state(false);
   let markupMenuMoved = $state(false);
   let effectsMenuMoved = $state(false);
+  let equalizerMenuMoved = $state(false);
   let clipMenuMoved = $state(false);
   let clipMenuDismissed = $state(false);
 
@@ -392,6 +398,10 @@
 
   $effect(() => {
     if (!effectsMenuVisible) effectsMenuMoved = false;
+  });
+
+  $effect(() => {
+    if (!equalizerMenuVisible) equalizerMenuMoved = false;
   });
 
   $effect(() => {
@@ -418,31 +428,66 @@
     const editOpen = editMenuVisible && !editMenuMoved;
     const markupOpen = markupMenuVisible && !markupMenuMoved;
     const effectsOpen = effectsMenuVisible && !effectsMenuMoved;
+    const eqOpen = equalizerMenuVisible && !equalizerMenuMoved;
     const clipOpen = clipMenuActive && !clipMenuMoved;
 
-    // Count how many peer menus are open (edit, markup, effects)
-    const peerCount = (editOpen ? 1 : 0) + (markupOpen ? 1 : 0) + (effectsOpen ? 1 : 0);
+    // Count how many peer menus are open (edit, markup, effects, equalizer)
+    const peerCount = (editOpen ? 1 : 0) + (markupOpen ? 1 : 0) + (effectsOpen ? 1 : 0) + (eqOpen ? 1 : 0);
 
     let editOffset = 0;
     let markupOffset = 0;
     let effectsOffset = 0;
+    let eqOffset = 0;
 
     if (peerCount === 2) {
       const halfGap = (MENU_WIDTH + GAP) / 2;
-      if (editOpen && markupOpen) {
-        editOffset = -halfGap;
-        markupOffset = halfGap;
-      } else if (editOpen && effectsOpen) {
-        editOffset = -halfGap;
-        effectsOffset = halfGap;
-      } else if (markupOpen && effectsOpen) {
-        markupOffset = -halfGap;
-        effectsOffset = halfGap;
+      const open = [editOpen ? "edit" : "", markupOpen ? "markup" : "", effectsOpen ? "effects" : "", eqOpen ? "eq" : ""].filter(Boolean);
+      if (open.length === 2) {
+        const left = open[0];
+        const right = open[1];
+        const off = (k: string) => k === "edit" ? "edit" : k === "markup" ? "markup" : k === "effects" ? "effects" : "eq";
+        if (left === "edit") editOffset = -halfGap;
+        else if (left === "markup") markupOffset = -halfGap;
+        else if (left === "effects") effectsOffset = -halfGap;
+        else eqOffset = -halfGap;
+        if (right === "edit") editOffset = halfGap;
+        else if (right === "markup") markupOffset = halfGap;
+        else if (right === "effects") effectsOffset = halfGap;
+        else eqOffset = halfGap;
       }
     } else if (peerCount === 3) {
+      const open = [];
+      if (editOpen) open.push("edit");
+      if (markupOpen) open.push("markup");
+      if (effectsOpen) open.push("effects");
+      if (eqOpen) open.push("eq");
+      // Spread three menus: left, center, right
+      if (open.length === 3) {
+        const halfGap = (MENU_WIDTH + GAP) / 2;
+        const fullGap = MENU_WIDTH + GAP;
+        const off = (k: string) => k === "edit" ? "edit" : k === "markup" ? "markup" : k === "effects" ? "effects" : "eq";
+        // Center stays at 0, left at -fullGap, right at +fullGap
+        for (let i = 0; i < open.length; i++) {
+          const val = open[i] === "edit" ? "editOffset" : open[i] === "markup" ? "markupOffset" : open[i] === "effects" ? "effectsOffset" : "eqOffset";
+          if (i === 0) {
+            if (val === "editOffset") editOffset = -fullGap;
+            else if (val === "markupOffset") markupOffset = -fullGap;
+            else if (val === "effectsOffset") effectsOffset = -fullGap;
+            else eqOffset = -fullGap;
+          } else if (i === 2) {
+            if (val === "editOffset") editOffset = fullGap;
+            else if (val === "markupOffset") markupOffset = fullGap;
+            else if (val === "effectsOffset") effectsOffset = fullGap;
+            else eqOffset = fullGap;
+          }
+        }
+      }
+    } else if (peerCount === 4) {
       const fullGap = MENU_WIDTH + GAP;
-      editOffset = -fullGap;
-      effectsOffset = fullGap;
+      editOffset = -fullGap * 1.5;
+      markupOffset = -fullGap * 0.5;
+      effectsOffset = fullGap * 0.5;
+      eqOffset = fullGap * 1.5;
     }
 
     // Clip shifts based on peer menu presence
@@ -459,15 +504,18 @@
         } else if (effectsOpen) {
           clipOffset = -halfGap;
           effectsOffset = halfGap;
+        } else if (eqOpen) {
+          clipOffset = -halfGap;
+          eqOffset = halfGap;
         }
       } else {
-        // clip + 2 peers: shift all three
+        // clip + 2+ peers: shift clip left
         const fullGap = MENU_WIDTH + GAP;
         clipOffset = -fullGap;
       }
     }
 
-    return { edit: editOffset, clip: clipOffset, markup: markupOffset, effects: effectsOffset };
+    return { edit: editOffset, clip: clipOffset, markup: markupOffset, effects: effectsOffset, eq: eqOffset };
   });
 
   const editMenuStyle = $derived.by(() => {
@@ -487,6 +535,13 @@
   const effectsMenuStyle = $derived.by(() => {
     if (effectsMenuVisible && !effectsMenuMoved && layoutOffsets.effects !== 0) {
       return `left: calc(50% + ${layoutOffsets.effects}px);`;
+    }
+    return "";
+  });
+
+  const equalizerMenuStyle = $derived.by(() => {
+    if (equalizerMenuVisible && !equalizerMenuMoved && layoutOffsets.eq !== 0) {
+      return `left: calc(50% + ${layoutOffsets.eq}px);`;
     }
     return "";
   });
@@ -703,6 +758,13 @@
     onClose={closeEffectsMenu}
     onMoved={() => (effectsMenuMoved = true)}
     styleOverride={effectsMenuStyle}
+  />
+
+  <EqualizerMenu
+    visible={equalizerMenuVisible}
+    onClose={closeEqualizerMenu}
+    onMoved={() => (equalizerMenuMoved = true)}
+    styleOverride={equalizerMenuStyle}
   />
 
   {#key settingsOpen}
