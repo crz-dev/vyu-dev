@@ -751,11 +751,10 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="8" y1="8" x2="16" y2="16" />
-                <line x1="16" y1="8" x2="8" y2="16" />
+                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
+                <path d="M13 13l6 6" />
               </svg>
-              <span>Remove</span>
+              <span>Select</span>
             </button>
             <button class="edit-menu-btn red sub">
               <svg
@@ -768,14 +767,11 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <polyline points="5 9 2 12 5 15" />
-                <polyline points="9 5 12 2 15 5" />
-                <polyline points="15 19 12 22 9 19" />
-                <polyline points="19 9 22 12 19 15" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <line x1="12" y1="2" x2="12" y2="22" />
+                <circle cx="12" cy="12" r="10" />
+                <line x1="8" y1="8" x2="16" y2="16" />
+                <line x1="16" y1="8" x2="8" y2="16" />
               </svg>
-              <span>Move</span>
+              <span>Remove</span>
             </button>
             <button class="edit-menu-btn red sub">
               <svg
