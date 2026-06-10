@@ -147,6 +147,7 @@ function createMarkupStore() {
 
   // Selection state
   let selectedIndex = $state<number | null>(null);
+  let selectedIndices = $state<number[]>([]);
 
   // Highlight state
   let highlightActive = $state(false);
@@ -171,6 +172,11 @@ function createMarkupStore() {
   let textStrikethrough = $state(false);
   let textAlign = $state<"left" | "center" | "right" | "justify">("left");
 
+  // Erase submenu states
+  let selectActive = $state(false);
+  let removeActive = $state(false);
+  let strokesHidden = $state(false);
+
   function setActiveTool(tool: MarkupTool) {
     activeTool = activeTool === tool ? "freehand" : tool;
   }
@@ -185,9 +191,35 @@ function createMarkupStore() {
 
   function selectShape(index: number | null) {
     selectedIndex = index;
+    selectedIndices = index !== null ? [index] : [];
     // Sync selected shape's properties into the draw defaults
     if (index !== null) {
       const s = strokes[index];
+      if (s && s.type === "shape") {
+        drawColor = s.color;
+        drawThickness = s.thickness;
+        drawOpacity = s.opacity;
+      }
+      if (s && s.type === "text") {
+        textColor = s.color;
+        textFontFamily = s.fontFamily;
+        textFontSize = s.fontSize;
+        textBold = s.bold;
+        textItalic = s.italic;
+        textUnderline = s.underline;
+        textStrikethrough = s.strikethrough;
+        textAlign = s.align;
+        textBgColor = s.bgColor;
+        textBgEnabled = s.bgEnabled;
+      }
+    }
+  }
+
+  function selectShapes(indices: number[]) {
+    selectedIndices = indices;
+    selectedIndex = indices.length > 0 ? indices[indices.length - 1] : null;
+    if (selectedIndex !== null) {
+      const s = strokes[selectedIndex];
       if (s && s.type === "shape") {
         drawColor = s.color;
         drawThickness = s.thickness;
@@ -592,6 +624,9 @@ function createMarkupStore() {
     }
     const removedIndex = strokes.length - 1;
     strokes = strokes.slice(0, -1);
+    selectedIndices = selectedIndices
+      .filter(i => i !== removedIndex)
+      .map(i => i > removedIndex ? i - 1 : i);
     if (
       selectedIndex !== null &&
       (selectedIndex === removedIndex || selectedIndex >= strokes.length)
@@ -602,16 +637,310 @@ function createMarkupStore() {
   }
 
   function deleteSelectedShape() {
-    if (selectedIndex === null) return;
-    const next = strokes.filter((_, i) => i !== selectedIndex);
+    if (selectedIndices.length === 0) return;
+    const idxSet = new Set(selectedIndices);
+    const next = strokes.filter((_, i) => !idxSet.has(i));
     strokes = next;
     selectedIndex = null;
+    selectedIndices = [];
   }
 
   function clearAllStrokes() {
     strokes = [];
     currentStroke = null;
     selectedIndex = null;
+    selectedIndices = [];
+  }
+
+  /** Distance in CSS px from point (px,py) to line segment (x1,y1)-(x2,y2). */
+  function distToSegment(
+    px: number, py: number,
+    x1: number, y1: number,
+    x2: number, y2: number,
+  ): number {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.sqrt((px - x1) ** 2 + (py - y1) ** 2);
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const projX = x1 + t * dx;
+    const projY = y1 + t * dy;
+    return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
+  }
+
+  /** Find the topmost stroke under normalized point (nx, ny). Returns index or null. */
+  function findStrokeAt(nx: number, ny: number, w: number, h: number): number | null {
+    const px = nx * w;
+    const py = ny * h;
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      const s = strokes[i];
+      if (s.type === "shape") {
+        // Check if (nx, ny) is inside the shape's bounding box, accounting for rotation
+        const halfW = s.width / 2;
+        const halfH = s.height / 2;
+        const dx = nx - s.cx;
+        const dy = ny - s.cy;
+        const cos = Math.cos(-s.rotation);
+        const sin = Math.sin(-s.rotation);
+        const localX = cos * dx - sin * dy;
+        const localY = sin * dx + cos * dy;
+        if (localX >= -halfW && localX <= halfW && localY >= -halfH && localY <= halfH) return i;
+      } else if (s.type === "text") {
+        // Inline a simple bbox check using overlay dimensions
+        const fontSize = s.fontSize;
+        const estCharW = fontSize * 0.6;
+        const textW = Math.max((s.text || "").length * estCharW, fontSize * 1.5);
+        const pad = 6 * (fontSize / 16);
+        const boxW = textW + pad * 2 + (s.boxExtraWidth || 0);
+        const boxH = fontSize * 1.2 + pad;
+        const left = s.x * w - boxW / 2;
+        const top = s.y * h - boxH / 2;
+        if (px >= left && px <= left + boxW && py >= top && py <= top + boxH) return i;
+      } else if (s.type === "freehand") {
+        const pts = s.points;
+        const halfThick = s.thickness / 2;
+        for (let j = 1; j < pts.length; j++) {
+          const x1 = pts[j - 1].x * w, y1 = pts[j - 1].y * h;
+          const x2 = pts[j].x * w, y2 = pts[j].y * h;
+          if (distToSegment(px, py, x1, y1, x2, y2) <= halfThick) return i;
+        }
+        if (pts.length === 1) {
+          const dx = px - pts[0].x * w;
+          const dy = py - pts[0].y * h;
+          if (Math.sqrt(dx * dx + dy * dy) <= halfThick) return i;
+        }
+      } else if (s.type === "line") {
+        const halfThick = s.thickness / 2;
+        if (s.isPath && s.points.length > 0) {
+          const pts = s.points;
+          for (let j = 1; j < pts.length; j++) {
+            const x1 = pts[j - 1].x * w, y1 = pts[j - 1].y * h;
+            const x2 = pts[j].x * w, y2 = pts[j].y * h;
+            if (distToSegment(px, py, x1, y1, x2, y2) <= halfThick) return i;
+          }
+        } else {
+          const x1 = s.x1 * w, y1 = s.y1 * h;
+          const x2 = s.x2 * w, y2 = s.y2 * h;
+          if (distToSegment(px, py, x1, y1, x2, y2) <= halfThick) return i;
+        }
+      } else if (s.type === "highlight") {
+        const halfThick = s.thickness / 2;
+        if (s.mode === "free") {
+          const pts = s.points;
+          for (let j = 1; j < pts.length; j++) {
+            const x1 = pts[j - 1].x * w, y1 = pts[j - 1].y * h;
+            const x2 = pts[j].x * w, y2 = pts[j].y * h;
+            if (distToSegment(px, py, x1, y1, x2, y2) <= halfThick) return i;
+          }
+          if (pts.length === 1) {
+            const dx = px - pts[0].x * w;
+            const dy = py - pts[0].y * h;
+            if (Math.sqrt(dx * dx + dy * dy) <= halfThick) return i;
+          }
+        } else {
+          const x1 = s.x1 * w, y1 = s.y1 * h;
+          const x2 = s.x2 * w, y2 = s.y2 * h;
+          if (distToSegment(px, py, x1, y1, x2, y2) <= halfThick) return i;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Delete the topmost stroke under normalized point (nx, ny). Returns true if deleted. */
+  function deleteStrokeAt(nx: number, ny: number, w: number, h: number): boolean {
+    const idx = findStrokeAt(nx, ny, w, h);
+    if (idx === null) return false;
+    strokes = strokes.filter((_, i) => i !== idx);
+    if (selectedIndex !== null) {
+      if (selectedIndex === idx || selectedIndex >= strokes.length) {
+        selectedIndex = null;
+      } else if (selectedIndex > idx) {
+        selectedIndex = selectedIndex - 1;
+      }
+    }
+    return true;
+  }
+
+  /** Translate a stroke by normalized delta (dx, dy). */
+  function moveStrokeBy(idx: number, dx: number, dy: number) {
+    const s = strokes[idx];
+    if (!s) return;
+    const next = [...strokes];
+    switch (s.type) {
+      case "shape":
+        next[idx] = { ...s, cx: s.cx + dx, cy: s.cy + dy };
+        break;
+      case "text":
+        next[idx] = { ...s, x: s.x + dx, y: s.y + dy };
+        break;
+      case "freehand":
+        next[idx] = { ...s, points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy })) };
+        break;
+      case "line":
+        if (s.isPath) {
+          next[idx] = {
+            ...s,
+            points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy })),
+            x1: s.x1 + dx, y1: s.y1 + dy,
+            x2: s.x2 + dx, y2: s.y2 + dy,
+          };
+        } else {
+          next[idx] = {
+            ...s,
+            x1: s.x1 + dx, y1: s.y1 + dy,
+            x2: s.x2 + dx, y2: s.y2 + dy,
+          };
+        }
+        break;
+      case "highlight":
+        if (s.mode === "free") {
+          next[idx] = { ...s, points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy })) };
+        } else {
+          next[idx] = {
+            ...s,
+            x1: s.x1 + dx, y1: s.y1 + dy,
+            x2: s.x2 + dx, y2: s.y2 + dy,
+          };
+        }
+        break;
+    }
+    strokes = next;
+  }
+
+  /** Translate all selected strokes by normalized delta (dx, dy). */
+  function moveSelectedStrokesBy(dx: number, dy: number) {
+    if (selectedIndices.length === 0) return;
+    let next = [...strokes];
+    for (const idx of selectedIndices) {
+      const s = next[idx];
+      if (!s) continue;
+      switch (s.type) {
+        case "shape":
+          next[idx] = { ...s, cx: s.cx + dx, cy: s.cy + dy };
+          break;
+        case "text":
+          next[idx] = { ...s, x: s.x + dx, y: s.y + dy };
+          break;
+        case "freehand":
+          next[idx] = { ...s, points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy })) };
+          break;
+        case "line":
+          if (s.isPath) {
+            next[idx] = {
+              ...s,
+              points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy })),
+              x1: s.x1 + dx, y1: s.y1 + dy,
+              x2: s.x2 + dx, y2: s.y2 + dy,
+            };
+          } else {
+            next[idx] = { ...s, x1: s.x1 + dx, y1: s.y1 + dy, x2: s.x2 + dx, y2: s.y2 + dy };
+          }
+          break;
+        case "highlight":
+          if (s.mode === "free") {
+            next[idx] = { ...s, points: s.points.map(p => ({ x: p.x + dx, y: p.y + dy })) };
+          } else {
+            next[idx] = { ...s, x1: s.x1 + dx, y1: s.y1 + dy, x2: s.x2 + dx, y2: s.y2 + dy };
+          }
+          break;
+      }
+    }
+    strokes = next;
+  }
+
+  /** Compute overlap between two axis-aligned rectangles. */
+  function rectsOverlap(
+    ax1: number, ay1: number, ax2: number, ay2: number,
+    bx1: number, by1: number, bx2: number, by2: number,
+  ): boolean {
+    return ax1 < bx2 && ax2 > bx1 && ay1 < by2 && ay2 > by1;
+  }
+
+  /** Find all stroke indices whose bounding box overlaps the normalized rectangle (nx1,ny1)-(nx2,ny2). */
+  function findStrokesInRect(
+    nx1: number, ny1: number,
+    nx2: number, ny2: number,
+    w: number, h: number,
+  ): number[] {
+    const left = Math.min(nx1, nx2) * w;
+    const right = Math.max(nx1, nx2) * w;
+    const top = Math.min(ny1, ny2) * h;
+    const bottom = Math.max(ny1, ny2) * h;
+    const hits: number[] = [];
+    for (let i = 0; i < strokes.length; i++) {
+      const s = strokes[i];
+      let sl: number, sr: number, st: number, sb: number;
+      if (s.type === "shape") {
+        const hw = (s.width * w) / 2;
+        const hh = (s.height * h) / 2;
+        const cx = s.cx * w;
+        const cy = s.cy * h;
+        sl = cx - hw; sr = cx + hw;
+        st = cy - hh; sb = cy + hh;
+      } else if (s.type === "text") {
+        const fontSize = s.fontSize;
+        const estCharW = fontSize * 0.6;
+        const textW = Math.max((s.text || "").length * estCharW, fontSize * 1.5);
+        const pad = 6 * (fontSize / 16);
+        const boxW = textW + pad * 2 + (s.boxExtraWidth || 0);
+        const boxH = fontSize * 1.2 + pad;
+        sl = s.x * w - boxW / 2;
+        st = s.y * h - boxH / 2;
+        sr = sl + boxW; sb = st + boxH;
+      } else if (s.type === "freehand") {
+        if (s.points.length === 0) continue;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const p of s.points) {
+          const px = p.x * w, py = p.y * h;
+          if (px < minX) minX = px;
+          if (px > maxX) maxX = px;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
+        sl = minX; sr = maxX; st = minY; sb = maxY;
+      } else if (s.type === "line") {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        if (s.isPath && s.points.length > 0) {
+          for (const p of s.points) {
+            const px = p.x * w, py = p.y * h;
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+          }
+        } else {
+          const x1 = s.x1 * w, y1 = s.y1 * h;
+          const x2 = s.x2 * w, y2 = s.y2 * h;
+          minX = Math.min(x1, x2); maxX = Math.max(x1, x2);
+          minY = Math.min(y1, y2); maxY = Math.max(y1, y2);
+        }
+        sl = minX; sr = maxX; st = minY; sb = maxY;
+      } else if (s.type === "highlight") {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        if (s.mode === "free") {
+          if (s.points.length === 0) continue;
+          for (const p of s.points) {
+            const px = p.x * w, py = p.y * h;
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+          }
+        } else {
+          minX = Math.min(s.x1, s.x2) * w; maxX = Math.max(s.x1, s.x2) * w;
+          minY = Math.min(s.y1, s.y2) * h; maxY = Math.max(s.y1, s.y2) * h;
+        }
+        sl = minX; sr = maxX; st = minY; sb = maxY;
+      } else {
+        continue;
+      }
+      if (rectsOverlap(sl, st, sr, sb, left, top, right, bottom)) {
+        hits.push(i);
+      }
+    }
+    return hits;
   }
 
   function cleanup() {
@@ -625,6 +954,7 @@ function createMarkupStore() {
     roundedCorner = false;
     pathMode = false;
     selectedIndex = null;
+    selectedIndices = [];
     highlightActive = false;
     highlightColor = "#f5c518";
     highlightThickness = 20;
@@ -642,6 +972,9 @@ function createMarkupStore() {
     textUnderline = false;
     textStrikethrough = false;
     textAlign = "left";
+    selectActive = false;
+    removeActive = false;
+    strokesHidden = false;
   }
 
   return {
@@ -680,6 +1013,12 @@ function createMarkupStore() {
     },
     get selectedIndex() {
       return selectedIndex;
+    },
+    get selectedIndices() {
+      return selectedIndices;
+    },
+    set selectedIndices(v: number[]) {
+      selectedIndices = v;
     },
     get highlightActive() {
       return highlightActive;
@@ -749,6 +1088,8 @@ function createMarkupStore() {
     },
     get cursorStyle(): string {
       if (textActive) return "text";
+      if (selectActive) return "default";
+      if (removeActive) return "crosshair";
       if (!drawActive && !highlightActive) return "default";
       if (highlightActive) return "crosshair";
       if (activeTool === "freehand") return "crosshair";
@@ -770,6 +1111,12 @@ function createMarkupStore() {
       if (svg) return `url('${svg}') 12 12, crosshair`;
       return "crosshair";
     },
+    get selectActive() { return selectActive; },
+    set selectActive(v: boolean) { selectActive = v; },
+    get removeActive() { return removeActive; },
+    set removeActive(v: boolean) { removeActive = v; },
+    get strokesHidden() { return strokesHidden; },
+    set strokesHidden(v: boolean) { strokesHidden = v; },
     toggleDraw,
     setDrawColor,
     setCustomColor,
@@ -781,6 +1128,12 @@ function createMarkupStore() {
     undoLastStroke,
     deleteSelectedShape,
     clearAllStrokes,
+    findStrokeAt,
+    deleteStrokeAt,
+    moveStrokeBy,
+    moveSelectedStrokesBy,
+    findStrokesInRect,
+    selectShapes,
     cleanup,
     setActiveTool,
     setRoundedCorner,

@@ -81,6 +81,15 @@
   let textMoveStartX = $state(0);
   let textMoveStartY = $state(0);
 
+  // Select mode move state (any stroke type)
+  let isSelectMoving = $state(false);
+  let selectMoveOrigin = $state<{ x: number; y: number } | null>(null);
+  let selectMoveStartData = $state<Record<string, number> | null>(null);
+
+  // Select mode selection box
+  let selectBoxStart = $state<{ x: number; y: number } | null>(null);
+  let selectBoxEnd = $state<{ x: number; y: number } | null>(null);
+
   // Text drag-to-place state
   let textPlaceDragStart = $state<{ x: number; y: number } | null>(null);
   let textPlaceDragEnd = $state<{ x: number; y: number } | null>(null);
@@ -1058,6 +1067,9 @@
 
     ctx.clearRect(0, 0, w, h);
 
+    // If strokes are hidden, skip rendering everything
+    if (markup.strokesHidden) return;
+
     // Draw committed strokes
     for (const stroke of markup.strokes) {
       if (stroke.type === "freehand") {
@@ -1158,6 +1170,26 @@
       }
     }
 
+    // Draw selection box (select mode)
+    if (selectBoxStart && selectBoxEnd) {
+      const x1 = selectBoxStart.x * w;
+      const y1 = selectBoxStart.y * h;
+      const x2 = selectBoxEnd.x * w;
+      const y2 = selectBoxEnd.y * h;
+      const bw = Math.abs(x2 - x1);
+      const bh = Math.abs(y2 - y1);
+      if (bw > 2 || bh > 2) {
+        ctx.save();
+        ctx.strokeStyle = "#3b82f6";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), bw, bh);
+        ctx.fillStyle = "rgba(59, 130, 246, 0.08)";
+        ctx.fillRect(Math.min(x1, x2), Math.min(y1, y2), bw, bh);
+        ctx.restore();
+      }
+    }
+
     // Draw straight highlight preview during drag
     if (highlightStraightStart && highlightStraightPreview) {
       drawHighlightStraightBar(
@@ -1174,10 +1206,9 @@
       );
     }
 
-    // Draw transform handles for selected shape or text
-    const sel = markup.selectedIndex;
-    if (sel !== null) {
-      const stroke = markup.strokes[sel];
+    // Draw transform handles for all selected shapes or texts
+    for (const selIdx of markup.selectedIndices) {
+      const stroke = markup.strokes[selIdx];
       if (stroke && stroke.type === "shape") {
         drawTransformHandles(ctx, stroke, w, h);
       } else if (stroke && stroke.type === "text") {
@@ -1195,7 +1226,9 @@
       (markup.drawActive ||
         markup.highlightActive ||
         markup.textActive ||
-        hasTextStrokes) &&
+        markup.selectActive ||
+        markup.removeActive ||
+        markup.strokes.length > 0) &&
       mediaEl &&
       containerEl
     ) {
@@ -1213,7 +1246,7 @@
         resizeObs.disconnect();
         resizeObs = null;
       }
-      // Reset drag state when draw/highlight deactivated
+      // Reset drag state when tool deactivated
       lineStart = null;
       previewEnd = null;
       shapeDragStart = null;
@@ -1224,11 +1257,16 @@
       highlightStraightPreview = null;
       textPlaceDragStart = null;
       textPlaceDragEnd = null;
+      isSelectMoving = false;
+      selectMoveOrigin = null;
+      selectMoveStartData = null;
+      selectBoxStart = null;
+      selectBoxEnd = null;
     }
   });
 
   $effect(() => {
-    // Redraw when strokes, current stroke, tool, path mode, highlight, or text state change
+    // Redraw when strokes, tool, mode, or erase states change
     const _strokes = markup.strokes;
     const _current = markup.currentStroke;
     const _tool = markup.activeTool;
@@ -1236,6 +1274,9 @@
     const _hlActive = markup.highlightActive;
     const _hlCur = markup.currentHighlight;
     const _hasTextStrokes = hasTextStrokes;
+    const _selectActive = markup.selectActive;
+    const _removeActive = markup.removeActive;
+    const _strokesHidden = markup.strokesHidden;
     redrawAll();
   });
 
@@ -1244,7 +1285,9 @@
       (markup.drawActive ||
         markup.highlightActive ||
         markup.textActive ||
-        hasTextStrokes) &&
+        markup.selectActive ||
+        markup.removeActive ||
+        markup.strokes.length > 0) &&
       canvasEl
     ) {
       canvasEl.focus();
@@ -1487,12 +1530,138 @@
   // ── Pointer handlers ──────────────────────────────────
 
   function handlePointerDown(e: PointerEvent) {
-    if (!markup.drawActive && !markup.highlightActive && !markup.textActive)
+    if (
+      !markup.drawActive &&
+      !markup.highlightActive &&
+      !markup.textActive &&
+      !markup.selectActive &&
+      !markup.removeActive
+    )
       return;
     e.preventDefault();
     e.stopPropagation();
     isPointerDown = true;
     const p = toNormal(e.clientX, e.clientY);
+
+    // Remove (eraser) mode — delete strokes under cursor
+    if (markup.removeActive) {
+      const w = overlayRect.width;
+      const h = overlayRect.height;
+      markup.deleteStrokeAt(p.x, p.y, w, h);
+      canvasEl?.setPointerCapture(e.pointerId);
+      redrawAll();
+      return;
+    }
+
+    // Select mode — handle hits, body clicks, or selection box
+    if (markup.selectActive) {
+      const w = overlayRect.width;
+      const h = overlayRect.height;
+      const rawPx = p.x * w;
+      const rawPy = p.y * h;
+
+      // 1. Check transform handle hit on currently selected stroke
+      const sel = markup.selectedIndex;
+      if (sel !== null) {
+        const stroke = markup.strokes[sel];
+        if (stroke && stroke.type === "shape") {
+          const hit = hitTestHandle(stroke, w, h, rawPx, rawPy);
+          if (hit === "delete") {
+            markup.deleteSelectedShape();
+            redrawAll();
+            return;
+          }
+          if (hit) {
+            dragHandle = hit;
+            dragOrigin = p;
+            dragStartShape = {
+              width: stroke.width, height: stroke.height,
+              rotation: stroke.rotation, cx: stroke.cx, cy: stroke.cy,
+            };
+            canvasEl?.setPointerCapture(e.pointerId);
+            return;
+          }
+          // Click inside body → start move (moves all selected strokes)
+          if (isInsideShapeBounds(stroke, p.x, p.y)) {
+            isSelectMoving = true;
+            selectMoveOrigin = p;
+            selectMoveStartData = {};
+            canvasEl?.setPointerCapture(e.pointerId);
+            return;
+          }
+        } else if (stroke && stroke.type === "text" && canvasEl) {
+          const ctx = canvasEl.getContext("2d");
+          if (ctx) {
+            const hit = hitTestTextHandle(stroke, w, h, rawPx, rawPy, ctx);
+            if (hit === "delete") {
+              markup.deleteSelectedShape();
+              redrawAll();
+              return;
+            }
+            if (hit === "left" || hit === "right") {
+              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              textDragStartBoxExtra = stroke.boxExtraWidth;
+              canvasEl?.setPointerCapture(e.pointerId);
+              return;
+            }
+            if (hit === "top" || hit === "bottom") {
+              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              textDragStartFontSize = stroke.fontSize;
+              canvasEl?.setPointerCapture(e.pointerId);
+              return;
+            }
+            if (hit === "topLeft" || hit === "topRight" || hit === "bottomLeft" || hit === "bottomRight") {
+              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              textDragStartBoxExtra = stroke.boxExtraWidth;
+              textDragStartFontSize = stroke.fontSize;
+              textDragStartRotation = stroke.rotation;
+              textDragStartX = stroke.x; textDragStartY = stroke.y;
+              canvasEl?.setPointerCapture(e.pointerId);
+              return;
+            }
+            if (hit === "rotate") {
+              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              textDragStartRotation = stroke.rotation;
+              canvasEl?.setPointerCapture(e.pointerId);
+              return;
+            }
+            // Click inside text body → start move (moves all selected)
+            const bbox = getTextBbox(stroke, w, h, ctx);
+            if (rawPx >= bbox.left && rawPx <= bbox.right && rawPy >= bbox.top && rawPy <= bbox.bottom) {
+              isSelectMoving = true;
+              selectMoveOrigin = p;
+              selectMoveStartData = {};
+              canvasEl?.setPointerCapture(e.pointerId);
+              redrawAll();
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. Click on any stroke → move all selected, or start a new single selection
+      const hitIdx = markup.findStrokeAt(p.x, p.y, w, h);
+      if (hitIdx !== null) {
+        // If the clicked stroke is already part of the selection, keep multi-select and move all
+        if (!markup.selectedIndices.includes(hitIdx)) {
+          markup.selectShape(hitIdx);
+        }
+        isSelectMoving = true;
+        selectMoveOrigin = p;
+        selectMoveStartData = {};
+        canvasEl?.setPointerCapture(e.pointerId);
+        redrawAll();
+        return;
+      }
+
+      // 3. Click on empty → start selection box
+      markup.selectShape(null);
+      selectBoxStart = p;
+      selectBoxEnd = p;
+      canvasEl?.setPointerCapture(e.pointerId);
+      redrawAll();
+      return;
+    }
 
     // Highlight mode — handle separately
     if (markup.highlightActive) {
@@ -1748,11 +1917,49 @@
   }
 
   function handlePointerMove(e: PointerEvent) {
-    if (!markup.drawActive && !markup.highlightActive && !markup.textActive)
+    if (
+      !markup.drawActive &&
+      !markup.highlightActive &&
+      !markup.textActive &&
+      !markup.selectActive &&
+      !markup.removeActive
+    )
       return;
-    // Handle drag takes priority
+
+    // Remove mode — continuously delete strokes under cursor
+    if (markup.removeActive && isPointerDown) {
+      e.preventDefault();
+      const p = toNormal(e.clientX, e.clientY);
+      const w = overlayRect.width;
+      const h = overlayRect.height;
+      markup.deleteStrokeAt(p.x, p.y, w, h);
+      redrawAll();
+      return;
+    }
+
+    // Handle drag takes priority (transform handles)
     if (dragHandle) {
       handleDragMove(e);
+      return;
+    }
+
+    // Select mode — move dragged strokes
+    if (markup.selectActive && isSelectMoving && selectMoveOrigin) {
+      e.preventDefault();
+      const p = toNormal(e.clientX, e.clientY);
+      const dx = p.x - selectMoveOrigin.x;
+      const dy = p.y - selectMoveOrigin.y;
+      markup.moveSelectedStrokesBy(dx, dy);
+      selectMoveOrigin = p;
+      redrawAll();
+      return;
+    }
+
+    // Select mode — selection box preview
+    if (markup.selectActive && selectBoxStart) {
+      e.preventDefault();
+      selectBoxEnd = toNormal(e.clientX, e.clientY);
+      redrawAll();
       return;
     }
     // Shape move drag
@@ -1878,6 +2085,47 @@
   }
 
   function handlePointerUp(e: PointerEvent) {
+    // Remove mode — release capture
+    if (markup.removeActive && isPointerDown) {
+      isPointerDown = false;
+      canvasEl?.releasePointerCapture(e.pointerId);
+      return;
+    }
+
+    // Select mode — finalize move
+    if (markup.selectActive && isSelectMoving) {
+      isSelectMoving = false;
+      selectMoveOrigin = null;
+      selectMoveStartData = null;
+      isPointerDown = false;
+      canvasEl?.releasePointerCapture(e.pointerId);
+      return;
+    }
+
+    // Select mode — finalize selection box
+    if (markup.selectActive && selectBoxStart) {
+      const end = selectBoxEnd ?? selectBoxStart;
+      const dragDx = Math.abs(end.x - selectBoxStart.x);
+      const dragDy = Math.abs(end.y - selectBoxStart.y);
+      if (dragDx > 0.005 || dragDy > 0.005) {
+        const w = overlayRect.width;
+        const h = overlayRect.height;
+        const hits = markup.findStrokesInRect(
+          selectBoxStart.x, selectBoxStart.y,
+          end.x, end.y, w, h,
+        );
+        if (hits.length > 0) {
+          markup.selectShapes(hits);
+        }
+      }
+      selectBoxStart = null;
+      selectBoxEnd = null;
+      isPointerDown = false;
+      canvasEl?.releasePointerCapture(e.pointerId);
+      redrawAll();
+      return;
+    }
+
     if (markup.textActive) {
       if (dragHandle) {
         // Finalize text handle drag
@@ -2037,7 +2285,7 @@
   // Cursor is provided by markup.cursorStyle (avoids duplicating SVG URLs)
 </script>
 
-{#if (markup.drawActive || markup.highlightActive || markup.textActive || hasTextStrokes) && overlayRect.width > 0 && overlayRect.height > 0}
+{#if (markup.drawActive || markup.highlightActive || markup.textActive || markup.selectActive || markup.removeActive || markup.strokes.length > 0) && overlayRect.width > 0 && overlayRect.height > 0}
   <canvas
     bind:this={canvasEl}
     class="draw-overlay"

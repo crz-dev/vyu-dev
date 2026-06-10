@@ -36,6 +36,8 @@
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
   let resetConfirming = $state(false);
   let resetConfirmTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+  let clearAllConfirming = $state(false);
+  let clearAllConfirmTimeout: ReturnType<typeof setTimeout> | null = $state(null);
 
   // Text sub-tool state
   let activeTextTool: "color" | "font" | "style" | "alignment" | null =
@@ -78,6 +80,12 @@
       if (resetConfirmTimeout) clearTimeout(resetConfirmTimeout);
       resetConfirmTimeout = null;
       resetConfirming = false;
+      if (clearAllConfirmTimeout) clearTimeout(clearAllConfirmTimeout);
+      clearAllConfirmTimeout = null;
+      clearAllConfirming = false;
+      markup.selectActive = false;
+      markup.removeActive = false;
+      markup.strokesHidden = false;
       eraserRowOpen = false;
       highlightRowOpen = false;
       drawRowOpen = false;
@@ -136,12 +144,22 @@
   function toggleEraser() {
     if (eraserRowOpen) {
       closeAllRows();
+      markup.selectActive = false;
+      markup.removeActive = false;
+      if (clearAllConfirmTimeout) {
+        clearTimeout(clearAllConfirmTimeout);
+        clearAllConfirmTimeout = null;
+      }
+      clearAllConfirming = false;
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeAllRows();
       closeDrawSubTools();
       closeHighlightSubTools();
       closeTextSubTools();
+      markup.drawActive = false;
+      markup.highlightActive = false;
+      markup.textActive = false;
       openTimeout = setTimeout(() => {
         eraserRowOpen = true;
         openTimeout = null;
@@ -162,6 +180,8 @@
       closeTextSubTools();
       markup.drawActive = false;
       markup.textActive = false;
+      markup.selectActive = false;
+      markup.removeActive = false;
       openTimeout = setTimeout(() => {
         highlightRowOpen = true;
         markup.highlightActive = true;
@@ -183,6 +203,8 @@
       closeTextSubTools();
       markup.highlightActive = false;
       markup.textActive = false;
+      markup.selectActive = false;
+      markup.removeActive = false;
       openTimeout = setTimeout(() => {
         drawRowOpen = true;
         markup.drawActive = true;
@@ -205,6 +227,8 @@
       markup.drawActive = false;
       markup.highlightActive = false;
       markup.textActive = true;
+      markup.selectActive = false;
+      markup.removeActive = false;
       openTimeout = setTimeout(() => {
         textRowOpen = true;
         openTimeout = null;
@@ -740,7 +764,24 @@
             in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
             out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
           >
-            <button class="edit-menu-btn red sub">
+            <button
+              class="edit-menu-btn red sub"
+              class:active={markup.selectActive}
+              onclick={() => {
+                markup.selectActive = !markup.selectActive;
+                if (markup.selectActive) {
+                  markup.removeActive = false;
+                  markup.drawActive = false;
+                  markup.highlightActive = false;
+                  markup.textActive = false;
+                  if (clearAllConfirmTimeout) {
+                    clearTimeout(clearAllConfirmTimeout);
+                    clearAllConfirmTimeout = null;
+                  }
+                  clearAllConfirming = false;
+                }
+              }}
+            >
               <svg
                 width="11"
                 height="11"
@@ -756,7 +797,24 @@
               </svg>
               <span>Select</span>
             </button>
-            <button class="edit-menu-btn red sub">
+            <button
+              class="edit-menu-btn red sub"
+              class:active={markup.removeActive}
+              onclick={() => {
+                markup.removeActive = !markup.removeActive;
+                if (markup.removeActive) {
+                  markup.selectActive = false;
+                  markup.drawActive = false;
+                  markup.highlightActive = false;
+                  markup.textActive = false;
+                  if (clearAllConfirmTimeout) {
+                    clearTimeout(clearAllConfirmTimeout);
+                    clearAllConfirmTimeout = null;
+                  }
+                  clearAllConfirming = false;
+                }
+              }}
+            >
               <svg
                 width="11"
                 height="11"
@@ -773,7 +831,13 @@
               </svg>
               <span>Remove</span>
             </button>
-            <button class="edit-menu-btn red sub">
+            <button
+              class="edit-menu-btn red sub"
+              class:active={markup.strokesHidden}
+              onclick={() => {
+                markup.strokesHidden = !markup.strokesHidden;
+              }}
+            >
               <svg
                 width="11"
                 height="11"
@@ -789,24 +853,61 @@
               </svg>
               <span>Hide</span>
             </button>
-            <button class="edit-menu-btn red sub">
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-              </svg>
-              <span>Clear all</span>
+            <button
+              class="edit-menu-btn red sub"
+              class:active={clearAllConfirming}
+              onclick={() => {
+                if (clearAllConfirming) {
+                  if (clearAllConfirmTimeout) {
+                    clearTimeout(clearAllConfirmTimeout);
+                    clearAllConfirmTimeout = null;
+                  }
+                  clearAllConfirming = false;
+                  markup.clearAllStrokes();
+                } else {
+                  clearAllConfirming = true;
+                  clearAllConfirmTimeout = setTimeout(() => {
+                    clearAllConfirming = false;
+                    clearAllConfirmTimeout = null;
+                  }, 3000);
+                }
+              }}
+            >
+              {#if clearAllConfirming}
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v0" />
+                  <path d="M12 8v4" />
+                </svg>
+                <span>Confirm?</span>
+              {:else}
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                </svg>
+                <span>Clear all</span>
+              {/if}
             </button>
           </div>
         {/if}
