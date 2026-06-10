@@ -34,6 +34,8 @@
   let highlightModeRowOpen = $state(false);
   let pinned = $state(false);
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+  let resetConfirming = $state(false);
+  let resetConfirmTimeout: ReturnType<typeof setTimeout> | null = $state(null);
 
   // Text sub-tool state
   let activeTextTool: "color" | "font" | "style" | "alignment" | null =
@@ -73,6 +75,9 @@
     if (!visible) {
       if (openTimeout) clearTimeout(openTimeout);
       openTimeout = null;
+      if (resetConfirmTimeout) clearTimeout(resetConfirmTimeout);
+      resetConfirmTimeout = null;
+      resetConfirming = false;
       eraserRowOpen = false;
       highlightRowOpen = false;
       drawRowOpen = false;
@@ -444,11 +449,71 @@
 
 {#if visible}
   <div class="markup-menu-wrapper" style={styleOverride}>
-    {#if hasEdits}
-      <div
-        class="edit-actions-bar edit-actions-left"
-        transition:fly={{ x: 60, duration: 180, opacity: 0.08 }}
-      >
+    <div
+      class="edit-actions-bar edit-actions-left"
+      class:has-edits={hasEdits}
+      in:fly={{ x: 60, duration: 180, opacity: 0.08 }}
+      out:fly={{ y: -26, duration: 190, opacity: 0.08 }}
+    >
+        <button
+          class="edit-action-btn red tooltip-ctrl"
+          class:confirming={resetConfirming}
+          disabled={!hasEdits}
+          onclick={() => {
+            if (resetConfirming) {
+              if (resetConfirmTimeout) {
+                clearTimeout(resetConfirmTimeout);
+                resetConfirmTimeout = null;
+              }
+              resetConfirming = false;
+              markup.clearAllStrokes();
+            } else {
+              resetConfirming = true;
+              resetConfirmTimeout = setTimeout(() => {
+                resetConfirming = false;
+                resetConfirmTimeout = null;
+              }, 3000);
+            }
+          }}
+          data-tooltip={resetConfirming ? "Confirm reset" : "Reset"}
+          aria-label={resetConfirming ? "Confirm reset" : "Reset"}
+        >
+          {#if resetConfirming}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v0" />
+              <path d="M12 8v4" />
+            </svg>
+            <span class="edit-action-label">Confirm</span>
+          {:else}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 6h18" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            <span class="edit-action-label">Reset</span>
+          {/if}
+        </button>
         <button
           class="edit-action-btn blue tooltip-ctrl"
           class:inactive={!canUndo}
@@ -472,33 +537,7 @@
           </svg>
           <span class="edit-action-label">Undo</span>
         </button>
-        <button
-          class="edit-action-btn red tooltip-ctrl"
-          disabled={!hasEdits}
-          onclick={() => markup.clearAllStrokes()}
-          data-tooltip="Reset"
-          aria-label="Reset"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 6h18" />
-            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-            <line x1="10" y1="11" x2="10" y2="17" />
-            <line x1="14" y1="11" x2="14" y2="17" />
-          </svg>
-          <span class="edit-action-label">Reset</span>
-        </button>
-      </div>
-    {/if}
+    </div>
 
     <div
       class="edit-menu"
@@ -2046,11 +2085,12 @@
       </div>
     </div>
 
-    {#if hasEdits}
-      <div
-        class="edit-actions-bar edit-actions-right"
-        transition:fly={{ x: -60, duration: 180, opacity: 0.08 }}
-      >
+    <div
+      class="edit-actions-bar edit-actions-right"
+      class:has-edits={hasEdits}
+      in:fly={{ x: -60, duration: 180, opacity: 0.08 }}
+      out:fly={{ y: -26, duration: 190, opacity: 0.08 }}
+    >
         <button
           class="edit-action-btn yellow tooltip-ctrl"
           disabled={!hasEdits}
@@ -2095,7 +2135,6 @@
           </svg>
           <span class="edit-action-label">Apply</span>
         </button>
-      </div>
-    {/if}
+    </div>
   </div>
 {/if}

@@ -3,25 +3,23 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-09
 
 ## Last change
-Made the font dropdown separator between system fonts (Courier New) and app fonts (Geist, Satoshi) much more visible. Changed from 1px at `rgba(255,255,255,0.18)` to 2px at `var(--bg-border)` (app's standard border color) with `border-radius: 1px`, matching the `.edit-menu-separator` pattern.
+Improved the edit/markup action submenu (Undo/Reset | Export/Apply) on both EditMenu and MarkupMenu. Three changes: (1) Reset button now requires a two-click confirmation — first click shows "Confirm" with a `?` icon and a red pulse highlight, second click executes reset; state auto-reverts after 3s. (2) Swapped Reset above Undo in the left action bar. (3) Fixed the exit animation — action bars now slide sideways out when edits are undone (CSS transition via `.has-edits` class), but fade upward when the entire menu closes (`out:fly={{ y: -26 }}`), matching the main menu's exit.
 
-File changed: `components.css`.
+Files changed: `EditMenu.svelte`, `MarkupMenu.svelte`, `components.css`.
 
 ## Status
 - Type check: clean
-- Formatter: clean
+- Formatter: untested
 - Rust build: untested
 
 ## Next
 Text word wrapping / multi-line support.
 
 ## Bugs found this session
-- Fixed: font menu size input did not update live when dragging diamond handles to resize text.
-- Fixed: underline positioned at em-square middle + 2px (way above baseline); strikethrough positioned at em-square middle - 30% font size (above x-height).
-- Fixed: font dropdown separator between Courier New and Geist was barely visible (1px at 18% white opacity).
+- None.
 
 ## Current commit
-style: make font dropdown separator more visible
+feat: add reset confirm, swap undo/reset, fix action bar exit animation
 
 ## Architecture update
 - None.

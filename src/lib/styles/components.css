@@ -2448,6 +2448,21 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   height: 104px;
   max-height: 104px;
   min-height: 104px;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.edit-actions-left:not(.has-edits) {
+  transform: translateX(60px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.edit-actions-right:not(.has-edits) {
+  transform: translateX(-60px);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .edit-action-btn {
@@ -2533,6 +2548,27 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   opacity: 0.25;
   cursor: default;
   pointer-events: none;
+}
+
+.edit-action-btn.confirming {
+  background: var(--red-bg-active);
+  border-color: var(--red-border-strong, var(--red-border));
+  color: var(--red-soft);
+  opacity: 1;
+  animation: edit-action-pulse 0.8s ease-in-out infinite alternate;
+}
+
+.edit-action-btn.confirming:hover {
+  background: var(--red-bg-active);
+}
+
+@keyframes edit-action-pulse {
+  from {
+    box-shadow: 0 0 4px rgba(220, 38, 38, 0.2);
+  }
+  to {
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+  }
 }
 
 .color-slider-panel {
