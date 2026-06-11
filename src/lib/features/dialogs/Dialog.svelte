@@ -1246,25 +1246,18 @@
         </button>
         <button
           class="ctx-item blue"
-          onclick={ctxMarkup}
+          onclick={ctxEqualizer}
           role="menuitem"
           style="animation-delay: 165ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M12 20h9"
+            ><path d="M2 12h2M6 8v8M10 5v14M14 9v6M18 7v10M22 11v2"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-            /><path
-              d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
             /></svg
           >
-          Markup
+          Equalizer
         </button>
         <div class="ctx-sep"></div>
         <button

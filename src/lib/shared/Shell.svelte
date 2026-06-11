@@ -765,6 +765,7 @@
     onClose={closeEqualizerMenu}
     onMoved={() => (equalizerMenuMoved = true)}
     styleOverride={equalizerMenuStyle}
+    {isVideo}
   />
 
   {#key settingsOpen}

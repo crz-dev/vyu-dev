@@ -8,11 +8,13 @@
     onClose,
     onMoved,
     styleOverride = "",
+    isVideo = false,
   }: {
     visible: boolean;
     onClose: () => void;
     onMoved?: () => void;
     styleOverride?: string;
+    isVideo?: boolean;
   } = $props();
 
   let pinned = $state(false);
@@ -59,7 +61,7 @@
     "var(--pink-border)",
   ] as const;
 
-  const presets: Record<string, number[]> = {
+  const audioPresets: Record<string, number[]> = {
     Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "Bass Boost": [8, 6, 4, 2, 0, 0, -1, -1, -2, -3],
     Vocal: [-2, -1, 0, 3, 5, 5, 3, 1, 0, -1],
@@ -69,6 +71,19 @@
     Electronic: [5, 4, 2, 0, -2, 0, 0, 2, 4, 6],
     Podcast: [-3, -1, 2, 5, 5, 5, 3, 0, -1, -2],
   };
+
+  const videoPresets: Record<string, number[]> = {
+    Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "Bass Boost": [8, 6, 4, 2, 0, 0, -1, -1, -2, -3],
+    Dialogue: [-4, -3, -1, 1, 3, 5, 5, 3, 1, -1],
+    Movie: [4, 3, 2, 0, -1, -1, 0, 2, 4, 5],
+    Cinema: [5, 4, 3, 1, -2, -2, 0, 2, 4, 6],
+    Action: [7, 5, 3, 0, -3, -2, 1, 3, 5, 7],
+    "Night Mode": [2, 2, 1, 0, -2, -2, -1, 1, 2, 2],
+    Surround: [3, 2, 0, -2, -3, -2, 0, 3, 5, 6],
+  };
+
+  const presets = $derived(isVideo ? videoPresets : audioPresets);
 
   const TRACK_HEIGHT = 100;
 
