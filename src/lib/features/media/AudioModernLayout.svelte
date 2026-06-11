@@ -8,6 +8,7 @@
   import type { LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
   import { showToast } from "$lib/features/toast/toast.svelte";
+  import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
   let {
     fileName,
@@ -58,6 +59,7 @@
     toggleSpeedSliderMode,
     loopMode,
     setLoopMode,
+    audioEl,
     cassetteFilenameOverflow = $bindable(),
     cassetteInfoRowEl = $bindable(),
   }: {
@@ -139,6 +141,7 @@
     toggleSpeedSliderMode: () => void;
     loopMode: LoopMode;
     setLoopMode: (mode: LoopMode) => void;
+    audioEl: () => HTMLAudioElement | null;
     cassetteFilenameOverflow: boolean;
     cassetteInfoRowEl: HTMLElement | null;
   } = $props();
@@ -172,6 +175,13 @@
     speedTrackEl = null;
     toggleSpeedSliderMode();
   }
+
+  // Connect audio element to the shared equalizer engine
+  $effect(() => {
+    const el = audioEl();
+    if (!el) return;
+    eqEngine.connectMediaElement(el);
+  });
 </script>
 
 <div class="audio-modern-thumbnail">

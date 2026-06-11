@@ -82,6 +82,8 @@
     editDialogStore,
     createEditActions,
   } from "$lib/features/edit-dialogs/editActions.svelte";
+  import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
+  import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
   // State declarations
   let filePath = $state("");
@@ -845,6 +847,26 @@
     loadFile,
     handleKeydown,
     handleGlobalMouseDown,
+  });
+
+  // Load EQ settings on file change and connect video element
+  $effect(() => {
+    const path = filePath;
+    if (!path) return;
+
+    eqStore.loadForFile(path);
+
+    if (isVideo && videoEl) {
+      eqEngine.connectMediaElement(videoEl);
+    }
+  });
+
+  // Also connect video element when it becomes available after mount
+  $effect(() => {
+    const el = videoEl;
+    if (el && filePath && isVideo) {
+      eqEngine.connectMediaElement(el);
+    }
   });
 </script>
 

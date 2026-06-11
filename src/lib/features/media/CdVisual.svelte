@@ -1,11 +1,5 @@
 <script lang="ts">
-  // Module-level analyser tracking
-  // Shared AudioContext (lazy singleton) and per-element analyser map.
-  // createMediaElementSource() can only be called once per <audio> element,
-  // so we track connected elements to avoid double-connection errors when
-  // CdVisual is unmounted/remounted (e.g. retro ↔ modern layout switch).
-  let sharedCtx: AudioContext | null = null;
-  const analyserMap = new WeakMap<HTMLAudioElement, AnalyserNode>();
+  import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
   let {
     progress = 0,
@@ -154,30 +148,15 @@
     const el = audioEl();
     if (!el) return;
 
-    // Lazily create or resume the shared AudioContext
-    if (!sharedCtx) {
-      sharedCtx = new AudioContext();
-    }
-    if (sharedCtx.state === "suspended") {
-      sharedCtx.resume();
-    }
+    // Connect the audio element through the shared equalizer engine
+    // (idempotent — safe to call multiple times for the same element)
+    eqEngine.connectMediaElement(el);
 
-    // Get or create the AnalyserNode for this audio element
-    let analyser = analyserMap.get(el);
+    // Get the analyser from the shared engine (chain: source → filters → gain → analyser → destination)
+    const analyser = eqEngine.getAnalyser();
     if (!analyser) {
-      try {
-        const source = sharedCtx.createMediaElementSource(el);
-        analyser = sharedCtx.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
-        source.connect(analyser);
-        // Connect to destination so audio still plays through speakers
-        analyser.connect(sharedCtx.destination);
-        analyserMap.set(el, analyser);
-      } catch {
-        // Already connected or unsupported — bail silently
-        return;
-      }
+      // Engine could not connect — bail silently
+      return;
     }
 
     const freqData = new Uint8Array(analyser.frequencyBinCount);

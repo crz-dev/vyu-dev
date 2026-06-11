@@ -3,11 +3,19 @@ import type { LoopMode } from "$lib/shared/constants";
 
 const MAX_STALE_ENTRIES = 500;
 
+export interface EqSettings {
+  bands: number[];
+  bypass: boolean;
+  outputGain: number;
+  activePreset: string;
+}
+
 export function cleanupStaleStorageEntries(): void {
   const tsKeys: string[] = [];
   const clipKeys: string[] = [];
   const resumeKeys: string[] = [];
   const cdColorKeys: string[] = [];
+  const eqKeys: string[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (!key) continue;
@@ -15,8 +23,9 @@ export function cleanupStaleStorageEntries(): void {
     else if (key.startsWith("vyu-clips-")) clipKeys.push(key);
     else if (key.startsWith("vyu-resume-")) resumeKeys.push(key);
     else if (key.startsWith("vyu-cd-color-")) cdColorKeys.push(key);
+    else if (key.startsWith("vyu-eq-")) eqKeys.push(key);
   }
-  for (const keys of [tsKeys, clipKeys, resumeKeys, cdColorKeys]) {
+  for (const keys of [tsKeys, clipKeys, resumeKeys, cdColorKeys, eqKeys]) {
     if (keys.length > MAX_STALE_ENTRIES) {
       const toRemove = keys.slice(0, keys.length - MAX_STALE_ENTRIES);
       for (const k of toRemove) localStorage.removeItem(k);
@@ -342,4 +351,34 @@ export function loadTextCustomColors(): string[] {
 
 export function saveTextCustomColors(colors: string[]): void {
   localStorage.setItem("vyu-text-custom-colors", JSON.stringify(colors));
+}
+
+export function loadEqSettings(filePath: string): EqSettings | null {
+  if (!filePath) return null;
+  try {
+    const raw = localStorage.getItem(`vyu-eq-${filePath}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<EqSettings>;
+    if (
+      Array.isArray(parsed.bands) &&
+      parsed.bands.length === 10 &&
+      typeof parsed.bypass === "boolean" &&
+      typeof parsed.outputGain === "number" &&
+      typeof parsed.activePreset === "string"
+    ) {
+      return parsed as EqSettings;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveEqSettings(filePath: string, settings: EqSettings): void {
+  if (!filePath) return;
+  localStorage.setItem(`vyu-eq-${filePath}`, JSON.stringify(settings));
+}
+
+export function deleteEqSettings(filePath: string): void {
+  if (filePath) localStorage.removeItem(`vyu-eq-${filePath}`);
 }

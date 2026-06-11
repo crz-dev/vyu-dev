@@ -361,6 +361,7 @@
             {toggleSpeedSliderMode}
             {loopMode}
             {setLoopMode}
+            audioEl={() => audioEl}
             bind:cassetteFilenameOverflow
             bind:cassetteInfoRowEl
           />

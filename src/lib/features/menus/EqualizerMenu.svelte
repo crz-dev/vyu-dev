@@ -1,5 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
+  import { formatFreq, formatDb } from "$lib/features/equalizer/band-config";
 
   let {
     visible,
@@ -14,9 +16,6 @@
   } = $props();
 
   let pinned = $state(false);
-  let bypass = $state(true);
-  let activePreset = $state("Flat");
-  let outputGain = $state(0);
   let presetDropdownOpen = $state(false);
 
   const BANDS = [30, 60, 125, 250, 500, 1000, 2000, 4000, 8000, 16000] as const;
@@ -71,19 +70,7 @@
     Podcast: [-3, -1, 2, 5, 5, 5, 3, 0, -1, -2],
   };
 
-  let bands = $state([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-
   const TRACK_HEIGHT = 100;
-
-  function formatFreq(hz: number): string {
-    if (hz >= 1000) return `${hz / 1000}kHz`;
-    return `${hz}Hz`;
-  }
-
-  function formatDb(val: number): string {
-    if (val === 0) return "0dB";
-    return val > 0 ? `+${val}dB` : `${val}dB`;
-  }
 
   function knobY(val: number): number {
     const ratio = (val + 12) / 24;
@@ -91,40 +78,30 @@
   }
 
   function applyPreset(name: string) {
-    activePreset = name;
     const values = presets[name];
     if (values) {
-      bands = [...values];
-      if (name !== "Flat") bypass = false;
+      eqStore.applyPreset(name, values);
     }
   }
 
   function resetAll() {
-    bands = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-    activePreset = "Flat";
-    outputGain = 0;
-    bypass = true;
+    eqStore.resetAll();
   }
 
   function handleBandInput(index: number, e: Event) {
     const target = e.target as HTMLInputElement;
-    const val = Math.round(Number(target.value));
-    const next = [...bands];
-    next[index] = val;
-    bands = next;
-    if (val !== 0) bypass = false;
-    activePreset = "Custom";
+    eqStore.setBand(index, Number(target.value));
   }
 
   function handleGainInput(e: Event) {
     const target = e.target as HTMLInputElement;
-    outputGain = Math.round(Number(target.value));
+    eqStore.setOutputGain(Number(target.value));
   }
 
   function curvePath(): string {
     const gap = 38;
     const startX = 19;
-    const points: [number, number][] = bands.map((val, i) => [
+    const points: [number, number][] = eqStore.bands.map((val, i) => [
       startX + i * gap,
       knobY(val) + 12,
     ]);
@@ -143,7 +120,7 @@
   const curveFillPath = $derived.by(() => {
     const gap = 38;
     const startX = 19;
-    const points: [number, number][] = bands.map((val, i) => [
+    const points: [number, number][] = eqStore.bands.map((val, i) => [
       startX + i * gap,
       knobY(val) + 12,
     ]);
@@ -273,13 +250,13 @@
         <div class="eq-controls-row">
           <button
             class="eq-bypass-btn"
-            class:active={!bypass}
-            onclick={() => (bypass = !bypass)}
+            class:active={!eqStore.bypass}
+            onclick={() => eqStore.setBypass(!eqStore.bypass)}
           >
-            <span class="eq-bypass-track" class:on={!bypass}>
+            <span class="eq-bypass-track" class:on={!eqStore.bypass}>
               <span class="eq-bypass-thumb"></span>
             </span>
-            <span class="eq-bypass-label">{bypass ? "Bypass" : "Active"}</span>
+            <span class="eq-bypass-label">{eqStore.bypass ? "Bypass" : "Active"}</span>
           </button>
 
           <div class="edit-menu-divider"></div>
@@ -289,7 +266,7 @@
               class="eq-preset-btn"
               onclick={() => (presetDropdownOpen = !presetDropdownOpen)}
             >
-              <span>{activePreset}</span>
+              <span>{eqStore.activePreset}</span>
               <svg
                 width="8"
                 height="8"
@@ -313,7 +290,7 @@
                 {#each Object.keys(presets) as name}
                   <button
                     class="eq-preset-item"
-                    class:active={activePreset === name}
+                    class:active={eqStore.activePreset === name}
                     onclick={() => {
                       applyPreset(name);
                       presetDropdownOpen = false;
@@ -322,7 +299,7 @@
                     {name}
                   </button>
                 {/each}
-                {#if activePreset === "Custom"}
+                {#if eqStore.activePreset === "Custom"}
                   <div class="eq-preset-separator"></div>
                   <button
                     class="eq-preset-item active"
@@ -411,21 +388,22 @@
             </svg>
 
             {#each BANDS as freq, i}
-              {@const pct = ((bands[i] + 12) / 24) * 100}
+              {@const val = eqStore.bands[i]}
+              {@const pct = ((val + 12) / 24) * 100}
               <div class="eq-band">
-                <span class="eq-db-label">{formatDb(bands[i])}</span>
+                <span class="eq-db-label">{formatDb(val)}</span>
                 <div class="eq-slider-track" style="height: {TRACK_HEIGHT}px;">
                   <div class="eq-slider-center"></div>
                   <div
                     class="eq-slider-fill"
-                    class:above={bands[i] > 0}
-                    class:below={bands[i] < 0}
-                    style:top={bands[i] >= 0
-                      ? `${knobY(bands[i])}px`
+                    class:above={val > 0}
+                    class:below={val < 0}
+                    style:top={val >= 0
+                      ? `${knobY(val)}px`
                       : `${TRACK_HEIGHT / 2}px`}
-                    style:height={bands[i] >= 0
-                      ? `${TRACK_HEIGHT / 2 - knobY(bands[i])}px`
-                      : `${knobY(bands[i]) - TRACK_HEIGHT / 2}px`}
+                    style:height={val >= 0
+                      ? `${TRACK_HEIGHT / 2 - knobY(val)}px`
+                      : `${knobY(val) - TRACK_HEIGHT / 2}px`}
                     style:background={BAND_COLORS[i]}
                     style:opacity="0.35"
                   ></div>
@@ -435,13 +413,13 @@
                     min="-12"
                     max="12"
                     step="1"
-                    value={bands[i]}
+                    value={val}
                     oninput={(e) => handleBandInput(i, e)}
                     style:accent-color={BAND_COLORS[i]}
                   />
                   <div
                     class="eq-knob"
-                    style:top="{knobY(bands[i])}px"
+                    style:top="{knobY(val)}px"
                     style:background={BAND_COLORS[i]}
                     style:border-color={BAND_BORDER[i]}
                     style:box-shadow="0 0 8px {BAND_BG[i]}"
@@ -475,27 +453,27 @@
             <div class="eq-gain-center"></div>
             <div
               class="eq-gain-fill"
-              style:width="{((outputGain + 12) / 24) * 100}%"
+              style:width="{((eqStore.outputGain + 12) / 24) * 100}%"
             ></div>
             <button
               class="eq-gain-marker"
-              class:active={outputGain === -12}
+              class:active={eqStore.outputGain === -12}
               style:left="0%"
-              onclick={() => (outputGain = -12)}
+              onclick={() => eqStore.setOutputGain(-12)}
               aria-label="Min gain"
             ></button>
             <button
               class="eq-gain-marker"
-              class:active={outputGain === 0}
+              class:active={eqStore.outputGain === 0}
               style:left="50%"
-              onclick={() => (outputGain = 0)}
+              onclick={() => eqStore.setOutputGain(0)}
               aria-label="Zero gain"
             ></button>
             <button
               class="eq-gain-marker"
-              class:active={outputGain === 12}
+              class:active={eqStore.outputGain === 12}
               style:left="100%"
-              onclick={() => (outputGain = 12)}
+              onclick={() => eqStore.setOutputGain(12)}
               aria-label="Max gain"
             ></button>
             <input
@@ -504,15 +482,15 @@
               min="-12"
               max="12"
               step="1"
-              value={outputGain}
+              value={eqStore.outputGain}
               oninput={handleGainInput}
             />
             <div
               class="eq-knob eq-gain-knob"
-              style:left="{((outputGain + 12) / 24) * 100}%"
+              style:left="{((eqStore.outputGain + 12) / 24) * 100}%"
             ></div>
           </div>
-          <span class="eq-gain-value">{formatDb(outputGain)}</span>
+          <span class="eq-gain-value">{formatDb(eqStore.outputGain)}</span>
         </div>
       </div>
     </div>
