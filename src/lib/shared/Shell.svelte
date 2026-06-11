@@ -758,6 +758,7 @@
     onClose={closeEffectsMenu}
     onMoved={() => (effectsMenuMoved = true)}
     styleOverride={effectsMenuStyle}
+    {filePath}
   />
 
   <EqualizerMenu

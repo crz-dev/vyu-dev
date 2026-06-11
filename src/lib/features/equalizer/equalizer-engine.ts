@@ -3,6 +3,8 @@ import { effectsEngine } from "../effects/effects-engine";
 
 const NUM_BANDS = BAND_FREQUENCIES.length;
 
+type StageMode = "mono" | "stereo" | "surround" | "eightD" | null;
+
 class EqualizerEngine {
   private ctx: AudioContext | null = null;
   private source: MediaElementAudioSourceNode | null = null;
@@ -13,6 +15,10 @@ class EqualizerEngine {
   private bandValues: number[] = new Array(NUM_BANDS).fill(0);
   private outputGainDb = 0;
   private bypassed = true;
+
+  private stageMode: StageMode = null;
+  private stageNodes: AudioNode[] = [];
+  private stageLfo: OscillatorNode | null = null;
 
   getAnalyser(): AnalyserNode | null {
     return this.analyser;
@@ -70,7 +76,7 @@ class EqualizerEngine {
       }
       this.filters[this.filters.length - 1].connect(this.outputGain);
       this.outputGain.connect(this.analyser);
-      this.analyser.connect(ctx.destination);
+      this.applyStage();
 
       this.connectedElement = el;
       return true;
@@ -95,6 +101,8 @@ class EqualizerEngine {
 
   private cleanup(): void {
     effectsEngine.teardown();
+    this.teardownStage();
+    this.stageMode = null;
     for (const f of this.filters) {
       try {
         f.disconnect();
@@ -180,6 +188,123 @@ class EqualizerEngine {
 
   getOutputGainDb(): number {
     return this.outputGainDb;
+  }
+
+  getStageMode(): StageMode {
+    return this.stageMode;
+  }
+
+  setStage(mode: StageMode): void {
+    if (mode === this.stageMode) return;
+    this.stageMode = mode;
+    this.teardownStage();
+    this.applyStage();
+  }
+
+  private teardownStage(): void {
+    if (this.stageLfo) {
+      try { this.stageLfo.stop(); } catch { /* already stopped */ }
+      this.stageLfo = null;
+    }
+    for (const node of this.stageNodes) {
+      try { node.disconnect(); } catch { /* already disconnected */ }
+    }
+    this.stageNodes = [];
+  }
+
+  private applyStage(): void {
+    if (!this.analyser || !this.ctx) return;
+
+    const mode = this.stageMode;
+    if (!mode || mode === "stereo") {
+      this.analyser.connect(this.ctx.destination);
+      return;
+    }
+
+    if (mode === "mono") {
+      const splitter = this.ctx.createChannelSplitter(2);
+      const merger = this.ctx.createChannelMerger(2);
+      const gainL = this.ctx.createGain();
+      const gainR = this.ctx.createGain();
+      gainL.gain.value = 0.5;
+      gainR.gain.value = 0.5;
+
+      this.analyser.connect(splitter);
+      splitter.connect(gainL, 0);
+      splitter.connect(gainR, 1);
+      gainL.connect(merger, 0, 0);
+      gainL.connect(merger, 0, 1);
+      gainR.connect(merger, 0, 0);
+      gainR.connect(merger, 0, 1);
+      merger.connect(this.ctx.destination);
+
+      this.stageNodes = [splitter, merger, gainL, gainR];
+      return;
+    }
+
+    if (mode === "surround") {
+      const splitter = this.ctx.createChannelSplitter(2);
+      const merger = this.ctx.createChannelMerger(2);
+
+      // Direct path L→L, R→R
+      this.analyser.connect(splitter);
+      splitter.connect(merger, 0, 0);
+      splitter.connect(merger, 1, 1);
+
+      // Crossfeed L→R
+      const delayLR = this.ctx.createDelay(0.002);
+      delayLR.delayTime.value = 0.0004;
+      const lpLR = this.ctx.createBiquadFilter();
+      lpLR.type = "lowpass";
+      lpLR.frequency.value = 3000;
+      const gainLR = this.ctx.createGain();
+      gainLR.gain.value = 0.3;
+
+      splitter.connect(delayLR, 0);
+      delayLR.connect(lpLR);
+      lpLR.connect(gainLR);
+      gainLR.connect(merger, 0, 1);
+
+      // Crossfeed R→L
+      const delayRL = this.ctx.createDelay(0.002);
+      delayRL.delayTime.value = 0.0004;
+      const lpRL = this.ctx.createBiquadFilter();
+      lpRL.type = "lowpass";
+      lpRL.frequency.value = 3000;
+      const gainRL = this.ctx.createGain();
+      gainRL.gain.value = 0.3;
+
+      splitter.connect(delayRL, 1);
+      delayRL.connect(lpRL);
+      lpRL.connect(gainRL);
+      gainRL.connect(merger, 0, 0);
+
+      merger.connect(this.ctx.destination);
+
+      this.stageNodes = [splitter, merger, delayLR, lpLR, gainLR, delayRL, lpRL, gainRL];
+      return;
+    }
+
+    if (mode === "eightD") {
+      const panner = this.ctx.createStereoPanner();
+      const lfo = this.ctx.createOscillator();
+      const lfoGain = this.ctx.createGain();
+
+      lfo.type = "sine";
+      lfo.frequency.value = 1 / 8;
+      lfoGain.gain.value = 1;
+
+      lfo.connect(lfoGain);
+      lfoGain.connect(panner.pan);
+      lfo.start();
+
+      this.analyser.connect(panner);
+      panner.connect(this.ctx.destination);
+
+      this.stageLfo = lfo;
+      this.stageNodes = [panner, lfoGain];
+      return;
+    }
   }
 
   destroy(): void {

@@ -1,17 +1,20 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { effectsEngine } from "$lib/features/effects/effects-engine";
+  import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
   let {
     visible,
     onClose,
     onMoved,
     styleOverride = "",
+    filePath = "",
   }: {
     visible: boolean;
     onClose: () => void;
     onMoved?: () => void;
     styleOverride?: string;
+    filePath?: string;
   } = $props();
 
   let pinned = $state(false);
@@ -197,7 +200,13 @@
     e: Event,
   ) {
     e.stopPropagation();
-    activeStage = activeStage === key ? null : key;
+    if (activeStage === key) {
+      activeStage = null;
+      eqEngine.setStage(null);
+    } else {
+      activeStage = key;
+      eqEngine.setStage(key);
+    }
   }
 
   function flashVisual(name: string, e: Event) {
@@ -220,8 +229,19 @@
       visualRowOpen = false;
       activeTuneItem = null;
       activeFilter = null;
-      activeStage = null;
       pinned = false;
+    }
+  });
+
+  $effect(() => {
+    if (visible) {
+      activeStage = eqEngine.getStageMode();
+    }
+  });
+
+  $effect(() => {
+    if (filePath) {
+      activeStage = eqEngine.getStageMode();
     }
   });
 </script>
