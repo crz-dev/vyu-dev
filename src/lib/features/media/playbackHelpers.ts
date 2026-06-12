@@ -1,3 +1,4 @@
+import { isAudio } from "$lib/shared/media-kind";
 import type { MediaState } from "./media.svelte";
 
 export function createOnMediaEnded(deps: {
@@ -35,6 +36,23 @@ export function createOnMediaEnded(deps: {
           currentIndex,
           deps.setMediaState,
         );
+      }
+    } else if (mode === "shuffle-songs") {
+      const list = deps.getFileList();
+      const audioFiles = list.filter((f) => isAudio(f));
+      if (audioFiles.length > 1) {
+        const idx = Math.floor(Math.random() * audioFiles.length);
+        const currentIndex = deps.getCurrentIndex();
+        const chosen = audioFiles[idx];
+        const listIdx = list.indexOf(chosen);
+        if (listIdx !== -1) {
+          await deps.media.navigate(
+            listIdx - currentIndex,
+            list,
+            currentIndex,
+            deps.setMediaState,
+          );
+        }
       }
     }
   };

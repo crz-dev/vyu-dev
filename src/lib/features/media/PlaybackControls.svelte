@@ -2,6 +2,7 @@
   import { fly } from "svelte/transition";
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
+  import type { LoopMode } from "$lib/shared/constants";
 
   let {
     fullscreen = false,
@@ -67,14 +68,14 @@
     isAudio?: boolean;
     isGifVideo: boolean;
     playing: boolean;
-    looping: "loop" | "stop" | "next" | "shuffle";
+    looping: LoopMode;
     muted: boolean;
     volume: number;
     volumeHovered: boolean;
     volumeSegments: number;
     togglePlay: () => void;
     toggleLoop?: () => void;
-    setLoopMode: (mode: "loop" | "stop" | "next" | "shuffle") => void;
+    setLoopMode: (mode: LoopMode) => void;
     toggleMute: () => void;
     showVolumeOverlay: () => void;
     handleVolumeAreaLeave: () => void;
@@ -233,7 +234,9 @@
               ? "Stop at end"
               : looping === "next"
                 ? "Play next"
-                : "Shuffle"}
+                : looping === "shuffle-songs"
+                  ? "Shuffle songs"
+                  : "Shuffle"}
         onclick={() => {
           loopMenuOpen = !loopMenuOpen;
         }}
@@ -309,6 +312,22 @@
               rx="1"
               fill="currentColor"
             />
+          </svg>
+        {:else if looping === "shuffle-songs"}
+          <svg
+            class="loop-mode-icon"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
           </svg>
         {:else}
           <svg
@@ -758,7 +777,9 @@
               ? "Stop at end"
               : looping === "next"
                 ? "Play next"
-                : "Shuffle"}
+                : looping === "shuffle-songs"
+                  ? "Shuffle songs"
+                  : "Shuffle"}
         onclick={() => {
           loopMenuOpen = !loopMenuOpen;
         }}
@@ -834,6 +855,22 @@
               rx="1"
               fill="currentColor"
             />
+          </svg>
+        {:else if looping === "shuffle-songs"}
+          <svg
+            class="loop-mode-icon"
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" />
+            <circle cx="18" cy="16" r="3" />
           </svg>
         {:else}
           <svg

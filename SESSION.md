@@ -3,27 +3,25 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-11
 
 ## Last change
-Replaced distortion curve from PI-based hard-clipping (deafening at low slider values) to `tanh` soft saturation with sensible drive range. Fixed volume slider always showing 100% regardless of actual stored volume — `initSliderMode` now initializes slider values from current state. Added playback speed persistence (`vyu-speed` localStorage) so speed setting carries between sessions. Speed is applied to audio element on load.
+Added "Shuffle songs" mode (shuffles only audio files in folder) as a 5th full-width button in the After playback menu, with music note icon on controls bar when active. Thinned markers menu buttons for audio layouts to match loop-drop-btn dimensions. Added "shuffle-songs" to LOOP_MODES constant, updated types to LoopMode throughout.
 
-Files: `effects-engine.ts`, `playback.svelte.ts`, `storage.ts`, `navigation.svelte.ts`, `+page.svelte`, `init.ts`
+Files: `constants.ts`, `dropAnimations.ts`, `LoopDropdown.svelte`, `playbackHelpers.ts`, `PlaybackControls.svelte`, `AudioModernLayout.svelte`, `AudioRetroLayout.svelte`, `MarkerDropdown.svelte`, `SettingsDialog.svelte`, `components.css`
 
 ## Status
-- Effects — Distortion: working (tanh curve, usable slider range)
-- Volume slider display: working (shows actual stored volume)
-- Speed slider persistence: working (saves/loads between sessions)
-- Speed applied on audio load: fixed (playbackRate set on new audio elements)
-- Stage buttons (Mono/Stereo/Surround/8D): working
+- Shuffle songs mode: working (shuffles only audio files on media end)
+- After playback menu: working (2x2 grid + full-width Shuffle songs button)
+- Markers menu buttons (audio): working (thin styling for audio layouts)
+- Tooltips/icons: working (music note when shuffle-songs active)
 - Type check: passing
 
 ## Next
 None.
 
 ## Bugs found this session
-- Volume slider always showed 100% regardless of actual stored volume. Fixed by initializing `volumeSliderValue` from `getVolume()` in `initSliderMode`.
-- No playback speed persistence — speed always reset to 1x between sessions. Fixed with `vyu-speed` localStorage key.
+- None.
 
 ## Current commit
-fix: distortion curve, slider init, speed persistence
+feat: shuffle-songs mode, thin markers menu for audio
 
 ## Architecture update
 None.

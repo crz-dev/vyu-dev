@@ -7,6 +7,7 @@
     invokeCleanupTempFolder,
   } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
+  import type { LoopMode } from "$lib/shared/constants";
 
   let {
     settingsOpen,
@@ -174,7 +175,7 @@
 
   let volumeBoost = $state(false);
   let resumePlayback = $state(true);
-  let defaultLoop = $state<"loop" | "stop" | "next" | "shuffle">("loop");
+  let defaultLoop = $state<LoopMode>("loop");
   let showTimeRemaining = $state(false);
   let rememberVolume = $state(true);
   let autoplayNext = $state(false);

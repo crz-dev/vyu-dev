@@ -1785,6 +1785,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .ts-drop-half.ts-drop-green:last-child {
   border-left-color: var(--green-border-subtle);
 }
+.ts-drop-menu.thin .ts-drop-item,
+.ts-drop-menu.thin .ts-drop-half,
+.ts-drop-menu.thin .ts-drop-red-confirm {
+  padding: 3px 8px;
+  min-height: 24px;
+}
 .ts-drop-header {
   display: flex;
   flex-direction: row;
@@ -1934,6 +1940,9 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
+}
+.loop-drop-btn-full {
+  grid-column: 1 / -1;
 }
 .loop-btn.loop-menu-open {
   color: var(--text-primary);

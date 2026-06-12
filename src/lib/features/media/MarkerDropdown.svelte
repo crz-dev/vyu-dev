@@ -11,6 +11,7 @@
     addClipStart,
     addClipEnd,
     deleteAllMarkers,
+    thin = false,
   }: {
     open: boolean;
     onClose: () => void;
@@ -21,6 +22,7 @@
     addClipStart: () => void;
     addClipEnd: () => void;
     deleteAllMarkers: () => void;
+    thin?: boolean;
   } = $props();
 
   // Two-step delete confirmation is internal to the menu — parent only
@@ -51,7 +53,7 @@
 </script>
 
 {#if open}
-  <div class="ts-drop-menu" role="menu">
+  <div class="ts-drop-menu" class:thin={thin} role="menu">
     <div class="ts-drop-header" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <polygon

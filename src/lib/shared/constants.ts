@@ -120,7 +120,7 @@ export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
 export const REMUX_VIDEO_EXTS = new Set(["ts", "m2ts"]);
 
 export const VOLUME_SEGMENTS = 8;
-export const LOOP_MODES = ["loop", "stop", "next", "shuffle"] as const;
+export const LOOP_MODES = ["loop", "stop", "next", "shuffle", "shuffle-songs"] as const;
 export type LoopMode = (typeof LOOP_MODES)[number];
 
 // UI / interaction constants
