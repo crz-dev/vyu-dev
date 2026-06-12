@@ -34,7 +34,10 @@ export interface InitState {
   filePath: { get: () => string };
   rawCurrentSecs: { get: () => number };
   rawDurationSecs: { get: () => number };
-  playbackUI: { initSliderMode: (v: boolean, s: boolean) => void };
+  playbackUI: {
+    initSliderMode: (v: boolean, s: boolean) => void;
+    setPlaybackSpeed: (v: number) => void;
+  };
   loadFile: (path: string) => Promise<void>;
   handleKeydown: (e: KeyboardEvent) => void;
   handleGlobalMouseDown: (e: MouseEvent) => void;

@@ -24,7 +24,12 @@
   import { createKeybindHandler } from "$lib/shared/keybinds";
   import { VOLUME_SEGMENTS, type LoopMode } from "$lib/shared/constants";
   import type { MediaProperties } from "$lib/shared/types";
-  import { saveLoopMode, loadAudioLayoutMode } from "$lib/services/storage";
+  import {
+    saveLoopMode,
+    loadAudioLayoutMode,
+    loadPlaybackSpeed,
+    savePlaybackSpeed,
+  } from "$lib/services/storage";
   import {
     createFfmpegHelpers,
     createEnsureFfprobe,
@@ -253,6 +258,8 @@
     getMediaEl,
     () => volume,
     () => {},
+    savePlaybackSpeed,
+    loadPlaybackSpeed(),
   );
   const scrubbing = createScrubbingActions({
     getIsVideo: () => isVideo,

@@ -3,31 +3,27 @@ _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-11
 
 ## Last change
-Wired Stage buttons (Mono, Stereo, Surround, 8D) to Web Audio API spatial processing. Added `setStage()`/`getStageMode()` to `equalizer-engine.ts` with node graphs for each mode: mono (channel summing), stereo (pass-through), surround (crossfeed with delay+lowpass), 8D (StereoPannerNode + sine LFO at 1/8 Hz, ~8s cycle). Stage persists until toggled off or song changes. Added `filePath` prop to EffectsMenu to reset UI state on file skip.
+Replaced distortion curve from PI-based hard-clipping (deafening at low slider values) to `tanh` soft saturation with sensible drive range. Fixed volume slider always showing 100% regardless of actual stored volume — `initSliderMode` now initializes slider values from current state. Added playback speed persistence (`vyu-speed` localStorage) so speed setting carries between sessions. Speed is applied to audio element on load.
+
+Files: `effects-engine.ts`, `playback.svelte.ts`, `storage.ts`, `navigation.svelte.ts`, `+page.svelte`, `init.ts`
 
 ## Status
-- EffectsMenu icons: working
-- Filter/Stage radio behavior: working
-- Tune sliders: working (now actually modulates audio)
-- Pitch effect: working (playbackRate adjustment)
-- Reverb effect: working (ConvolverNode with generated IR, dry/wet mix)
-- Chorus effect: working (DelayNode + LFO modulation, dry/wet mix)
-- Distortion effect: working (WaveShaperNode with sigmoid curve)
-- Stage Mono: working (ChannelSplitter → sum at 0.5 gain → ChannelMerger)
-- Stage Stereo: working (pass-through, no processing)
-- Stage Surround: working (crossfeed with 0.4ms delay + 3kHz lowpass + 0.3 gain)
-- Stage 8D: working (StereoPannerNode + sine LFO at 1/8 Hz, ~8s cycle)
-- Stage reset on file skip: working (syncs from engine on filePath change)
+- Effects — Distortion: working (tanh curve, usable slider range)
+- Volume slider display: working (shows actual stored volume)
+- Speed slider persistence: working (saves/loads between sessions)
+- Speed applied on audio load: fixed (playbackRate set on new audio elements)
+- Stage buttons (Mono/Stereo/Surround/8D): working
 - Type check: passing
 
 ## Next
 None.
 
 ## Bugs found this session
-- None.
+- Volume slider always showed 100% regardless of actual stored volume. Fixed by initializing `volumeSliderValue` from `getVolume()` in `initSliderMode`.
+- No playback speed persistence — speed always reset to 1x between sessions. Fixed with `vyu-speed` localStorage key.
 
 ## Current commit
-feat: wire stage menu buttons to Web Audio API spatial processing
+fix: distortion curve, slider init, speed persistence
 
 ## Architecture update
-- `equalizer-engine.ts` — added stage audio processing at end of chain (analyser → stage → destination). `setStage(mode)` builds/tears down spatial AudioNode graphs. Stage resets on song change via chain rebuild.
+None.

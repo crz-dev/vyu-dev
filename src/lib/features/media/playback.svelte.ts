@@ -55,6 +55,8 @@ export function createPlaybackUI(
   mediaElRef: () => HTMLMediaElement | null,
   getVolume: () => number,
   setVolume: (v: number) => void,
+  onSpeedChange?: (speed: number) => void,
+  initialSpeed = 1,
 ) {
   function setVolumeOnMedia(val: number) {
     const mediaEl = mediaElRef();
@@ -63,7 +65,7 @@ export function createPlaybackUI(
   }
   let volumeHovered = $state(false);
   let speedHovered = $state(false);
-  let playbackSpeed = $state(1);
+  let playbackSpeed = $state(initialSpeed);
 
   let volumeTooltipX = $state(0);
   let volumeTooltipY = $state(0);
@@ -190,6 +192,7 @@ export function createPlaybackUI(
     speedSliderValue = speedToSliderVal(val);
     const mediaEl = mediaElRef();
     if (mediaEl) mediaEl.playbackRate = val;
+    onSpeedChange?.(val);
   }
 
   function showSpeedOverlay() {
@@ -372,6 +375,12 @@ export function createPlaybackUI(
   function initSliderMode(volume: boolean, speed: boolean) {
     volumeSliderMode = volume;
     speedSliderMode = speed;
+    if (volume) {
+      volumeSliderValue = getVolume();
+    }
+    if (speed) {
+      speedSliderValue = speedToSliderVal(playbackSpeed);
+    }
   }
 
   function startVolumeSliderDrag(

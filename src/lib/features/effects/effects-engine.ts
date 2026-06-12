@@ -117,8 +117,7 @@ class EffectsEngine {
 
   setDistortion(amountPercent: number): void {
     if (!this.distortionShaper) return;
-    const amount = amountPercent / 100;
-    this.distortionShaper.curve = makeDistortionCurve(amount * 400);
+    this.distortionShaper.curve = makeDistortionCurve(amountPercent);
   }
 
   teardown(): void {
@@ -157,20 +156,15 @@ function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-/**
- * Creates a soft-clipping distortion curve.
- * amount=0 → linear (no distortion). Higher → more clipping.
- */
-function makeDistortionCurve(amount: number): Float32Array {
+function makeDistortionCurve(amountPercent: number): Float32Array {
   const n = 256;
   const curve = new Float32Array(n);
+  // Tanh soft-clipping: smooth saturation with odd harmonics.
+  // drive=1 (near-linear) at 0%, drive=10 (heavy saturation) at 100%.
+  const drive = 1 + 9 * (amountPercent / 100);
   for (let i = 0; i < n; i++) {
     const x = (i * 2) / n - 1;
-    if (amount === 0) {
-      curve[i] = x;
-    } else {
-      curve[i] = ((Math.PI + amount) * x) / (Math.PI + amount * Math.abs(x));
-    }
+    curve[i] = Math.tanh(x * drive);
   }
   return curve;
 }

@@ -240,6 +240,7 @@ export function createNavigation(deps: NavigationDeps) {
     const audioEl = deps.getAudioEl();
     if (!audioEl) return;
     audioEl.volume = deps.getVolume();
+    audioEl.playbackRate = deps.getPlaybackUI().playbackSpeed;
     audioEl.muted = deps.getMuted();
     audioEl.loop = deps.getLoopMode() === "loop";
     deps.getPlaybackUI().initSliderMode(true, true);

@@ -42,6 +42,15 @@ export function saveVolume(volume: number): void {
   localStorage.setItem("vyu-volume", String(volume));
 }
 
+export function loadPlaybackSpeed(): number {
+  const saved = localStorage.getItem("vyu-speed");
+  return saved !== null ? parseFloat(saved) : 1;
+}
+
+export function savePlaybackSpeed(speed: number): void {
+  localStorage.setItem("vyu-speed", String(speed));
+}
+
 export function loadSkipDeleteConfirmation(): boolean {
   return localStorage.getItem("vyu-delete-no-ask") === "true";
 }
