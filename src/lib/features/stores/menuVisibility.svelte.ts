@@ -12,6 +12,7 @@ function createMenuVisibilityStore() {
   let helpOpen = $state(false);
   let aboutOpen = $state(false);
   let feedbackOpen = $state(false);
+  let libraryOpen = $state(false);
   let tsMenuOpen = $state(false);
   let loopMenuOpen = $state(false);
 
@@ -82,6 +83,12 @@ function createMenuVisibilityStore() {
     set feedbackOpen(v: boolean) {
       feedbackOpen = v;
     },
+    get libraryOpen() {
+      return libraryOpen;
+    },
+    set libraryOpen(v: boolean) {
+      libraryOpen = v;
+    },
     get tsMenuOpen() {
       return tsMenuOpen;
     },
@@ -107,6 +114,7 @@ function createMenuVisibilityStore() {
         helpOpen ||
         aboutOpen ||
         feedbackOpen ||
+        libraryOpen ||
         tsMenuOpen
       );
     },
@@ -122,6 +130,7 @@ function createMenuVisibilityStore() {
       helpOpen = false;
       aboutOpen = false;
       feedbackOpen = false;
+      libraryOpen = false;
       tsMenuOpen = false;
     },
   };
@@ -228,6 +237,11 @@ export function createMenuBindings() {
       return menuStore.feedbackOpen;
     },
     closeFeedback: () => (menuStore.feedbackOpen = false),
+    openLibrary: () => (menuStore.libraryOpen = true),
+    closeLibrary: () => (menuStore.libraryOpen = false),
+    get libraryOpen() {
+      return menuStore.libraryOpen;
+    },
   };
 }
 

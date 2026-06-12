@@ -1575,8 +1575,11 @@
             dragHandle = hit;
             dragOrigin = p;
             dragStartShape = {
-              width: stroke.width, height: stroke.height,
-              rotation: stroke.rotation, cx: stroke.cx, cy: stroke.cy,
+              width: stroke.width,
+              height: stroke.height,
+              rotation: stroke.rotation,
+              cx: stroke.cx,
+              cy: stroke.cy,
             };
             canvasEl?.setPointerCapture(e.pointerId);
             return;
@@ -1599,35 +1602,54 @@
               return;
             }
             if (hit === "left" || hit === "right") {
-              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              dragHandle = hit;
+              dragOrigin = p;
+              textDragOrigin = p;
               textDragStartBoxExtra = stroke.boxExtraWidth;
               canvasEl?.setPointerCapture(e.pointerId);
               return;
             }
             if (hit === "top" || hit === "bottom") {
-              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              dragHandle = hit;
+              dragOrigin = p;
+              textDragOrigin = p;
               textDragStartFontSize = stroke.fontSize;
               canvasEl?.setPointerCapture(e.pointerId);
               return;
             }
-            if (hit === "topLeft" || hit === "topRight" || hit === "bottomLeft" || hit === "bottomRight") {
-              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+            if (
+              hit === "topLeft" ||
+              hit === "topRight" ||
+              hit === "bottomLeft" ||
+              hit === "bottomRight"
+            ) {
+              dragHandle = hit;
+              dragOrigin = p;
+              textDragOrigin = p;
               textDragStartBoxExtra = stroke.boxExtraWidth;
               textDragStartFontSize = stroke.fontSize;
               textDragStartRotation = stroke.rotation;
-              textDragStartX = stroke.x; textDragStartY = stroke.y;
+              textDragStartX = stroke.x;
+              textDragStartY = stroke.y;
               canvasEl?.setPointerCapture(e.pointerId);
               return;
             }
             if (hit === "rotate") {
-              dragHandle = hit; dragOrigin = p; textDragOrigin = p;
+              dragHandle = hit;
+              dragOrigin = p;
+              textDragOrigin = p;
               textDragStartRotation = stroke.rotation;
               canvasEl?.setPointerCapture(e.pointerId);
               return;
             }
             // Click inside text body → start move (moves all selected)
             const bbox = getTextBbox(stroke, w, h, ctx);
-            if (rawPx >= bbox.left && rawPx <= bbox.right && rawPy >= bbox.top && rawPy <= bbox.bottom) {
+            if (
+              rawPx >= bbox.left &&
+              rawPx <= bbox.right &&
+              rawPy >= bbox.top &&
+              rawPy <= bbox.bottom
+            ) {
               isSelectMoving = true;
               selectMoveOrigin = p;
               selectMoveStartData = {};
@@ -2111,8 +2133,12 @@
         const w = overlayRect.width;
         const h = overlayRect.height;
         const hits = markup.findStrokesInRect(
-          selectBoxStart.x, selectBoxStart.y,
-          end.x, end.y, w, h,
+          selectBoxStart.x,
+          selectBoxStart.y,
+          end.x,
+          end.y,
+          w,
+          h,
         );
         if (hits.length > 0) {
           markup.selectShapes(hits);

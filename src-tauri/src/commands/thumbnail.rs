@@ -20,22 +20,22 @@ pub fn thumb_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     dir
 }
 
-/// In-process image-crate thumbnail: decode, resize to `THUMB_SHORT_SIDE`, encode as JPEG.
-fn thumbnail_via_image_crate(path: &Path, thumb_path: &Path, src_path: &Path) -> Result<Vec<u8>, String> {
+/// In-process image-crate thumbnail: decode, resize to `short_side`, encode as JPEG.
+fn thumbnail_via_image_crate(path: &Path, thumb_path: &Path, src_path: &Path, short_side: u32) -> Result<Vec<u8>, String> {
     let img = image::open(path).map_err(|e| format!("Failed to open image: {e}"))?;
     let (w, h) = img.dimensions();
     let (nw, nh) = if w > h {
         (
-            ((w as f64) * (THUMB_SHORT_SIDE as f64) / (h as f64)).round() as u32,
-            THUMB_SHORT_SIDE,
+            ((w as f64) * (short_side as f64) / (h as f64)).round() as u32,
+            short_side,
         )
     } else if h > w {
         (
-            THUMB_SHORT_SIDE,
-            ((h as f64) * (THUMB_SHORT_SIDE as f64) / (w as f64)).round() as u32,
+            short_side,
+            ((h as f64) * (short_side as f64) / (w as f64)).round() as u32,
         )
     } else {
-        (THUMB_SHORT_SIDE, THUMB_SHORT_SIDE)
+        (short_side, short_side)
     };
     let thumb = img.resize_exact(nw.max(1), nh.max(1), image::imageops::FilterType::Triangle);
     let mut jpeg_bytes: Vec<u8> = Vec::new();
@@ -54,7 +54,8 @@ fn thumbnail_via_image_crate(path: &Path, thumb_path: &Path, src_path: &Path) ->
     Ok(jpeg_bytes)
 }
 
-fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+fn generate_video_frame(path: &str, thumb_path: &Path, size: u32) -> Result<Option<String>, String> {
+    let scale = format!("scale={size}:{size}:force_original_aspect_ratio=decrease");
     run_ffmpeg(
         &[
             "-y",
@@ -68,7 +69,7 @@ fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>,
             "-vframes",
             "1",
             "-vf",
-            "scale=200:200:force_original_aspect_ratio=decrease",
+            &scale,
             "-q:v",
             "4",
             &thumb_path.to_string_lossy(),
@@ -81,7 +82,8 @@ fn generate_video_frame(path: &str, thumb_path: &Path) -> Result<Option<String>,
 /// Thumbnail for single-frame ffmpeg-based images (PSD, JXL, etc.).
 /// Unlike generate_video_frame this does NOT seek (-ss), since
 /// single-frame images have only frame at position 0.
-fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path, size: u32) -> Result<Option<String>, String> {
+    let scale = format!("scale={size}:{size}:force_original_aspect_ratio=decrease");
     run_ffmpeg(
         &[
             "-y",
@@ -93,7 +95,7 @@ fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path) -> Result<Option<S
             "-vframes",
             "1",
             "-vf",
-            "scale=200:200:force_original_aspect_ratio=decrease",
+            &scale,
             "-q:v",
             "4",
             &thumb_path.to_string_lossy(),
@@ -161,11 +163,12 @@ fn thumbnail_via_ffmpeg(
     thumb_path: &Path,
     src_path: &Path,
     kind: &MediaKind,
+    size: u32,
 ) -> Result<Vec<u8>, String> {
     let result = if kind.is_video {
-        generate_video_frame(path, thumb_path)
+        generate_video_frame(path, thumb_path, size)
     } else if kind.is_ffmpeg_image || kind.is_raw {
-        generate_ffmpeg_image_frame(path, thumb_path)
+        generate_ffmpeg_image_frame(path, thumb_path, size)
     } else if kind.is_audio {
         match try_extract_audio_cover_art(path, thumb_path) {
             Ok(Some(_)) => Ok(Some(thumb_path.to_string_lossy().to_string())),
@@ -192,12 +195,15 @@ fn thumbnail_via_ffmpeg(
 
 /// Single command for all thumbnail generation.
 /// Returns a base64 JPEG data URL, or empty string for PDFs / unsupported types.
+/// `size` is the short-side target in pixels; defaults to THUMB_SHORT_SIDE (120) if omitted.
 #[tauri::command]
 pub async fn get_thumbnail(
     app: tauri::AppHandle,
     state: tauri::State<'_, ThumbState>,
     path: String,
+    size: Option<u32>,
 ) -> Result<String, String> {
+    let thumb_size = size.unwrap_or(THUMB_SHORT_SIDE);
     let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
     let kind = MediaKind::from_ext(&ext);
 
@@ -219,9 +225,9 @@ pub async fn get_thumbnail(
 
     let cache_dir = thumb_cache_dir(&app);
     let hash = hash_path_xxh3(&path);
-    let thumb_name = format!("{hash}_{mtime}.jpg");
+    let thumb_name = format!("{hash}_{mtime}_{thumb_size}.jpg");
     let thumb_path = cache_dir.join(&thumb_name);
-    let src_name = format!("{hash}_{mtime}.src");
+    let src_name = format!("{hash}_{mtime}_{thumb_size}.src");
     let src_path = cache_dir.join(&src_name);
 
     if thumb_path.exists() {
@@ -244,9 +250,9 @@ pub async fn get_thumbnail(
 
     let jpeg_bytes = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
         if use_image_crate {
-            thumbnail_via_image_crate(Path::new(&path_c), &thumb_path_c, &src_path_c)
+            thumbnail_via_image_crate(Path::new(&path_c), &thumb_path_c, &src_path_c, thumb_size)
         } else {
-            thumbnail_via_ffmpeg(&path_c, &thumb_path_c, &src_path_c, &kind)
+            thumbnail_via_ffmpeg(&path_c, &thumb_path_c, &src_path_c, &kind, thumb_size)
         }
     })
     .await

@@ -843,7 +843,9 @@
           >
             <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" />
             <path d="M5 16l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />
-            <path d="M19 14l.75 2.25 2.25.75-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z" />
+            <path
+              d="M19 14l.75 2.25 2.25.75-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"
+            />
           </svg>
           Effects
         </button>
@@ -854,7 +856,8 @@
           style="animation-delay: 165ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path d="M2 12h2M6 8v8M10 5v14M14 9v6M18 7v10M22 11v2"
+            ><path
+              d="M2 12h2M6 8v8M10 5v14M14 9v6M18 7v10M22 11v2"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
@@ -1251,7 +1254,8 @@
           style="animation-delay: 165ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path d="M2 12h2M6 8v8M10 5v14M14 9v6M18 7v10M22 11v2"
+            ><path
+              d="M2 12h2M6 8v8M10 5v14M14 9v6M18 7v10M22 11v2"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"

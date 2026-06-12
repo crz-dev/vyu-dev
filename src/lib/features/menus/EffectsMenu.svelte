@@ -390,7 +390,9 @@
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M12 2l1.5 4.5 4.5 1.5-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z" />
+              <path
+                d="M12 2l1.5 4.5 4.5 1.5-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z"
+              />
               <path d="M19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />
             </svg>
             <span>Filter</span>
@@ -532,8 +534,7 @@
 
           {#if activeTuneItem}
             {@const item = activeTuneItem}
-            {@const label =
-              item.charAt(0).toUpperCase() + item.slice(1)}
+            {@const label = item.charAt(0).toUpperCase() + item.slice(1)}
             {@const max = item === "pitch" ? 12 : 100}
             {@const min = item === "pitch" ? -12 : 0}
             {@const val = tuneValues[item]}

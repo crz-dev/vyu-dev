@@ -621,6 +621,7 @@
     isFullscreen: () => viewer.state.isFullscreen,
     togglePlay,
     frameStep: createFrameStep({ getVideoEl: () => videoEl }),
+    toggleLibrary: () => (menuStore.libraryOpen = !menuStore.libraryOpen),
   });
   function handleKeydown(e: KeyboardEvent) {
     configuredKeydown(e);

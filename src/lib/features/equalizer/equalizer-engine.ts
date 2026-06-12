@@ -151,7 +151,9 @@ class EqualizerEngine {
       }
     }
     if (this.outputGain) {
-      this.outputGain.gain.value = active ? 1 : this.dbToLinear(this.outputGainDb);
+      this.outputGain.gain.value = active
+        ? 1
+        : this.dbToLinear(this.outputGainDb);
     }
   }
 
@@ -210,11 +212,19 @@ class EqualizerEngine {
 
   private teardownStage(): void {
     if (this.stageLfo) {
-      try { this.stageLfo.stop(); } catch { /* already stopped */ }
+      try {
+        this.stageLfo.stop();
+      } catch {
+        /* already stopped */
+      }
       this.stageLfo = null;
     }
     for (const node of this.stageNodes) {
-      try { node.disconnect(); } catch { /* already disconnected */ }
+      try {
+        node.disconnect();
+      } catch {
+        /* already disconnected */
+      }
     }
     this.stageNodes = [];
   }
@@ -288,7 +298,16 @@ class EqualizerEngine {
 
       merger.connect(this.ctx.destination);
 
-      this.stageNodes = [splitter, merger, delayLR, lpLR, gainLR, delayRL, lpRL, gainRL];
+      this.stageNodes = [
+        splitter,
+        merger,
+        delayLR,
+        lpLR,
+        gainLR,
+        delayRL,
+        lpRL,
+        gainRL,
+      ];
       return;
     }
 

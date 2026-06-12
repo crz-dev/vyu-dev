@@ -15,6 +15,7 @@ type KeybindActions = {
   isFullscreen: () => boolean;
   togglePlay: () => void;
   frameStep: (direction: -1 | 1) => void;
+  toggleLibrary: () => void;
 };
 
 const NAV_KEYS = new Set(["ArrowRight", "ArrowLeft", " "]);
@@ -31,6 +32,9 @@ export function createKeybindHandler(actions: KeybindActions) {
     if (actions.areDialogsOpen()) {
       if (e.key === "Escape") {
         actions.closeDialogs();
+      }
+      if (e.key === "l" || e.key === "L") {
+        actions.toggleLibrary();
       }
       return;
     }
@@ -61,6 +65,10 @@ export function createKeybindHandler(actions: KeybindActions) {
     }
     if (e.key === "Escape" && actions.isFullscreen()) {
       actions.toggleFullscreen();
+      return;
+    }
+    if (e.key === "l" || e.key === "L") {
+      actions.toggleLibrary();
       return;
     }
     if (e.key === "ArrowUp") {

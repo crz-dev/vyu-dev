@@ -72,8 +72,11 @@ export async function exportCroppedImage(
   await saveCanvasToFile(canvas, outputPath);
 }
 
-export async function invokeGetThumbnail(path: string): Promise<string> {
-  return invoke("get_thumbnail", { path });
+export async function invokeGetThumbnail(
+  path: string,
+  size?: number,
+): Promise<string> {
+  return invoke("get_thumbnail", { path, size: size ?? null });
 }
 
 export async function invokeGetMediaProperties(

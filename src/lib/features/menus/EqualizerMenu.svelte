@@ -271,7 +271,9 @@
             <span class="eq-bypass-track" class:on={!eqStore.bypass}>
               <span class="eq-bypass-thumb"></span>
             </span>
-            <span class="eq-bypass-label">{eqStore.bypass ? "Bypass" : "Active"}</span>
+            <span class="eq-bypass-label"
+              >{eqStore.bypass ? "Bypass" : "Active"}</span
+            >
           </button>
 
           <div class="edit-menu-divider"></div>

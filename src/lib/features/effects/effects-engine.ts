@@ -122,7 +122,11 @@ class EffectsEngine {
 
   teardown(): void {
     if (this.chorusLFO) {
-      try { this.chorusLFO.stop(); } catch { /* already stopped */ }
+      try {
+        this.chorusLFO.stop();
+      } catch {
+        /* already stopped */
+      }
       this.chorusLFO = null;
     }
     this.disconnectNode(this.chorusDelay);
@@ -148,7 +152,11 @@ class EffectsEngine {
 
   private disconnectNode(node: AudioNode | null): void {
     if (!node) return;
-    try { node.disconnect(); } catch { /* already disconnected */ }
+    try {
+      node.disconnect();
+    } catch {
+      /* already disconnected */
+    }
   }
 }
 

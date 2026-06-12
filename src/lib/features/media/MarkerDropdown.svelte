@@ -53,7 +53,7 @@
 </script>
 
 {#if open}
-  <div class="ts-drop-menu" class:thin={thin} role="menu">
+  <div class="ts-drop-menu" class:thin role="menu">
     <div class="ts-drop-header" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <polygon

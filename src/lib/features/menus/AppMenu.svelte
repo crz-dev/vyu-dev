@@ -25,6 +25,7 @@
     onOpenHelp,
     onOpenAbout,
     onOpenFeedback,
+    onOpenLibrary,
   }: {
     fileName: string;
     fileSrc: string;
@@ -46,6 +47,7 @@
     onOpenHelp: () => void;
     onOpenAbout: () => void;
     onOpenFeedback: () => void;
+    onOpenLibrary: () => void;
   } = $props();
 
   let editing = $state(false);
@@ -133,6 +135,7 @@
       {onOpenHelp}
       {onOpenAbout}
       {onOpenFeedback}
+      {onOpenLibrary}
     />
   </div>
   <span class="divider">/</span>

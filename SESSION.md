@@ -1,32 +1,36 @@
 # Session state
+
 _Overwrite this file completely at end of every session. Never append._
 Updated: 2026-06-11
 
 ## Last change
-Fixed 5 bugs: shuffle-songs button hidden for videos (isAudio prop), video overlay gradient gap closed (tighter gradient + reduced padding), crackle/pop on file switch eliminated (gain ramp in eq-engine disconnect), retro vertical slider tooltips no longer overlap track (vertical CSS class overriding translateX), video volume slider now updates state and persists (wired setVolume callback).
 
-Files: `LoopDropdown.svelte`, `PlaybackControls.svelte`, `AudioRetroLayout.svelte`, `AudioModernLayout.svelte`, `+page.svelte`, `playback.svelte.ts`, `equalizer-engine.ts`, `components.css`, `overlays.css`, `Tooltip.svelte`, `Shell.svelte`
+Added Library view — full-screen overlay grid showing all media files in the current folder, grouped by kind (images, videos, audio). Opened from the app dropdown menu (replaced version label) or via L keybind. Thumbnails loaded on demand via IntersectionObserver, sized at 256px (vs nav bar's 120px). Cache key includes size so both sizes coexist. Section labels lowercase, centered, font-weight 600. Cell click closes Library and opens file.
+
+Files: `library.svelte.ts`, `LibraryView.svelte`, `thumbnail.rs`, `tools.ts`, `AppDropdownMenu.svelte`, `AppMenu.svelte`, `menuVisibility.svelte.ts`, `keybinds.ts`, `Shell.svelte`, `+page.svelte`
 
 ## Status
-- Shuffle songs button: hidden for videos, visible for audio (working)
-- Video overlay gradient: tighter fade, no visible gap (working)
-- Audio crackle on file switch: eliminated via gain ramp (working)
-- Retro slider tooltips: no longer overlap track (working)
-- Video volume slider: updates state and persists (working)
+
+- Library view: opens from app menu and L keybind (working)
+- Thumbnail demand loading with IntersectionObserver (working)
+- Library uses 256px thumbnails, nav bar continues at 120px (working)
+- Cache key includes size — no collision between sizes (working)
+- Section labels: lowercase, centered, font-weight 600 (working)
+- Cell click closes Library and opens file (working)
 - Type check: passing
 
 ## Next
+
 None.
 
 ## Bugs found this session
-- "Shuffle songs" button appeared for videos (should be audio only)
-- Video overlay gradient had visible transparent gap at bottom of video
-- Crackle/pop sound when switching between audio/video files
-- Retro vertical slider tooltip overlapped track due to translateX(-50%)
-- Video volume slider didn't update state — tooltip always showed stale value
+
+None.
 
 ## Current commit
-fix: shuffle-songs for video, overlay gap, crackle, tooltip, volume
+
+feat: library view with size-parametrized thumbnails
 
 ## Architecture update
-None.
+
+New module: `src/lib/features/library/` — see BLUEPRINT.md for module row.

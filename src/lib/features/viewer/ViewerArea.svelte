@@ -233,7 +233,11 @@
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
     onwheel={handleViewerScroll}
-    onmousedown={!isVideo && !isPdf && !markup.drawActive && !markup.selectActive && !markup.removeActive
+    onmousedown={!isVideo &&
+    !isPdf &&
+    !markup.drawActive &&
+    !markup.selectActive &&
+    !markup.removeActive
       ? startPan
       : undefined}
     ontouchstart={(e) => {
@@ -241,7 +245,9 @@
     }}
     ontouchmove={viewer.handleTouchZoom}
     ontouchend={viewer.handleTouchEnd}
-    style="cursor: {markup.drawActive || markup.selectActive || markup.removeActive
+    style="cursor: {markup.drawActive ||
+    markup.selectActive ||
+    markup.removeActive
       ? markup.cursorStyle
       : !isVideo && !isPdf
         ? style.panCursor

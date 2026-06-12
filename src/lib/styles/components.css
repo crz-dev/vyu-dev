@@ -2237,7 +2237,9 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   cursor: pointer;
   padding: 3px 4px;
   border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   line-height: 1;
 }
 .edit-menu-back-btn:hover {
@@ -2310,7 +2312,9 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   background: var(--text-secondary);
   cursor: pointer;
   border: none;
-  transition: background 0.15s, transform 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.15s;
 }
 .edit-menu-slider-track input[type="range"]::-webkit-slider-thumb:hover {
   background: var(--text-primary);

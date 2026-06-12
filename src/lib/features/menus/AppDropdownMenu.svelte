@@ -7,6 +7,7 @@
     onOpenHelp,
     onOpenAbout,
     onOpenFeedback,
+    onOpenLibrary,
   }: {
     visible: boolean;
     onClose: () => void;
@@ -15,14 +16,42 @@
     onOpenHelp: () => void;
     onOpenAbout: () => void;
     onOpenFeedback: () => void;
+    onOpenLibrary: () => void;
   } = $props();
 </script>
 
 {#if visible}
   <div class="app-dropdown-menu">
-    <div class="app-dropdown-header">
-      <span class="app-dropdown-title"><span>v{__APP_VERSION__}</span></span>
-    </div>
+    <button
+      class="app-dropdown-item"
+      onclick={() => {
+        onOpenLibrary();
+        onClose();
+      }}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><rect x="3" y="3" width="7" height="7" /><rect
+          x="14"
+          y="3"
+          width="7"
+          height="7"
+        /><rect x="14" y="14" width="7" height="7" /><rect
+          x="3"
+          y="14"
+          width="7"
+          height="7"
+        /></svg
+      >
+      Library
+    </button>
     <div class="app-dropdown-separator"></div>
     <button
       class="app-dropdown-item"

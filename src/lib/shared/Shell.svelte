@@ -2,6 +2,7 @@
   import AppMenu from "$lib/features/menus/AppMenu.svelte";
   import MediaBar from "$lib/features/media/MediaBar.svelte";
   import ThumbnailBar from "$lib/features/navigation/ThumbnailBar.svelte";
+  import LibraryView from "$lib/features/library/LibraryView.svelte";
   import Dialog from "$lib/features/dialogs/Dialog.svelte";
   import Tooltip from "$lib/shared/Tooltip.svelte";
   import EditMenu from "$lib/features/menus/EditMenu.svelte";
@@ -91,6 +92,9 @@
     openHelp,
     openAbout,
     openFeedback,
+    openLibrary,
+    libraryOpen,
+    closeLibrary,
     settingsOpen,
     closeSettings,
     accessibilityOpen,
@@ -271,6 +275,9 @@
     openHelp: () => void;
     openAbout: () => void;
     openFeedback: () => void;
+    openLibrary: () => void;
+    libraryOpen: boolean;
+    closeLibrary: () => void;
     settingsOpen: boolean;
     closeSettings: () => void;
     accessibilityOpen: boolean;
@@ -436,7 +443,11 @@
     const clipOpen = clipMenuActive && !clipMenuMoved;
 
     // Count how many peer menus are open (edit, markup, effects, equalizer)
-    const peerCount = (editOpen ? 1 : 0) + (markupOpen ? 1 : 0) + (effectsOpen ? 1 : 0) + (eqOpen ? 1 : 0);
+    const peerCount =
+      (editOpen ? 1 : 0) +
+      (markupOpen ? 1 : 0) +
+      (effectsOpen ? 1 : 0) +
+      (eqOpen ? 1 : 0);
 
     let editOffset = 0;
     let markupOffset = 0;
@@ -445,11 +456,23 @@
 
     if (peerCount === 2) {
       const halfGap = (MENU_WIDTH + GAP) / 2;
-      const open = [editOpen ? "edit" : "", markupOpen ? "markup" : "", effectsOpen ? "effects" : "", eqOpen ? "eq" : ""].filter(Boolean);
+      const open = [
+        editOpen ? "edit" : "",
+        markupOpen ? "markup" : "",
+        effectsOpen ? "effects" : "",
+        eqOpen ? "eq" : "",
+      ].filter(Boolean);
       if (open.length === 2) {
         const left = open[0];
         const right = open[1];
-        const off = (k: string) => k === "edit" ? "edit" : k === "markup" ? "markup" : k === "effects" ? "effects" : "eq";
+        const off = (k: string) =>
+          k === "edit"
+            ? "edit"
+            : k === "markup"
+              ? "markup"
+              : k === "effects"
+                ? "effects"
+                : "eq";
         if (left === "edit") editOffset = -halfGap;
         else if (left === "markup") markupOffset = -halfGap;
         else if (left === "effects") effectsOffset = -halfGap;
@@ -469,10 +492,24 @@
       if (open.length === 3) {
         const halfGap = (MENU_WIDTH + GAP) / 2;
         const fullGap = MENU_WIDTH + GAP;
-        const off = (k: string) => k === "edit" ? "edit" : k === "markup" ? "markup" : k === "effects" ? "effects" : "eq";
+        const off = (k: string) =>
+          k === "edit"
+            ? "edit"
+            : k === "markup"
+              ? "markup"
+              : k === "effects"
+                ? "effects"
+                : "eq";
         // Center stays at 0, left at -fullGap, right at +fullGap
         for (let i = 0; i < open.length; i++) {
-          const val = open[i] === "edit" ? "editOffset" : open[i] === "markup" ? "markupOffset" : open[i] === "effects" ? "effectsOffset" : "eqOffset";
+          const val =
+            open[i] === "edit"
+              ? "editOffset"
+              : open[i] === "markup"
+                ? "markupOffset"
+                : open[i] === "effects"
+                  ? "effectsOffset"
+                  : "eqOffset";
           if (i === 0) {
             if (val === "editOffset") editOffset = -fullGap;
             else if (val === "markupOffset") markupOffset = -fullGap;
@@ -519,7 +556,13 @@
       }
     }
 
-    return { edit: editOffset, clip: clipOffset, markup: markupOffset, effects: effectsOffset, eq: eqOffset };
+    return {
+      edit: editOffset,
+      clip: clipOffset,
+      markup: markupOffset,
+      effects: effectsOffset,
+      eq: eqOffset,
+    };
   });
 
   const editMenuStyle = $derived.by(() => {
@@ -537,7 +580,11 @@
   });
 
   const effectsMenuStyle = $derived.by(() => {
-    if (effectsMenuVisible && !effectsMenuMoved && layoutOffsets.effects !== 0) {
+    if (
+      effectsMenuVisible &&
+      !effectsMenuMoved &&
+      layoutOffsets.effects !== 0
+    ) {
       return `left: calc(50% + ${layoutOffsets.effects}px);`;
     }
     return "";
@@ -592,6 +639,7 @@
     onOpenHelp={openHelp}
     onOpenAbout={openAbout}
     onOpenFeedback={openFeedback}
+    onOpenLibrary={openLibrary}
   />
 
   {@render children?.()}
@@ -658,6 +706,19 @@
     {onSelect}
     fullscreen={viewerStateIsFullscreen}
   />
+
+  {#if libraryOpen}
+    <LibraryView
+      {fileList}
+      {currentIndex}
+      onSelect={(path) => {
+        const idx = fileList.indexOf(path);
+        if (idx !== -1) onSelect(idx);
+        closeLibrary();
+      }}
+      onClose={closeLibrary}
+    />
+  {/if}
 
   {#if isLoadingFile}
     <div class="border-sweep" class:fading={loadingFadingOut}></div>
