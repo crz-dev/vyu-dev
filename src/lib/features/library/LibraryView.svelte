@@ -16,7 +16,6 @@
 
   let gridEl: HTMLDivElement | null = $state(null);
   let observer: IntersectionObserver | null = null;
-  let observed = $state(new Set<string>());
 
   const groups = $derived.by(() => {
     const images: string[] = [];
@@ -34,8 +33,14 @@
     ].filter((g) => g.files.length > 0);
   });
 
+  const activePaths = $derived(
+    currentIndex >= 0 && currentIndex < fileList.length
+      ? new Set([fileList[currentIndex]])
+      : new Set<string>(),
+  );
+
   function thumbFor(path: string) {
-    return library.cache.get(path) || "";
+    return library.cache[path] || "";
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -45,6 +50,7 @@
     }
   }
 
+  // Observer lifecycle — created once, disconnected on unmount
   $effect(() => {
     observer = new IntersectionObserver(
       (entries) => {
@@ -52,10 +58,7 @@
           const path = (entry.target as HTMLElement).dataset.path;
           if (!path) continue;
           if (entry.isIntersecting) {
-            if (!observed.has(path)) {
-              observed = new Set(observed).add(path);
-              library.requestThumbnail(path);
-            }
+            library.requestThumbnail(path);
           } else {
             library.cancelPending(path);
           }
@@ -66,6 +69,7 @@
     return () => observer?.disconnect();
   });
 
+  // Re-observe elements when grid content changes
   $effect(() => {
     groups;
     const els = gridEl?.querySelectorAll("[data-path]");
@@ -76,9 +80,14 @@
     }
   });
 
+  // Rebuild center-outward load queue when folder or position changes
+  $effect(() => {
+    library.rebuildQueue(fileList, currentIndex);
+  });
+
+  // Cleanup on close/unmount
   $effect(() => {
     return () => {
-      observed = new Set();
       library.clearQueue();
     };
   });
@@ -92,7 +101,7 @@
         <div class="library-group-label">{group.label}</div>
         <div class="library-grid">
           {#each group.files as path (path)}
-            {@const active = fileList.indexOf(path) === currentIndex}
+            {@const active = activePaths.has(path)}
             <div
               class="library-cell"
               class:active
