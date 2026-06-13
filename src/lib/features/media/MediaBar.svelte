@@ -189,14 +189,14 @@
 {#if libraryOpen}
   <div class="bottombar-left">
     <button
-      class="lib-sort-btn tooltip-above"
-      data-tooltip="Sort files"
+      class="fs-btn tooltip-above-shift-right"
+      data-tooltip="Sort by"
       onclick={handleLibSortClick}
-      aria-label="sort files"
+      aria-label="sort by"
     >
       <svg
-        width="14"
-        height="14"
+        width="12"
+        height="12"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -204,13 +204,12 @@
         stroke-linecap="round"
         stroke-linejoin="round"
       >
-        <line x1="4" y1="6" x2="20" y2="6" />
-        <line x1="4" y1="12" x2="14" y2="12" />
-        <line x1="4" y1="18" x2="8" y2="18" />
+        <path d="m7 15 5 5 5-5" />
+        <path d="m7 9 5-5 5 5" />
       </svg>
     </button>
   </div>
-  <span class="lib-file-info">
+  <span class="file-info">
     {fileListLength}
     {fileListLength === 1 ? "file" : "files"}
     {#if !library.totalSizeLoading && library.totalSize > 0}
@@ -221,52 +220,46 @@
   </span>
   <div class="bottombar-right">
     <button
-      class="lib-view-btn tooltip-above"
-      class:active={library.viewMode === "grid"}
-      data-tooltip="Grid view"
-      onclick={() => library.setViewMode("grid")}
-      aria-label="grid view"
+      class="lib-view-toggle fs-btn tooltip-above-shift-left"
+      data-tooltip={library.viewMode === "grid" ? "List view" : "Grid view"}
+      onclick={toggleViewMode}
+      aria-label={library.viewMode === "grid" ? "switch to list view" : "switch to grid view"}
     >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-      </svg>
-    </button>
-    <button
-      class="lib-view-btn tooltip-above-shift-left"
-      class:active={library.viewMode === "list"}
-      data-tooltip="List view"
-      onclick={() => library.setViewMode("list")}
-      aria-label="list view"
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <line x1="8" y1="6" x2="21" y2="6" />
-        <line x1="8" y1="12" x2="21" y2="12" />
-        <line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" />
-        <line x1="3" y1="12" x2="3.01" y2="12" />
-        <line x1="3" y1="18" x2="3.01" y2="18" />
-      </svg>
+      {#if library.viewMode === "grid"}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+      {:else}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+      {/if}
     </button>
   </div>
 {:else}
@@ -592,39 +585,8 @@
     justify-content: space-between;
   }
 
-  .lib-sort-btn,
-  .lib-view-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border-radius: 4px;
-    transition:
-      background 0.2s,
-      color 0.2s;
-    color: var(--text-muted);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .lib-sort-btn:hover,
-  .lib-view-btn:hover {
-    background: var(--bg-elevated);
-    color: var(--text-mid);
-  }
-
-  .lib-view-btn.active {
-    color: var(--accent, #4a9eff);
-  }
-
-  .lib-file-info {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: var(--font-family);
-    white-space: nowrap;
+  .lib-view-toggle {
+    line-height: 0;
   }
 </style>
   </div>
