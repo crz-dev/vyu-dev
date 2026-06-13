@@ -11,12 +11,22 @@ pub fn delete_file(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
-    let _old = canonicalize_path(&old_path)?;
-    let dest = Path::new(&new_path);
+    let old = canonicalize_path(&old_path)?;
+    let dest = PathBuf::from(&new_path);
     if dest.exists() {
         return Err("Destination already exists".into());
     }
-    std::fs::rename(&_old, dest).map_err(|e| format!("Failed to rename file: {e}"))
+    match std::fs::rename(&old, &dest) {
+        Ok(()) => Ok(()),
+        Err(e) if e.raw_os_error() == Some(17) => {
+            // Cross-device link (ERROR_NOT_SAME_DEVICE) — fall back to copy + delete
+            std::fs::copy(&old, &dest)
+                .map_err(|ce| format!("Failed to copy across devices: {ce}"))?;
+            std::fs::remove_file(&old).map_err(|de| format!("Copied but failed to remove original: {de}"))?;
+            Ok(())
+        }
+        Err(e) => Err(format!("Failed to rename file: {e}")),
+    }
 }
 
 #[tauri::command]

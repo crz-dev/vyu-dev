@@ -69,8 +69,9 @@ fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
         return Ok(None);
     };
 
-    let temp_dir = std::env::temp_dir().join("Vyu-temp").join("browser");
-    // Clean up any stale files from previous browser conversions
+    let temp_dir = std::env::temp_dir()
+        .join("Vyu-temp")
+        .join(format!("browser-{}", hash_path_xxh3(path)));
     let _ = fs::remove_dir_all(&temp_dir);
     fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create browser temp dir: {e}"))?;
 

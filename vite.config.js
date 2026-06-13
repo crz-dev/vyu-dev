@@ -1,4 +1,5 @@
-// @ts-nocheck
+// @ts-check
+/// <reference types="vite/client" />
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import { readFileSync } from "fs";
@@ -28,7 +29,7 @@ export default defineConfig(async () => ({
     target: "chrome120",
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
+        manualChunks: /** @param {string} id */ (id) => {
           if (id.includes("pdfjs-dist")) return "pdfjs";
         },
       },

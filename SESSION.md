@@ -5,36 +5,35 @@ Updated: 2026-06-13
 
 ## Last change
 
-Library UI polish across 8 files: folder name alignment, white thumbnail selection outline, sort popout repositioning (+62 → +88), sort button toggle (onmousedown + stopPropagation), dynamic sort mode icon with scale-in animation, grid/list toggle scale-in animation, tooltip CSS exception for library mode with proper 0.4s delay, tooltip text "Total files · Folder size", icon sizes 12x12 → 14x14, library button toggle in app dropdown with active state.
+Audit-driven fixes across 11 files: restored thumbnail cache reactivity (reverted Map to $state<Record>), added stat() concurrency cap (8 workers) for sort operations, fixed temp dir race in browser conversion (unique hash-based subdir), added cross-volume rename fallback (copy+delete), moved dynamic imports to static in init.ts, deduplicated key conditionals in keybinds.ts, enabled type checking in vite.config.js with JSDoc annotation.
 
-Files: `AppMenu.svelte`, `AppDropdownMenu.svelte`, `LibraryView.svelte`, `SortMenu.svelte`, `MediaBar.svelte`, `components.css`, `tooltips.css`
+Files: `conversion.rs`, `file_ops.rs`, `library.svelte.ts`, `files.ts`, `keybinds.ts`, `init.ts`, `vite.config.js`, plus prettier reformatted `LibraryView.svelte`, `MediaBar.svelte`, `AppMenu.svelte`, `playback.svelte.ts`, `tools.ts`
 
 ## Status
 
-- Folder name in topbar aligned to match normal mode (working)
-- Thumbnail selection outline white (working)
-- Sort popout repositioned; adjusts in SortMenu.svelte line 46 (working)
-- Sort button toggles open/close (working)
-- Sort icon shows current sort mode with scale-in animation (working)
-- Grid/list toggle icon has scale-in animation (working)
-- Tooltips appear in library mode with 0.4s delay (working)
-- Library file count tooltip reads "Total files · Folder size" (working)
-- Folder name has tooltip (working)
-- Library button in app dropdown toggles and shows active state (working)
+- Thumbnail loading: working (reverted $state<Record> — Map broke proxy reactivity)
+- stat() concurrency: fixed (8-worker limit in sortFileList)
+- Temp dir race in conversion.rs: fixed (unique hash-based subdir)
+- Cross-volume rename: fixed (copy+delete fallback on ERROR_NOT_SAME_DEVICE)
+- Static imports in init.ts: fixed
+- Keybind deduplication: fixed (merged if/else branches into else-if chain)
+- vite.config.js type checking: fixed (ts-check + JSDoc param annotation)
 - Type check: passing (0 errors, 0 warnings)
 
 ## Next
 
-Polish: test with large folders, verify sort with different modes, refine badge sizing for list view.
+Extract state and prop bundles from +page.svelte into feature modules to eliminate the 1123-line god component.
 
 ## Bugs found this session
 
-- Tooltips were suppressed in library mode because `libraryOpen` feeds into `isAnyOpen` → `menu-open` class → CSS kills `[data-tooltip]::after` with `opacity: 0 !important`
-- Tooltip delay was 0ms in library mode because CSS exception didn't restore the 0.4s transition-delay
+- Library thumbnail cache changed from `$state<Record>` to `Map` broke all thumbnail loading — LibraryView uses `cache[path]` bracket access which `$state` tracks via proxy, `Map.set()` is opaque and not reactive
+- `vite.config.js` `// @ts-nocheck` → `// @ts-check` flagged missing type on `manualChunks` `id` parameter
+- `convert_for_browser()` used shared `Vyu-temp/browser/` dir; concurrent ops could delete each other's temp files
+- `rename_file()` failed silently across mount points with no fallback for `ERROR_NOT_SAME_DEVICE`
 
 ## Current commit
 
-fix: library UI polish — tooltips, icons, selection, sort, animations
+fix: thumbnail cache, stat concurrency, cross-device rename
 
 ## Architecture update
 

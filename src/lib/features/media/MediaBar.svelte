@@ -195,175 +195,180 @@
 </script>
 
 <div class="bottombar" class:library-mode={libraryOpen}>
-{#if libraryOpen}
-  <div class="bottombar-left">
-    <button
-      class="fs-btn tooltip-above-shift-right"
-      data-tooltip="Sort by"
-      onmousedown={handleLibSortClick}
-      aria-label="sort by"
-    >
-      {#key library.sortMode}
-        <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
-          {@html SORT_ICONS[library.sortMode] || SORT_ICONS.name}
-        </span>
-      {/key}
-    </button>
-  </div>
-  <span class="file-info tooltip-above" data-tooltip="Total files · Folder size">
-    {fileListLength}
-    {fileListLength === 1 ? "file" : "files"}
-    {#if !library.totalSizeLoading && library.totalSize > 0}
-      · {formatTotalSize(library.totalSize)}
-    {:else if library.totalSizeLoading}
-      · ...
-    {/if}
-  </span>
-  <div class="bottombar-right">
-    <button
-      class="lib-view-toggle fs-btn tooltip-above-shift-left"
-      data-tooltip={library.viewMode === "grid" ? "List view" : "Grid view"}
-      onclick={toggleViewMode}
-      aria-label={library.viewMode === "grid" ? "switch to list view" : "switch to grid view"}
-    >
-      {#key library.viewMode}
-        <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
-          {#if library.viewMode === "grid"}
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-            </svg>
-          {:else}
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line x1="8" y1="6" x2="21" y2="6" />
-              <line x1="8" y1="12" x2="21" y2="12" />
-              <line x1="8" y1="18" x2="21" y2="18" />
-              <line x1="3" y1="6" x2="3.01" y2="6" />
-              <line x1="3" y1="12" x2="3.01" y2="12" />
-              <line x1="3" y1="18" x2="3.01" y2="18" />
-            </svg>
-          {/if}
-        </span>
-      {/key}
-    </button>
-  </div>
-{:else}
-  <div class="bottombar-left">
-    <div class="slideshow-anchor">
+  {#if libraryOpen}
+    <div class="bottombar-left">
       <button
-        class="slideshow-btn tooltip-above-shift-right"
-        class:active={slideshow.active}
-        data-tooltip="Slideshow"
-        onclick={toggleSlideshowMenu}
-        aria-label="toggle slideshow menu"
+        class="fs-btn tooltip-above-shift-right"
+        data-tooltip="Sort by"
+        onmousedown={handleLibSortClick}
+        aria-label="sort by"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
+        {#key library.sortMode}
+          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
+            {@html SORT_ICONS[library.sortMode] || SORT_ICONS.name}
+          </span>
+        {/key}
       </button>
-      <SlideshowMenu
-        visible={slideshowMenuVisible}
-        onClose={closeSlideshowMenu}
-      />
     </div>
-    <button
-      bind:this={fileCountEl}
-      class="file-count tooltip-above"
-      class:active={thumbnailBarVisible}
-      data-tooltip="File position"
-      onclick={toggleThumbnailBar}
-      oncontextmenu={handleFileCountContext}
+    <span
+      class="file-info tooltip-above"
+      data-tooltip="Total files · Folder size"
     >
-      {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
-    </button>
-  </div>
-  <span
-    class="file-info tooltip-above"
-    data-tooltip={isAudio
-      ? "Duration · Bitrate · File size"
-      : "Resolution · File size"}
-  >
-    {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
-      {durationDisplay} · {audioBitrateDisplay} · {fileSize}
-    {:else if fileDimensions && fileSize}
-      {fileDimensions} · {fileSize}
-    {:else if !fileInfoLoading && fileName !== "no file open"}
-      {fileName}
-    {:else if !fileSrc}
-      no file open
-    {/if}
-  </span>
-  <div class="bottombar-right">
-    <button
-      class="zoom tooltip-above"
-      class:active={zoomLocked}
-      data-tooltip="Reset zoom"
-      onclick={resetZoom}
-      oncontextmenu={(e) => {
-        e.preventDefault();
-        toggleZoomLock?.();
-      }}>{Math.round(zoomLevel)}%{zoomLocked ? "-" : ""}</button
-    >
-    <button
-      class="fs-btn tooltip-above-shift-left"
-      data-tooltip={fullscreen ? "Unfullscreen" : "Fullscreen"}
-      onclick={toggleFullscreen}
-      aria-label={fullscreen ? "exit fullscreen" : "toggle fullscreen"}
-    >
-      {#if fullscreen}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-          ><path
-            d="M4 1V4H1M8 1V4H11M8 11V8H11M4 11V8H1"
+      {fileListLength}
+      {fileListLength === 1 ? "file" : "files"}
+      {#if !library.totalSizeLoading && library.totalSize > 0}
+        · {formatTotalSize(library.totalSize)}
+      {:else if library.totalSizeLoading}
+        · ...
+      {/if}
+    </span>
+    <div class="bottombar-right">
+      <button
+        class="lib-view-toggle fs-btn tooltip-above-shift-left"
+        data-tooltip={library.viewMode === "grid" ? "List view" : "Grid view"}
+        onclick={toggleViewMode}
+        aria-label={library.viewMode === "grid"
+          ? "switch to list view"
+          : "switch to grid view"}
+      >
+        {#key library.viewMode}
+          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
+            {#if library.viewMode === "grid"}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
+            {:else}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+            {/if}
+          </span>
+        {/key}
+      </button>
+    </div>
+  {:else}
+    <div class="bottombar-left">
+      <div class="slideshow-anchor">
+        <button
+          class="slideshow-btn tooltip-above-shift-right"
+          class:active={slideshow.active}
+          data-tooltip="Slideshow"
+          onclick={toggleSlideshowMenu}
+          aria-label="toggle slideshow menu"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
             stroke="currentColor"
-            stroke-width="0.6"
+            stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-          /></svg
-        >
-      {:else}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-          ><path
-            d="M1 4V1H4M8 1H11V4M11 8V11H8M4 11H1V8"
-            stroke="currentColor"
-            stroke-width="0.6"
-            stroke-linecap="round"
-          /></svg
-        >
+          >
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+            <line x1="8" y1="21" x2="16" y2="21" />
+            <line x1="12" y1="17" x2="12" y2="21" />
+          </svg>
+        </button>
+        <SlideshowMenu
+          visible={slideshowMenuVisible}
+          onClose={closeSlideshowMenu}
+        />
+      </div>
+      <button
+        bind:this={fileCountEl}
+        class="file-count tooltip-above"
+        class:active={thumbnailBarVisible}
+        data-tooltip="File position"
+        onclick={toggleThumbnailBar}
+        oncontextmenu={handleFileCountContext}
+      >
+        {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
+      </button>
+    </div>
+    <span
+      class="file-info tooltip-above"
+      data-tooltip={isAudio
+        ? "Duration · Bitrate · File size"
+        : "Resolution · File size"}
+    >
+      {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
+        {durationDisplay} · {audioBitrateDisplay} · {fileSize}
+      {:else if fileDimensions && fileSize}
+        {fileDimensions} · {fileSize}
+      {:else if !fileInfoLoading && fileName !== "no file open"}
+        {fileName}
+      {:else if !fileSrc}
+        no file open
       {/if}
-    </button>
-  </div>
-{/if}
+    </span>
+    <div class="bottombar-right">
+      <button
+        class="zoom tooltip-above"
+        class:active={zoomLocked}
+        data-tooltip="Reset zoom"
+        onclick={resetZoom}
+        oncontextmenu={(e) => {
+          e.preventDefault();
+          toggleZoomLock?.();
+        }}>{Math.round(zoomLevel)}%{zoomLocked ? "-" : ""}</button
+      >
+      <button
+        class="fs-btn tooltip-above-shift-left"
+        data-tooltip={fullscreen ? "Unfullscreen" : "Fullscreen"}
+        onclick={toggleFullscreen}
+        aria-label={fullscreen ? "exit fullscreen" : "toggle fullscreen"}
+      >
+        {#if fullscreen}
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+            ><path
+              d="M4 1V4H1M8 1V4H11M8 11V8H11M4 11V8H1"
+              stroke="currentColor"
+              stroke-width="0.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >
+        {:else}
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+            ><path
+              d="M1 4V1H4M8 1H11V4M11 8V11H8M4 11H1V8"
+              stroke="currentColor"
+              stroke-width="0.6"
+              stroke-linecap="round"
+            /></svg
+          >
+        {/if}
+      </button>
+    </div>
+  {/if}
 </div>
 
 {#if sortMenuVisible}
@@ -582,22 +587,22 @@
       <div class="clip-job-progress">
         <span>{clipJobLabel}</span>
         <div class="clip-job-bar"><span></span></div>
-  </div>
-{/if}
+      </div>
+    {/if}
 
-<style>
-  .bottombar.library-mode {
-    justify-content: space-between;
-  }
+    <style>
+      .bottombar.library-mode {
+        justify-content: space-between;
+      }
 
-  .lib-view-toggle {
-    line-height: 0;
-  }
+      .lib-view-toggle {
+        line-height: 0;
+      }
 
-  .icon-swap {
-    display: inline-flex;
-    line-height: 0;
-  }
-</style>
+      .icon-swap {
+        display: inline-flex;
+        line-height: 0;
+      }
+    </style>
   </div>
 {/if}

@@ -33,16 +33,29 @@ async function sortFileList(
     return desc ? sorted.reverse() : sorted;
   }
 
-  // Modes that need file stats
-  const entries = await Promise.all(
-    list.map(async (path) => {
+  // Modes that need file stats — limit concurrency to avoid I/O thundering herd
+  const STAT_CONCURRENCY = 8;
+  const entries: {
+    path: string;
+    stat: Awaited<ReturnType<typeof stat>> | null;
+  }[] = [];
+  let idx = 0;
+  async function statWorker() {
+    while (idx < list.length) {
+      const i = idx++;
+      const path = list[i];
       try {
         const s = await stat(path);
-        return { path, stat: s };
+        entries[i] = { path, stat: s };
       } catch {
-        return { path, stat: null };
+        entries[i] = { path, stat: null };
       }
-    }),
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(STAT_CONCURRENCY, list.length) }, () =>
+      statWorker(),
+    ),
   );
 
   entries.sort((a, b) => {

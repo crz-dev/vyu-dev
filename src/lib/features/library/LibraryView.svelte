@@ -152,7 +152,9 @@
   // Scroll to current file on open
   $effect(() => {
     if (!mounted || !scrollEl) return;
-    const el = scrollEl.querySelector(`[data-path="${fileList[currentIndex]}"]`) as HTMLElement | null;
+    const el = scrollEl.querySelector(
+      `[data-path="${fileList[currentIndex]}"]`,
+    ) as HTMLElement | null;
     if (el) {
       el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
@@ -200,27 +202,61 @@
             }}
           >
             {#if thumbFor(path)}
-              <img class="library-thumb" src={thumbFor(path)} alt="" draggable="false" />
+              <img
+                class="library-thumb"
+                src={thumbFor(path)}
+                alt=""
+                draggable="false"
+              />
             {:else}
               <div class="library-placeholder"></div>
             {/if}
             {#if badge === "video"}
               <div class="library-badge">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
               </div>
             {:else if badge === "gif"}
               <div class="library-badge">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline points="23 4 23 10 17 10" />
                   <polyline points="1 20 1 14 7 14" />
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  <path
+                    d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                  />
                 </svg>
               </div>
             {:else if badge === "audio"}
               <div class="library-badge">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
                   <circle cx="18" cy="16" r="3" />
@@ -228,8 +264,19 @@
               </div>
             {:else if badge === "pdf"}
               <div class="library-badge library-badge-pdf">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                  />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="9" y1="13" x2="15" y2="13" />
                   <line x1="12" y1="13" x2="12" y2="18" />
@@ -264,7 +311,12 @@
           >
             <span class="list-col list-col-thumb">
               {#if thumbFor(path)}
-                <img class="list-thumb" src={thumbFor(path)} alt="" draggable="false" />
+                <img
+                  class="list-thumb"
+                  src={thumbFor(path)}
+                  alt=""
+                  draggable="false"
+                />
               {:else}
                 <div class="list-placeholder"></div>
               {/if}
@@ -280,8 +332,20 @@
 
     {#if fileList.length === 0}
       <div class="library-empty">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          opacity="0.3"
+        >
+          <path
+            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+          />
         </svg>
         <span>No files in this folder</span>
       </div>

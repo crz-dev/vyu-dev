@@ -1,4 +1,7 @@
-import { invokeGetThumbnail, invokeGetFilesTotalSize } from "$lib/features/media/tools";
+import {
+  invokeGetThumbnail,
+  invokeGetFilesTotalSize,
+} from "$lib/features/media/tools";
 import type { SortMode } from "$lib/shared/constants";
 
 const MAX_CONCURRENT = 4;
@@ -107,7 +110,9 @@ function createLibrary() {
   }
 
   return {
-    cache,
+    get cache() {
+      return cache;
+    },
     requestThumbnail,
     cancelPending,
     clearQueue,

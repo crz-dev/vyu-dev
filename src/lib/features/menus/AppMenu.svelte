@@ -61,9 +61,7 @@
   let editValue = $state("");
   let inputEl = $state<HTMLInputElement | null>(null);
 
-  const folderName = $derived(
-    parentFolder ? getFileName(parentFolder()) : "",
-  );
+  const folderName = $derived(parentFolder ? getFileName(parentFolder()) : "");
 
   function startEditing() {
     editValue = fileName;
@@ -153,7 +151,10 @@
   </div>
   <span class="divider">/</span>
   {#if libraryOpen}
-    <span class="filename folder-name-display tooltip-below" data-tooltip={folderName}>
+    <span
+      class="filename folder-name-display tooltip-below"
+      data-tooltip={folderName}
+    >
       <Marquee text={folderName} scrollOnHover class="filename-marquee" />
     </span>
   {:else if editing}

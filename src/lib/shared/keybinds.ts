@@ -86,41 +86,35 @@ export function createKeybindHandler(actions: KeybindActions) {
 
     const isTimed = actions.isTimedMedia();
     const mediaEl = actions.getMediaEl();
-
-    if (
+    const isVideoHover =
       isTimed &&
       mediaEl &&
-      (actions.getHoverZone() === "video" || actions.isFullscreen())
-    ) {
-      if (e.key === " ") actions.togglePlay();
-      if (e.key === "ArrowRight")
-        mediaEl.currentTime = Math.min(
-          mediaEl.currentTime + 5,
-          mediaEl.duration,
+      (actions.getHoverZone() === "video" || actions.isFullscreen());
+    const isVid = actions.isVideo();
+
+    if (e.key === " " && isTimed && mediaEl) {
+      actions.togglePlay();
+    } else if (e.key === "ArrowRight") {
+      if (isVideoHover) {
+        mediaEl!.currentTime = Math.min(
+          mediaEl!.currentTime + 5,
+          mediaEl!.duration,
         );
-      if (e.key === "ArrowLeft")
-        mediaEl.currentTime = Math.max(mediaEl.currentTime - 5, 0);
-      if (e.key === "," || e.key === "<") {
-        e.preventDefault();
-        actions.frameStep(-1);
+      } else {
+        actions.navigate(1);
       }
-      if (e.key === "." || e.key === ">") {
-        e.preventDefault();
-        actions.frameStep(1);
+    } else if (e.key === "ArrowLeft") {
+      if (isVideoHover) {
+        mediaEl!.currentTime = Math.max(mediaEl!.currentTime - 5, 0);
+      } else {
+        actions.navigate(-1);
       }
-    } else {
-      const isVid = actions.isVideo();
-      if (e.key === " " && isTimed && mediaEl) actions.togglePlay();
-      if (e.key === "ArrowRight") actions.navigate(1);
-      if (e.key === "ArrowLeft") actions.navigate(-1);
-      if (e.key === "," || e.key === "<") {
-        e.preventDefault();
-        if (isVid) actions.frameStep(-1);
-      }
-      if (e.key === "." || e.key === ">") {
-        e.preventDefault();
-        if (isVid) actions.frameStep(1);
-      }
+    } else if (e.key === "," || e.key === "<") {
+      e.preventDefault();
+      if (isVideoHover || isVid) actions.frameStep(-1);
+    } else if (e.key === "." || e.key === ">") {
+      e.preventDefault();
+      if (isVideoHover || isVid) actions.frameStep(1);
     }
   };
 }
