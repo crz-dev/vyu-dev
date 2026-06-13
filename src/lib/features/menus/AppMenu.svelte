@@ -147,11 +147,13 @@
       {onOpenAbout}
       {onOpenFeedback}
       {onOpenLibrary}
+      {libraryOpen}
+      {onCloseLibrary}
     />
   </div>
   <span class="divider">/</span>
   {#if libraryOpen}
-    <span class="filename folder-name-display">
+    <span class="filename folder-name-display tooltip-below" data-tooltip={folderName}>
       <Marquee text={folderName} scrollOnHover class="filename-marquee" />
     </span>
   {:else if editing}
@@ -324,6 +326,8 @@
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
+    height: 34px;
+    padding: 2px 0 0 0;
   }
 
   :global(.topbar) .close-file-btn.library-mode,

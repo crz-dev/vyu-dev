@@ -95,6 +95,12 @@
 .menu-open .edit-menu [data-tooltip]:hover::after {
   opacity: 1 !important;
 }
+.menu-open .topbar [data-tooltip]:hover::after,
+.menu-open .bottombar [data-tooltip]:hover::after {
+  opacity: 1 !important;
+  transition: opacity 0.15s ease !important;
+  transition-delay: 0.4s !important;
+}
 
 .loop-btn.loop-menu-open::after {
   opacity: 0 !important;

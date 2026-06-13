@@ -1628,6 +1628,10 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   color: var(--text-primary);
 }
 
+.app-dropdown-item.active {
+  color: var(--text-primary);
+}
+
 @keyframes appDropdownIn {
   0% {
     opacity: 0;

@@ -8,6 +8,8 @@
     onOpenAbout,
     onOpenFeedback,
     onOpenLibrary,
+    libraryOpen = false,
+    onCloseLibrary,
   }: {
     visible: boolean;
     onClose: () => void;
@@ -17,6 +19,8 @@
     onOpenAbout: () => void;
     onOpenFeedback: () => void;
     onOpenLibrary: () => void;
+    libraryOpen?: boolean;
+    onCloseLibrary?: () => void;
   } = $props();
 </script>
 
@@ -24,8 +28,13 @@
   <div class="app-dropdown-menu">
     <button
       class="app-dropdown-item"
+      class:active={libraryOpen}
       onclick={() => {
-        onOpenLibrary();
+        if (libraryOpen) {
+          onCloseLibrary?.();
+        } else {
+          onOpenLibrary();
+        }
         onClose();
       }}
     >

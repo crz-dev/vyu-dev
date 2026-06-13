@@ -364,7 +364,7 @@
   }
 
   .library-cell.active {
-    border-color: var(--accent, #4a9eff);
+    border-color: #fff;
   }
 
   .library-thumb {
@@ -434,7 +434,7 @@
   }
 
   .list-row.active {
-    background: rgba(74, 158, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .list-col {
