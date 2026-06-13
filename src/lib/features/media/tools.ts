@@ -768,3 +768,7 @@ export async function invokeOpenInBrowser(path: string): Promise<void> {
 export async function invokeOpenWithDialog(path: string): Promise<void> {
   return invoke("open_with_dialog", { path });
 }
+
+export async function invokeGetFilesTotalSize(paths: string[]): Promise<number> {
+  return invoke("get_files_total_size", { paths });
+}

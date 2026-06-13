@@ -1,4 +1,5 @@
-import { invokeGetThumbnail } from "$lib/features/media/tools";
+import { invokeGetThumbnail, invokeGetFilesTotalSize } from "$lib/features/media/tools";
+import type { SortMode } from "$lib/shared/constants";
 
 const MAX_CONCURRENT = 4;
 
@@ -6,6 +7,17 @@ function createLibrary() {
   const cache = $state<Record<string, string>>({});
   let pending: string[] = [];
   let inflight = 0;
+
+  // View mode
+  let viewMode = $state<"grid" | "list">("grid");
+
+  // Sort state (independent from main view)
+  let sortMode = $state<SortMode>("name");
+  let sortDesc = $state(false);
+
+  // Total size
+  let totalSize = $state(0);
+  let totalSizeLoading = $state(false);
 
   async function loadOne(path: string) {
     inflight++;
@@ -70,12 +82,54 @@ function createLibrary() {
     kick();
   }
 
+  function setViewMode(mode: "grid" | "list") {
+    viewMode = mode;
+  }
+
+  function setSortMode(mode: SortMode, desc: boolean) {
+    sortMode = mode;
+    sortDesc = desc;
+  }
+
+  async function computeTotalSize(paths: string[]) {
+    if (paths.length === 0) {
+      totalSize = 0;
+      return;
+    }
+    totalSizeLoading = true;
+    try {
+      totalSize = await invokeGetFilesTotalSize(paths);
+    } catch {
+      totalSize = 0;
+    } finally {
+      totalSizeLoading = false;
+    }
+  }
+
   return {
     cache,
     requestThumbnail,
     cancelPending,
     clearQueue,
     rebuildQueue,
+    get viewMode() {
+      return viewMode;
+    },
+    setViewMode,
+    get sortMode() {
+      return sortMode;
+    },
+    get sortDesc() {
+      return sortDesc;
+    },
+    setSortMode,
+    get totalSize() {
+      return totalSize;
+    },
+    get totalSizeLoading() {
+      return totalSizeLoading;
+    },
+    computeTotalSize,
   };
 }
 

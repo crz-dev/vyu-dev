@@ -1,38 +1,43 @@
 # Session state
 
 _Overwrite this file completely at end of every session. Never append._
-Updated: 2026-06-12
+Updated: 2026-06-13
 
 ## Last change
 
-Fixed library reactivity (thumbnails not appearing on first open) and performance (serial queue → 4 concurrent loads). Root cause: `$state(Map)` `.set()` loses subscriptions for keys not previously read — replaced with `$state(Record)` object. Added center-outward `rebuildQueue()` driven by `currentIndex` so relevant thumbnails load first. Removed `observed` Set that was recreated on every intersection entry (GC churn). Replaced O(n) `fileList.indexOf(path) === currentIndex` in `{#each}` with O(1) `activePaths` derived Set.
+Library visual polish: redesigned from fullscreen overlay to integrated flex layout between topbar/bottombar. Added independent sort, grid/list view toggle, folder total size via Rust backend command, media-type badges on cells, custom auto-hide scrollbar, fade-in animation, hover scale, scroll-to-current, keyboard navigation, and empty state with icon.
 
-Files: `library.svelte.ts`, `LibraryView.svelte`
+Files: `LibraryView.svelte`, `library.svelte.ts`, `Shell.svelte`, `AppMenu.svelte`, `MediaBar.svelte`, `file_ops.rs`, `lib.rs`, `tools.ts`
 
 ## Status
 
-- Library thumbnail loading: concurrent (4 in-flight), center-outward priority (working)
-- Library thumbnail reactivity on first open: `$state` Record triggers re-render on property assignment (fixed)
-- Library queue: cleared on close, rebuilt on fileList/currentIndex change (working)
-- Active cell detection: O(1) via derived Set (fixed)
-- Observer: created once, no Set recreation per entry (fixed)
-- Type check: passing
+- Library: integrated layout (flex child, not overlay) (working)
+- Topbar: app icon, folder name, Close Library + Add File buttons (white) (working)
+- Bottombar: sort button, file count + total size, grid/list toggle (working)
+- Grid view: 180px min cells, aspect-ratio 1, media-type badges (working)
+- List view: table with thumbnail, name, type columns (working)
+- Custom scrollbar: thin, auto-hide after 3s (working)
+- Independent sort: name/type modes, ascending/descending (working)
+- Total folder size: Rust backend command `get_files_total_size` (working)
+- Fade-in animation: 150ms opacity transition (working)
+- Hover scale: 1.02x on grid cells (working)
+- Keyboard nav: arrow keys, Enter, Escape (working)
+- Scroll-to-current: auto-scrolls to active file on open (working)
+- Empty state: folder icon + message (working)
+- Type check: passing (0 errors, 0 warnings)
 
 ## Next
 
-Visual polish: frosted glass overlay, open/close animation, scroll-to-current-file, media-type icons on cells.
+Polish: test with large folders, verify sort with different modes, add date-modified/date-created/size sort support (currently falls back to name), refine badge sizing for list view.
 
 ## Bugs found this session
 
-- `$state(Map).set()` does not trigger reactivity for keys that returned `undefined` on first `.get()` read — switched to `$state(Record)` with direct property assignment.
-- IntersectionObserver `observed` Set recreated on every visible entry — removed; `requestThumbnail` handles dedup internally.
-- Queue processor only allowed 1 concurrent thumbnail load (`inFlight >= 1`) — bumped to `MAX_CONCURRENT = 4`.
-- No center-outward priority — thumbnails loaded in FIFO insertion order, ignoring `currentIndex`.
+None.
 
 ## Current commit
 
-fix: reactive thumbnail cache and concurrent loading in library
+feat: redesign library with integrated layout, sort, grid/list, badges, and folder stats
 
 ## Architecture update
 
-None.
+Library changed from `position: fixed; z-index: 1000` overlay to flex child between AppMenu and MediaBar. AppMenu and MediaBar now accept `libraryOpen` prop for conditional rendering. Library state module expanded with viewMode, sortMode, sortDesc, totalSize. New Rust command `get_files_total_size` for efficient folder size computation.

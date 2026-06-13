@@ -640,9 +640,25 @@
     onOpenAbout={openAbout}
     onOpenFeedback={openFeedback}
     onOpenLibrary={openLibrary}
+    {libraryOpen}
+    onCloseLibrary={closeLibrary}
+    {parentFolder}
   />
 
-  {@render children?.()}
+  {#if libraryOpen}
+    <LibraryView
+      {fileList}
+      {currentIndex}
+      onSelect={(path) => {
+        const idx = fileList.indexOf(path);
+        if (idx !== -1) onSelect(idx);
+        closeLibrary();
+      }}
+      onClose={closeLibrary}
+    />
+  {:else}
+    {@render children?.()}
+  {/if}
 
   <MediaBar
     fileListLength={fileList.length}
@@ -697,6 +713,7 @@
     markupMenuStyleOverride={markupMenuStyle}
     clipMenuStyleOverride={clipMenuStyle}
     fullscreen={viewerStateIsFullscreen}
+    {libraryOpen}
   />
 
   <ThumbnailBar
@@ -706,19 +723,6 @@
     {onSelect}
     fullscreen={viewerStateIsFullscreen}
   />
-
-  {#if libraryOpen}
-    <LibraryView
-      {fileList}
-      {currentIndex}
-      onSelect={(path) => {
-        const idx = fileList.indexOf(path);
-        if (idx !== -1) onSelect(idx);
-        closeLibrary();
-      }}
-      onClose={closeLibrary}
-    />
-  {/if}
 
   {#if isLoadingFile}
     <div class="border-sweep" class:fading={loadingFadingOut}></div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { invokeRenameFile } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
+  import { getFileName } from "$lib/services/files";
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
   import Marquee from "$lib/shared/Marquee.svelte";
 
@@ -26,6 +27,9 @@
     onOpenAbout,
     onOpenFeedback,
     onOpenLibrary,
+    libraryOpen = false,
+    onCloseLibrary,
+    parentFolder,
   }: {
     fileName: string;
     fileSrc: string;
@@ -48,11 +52,18 @@
     onOpenAbout: () => void;
     onOpenFeedback: () => void;
     onOpenLibrary: () => void;
+    libraryOpen?: boolean;
+    onCloseLibrary?: () => void;
+    parentFolder?: () => string;
   } = $props();
 
   let editing = $state(false);
   let editValue = $state("");
   let inputEl = $state<HTMLInputElement | null>(null);
+
+  const folderName = $derived(
+    parentFolder ? getFileName(parentFolder()) : "",
+  );
 
   function startEditing() {
     editValue = fileName;
@@ -139,7 +150,11 @@
     />
   </div>
   <span class="divider">/</span>
-  {#if editing}
+  {#if libraryOpen}
+    <span class="filename folder-name-display">
+      <Marquee text={folderName} scrollOnHover class="filename-marquee" />
+    </span>
+  {:else if editing}
     <input
       bind:this={inputEl}
       bind:value={editValue}
@@ -172,7 +187,60 @@
       /></button
     >
   {/if}
-  {#if fileSrc}
+  {#if libraryOpen}
+    <span class="divider">/</span>
+    <button
+      class="folder-btn close-file-btn tooltip-below library-mode"
+      data-tooltip="Close Library"
+      onclick={onCloseLibrary}
+      aria-label="close library"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M3 10h13a4 4 0 010 8H7"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M7 6l-4 4 4 4"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <span class="divider">/</span>
+    <button
+      class="folder-btn open-file-btn tooltip-below library-mode"
+      data-tooltip="Add File"
+      onclick={openFileDialog}
+      aria-label="add file"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <line
+          x1="12"
+          y1="5"
+          x2="12"
+          y2="19"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+        <line
+          x1="5"
+          y1="12"
+          x2="19"
+          y2="12"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+  {:else if fileSrc}
     <span class="divider">/</span>
     <button
       class="folder-btn close-file-btn tooltip-below"
@@ -247,3 +315,23 @@
     >
   </div>
 </div>
+
+<style>
+  .folder-name-display {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  :global(.topbar) .close-file-btn.library-mode,
+  :global(.topbar) .open-file-btn.library-mode {
+    color: var(--text-primary, #fff);
+  }
+  :global(.topbar) .close-file-btn.library-mode:hover,
+  :global(.topbar) .open-file-btn.library-mode:hover {
+    color: var(--text-primary, #fff);
+  }
+</style>

@@ -60,6 +60,7 @@ pub fn run() {
             open_with_dialog,
             convert_audio_to_waveform_video,
             convert_image_to_pdf,
+            get_files_total_size,
         ])
         .setup(|app| {
             unsafe {

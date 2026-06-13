@@ -127,3 +127,14 @@ pub fn open_directory(path: String) -> Result<(), String> {
 pub fn cleanup_temp_folder() {
     crate::util::cleanup_vyu_temp();
 }
+
+#[tauri::command]
+pub fn get_files_total_size(paths: Vec<String>) -> Result<u64, String> {
+    let mut total: u64 = 0;
+    for p in &paths {
+        if let Ok(meta) = fs::metadata(p) {
+            total = total.saturating_add(meta.len());
+        }
+    }
+    Ok(total)
+}
