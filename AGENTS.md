@@ -2,7 +2,7 @@
 
 Tauri 2 + Svelte 5 (runes) + TypeScript + pnpm. Windows desktop media viewer. Replaces Windows Photos. Private by architecture — no telemetry, no internet, files never leave the device.
 
-See `ARCHITECTURE.md` for module map, state pattern, and where new code goes.
+See `ARCHITECTURE.md` before creating modules, moving state, changing ownership boundaries, or introducing new storage patterns.
 
 ## Commands
 
@@ -24,15 +24,42 @@ See `ARCHITECTURE.md` for module map, state pattern, and where new code goes.
 - **Top-level toolbar icons stay fixed.** Shell bar design is locked.
 - **Constants must stay in sync.** `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` must match `*_RUST` constants in `src-tauri/src/constants.rs`.
 
+## Modification principles
+
+Before creating code:
+
+1. Find the existing owner in `ARCHITECTURE.md`.
+2. Extend existing modules before creating new modules.
+3. Reuse existing services before introducing new services.
+4. Prefer localized changes over broad refactors.
+5. Preserve architecture unless explicitly instructed otherwise.
+
+Do not:
+
+- Reorganize files without a clear reason.
+- Rename modules as part of unrelated work.
+- Introduce abstractions before duplication exists.
+- Replace existing patterns with new patterns unless requested.
+
+## New modules
+
+Create a new module only when:
+
+- No existing module owns the concern.
+- The responsibility is clearly distinct.
+- Extending an existing module would reduce cohesion.
+
 ## Svelte / TypeScript conventions
 
 - Svelte 5 runes only — `$state`, `$derived`, `$effect`. No legacy `let`/`$:` reactivity.
 - `let` for `$state` declarations.
-- TypeScript strict mode. `tsconfig.json` extends `.svelte-kit/tsconfig.json`.
+- TypeScript strict mode.
 - No SSR — `+layout.ts` exports `ssr = false`.
 - `localStorage` keys use `vyu-` prefix. Per-file: `vyu-{kind}-{path}`. App-wide: `vyu-{name}`.
+- All storage reads and writes go through `services/storage.ts`.
 - `pdfjs-dist` is dynamically imported — only loads when a PDF opens.
-- Vite port 1420, `strictPort: true`. Window decorations disabled — app draws its own title bar.
+- Vite port 1420, `strictPort: true`.
+- Window decorations disabled — app draws its own title bar.
 
 ## Cache paths
 
@@ -42,42 +69,49 @@ See `ARCHITECTURE.md` for module map, state pattern, and where new code goes.
 | Display    | `%LOCALAPPDATA%/vyu/cache/displays/`   |
 | Temp       | `%TEMP%/Vyu-temp/{unique-hash}/`       |
 
-Temp dirs must be unique per operation (hash-based subdir) — concurrent ops must never share a temp dir.
+Temp dirs must be unique per operation. Concurrent operations must never share a temp dir.
 
 ## Code style
 
-- No decorative ASCII section headers. Folder structure is the section header.
-- No `// DATAFLOW:` comments. Module exports are the doc.
-- No JSDoc on private helpers. Comments explain _why_, never _what_.
-- No defensive null chains re-checking what an earlier guard already covered.
 - Early returns over nested if/else.
-- `console.error` only for caught-and-swallowed failures. No logging on the happy path.
-- Named functions over anonymous arrows in event handlers unless the closure captures something specific.
-- No emoji or exclamation points in user-facing strings. Tone is terse.
+- Comments explain why, not what.
+- No JSDoc on private helpers.
+- Avoid redundant guards already covered by earlier checks.
+- Named functions over anonymous handlers unless closure state is required.
+- `console.error` only for caught-and-swallowed failures.
+- No logging on the happy path.
+- User-facing copy is concise and neutral.
 
 ## Backend (Rust)
 
-Tauri commands live in `src-tauri/src/commands/`, one file per domain. Shared helpers in `util.rs`, types in `types.rs`, constants in `constants.rs`.
+Tauri commands live in `src-tauri/src/commands/`, one file per domain.
 
-Domains: thumbnails, display image prep (TIFF/PSD/JXL/RAW/HEIC → PNG), video remuxing, clip extraction, conversion, compression, crop/edit, integrity check, file ops, window state.
+Shared code:
+
+- `util.rs`
+- `types.rs`
+- `constants.rs`
 
 Key constraints:
 
 - Cross-volume file moves must use copy+delete fallback on `ERROR_NOT_SAME_DEVICE`.
-- Concurrent operations that write temp files must each get a unique hash-based subdir.
+- Concurrent operations writing temp files must use unique hash-based subdirectories.
 - `stat()` calls under sort operations are capped at 8 concurrent workers.
+
+## Completion criteria
+
+Before finishing:
+
+- Ensure changes follow existing ownership boundaries.
+- Ensure constants remain synchronized between TypeScript and Rust when modified.
+- Preserve behavior outside the requested scope.
+- Do not introduce new top-level dependencies without justification.
 
 ## Agent behavior
 
-- Reply `Done.` and stop. No follow-up questions unless the task genuinely requires a decision.
-- When a design decision is needed, surface it as a specific question with options before proceeding.
-- If a skill/command is invoked with no user input, ask what to implement with concrete options.
-- No re-checking completed steps. No summarizing unless asked.
-- No redundant file reads. No restating context that's already in scope.
-- When something is unclear, ask once — precisely — rather than guessing and fixing later.
-
-## Hard rules — repeated for recency
-
-- **State goes in `src/lib/features/*/` only.**
-- **New top-level dependencies need an explicit reason before adding.**
-- **Constants must stay in sync between `shared/constants.ts` and `constants.rs`.**
+- Keep responses concise.
+- Surface important decisions, blockers, or risks.
+- When a required design decision is unclear, ask one focused question with concrete options.
+- Do not guess architectural intent.
+- Do not re-read files unnecessarily.
+- Do not restate context already in scope.
