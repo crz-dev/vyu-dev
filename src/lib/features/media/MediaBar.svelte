@@ -226,52 +226,11 @@
 </script>
 
 <div class="bottombar" class:library-mode={libraryOpen}>
-  {#if libraryOpen}
-    <div class="bottombar-left">
-      <button
-        class="fs-btn tooltip-above-shift-right"
-        data-tooltip="Sort by"
-        onmousedown={handleLibSortClick}
-        aria-label="sort by"
-      >
-        {#key library.sortMode}
-          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
-            {@html SORT_ICONS[library.sortMode] || SORT_ICONS.name}
-          </span>
-        {/key}
-      </button>
-    </div>
-    <span
-      class="file-info tooltip-above"
-      data-tooltip="Total files · Folder size"
-    >
-      {fileListLength}
-      {fileListLength === 1 ? "file" : "files"}
-      {#if !library.totalSizeLoading && library.totalSize > 0}
-        · {formatTotalSize(library.totalSize)}
-      {:else if library.totalSizeLoading}
-        · ...
-      {/if}
-    </span>
-    <div class="bottombar-right">
-      <button
-        class="lib-view-toggle fs-btn tooltip-above-shift-left"
-        data-tooltip="View mode"
-        onmousedown={handleViewMenuClick}
-        aria-label="View mode"
-      >
-        {#key library.viewMode}
-          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
-            {@html VIEW_ICONS[library.viewMode] || VIEW_ICONS.grid}
-          </span>
-        {/key}
-      </button>
-    </div>
-  {:else}
-    <div class="bottombar-left">
+  <div class="bottombar-left">
+    <div class="icon-slot" class:hidden={libraryOpen}>
       <div class="slideshow-anchor">
         <button
-          class="slideshow-btn tooltip-above-shift-right"
+          class="fs-btn tooltip-above-shift-right"
           class:active={slideshow.active}
           data-tooltip="Slideshow"
           onclick={toggleSlideshowMenu}
@@ -308,27 +267,60 @@
         {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
       </button>
     </div>
-    <span
-      class="file-info tooltip-above"
-      data-tooltip={isAudio
-        ? "Duration · Bitrate · File size"
-        : "Resolution · File size"}
-    >
-      {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
-        {durationDisplay} · {audioBitrateDisplay} · {fileSize}
-      {:else if fileDimensions && fileSize}
-        {fileDimensions} · {fileSize}
-      {:else if !fileInfoLoading && fileName !== "no file open"}
-        {fileName}
-      {:else if !fileSrc}
-        no file open
-      {/if}
-    </span>
-    <div class="bottombar-right">
+    <div class="icon-slot" class:hidden={!libraryOpen}>
+      <button
+        class="fs-btn tooltip-above-shift-right"
+        data-tooltip="Sort by"
+        onmousedown={handleLibSortClick}
+        aria-label="sort by"
+      >
+        {#key library.sortMode}
+          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
+            {@html SORT_ICONS[library.sortMode] || SORT_ICONS.name}
+          </span>
+        {/key}
+      </button>
+    </div>
+  </div>
+  <div class="file-info-wrapper">
+    {#if libraryOpen}
+      <span
+        class="file-info tooltip-above"
+        data-tooltip="Total files · Folder size"
+      >
+        {fileListLength}
+        {fileListLength === 1 ? "file" : "files"}
+        {#if !library.totalSizeLoading && library.totalSize > 0}
+          · {formatTotalSize(library.totalSize)}
+        {:else if library.totalSizeLoading}
+          · ...
+        {/if}
+      </span>
+    {:else}
+      <span
+        class="file-info tooltip-above"
+        data-tooltip={isAudio
+          ? "Duration · Bitrate · File size"
+          : "Resolution · File size"}
+      >
+        {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
+          {durationDisplay} · {audioBitrateDisplay} · {fileSize}
+        {:else if fileDimensions && fileSize}
+          {fileDimensions} · {fileSize}
+        {:else if !fileInfoLoading && fileName !== "no file open"}
+          {fileName}
+        {:else if !fileSrc}
+          no file open
+        {/if}
+      </span>
+    {/if}
+  </div>
+  <div class="bottombar-right">
+    <div class="icon-slot viewer-right" class:hidden={libraryOpen}>
       <button
         class="zoom tooltip-above"
         class:active={zoomLocked}
-        data-tooltip="Reset zoom"
+        data-tooltip="Zoom"
         onclick={resetZoom}
         oncontextmenu={(e) => {
           e.preventDefault();
@@ -363,7 +355,21 @@
         {/if}
       </button>
     </div>
-  {/if}
+    <div class="icon-slot" class:hidden={!libraryOpen}>
+      <button
+        class="lib-view-toggle fs-btn tooltip-above-shift-left"
+        data-tooltip="View mode"
+        onmousedown={handleViewMenuClick}
+        aria-label="View mode"
+      >
+        {#key library.viewMode}
+          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
+            {@html VIEW_ICONS[library.viewMode] || VIEW_ICONS.grid}
+          </span>
+        {/key}
+      </button>
+    </div>
+  </div>
 </div>
 
 {#if libraryOpen && selectMenuVisible}

@@ -294,6 +294,34 @@ main:not(.fullscreen).thumbnail-bar-open.is-audio .viewer {
   gap: 0px;
   margin-right: -8px;
 }
+
+.icon-slot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  transform-origin: center;
+}
+
+.icon-slot.hidden {
+  opacity: 0;
+  transform: scale(0.5) rotate(90deg);
+  pointer-events: none;
+  position: absolute;
+}
+
+.icon-slot.viewer-right {
+  gap: 0px;
+  margin-right: -8px;
+}
+
+.file-info-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
 .zoom {
   font-size: 12px;
   color: var(--text-dim);
@@ -329,6 +357,9 @@ main:not(.fullscreen).thumbnail-bar-open.is-audio .viewer {
 }
 .fs-btn:hover {
   color: var(--text-muted);
+}
+.fs-btn.active {
+  color: var(--blue-light);
 }
 
 main.fullscreen .topbar {

@@ -948,6 +948,12 @@
     clearFolderCache(getParentFolder(newPath));
     await loadFile(newPath);
   }}
+  onFolderRenamed={async (newFolderPath: string) => {
+    clearFolderCache(getParentFolder(newFolderPath));
+    const sep = newFolderPath.includes("\\") ? "\\" : "/";
+    const newFilePath = `${newFolderPath}${sep}${fileName}`;
+    await loadFile(newFilePath);
+  }}
   onSelect={navigateToIndex}
   onCloseClipDeleteConfirm={() => {
     clips.clipDeleteConfirm.visible = false;

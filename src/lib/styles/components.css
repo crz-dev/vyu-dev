@@ -1630,6 +1630,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .app-dropdown-item.active {
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 @keyframes appDropdownIn {

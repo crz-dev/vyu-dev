@@ -77,6 +77,7 @@
     onSortChange,
     navigate,
     onRenamed,
+    onFolderRenamed,
     startDrag,
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -259,6 +260,7 @@
       desc: boolean,
     ) => void;
     onRenamed: (newPath: string) => Promise<void>;
+    onFolderRenamed?: (newFolderPath: string) => void;
     navigate: (dir: number) => void;
     startDrag: (e: MouseEvent) => void;
     showFilenameTooltip: (e: MouseEvent) => void;
@@ -637,6 +639,7 @@
     {fileSrc}
     {filePath}
     {onRenamed}
+    {onFolderRenamed}
     {startDrag}
     {showFilenameTooltip}
     {hideFilenameTooltip}

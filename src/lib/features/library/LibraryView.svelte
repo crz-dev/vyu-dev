@@ -35,7 +35,12 @@
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
 
-  function densityMap(d: number, big: number, def: number, small: number): number {
+  function densityMap(
+    d: number,
+    big: number,
+    def: number,
+    small: number,
+  ): number {
     return d <= 0.5
       ? big + (def - big) * (d / 0.5)
       : def + (small - def) * ((d - 0.5) / 0.5);
@@ -150,7 +155,12 @@
     a: { left: number; right: number; top: number; bottom: number },
     b: { left: number; right: number; top: number; bottom: number },
   ): boolean {
-    return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top;
+    return (
+      a.left <= b.right &&
+      a.right >= b.left &&
+      a.top <= b.bottom &&
+      a.bottom >= b.top
+    );
   }
 
   function handleDragStart(e: MouseEvent) {
@@ -345,7 +355,10 @@
     onmousedown={handleDragStart}
   >
     {#if library.viewMode === "grid"}
-      <div class="library-grid" style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));">
+      <div
+        class="library-grid"
+        style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
+      >
         {#each sortedFiles as path (path)}
           {@const active = activePaths.has(path)}
           {@const selected = library.isSelected(path)}
@@ -511,8 +524,7 @@
             data-path={path}
             role="button"
             tabindex="0"
-            style="height: {riverRowH}px; flex-grow: {ratio *
-              riverRowH};"
+            style="height: {riverRowH}px; flex-grow: {ratio * riverRowH};"
             onclick={(e) => {
               if (dragSuppressedClick) return;
               if (selectMode || e.ctrlKey || e.metaKey) {
@@ -667,7 +679,9 @@
             data-path={path}
             role="button"
             tabindex="0"
-            style="height: {active ? filmstripBase * 1.33 : filmstripBase}px; width: {(active
+            style="height: {active
+              ? filmstripBase * 1.33
+              : filmstripBase}px; width: {(active
               ? filmstripBase * 1.33
               : filmstripBase) * ratio}px;"
             onclick={(e) => {
@@ -810,7 +824,10 @@
         {/each}
       </div>
     {:else}
-      <div class="library-list" style="--list-thumb: {listThumbSize}px; --list-pad: {listRowPad}px; --list-font: {listFontSize}px; --list-type-font: {listTypeFontSize}px;">
+      <div
+        class="library-list"
+        style="--list-thumb: {listThumbSize}px; --list-pad: {listRowPad}px; --list-font: {listFontSize}px; --list-type-font: {listTypeFontSize}px;"
+      >
         <div class="list-header">
           <span class="list-col list-col-thumb"></span>
           <span class="list-col list-col-name">Name</span>

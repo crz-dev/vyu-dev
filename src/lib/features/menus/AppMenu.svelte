@@ -10,6 +10,7 @@
     fileSrc,
     filePath,
     onRenamed,
+    onFolderRenamed,
     startDrag,
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -35,6 +36,7 @@
     fileSrc: string;
     filePath: string;
     onRenamed: (newPath: string) => void;
+    onFolderRenamed?: (newFolderPath: string) => void;
     startDrag: (e: MouseEvent) => void;
     showFilenameTooltip: (e: MouseEvent) => void;
     hideFilenameTooltip: () => void;
@@ -60,6 +62,10 @@
   let editing = $state(false);
   let editValue = $state("");
   let inputEl = $state<HTMLInputElement | null>(null);
+
+  let folderEditing = $state(false);
+  let folderEditValue = $state("");
+  let folderInputEl = $state<HTMLInputElement | null>(null);
 
   const folderName = $derived(parentFolder ? getFileName(parentFolder()) : "");
 
@@ -109,6 +115,49 @@
     editing = false;
   }
 
+  function startFolderEditing() {
+    folderEditValue = folderName;
+    folderEditing = true;
+    setTimeout(() => {
+      if (!folderInputEl) return;
+      folderInputEl.focus();
+      folderInputEl.select();
+    }, 0);
+  }
+
+  async function commitFolderRename() {
+    folderEditing = false;
+    const newName = folderEditValue.trim();
+    const folder = parentFolder?.();
+    if (!newName || newName === folderName || !folder) return;
+
+    if (/[/\\]/.test(newName) || newName === ".." || newName === ".") {
+      showToast({ message: "Invalid folder name", color: "red" });
+      return;
+    }
+
+    const sep = folder.includes("\\") ? "\\" : "/";
+    const parentDir = folder.substring(0, folder.lastIndexOf(sep));
+    const newFolderPath = `${parentDir}${sep}${newName}`;
+
+    if (!newFolderPath.startsWith(parentDir + sep)) {
+      showToast({ message: "Invalid folder name", color: "red" });
+      return;
+    }
+
+    try {
+      await invokeRenameFile(folder, newFolderPath);
+      onFolderRenamed?.(newFolderPath);
+      showToast({ message: "Folder renamed", color: "green" });
+    } catch (e) {
+      showToast({ message: "Rename failed", color: "red" });
+    }
+  }
+
+  function cancelFolderEdit() {
+    folderEditing = false;
+  }
+
   // Submit rename on any click outside the input.
   // onblur doesn't work here because startPan calls preventDefault()
   // on mousedown, which prevents the browser from blurring the input.
@@ -117,6 +166,18 @@
     function onGlobalMouseDown(e: MouseEvent) {
       if (inputEl && !inputEl.contains(e.target as Node)) {
         commitRename();
+      }
+    }
+    document.addEventListener("mousedown", onGlobalMouseDown, true);
+    return () =>
+      document.removeEventListener("mousedown", onGlobalMouseDown, true);
+  });
+
+  $effect(() => {
+    if (!folderEditing) return;
+    function onGlobalMouseDown(e: MouseEvent) {
+      if (folderInputEl && !folderInputEl.contains(e.target as Node)) {
+        commitFolderRename();
       }
     }
     document.addEventListener("mousedown", onGlobalMouseDown, true);
@@ -151,12 +212,34 @@
   </div>
   <span class="divider">/</span>
   {#if libraryOpen}
-    <span
-      class="filename folder-name-display tooltip-below"
-      data-tooltip={folderName}
-    >
-      <Marquee text={folderName} scrollOnHover class="filename-marquee" />
-    </span>
+    {#if folderEditing}
+      <input
+        bind:this={folderInputEl}
+        bind:value={folderEditValue}
+        class="filename-input"
+        type="text"
+        onkeydown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitFolderRename();
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            cancelFolderEdit();
+          }
+        }}
+        onmousedown={(e) => e.stopPropagation()}
+        aria-label="Rename folder"
+      />
+    {:else}
+      <button
+        class="filename filename-btn folder-name-btn"
+        onclick={startFolderEditing}
+        aria-label="Rename folder"
+      >
+        <Marquee text={folderName} scrollOnHover class="filename-marquee" />
+      </button>
+    {/if}
   {:else if editing}
     <input
       bind:this={inputEl}
@@ -320,7 +403,7 @@
 </div>
 
 <style>
-  .folder-name-display {
+  .folder-name-btn {
     max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
