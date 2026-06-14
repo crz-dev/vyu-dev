@@ -22,7 +22,7 @@ export function createViewerStyle() {
     return parts.length ? ` filter: ${parts.join(" ")};` : "";
   });
   const imageStyle = $derived(
-    `transform: scale(${imageScale}) translate(${viewer.state.translateX / imageScale}px, ${viewer.state.translateY / imageScale}px) rotate(${editing.snapshot.rotation}deg) scaleX(${editing.snapshot.flipped ? -1 : 1}) scaleY(${editing.snapshot.flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
+    `transform: translate(${viewer.state.translateX}px, ${viewer.state.translateY}px) scale(${imageScale}) rotate(${editing.snapshot.rotation}deg) scaleX(${editing.snapshot.flipped ? -1 : 1}) scaleY(${editing.snapshot.flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
   );
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const videoInnerTransform = $derived(viewer.getVideoInnerTransform());

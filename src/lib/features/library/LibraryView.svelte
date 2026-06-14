@@ -198,9 +198,10 @@
     }
   });
 
-  // Scroll to current file on open
+  // Scroll to current file on open or density change
   $effect(() => {
     if (!mounted || !scrollEl) return;
+    void library.density;
     const el = scrollEl.querySelector(
       `[data-path="${fileList[currentIndex]}"]`,
     ) as HTMLElement | null;
@@ -684,8 +685,6 @@
     padding: 0 calc(50% - 100px);
     overflow-x: auto;
     overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
     scrollbar-width: none;
   }
 

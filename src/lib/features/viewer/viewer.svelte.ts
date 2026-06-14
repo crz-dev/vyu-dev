@@ -123,7 +123,7 @@ function createViewer() {
 
   function getVideoWrapperTransform(): string {
     const scale = state.zoomLevel / 100;
-    return `transform: scale(${scale}) translate(${state.translateX / scale}px, ${state.translateY / scale}px); transform-origin: center center;`;
+    return `transform: translate(${state.translateX}px, ${state.translateY}px) scale(${scale}); transform-origin: center center;`;
   }
 
   function getVideoInnerTransform(): string {
