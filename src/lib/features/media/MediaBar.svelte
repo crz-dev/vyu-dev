@@ -3,6 +3,7 @@
   import SlideshowMenu from "$lib/features/menus/SlideshowMenu.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
+  import ViewMenu from "$lib/features/navigation/ViewMenu.svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
@@ -15,6 +16,12 @@
     type: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
   };
 
+  const VIEW_ICONS: Record<string, string> = {
+    grid: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
+    list: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
+    river: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`,
+  };
+
   let dismissed = $state(false);
   let pinned = $state(false);
   let fileCountEl: HTMLButtonElement | null = $state(null);
@@ -25,6 +32,11 @@
   let libSortMenuVisible = $state(false);
   let libSortMenuX = $state(0);
   let libSortMenuY = $state(0);
+
+  // Library view menu state
+  let viewMenuVisible = $state(false);
+  let viewMenuX = $state(0);
+  let viewMenuY = $state(0);
 
   $effect(() => {
     if (dismissed) {
@@ -182,8 +194,18 @@
     libSortMenuVisible = false;
   }
 
-  function toggleViewMode() {
-    library.setViewMode(library.viewMode === "grid" ? "list" : "grid");
+  function handleViewMenuClick(e: MouseEvent) {
+    e.stopPropagation();
+    const btn = e.currentTarget as HTMLElement;
+    const rect = btn.getBoundingClientRect();
+    viewMenuX = rect.left;
+    viewMenuY = window.innerHeight - rect.top + 4;
+    viewMenuVisible = !viewMenuVisible;
+  }
+
+  function handleViewChange(mode: "grid" | "list" | "river") {
+    library.setViewMode(mode);
+    viewMenuVisible = false;
   }
 
   function formatTotalSize(bytes: number): string {
@@ -225,49 +247,13 @@
     <div class="bottombar-right">
       <button
         class="lib-view-toggle fs-btn tooltip-above-shift-left"
-        data-tooltip={library.viewMode === "grid" ? "List view" : "Grid view"}
-        onclick={toggleViewMode}
-        aria-label={library.viewMode === "grid"
-          ? "switch to list view"
-          : "switch to grid view"}
+        data-tooltip="View mode"
+        onmousedown={handleViewMenuClick}
+        aria-label="view mode"
       >
         {#key library.viewMode}
           <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
-            {#if library.viewMode === "grid"}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-              </svg>
-            {:else}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <line x1="3" y1="6" x2="3.01" y2="6" />
-                <line x1="3" y1="12" x2="3.01" y2="12" />
-                <line x1="3" y1="18" x2="3.01" y2="18" />
-              </svg>
-            {/if}
+            {@html VIEW_ICONS[library.viewMode] || VIEW_ICONS.grid}
           </span>
         {/key}
       </button>
@@ -392,6 +378,17 @@
     sortMode={library.sortMode}
     sortDesc={library.sortDesc}
     onSortChange={handleLibSortChange}
+  />
+{/if}
+
+{#if viewMenuVisible}
+  <ViewMenu
+    visible={viewMenuVisible}
+    onClose={() => (viewMenuVisible = false)}
+    x={viewMenuX}
+    y={viewMenuY}
+    viewMode={library.viewMode}
+    onViewChange={handleViewChange}
   />
 {/if}
 

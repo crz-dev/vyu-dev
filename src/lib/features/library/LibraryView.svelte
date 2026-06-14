@@ -20,6 +20,10 @@
   let mounted = $state(false);
   let scrollActive = $state(false);
   let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+  let imageDims = $state<Record<string, { w: number; h: number }>>({});
+
+  const RIVER_ROW_HEIGHT = 140;
+  const RIVER_GAP = 6;
 
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
@@ -66,6 +70,13 @@
 
   function getExt(path: string): string {
     return getFileExt(path).toUpperCase();
+  }
+
+  function onImageLoad(path: string, e: Event) {
+    const img = e.target as HTMLImageElement;
+    if (img.naturalWidth && img.naturalHeight) {
+      imageDims[path] = { w: img.naturalWidth, h: img.naturalHeight };
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -286,6 +297,70 @@
           </div>
         {/each}
       </div>
+    {:else if library.viewMode === "river"}
+      <div class="library-river">
+        {#each sortedFiles as path (path)}
+          {@const active = activePaths.has(path)}
+          {@const badge = getMediaBadge(path)}
+          {@const dim = imageDims[path]}
+          {@const ratio = dim ? dim.w / dim.h : 4 / 3}
+          <div
+            class="river-cell"
+            class:active
+            data-path={path}
+            role="button"
+            tabindex="0"
+            style="height: {RIVER_ROW_HEIGHT}px; flex-grow: {ratio * RIVER_ROW_HEIGHT};"
+            onclick={() => onSelect(path)}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(path);
+              }
+            }}
+          >
+            {#if thumbFor(path)}
+              <img
+                class="river-thumb"
+                src={thumbFor(path)}
+                alt=""
+                draggable="false"
+                onload={(e) => onImageLoad(path, e)}
+              />
+            {:else}
+              <div class="river-placeholder"></div>
+            {/if}
+            {#if badge}
+              <div class="library-badge" class:library-badge-pdf={badge === "pdf"}>
+                {#if badge === "video"}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                {:else if badge === "gif"}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
+                {:else if badge === "audio"}
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
+                {:else if badge === "pdf"}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="9" y1="13" x2="15" y2="13" />
+                    <line x1="12" y1="13" x2="12" y2="18" />
+                  </svg>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
     {:else}
       <div class="library-list">
         <div class="list-header">
@@ -397,6 +472,48 @@
 
   .library-scroll.scroll-active::-webkit-scrollbar-thumb {
     background: var(--bg-shimmer, #333);
+  }
+
+  /* River view */
+  .library-river {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .river-cell {
+    position: relative;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    min-width: 60px;
+    border: 2px solid transparent;
+    transition:
+      border-color 0.1s,
+      transform 0.15s;
+    background: var(--bg-secondary, #111);
+  }
+
+  .river-cell:hover {
+    border-color: var(--border-hover, #555);
+    transform: scale(1.02);
+  }
+
+  .river-cell.active {
+    border-color: #fff;
+  }
+
+  .river-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .river-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-secondary, #111);
   }
 
   /* Grid view */

@@ -12,7 +12,7 @@ function createLibrary() {
   let inflight = 0;
 
   // View mode
-  let viewMode = $state<"grid" | "list">("grid");
+  let viewMode = $state<"grid" | "list" | "river">("grid");
 
   // Sort state (independent from main view)
   let sortMode = $state<SortMode>("name");
@@ -85,7 +85,7 @@ function createLibrary() {
     kick();
   }
 
-  function setViewMode(mode: "grid" | "list") {
+  function setViewMode(mode: "grid" | "list" | "river") {
     viewMode = mode;
   }
 
