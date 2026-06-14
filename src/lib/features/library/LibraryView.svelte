@@ -29,6 +29,7 @@
   let dragEnd: { x: number; y: number } | null = $state(null);
   let isDragging = $state(false);
   let dragSuppressedClick = $state(false);
+  let lastClickedIndex: number | null = null;
 
   const RIVER_GAP = 6;
 
@@ -87,6 +88,13 @@
     return files;
   });
 
+  const allFilesSelected = $derived(
+    sortedFiles.length > 0 && sortedFiles.every((p) => library.isSelected(p)),
+  );
+  const someFilesSelected = $derived(
+    !allFilesSelected && sortedFiles.some((p) => library.isSelected(p)),
+  );
+
   function thumbFor(path: string) {
     return library.cache[path] || "";
   }
@@ -104,6 +112,42 @@
     return getFileExt(path).toUpperCase();
   }
 
+  function formatFileSize(bytes: number): string {
+    if (bytes === 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const val = bytes / Math.pow(1024, i);
+    return `${val < 10 ? val.toFixed(1) : Math.round(val)} ${units[i]}`;
+  }
+
+  function formatDate(ms: number): string {
+    if (!ms) return "";
+    const d = new Date(ms);
+    const now = new Date();
+    const sameDay =
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate();
+    if (sameDay) {
+      return d.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    }
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const wasYesterday =
+      d.getFullYear() === yesterday.getFullYear() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getDate() === yesterday.getDate();
+    if (wasYesterday) return "Yesterday";
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  }
+
   function onImageLoad(path: string, e: Event) {
     const img = e.target as HTMLImageElement;
     if (img.naturalWidth && img.naturalHeight) {
@@ -117,7 +161,11 @@
       onClose();
       return;
     }
-    if (library.viewMode === "grid" || library.viewMode === "filmstrip") {
+    if (
+      library.viewMode === "grid" ||
+      library.viewMode === "filmstrip" ||
+      library.viewMode === "list"
+    ) {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
         const idx = Math.min(currentIndex + 1, fileList.length - 1);
@@ -829,26 +877,197 @@
         style="--list-thumb: {listThumbSize}px; --list-pad: {listRowPad}px; --list-font: {listFontSize}px; --list-type-font: {listTypeFontSize}px;"
       >
         <div class="list-header">
+          <span class="list-col list-col-check">
+            <span
+              class="list-checkbox list-checkbox-header"
+              class:checked={allFilesSelected}
+              class:indeterminate={someFilesSelected}
+              role="checkbox"
+              tabindex="0"
+              aria-checked={allFilesSelected}
+              aria-label="Select all files"
+              onclick={() => {
+                if (allFilesSelected) {
+                  library.clearSelection();
+                } else {
+                  library.selectRange(sortedFiles);
+                }
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (allFilesSelected) {
+                    library.clearSelection();
+                  } else {
+                    library.selectRange(sortedFiles);
+                  }
+                }
+              }}
+            >
+              {#if allFilesSelected}
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              {:else if someFilesSelected}
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              {/if}
+            </span>
+          </span>
           <span class="list-col list-col-thumb"></span>
-          <span class="list-col list-col-name">Name</span>
-          <span class="list-col list-col-type">Type</span>
+          <button
+            class="list-col list-col-name list-sort-btn"
+            onclick={() => {
+              const desc = library.sortMode === "name" && !library.sortDesc;
+              library.setSortMode("name", desc);
+            }}
+          >
+            Name
+            {#if library.sortMode === "name"}
+              <span class="list-sort-arrow">{library.sortDesc ? "▲" : "▼"}</span
+              >
+            {/if}
+          </button>
+          <button
+            class="list-col list-col-size list-sort-btn"
+            onclick={() => {
+              const desc = library.sortMode === "size" && !library.sortDesc;
+              library.setSortMode("size", desc);
+            }}
+          >
+            Size
+            {#if library.sortMode === "size"}
+              <span class="list-sort-arrow">{library.sortDesc ? "▲" : "▼"}</span
+              >
+            {/if}
+          </button>
+          <button
+            class="list-col list-col-date list-sort-btn"
+            onclick={() => {
+              const desc =
+                library.sortMode === "date-modified" && !library.sortDesc;
+              library.setSortMode("date-modified", desc);
+            }}
+          >
+            Date Modified
+            {#if library.sortMode === "date-modified"}
+              <span class="list-sort-arrow">{library.sortDesc ? "▲" : "▼"}</span
+              >
+            {/if}
+          </button>
+          <button
+            class="list-col list-col-type list-sort-btn"
+            onclick={() => {
+              const desc = library.sortMode === "type" && !library.sortDesc;
+              library.setSortMode("type", desc);
+            }}
+          >
+            Type
+            {#if library.sortMode === "type"}
+              <span class="list-sort-arrow">{library.sortDesc ? "▲" : "▼"}</span
+              >
+            {/if}
+          </button>
         </div>
-        {#each sortedFiles as path (path)}
+        {#each sortedFiles as path, idx (path)}
           {@const active = activePaths.has(path)}
+          {@const selected = library.isSelected(path)}
+          {@const stat = library.stats[path]}
           <div
             class="list-row"
             class:active
+            class:selected
+            class:even={idx % 2 === 0}
             data-path={path}
             role="button"
             tabindex="0"
-            onclick={() => onSelect(path)}
+            onclick={(e) => {
+              if (dragSuppressedClick) return;
+              if (e.shiftKey) {
+                if (lastClickedIndex !== null) {
+                  const start = Math.min(lastClickedIndex, idx);
+                  const end = Math.max(lastClickedIndex, idx);
+                  const range = sortedFiles.slice(start, end + 1);
+                  library.selectRange(range);
+                }
+                return;
+              }
+              if (selectMode || e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                library.toggleSelect(path);
+              } else {
+                onSelect(path);
+              }
+              lastClickedIndex = idx;
+            }}
             onkeydown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                onSelect(path);
+                if (selectMode || e.ctrlKey || e.metaKey) {
+                  library.toggleSelect(path);
+                } else {
+                  onSelect(path);
+                }
               }
             }}
           >
+            <span
+              class="list-col list-col-check"
+              onclick={(e) => {
+                e.stopPropagation();
+                library.toggleSelect(path);
+              }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  library.toggleSelect(path);
+                }
+              }}
+            >
+              <span
+                class="list-checkbox"
+                class:checked={selected}
+                role="checkbox"
+                tabindex="0"
+                aria-checked={selected}
+                aria-label="Select file"
+              >
+                {#if selected}
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="3"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                {/if}
+              </span>
+            </span>
             <span class="list-col list-col-thumb">
               {#if thumbFor(path)}
                 <img
@@ -863,6 +1082,12 @@
             </span>
             <span class="list-col list-col-name">
               {path.split(/[/\\]/).pop()}
+            </span>
+            <span class="list-col list-col-size">
+              {stat?.size != null ? formatFileSize(stat.size) : ""}
+            </span>
+            <span class="list-col list-col-date">
+              {stat?.mtime_ms ? formatDate(stat.mtime_ms) : ""}
             </span>
             <span class="list-col list-col-type">{getExt(path)}</span>
           </div>
@@ -1190,24 +1415,62 @@
 
   .list-header {
     display: flex;
-    padding: 6px 8px;
+    align-items: center;
+    padding: 0 8px;
+    height: 28px;
     font-size: 11px;
     font-weight: 600;
     color: var(--text-muted, #888);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--bg-elevated, #222);
+    border-bottom: 1px solid var(--bg-border, #2a2a2a);
     font-family: var(--font-family);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg-primary, #0a0a0a);
+    flex-shrink: 0;
+  }
+
+  .list-sort-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    border-radius: 3px;
+    transition: color 0.1s;
+  }
+
+  .list-sort-btn:hover {
+    color: var(--text-primary, #fff);
+  }
+
+  .list-sort-arrow {
+    font-size: 9px;
+    line-height: 1;
   }
 
   .list-row {
     display: flex;
-    padding: var(--list-pad) calc(var(--list-pad) * 2);
-    border-radius: 4px;
+    padding: 0 8px;
+    height: 32px;
     cursor: pointer;
-    transition: background 0.1s;
+    transition: background 0.08s;
     align-items: center;
     font-family: var(--font-family);
+    border-bottom: 1px solid var(--bg-border, #2a2a2a);
+  }
+
+  .list-row.even {
+    background: rgba(255, 255, 255, 0.015);
   }
 
   .list-row:hover {
@@ -1215,7 +1478,15 @@
   }
 
   .list-row.active {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .list-row.selected {
+    background: var(--yellow-bg-subtle, rgba(245, 197, 24, 0.08));
+  }
+
+  .list-row.selected:hover {
+    background: var(--yellow-bg-faint, rgba(245, 197, 24, 0.12));
   }
 
   .list-col {
@@ -1224,13 +1495,67 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    padding: 0 4px;
+  }
+
+  .list-col-check {
+    width: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .list-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1.5px solid var(--text-dim, #444);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition:
+      background 0.1s,
+      border-color 0.1s,
+      opacity 0.1s;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .list-checkbox:hover {
+    border-color: var(--text-muted, #888);
+  }
+
+  .list-checkbox.checked {
+    background: var(--yellow, #f5c518);
+    border-color: var(--yellow, #f5c518);
+  }
+
+  .list-checkbox.indeterminate {
+    background: var(--yellow, #f5c518);
+    border-color: var(--yellow, #f5c518);
+  }
+
+  .list-checkbox-header {
+    opacity: 1;
+  }
+
+  .select-mode .list-checkbox,
+  .list-checkbox.checked {
+    opacity: 1;
+  }
+
+  .list-row:hover .list-checkbox {
+    opacity: 1;
   }
 
   .list-col-thumb {
     width: var(--list-thumb);
     height: var(--list-thumb);
     flex-shrink: 0;
-    margin-right: 10px;
+    margin-right: 8px;
     border-radius: 3px;
     overflow: hidden;
     display: flex;
@@ -1242,6 +1567,23 @@
   .list-col-name {
     flex: 1;
     min-width: 0;
+  }
+
+  .list-col-size {
+    width: 90px;
+    flex-shrink: 0;
+    text-align: right;
+    color: var(--text-muted, #888);
+    font-size: var(--list-type-font);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .list-col-date {
+    width: 140px;
+    flex-shrink: 0;
+    text-align: right;
+    color: var(--text-muted, #888);
+    font-size: var(--list-type-font);
   }
 
   .list-col-type {
