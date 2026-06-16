@@ -191,8 +191,8 @@
     <button
       class="app-dropdown-toggle tooltip-below"
       class:active={dropdownVisible}
-      onclick={onToggleDropdown}
-      aria-label="Open app menu"
+      onclick={libraryOpen ? onCloseLibrary : onToggleDropdown}
+      aria-label={libraryOpen ? "Back to viewer" : "Open app menu"}
       data-tooltip="Vyu"
     >
       <img src="/app-icon.png" alt="vyu" class="app-icon" />
@@ -273,36 +273,7 @@
       /></button
     >
   {/if}
-  {#if libraryOpen}
-    <span class="divider">/</span>
-    <button
-      class="folder-btn close-file-btn tooltip-below library-mode"
-      data-tooltip="Close Library"
-      onclick={onCloseLibrary}
-      aria-label="close library"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <line
-          x1="6"
-          y1="6"
-          x2="18"
-          y2="18"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <line
-          x1="18"
-          y1="6"
-          x2="6"
-          y2="18"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
-    </button>
-  {:else if fileSrc}
+  {#if !libraryOpen && fileSrc}
     <span class="divider">/</span>
     <button
       class="folder-btn close-file-btn tooltip-below"
@@ -390,10 +361,5 @@
     padding: 2px 0 0 0;
   }
 
-  :global(.topbar) .close-file-btn.library-mode {
-    color: var(--text-primary, #fff);
-  }
-  :global(.topbar) .close-file-btn.library-mode:hover {
-    color: var(--text-primary, #fff);
-  }
+
 </style>

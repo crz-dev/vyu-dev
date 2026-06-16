@@ -196,19 +196,21 @@
   }
 </script>
 
-<CdVisual
-  {progress}
-  {audioEl}
-  duration={rawDurationSecs}
-  currentTime={rawCurrentSecs}
-  onScrubStart={startDiscScrubbing}
-  onScrubMove={discScrubHandlers.onScrubMove}
-  onScrubEnd={discScrubHandlers.onScrubEnd}
-  {isScrubbing}
-  {fileName}
-  color={cdColor}
-  {onCenterClick}
-/>
+<div class="cd-visual-wrapper">
+  <CdVisual
+    {progress}
+    {audioEl}
+    duration={rawDurationSecs}
+    currentTime={rawCurrentSecs}
+    onScrubStart={startDiscScrubbing}
+    onScrubMove={discScrubHandlers.onScrubMove}
+    onScrubEnd={discScrubHandlers.onScrubEnd}
+    {isScrubbing}
+    {fileName}
+    color={cdColor}
+    {onCenterClick}
+  />
+</div>
 <div class="audio-controls-card">
   <div class="audio-controls-new">
     <div class="audio-thumb-wrapper">

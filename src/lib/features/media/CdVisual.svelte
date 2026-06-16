@@ -380,10 +380,9 @@
 
 <style>
   .cd-visual {
-    width: min(460px, 100%);
-    height: auto;
+    width: 100%;
+    height: 100%;
     display: block;
-    flex-shrink: 0;
     cursor: grab;
     outline: none;
     transition: transform 0.05s linear;

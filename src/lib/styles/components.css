@@ -2975,12 +2975,19 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   justify-content: center;
   gap: 6px;
   width: min(540px, calc(100vw - 96px - 32px));
+  max-height: 100%;
   padding: 16px;
   border-radius: 9px;
   background: var(--bg-secondary);
   border: 0.5px solid var(--bg-border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   overflow: visible;
+}
+.cd-visual-wrapper {
+  width: min(460px, 100%);
+  aspect-ratio: 1;
+  max-height: min(460px, calc(100vh - 270px));
+  flex-shrink: 0;
 }
 .audio-controls-card {
   width: 100%;
