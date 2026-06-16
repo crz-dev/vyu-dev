@@ -34,7 +34,7 @@ class EffectsEngine {
    */
   setup(ctx: AudioContext, sourceNode: MediaElementAudioSourceNode): AudioNode {
     if (this.tearingDown) {
-      return this.tailNode ?? sourceNode;
+      this.teardown();
     }
     if (this.setupDone && this.tailNode && this.ctx === ctx) {
       return this.tailNode;
@@ -128,55 +128,40 @@ class EffectsEngine {
     if (!this.ctx || this.tearingDown) return;
     this.tearingDown = true;
 
-    const now = this.ctx.currentTime;
-
-    if (this.chorusLFOGain) {
-      this.chorusLFOGain.gain.cancelScheduledValues(now);
-      this.chorusLFOGain.gain.setValueAtTime(this.chorusLFOGain.gain.value, now);
-      this.chorusLFOGain.gain.setTargetAtTime(0, now, 0.015);
-    }
-    if (this.reverbWetGain) {
-      this.reverbWetGain.gain.cancelScheduledValues(now);
-      this.reverbWetGain.gain.setValueAtTime(this.reverbWetGain.gain.value, now);
-      this.reverbWetGain.gain.setTargetAtTime(0, now, 0.015);
-    }
-
-    setTimeout(() => {
-      if (this.chorusLFO) {
-        try {
-          this.chorusLFO.stop();
-        } catch {
-          /* already stopped */
-        }
+    if (this.chorusLFO) {
+      try {
+        this.chorusLFO.stop();
+      } catch {
+        /* already stopped */
       }
-      this.disconnectNode(this.chorusDelay);
-      this.disconnectNode(this.chorusLFOGain);
-      this.disconnectNode(this.chorusWetGain);
-      this.disconnectNode(this.chorusDryGain);
-      this.disconnectNode(this.chorusMerge);
-      this.disconnectNode(this.reverbConvolver);
-      this.disconnectNode(this.reverbWetGain);
-      this.disconnectNode(this.reverbDryGain);
-      this.disconnectNode(this.reverbMerge);
-      this.disconnectNode(this.distortionShaper);
+    }
+    this.disconnectNode(this.chorusDelay);
+    this.disconnectNode(this.chorusLFOGain);
+    this.disconnectNode(this.chorusWetGain);
+    this.disconnectNode(this.chorusDryGain);
+    this.disconnectNode(this.chorusMerge);
+    this.disconnectNode(this.reverbConvolver);
+    this.disconnectNode(this.reverbWetGain);
+    this.disconnectNode(this.reverbDryGain);
+    this.disconnectNode(this.reverbMerge);
+    this.disconnectNode(this.distortionShaper);
 
-      this.chorusLFO = null;
-      this.chorusDelay = null;
-      this.chorusLFOGain = null;
-      this.chorusWetGain = null;
-      this.chorusDryGain = null;
-      this.chorusMerge = null;
-      this.reverbConvolver = null;
-      this.reverbWetGain = null;
-      this.reverbDryGain = null;
-      this.reverbMerge = null;
-      this.distortionShaper = null;
-      this.setupDone = false;
-      this.tailNode = null;
-      this.ctx = null;
+    this.chorusLFO = null;
+    this.chorusDelay = null;
+    this.chorusLFOGain = null;
+    this.chorusWetGain = null;
+    this.chorusDryGain = null;
+    this.chorusMerge = null;
+    this.reverbConvolver = null;
+    this.reverbWetGain = null;
+    this.reverbDryGain = null;
+    this.reverbMerge = null;
+    this.distortionShaper = null;
+    this.setupDone = false;
+    this.tailNode = null;
+    this.ctx = null;
 
-      this.tearingDown = false;
-    }, 60);
+    this.tearingDown = false;
   }
 
   destroy(): void {
