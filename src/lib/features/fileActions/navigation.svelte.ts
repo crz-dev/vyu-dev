@@ -140,7 +140,11 @@ export function createNavigation(deps: NavigationDeps) {
     if (deps.getFileList().length === 0) return;
     slideshow.stop();
     editing.exitCropMode();
-    const next = await media.navigateToEdge(first, deps.getFileList(), setMediaState);
+    const next = await media.navigateToEdge(
+      first,
+      deps.getFileList(),
+      setMediaState,
+    );
     deps.setCurrentIndex(next);
     library.addRecent(deps.getFileList()[next]);
   }
@@ -246,6 +250,9 @@ export function createNavigation(deps: NavigationDeps) {
     audioEl.muted = deps.getMuted();
     audioEl.loop = deps.getLoopMode() === "loop";
     deps.getPlaybackUI().initSliderMode(true, true);
+    // Explicitly start playback so audio plays immediately after file switch
+    // regardless of browser autoplay policy or element reuse state.
+    audioEl.play().catch(() => {});
     setMediaState({
       fileDimensions: "",
       fileInfoLoading: false,
