@@ -1,6 +1,7 @@
 <script lang="ts">
   import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
+  import { fly } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
 
   let {
@@ -30,6 +31,16 @@
   let isDragging = $state(false);
   let dragSuppressedClick = $state(false);
   let lastClickedIndex: number | null = null;
+
+  const TAB_ORDER = ["library", "recents", "collections", "favorites"] as const;
+  type TabId = (typeof TAB_ORDER)[number];
+  let previousTab = $state<TabId>("library");
+  const slideDirection = $derived(
+    TAB_ORDER.indexOf(library.activeTab as TabId) >=
+      TAB_ORDER.indexOf(previousTab)
+      ? 1
+      : -1,
+  );
 
   const RIVER_GAP = 6;
 
@@ -299,6 +310,14 @@
     };
   });
 
+  // Track previous tab for directional slide animation
+  $effect(() => {
+    const current = library.activeTab;
+    return () => {
+      previousTab = current as TabId;
+    };
+  });
+
   // Observer lifecycle
   $effect(() => {
     observer = new IntersectionObserver(
@@ -434,6 +453,8 @@
     onwheel={onWheel}
     onmousedown={handleDragStart}
   >
+    {#key library.activeTab}
+      <div class="tab-content" transition:fly={{ x: slideDirection * 24, duration: 180 }}>
     {#if !isPlaceholderTab}
     {#if library.viewMode === "grid"}
       <div
@@ -1191,6 +1212,9 @@
       </div>
     {/if}
 
+      </div>
+    {/key}
+
     {#if isDragging && dragRect}
       <div
         class="select-rect"
@@ -1215,11 +1239,15 @@
     opacity: 1;
   }
 
+  .tab-content {
+    width: 100%;
+  }
+
   .library-tabs {
     display: flex;
     justify-content: center;
     gap: 2px;
-    padding: 12px 24px 0;
+    padding: 12px 24px 8px;
   }
 
   .library-tab {
