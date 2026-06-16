@@ -20,6 +20,10 @@ class EqualizerEngine {
   private stageNodes: AudioNode[] = [];
   private stageLfo: OscillatorNode | null = null;
 
+  private pendingCleanup: ReturnType<typeof setTimeout> | null = null;
+  private orphanedNodes: AudioNode[] = [];
+  private orphanedLfo: OscillatorNode | null = null;
+
   getAnalyser(): AnalyserNode | null {
     return this.analyser;
   }
@@ -44,7 +48,12 @@ class EqualizerEngine {
       return true;
     }
 
-    this.disconnect();
+    // If a previous disconnect() is still ramping down, let the old graph's
+    // deferred cleanup run — the old source is already disconnected so the
+    // old graph outputs silence.  We only null the stale references so the
+    // new graph can be built immediately on top.
+    this.source = null;
+    this.connectedElement = null;
 
     try {
       const ctx = this.ensureContext();
@@ -87,12 +96,16 @@ class EqualizerEngine {
   }
 
   disconnect(): void {
-    // Ramp output gain to zero before disconnecting to avoid DC pop/crackle
+    this.cancelPendingCleanup();
+
+    // Ramp output gain to zero before disconnecting to avoid DC pop/crackle.
+    // The ramp is scheduled on the audio thread; cleanup is deferred so the
+    // audio thread can process the ramp before nodes are torn down.
     if (this.outputGain && this.ctx) {
       const now = this.ctx.currentTime;
       this.outputGain.gain.cancelScheduledValues(now);
       this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
-      this.outputGain.gain.linearRampToValueAtTime(0, now + 0.01);
+      this.outputGain.gain.linearRampToValueAtTime(0, now + 0.03);
     }
     if (this.source) {
       try {
@@ -102,8 +115,69 @@ class EqualizerEngine {
       }
       this.source = null;
     }
-    this.cleanup();
     this.connectedElement = null;
+
+    // Snapshot the current graph nodes for deferred cleanup.  The instance
+    // fields are nulled so that a subsequent connectMediaElement() can build
+    // a new graph immediately while the old graph's gain ramp finishes.
+    this.orphanedNodes = [
+      ...this.filters,
+      ...(this.outputGain ? [this.outputGain] : []),
+      ...(this.analyser ? [this.analyser] : []),
+      ...this.stageNodes,
+    ];
+    this.orphanedLfo = this.stageLfo;
+    this.filters = [];
+    this.outputGain = null;
+    this.analyser = null;
+    this.stageNodes = [];
+    this.stageLfo = null;
+    this.stageMode = null;
+
+    // Disconnect the orphaned stage LFO immediately (it is an audio source
+    // that keeps producing output until stopped; stopping it does not produce
+    // an audible click when the outputGain ramp is still running).
+    if (this.orphanedLfo) {
+      try {
+        this.orphanedLfo.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
+
+    // Allow the 30ms gain ramp to complete before tearing down the graph.
+    this.pendingCleanup = setTimeout(() => {
+      this.pendingCleanup = null;
+      this.cleanupOrphaned();
+    }, 50);
+  }
+
+  private cancelPendingCleanup(): void {
+    if (this.pendingCleanup !== null) {
+      clearTimeout(this.pendingCleanup);
+      this.pendingCleanup = null;
+      // The ramp was interrupted — clean up orphaned nodes immediately.
+      this.cleanupOrphaned();
+    }
+  }
+
+  private cleanupOrphaned(): void {
+    for (const node of this.orphanedNodes) {
+      try {
+        node.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+    }
+    this.orphanedNodes = [];
+    if (this.orphanedLfo) {
+      try {
+        this.orphanedLfo.stop();
+      } catch {
+        /* already stopped */
+      }
+      this.orphanedLfo = null;
+    }
   }
 
   private cleanup(): void {
@@ -334,12 +408,59 @@ class EqualizerEngine {
   }
 
   destroy(): void {
+    this.cancelPendingCleanup();
     effectsEngine.destroy();
-    this.disconnect();
-    if (this.ctx) {
-      this.ctx.close();
-      this.ctx = null;
+
+    // Ramp output gain to zero before tearing down to avoid pop/crackle
+    if (this.outputGain && this.ctx) {
+      const now = this.ctx.currentTime;
+      this.outputGain.gain.cancelScheduledValues(now);
+      this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
+      this.outputGain.gain.linearRampToValueAtTime(0, now + 0.03);
     }
+    if (this.source) {
+      try {
+        this.source.disconnect();
+      } catch {
+        // already disconnected
+      }
+      this.source = null;
+    }
+    this.connectedElement = null;
+
+    // Snapshot nodes for deferred cleanup (same pattern as disconnect)
+    this.orphanedNodes = [
+      ...this.filters,
+      ...(this.outputGain ? [this.outputGain] : []),
+      ...(this.analyser ? [this.analyser] : []),
+      ...this.stageNodes,
+    ];
+    this.orphanedLfo = this.stageLfo;
+    this.filters = [];
+    this.outputGain = null;
+    this.analyser = null;
+    this.stageNodes = [];
+    this.stageLfo = null;
+    this.stageMode = null;
+
+    if (this.orphanedLfo) {
+      try {
+        this.orphanedLfo.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
+
+    // Defer cleanup and context close so the audio thread can process the ramp
+    const ctx = this.ctx;
+    this.pendingCleanup = setTimeout(() => {
+      this.pendingCleanup = null;
+      this.cleanupOrphaned();
+      if (ctx) {
+        ctx.close();
+      }
+    }, 50);
+    this.ctx = null;
   }
 
   private dbToLinear(db: number): number {

@@ -88,16 +88,20 @@ export function createMedia(
   }
 
   function releaseMediaResources() {
-    eqEngine.disconnect();
     const videoEl = videoElRef();
     if (videoEl) {
       videoEl.pause();
-      videoEl.removeAttribute("src");
-      videoEl.load();
     }
     const audioEl = audioElRef();
     if (audioEl) {
       audioEl.pause();
+    }
+    eqEngine.disconnect();
+    if (videoEl) {
+      videoEl.removeAttribute("src");
+      videoEl.load();
+    }
+    if (audioEl) {
       audioEl.removeAttribute("src");
       audioEl.load();
     }
