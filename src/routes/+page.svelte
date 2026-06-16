@@ -955,6 +955,7 @@
     await loadFile(newFilePath);
   }}
   onSelect={navigateToIndex}
+  {loadFile}
   onCloseClipDeleteConfirm={() => {
     clips.clipDeleteConfirm.visible = false;
     clips.clipDeleteConfirm.mode = null;

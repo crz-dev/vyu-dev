@@ -1,6 +1,7 @@
 import { createMedia } from "$lib/features/media/media.svelte";
 import { createFolderWatcher } from "$lib/features/navigation/folderWatcher.svelte";
 import { editing } from "$lib/features/editing/editing.svelte";
+import { library } from "$lib/features/library/library.svelte";
 import { markup } from "$lib/features/markup/markup.svelte";
 import { markerStore } from "$lib/features/markers/markers.svelte";
 import { viewer } from "$lib/features/viewer/viewer.svelte";
@@ -115,14 +116,14 @@ export function createNavigation(deps: NavigationDeps) {
     if (deps.getFileList().length === 0) return;
     slideshow.stop();
     editing.exitCropMode();
-    deps.setCurrentIndex(
-      await media.navigate(
-        direction,
-        deps.getFileList(),
-        deps.getCurrentIndex(),
-        setMediaState,
-      ),
+    const next = await media.navigate(
+      direction,
+      deps.getFileList(),
+      deps.getCurrentIndex(),
+      setMediaState,
     );
+    deps.setCurrentIndex(next);
+    library.addRecent(deps.getFileList()[next]);
   }
 
   async function navigateToIndex(index: number) {
@@ -132,15 +133,16 @@ export function createNavigation(deps: NavigationDeps) {
     editing.exitCropMode();
     deps.setCurrentIndex(index);
     await media.displayFile(fileList[index], setMediaState);
+    library.addRecent(fileList[index]);
   }
 
   async function navigateToEdge(first: boolean) {
     if (deps.getFileList().length === 0) return;
     slideshow.stop();
     editing.exitCropMode();
-    deps.setCurrentIndex(
-      await media.navigateToEdge(first, deps.getFileList(), setMediaState),
-    );
+    const next = await media.navigateToEdge(first, deps.getFileList(), setMediaState);
+    deps.setCurrentIndex(next);
+    library.addRecent(deps.getFileList()[next]);
   }
 
   function navigateToAudioFile(direction: number) {

@@ -132,6 +132,7 @@
     openConvertedFile,
     showInExplorer,
     onSelect,
+    loadFile,
     onCloseClipDeleteConfirm,
     onCloseDeleteConfirm,
     onCloseProperties,
@@ -316,6 +317,7 @@
     openConvertedFile: (path: string) => Promise<void>;
     showInExplorer: (path: string) => Promise<void>;
     onSelect: (index: number) => void;
+    loadFile: (path: string) => Promise<void>;
     onCloseClipDeleteConfirm: () => void;
     onCloseDeleteConfirm: () => void;
     onCloseProperties: () => void;
@@ -667,9 +669,13 @@
       {fileList}
       {currentIndex}
       selectMode={library.selectedCount > 0}
-      onSelect={(path) => {
-        const idx = fileList.indexOf(path);
-        if (idx !== -1) onSelect(idx);
+      onSelect={async (path) => {
+        if (library.activeTab === "recents") {
+          await loadFile(path);
+        } else {
+          const idx = fileList.indexOf(path);
+          if (idx !== -1) onSelect(idx);
+        }
         closeLibrary();
       }}
       onClose={closeLibrary}
