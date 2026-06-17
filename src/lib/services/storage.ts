@@ -451,3 +451,32 @@ export function loadShowThumbnails(): boolean {
 export function saveShowThumbnails(enabled: boolean): void {
   localStorage.setItem("vyu-show-thumbnails", String(enabled));
 }
+
+// Collections
+
+export interface CollectionItem {
+  name: string;
+  path: string;
+}
+
+export function loadCollections(): CollectionItem[] {
+  const raw = localStorage.getItem("vyu-collections");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (c: unknown): c is CollectionItem =>
+        typeof c === "object" &&
+        c !== null &&
+        typeof (c as Record<string, unknown>).name === "string" &&
+        typeof (c as Record<string, unknown>).path === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function saveCollections(items: CollectionItem[]): void {
+  localStorage.setItem("vyu-collections", JSON.stringify(items));
+}

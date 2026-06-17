@@ -32,8 +32,8 @@ Before creating code, find the existing owner.
 | Theme                                    | `features/theme/theme.svelte.ts`                     |
 | Typography                               | `features/font/font.svelte.ts`                       |
 | Filesystem scans / folder cache          | `services/files.ts`                                  |
-| Storage                                  | `services/storage.ts`                              |
-| Shared thumbnail cache                   | `services/thumbnailCache.ts`                       |
+| Storage                                  | `services/storage.ts`                                |
+| Shared thumbnail cache                   | `services/thumbnailCache.ts`                         |
 | Clipboard                                | `services/clipboard.ts`                              |
 | Session state                            | `services/session.ts`                                |
 | Tauri wrappers / FFmpeg orchestration    | `features/media/tools.ts`, `ffmpeg.ts`, `sources.ts` |
@@ -97,15 +97,15 @@ On change:
 
 These decisions are intentional and should not be changed without discussion.
 
-| Constraint                                             | Reason                                            |
-| ------------------------------------------------------ | ------------------------------------------------- |
-| Thumbnail cache uses `$state<Record>` instead of `Map` | Svelte proxy tracking depends on property access. |
-| `pdfjs-dist` remains dynamic                           | Keeps startup bundle smaller.                     |
-| Sort-related stat uses batch IPC call                  | Eliminates per-call IPC overhead for stat.        |
-| Thumbnail cache evicted at 500MB soft limit            | Prevents unbounded disk usage.                    |
-| Temp dirs use hash-based subdirectories                | Prevents concurrent-operation conflicts.          |
-| Cross-volume rename uses copy+delete fallback          | Required for `ERROR_NOT_SAME_DEVICE`.             |
-| JPEG scale-down via `jpeg-decoder` (not `image`)       | `image` uses `zune-jpeg` which lacks IDCT scaling  |
+| Constraint                                             | Reason                                               |
+| ------------------------------------------------------ | ---------------------------------------------------- |
+| Thumbnail cache uses `$state<Record>` instead of `Map` | Svelte proxy tracking depends on property access.    |
+| `pdfjs-dist` remains dynamic                           | Keeps startup bundle smaller.                        |
+| Sort-related stat uses batch IPC call                  | Eliminates per-call IPC overhead for stat.           |
+| Thumbnail cache evicted at 500MB soft limit            | Prevents unbounded disk usage.                       |
+| Temp dirs use hash-based subdirectories                | Prevents concurrent-operation conflicts.             |
+| Cross-volume rename uses copy+delete fallback          | Required for `ERROR_NOT_SAME_DEVICE`.                |
+| JPEG scale-down via `jpeg-decoder` (not `image`)       | `image` uses `zune-jpeg` which lacks IDCT scaling    |
 | Dedicated semaphore pools: 4 image, 2 video, 2 audio   | Prevents fast image work from blocking behind FFmpeg |
-| Atomic eviction counter (best-effort, synced on query)  | Eliminates full directory scans from hot path      |
-| Inflight dedup keyed by `{hash}_{size}` (no mtime)      | Allows metadata stat inside `spawn_blocking`        |
+| Atomic eviction counter (best-effort, synced on query) | Eliminates full directory scans from hot path        |
+| Inflight dedup keyed by `{hash}_{size}` (no mtime)     | Allows metadata stat inside `spawn_blocking`         |

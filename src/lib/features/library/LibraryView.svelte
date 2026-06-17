@@ -1,8 +1,15 @@
 <script lang="ts">
-  import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
-  import { getFileExt } from "$lib/services/files";
+  import {
+    VIDEO_EXTS,
+    AUDIO_EXTS,
+    DOCUMENT_EXTS,
+    ALL_EXTS,
+  } from "$lib/shared/constants";
+  import { getFileExt, getFileName } from "$lib/services/files";
   import { fly } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
+  import { open } from "@tauri-apps/plugin-dialog";
+  import { readDir } from "@tauri-apps/plugin-fs";
 
   let {
     fileList,
@@ -31,6 +38,12 @@
   let isDragging = $state(false);
   let dragSuppressedClick = $state(false);
   let lastClickedIndex: number | null = null;
+
+  // Collection state
+  let collectionFiles = $state<string[]>([]);
+  let collectionFirstFiles = $state<Record<string, string>>({});
+  let renamingPath = $state<string | null>(null);
+  let renameValue = $state("");
 
   const TAB_ORDER = ["library", "recents", "collections", "favorites"] as const;
   type TabId = (typeof TAB_ORDER)[number];
@@ -72,12 +85,21 @@
       : new Set<string>(),
   );
 
-  const isPlaceholderTab = $derived(
-    library.activeTab === "collections" || library.activeTab === "favorites",
+  const isPlaceholderTab = $derived(library.activeTab === "favorites");
+
+  const isViewingCollection = $derived(
+    library.activeTab === "collections" &&
+      library.activeCollectionPath !== null,
+  );
+
+  const showFileGrid = $derived(
+    library.activeTab !== "favorites" &&
+      (library.activeTab !== "collections" || isViewingCollection),
   );
 
   const displayFiles = $derived.by(() => {
     if (library.activeTab === "recents") return library.recentFiles;
+    if (isViewingCollection) return collectionFiles;
     return fileList;
   });
 
@@ -168,6 +190,29 @@
     });
   }
 
+  async function addCollection() {
+    const dir = await open({ directory: true });
+    if (dir) {
+      library.addCollection(dir as string);
+    }
+  }
+
+  function startRename(path: string, currentName: string) {
+    renamingPath = path;
+    renameValue = currentName;
+  }
+
+  function confirmRename() {
+    if (renamingPath) {
+      library.renameCollection(renamingPath, renameValue);
+      renamingPath = null;
+    }
+  }
+
+  function cancelRename() {
+    renamingPath = null;
+  }
+
   function onImageLoad(path: string, e: Event) {
     const img = e.target as HTMLImageElement;
     if (img.naturalWidth && img.naturalHeight) {
@@ -178,7 +223,11 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
-      onClose();
+      if (isViewingCollection) {
+        library.closeCollection();
+      } else {
+        onClose();
+      }
       return;
     }
     if (
@@ -367,6 +416,68 @@
     }
   });
 
+  // Load collection files when active collection changes
+  $effect(() => {
+    const path = library.activeCollectionPath;
+    if (!path) {
+      collectionFiles = [];
+      return;
+    }
+    (async () => {
+      try {
+        const sep = path.includes("\\") ? "\\" : "/";
+        const entries = await readDir(path);
+        const files = entries
+          .filter((e) => ALL_EXTS.includes(getFileExt(e.name ?? "")))
+          .map((e) => `${path}${sep}${e.name}`);
+        files.sort((a, b) =>
+          getFileName(a).localeCompare(getFileName(b), undefined, {
+            sensitivity: "base",
+          }),
+        );
+        collectionFiles = files;
+      } catch {
+        collectionFiles = [];
+      }
+    })();
+  });
+
+  // Load stats and size for collection files
+  $effect(() => {
+    if (isViewingCollection && collectionFiles.length > 0) {
+      library.computeTotalSize(collectionFiles);
+      library.loadStats(collectionFiles);
+    }
+  });
+
+  // Load first file for each collection card thumbnail
+  $effect(() => {
+    if (library.activeTab !== "collections") return;
+    const cols = library.collections;
+    for (const col of cols) {
+      if (collectionFirstFiles[col.path]) continue;
+      (async () => {
+        try {
+          const sep = col.path.includes("\\") ? "\\" : "/";
+          const entries = await readDir(col.path);
+          const first = entries.find((e) =>
+            ALL_EXTS.includes(getFileExt(e.name ?? "")),
+          );
+          if (first) {
+            const filePath = `${col.path}${sep}${first.name}`;
+            collectionFirstFiles = {
+              ...collectionFirstFiles,
+              [col.path]: filePath,
+            };
+            library.requestThumbnail(filePath);
+          }
+        } catch {
+          // folder may not exist — handled by validateCollections
+        }
+      })();
+    }
+  });
+
   // Scroll to current file on open or density change
   $effect(() => {
     if (!mounted || !scrollEl) return;
@@ -433,7 +544,28 @@
     <button
       class="library-tab"
       class:active={library.activeTab === "collections"}
-      onclick={() => library.setActiveTab("collections")}>Collections</button
+      onclick={() => {
+        if (isViewingCollection) {
+          library.closeCollection();
+        } else {
+          library.setActiveTab("collections");
+        }
+      }}
+      >Collections{#if isViewingCollection}
+        <span class="library-tab-close" aria-label="Back to collections">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </span>
+      {/if}</button
     >
     <button
       class="library-tab"
@@ -458,7 +590,7 @@
         class="tab-content"
         transition:fly={{ x: slideDirection * 24, duration: 180 }}
       >
-        {#if !isPlaceholderTab}
+        {#if showFileGrid}
           {#if library.viewMode === "grid"}
             <div
               class="library-grid"
@@ -1185,12 +1317,24 @@
           </div>
         {/if}
 
-        {#if library.activeTab === "collections"}
+        {#if library.activeTab === "collections" && !library.activeCollectionPath}
           <div
             class="library-placeholder-grid"
             style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
           >
-            <div class="library-placeholder-card">
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="library-placeholder-card"
+              role="button"
+              tabindex="0"
+              onclick={addCollection}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  addCollection();
+                }
+              }}
+            >
               <svg
                 width="32"
                 height="32"
@@ -1206,7 +1350,112 @@
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </div>
+            {#each library.collections as col (col.path)}
+              {@const firstFilePath = collectionFirstFiles[col.path]}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="library-collection-card"
+                role="button"
+                tabindex="0"
+                onclick={() => library.openCollection(col.path)}
+                ondblclick={() => startRename(col.path, col.name)}
+                oncontextmenu={(e) => {
+                  e.preventDefault();
+                  startRename(col.path, col.name);
+                }}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    library.openCollection(col.path);
+                  }
+                }}
+              >
+                {#if library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
+                  <img
+                    class="library-collection-thumb"
+                    src={library.cache[firstFilePath]}
+                    alt=""
+                    draggable="false"
+                  />
+                {:else}
+                  <div class="library-collection-placeholder">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      opacity="0.3"
+                    >
+                      <path
+                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                      />
+                    </svg>
+                  </div>
+                {/if}
+                <div class="library-collection-name">
+                  {#if renamingPath === col.path}
+                    <input
+                      class="library-rename-input"
+                      type="text"
+                      bind:value={renameValue}
+                      onblur={confirmRename}
+                      onkeydown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          confirmRename();
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          cancelRename();
+                        }
+                      }}
+                      onclick={(e) => e.stopPropagation()}
+                      ondblclick={(e) => e.stopPropagation()}
+                    />
+                  {:else}
+                    <span>{col.name}</span>
+                  {/if}
+                </div>
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="library-collection-remove"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Remove collection"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    library.removeCollection(col.path);
+                  }}
+                  onkeydown={(e: KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      library.removeCollection(col.path);
+                    }
+                  }}
+                >
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </div>
+              </div>
+            {/each}
           </div>
+          {#if library.collections.length === 0}
+            <div class="library-empty-hint">
+              <span>Add folders to your collection</span>
+            </div>
+          {/if}
         {/if}
 
         {#if library.activeTab === "favorites"}
@@ -1295,6 +1544,27 @@
     color: var(--text-primary, #fff);
   }
 
+  .library-tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted, #888);
+    vertical-align: middle;
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+
+  .library-tab:hover .library-tab-close {
+    color: var(--text-secondary, #ccc);
+    background: rgba(255, 255, 255, 0.15);
+  }
+
   .library-placeholder-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1310,6 +1580,117 @@
     border: 2px dashed var(--bg-border, #2a2a2a);
     background: var(--bg-secondary, #111);
     color: var(--text-muted, #888);
+    cursor: pointer;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+  }
+
+  .library-placeholder-card:hover {
+    border-color: var(--text-muted, #888);
+    background: var(--bg-elevated, #1a1a1a);
+  }
+
+  .library-collection-card {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bg-border, #2a2a2a);
+    background: var(--bg-secondary, #111);
+    color: var(--text-primary, #fff);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+  }
+
+  .library-collection-card:hover {
+    border-color: var(--text-muted, #888);
+    background: var(--bg-elevated, #1a1a1a);
+  }
+
+  .library-collection-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    border-radius: 3px;
+  }
+
+  .library-collection-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted, #888);
+    padding-bottom: 28px;
+  }
+
+  .library-collection-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 6px 8px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 1;
+  }
+
+  .library-rename-input {
+    width: 100%;
+    background: var(--bg-primary, #000);
+    border: 1px solid var(--text-muted, #888);
+    border-radius: 2px;
+    color: var(--text-primary, #fff);
+    font-size: 12px;
+    font-family: var(--font-family);
+    text-align: center;
+    padding: 1px 4px;
+    outline: none;
+  }
+
+  .library-collection-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted, #888);
+    opacity: 0;
+    transition:
+      opacity 0.15s,
+      color 0.15s;
+    z-index: 2;
+  }
+
+  .library-collection-card:hover .library-collection-remove {
+    opacity: 1;
+  }
+
+  .library-collection-remove:hover {
+    color: var(--text-primary, #fff);
+  }
+
+  .library-empty-hint {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted, #888);
+    font-size: 13px;
   }
 
   .library-scroll {

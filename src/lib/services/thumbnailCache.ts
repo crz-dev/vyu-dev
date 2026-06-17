@@ -45,7 +45,10 @@ export function setCached(path: string, size: number, dataUrl: string): void {
   cache.set(cacheKey(path, size), dataUrl);
 }
 
-export function getCached(path: string, size: number = 120): string | undefined {
+export function getCached(
+  path: string,
+  size: number = 120,
+): string | undefined {
   return cache.get(cacheKey(path, size));
 }
 

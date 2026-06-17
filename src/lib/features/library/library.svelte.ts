@@ -16,8 +16,15 @@ import {
   saveAutoScanFolders,
   loadShowThumbnails,
   saveShowThumbnails,
+  loadCollections,
+  saveCollections,
 } from "$lib/services/storage";
-import { getCached as sharedGetCached, setCached } from "$lib/services/thumbnailCache";
+import type { CollectionItem } from "$lib/services/storage";
+import { exists } from "@tauri-apps/plugin-fs";
+import {
+  getCached as sharedGetCached,
+  setCached,
+} from "$lib/services/thumbnailCache";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -62,6 +69,10 @@ function createLibrary() {
 
   // Multi-select state
   let selectedPaths = $state<Record<string, boolean>>({});
+
+  // Collections state
+  let collections = $state<CollectionItem[]>(loadCollections());
+  let activeCollectionPath = $state<string | null>(null);
 
   async function loadOne(path: string) {
     inflight++;
@@ -251,6 +262,52 @@ function createLibrary() {
     return Object.keys(selectedPaths).length;
   }
 
+  function addCollection(path: string) {
+    if (collections.some((c) => c.path === path)) return;
+    const parts = path.replace(/\\/g, "/").split("/");
+    const name = parts[parts.length - 1] || path;
+    collections = [...collections, { name, path }];
+    saveCollections(collections);
+  }
+
+  function removeCollection(path: string) {
+    collections = collections.filter((c) => c.path !== path);
+    saveCollections(collections);
+    if (activeCollectionPath === path) activeCollectionPath = null;
+  }
+
+  function renameCollection(path: string, newName: string) {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    collections = collections.map((c) =>
+      c.path === path ? { ...c, name: trimmed } : c,
+    );
+    saveCollections(collections);
+  }
+
+  function openCollection(path: string) {
+    activeCollectionPath = path;
+  }
+
+  function closeCollection() {
+    activeCollectionPath = null;
+  }
+
+  async function validateCollections() {
+    const valid: CollectionItem[] = [];
+    for (const c of collections) {
+      try {
+        if (await exists(c.path)) valid.push(c);
+      } catch {
+        // treat as missing
+      }
+    }
+    if (valid.length !== collections.length) {
+      collections = valid;
+      saveCollections(collections);
+    }
+  }
+
   return {
     get cache() {
       return cache;
@@ -320,6 +377,18 @@ function createLibrary() {
     get selectedCount() {
       return getSelectedCount();
     },
+    get collections() {
+      return collections;
+    },
+    addCollection,
+    removeCollection,
+    renameCollection,
+    get activeCollectionPath() {
+      return activeCollectionPath;
+    },
+    openCollection,
+    closeCollection,
+    validateCollections,
   };
 }
 
