@@ -2,6 +2,7 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 use image::GenericImageView;
 use tauri::Manager;
@@ -21,14 +22,19 @@ const EVICTION_MARGIN: u64 = 10 * 1024 * 1024;
 /// the directory when eviction is actually needed.
 static CACHE_USED: AtomicU64 = AtomicU64::new(u64::MAX);
 
-pub fn thumb_cache_dir(app: &tauri::AppHandle) -> PathBuf {
-    let dir = app
-        .path()
-        .app_cache_dir()
-        .unwrap_or_else(|_| std::env::temp_dir())
-        .join("thumbnails");
-    let _ = fs::create_dir_all(&dir);
-    dir
+/// Resolved once on first access, then reused for every request.
+static CACHED_THUMB_DIR: OnceLock<PathBuf> = OnceLock::new();
+
+pub fn thumb_cache_dir(app: &tauri::AppHandle) -> &Path {
+    CACHED_THUMB_DIR.get_or_init(|| {
+        let dir = app
+            .path()
+            .app_cache_dir()
+            .unwrap_or_else(|_| std::env::temp_dir())
+            .join("thumbnails");
+        let _ = fs::create_dir_all(&dir);
+        dir
+    })
 }
 
 /// Opens a JPEG using decoder-scale-down to avoid full-resolution decode.
@@ -253,41 +259,19 @@ pub async fn get_thumbnail(
         return Ok(String::new());
     }
 
-    let src_meta = fs::metadata(&path).map_err(|e| format!("Cannot access file: {e}"))?;
-    let mtime = src_meta
-        .modified()
-        .map_err(|e| format!("Cannot read mtime: {e}"))?
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or(0);
+    let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
 
-    let cache_dir = thumb_cache_dir(&app);
+    // ── In-flight dedup (keyed by hash + size — mtime known later) ──
     let hash = hash_path_xxh3(&path);
-    let cache_key = format!("{hash}_{mtime}_{thumb_size}");
-    let thumb_name = format!("{cache_key}.jpg");
-    let thumb_path = cache_dir.join(&thumb_name);
-    let src_name = format!("{cache_key}.src");
-    let src_path = cache_dir.join(&src_name);
-
-    // ── Disk cache check ──
-    if thumb_path.exists() {
-        if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
-            return Ok(format_data_url(&jpeg_bytes));
-        }
-    }
-
-    // ── In-flight dedup: if another task is already generating this
-    //    exact thumbnail, await its result instead of duplicating work.
-    if let Some(rx) = state.inflight.register(&cache_key).await {
+    let inflight_key = format!("{hash}_{thumb_size}");
+    if let Some(rx) = state.inflight.register(&inflight_key).await {
         return rx
             .await
             .unwrap_or(Ok(vec![]))
             .map(|bytes| format_data_url(&bytes));
     }
 
-    // ── Select pool: fast image work has dedicated slots so it
-    //    is never blocked by slow FFmpeg subprocesses.
-    let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
+    let cache_dir = thumb_cache_dir(&app).to_path_buf();
     let sem = state.sem_for_kind(&kind);
     let _permit = sem
         .acquire()
@@ -295,36 +279,58 @@ pub async fn get_thumbnail(
         .map_err(|e| format!("Semaphore error: {e}"))?;
 
     let path_c = path.clone();
-    let thumb_path_c = thumb_path.clone();
-    let src_path_c = src_path.clone();
+    let cache_dir_c = cache_dir.clone();
 
-    let jpeg_result = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
-        if use_image_crate {
+    // ── All blocking work (metadata, cache ops, generation) ──
+    let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<(Vec<u8>, String), String> {
+        let src_meta = fs::metadata(&path_c).map_err(|e| format!("Cannot access file: {e}"))?;
+        let mtime = src_meta
+            .modified()
+            .map_err(|e| format!("Cannot read mtime: {e}"))?
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+
+        let cache_key = format!("{hash}_{mtime}_{thumb_size}");
+        let thumb_path = cache_dir_c.join(format!("{cache_key}.jpg"));
+        let src_path = cache_dir_c.join(format!("{cache_key}.src"));
+
+        // ── Disk cache check ──
+        if thumb_path.exists() {
+            if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
+                return Ok((jpeg_bytes, cache_key));
+            }
+        }
+
+        // ── Generate ──
+        let jpeg_bytes = if use_image_crate {
             thumbnail_via_image_crate(
                 Path::new(&path_c),
-                &thumb_path_c,
-                &src_path_c,
+                &thumb_path,
+                &src_path,
                 thumb_size,
             )
         } else {
-            thumbnail_via_ffmpeg(&path_c, &thumb_path_c, &src_path_c, &kind, thumb_size)
+            thumbnail_via_ffmpeg(&path_c, &thumb_path, &src_path, &kind, thumb_size)
+        }?;
+
+        // ── Track cache size and evict only when near the limit ──
+        if let Ok(meta) = fs::metadata(&thumb_path) {
+            record_cache_write(meta.len(), &cache_dir_c);
         }
+
+        Ok((jpeg_bytes, cache_key))
     })
     .await
-    .map_err(|e| format!("Thread join error: {e}"))?;
+    .map_err(|e| format!("Thread join error: {e}"))?
+    .map_err(|e| e)?;
 
-    // Notify any concurrent waiters (they get the same result).
+    let (jpeg_bytes, _cache_key) = spawn_result;
+
     state
         .inflight
-        .complete(&cache_key, jpeg_result.clone())
+        .complete(&inflight_key, Ok(jpeg_bytes.clone()))
         .await;
-
-    let jpeg_bytes = jpeg_result?;
-
-    // ── Track cache size and evict only when near the limit ──
-    if let Ok(meta) = fs::metadata(&thumb_path) {
-        record_cache_write(meta.len(), &cache_dir);
-    }
 
     Ok(format_data_url(&jpeg_bytes))
 }
@@ -422,7 +428,7 @@ fn try_evict_cache(cache_dir: &Path) {
 #[tauri::command]
 pub async fn get_thumbnail_cache_size(app: tauri::AppHandle) -> Result<u64, String> {
     let cache_dir = thumb_cache_dir(&app);
-    let size = compute_cache_size(&cache_dir);
+    let size = compute_cache_size(cache_dir);
     // Re-sync the shared counter with ground truth.
     CACHE_USED.store(size, Ordering::Relaxed);
     Ok(size)
@@ -436,7 +442,7 @@ pub async fn clear_thumbnail_cache(app: tauri::AppHandle) -> Result<u64, String>
         return Ok(0);
     }
     let mut freed: u64 = 0;
-    let entries = fs::read_dir(&cache_dir).map_err(|e| e.to_string())?;
+    let entries = fs::read_dir(cache_dir).map_err(|e| e.to_string())?;
     for entry in entries.flatten() {
         let p = entry.path();
         let ext = p.extension().map(|e| e.to_os_string()).unwrap_or_default();

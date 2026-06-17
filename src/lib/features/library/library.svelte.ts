@@ -17,6 +17,7 @@ import {
   loadShowThumbnails,
   saveShowThumbnails,
 } from "$lib/services/storage";
+import { getCached as sharedGetCached, setCached } from "$lib/services/thumbnailCache";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -68,6 +69,7 @@ function createLibrary() {
       const dataUrl = await invokeGetThumbnail(path, 256);
       if (dataUrl) {
         cache[path] = dataUrl;
+        setCached(path, 256, dataUrl);
       }
     } catch {
       // generation failed — skip silently
@@ -85,6 +87,12 @@ function createLibrary() {
 
   function requestThumbnail(path: string) {
     if (path in cache) return cache[path];
+    // Check the shared cache before hitting the backend.
+    const shared = sharedGetCached(path, 256);
+    if (shared) {
+      cache[path] = shared;
+      return shared;
+    }
     if (inflight >= MAX_CONCURRENT) {
       if (!pending.includes(path)) pending.push(path);
     } else {

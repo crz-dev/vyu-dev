@@ -1,16 +1,23 @@
 use std::time::Duration;
 
+// Kept as canonical source of truth even though types.rs
+// now uses a match — referenced conceptually by frontend
+// shared/constants.ts for cross-referencing.
+#[allow(dead_code)]
 pub const IMAGE_EXTS_RUST: &[&str] = &[
     "jpg", "jpeg", "png", "gif", "webp", "bmp", "avif", "tiff", "tif", "psd", "jxl", "heic",
     "heif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "srf", "sr2", "raf", "rw2", "orf", "pef",
     "3fr", "fff", "iiq", "kdc", "mef", "mos", "x3f", "gpr", // NOTE: "svg" is intentionally absent — browser-native, never needs server-side processing
 ];
+#[allow(dead_code)]
 pub const VIDEO_EXTS_RUST: &[&str] = &[
     "mp4", "webm", "mkv", "avi", "mov", "wmv", "mpeg", "mpg", "ts", "m2ts", "m4v",
 ];
+#[allow(dead_code)]
 pub const AUDIO_EXTS_RUST: &[&str] = &[
     "mp3", "wav", "flac", "ogg", "aac", "wma", "m4a", "opus", "aiff", "alac",
 ];
+#[allow(dead_code)]
 pub const DOCUMENT_EXTS_RUST: &[&str] = &["pdf"];
 
 /// Image formats that need ffmpeg for decoding/thumbnail generation.

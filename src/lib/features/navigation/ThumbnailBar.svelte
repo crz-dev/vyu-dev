@@ -2,6 +2,7 @@
   import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
   import { invokeGetThumbnail } from "$lib/features/media/tools";
+  import { getCached, setCached } from "$lib/services/thumbnailCache";
 
   let {
     fileList,
@@ -153,6 +154,12 @@
     if (fetching.size >= MAX_CONCURRENT) return;
     for (const path of loadQueue) {
       if (loaded.has(path) || fetching.has(path)) continue;
+      // Check the shared cache before hitting the backend.
+      const cached = getCached(path);
+      if (cached) {
+        loaded = new Map(loaded).set(path, cached);
+        continue;
+      }
       fetchOne(path);
       return; // one per effect run — re-triggers when a slot opens
     }
@@ -165,6 +172,7 @@
       const dataUrl = await invokeGetThumbnail(path);
       if (dataUrl) {
         loaded = new Map(loaded).set(path, dataUrl);
+        setCached(path, 120, dataUrl);
       }
     } catch {
       // Silently fail — thumbnail stays as placeholder

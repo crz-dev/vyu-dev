@@ -6,7 +6,6 @@ mod commands;
 use commands::*;
 
 use std::fs;
-use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -71,20 +70,18 @@ pub fn run() {
 
             util::cleanup_vyu_temp();
 
-            // Silently clean up orphaned thumbnail cache entries
-            let cache_dir = app
-                .path()
-                .app_cache_dir()
-                .unwrap_or_else(|_| std::env::temp_dir())
-                .join("thumbnails");
+            // Silently clean up orphaned thumbnail cache entries.
+            // Runs once at startup; sequential scan of `.src` files is acceptable
+            // — most point to valid paths, so the hot delete path is rarely hit.
+            let cache_dir = commands::thumbnail::thumb_cache_dir(app.handle());
             if cache_dir.exists() {
-                if let Ok(entries) = fs::read_dir(&cache_dir) {
+                if let Ok(entries) = fs::read_dir(cache_dir) {
                     for entry in entries.flatten() {
                         let p = entry.path();
                         if p.extension().map_or(false, |e| e == "src") {
                             if let Ok(src) = fs::read_to_string(&p) {
                                 let src = src.trim();
-                                if !Path::new(src).exists() {
+                                if !std::path::Path::new(src).exists() {
                                     let _ = fs::remove_file(&p);
                                     let _ = fs::remove_file(p.with_extension("jpg"));
                                 }

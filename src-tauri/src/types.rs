@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use tokio::sync::{Mutex, Semaphore, oneshot};
 
-use crate::constants;
-
 #[derive(serde::Serialize)]
 pub struct MediaProperties {
     pub container: Option<String>,
@@ -129,6 +127,9 @@ impl InFlightRegistry {
 
 /// Bundles the boolean checks that repeat at the top of most Tauri commands.
 /// Construct via `MediaKind::from_ext(ext)`.
+///
+/// Uses a single `match` (O(1)) instead of six linear slice scans.
+/// Extensions must match `*_RUST` constants in `constants.rs`.
 #[derive(Clone)]
 pub struct MediaKind {
     pub is_image: bool,
@@ -141,14 +142,57 @@ pub struct MediaKind {
 
 impl MediaKind {
     pub fn from_ext(ext: &str) -> Self {
-        Self {
-            is_image: constants::IMAGE_EXTS_RUST.contains(&ext),
-            is_video: constants::VIDEO_EXTS_RUST.contains(&ext),
-            is_audio: constants::AUDIO_EXTS_RUST.contains(&ext),
-            is_document: constants::DOCUMENT_EXTS_RUST.contains(&ext),
-            is_ffmpeg_image: constants::FFMPEG_IMAGE_EXTS_RUST.contains(&ext),
-            is_raw: constants::RAW_IMAGE_EXTS_RUST.contains(&ext),
+        let mut kind = Self {
+            is_image: false,
+            is_video: false,
+            is_audio: false,
+            is_document: false,
+            is_ffmpeg_image: false,
+            is_raw: false,
+        };
+
+        match ext {
+            // ── Standard images (image crate) ──
+            "jpg" | "jpeg" | "png" | "webp" | "bmp" | "avif" => kind.is_image = true,
+            "tiff" | "tif" => kind.is_image = true,
+
+            // ── FFmpeg images (image crate cannot decode) ──
+            "jxl" | "heic" | "heif" => {
+                kind.is_image = true;
+                kind.is_ffmpeg_image = true;
+            }
+            "psd" => {
+                kind.is_image = true;
+                kind.is_ffmpeg_image = true;
+            }
+            "gif" => {
+                kind.is_image = true;
+                kind.is_ffmpeg_image = true;
+            }
+
+            // ── RAW camera formats ──
+            "dng" | "cr2" | "cr3" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "raf" | "rw2"
+            | "orf" | "pef" | "3fr" | "fff" | "iiq" | "kdc" | "mef" | "mos" | "x3f"
+            | "gpr" => {
+                kind.is_image = true;
+                kind.is_raw = true;
+            }
+
+            // ── Video ──
+            "mp4" | "webm" | "mkv" | "avi" | "mov" | "wmv" | "mpeg" | "mpg" | "ts" | "m2ts"
+            | "m4v" => kind.is_video = true,
+
+            // ── Audio ──
+            "mp3" | "wav" | "flac" | "ogg" | "aac" | "wma" | "m4a" | "opus" | "aiff"
+            | "alac" => kind.is_audio = true,
+
+            // ── Document ──
+            "pdf" => kind.is_document = true,
+
+            _ => {}
         }
+
+        kind
     }
 }
 
