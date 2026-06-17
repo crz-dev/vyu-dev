@@ -11,7 +11,6 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{Listener, Manager, WindowEvent};
-use tokio::sync::Semaphore;
 use windows::core::w;
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 
@@ -68,9 +67,7 @@ pub fn run() {
                 let _ = SetCurrentProcessExplicitAppUserModelID(w!("com.vyu.app"));
             }
 
-            app.manage(types::ThumbState {
-                sem: Semaphore::new(6),
-            });
+            app.manage(types::ThumbState::new());
 
             util::cleanup_vyu_temp();
 

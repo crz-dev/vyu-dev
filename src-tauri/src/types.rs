@@ -1,4 +1,5 @@
-use tokio::sync::Semaphore;
+use std::collections::HashMap;
+use tokio::sync::{Mutex, Semaphore, oneshot};
 
 use crate::constants;
 
@@ -52,9 +53,78 @@ pub struct BatchStatItem {
     pub birthtime_ms: f64,
 }
 
-/// Managed state for the thumbnail system — caps concurrent decode operations.
+/// Managed state for the thumbnail system.
+/// Dedicated semaphores per work type prevent fast image work
+/// from being blocked by slow FFmpeg operations.
 pub struct ThumbState {
-    pub sem: Semaphore,
+    pub image_sem: Semaphore,
+    pub video_sem: Semaphore,
+    pub audio_sem: Semaphore,
+    pub inflight: InFlightRegistry,
+}
+
+impl ThumbState {
+    pub fn new() -> Self {
+        Self {
+            image_sem: Semaphore::new(4),
+            video_sem: Semaphore::new(2),
+            audio_sem: Semaphore::new(2),
+            inflight: InFlightRegistry::new(),
+        }
+    }
+
+    pub fn sem_for_kind(&self, kind: &MediaKind) -> &Semaphore {
+        if kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw {
+            &self.image_sem
+        } else if kind.is_video || kind.is_ffmpeg_image || kind.is_raw {
+            &self.video_sem
+        } else {
+            &self.audio_sem
+        }
+    }
+}
+
+/// Prevents duplicate generation of the same thumbnail.
+/// When multiple requests arrive for the same (path, mtime, size),
+/// only one generates; others await the result.
+pub struct InFlightRegistry {
+    map: Mutex<HashMap<String, Vec<oneshot::Sender<Result<Vec<u8>, String>>>>>,
+}
+
+impl InFlightRegistry {
+    pub fn new() -> Self {
+        Self {
+            map: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// If another task is already generating this thumbnail,
+    /// returns a receiver for its result. Otherwise registers
+    /// this task as the generator and returns `None`.
+    pub async fn register(
+        &self,
+        key: &str,
+    ) -> Option<oneshot::Receiver<Result<Vec<u8>, String>>> {
+        let mut map = self.map.lock().await;
+        if let Some(senders) = map.get_mut(key) {
+            let (tx, rx) = oneshot::channel();
+            senders.push(tx);
+            Some(rx)
+        } else {
+            map.insert(key.to_string(), Vec::new());
+            None
+        }
+    }
+
+    /// Signals all waiters with the result and removes the entry.
+    pub async fn complete(&self, key: &str, result: Result<Vec<u8>, String>) {
+        let mut map = self.map.lock().await;
+        if let Some(senders) = map.remove(key) {
+            for sender in senders {
+                let _ = sender.send(result.clone());
+            }
+        }
+    }
 }
 
 /// Bundles the boolean checks that repeat at the top of most Tauri commands.

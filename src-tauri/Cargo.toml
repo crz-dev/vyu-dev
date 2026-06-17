@@ -24,6 +24,7 @@ image = "0.25"
 base64 = "0.22"
 tokio = { version = "1", features = ["sync"] }
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
+jpeg-decoder = "0.3"
 arboard = "3"
 windows = { version = "0.61", features = [
     "Win32_UI_Shell",
