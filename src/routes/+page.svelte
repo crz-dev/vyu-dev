@@ -76,6 +76,7 @@
   import ViewerArea from "$lib/features/viewer/ViewerArea.svelte";
   import {
     createDeleteActions,
+    performMultiDelete,
     deleteStore,
   } from "$lib/features/fileActions/deleteFile.svelte";
   import {
@@ -627,6 +628,8 @@
       contextMenuStore.close();
       menuStore.closeAll();
       deleteStore.deleteConfirm = false;
+      deleteStore.multiDeleteConfirm = false;
+      deleteStore.multiDeletePaths = [];
       propertiesOpen = false;
       shareOpen = false;
       markerStore.tsEditMenu.visible = false;

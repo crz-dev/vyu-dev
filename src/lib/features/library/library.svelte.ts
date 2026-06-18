@@ -255,6 +255,10 @@ function createLibrary() {
     }
   }
 
+  function getSelectedPaths(): string[] {
+    return Object.keys(selectedPaths);
+  }
+
   function clearSelection() {
     selectedPaths = {};
   }
@@ -389,6 +393,7 @@ function createLibrary() {
     loadStats,
     toggleSelect,
     selectRange,
+    getSelectedPaths,
     clearSelection,
     isSelected,
     get selectMode() {

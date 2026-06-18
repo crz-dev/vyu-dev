@@ -101,6 +101,7 @@
     libraryOpen = false,
     selectedCount = 0,
     selectMenuVisible = false,
+    getSelectedPaths,
     onCloseSelectMenu,
     onSelectMenuMoved,
   }: {
@@ -162,6 +163,7 @@
     libraryOpen?: boolean;
     selectedCount?: number;
     selectMenuVisible?: boolean;
+    getSelectedPaths?: () => string[];
     onCloseSelectMenu?: () => void;
     onSelectMenuMoved?: () => void;
   } = $props();
@@ -376,14 +378,13 @@
   </div>
 </div>
 
-{#if libraryOpen && selectMenuVisible}
   <SelectMenu
-    visible={selectMenuVisible}
+    visible={libraryOpen && selectMenuVisible}
     {selectedCount}
+    getSelectedPaths={getSelectedPaths ?? (() => [])}
     onClose={onCloseSelectMenu ?? (() => {})}
     onMoved={onSelectMenuMoved}
   />
-{/if}
 
 {#if sortMenuVisible}
   <SortMenu

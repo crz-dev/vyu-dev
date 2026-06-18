@@ -13,10 +13,18 @@ export interface DeleteActionsDeps {
   closeFile: () => void | Promise<void>;
 }
 
+export interface MultiDeleteActionsDeps {
+  refreshView: () => void;
+}
+
 function createDeleteStore() {
   let deleteConfirm = $state(false);
   let deletePermanently = $state(false);
   let deleteNoAsk = $state(false);
+  let multiDeleteConfirm = $state(false);
+  let multiDeletePermanently = $state(false);
+  let multiDeleteNoAsk = $state(false);
+  let multiDeletePaths = $state<string[]>([]);
 
   return {
     get deleteConfirm() {
@@ -37,10 +45,66 @@ function createDeleteStore() {
     set deleteNoAsk(v: boolean) {
       deleteNoAsk = v;
     },
+    get multiDeleteConfirm() {
+      return multiDeleteConfirm;
+    },
+    set multiDeleteConfirm(v: boolean) {
+      multiDeleteConfirm = v;
+    },
+    get multiDeletePermanently() {
+      return multiDeletePermanently;
+    },
+    set multiDeletePermanently(v: boolean) {
+      multiDeletePermanently = v;
+    },
+    get multiDeleteNoAsk() {
+      return multiDeleteNoAsk;
+    },
+    set multiDeleteNoAsk(v: boolean) {
+      multiDeleteNoAsk = v;
+    },
+    get multiDeletePaths() {
+      return multiDeletePaths;
+    },
+    set multiDeletePaths(v: string[]) {
+      multiDeletePaths = v;
+    },
   };
 }
 
 export const deleteStore = createDeleteStore();
+
+export async function performMultiDelete(deps: MultiDeleteActionsDeps) {
+  const paths = [...deleteStore.multiDeletePaths];
+  if (paths.length === 0) return;
+  deleteStore.multiDeleteConfirm = false;
+  if (deleteStore.multiDeleteNoAsk) saveSkipDeleteConfirmation();
+  let successCount = 0;
+  let failCount = 0;
+  for (const path of paths) {
+    try {
+      if (deleteStore.multiDeletePermanently) await invokeDeleteFile(path);
+      else await invokeTrashFile(path);
+      successCount++;
+    } catch {
+      failCount++;
+    }
+  }
+  if (successCount > 0) {
+    showToast({
+      message: `${successCount} file${successCount === 1 ? "" : "s"} deleted`,
+      color: "red",
+    });
+    deps.refreshView();
+  }
+  if (failCount > 0) {
+    showToast({
+      message: `Failed to delete ${failCount} file${failCount === 1 ? "" : "s"}`,
+      color: "red",
+    });
+  }
+  deleteStore.multiDeletePaths = [];
+}
 
 export function createDeleteActions(deps: DeleteActionsDeps) {
   async function performDelete() {

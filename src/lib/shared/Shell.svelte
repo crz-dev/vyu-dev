@@ -4,6 +4,10 @@
   import ThumbnailBar from "$lib/features/navigation/ThumbnailBar.svelte";
   import LibraryView from "$lib/features/library/LibraryView.svelte";
   import { library } from "$lib/features/library/library.svelte";
+  import {
+    deleteStore,
+    performMultiDelete,
+  } from "$lib/features/fileActions/deleteFile.svelte";
   import Dialog from "$lib/features/dialogs/Dialog.svelte";
   import Tooltip from "$lib/shared/Tooltip.svelte";
   import EditMenu from "$lib/features/menus/EditMenu.svelte";
@@ -422,6 +426,29 @@
   });
 
   // Clear viewer menu selection state when library opens
+  // Multi-delete state
+  const multiDeleteConfirm = $derived(deleteStore.multiDeleteConfirm);
+  const multiDeleteCount = $derived(deleteStore.multiDeletePaths.length);
+  const multiDeletePermanently = $derived(deleteStore.multiDeletePermanently);
+  const multiDeleteNoAsk = $derived(deleteStore.multiDeleteNoAsk);
+
+  function onPerformMultiDelete() {
+    performMultiDelete({ refreshView: () => library.clearSelection() });
+  }
+
+  function onCloseMultiDeleteConfirm() {
+    deleteStore.multiDeleteConfirm = false;
+    deleteStore.multiDeletePaths = [];
+  }
+
+  function onUpdateMultiDeletePermanently(v: boolean) {
+    deleteStore.multiDeletePermanently = v;
+  }
+
+  function onUpdateMultiDeleteNoAsk(v: boolean) {
+    deleteStore.multiDeleteNoAsk = v;
+  }
+
   $effect(() => {
     if (!libraryOpen) {
       library.clearSelection();
@@ -757,6 +784,7 @@
     {libraryOpen}
     selectedCount={library.selectedCount}
     {selectMenuVisible}
+    getSelectedPaths={library.getSelectedPaths}
     onCloseSelectMenu={() => library.clearSelection()}
     onSelectMenuMoved={() => (selectMenuMoved = true)}
   />
@@ -827,6 +855,14 @@
     {ctxClearMarkers}
     closeClipDeleteConfirm={onCloseClipDeleteConfirm}
     closeDeleteConfirm={onCloseDeleteConfirm}
+    {multiDeleteConfirm}
+    {multiDeleteCount}
+    {multiDeletePermanently}
+    {multiDeleteNoAsk}
+    performMultiDelete={onPerformMultiDelete}
+    closeMultiDeleteConfirm={onCloseMultiDeleteConfirm}
+    updateMultiDeletePermanently={onUpdateMultiDeletePermanently}
+    updateMultiDeleteNoAsk={onUpdateMultiDeleteNoAsk}
     closeProperties={onCloseProperties}
     closeShare={onCloseShare}
     {shareOpen}

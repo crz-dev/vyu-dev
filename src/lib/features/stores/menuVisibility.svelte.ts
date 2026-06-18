@@ -281,7 +281,7 @@ export function areDialogsOpen(deps: {
   contextMenuStore: { isOpen: boolean };
   menuStore: { isAnyOpen: boolean };
   markerStore: { tsEditMenu: { visible: boolean } };
-  deleteStore: { deleteConfirm: boolean };
+  deleteStore: { deleteConfirm: boolean; multiDeleteConfirm: boolean };
   propertiesOpen: boolean;
   shareOpen: boolean;
   clips: { clipDeleteConfirm: { visible: boolean } };
@@ -297,6 +297,7 @@ export function areDialogsOpen(deps: {
     deps.menuStore.isAnyOpen ||
     deps.markerStore.tsEditMenu.visible ||
     deps.deleteStore.deleteConfirm ||
+    deps.deleteStore.multiDeleteConfirm ||
     deps.propertiesOpen ||
     deps.shareOpen ||
     deps.clips.clipDeleteConfirm.visible ||
