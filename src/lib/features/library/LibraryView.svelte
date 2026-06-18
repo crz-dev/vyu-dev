@@ -10,6 +10,12 @@
   import { library } from "$lib/features/library/library.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { readDir } from "@tauri-apps/plugin-fs";
+  import {
+    invokeOpenWithDialog,
+    invokeTrashFile,
+    invokeRenameFile,
+  } from "$lib/features/media/tools";
+  import { showToast } from "$lib/features/toast/toast.svelte";
 
   let {
     fileList,
@@ -45,6 +51,15 @@
   let renamingPath = $state<string | null>(null);
   let renameValue = $state("");
 
+  // Library context menu state
+  let libCtxMenu = $state<{
+    visible: boolean;
+    x: number;
+    y: number;
+    path: string;
+  }>({ visible: false, x: 0, y: 0, path: "" });
+  let libCtxPinned = $state(false);
+
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
 
@@ -73,7 +88,9 @@
       : new Set<string>(),
   );
 
-  const isPlaceholderTab = $derived(library.activeTab === "favorites");
+  const isPlaceholderTab = $derived(
+    library.activeTab === "collections" && !library.activeCollectionPath,
+  );
 
   const isViewingCollection = $derived(
     library.activeTab === "collections" &&
@@ -81,12 +98,12 @@
   );
 
   const showFileGrid = $derived(
-    library.activeTab !== "favorites" &&
-      (library.activeTab !== "collections" || isViewingCollection),
+    library.activeTab !== "collections" || isViewingCollection,
   );
 
   const displayFiles = $derived.by(() => {
     if (library.activeTab === "recents") return library.recentFiles;
+    if (library.activeTab === "favorites") return library.favorites;
     if (isViewingCollection) return collectionFiles;
     return fileList;
   });
@@ -199,6 +216,84 @@
 
   function cancelRename() {
     renamingPath = null;
+  }
+
+  function openLibCtxMenu(e: MouseEvent, path: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    libCtxMenu = { visible: true, x: e.clientX, y: e.clientY, path };
+    libCtxPinned = false;
+  }
+
+  function closeLibCtxMenu() {
+    if (libCtxPinned) return;
+    libCtxMenu = { ...libCtxMenu, visible: false };
+    libCtxPinned = false;
+  }
+
+  function forceCloseLibCtxMenu() {
+    libCtxMenu = { ...libCtxMenu, visible: false };
+    libCtxPinned = false;
+  }
+
+  async function ctxOpenWith() {
+    const path = libCtxMenu.path;
+    closeLibCtxMenu();
+    try {
+      await invokeOpenWithDialog(path);
+    } catch {
+      showToast({ message: "Failed to open with dialog", color: "red" });
+    }
+  }
+
+  async function ctxMoveTo() {
+    const path = libCtxMenu.path;
+    closeLibCtxMenu();
+    try {
+      const destDir = await open({ directory: true });
+      if (!destDir) return;
+      const fileName = getFileName(path);
+      const destPath = `${destDir}\\${fileName}`;
+      await invokeRenameFile(path, destPath);
+      showToast({ message: "File moved", color: "blue" });
+    } catch {
+      showToast({ message: "Failed to move file", color: "red" });
+    }
+  }
+
+  function ctxFavorite() {
+    const path = libCtxMenu.path;
+    closeLibCtxMenu();
+    if (library.isFavorite(path)) {
+      library.removeFavorite(path);
+      showToast({ message: "Removed from favorites", color: "yellow" });
+    } else {
+      library.addFavorite(path);
+      showToast({ message: "Added to favorites", color: "yellow" });
+    }
+  }
+
+  async function ctxDelete() {
+    const path = libCtxMenu.path;
+    closeLibCtxMenu();
+    try {
+      await invokeTrashFile(path);
+      showToast({ message: "File deleted", color: "red" });
+    } catch {
+      showToast({ message: "Failed to delete file", color: "red" });
+    }
+  }
+
+  async function addFavoriteFromFile() {
+    try {
+      const file = await open({ multiple: false });
+      if (file) {
+        library.addFavorite(file as string);
+        showToast({ message: "Added to favorites", color: "yellow" });
+      }
+    } catch {
+      showToast({ message: "Failed to add favorite", color: "red" });
+    }
   }
 
   function onImageLoad(path: string, e: Event) {
@@ -514,6 +609,7 @@
 <div
   class="library-view"
   onkeydown={handleKeydown}
+  onclick={closeLibCtxMenu}
   role="region"
   aria-label="File library"
 >
@@ -587,6 +683,37 @@
               class="library-grid"
               style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
             >
+              {#if library.activeTab === "favorites"}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="library-placeholder-card"
+                  role="button"
+                  tabindex="0"
+                  onclick={addFavoriteFromFile}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      addFavoriteFromFile();
+                    }
+                  }}
+                >
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    opacity="0.4"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                </div>
+              {/if}
               {#each sortedFiles as path (path)}
                 {@const active = activePaths.has(path)}
                 {@const selected = library.isSelected(path)}
@@ -607,6 +734,7 @@
                       onSelect(path);
                     }
                   }}
+                  oncontextmenu={(e) => openLibCtxMenu(e, path)}
                   onkeydown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -739,6 +867,38 @@
             </div>
           {:else if library.viewMode === "river"}
             <div class="library-river">
+              {#if library.activeTab === "favorites"}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="library-placeholder-card river-fav-placeholder"
+                  role="button"
+                  tabindex="0"
+                  style="height: {riverRowH}px; min-width: {riverRowH}px; flex-grow: 0;"
+                  onclick={addFavoriteFromFile}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      addFavoriteFromFile();
+                    }
+                  }}
+                >
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    opacity="0.4"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                </div>
+              {/if}
               {#each sortedFiles as path (path)}
                 {@const active = activePaths.has(path)}
                 {@const selected = library.isSelected(path)}
@@ -762,6 +922,7 @@
                       onSelect(path);
                     }
                   }}
+                  oncontextmenu={(e) => openLibCtxMenu(e, path)}
                   onkeydown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -894,6 +1055,38 @@
             </div>
           {:else if library.viewMode === "filmstrip"}
             <div class="library-filmstrip">
+              {#if library.activeTab === "favorites"}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="library-placeholder-card filmstrip-fav-placeholder"
+                  role="button"
+                  tabindex="0"
+                  style="height: {filmstripBase}px; min-width: {filmstripBase}px; flex-shrink: 0;"
+                  onclick={addFavoriteFromFile}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      addFavoriteFromFile();
+                    }
+                  }}
+                >
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    opacity="0.4"
+                  >
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    />
+                  </svg>
+                </div>
+              {/if}
               {#each sortedFiles as path (path)}
                 {@const active = activePaths.has(path)}
                 {@const selected = library.isSelected(path)}
@@ -921,6 +1114,7 @@
                       onSelect(path);
                     }
                   }}
+                  oncontextmenu={(e) => openLibCtxMenu(e, path)}
                   onkeydown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -1175,6 +1369,46 @@
                   {/if}
                 </button>
               </div>
+              {#if library.activeTab === "favorites"}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div
+                  class="list-row list-fav-placeholder"
+                  role="button"
+                  tabindex="0"
+                  onclick={addFavoriteFromFile}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      addFavoriteFromFile();
+                    }
+                  }}
+                >
+                  <span class="list-col list-col-check"></span>
+                  <span class="list-col list-col-thumb">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      opacity="0.4"
+                    >
+                      <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                      />
+                    </svg>
+                  </span>
+                  <span class="list-col list-col-name" style="color: var(--text-muted, #888);">
+                    Add to favorites...
+                  </span>
+                  <span class="list-col list-col-size"></span>
+                  <span class="list-col list-col-date"></span>
+                  <span class="list-col list-col-type"></span>
+                </div>
+              {/if}
               {#each sortedFiles as path, idx (path)}
                 {@const active = activePaths.has(path)}
                 {@const selected = library.isSelected(path)}
@@ -1206,6 +1440,7 @@
                     }
                     lastClickedIndex = idx;
                   }}
+                  oncontextmenu={(e) => openLibCtxMenu(e, path)}
                   onkeydown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -1448,31 +1683,6 @@
             </div>
           {/if}
         {/if}
-
-        {#if library.activeTab === "favorites"}
-          <div
-            class="library-placeholder-grid"
-            style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
-          >
-            <div class="library-placeholder-card">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                opacity="0.4"
-              >
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                />
-              </svg>
-            </div>
-          </div>
-        {/if}
       </div>
     {/key}
     </div>
@@ -1484,6 +1694,202 @@
       ></div>
     {/if}
   </div>
+
+  {#if libCtxMenu.visible}
+    <div
+      class="context-menu lib-ctx"
+      class:pinned={libCtxPinned}
+      style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
+      role="menu"
+      tabindex="-1"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+    >
+      <div
+        class="ctx-drag"
+        role="button"
+        tabindex="0"
+        aria-label="Drag to move"
+        onmousedown={(e) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const startMenuX = libCtxMenu.x;
+          const startMenuY = libCtxMenu.y;
+
+          function onMouseMove(ev: MouseEvent) {
+            libCtxMenu.x = startMenuX + ev.clientX - startX;
+            libCtxMenu.y = startMenuY + ev.clientY - startY;
+          }
+
+          function onMouseUp() {
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+          }
+
+          window.addEventListener("mousemove", onMouseMove);
+          window.addEventListener("mouseup", onMouseUp);
+        }}
+      >
+        <button
+          class="ctx-pin tooltip-below"
+          class:active={libCtxPinned}
+          data-tooltip={libCtxPinned ? "Unpin" : "Pin"}
+          onclick={(e) => {
+            e.stopPropagation();
+            libCtxPinned = !libCtxPinned;
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={libCtxPinned ? "Unpin" : "Pin"}
+        >
+          <svg
+            width="9"
+            height="9"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+            />
+          </svg>
+        </button>
+        <span class="ctx-dots">
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+        </span>
+        <button
+          class="ctx-close tooltip-below"
+          data-tooltip="Close"
+          onclick={(e) => {
+            e.stopPropagation();
+            forceCloseLibCtxMenu();
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label="Close"
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="edit-menu-card">
+        <button
+          class="ctx-item green"
+          onclick={ctxOpenWith}
+          role="menuitem"
+          style="animation-delay: 0ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><path
+              d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /><polyline
+              points="15 3 21 3 21 9"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /><line
+              x1="10"
+              y1="14"
+              x2="21"
+              y2="3"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >
+          Open with...
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item blue"
+          onclick={ctxMoveTo}
+          role="menuitem"
+          style="animation-delay: 55ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><path
+              d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >
+          Move to...
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item yellow"
+          onclick={ctxFavorite}
+          role="menuitem"
+          style="animation-delay: 110ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24"
+            fill={library.isFavorite(libCtxMenu.path) ? "currentColor" : "none"}
+            ><polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >
+          {library.isFavorite(libCtxMenu.path) ? "Unfavorite" : "Favorite"}
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item red"
+          onclick={ctxDelete}
+          role="menuitem"
+          style="animation-delay: 165ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><polyline
+              points="3 6 5 6 21 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M19 6l-1 14H6L5 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M10 11v6M14 11v6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M9 6V4h6v2"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
+          >
+          Delete
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -1575,6 +1981,16 @@
   .library-placeholder-card:hover {
     border-color: var(--text-muted, #888);
     background: var(--bg-elevated, #1a1a1a);
+  }
+
+  .river-fav-placeholder,
+  .filmstrip-fav-placeholder {
+    aspect-ratio: unset;
+    flex-shrink: 0;
+  }
+
+  .list-fav-placeholder {
+    cursor: pointer;
   }
 
   .library-collection-card {

@@ -18,6 +18,8 @@ import {
   saveShowThumbnails,
   loadCollections,
   saveCollections,
+  loadFavorites,
+  saveFavorites,
 } from "$lib/services/storage";
 import type { CollectionItem } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
@@ -73,6 +75,9 @@ function createLibrary() {
   // Collections state
   let collections = $state<CollectionItem[]>(loadCollections());
   let activeCollectionPath = $state<string | null>(null);
+
+  // Favorites state
+  let favorites = $state<string[]>(loadFavorites());
 
   async function loadOne(path: string) {
     inflight++;
@@ -308,6 +313,21 @@ function createLibrary() {
     }
   }
 
+  function addFavorite(path: string) {
+    if (favorites.includes(path)) return;
+    favorites = [...favorites, path];
+    saveFavorites(favorites);
+  }
+
+  function removeFavorite(path: string) {
+    favorites = favorites.filter((p) => p !== path);
+    saveFavorites(favorites);
+  }
+
+  function isFavorite(path: string): boolean {
+    return favorites.includes(path);
+  }
+
   return {
     get cache() {
       return cache;
@@ -389,6 +409,12 @@ function createLibrary() {
     openCollection,
     closeCollection,
     validateCollections,
+    get favorites() {
+      return favorites;
+    },
+    addFavorite,
+    removeFavorite,
+    isFavorite,
   };
 }
 

@@ -421,6 +421,7 @@
     if (!equalizerMenuVisible) equalizerMenuMoved = false;
   });
 
+  // Clear viewer menu selection state when library opens
   $effect(() => {
     if (!libraryOpen) {
       library.clearSelection();
@@ -629,6 +630,7 @@
   class:menu-open={anyMenuOpen}
   class:thumbnail-bar-open={thumbnailBarVisible}
   class:is-audio={isAudio}
+  class:library-mode={libraryOpen}
   class:fs-controls-hidden={viewerStateIsFullscreen &&
     thumbnailBarVisible &&
     !viewerFsControlsVisible}

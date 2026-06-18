@@ -750,6 +750,9 @@
       get appDropdownVisible() {
         return menuStore.appDropdownVisible;
       },
+      get libraryOpen() {
+        return menuStore.libraryOpen;
+      },
     },
     markerStore: {
       get tsEditMenu() {
@@ -896,6 +899,17 @@
     if (menuStore.libraryOpen) {
       thumbnailBarVisible = false;
     }
+  });
+
+  // Save/restore viewer menu state across library transitions
+  let prevLibraryOpen = $state(false);
+  $effect(() => {
+    if (menuStore.libraryOpen && !prevLibraryOpen) {
+      menuStore.saveViewerMenus();
+    } else if (!menuStore.libraryOpen && prevLibraryOpen) {
+      menuStore.restoreViewerMenus();
+    }
+    prevLibraryOpen = menuStore.libraryOpen;
   });
 </script>
 

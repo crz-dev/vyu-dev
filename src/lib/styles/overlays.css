@@ -3752,3 +3752,12 @@
   min-width: 160px;
   flex-shrink: 0;
 }
+
+/* Hide viewer menus when library is open */
+.library-mode .context-menu:not(.lib-ctx),
+.library-mode .edit-menu-wrapper,
+.library-mode .markup-menu-wrapper,
+.library-mode .equalizer-wrapper,
+.library-mode .slideshow-menu {
+  display: none !important;
+}

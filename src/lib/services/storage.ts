@@ -480,3 +480,21 @@ export function loadCollections(): CollectionItem[] {
 export function saveCollections(items: CollectionItem[]): void {
   localStorage.setItem("vyu-collections", JSON.stringify(items));
 }
+
+// Favorites
+
+export function loadFavorites(): string[] {
+  const raw = localStorage.getItem("vyu-favorites");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((p: unknown): p is string => typeof p === "string");
+  } catch {
+    return [];
+  }
+}
+
+export function saveFavorites(favs: string[]): void {
+  localStorage.setItem("vyu-favorites", JSON.stringify(favs));
+}

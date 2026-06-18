@@ -16,6 +16,15 @@ function createMenuVisibilityStore() {
   let tsMenuOpen = $state(false);
   let loopMenuOpen = $state(false);
 
+  // Saved state for viewer menus when library is open
+  let savedViewerMenus: {
+    editMenuVisible: boolean;
+    markupMenuVisible: boolean;
+    effectsMenuVisible: boolean;
+    equalizerMenuVisible: boolean;
+    slideshowMenuVisible: boolean;
+  } | null = null;
+
   return {
     get editMenuVisible() {
       return editMenuVisible;
@@ -117,6 +126,29 @@ function createMenuVisibilityStore() {
         libraryOpen ||
         tsMenuOpen
       );
+    },
+    saveViewerMenus() {
+      savedViewerMenus = {
+        editMenuVisible,
+        markupMenuVisible,
+        effectsMenuVisible,
+        equalizerMenuVisible,
+        slideshowMenuVisible,
+      };
+      editMenuVisible = false;
+      markupMenuVisible = false;
+      effectsMenuVisible = false;
+      equalizerMenuVisible = false;
+      slideshowMenuVisible = false;
+    },
+    restoreViewerMenus() {
+      if (!savedViewerMenus) return;
+      editMenuVisible = savedViewerMenus.editMenuVisible;
+      markupMenuVisible = savedViewerMenus.markupMenuVisible;
+      effectsMenuVisible = savedViewerMenus.effectsMenuVisible;
+      equalizerMenuVisible = savedViewerMenus.equalizerMenuVisible;
+      slideshowMenuVisible = savedViewerMenus.slideshowMenuVisible;
+      savedViewerMenus = null;
     },
     closeAll() {
       editMenuVisible = false;

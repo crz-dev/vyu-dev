@@ -7,6 +7,7 @@ export function createGlobalMouseHandler(deps: {
     equalizerMenuVisible: boolean;
     slideshowMenuVisible: boolean;
     appDropdownVisible: boolean;
+    libraryOpen: boolean;
   };
   markerStore: { tsEditMenu: { visible: boolean } };
   closeEditMenu: () => void;
@@ -18,6 +19,7 @@ export function createGlobalMouseHandler(deps: {
 }) {
   return function handleGlobalMouseDown(e: MouseEvent) {
     const target = e.target as HTMLElement;
+    if (deps.menuStore.libraryOpen) return;
     if (
       deps.contextMenuStore.isOpen &&
       !target.closest(".context-menu") &&
