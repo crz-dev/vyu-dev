@@ -16,6 +16,7 @@
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
   import Toast from "$lib/shared/Toast.svelte";
+  import { fade } from "svelte/transition";
   import type {
     ContextMenu,
     VideoMarker,
@@ -664,25 +665,39 @@
     {parentFolder}
   />
 
-  {#if libraryOpen}
-    <LibraryView
-      {fileList}
-      {currentIndex}
-      selectMode={library.selectedCount > 0}
-      onSelect={async (path) => {
-        if (library.activeTab === "recents") {
-          await loadFile(path);
-        } else {
-          const idx = fileList.indexOf(path);
-          if (idx !== -1) onSelect(idx);
-        }
-        closeLibrary();
-      }}
-      onClose={closeLibrary}
-    />
-  {:else}
-    {@render children?.()}
-  {/if}
+  <div
+    style="flex: 1; display: grid; grid-template: 1fr / 1fr; overflow: hidden;"
+  >
+    {#if libraryOpen}
+      <div
+        transition:fade={{ duration: 200 }}
+        style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
+      >
+        <LibraryView
+          {fileList}
+          {currentIndex}
+          selectMode={library.selectedCount > 0}
+          onSelect={async (path) => {
+            if (library.activeTab === "recents") {
+              await loadFile(path);
+            } else {
+              const idx = fileList.indexOf(path);
+              if (idx !== -1) onSelect(idx);
+            }
+            closeLibrary();
+          }}
+          onClose={closeLibrary}
+        />
+      </div>
+    {:else}
+      <div
+        transition:fade={{ duration: 200 }}
+        style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
+      >
+        {@render children?.()}
+      </div>
+    {/if}
+  </div>
 
   <MediaBar
     fileListLength={fileList.length}

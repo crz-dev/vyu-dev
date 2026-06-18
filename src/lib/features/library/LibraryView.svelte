@@ -6,7 +6,7 @@
     ALL_EXTS,
   } from "$lib/shared/constants";
   import { getFileExt, getFileName } from "$lib/services/files";
-  import { fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
   import { open } from "@tauri-apps/plugin-dialog";
   import { readDir } from "@tauri-apps/plugin-fs";
@@ -44,18 +44,6 @@
   let collectionFirstFiles = $state<Record<string, string>>({});
   let renamingPath = $state<string | null>(null);
   let renameValue = $state("");
-
-  const TAB_ORDER = ["library", "recents", "collections", "favorites"] as const;
-  type TabId = (typeof TAB_ORDER)[number];
-  let previousTab = $state<TabId>("library");
-  const slideDirection = $derived(
-    TAB_ORDER.indexOf(library.activeTab as TabId) >=
-      TAB_ORDER.indexOf(previousTab)
-      ? 1
-      : -1,
-  );
-
-  const RIVER_GAP = 6;
 
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
@@ -359,12 +347,12 @@
     };
   });
 
-  // Track previous tab for directional slide animation
+  // Reset scroll to top when switching tabs
   $effect(() => {
-    const current = library.activeTab;
-    return () => {
-      previousTab = current as TabId;
-    };
+    library.activeTab;
+    if (scrollEl) {
+      scrollEl.scrollTop = 0;
+    }
   });
 
   // Observer lifecycle
@@ -525,7 +513,6 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="library-view"
-  class:mounted
   onkeydown={handleKeydown}
   role="region"
   aria-label="File library"
@@ -585,12 +572,16 @@
     onwheel={onWheel}
     onmousedown={handleDragStart}
   >
-    {#key library.activeTab}
-      <div
-        class="tab-content"
-        transition:fly={{ x: slideDirection * 24, duration: 180 }}
-      >
-        {#if showFileGrid}
+    <div
+      style="display: grid; grid-template: 1fr / 1fr; align-items: start;"
+    >
+      {#key library.activeTab}
+        <div
+          class="tab-content"
+          transition:fade={{ duration: 150 }}
+          style="grid-area: 1 / 1;"
+        >
+          {#if showFileGrid}
           {#if library.viewMode === "grid"}
             <div
               class="library-grid"
@@ -1484,6 +1475,7 @@
         {/if}
       </div>
     {/key}
+    </div>
 
     {#if isDragging && dragRect}
       <div
@@ -1501,12 +1493,6 @@
     flex-direction: column;
     overflow: hidden;
     background: var(--bg-primary, #0a0a0a);
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .library-view.mounted {
-    opacity: 1;
   }
 
   .tab-content {
