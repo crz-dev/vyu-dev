@@ -785,6 +785,7 @@
     selectedCount={library.selectedCount}
     {selectMenuVisible}
     getSelectedPaths={library.getSelectedPaths}
+    onSelectAll={() => library.selectRange(fileList)}
     onCloseSelectMenu={() => library.clearSelection()}
     onSelectMenuMoved={() => (selectMenuMoved = true)}
   />

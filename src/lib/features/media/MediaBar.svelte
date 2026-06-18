@@ -102,6 +102,7 @@
     selectedCount = 0,
     selectMenuVisible = false,
     getSelectedPaths,
+    onSelectAll,
     onCloseSelectMenu,
     onSelectMenuMoved,
   }: {
@@ -164,6 +165,7 @@
     selectedCount?: number;
     selectMenuVisible?: boolean;
     getSelectedPaths?: () => string[];
+    onSelectAll?: () => void;
     onCloseSelectMenu?: () => void;
     onSelectMenuMoved?: () => void;
   } = $props();
@@ -382,6 +384,7 @@
     visible={libraryOpen && selectMenuVisible}
     {selectedCount}
     getSelectedPaths={getSelectedPaths ?? (() => [])}
+    {onSelectAll}
     onClose={onCloseSelectMenu ?? (() => {})}
     onMoved={onSelectMenuMoved}
   />

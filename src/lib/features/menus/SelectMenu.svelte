@@ -16,21 +16,17 @@
     visible,
     selectedCount,
     getSelectedPaths,
+    onSelectAll,
     onClose,
     onMoved,
   }: {
     visible: boolean;
     selectedCount: number;
     getSelectedPaths: () => string[];
+    onSelectAll?: () => void;
     onClose: () => void;
     onMoved?: () => void;
   } = $props();
-
-  let pinned = $state(false);
-
-  $effect(() => {
-    if (!visible) pinned = false;
-  });
 
   function getPaths(): string[] {
     return getSelectedPaths?.() ?? [];
@@ -133,7 +129,7 @@
   }
 </script>
 
-<div class="select-menu" class:open={visible} class:pinned>
+<div class="select-menu" class:open={visible}>
   <div
     class="ctx-drag"
     role="button"
@@ -171,31 +167,19 @@
       window.addEventListener("mouseup", onMouseUp);
     }}
   >
-    <button
-      class="ctx-pin tooltip-below"
-      class:active={pinned}
-      data-tooltip={pinned ? "Unpin" : "Pin"}
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onmousedown={(e) => e.stopPropagation()}
-      aria-label={pinned ? "Unpin" : "Pin"}
-    >
-      <svg
-        width="9"
-        height="9"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+    <div class="select-all-card">
+      <button
+        class="select-all-btn"
+        onclick={(e) => {
+          e.stopPropagation();
+          onSelectAll?.();
+        }}
+        onmousedown={(e) => e.stopPropagation()}
+        aria-label="Select all files"
       >
-        <path
-          d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
-        />
-      </svg>
-    </button>
+        Select all
+      </button>
+    </div>
     <span class="ctx-drag-title">
       <span class="ctx-dots">
         <span class="ctx-dot"></span>
@@ -332,5 +316,53 @@
     transform: translateX(-50%) translateY(0);
     pointer-events: auto;
     opacity: 1;
+  }
+
+  .select-menu .ctx-drag {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .select-menu .ctx-drag:hover {
+    background: transparent;
+  }
+
+  .select-menu .ctx-close {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .select-all-card {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0.5px solid var(--bg-elevated);
+    border-radius: 8px;
+    padding: 1px 3px;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+  }
+
+  .select-all-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #888);
+    font-family: var(--font-family);
+    font-size: 10px;
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    white-space: nowrap;
+    transition: color 0.12s;
+  }
+
+  .select-all-btn:hover {
+    color: var(--text-primary, #fff);
   }
 </style>
