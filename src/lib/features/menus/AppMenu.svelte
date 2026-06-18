@@ -191,6 +191,7 @@
     <button
       class="app-dropdown-toggle tooltip-below"
       class:active={dropdownVisible}
+      class:menu-active={dropdownVisible}
       onclick={libraryOpen ? onCloseLibrary : onToggleDropdown}
       aria-label={libraryOpen ? "Back to viewer" : "Open app menu"}
       data-tooltip="Vyu"

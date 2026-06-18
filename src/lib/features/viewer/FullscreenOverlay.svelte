@@ -159,6 +159,7 @@
         bind:this={fsPillEl}
         class="fs-file-count-pill tooltip-above"
         class:slideshow-active={slideshowActive}
+        class:menu-active={sortMenuVisible}
         data-tooltip="File position"
         onclick={toggleThumbnailBar}
         oncontextmenu={handleFsPillContext}

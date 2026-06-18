@@ -232,6 +232,7 @@
         <button
           class="fs-btn tooltip-above-shift-right"
           class:active={slideshow.active}
+          class:menu-active={slideshowMenuVisible}
           data-tooltip="Slideshow"
           onclick={toggleSlideshowMenu}
           aria-label="toggle slideshow menu"
@@ -260,6 +261,7 @@
         bind:this={fileCountEl}
         class="file-count tooltip-above"
         class:active={thumbnailBarVisible}
+        class:menu-active={thumbnailBarVisible || sortMenuVisible}
         data-tooltip="File position"
         onclick={toggleThumbnailBar}
         oncontextmenu={handleFileCountContext}
@@ -270,6 +272,7 @@
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
         class="fs-btn tooltip-above-shift-right"
+        class:menu-active={libSortMenuVisible}
         data-tooltip="Sort by"
         onmousedown={handleLibSortClick}
         aria-label="sort by"
@@ -358,6 +361,7 @@
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
         class="lib-view-toggle fs-btn tooltip-above-shift-left"
+        class:menu-active={viewMenuVisible}
         data-tooltip="View mode"
         onmousedown={handleViewMenuClick}
         aria-label="View mode"

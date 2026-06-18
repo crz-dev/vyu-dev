@@ -28,13 +28,13 @@
 [data-tooltip].tooltip-above-shift-right::after {
   bottom: calc(100% + 4px);
   left: 0;
-  transform: translateX(-10px);
+  transform: translateX(0);
 }
 [data-tooltip].tooltip-above-shift-left::after {
   bottom: calc(100% + 4px);
   left: auto;
   right: 0;
-  transform: translateX(8px);
+  transform: translateX(0);
 }
 [data-tooltip].tooltip-below::after {
   top: calc(100% + 6px);
@@ -95,8 +95,8 @@
 .menu-open .edit-menu [data-tooltip]:hover::after {
   opacity: 1 !important;
 }
-.menu-open .topbar [data-tooltip]:hover::after,
-.menu-open .bottombar [data-tooltip]:hover::after {
+.menu-open .topbar [data-tooltip]:not(.menu-active):hover::after,
+.menu-open .bottombar [data-tooltip]:not(.menu-active):hover::after {
   opacity: 1 !important;
   transition: opacity 0.15s ease !important;
   transition-delay: 0.4s !important;

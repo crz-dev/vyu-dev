@@ -743,6 +743,7 @@
             class="ctrl-btn add-ts-btn tooltip-ctrl"
             data-tooltip="Marker menu"
             class:ts-menu-open={tsMenuOpen}
+            class:menu-active={tsMenuOpen}
             onclick={() => onTsMenuChange(!tsMenuOpen)}
             aria-label="markers menu"
           >
