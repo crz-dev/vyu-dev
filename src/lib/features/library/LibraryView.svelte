@@ -364,18 +364,6 @@
     }, 3000);
   }
 
-  function onWheel(e: WheelEvent) {
-    if (library.viewMode !== "filmstrip") return;
-    const container = scrollEl?.querySelector(
-      ".library-filmstrip",
-    ) as HTMLElement | null;
-    if (!container) return;
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      e.preventDefault();
-      container.scrollLeft += e.deltaY;
-    }
-  }
-
   function rectsOverlap(
     a: { left: number; right: number; top: number; bottom: number },
     b: { left: number; right: number; top: number; bottom: number },
@@ -597,10 +585,11 @@
     }
   });
 
-  // Scroll to current file on open or density change
+  // Scroll to current file on open, density change, or view mode switch
   $effect(() => {
     if (!mounted || !scrollEl) return;
     void library.density;
+    void library.viewMode;
     const el = scrollEl.querySelector(
       `[data-path="${fileList[currentIndex]}"]`,
     ) as HTMLElement | null;
@@ -622,6 +611,30 @@
     return () => {
       library.clearQueue();
     };
+  });
+
+  // Attach non-passive wheel listener directly on filmstrip for horizontal scroll
+  $effect(() => {
+    if (library.viewMode !== "filmstrip" || !scrollEl) return;
+    void library.activeTab;
+    const filmstrip = scrollEl.querySelector(
+      ".library-filmstrip",
+    ) as HTMLElement | null;
+    if (!filmstrip) return;
+    const el = filmstrip;
+    function onFilmstripWheel(e: WheelEvent) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        e.stopPropagation();
+        const maxScroll = el.scrollWidth - el.clientWidth;
+        el.scrollLeft = Math.max(
+          0,
+          Math.min(el.scrollLeft + e.deltaY, maxScroll),
+        );
+      }
+    }
+    el.addEventListener("wheel", onFilmstripWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onFilmstripWheel);
   });
 
   // Window-level drag handlers
@@ -706,10 +719,9 @@
     class:dragging={isDragging}
     bind:this={scrollEl}
     onscroll={onScroll}
-    onwheel={onWheel}
     onmousedown={handleDragStart}
   >
-    <div style="display: grid; grid-template: 1fr / 1fr; align-items: start;">
+    <div style="display: grid; grid-template: 1fr / 1fr; align-items: start; height: 100%;">
       {#key library.activeTab}
         <div
           class="tab-content"
@@ -974,6 +986,42 @@
                     </svg>
                   </div>
                 {/if}
+                {#if isViewingCollection}
+                  {#each collectionFolders as folderPath (folderPath)}
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div
+                      class="river-cell river-subfolder-cell"
+                      role="button"
+                      tabindex="0"
+                      style="height: {riverRowH}px; min-width: {riverRowH}px; flex-grow: 0;"
+                      onclick={() => library.openCollection(folderPath)}
+                      onkeydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          library.openCollection(folderPath);
+                        }
+                      }}
+                    >
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--yellow-soft)"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                        />
+                      </svg>
+                      <div class="river-subfolder-name">
+                        {getFileName(folderPath)}
+                      </div>
+                    </div>
+                  {/each}
+                {/if}
                 {#each sortedFiles as path (path)}
                   {@const active = activePaths.has(path)}
                   {@const selected = library.isSelected(path)}
@@ -1162,6 +1210,42 @@
                       />
                     </svg>
                   </div>
+                {/if}
+                {#if isViewingCollection}
+                  {#each collectionFolders as folderPath (folderPath)}
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div
+                      class="filmstrip-cell filmstrip-subfolder-cell"
+                      role="button"
+                      tabindex="0"
+                      style="height: {filmstripBase}px; min-width: {filmstripBase}px; flex-shrink: 0;"
+                      onclick={() => library.openCollection(folderPath)}
+                      onkeydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          library.openCollection(folderPath);
+                        }
+                      }}
+                    >
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--yellow-soft)"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                        />
+                      </svg>
+                      <div class="filmstrip-subfolder-name">
+                        {getFileName(folderPath)}
+                      </div>
+                    </div>
+                  {/each}
                 {/if}
                 {#each sortedFiles as path (path)}
                   {@const active = activePaths.has(path)}
@@ -2139,6 +2223,7 @@
 
   .tab-content {
     width: 100%;
+    height: 100%;
   }
 
   .library-tabs {
@@ -2353,6 +2438,7 @@
 
   .library-scroll {
     flex: 1;
+    overflow-x: hidden;
     overflow-y: auto;
     scroll-behavior: smooth;
     padding: 16px 24px;
@@ -2397,8 +2483,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    min-height: 100%;
-    padding: 0 calc(50% - 100px);
+    height: 100%;
+    padding: 0 24px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
@@ -2452,6 +2538,25 @@
     background: var(--bg-secondary, #111);
   }
 
+  .filmstrip-subfolder-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .filmstrip-subfolder-name {
+    font-family: var(--font-family);
+    font-size: 11px;
+    color: var(--text-primary, #fff);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+  }
+
   /* River view */
   .library-river {
     display: flex;
@@ -2500,6 +2605,27 @@
     width: 100%;
     height: 100%;
     background: var(--bg-secondary, #111);
+  }
+
+  .river-subfolder-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    aspect-ratio: 1;
+    flex-grow: 0 !important;
+  }
+
+  .river-subfolder-name {
+    font-family: var(--font-family);
+    font-size: 11px;
+    color: var(--text-primary, #fff);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
   }
 
   /* Grid view */
