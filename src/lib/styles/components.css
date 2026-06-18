@@ -1653,22 +1653,22 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
     linear-gradient(var(--text-primary) 0 0) content-box,
     linear-gradient(var(--text-primary) 0 0);
   mask-composite: exclude;
-  padding: 4px;
+  padding: 2px;
 }
 
 .library-sweep::before {
   content: "";
   position: absolute;
-  width: 120px;
-  height: 120px;
-  margin: -60px 0 0 -60px;
+  width: 70px;
+  height: 70px;
+  margin: -35px 0 0 -35px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
     white 0%,
-    rgba(255, 255, 255, 0.8) 12%,
-    rgba(255, 255, 255, 0.3) 30%,
-    transparent 45%
+    rgba(255, 255, 255, 0.7) 15%,
+    rgba(255, 255, 255, 0.2) 30%,
+    transparent 38%
   );
   offset-path: inset(0 round 6px);
   offset-distance: 0%;
