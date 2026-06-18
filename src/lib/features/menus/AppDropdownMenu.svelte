@@ -38,7 +38,6 @@
         onClose();
       }}
     >
-      <span class="library-sweep"></span>
       <svg
         width="14"
         height="14"
