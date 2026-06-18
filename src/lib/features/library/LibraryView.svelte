@@ -3034,5 +3034,6 @@
     background: rgba(245, 197, 24, 0.08);
     pointer-events: none;
     z-index: 10;
+    border-radius: 6px;
   }
 </style>
