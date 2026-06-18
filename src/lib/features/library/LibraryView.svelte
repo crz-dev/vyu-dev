@@ -634,21 +634,7 @@
           library.setActiveTab("collections");
         }
       }}
-      >Collections{#if isViewingCollection}
-        <span class="library-tab-close" aria-label="Back to collections">
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </span>
-      {/if}</button
+      >Collections</button
     >
     <button
       class="library-tab"
@@ -2054,27 +2040,6 @@
     color: var(--text-primary, #fff);
   }
 
-  .library-tab-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: 6px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-muted, #888);
-    vertical-align: middle;
-    transition:
-      background 0.15s,
-      color 0.15s;
-  }
-
-  .library-tab:hover .library-tab-close {
-    color: var(--text-secondary, #ccc);
-    background: rgba(255, 255, 255, 0.15);
-  }
-
   .library-placeholder-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -2153,17 +2118,24 @@
 
   .library-collection-name {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 6px 8px;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    bottom: 4px;
+    left: 4px;
+    right: 4px;
+    padding: 4px 6px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 4px;
+    font-family: var(--font-family);
     font-size: 12px;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     z-index: 1;
+    transition: background 0.15s;
+  }
+
+  .library-collection-card:hover .library-collection-name {
+    background: rgba(0, 0, 0, 0.65);
   }
 
   .library-rename-input {

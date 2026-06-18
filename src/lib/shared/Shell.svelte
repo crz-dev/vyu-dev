@@ -680,11 +680,11 @@
           {currentIndex}
           selectMode={library.selectedCount > 0}
           onSelect={async (path) => {
-            if (library.activeTab === "recents") {
-              await loadFile(path);
+            const idx = fileList.indexOf(path);
+            if (idx !== -1) {
+              onSelect(idx);
             } else {
-              const idx = fileList.indexOf(path);
-              if (idx !== -1) onSelect(idx);
+              await loadFile(path);
             }
             closeLibrary();
           }}
