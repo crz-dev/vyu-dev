@@ -6,7 +6,11 @@ import {
   invokeExportEditedMedia,
 } from "$lib/features/media/tools";
 import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
-import { showToast, updateToast } from "$lib/features/toast/toast.svelte";
+import { showToast, updateToast, dismissToast } from "$lib/features/toast/toast.svelte";
+import {
+  loadSkipApplyConfirm,
+  saveSkipApplyConfirm,
+} from "$lib/services/storage";
 
 export type PendingEditAction = "apply" | "export" | null;
 export type ExportFormatOverride = "png" | null;
@@ -61,7 +65,162 @@ export interface EditActionsDeps {
   loadFile: (path: string) => Promise<void>;
 }
 
+const WARNING_ICON =
+  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #eab308"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+const APPLY_ICON =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #4ade80"><path d="M20 6L9 17l-5-5"/></svg>';
+const RESET_ICON =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ef4444"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
+const CONFIRM_ICON =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ef4444"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+
 export function createEditActions(deps: EditActionsDeps) {
+  let applyNoAsk = $state(loadSkipApplyConfirm());
+  let unsavedToastId = $state<number | null>(null);
+  let unsavedToastDismissed = $state(false);
+  let resetConfirming = $state(false);
+  let resetConfirmTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+
+  function getToastActions() {
+    if (resetConfirming) {
+      return [
+        {
+          icon: CONFIRM_ICON,
+          tooltip: "Confirm?",
+          variant: "red" as const,
+          onClick: executeReset,
+        },
+        {
+          icon: APPLY_ICON,
+          tooltip: "Apply",
+          variant: "green" as const,
+          onClick: () => handleApplyEdits(),
+        },
+      ];
+    }
+    return [
+      {
+        icon: RESET_ICON,
+        tooltip: "Reset",
+        variant: "red" as const,
+        onClick: startResetConfirm,
+      },
+      {
+        icon: APPLY_ICON,
+        tooltip: "Apply",
+        variant: "green" as const,
+        onClick: () => handleApplyEdits(),
+      },
+    ];
+  }
+
+  function showUnsavedToast() {
+    if (unsavedToastId !== null) return;
+    unsavedToastId = showToast({
+      message: "File has unsaved changes",
+      color: "grey",
+      duration: 0,
+      icon: WARNING_ICON,
+      prepend: true,
+      actions: getToastActions(),
+    });
+  }
+
+  function syncToastActions() {
+    if (unsavedToastId !== null) {
+      updateToast(unsavedToastId, { actions: getToastActions() });
+    }
+  }
+
+  function startResetConfirm() {
+    if (resetConfirmTimeout) clearTimeout(resetConfirmTimeout);
+    resetConfirming = true;
+    syncToastActions();
+    resetConfirmTimeout = setTimeout(() => {
+      resetConfirming = false;
+      syncToastActions();
+      resetConfirmTimeout = null;
+    }, 5000);
+  }
+
+  function executeReset() {
+    if (resetConfirmTimeout) clearTimeout(resetConfirmTimeout);
+    resetConfirmTimeout = null;
+    resetConfirming = false;
+    handleReset();
+  }
+
+  function hideUnsavedToast() {
+    if (unsavedToastId !== null) {
+      dismissToast(unsavedToastId);
+      unsavedToastId = null;
+    }
+  }
+
+  function isActionInFlight(): boolean {
+    return (
+      editDialogStore.editApplyConfirm ||
+      editDialogStore.editTransparencyConfirm ||
+      editing.isApplying ||
+      editing.isExporting
+    );
+  }
+
+  $effect(() => {
+    const snap = editing.snapshot;
+    void snap.rotation;
+    void snap.flipped;
+    void snap.flippedVertical;
+    void snap.brightness;
+    void snap.contrast;
+    void snap.saturation;
+    void snap.hue;
+    void snap.cropBounds.left;
+    void snap.cropBounds.top;
+    void snap.cropBounds.right;
+    void snap.cropBounds.bottom;
+    void snap.cropAspectRatio;
+
+    if (unsavedToastDismissed) {
+      unsavedToastDismissed = false;
+    }
+  });
+
+  $effect(() => {
+    const menuOpen = menuStore.editMenuVisible;
+    const snap = editing.snapshot;
+    const hasEdits =
+      snap.rotation !== 0 ||
+      snap.flipped ||
+      snap.flippedVertical ||
+      snap.brightness !== 1 ||
+      snap.contrast !== 1 ||
+      snap.saturation !== 1 ||
+      snap.hue !== 0 ||
+      snap.cropBounds.left !== 0 ||
+      snap.cropBounds.top !== 0 ||
+      snap.cropBounds.right !== 0 ||
+      snap.cropBounds.bottom !== 0 ||
+      snap.cropAspectRatio !== null;
+    const applied = editing.isApplied;
+
+    if (
+      !menuOpen &&
+      hasEdits &&
+      !applied &&
+      !unsavedToastDismissed &&
+      !isActionInFlight()
+    ) {
+      showUnsavedToast();
+    } else {
+      hideUnsavedToast();
+    }
+  });
+
+  function handleUpdateApplyNoAsk(v: boolean) {
+    applyNoAsk = v;
+  }
+
   function needsTransparencyDialog(): boolean {
     if (deps.getIsVideo()) return false;
     const ext = getFileExt(deps.getFilePath());
@@ -159,6 +318,8 @@ export function createEditActions(deps: EditActionsDeps) {
       }
 
       editing.isExporting = false;
+      unsavedToastDismissed = true;
+      hideUnsavedToast();
       updateToast(toastId, {
         message: "Exported!",
         color: "green",
@@ -187,6 +348,11 @@ export function createEditActions(deps: EditActionsDeps) {
     if (needsTransparencyDialog()) {
       editDialogStore.pendingEditAction = "apply";
       editDialogStore.editTransparencyConfirm = true;
+      return;
+    }
+
+    if (applyNoAsk) {
+      await performApply();
       return;
     }
 
@@ -229,6 +395,7 @@ export function createEditActions(deps: EditActionsDeps) {
 
   async function handleApplyConfirm() {
     editDialogStore.editApplyConfirm = false;
+    if (applyNoAsk) saveSkipApplyConfirm();
     await performApply();
   }
 
@@ -260,7 +427,7 @@ export function createEditActions(deps: EditActionsDeps) {
 
   async function handleReset() {
     await editing.reset();
-    showToast({ message: "Edits reset", color: "yellow" });
+    showToast({ message: "Edits reset", color: "red" });
   }
 
   return {
@@ -275,5 +442,9 @@ export function createEditActions(deps: EditActionsDeps) {
     closeEditTransparencyConfirm,
     handleUndo,
     handleReset,
+    get applyNoAsk() {
+      return applyNoAsk;
+    },
+    handleUpdateApplyNoAsk,
   };
 }

@@ -56,6 +56,10 @@
     dragStartY = e.clientY;
     dragStartBounds = { ...editing.snapshot.cropBounds };
 
+    if (handle !== "move") {
+      editing.snapshot.cropAspectRatio = null;
+    }
+
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
   }

@@ -59,6 +59,14 @@ export function saveSkipDeleteConfirmation(): void {
   localStorage.setItem("vyu-delete-no-ask", "true");
 }
 
+export function loadSkipApplyConfirm(): boolean {
+  return localStorage.getItem("vyu-edit-apply-no-warn") === "true";
+}
+
+export function saveSkipApplyConfirm(): void {
+  localStorage.setItem("vyu-edit-apply-no-warn", "true");
+}
+
 export function loadClipPreferences(): {
   deleteOriginal: boolean;
   useCustomPath: boolean;

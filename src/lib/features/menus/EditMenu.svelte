@@ -50,11 +50,14 @@
 
   function flashButton(id: string) {
     if (flashTimeout) clearTimeout(flashTimeout);
-    flashTarget = id;
-    flashTimeout = setTimeout(() => {
-      flashTarget = null;
-      flashTimeout = null;
-    }, 450);
+    flashTarget = null;
+    requestAnimationFrame(() => {
+      flashTarget = id;
+      flashTimeout = setTimeout(() => {
+        flashTarget = null;
+        flashTimeout = null;
+      }, 450);
+    });
   }
 
   $effect(() => {
@@ -72,6 +75,7 @@
       flipRowOpen = false;
       cropRowOpen = false;
       activeCropTool = null;
+      if (editing.cropMode) editing.exitCropMode();
     }
   });
 
@@ -80,6 +84,20 @@
     localContrast = editing.snapshot.contrast;
     localSaturation = editing.snapshot.saturation;
     localHue = editing.snapshot.hue;
+  });
+
+  $effect(() => {
+    if (!cropRowOpen) return;
+    const ratio = editing.snapshot.cropAspectRatio;
+    if (ratio === null) {
+      activeCropTool = editing.getCropBounds() !== null ? "custom" : null;
+    } else if (Math.abs(ratio - 16 / 9) < 0.001) {
+      activeCropTool = "16-9";
+    } else if (Math.abs(ratio - 9 / 16) < 0.001) {
+      activeCropTool = "9-16";
+    } else if (Math.abs(ratio - 1) < 0.001) {
+      activeCropTool = "1-1";
+    }
   });
 
   function toggleColorTool(
@@ -221,13 +239,8 @@
         flipRowOpen = false;
       }
     } else if (activeRotateTool === "custom") {
-      // Don't close the slider — just add the preset rotation
       applyPresetRotation(getPresetAngle(tool));
     } else {
-      activeRotateTool = tool;
-      colorRowOpen = false;
-      activeColorTool = null;
-      flipRowOpen = false;
       editing.pushUndo();
       editing.rotate(getPresetAngle(tool));
     }
@@ -926,12 +939,12 @@
                   trackEl.setPointerCapture(e.pointerId);
                 }}
               ></div>
+              {#if scrubberTooltipVisible}
+                <div class="color-scrubber-tooltip" style="left: {scrubberPct}%">
+                  <span>{displayValue}</span>
+                </div>
+              {/if}
             </div>
-            {#if scrubberTooltipVisible}
-              <div class="color-scrubber-tooltip" style="left: {scrubberPct}%">
-                <span>{displayValue}</span>
-              </div>
-            {/if}
           </div>
         {/if}
 
@@ -944,7 +957,6 @@
           >
             <button
               class="edit-menu-btn yellow sub"
-              class:active={activeRotateTool === "90-right"}
               class:flash={flashTarget === "90-right"}
               onclick={() => toggleRotateTool("90-right")}
             >
@@ -965,7 +977,6 @@
             </button>
             <button
               class="edit-menu-btn yellow sub"
-              class:active={activeRotateTool === "90-left"}
               class:flash={flashTarget === "90-left"}
               onclick={() => toggleRotateTool("90-left")}
             >
@@ -986,7 +997,6 @@
             </button>
             <button
               class="edit-menu-btn yellow sub"
-              class:active={activeRotateTool === "180"}
               class:flash={flashTarget === "180"}
               onclick={() => toggleRotateTool("180")}
             >
@@ -1010,7 +1020,6 @@
             <button
               class="edit-menu-btn yellow sub"
               class:active={activeRotateTool === "custom"}
-              class:flash={flashTarget === "custom"}
               onclick={() => toggleRotateTool("custom")}
             >
               <svg
@@ -1092,15 +1101,15 @@
                   rotateTrackEl.setPointerCapture(e.pointerId);
                 }}
               ></div>
+              {#if rotateScrubberTooltipVisible}
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {rotateScrubberPct}%"
+                >
+                  <span>{rotateDisplayValue}</span>
+                </div>
+              {/if}
             </div>
-            {#if rotateScrubberTooltipVisible}
-              <div
-                class="color-scrubber-tooltip"
-                style="left: {rotateScrubberPct}%"
-              >
-                <span>{rotateDisplayValue}</span>
-              </div>
-            {/if}
           </div>
         {/if}
 

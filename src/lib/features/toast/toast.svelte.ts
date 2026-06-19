@@ -1,9 +1,10 @@
-export type ToastColor = "green" | "red" | "yellow" | "blue";
+export type ToastColor = "green" | "red" | "yellow" | "blue" | "grey";
 
 export interface ToastAction {
-  label: string;
+  label?: string;
   icon?: string;
-  variant?: "default" | "accent";
+  variant?: "default" | "accent" | "red" | "green";
+  tooltip?: string;
   onClick: () => void;
 }
 
@@ -11,13 +12,16 @@ export interface ToastOptions {
   message: string;
   color: ToastColor;
   duration?: number;
+  icon?: string;
   actions?: ToastAction[];
+  prepend?: boolean;
 }
 
-interface ToastItem extends Required<Omit<ToastOptions, "actions">> {
+interface ToastItem extends Required<Omit<ToastOptions, "actions" | "prepend" | "icon">> {
   id: number;
   actions: ToastAction[];
   exiting: boolean;
+  icon: string;
 }
 
 const EXIT_MS = 200;
@@ -50,10 +54,15 @@ function createToastStore() {
       message: opts.message,
       color: opts.color,
       duration,
+      icon: opts.icon ?? "",
       actions: opts.actions ?? [],
       exiting: false,
     };
-    toasts.push(item);
+    if (opts.prepend) {
+      toasts.unshift(item);
+    } else {
+      toasts.push(item);
+    }
 
     if (duration > 0) {
       timers.set(

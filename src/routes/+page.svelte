@@ -688,6 +688,7 @@
     closeEditTransparencyConfirm,
     handleUndo,
     handleReset,
+    handleUpdateApplyNoAsk,
   } = editActions;
   const { handleMarkupApply, handleMarkupExport } = createMarkupActions({
     getFilePath: () => filePath,
@@ -1175,7 +1176,9 @@
 <ApplyEditDialog
   open={editDialogStore.editApplyConfirm}
   {fileName}
+  applyNoAsk={editActions.applyNoAsk}
   onClose={closeEditApplyConfirm}
   onConfirm={handleApplyConfirm}
   onExportInstead={handleApplyExportInstead}
+  onUpdateApplyNoAsk={handleUpdateApplyNoAsk}
 />

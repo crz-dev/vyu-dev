@@ -2,15 +2,19 @@
   let {
     open,
     fileName,
+    applyNoAsk,
     onClose,
     onConfirm,
     onExportInstead,
+    onUpdateApplyNoAsk,
   }: {
     open: boolean;
     fileName: string;
+    applyNoAsk: boolean;
     onClose: () => void;
     onConfirm: () => void;
     onExportInstead: () => void;
+    onUpdateApplyNoAsk: (v: boolean) => void;
   } = $props();
 </script>
 
@@ -72,6 +76,36 @@
       <div class="edit-confirm-body-box">
         Applying edits will overwrite the current image. A temporary backup is
         created, but you cannot undo after closing the file or app.
+      </div>
+      <div class="delete-toggles">
+        <label class="toggle-row">
+          <span class="toggle-label"
+            ><svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"
+              /><path
+                d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
+              /><line x1="1" y1="1" x2="23" y2="23"
+            /></svg>
+            Don't ask again</span
+          >
+          <input
+            type="checkbox"
+            checked={applyNoAsk}
+            onchange={(e) => onUpdateApplyNoAsk(e.currentTarget.checked)}
+          />
+          <span class="toggle-track green-toggle" class:on={applyNoAsk}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
       </div>
       <div class="edit-confirm-actions edit-confirm-actions-horizontal">
         <button class="edit-confirm-btn-export" onclick={onExportInstead}>

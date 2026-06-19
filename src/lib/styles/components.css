@@ -2800,7 +2800,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .color-scrubber-tooltip {
   position: absolute;
   transform: translateX(-50%);
-  bottom: -24px;
+  bottom: -36px;
   background: var(--bg-elevated);
   color: var(--text-primary);
   font-size: 10px;
@@ -2913,10 +2913,11 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .crop-handle-diamond {
   width: 10px;
   height: 10px;
-  background: var(--text-primary);
-  border: 1px solid rgba(0, 0, 0, 0.4);
+  background: #ffffff;
+  border: 0.5px solid rgba(255, 255, 255, 0.8);
   transform: rotate(45deg);
-  transition: transform 0.15s ease;
+  transition: transform 0.18s cubic-bezier(0.22, 0.9, 0.3, 1);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.15);
 }
 
 .crop-handle:hover .crop-handle-diamond {
