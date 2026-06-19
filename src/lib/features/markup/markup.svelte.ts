@@ -63,7 +63,7 @@ export interface PlacedShape {
   width: number;
   height: number;
   rotation: number;
-  cornerRadius: number;
+  fill: boolean;
   color: string;
   thickness: number;
   opacity: number;
@@ -219,7 +219,7 @@ function createMarkupStore() {
 
   // Shape tools state
   let activeTool = $state<MarkupTool>("freehand");
-  let roundedCorner = $state(false);
+  let fillShapes = $state(false);
   let pathMode = $state(false);
 
   // Selection state
@@ -258,8 +258,8 @@ function createMarkupStore() {
     activeTool = activeTool === tool ? "freehand" : tool;
   }
 
-  function setRoundedCorner(v: boolean) {
-    roundedCorner = v;
+  function setFillShapes(v: boolean) {
+    fillShapes = v;
   }
 
   function setPathMode(v: boolean) {
@@ -333,13 +333,13 @@ function createMarkupStore() {
     strokes = next;
   }
 
-  function toggleSelectedCornerRadius() {
-    const newVal = !roundedCorner;
-    roundedCorner = newVal;
+  function toggleSelectedShapeFill() {
+    const newVal = !fillShapes;
+    fillShapes = newVal;
     if (selectedIndex !== null) {
       const s = strokes[selectedIndex];
-      if (s && s.type === "shape" && s.shape === "square") {
-        updateShape(selectedIndex, { cornerRadius: newVal ? 0.2 : 0 });
+      if (s && s.type === "shape") {
+        updateShape(selectedIndex, { fill: newVal });
       }
     }
   }
@@ -423,7 +423,7 @@ function createMarkupStore() {
       width: Math.max(0.005, width),
       height: Math.max(0.005, height),
       rotation: 0,
-      cornerRadius: roundedCorner ? 0.2 : 0,
+      fill: fillShapes,
       color: drawColor,
       thickness: drawThickness,
       opacity: drawOpacity,
@@ -1152,7 +1152,7 @@ function createMarkupStore() {
     strokes = [];
     currentStroke = null;
     activeTool = "freehand";
-    roundedCorner = false;
+    fillShapes = false;
     pathMode = false;
     selectedIndex = null;
     selectedIndices = [];
@@ -1206,8 +1206,8 @@ function createMarkupStore() {
     get activeTool() {
       return activeTool;
     },
-    get roundedCorner() {
-      return roundedCorner;
+    get fillShapes() {
+      return fillShapes;
     },
     get pathMode() {
       return pathMode;
@@ -1349,14 +1349,14 @@ function createMarkupStore() {
     selectShapes,
     cleanup,
     setActiveTool,
-    setRoundedCorner,
+    setFillShapes,
     setPathMode,
     selectShape,
     updateShape,
     updateText,
     placeText,
     placeTextSized,
-    toggleSelectedCornerRadius,
+    toggleSelectedShapeFill,
     placeShape,
     placeShapeSized,
     placeLine,

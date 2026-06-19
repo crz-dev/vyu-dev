@@ -195,8 +195,6 @@
     const cy = s.cy * h;
     const halfW = (s.width * w) / 2;
     const halfH = (s.height * h) / 2;
-    const sw = s.width * w;
-    const sh = s.height * h;
 
     ctx.save();
     ctx.translate(cx, cy);
@@ -206,25 +204,34 @@
     ctx.lineWidth = s.thickness;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.beginPath();
 
     if (s.shape === "square") {
-      if (s.cornerRadius > 0) {
-        const r = s.cornerRadius * Math.min(sw, sh);
-        ctx.roundRect(-halfW, -halfH, sw, sh, r);
-      } else {
-        ctx.rect(-halfW, -halfH, sw, sh);
-      }
+      ctx.beginPath();
+      ctx.rect(-halfW, -halfH, s.width * w, s.height * h);
       ctx.stroke();
+      if (s.fill) {
+        ctx.fillStyle = s.color;
+        ctx.fill();
+      }
     } else if (s.shape === "circle") {
+      ctx.beginPath();
       ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2);
       ctx.stroke();
+      if (s.fill) {
+        ctx.fillStyle = s.color;
+        ctx.fill();
+      }
     } else if (s.shape === "triangle") {
+      ctx.beginPath();
       ctx.moveTo(0, -halfH);
       ctx.lineTo(halfW, halfH);
       ctx.lineTo(-halfW, halfH);
       ctx.closePath();
       ctx.stroke();
+      if (s.fill) {
+        ctx.fillStyle = s.color;
+        ctx.fill();
+      }
     }
     ctx.restore();
     ctx.globalAlpha = 1;
@@ -791,27 +798,34 @@
     ctx.lineWidth = markup.drawThickness;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.beginPath();
 
     if (tool === "square") {
-      const sw = halfW * 2;
-      const sh = halfH * 2;
-      if (markup.roundedCorner) {
-        const r = 0.2 * Math.min(sw, sh);
-        ctx.roundRect(cx - halfW, cy - halfH, sw, sh, r);
-      } else {
-        ctx.rect(cx - halfW, cy - halfH, sw, sh);
-      }
+      ctx.beginPath();
+      ctx.rect(cx - halfW, cy - halfH, halfW * 2, halfH * 2);
       ctx.stroke();
+      if (markup.fillShapes) {
+        ctx.fillStyle = markup.drawColor;
+        ctx.fill();
+      }
     } else if (tool === "circle") {
+      ctx.beginPath();
       ctx.ellipse(cx, cy, halfW, halfH, 0, 0, Math.PI * 2);
       ctx.stroke();
+      if (markup.fillShapes) {
+        ctx.fillStyle = markup.drawColor;
+        ctx.fill();
+      }
     } else if (tool === "triangle") {
+      ctx.beginPath();
       ctx.moveTo(cx, cy - halfH);
       ctx.lineTo(cx + halfW, cy + halfH);
       ctx.lineTo(cx - halfW, cy + halfH);
       ctx.closePath();
       ctx.stroke();
+      if (markup.fillShapes) {
+        ctx.fillStyle = markup.drawColor;
+        ctx.fill();
+      }
     }
     ctx.restore();
     ctx.globalAlpha = 1;

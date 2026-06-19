@@ -99,7 +99,7 @@
       activeTextTool = null;
       textFontDropdownOpen = false;
       markup.setActiveTool("freehand");
-      markup.setRoundedCorner(false);
+      markup.setFillShapes(false);
       markup.setPathMode(false);
       markup.textActive = false;
     }
@@ -1368,15 +1368,15 @@
             >
               <button
                 class="edit-menu-btn sub"
-                class:green={markup.roundedCorner}
-                class:grey={!markup.roundedCorner}
-                class:active={markup.roundedCorner}
+                class:green={markup.fillShapes}
+                class:grey={!markup.fillShapes}
+                class:active={markup.fillShapes}
                 onclick={() => {
-                  markup.toggleSelectedCornerRadius();
+                  markup.toggleSelectedShapeFill();
                 }}
-                aria-pressed={markup.roundedCorner}
-                aria-label="Rounded shapes"
-                data-tooltip="Rounded shapes"
+                aria-pressed={markup.fillShapes}
+                aria-label="Fill shapes"
+                data-tooltip="Fill shapes"
               >
                 <svg
                   width="11"
@@ -1393,10 +1393,19 @@
                     y="3"
                     width="18"
                     height="18"
+                    rx="2"
+                    fill="currentColor"
+                    fill-opacity="0.35"
+                  />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="2"
                     stroke-dasharray="2 2"
                     opacity="0.45"
                   />
-                  <path d="M3 9 V5 Q3 3 5 3 H9" />
                 </svg>
               </button>
               <div class="edit-menu-divider"></div>
