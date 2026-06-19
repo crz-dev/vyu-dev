@@ -64,12 +64,12 @@
   const audioPresets: Record<string, number[]> = {
     Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "Bass Boost": [8, 6, 5, 3, 1, 0, 0, -1, -1, 0],
-    Vocal: [-3, -2, 0, 4, 6, 6, 4, 1, -1, -2],
+    Podcast: [-2, 0, 2, 4, 5, 5, 3, 1, 0, -2],
     Classical: [2, 1, 1, 0, 0, 0, 0, 1, 2, 3],
     Rock: [6, 5, 3, 1, -1, -1, 1, 3, 5, 6],
     Jazz: [4, 3, 2, 1, 1, 0, 0, 1, 3, 4],
     EDM: [9, 7, 5, 2, -2, -3, -1, 3, 4, 6],
-    Podcast: [-2, 0, 2, 4, 5, 5, 3, 1, 0, -2],
+    "Afterparty": [10, 10, 8, 2, -1, -3, -8, -10, -10, -10],
   };
 
   const videoPresets: Record<string, number[]> = {
