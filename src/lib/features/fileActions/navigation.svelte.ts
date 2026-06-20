@@ -77,10 +77,11 @@ export function createNavigation(deps: NavigationDeps) {
       viewer.state.baseZoomLevel = 100;
       if (newPath) {
         editing.switchFile(newPath);
+        markup.switchFile(newPath);
       } else {
         editing.cleanup();
+        markup.cleanup();
       }
-      markup.cleanup();
       menuStore.editMenuVisible = false;
     },
   );

@@ -679,6 +679,8 @@
     getIsVideo: () => isVideo,
     getVideoEl: () => videoEl,
     loadFile,
+    handleMarkupApply: () => handleMarkupApply(),
+    handleClearMarkup: () => markup.clearAllStrokes(),
   });
   const {
     handleApplyEdits,

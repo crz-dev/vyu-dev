@@ -138,6 +138,8 @@ function createMarkupStore() {
   let drawOpacity = $state(1);
   let strokes = $state<MarkupStroke[]>([]);
   let currentStroke = $state<FreehandStroke | null>(null);
+  let filePath = "";
+  let sessionStrokes = new Map<string, MarkupStroke[]>();
   let displayWidth = $state(0);
   let displayHeight = $state(0);
 
@@ -432,6 +434,7 @@ function createMarkupStore() {
     };
     strokes = [...strokes, stroke];
     selectedIndex = strokes.length - 1;
+    selectedIndices = [selectedIndex];
   }
 
   /** Place a sized text box at normalized (x, y) center with explicit fontSize and boxExtraWidth. Auto-selects. */
@@ -461,6 +464,7 @@ function createMarkupStore() {
     };
     strokes = [...strokes, stroke];
     selectedIndex = strokes.length - 1;
+    selectedIndices = [selectedIndex];
   }
 
   /** Place a text box at normalized (x, y) center. Auto-selects. */
@@ -485,6 +489,7 @@ function createMarkupStore() {
     };
     strokes = [...strokes, stroke];
     selectedIndex = strokes.length - 1;
+    selectedIndices = [selectedIndex];
   }
 
   /** Place a straight line between two normalized points. */
@@ -1146,6 +1151,21 @@ function createMarkupStore() {
     return hits;
   }
 
+  function saveToSession() {
+    if (filePath) {
+      sessionStrokes.set(filePath, [...strokes]);
+    }
+  }
+
+  function switchFile(newPath: string) {
+    saveToSession();
+    filePath = newPath;
+    const saved = sessionStrokes.get(newPath);
+    strokes = saved ? [...saved] : [];
+    selectedIndex = null;
+    selectedIndices = [];
+  }
+
   function cleanup() {
     drawActive = false;
     drawColor = "#000000";
@@ -1178,6 +1198,8 @@ function createMarkupStore() {
     selectActive = false;
     removeActive = false;
     strokesHidden = false;
+    filePath = "";
+    sessionStrokes.clear();
   }
 
   return {
@@ -1344,6 +1366,9 @@ function createMarkupStore() {
     set displayHeight(v: number) {
       displayHeight = v;
     },
+    get hasUnapplied() {
+      return strokes.length > 0;
+    },
     toggleDraw,
     setDrawColor,
     setCustomColor,
@@ -1361,6 +1386,7 @@ function createMarkupStore() {
     moveSelectedStrokesBy,
     findStrokesInRect,
     selectShapes,
+    switchFile,
     cleanup,
     setActiveTool,
     setFillShapes,

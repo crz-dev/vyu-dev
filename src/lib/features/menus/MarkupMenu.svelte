@@ -104,6 +104,7 @@
       markup.setFillShapes(false);
       markup.setPathMode(false);
       markup.textActive = false;
+      markup.selectShape(null);
     }
   });
 

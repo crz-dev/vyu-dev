@@ -1,6 +1,7 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { getFileExt } from "$lib/services/files";
 import { editing } from "$lib/features/editing/editing.svelte";
+import { markup } from "$lib/features/markup/markup.svelte";
 import {
   exportEditedImage,
   invokeExportEditedMedia,
@@ -63,6 +64,8 @@ export interface EditActionsDeps {
   getIsVideo: () => boolean;
   getVideoEl: () => HTMLVideoElement | null;
   loadFile: (path: string) => Promise<void>;
+  handleMarkupApply?: () => Promise<void>;
+  handleClearMarkup?: () => void;
 }
 
 const WARNING_ICON =
@@ -115,7 +118,14 @@ export function createEditActions(deps: EditActionsDeps) {
   }
 
   function showUnsavedToast() {
-    if (unsavedToastId !== null) return;
+    if (unsavedToastId !== null) {
+      updateToast(unsavedToastId, {
+        message: "File has unsaved changes",
+        color: "grey",
+        actions: getToastActions(),
+      });
+      return;
+    }
     unsavedToastId = showToast({
       message: "File has unsaved changes",
       color: "grey",
@@ -180,14 +190,18 @@ export function createEditActions(deps: EditActionsDeps) {
     void snap.cropBounds.right;
     void snap.cropBounds.bottom;
     void snap.cropAspectRatio;
+    void markup.hasUnapplied;
 
     if (unsavedToastDismissed) {
       unsavedToastDismissed = false;
     }
   });
 
+  let prevShouldShow = false;
+
   $effect(() => {
-    const menuOpen = menuStore.editMenuVisible;
+    const editMenuOpen = menuStore.editMenuVisible;
+    const markupMenuOpen = menuStore.markupMenuVisible;
     const snap = editing.snapshot;
     const hasEdits =
       snap.rotation !== 0 ||
@@ -203,18 +217,19 @@ export function createEditActions(deps: EditActionsDeps) {
       snap.cropBounds.bottom !== 0 ||
       snap.cropAspectRatio !== null;
     const applied = editing.isApplied;
-
-    if (
-      !menuOpen &&
-      hasEdits &&
-      !applied &&
+    const hasUnappliedEdits = hasEdits && !applied;
+    const hasUnappliedMarkup = markup.hasUnapplied;
+    const shouldShow =
       !unsavedToastDismissed &&
-      !isActionInFlight()
-    ) {
+      !isActionInFlight() &&
+      ((hasUnappliedEdits && !editMenuOpen) || (hasUnappliedMarkup && !markupMenuOpen));
+
+    if (shouldShow && !prevShouldShow) {
       showUnsavedToast();
-    } else {
+    } else if (!shouldShow && prevShouldShow) {
       hideUnsavedToast();
     }
+    prevShouldShow = shouldShow;
   });
 
   function handleUpdateApplyNoAsk(v: boolean) {
@@ -341,22 +356,29 @@ export function createEditActions(deps: EditActionsDeps) {
   }
 
   async function handleApplyEdits() {
-    if (!editing.getHasEdits() && !editing.getCropBounds()) return;
-    menuStore.editMenuVisible = false;
-    editing.exitCropMode();
+    const hasEdits = editing.getHasEdits() || editing.getCropBounds() !== null;
+    if (!hasEdits && !markup.hasUnapplied) return;
+    if (hasEdits) {
+      menuStore.editMenuVisible = false;
+      editing.exitCropMode();
 
-    if (needsTransparencyDialog()) {
-      editDialogStore.pendingEditAction = "apply";
-      editDialogStore.editTransparencyConfirm = true;
-      return;
+      if (needsTransparencyDialog()) {
+        editDialogStore.pendingEditAction = "apply";
+        editDialogStore.editTransparencyConfirm = true;
+        return;
+      }
+
+      if (applyNoAsk) {
+        await performApply();
+      } else {
+        editDialogStore.editApplyConfirm = true;
+        return;
+      }
     }
-
-    if (applyNoAsk) {
-      await performApply();
-      return;
+    if (markup.hasUnapplied && deps.handleMarkupApply) {
+      await deps.handleMarkupApply();
     }
-
-    editDialogStore.editApplyConfirm = true;
+    hideUnsavedToast();
   }
 
   async function handleExportEdits() {
@@ -427,6 +449,9 @@ export function createEditActions(deps: EditActionsDeps) {
 
   async function handleReset() {
     await editing.reset();
+    if (markup.hasUnapplied && deps.handleClearMarkup) {
+      deps.handleClearMarkup();
+    }
     showToast({ message: "Edits reset", color: "red" });
   }
 
