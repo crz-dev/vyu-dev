@@ -204,15 +204,20 @@ function createEditingStore() {
     }
   }
 
+  function clearEdits() {
+    snapshot = defaultSnapshot();
+    undoStack = [];
+    cropMode = false;
+    _cropShouldCenter = false;
+    if (filePath) sessionEdits.delete(filePath);
+  }
+
   async function reset() {
     if (isApplied) {
       await restoreOriginal();
       isApplied = false;
     }
-    snapshot = defaultSnapshot();
-    undoStack = [];
-    cropMode = false;
-    _cropShouldCenter = false;
+    clearEdits();
   }
 
   function switchFile(newPath: string) {
@@ -302,6 +307,7 @@ function createEditingStore() {
     setSaturation,
     setHue,
     backupOriginal,
+    clearEdits,
     reset,
     cleanup,
     setFilePath,

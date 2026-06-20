@@ -7,7 +7,11 @@ import {
   invokeExportEditedMedia,
 } from "$lib/features/media/tools";
 import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
-import { showToast, updateToast, dismissToast } from "$lib/features/toast/toast.svelte";
+import {
+  showToast,
+  updateToast,
+  dismissToast,
+} from "$lib/features/toast/toast.svelte";
 import {
   loadSkipApplyConfirm,
   saveSkipApplyConfirm,
@@ -223,7 +227,8 @@ export function createEditActions(deps: EditActionsDeps) {
     const shouldShow =
       !unsavedToastDismissed &&
       !isActionInFlight() &&
-      ((hasUnappliedEdits && !editMenuOpen) || (hasUnappliedMarkup && !markupMenuOpen));
+      ((hasUnappliedEdits && !editMenuOpen) ||
+        (hasUnappliedMarkup && !markupMenuOpen));
 
     if (shouldShow && !prevShouldShow) {
       showUnsavedToast();
@@ -276,7 +281,12 @@ export function createEditActions(deps: EditActionsDeps) {
 
       editing.isApplying = false;
       editing.isApplied = true;
+      editing.clearEdits();
+      const exportOverride = editDialogStore.exportFormatOverride;
       editDialogStore.exportFormatOverride = null;
+      if (!exportOverride) {
+        await deps.loadFile(filePath);
+      }
       showToast({ message: "Edits applied", color: "green" });
     } catch (err) {
       editing.isApplying = false;
@@ -428,7 +438,8 @@ export function createEditActions(deps: EditActionsDeps) {
     if (markup.hasUnapplied && deps.handleMarkupApply) {
       await deps.handleMarkupApply();
     }
-    const hasImageEdits = editing.getHasEdits() || editing.getCropBounds() !== null;
+    const hasImageEdits =
+      editing.getHasEdits() || editing.getCropBounds() !== null;
     if (hasImageEdits) {
       await performApply();
     }
@@ -440,7 +451,8 @@ export function createEditActions(deps: EditActionsDeps) {
     if (markup.hasUnapplied && deps.handleMarkupExport) {
       await deps.handleMarkupExport();
     }
-    const hasImageEdits = editing.getHasEdits() || editing.getCropBounds() !== null;
+    const hasImageEdits =
+      editing.getHasEdits() || editing.getCropBounds() !== null;
     if (hasImageEdits) {
       await performExport();
     }
