@@ -2342,6 +2342,7 @@
     onkeydown={(e) => {
       // Inline text editing — capture keyboard into the text box
       if (editingTextIndex !== null) {
+        e.stopPropagation();
         const s = markup.strokes[editingTextIndex];
         if (s && s.type === "text") {
           if (e.key === "Escape") {
