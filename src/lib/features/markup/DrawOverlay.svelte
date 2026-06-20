@@ -1295,6 +1295,12 @@
   });
 
   $effect(() => {
+    if (!markup.textActive) {
+      exitEditing();
+    }
+  });
+
+  $effect(() => {
     if (
       (markup.drawActive ||
         markup.highlightActive ||

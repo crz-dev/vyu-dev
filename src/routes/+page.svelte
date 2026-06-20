@@ -680,6 +680,7 @@
     getVideoEl: () => videoEl,
     loadFile,
     handleMarkupApply: () => handleMarkupApply(),
+    handleMarkupExport: () => handleMarkupExport(),
     handleClearMarkup: () => markup.clearAllStrokes(),
   });
   const {
@@ -982,7 +983,7 @@
   onExport={handleExportEdits}
   onUndo={handleUndo}
   onReset={handleReset}
-  onMarkupApply={handleMarkupApply}
+  onMarkupApply={handleApplyEdits}
   onMarkupExport={handleMarkupExport}
   markupMenuVisible={menuStore.markupMenuVisible}
   effectsMenuVisible={menuStore.effectsMenuVisible}

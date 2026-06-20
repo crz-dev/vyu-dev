@@ -65,6 +65,7 @@ export interface EditActionsDeps {
   getVideoEl: () => HTMLVideoElement | null;
   loadFile: (path: string) => Promise<void>;
   handleMarkupApply?: () => Promise<void>;
+  handleMarkupExport?: () => Promise<void>;
   handleClearMarkup?: () => void;
 }
 
@@ -376,7 +377,13 @@ export function createEditActions(deps: EditActionsDeps) {
       }
     }
     if (markup.hasUnapplied && deps.handleMarkupApply) {
-      await deps.handleMarkupApply();
+      menuStore.markupMenuVisible = false;
+      if (applyNoAsk) {
+        await deps.handleMarkupApply();
+      } else {
+        editDialogStore.editApplyConfirm = true;
+        return;
+      }
     }
     hideUnsavedToast();
   }
@@ -418,13 +425,25 @@ export function createEditActions(deps: EditActionsDeps) {
   async function handleApplyConfirm() {
     editDialogStore.editApplyConfirm = false;
     if (applyNoAsk) saveSkipApplyConfirm();
-    await performApply();
+    if (markup.hasUnapplied && deps.handleMarkupApply) {
+      await deps.handleMarkupApply();
+    }
+    const hasImageEdits = editing.getHasEdits() || editing.getCropBounds() !== null;
+    if (hasImageEdits) {
+      await performApply();
+    }
   }
 
   async function handleApplyExportInstead() {
     editDialogStore.editApplyConfirm = false;
     editDialogStore.exportFormatOverride = null;
-    await performExport();
+    if (markup.hasUnapplied && deps.handleMarkupExport) {
+      await deps.handleMarkupExport();
+    }
+    const hasImageEdits = editing.getHasEdits() || editing.getCropBounds() !== null;
+    if (hasImageEdits) {
+      await performExport();
+    }
   }
 
   function closeEditApplyConfirm() {
