@@ -17,7 +17,12 @@ import type {
   HighlightStraight,
 } from "$lib/features/markup/markup.svelte";
 
-async function loadImageAsElement(filePath: string): Promise<HTMLImageElement> {
+interface LoadedImage {
+  img: HTMLImageElement;
+  url: string;
+}
+
+async function loadImageAsElement(filePath: string): Promise<LoadedImage> {
   const { readFile } = await import("@tauri-apps/plugin-fs");
   const bytes = await readFile(filePath);
   const blob = new Blob([bytes]);
@@ -29,8 +34,7 @@ async function loadImageAsElement(filePath: string): Promise<HTMLImageElement> {
     img.onload = () => resolve();
     img.onerror = () => reject(new Error("Failed to load image"));
   });
-  URL.revokeObjectURL(url);
-  return img;
+  return { img, url };
 }
 
 async function saveCanvasToFile(
@@ -45,8 +49,11 @@ async function saveCanvasToFile(
         ? "image/webp"
         : "image/png";
 
-  const outBlob = await new Promise<Blob>((resolve) => {
-    canvas.toBlob((b) => resolve(b!), mimeType, 0.92);
+  const outBlob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((b) => {
+      if (b) resolve(b);
+      else reject(new Error("Canvas toBlob returned null"));
+    }, mimeType, 0.92);
   });
   const arrayBuffer = await outBlob.arrayBuffer();
   const { writeFile } = await import("@tauri-apps/plugin-fs");
@@ -58,7 +65,7 @@ export async function exportCroppedImage(
   bounds: { left: number; top: number; right: number; bottom: number },
   outputPath: string,
 ) {
-  const img = await loadImageAsElement(filePath);
+  const { img, url } = await loadImageAsElement(filePath);
   const w = img.naturalWidth;
   const h = img.naturalHeight;
   const cropX = Math.round(bounds.left * w);
@@ -72,6 +79,7 @@ export async function exportCroppedImage(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not create canvas context");
   ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+  URL.revokeObjectURL(url);
 
   await saveCanvasToFile(canvas, outputPath);
 }
@@ -250,7 +258,7 @@ export async function exportEditedImage(
   snapshot: EditSnapshot,
   outputPath: string,
 ) {
-  const img = await loadImageAsElement(filePath);
+  const { img, url } = await loadImageAsElement(filePath);
   const w = img.naturalWidth;
   const h = img.naturalHeight;
 
@@ -342,6 +350,7 @@ export async function exportEditedImage(
   );
 
   ctx.restore();
+  URL.revokeObjectURL(url);
 
   await saveCanvasToFile(canvas, outputPath);
 }
@@ -350,11 +359,17 @@ export async function renderMarkupOnImage(
   filePath: string,
   strokes: MarkupStroke[],
   outputPath: string,
+  displayWidth: number,
+  displayHeight: number,
 ) {
-  const img = await loadImageAsElement(filePath);
+  const { img, url } = await loadImageAsElement(filePath);
 
   const w = img.naturalWidth;
   const h = img.naturalHeight;
+  const scale =
+    displayWidth > 0 && displayHeight > 0
+      ? Math.min(w / displayWidth, h / displayHeight)
+      : 1;
 
   const canvas = document.createElement("canvas");
   canvas.width = w;
@@ -363,17 +378,18 @@ export async function renderMarkupOnImage(
   if (!ctx) throw new Error("Could not create canvas context");
 
   ctx.drawImage(img, 0, 0, w, h);
+  URL.revokeObjectURL(url);
 
   for (const stroke of strokes) {
     if (stroke.type === "freehand") {
-      renderFreehand(ctx, stroke, w, h);
+      renderFreehand(ctx, stroke, w, h, scale);
     } else if (stroke.type === "shape") {
-      renderShape(ctx, stroke, w, h);
+      renderShape(ctx, stroke, w, h, scale);
     } else if (stroke.type === "line") {
-      renderLine(ctx, stroke, w, h);
+      renderLine(ctx, stroke, w, h, scale);
     } else if (stroke.type === "highlight") {
       if (stroke.mode === "free") {
-        renderHighlightFreehand(ctx, stroke, w, h);
+        renderHighlightFreehand(ctx, stroke, w, h, scale);
       } else {
         renderHighlightStraightBar(
           ctx,
@@ -386,10 +402,11 @@ export async function renderMarkupOnImage(
           stroke.color,
           stroke.thickness,
           stroke.opacity,
+          scale,
         );
       }
     } else if (stroke.type === "text") {
-      renderText(ctx, stroke, w, h);
+      renderText(ctx, stroke, w, h, scale);
     }
   }
   ctx.globalAlpha = 1;
@@ -422,18 +439,20 @@ function renderFreehand(
   stroke: FreehandStroke,
   w: number,
   h: number,
+  scale: number,
 ) {
   const pts = stroke.points;
   if (pts.length < 1) return;
+  const thickness = stroke.thickness * scale;
   ctx.beginPath();
   ctx.globalAlpha = stroke.opacity;
   ctx.strokeStyle = stroke.color;
-  ctx.lineWidth = stroke.thickness;
+  ctx.lineWidth = thickness;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
   if (pts.length === 1) {
-    ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
+    ctx.arc(pts[0].x * w, pts[0].y * h, thickness / 2, 0, Math.PI * 2);
     ctx.fillStyle = stroke.color;
     ctx.fill();
   } else {
@@ -451,18 +470,20 @@ function renderHighlightFreehand(
   stroke: HighlightFreehand,
   w: number,
   h: number,
+  scale: number,
 ) {
   const pts = stroke.points;
   if (pts.length < 1) return;
+  const thickness = stroke.thickness * scale;
   ctx.beginPath();
   ctx.globalAlpha = stroke.opacity;
   ctx.strokeStyle = stroke.color;
-  ctx.lineWidth = stroke.thickness;
+  ctx.lineWidth = thickness;
   ctx.lineCap = "butt";
   ctx.lineJoin = "miter";
 
   if (pts.length === 1) {
-    ctx.arc(pts[0].x * w, pts[0].y * h, stroke.thickness / 2, 0, Math.PI * 2);
+    ctx.arc(pts[0].x * w, pts[0].y * h, thickness / 2, 0, Math.PI * 2);
     ctx.fillStyle = stroke.color;
     ctx.fill();
   } else {
@@ -486,13 +507,14 @@ function renderHighlightStraightBar(
   color: string,
   thickness: number,
   opacity: number,
+  scale: number,
 ) {
   const px1 = x1 * w;
   const py1 = y1 * h;
   const px2 = x2 * w;
   const py2 = y2 * h;
   const angle = Math.atan2(py2 - py1, px2 - px1);
-  const halfThick = thickness / 2;
+  const halfThick = (thickness * scale) / 2;
   const cos = Math.cos(angle + Math.PI / 2);
   const sin = Math.sin(angle + Math.PI / 2);
 
@@ -513,6 +535,7 @@ function renderShape(
   s: PlacedShape,
   w: number,
   h: number,
+  scale: number,
 ) {
   const cx = s.cx * w;
   const cy = s.cy * h;
@@ -524,7 +547,7 @@ function renderShape(
   ctx.rotate(s.rotation);
   ctx.globalAlpha = s.opacity;
   ctx.strokeStyle = s.color;
-  ctx.lineWidth = s.thickness;
+  ctx.lineWidth = s.thickness * scale;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
@@ -565,11 +588,12 @@ function renderLine(
   l: PlacedLine,
   w: number,
   h: number,
+  scale: number,
 ) {
   ctx.beginPath();
   ctx.globalAlpha = l.opacity;
   ctx.strokeStyle = l.color;
-  ctx.lineWidth = l.thickness;
+  ctx.lineWidth = l.thickness * scale;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.fillStyle = l.color;
@@ -583,7 +607,7 @@ function renderLine(
     ctx.lineTo(x2, y2);
     ctx.stroke();
 
-    const aSize = arrowSize(l.thickness);
+    const aSize = arrowSize(l.thickness * scale);
     const angle = Math.atan2(y2 - y1, x2 - x1);
     if (l.lineType === "arrow" || l.lineType === "bidirectional-arrow") {
       drawArrowhead(ctx, x2, y2, angle, aSize);
@@ -601,7 +625,7 @@ function renderLine(
     ctx.stroke();
 
     if (pts.length >= 2) {
-      const aSize = arrowSize(l.thickness);
+      const aSize = arrowSize(l.thickness * scale);
       const last = pts[pts.length - 1];
       const prev = pts[pts.length - 2];
       const endAngle = Math.atan2(last.y - prev.y, last.x - prev.x);
@@ -624,10 +648,11 @@ function renderText(
   t: PlacedText,
   w: number,
   h: number,
+  scale: number,
 ) {
   const px = t.x * w;
   const py = t.y * h;
-  const fontSize = t.fontSize;
+  const fontSize = t.fontSize * scale;
   const fontWeight = t.bold ? "bold" : "normal";
   const fontStyle = t.italic ? "italic" : "normal";
   const fontStr = `${fontStyle} ${fontWeight} ${fontSize}px "${t.fontFamily}"`;
@@ -642,7 +667,8 @@ function renderText(
   const textWidth = metrics.width;
   const lineHeight = fontSize * 1.2;
   const pad = 6 * (fontSize / 16);
-  const boxW = textWidth + pad * 2 + (t.boxExtraWidth || 0);
+  const boxExtraWidth = (t.boxExtraWidth || 0) * scale;
+  const boxW = textWidth + pad * 2 + boxExtraWidth;
   const boxH = lineHeight + pad;
 
   const boxLeft = px - boxW / 2;

@@ -138,6 +138,8 @@ function createMarkupStore() {
   let drawOpacity = $state(1);
   let strokes = $state<MarkupStroke[]>([]);
   let currentStroke = $state<FreehandStroke | null>(null);
+  let displayWidth = $state(0);
+  let displayHeight = $state(0);
 
   // Precomputed axis-aligned bounding boxes (normalized coords) for spatial filtering
   interface BBox {
@@ -1329,6 +1331,18 @@ function createMarkupStore() {
     },
     set strokesHidden(v: boolean) {
       strokesHidden = v;
+    },
+    get displayWidth() {
+      return displayWidth;
+    },
+    set displayWidth(v: number) {
+      displayWidth = v;
+    },
+    get displayHeight() {
+      return displayHeight;
+    },
+    set displayHeight(v: number) {
+      displayHeight = v;
     },
     toggleDraw,
     setDrawColor,

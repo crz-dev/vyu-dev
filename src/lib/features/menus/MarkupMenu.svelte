@@ -84,6 +84,8 @@
       if (clearAllConfirmTimeout) clearTimeout(clearAllConfirmTimeout);
       clearAllConfirmTimeout = null;
       clearAllConfirming = false;
+      markup.drawActive = false;
+      markup.highlightActive = false;
       markup.selectActive = false;
       markup.removeActive = false;
       markup.strokesHidden = false;
@@ -692,7 +694,6 @@
           </button>
           <button
             class="edit-menu-btn yellow"
-            class:active={markup.highlightActive}
             class:sub-open={eraserRowOpen || drawRowOpen || textRowOpen}
             onclick={toggleHighlight}
           >
@@ -714,7 +715,6 @@
           </button>
           <button
             class="edit-menu-btn green"
-            class:active={markup.drawActive}
             class:sub-open={eraserRowOpen || highlightRowOpen || textRowOpen}
             onclick={toggleDraw}
           >

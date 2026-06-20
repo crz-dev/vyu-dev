@@ -1057,6 +1057,8 @@
       width: mr.width,
       height: mr.height,
     };
+    markup.displayWidth = mr.width;
+    markup.displayHeight = mr.height;
   }
 
   // ── Rendering ─────────────────────────────────────────
@@ -1318,8 +1320,8 @@
     if (!canvas) return { x: 0, y: 0 };
     const r = canvas.getBoundingClientRect();
     return {
-      x: (clientX - r.left) / r.width,
-      y: (clientY - r.top) / r.height,
+      x: Math.max(0, Math.min(1, (clientX - r.left) / r.width)),
+      y: Math.max(0, Math.min(1, (clientY - r.top) / r.height)),
     };
   }
 
@@ -2328,7 +2330,7 @@
     bind:this={canvasEl}
     class="draw-overlay"
     tabindex="-1"
-    style="position: absolute; left: {overlayRect.left}px; top: {overlayRect.top}px; width: {overlayRect.width}px; height: {overlayRect.height}px; cursor: {markup.cursorStyle}; z-index: 999;"
+    style="position: absolute; left: {overlayRect.left}px; top: {overlayRect.top}px; width: {overlayRect.width}px; height: {overlayRect.height}px; cursor: {markup.cursorStyle}; z-index: 999; overflow: hidden;"
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}

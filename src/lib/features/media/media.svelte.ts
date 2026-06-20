@@ -148,7 +148,10 @@ export function createMedia(
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
-    set({ fileSrc: convertFileSrc(await prepareDisplayPath(path)) });
+    const baseSrc = convertFileSrc(await prepareDisplayPath(path));
+    set({
+      fileSrc: `${baseSrc}${baseSrc.includes("?") ? "&" : "?"}_t=${Date.now()}`,
+    });
 
     try {
       let info = statCache.get(path);

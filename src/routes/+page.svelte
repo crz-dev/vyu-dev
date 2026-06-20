@@ -637,6 +637,8 @@
       editDialogStore.closeAll();
       corruption.hide();
       markup.drawActive = false;
+      markup.highlightActive = false;
+      markup.textActive = false;
     },
     navigateToEdge,
     navigate,

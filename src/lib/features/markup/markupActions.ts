@@ -23,6 +23,8 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
         deps.getFilePath(),
         markup.strokes,
         deps.getFilePath(),
+        markup.displayWidth,
+        markup.displayHeight,
       );
       markup.clearAllStrokes();
       await deps.loadFile(deps.getFilePath());
@@ -51,7 +53,13 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
         filters: [{ name: "Image", extensions: [ext] }],
       });
       if (!outputPath) return;
-      await renderMarkupOnImage(deps.getFilePath(), markup.strokes, outputPath);
+      await renderMarkupOnImage(
+        deps.getFilePath(),
+        markup.strokes,
+        outputPath,
+        markup.displayWidth,
+        markup.displayHeight,
+      );
       showToast({ message: "Markup exported", color: "green" });
     } catch (err) {
       const message =

@@ -79,8 +79,8 @@ export function createNavigation(deps: NavigationDeps) {
         editing.switchFile(newPath);
       } else {
         editing.cleanup();
-        markup.cleanup();
       }
+      markup.cleanup();
       menuStore.editMenuVisible = false;
     },
   );

@@ -30,7 +30,7 @@
 <div
   class="media-container"
   bind:this={cropContainerEl}
-  style="position: relative; display: flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%;"
+  style="position: relative; display: flex; align-items: center; justify-content: center; max-width: 100%; max-height: 100%; overflow: hidden;"
 >
   {#key slideshowActive && slideshowTransition !== "none" ? currentIndex : fileSrc}
     <div
