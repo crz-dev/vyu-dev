@@ -2,6 +2,10 @@ import { VOLUME_SEGMENTS } from "$lib/shared/constants";
 
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 2, 3];
 
+export function volumeToActual(v: number): number {
+  return 0.75 * Math.pow(v, 1.5);
+}
+
 export function createPlaybackActions(
   mediaElRef: () => HTMLMediaElement | null,
 ) {
@@ -29,7 +33,7 @@ export function createPlaybackActions(
     const volume = Math.max(0, Math.min(1, val));
 
     if (mediaEl) {
-      mediaEl.volume = volume;
+      mediaEl.volume = volumeToActual(volume);
     }
 
     set({
@@ -46,7 +50,7 @@ export function createPlaybackActions(
 }
 
 function applyVolume(el: HTMLMediaElement, vol: number) {
-  el.volume = Math.max(0, Math.min(1, vol));
+  el.volume = volumeToActual(Math.max(0, Math.min(1, vol)));
 }
 
 export type PlaybackUIStore = ReturnType<typeof createPlaybackUI>;

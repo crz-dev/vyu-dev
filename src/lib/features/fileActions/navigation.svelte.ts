@@ -19,7 +19,10 @@ import {
   type SortMode,
 } from "$lib/shared/constants";
 import { sort } from "$lib/features/navigation/sort.svelte";
-import { createPlaybackUI } from "$lib/features/media/playback.svelte";
+import {
+  createPlaybackUI,
+  volumeToActual,
+} from "$lib/features/media/playback.svelte";
 import {
   createSetMediaState,
   type SetMediaState,
@@ -247,7 +250,7 @@ export function createNavigation(deps: NavigationDeps) {
   function onAudioLoad() {
     const audioEl = deps.getAudioEl();
     if (!audioEl) return;
-    audioEl.volume = deps.getVolume();
+    audioEl.volume = volumeToActual(deps.getVolume());
     audioEl.playbackRate = deps.getPlaybackUI().playbackSpeed;
     audioEl.muted = deps.getMuted();
     audioEl.loop = deps.getLoopMode() === "loop";

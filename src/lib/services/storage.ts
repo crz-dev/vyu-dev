@@ -35,7 +35,7 @@ export function cleanupStaleStorageEntries(): void {
 
 export function loadVolume(): number {
   const saved = localStorage.getItem("vyu-volume");
-  return saved !== null ? parseFloat(saved) : 1;
+  return saved !== null ? parseFloat(saved) : 0.5;
 }
 
 export function saveVolume(volume: number): void {

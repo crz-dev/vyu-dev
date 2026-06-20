@@ -1,3 +1,4 @@
+import { volumeToActual } from "$lib/features/media/playback.svelte";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
 import { getFileName } from "$lib/services/files";
@@ -277,7 +278,7 @@ export function createMedia(
   ): void {
     const videoEl = videoElRef();
     if (!videoEl) return;
-    videoEl.volume = getVolume();
+    videoEl.volume = volumeToActual(getVolume());
     videoEl.muted = getMuted();
     videoEl.loop = getLooping();
     set({
