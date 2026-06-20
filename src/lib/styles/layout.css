@@ -216,8 +216,8 @@ main {
 main:not(.fullscreen).thumbnail-bar-open .viewer {
   padding-bottom: 98px;
 }
-main:not(.fullscreen).thumbnail-bar-open.is-audio .viewer {
-  padding-bottom: 16px;
+main:not(.fullscreen).thumbnail-bar-open {
+  --thumb-bar-h: 82px;
 }
 
 .empty {

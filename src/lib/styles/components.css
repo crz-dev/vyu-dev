@@ -2990,16 +2990,16 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   background: var(--bg-secondary);
   border: 0.5px solid var(--bg-border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  overflow: visible;
+  overflow: hidden;
 }
 .cd-visual-wrapper {
   width: min(460px, 100%);
   aspect-ratio: 1;
-  max-height: min(460px, calc(100vh - 270px));
-  flex-shrink: 0;
+  max-height: min(460px, calc(100vh - 270px - var(--thumb-bar-h)));
 }
 .audio-controls-card {
   width: 100%;
+  flex-shrink: 0;
   background: var(--bg-elevated);
   border: 0.5px solid var(--bg-border);
   border-radius: 8px;
@@ -3312,6 +3312,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   width: 100%;
+  flex-shrink: 0;
   padding: 0 2px;
   margin: 4px 0;
 }
@@ -3358,6 +3359,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .audio-modern-controls-card {
   width: 100%;
+  flex-shrink: 0;
   background: var(--bg-elevated);
   border: 0.5px solid var(--bg-border);
   border-radius: 8px;
