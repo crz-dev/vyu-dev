@@ -12,7 +12,6 @@
     cropContainerEl = $bindable(null),
     drawActive,
     markupCursor = "crosshair",
-    startPan,
     videoWrapperTransform,
     videoInnerStyle,
     panCursor,
@@ -33,7 +32,6 @@
     cropContainerEl: HTMLElement | null;
     drawActive: boolean;
     markupCursor?: string;
-    startPan: (e: MouseEvent) => void;
     videoWrapperTransform: string;
     videoInnerStyle: string;
     panCursor: string;
@@ -56,7 +54,6 @@
   role="presentation"
   onmouseenter={() => (hoverZone = "video")}
   onmouseleave={() => (hoverZone = "none")}
-  onmousedown={drawActive ? undefined : startPan}
   style="{videoWrapperTransform} cursor: {drawActive
     ? markupCursor
     : panCursor}"

@@ -80,7 +80,7 @@ function createViewer() {
     const effectiveHeight = isQuarterTurn ? imageWidth : imageHeight;
 
     const fitScale = Math.min(
-      1,
+      state.isFullscreen ? 10 : 1,
       containerWidth / effectiveWidth,
       containerHeight / effectiveHeight,
     );

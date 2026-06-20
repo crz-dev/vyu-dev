@@ -235,8 +235,7 @@
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
     onwheel={handleViewerScroll}
-    onmousedown={!isVideo &&
-    !isPdf &&
+    onmousedown={!isPdf &&
     !markup.drawActive &&
     !markup.selectActive &&
     !markup.removeActive
@@ -279,7 +278,6 @@
         bind:cropContainerEl
         drawActive={markup.drawActive}
         markupCursor={markup.cursorStyle}
-        {startPan}
         videoWrapperTransform={style.videoWrapperTransform}
         videoInnerStyle={style.videoInnerStyle}
         panCursor={style.panCursor}

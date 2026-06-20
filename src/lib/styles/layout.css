@@ -392,10 +392,8 @@ main.fullscreen .video-wrapper {
   height: 100%;
 }
 main.fullscreen .video-inner video {
-  max-width: 100vw;
-  max-height: 100vh;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   object-fit: contain;
 }
 

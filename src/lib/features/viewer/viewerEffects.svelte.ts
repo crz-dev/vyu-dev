@@ -108,7 +108,6 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       deps.getViewerEl() &&
       deps.getFileSrc() &&
       !deps.getIsVideo() &&
-      !deps.getIsFullscreen() &&
       deps.getImageNaturalWidth() > 0 &&
       deps.getImageNaturalHeight() > 0
     ) {
