@@ -2990,7 +2990,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   background: var(--bg-secondary);
   border: 0.5px solid var(--bg-border);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
 }
 .cd-visual-wrapper {
   width: min(460px, 100%);
