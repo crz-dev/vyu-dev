@@ -3,7 +3,9 @@ mod types;
 mod util;
 mod window_state;
 mod commands;
+mod database;
 use commands::*;
+use database::*;
 
 use std::fs;
 use std::sync::atomic::AtomicBool;
@@ -60,10 +62,21 @@ pub fn run() {
             convert_audio_to_waveform_video,
             convert_image_to_pdf,
             get_files_total_size,
+            db_get_file_metadata,
+            db_save_file_metadata,
+            db_clear_file_metadata_field,
+            db_delete_file_metadata,
+            db_get_setting,
+            db_set_setting,
+            db_batch_upsert_file_metadata,
         ])
         .setup(|app| {
             unsafe {
                 let _ = SetCurrentProcessExplicitAppUserModelID(w!("com.vyu.app"));
+            }
+
+            if let Err(e) = database::connection::init(app.handle()) {
+                eprintln!("Database initialization failed: {e}");
             }
 
             app.manage(types::ThumbState::new());

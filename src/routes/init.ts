@@ -16,6 +16,11 @@ import {
   saveResumePoint,
   deleteResumePoint,
 } from "$lib/services/storage";
+import {
+  saveResumePoint as dbSaveResumePoint,
+  deleteResumePoint as dbDeleteResumePoint,
+  migrateFromLocalStorage,
+} from "$lib/services/database";
 import { ALL_EXTS } from "$lib/shared/constants";
 import { getFileExt } from "$lib/services/files";
 import { showToast } from "$lib/features/toast/toast.svelte";
@@ -52,11 +57,15 @@ export function setupInit(s: InitState) {
     if (initial) s.loadFile(initial);
 
     if (typeof requestIdleCallback === "function") {
-      requestIdleCallback(() => cleanupStaleStorageEntries(), {
-        timeout: 2000,
-      });
+      requestIdleCallback(() => {
+        migrateFromLocalStorage();
+        cleanupStaleStorageEntries();
+      }, { timeout: 3000 });
     } else {
-      setTimeout(() => cleanupStaleStorageEntries(), 1000);
+      setTimeout(() => {
+        migrateFromLocalStorage();
+        cleanupStaleStorageEntries();
+      }, 1500);
     }
     s.volume.set(loadVolume());
     s.loopMode.set(loadLoopMode());
@@ -76,11 +85,15 @@ export function setupInit(s: InitState) {
         s.rawCurrentSecs.get() > 0 &&
         s.rawDurationSecs.get() > 0
       ) {
-        const nearEnd = s.rawCurrentSecs.get() >= s.rawDurationSecs.get() - 1.5;
+        const path = s.filePath.get();
+        const cur = s.rawCurrentSecs.get();
+        const nearEnd = cur >= s.rawDurationSecs.get() - 1.5;
         if (!nearEnd) {
-          saveResumePoint(s.filePath.get(), s.rawCurrentSecs.get());
+          saveResumePoint(path, cur);
+          dbSaveResumePoint(path, cur);
         } else {
-          deleteResumePoint(s.filePath.get());
+          deleteResumePoint(path);
+          dbDeleteResumePoint(path);
         }
       }
     }

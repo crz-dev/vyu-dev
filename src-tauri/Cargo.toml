@@ -26,6 +26,7 @@ tokio = { version = "1", features = ["sync"] }
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 jpeg-decoder = "0.3"
 arboard = "3"
+rusqlite = { version = "0.31", features = ["bundled"] }
 windows = { version = "0.61", features = [
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",

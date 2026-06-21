@@ -49,6 +49,7 @@ Before creating code, find the existing owner.
 | Dialog/menu state                        | `features/stores/*`                                  |
 | Context actions                          | `features/actions/*`                                 |
 | Edit/export orchestration                | `features/edit-dialogs/*`                            |
+| Database persistence (SQLite)            | `database/` (Rust), `services/database.ts` (frontend) |
 | Window state persistence                 | `window_state.rs`                                    |
 | File metadata formatting                 | `shared/file-meta.ts`                                |
 | Menus                                    | `features/menus/*`                                   |
@@ -78,11 +79,16 @@ Rules:
 
 ## Storage
 
-- `localStorage` keys use the `vyu-` prefix.
-- Per-file keys: `vyu-{kind}-{path}`.
-- App-wide keys: `vyu-{name}`.
-- All storage access goes through `services/storage.ts`.
-- Storage cleanup is centralized.
+Two persistence layers:
+
+**SQLite** (`database/` + `services/database.ts`) — primary store for per-file metadata
+(timestamps, clip boundaries, resume positions, EQ settings, CD color).
+DB at `%APPDATA%/com.vyu.app/vyu.db`, WAL mode, single `Mutex<Connection>`.
+
+**localStorage** (`services/storage.ts`) — app-wide settings, UI preferences,
+collections, favorites, recent files. Keys use the `vyu-` prefix.
+Per-file keys: `vyu-{kind}-{path}`. App-wide keys: `vyu-{name}`.
+Storage cleanup is centralized.
 
 ## File watching
 

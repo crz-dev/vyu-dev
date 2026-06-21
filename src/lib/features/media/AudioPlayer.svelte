@@ -6,6 +6,7 @@
   import { CD_COLORS, type LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
   import { saveAudioLayoutMode, saveCdColor } from "$lib/services/storage";
+  import { saveCdColor as dbSaveCdColor } from "$lib/services/database";
 
   let {
     fileSrc,
@@ -380,7 +381,10 @@
     onPick={(idx) => {
       cdColorIndex = idx;
       cdColor = CD_COLORS[idx];
-      if (filePath) saveCdColor(filePath, idx);
+      if (filePath) {
+        saveCdColor(filePath, idx);
+        dbSaveCdColor(filePath, idx);
+      }
       showCdColorPicker = false;
     }}
   />

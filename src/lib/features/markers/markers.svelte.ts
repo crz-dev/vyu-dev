@@ -3,7 +3,7 @@ import {
   writeTimestamps,
   deleteTimestamps,
   deleteResumePoint,
-} from "$lib/services/storage";
+} from "$lib/services/database";
 import type { LoopMode } from "$lib/shared/constants";
 import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
 

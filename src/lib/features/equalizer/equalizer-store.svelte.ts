@@ -1,4 +1,8 @@
 import { eqEngine } from "./equalizer-engine";
+import {
+  loadEqSettings as dbLoadEqSettings,
+  saveEqSettings as dbSaveEqSettings,
+} from "$lib/services/database";
 import { loadEqSettings, saveEqSettings } from "$lib/services/storage";
 import { BAND_FREQUENCIES } from "./band-config";
 
@@ -32,10 +36,12 @@ function createEqualizerStore(): EqualizerStore {
   let activePreset = $state("Flat");
   let currentFilePath = $state("");
 
-  function loadForFile(filePath: string) {
+  async function loadForFile(filePath: string) {
     if (!filePath) return;
     currentFilePath = filePath;
-    const settings = loadEqSettings(filePath);
+    const settings =
+      (await dbLoadEqSettings(filePath).catch(() => null)) ??
+      loadEqSettings(filePath);
     if (settings) {
       bands = [...settings.bands];
       bypass = settings.bypass;
@@ -53,12 +59,14 @@ function createEqualizerStore(): EqualizerStore {
   function saveForFile(filePath?: string) {
     const path = filePath || currentFilePath;
     if (!path) return;
-    saveEqSettings(path, {
+    const settings = {
       bands: [...bands],
       bypass,
       outputGain,
       activePreset,
-    });
+    };
+    dbSaveEqSettings(path, settings);
+    saveEqSettings(path, settings);
   }
 
   function applyPreset(name: string, values: number[]) {

@@ -3,10 +3,11 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
 import { getFileName } from "$lib/services/files";
 import { prepareDisplayPath } from "./sources";
+import { getFileMetadata } from "$lib/services/database";
 import {
-  readTimestamps,
-  readClipBoundaries,
-  loadResumePoint,
+  readTimestamps as lsReadTimestamps,
+  readClipBoundaries as lsReadClipBoundaries,
+  loadResumePoint as lsLoadResumePoint,
 } from "$lib/services/storage";
 import {
   isVideo as pathIsVideo,
@@ -118,6 +119,66 @@ export function createMedia(
     const isAudio = pathIsAudio(path);
     const isPdf = pathIsPdf(path);
 
+    // Single Tauri call for all per-file metadata (timestamps, clips, resume).
+    // Replaces 3 separate invocations — the data lives in one SQLite row.
+    let timestamps: VideoMarker[] = [];
+    let clipBoundaries: ClipBoundary[] = [];
+    let resumePoint: number | null = null;
+
+    if (isVideo || isAudio) {
+      try {
+        const meta = await getFileMetadata(path);
+        if (meta) {
+          if (meta.timestamp_data) {
+            try {
+              const raw = JSON.parse(meta.timestamp_data) as Array<Partial<VideoMarker>>;
+              timestamps = raw
+                .filter((ts) => typeof ts?.time === "number")
+                .map((ts) => ({
+                  id:
+                    ts.id ||
+                    `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                  time: ts.time as number,
+                  title: typeof ts.title === "string" ? ts.title : "",
+                }))
+                .sort((a, b) => a.time - b.time);
+            } catch { /* ignore parse errors */ }
+          }
+          if (isVideo && meta.clips_data) {
+            try {
+              const raw = JSON.parse(meta.clips_data) as Array<Partial<ClipBoundary>>;
+              clipBoundaries = raw
+                .filter(
+                  (m) =>
+                    typeof m?.time === "number" &&
+                    (m.kind === "start" || m.kind === "end"),
+                )
+                .map((m) => ({
+                  id:
+                    m.id ||
+                    `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}`,
+                  time: m.time as number,
+                  kind: m.kind as "start" | "end",
+                  title: typeof m.title === "string" ? m.title : "",
+                }))
+                .sort((a, b) => a.time - b.time);
+            } catch { /* ignore parse errors */ }
+          }
+          if (meta.last_position != null && isFinite(meta.last_position)) {
+            resumePoint = meta.last_position;
+          }
+        } else {
+          timestamps = lsReadTimestamps(path);
+          if (isVideo) clipBoundaries = lsReadClipBoundaries(path);
+          resumePoint = lsLoadResumePoint(path);
+        }
+      } catch {
+        timestamps = lsReadTimestamps(path);
+        if (isVideo) clipBoundaries = lsReadClipBoundaries(path);
+        resumePoint = lsLoadResumePoint(path);
+      }
+    }
+
     set({
       filePath: path,
       fileName: getFileName(path),
@@ -139,9 +200,9 @@ export function createMedia(
       rawDurationSecs: 0,
       progress: 0,
       playing: false,
-      timestamps: isVideo || isAudio ? readTimestamps(path) : [],
-      clipBoundaries: isVideo ? readClipBoundaries(path) : [],
-      resumePoint: isVideo || isAudio ? loadResumePoint(path) : null,
+      timestamps,
+      clipBoundaries,
+      resumePoint,
     });
 
     onReset(path);
