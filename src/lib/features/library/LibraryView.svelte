@@ -1032,23 +1032,39 @@
     >
   </div>
 
-  {#if isViewingCollection}
+  {#if library.activeTab === "collections"}
     <div class="library-collection-header">
-      {#each breadcrumb as seg, i}
-        {#if i > 0}
-          <span class="library-breadcrumb-sep">/</span>
-        {/if}
-        <button
-          class="library-breadcrumb-segment"
-          class:active={i === breadcrumb.length - 1}
-          onclick={() =>
-            seg.path === null
-              ? library.closeCollection()
-              : library.openCollection(seg.path)}
-        >
-          {seg.label}
-        </button>
-      {/each}
+      {#if isViewingCollection}
+        {#each breadcrumb as seg, i}
+          {#if i > 0}
+            <span class="library-breadcrumb-sep">/</span>
+          {/if}
+          <button
+            class="library-breadcrumb-segment"
+            class:active={i === breadcrumb.length - 1}
+            onclick={() =>
+              seg.path === null
+                ? library.closeCollection()
+                : library.openCollection(seg.path)}
+          >
+            {seg.label}
+          </button>
+        {/each}
+      {:else}
+        <span class="library-breadcrumb-segment active">Collections</span>
+      {/if}
+    </div>
+  {/if}
+
+  {#if library.activeTab === "recents"}
+    <div class="library-collection-header">
+      <span class="library-breadcrumb-segment active">Recents</span>
+    </div>
+  {/if}
+
+  {#if library.activeTab === "favorites"}
+    <div class="library-collection-header">
+      <span class="library-breadcrumb-segment active">Favorites</span>
     </div>
   {/if}
 
@@ -2338,8 +2354,9 @@
                   stroke-linejoin="round"
                   opacity="0.4"
                 >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  <line x1="12" y1="11" x2="12" y2="17" />
+                  <line x1="9" y1="14" x2="15" y2="14" />
                 </svg>
               </div>
               {#each library.collections as col (col.path)}
@@ -2383,15 +2400,14 @@
                   {:else}
                     <div class="library-collection-placeholder">
                       <svg
-                        width="24"
-                        height="24"
+                        width="32"
+                        height="32"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         stroke-width="1.5"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        opacity="0.3"
                       >
                         <path
                           d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
@@ -2979,8 +2995,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted, #888);
-    padding-bottom: 28px;
+    color: var(--blue-light);
+    padding-bottom: 16px;
   }
 
   .library-collection-name {
