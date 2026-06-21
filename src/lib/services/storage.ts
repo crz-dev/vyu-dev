@@ -467,6 +467,22 @@ export function loadShowFolders(): boolean {
   return v === "true";
 }
 
+export function loadDividersOn(): boolean {
+  return localStorage.getItem("vyu-dividers-on") === "true";
+}
+
+export function saveDividersOn(enabled: boolean): void {
+  localStorage.setItem("vyu-dividers-on", String(enabled));
+}
+
+export function loadNamesOn(): boolean {
+  return localStorage.getItem("vyu-names-on") === "true";
+}
+
+export function saveNamesOn(enabled: boolean): void {
+  localStorage.setItem("vyu-names-on", String(enabled));
+}
+
 export function saveShowFolders(enabled: boolean): void {
   localStorage.setItem("vyu-show-folders", String(enabled));
 }

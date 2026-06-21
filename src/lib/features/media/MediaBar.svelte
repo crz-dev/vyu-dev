@@ -15,11 +15,11 @@
   ];
 
   function toggleDividers() {
-    library.dividersOn = !library.dividersOn;
+    library.setDividersOn(!library.dividersOn);
   }
 
   function toggleNames() {
-    library.namesOn = !library.namesOn;
+    library.setNamesOn(!library.namesOn);
   }
 
   const SORT_ICONS: Record<string, string> = {
@@ -288,6 +288,8 @@
       <button
         class="fs-btn tooltip-above-shift-right"
         class:menu-active={libSortMenuVisible}
+        style:width={libraryOpen ? "auto" : undefined}
+        style:padding={libraryOpen ? "0 11px" : undefined}
         data-tooltip="Sort by"
         onmousedown={handleLibSortClick}
         aria-label="sort by"
@@ -301,13 +303,15 @@
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
-        class="fs-btn underline-btn tooltip-above-shift-right"
+        class="fs-btn underline-btn tooltip-above"
         class:underline-active={library.dividersOn}
+        style:padding={libraryOpen ? "0 3px" : undefined}
+        style:font-size={libraryOpen ? "12px" : undefined}
         data-tooltip="Section headers"
         onclick={toggleDividers}
         aria-label="toggle dividers"
       >
-        Dividers
+        Headers
       </button>
     </div>
   </div>
@@ -386,19 +390,23 @@
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
-        class="fs-btn underline-btn tooltip-above-shift-left"
+        class="fs-btn underline-btn tooltip-above"
         class:underline-active={library.namesOn}
+        style:padding={libraryOpen ? "0 3px" : undefined}
+        style:font-size={libraryOpen ? "12px" : undefined}
         data-tooltip="File labels"
         onclick={toggleNames}
         aria-label="toggle names"
       >
-        Names
+        Labels
       </button>
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
         class="lib-view-toggle fs-btn tooltip-above-shift-left"
         class:menu-active={viewMenuVisible}
+        style:width={libraryOpen ? "auto" : undefined}
+        style:padding={libraryOpen ? "0 11px" : undefined}
         data-tooltip="View mode"
         onmousedown={handleViewMenuClick}
         aria-label="View mode"
@@ -661,6 +669,24 @@
     <style>
       .bottombar.library-mode {
         justify-content: space-between;
+      }
+
+      .bottombar.library-mode .bottombar-left {
+        gap: 1px;
+      }
+
+      .bottombar.library-mode .bottombar-right {
+        gap: 1px;
+      }
+
+      .bottombar.library-mode .fs-btn {
+        width: auto;
+        padding: 0 11px;
+      }
+
+      .bottombar.library-mode .underline-btn {
+        padding: 0 3px;
+        font-size: 12px;
       }
 
       .lib-view-toggle {

@@ -29,6 +29,10 @@ import {
   saveSortMode,
   loadSortDesc,
   saveSortDesc,
+  loadDividersOn,
+  saveDividersOn,
+  loadNamesOn,
+  saveNamesOn,
 } from "$lib/services/storage";
 import type { CollectionItem, RecentFileItem } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
@@ -89,8 +93,8 @@ function createLibrary() {
   let statsLoading = $state(false);
 
   // Dividers / Names toggle
-  let dividersOn = $state(false);
-  let namesOn = $state(false);
+  let dividersOn = $state(loadDividersOn());
+  let namesOn = $state(loadNamesOn());
 
   // Multi-select state
   let selectedPaths = $state<Record<string, boolean>>({});
@@ -236,6 +240,16 @@ function createLibrary() {
   function setShowThumbnails(enabled: boolean) {
     showThumbnails = enabled;
     saveShowThumbnails(enabled);
+  }
+
+  function setDividersOn(enabled: boolean) {
+    dividersOn = enabled;
+    saveDividersOn(enabled);
+  }
+
+  function setNamesOn(enabled: boolean) {
+    namesOn = enabled;
+    saveNamesOn(enabled);
   }
 
   function setDensity(v: number) {
@@ -511,15 +525,11 @@ function createLibrary() {
     get dividersOn() {
       return dividersOn;
     },
-    set dividersOn(v: boolean) {
-      dividersOn = v;
-    },
+    setDividersOn,
     get namesOn() {
       return namesOn;
     },
-    set namesOn(v: boolean) {
-      namesOn = v;
-    },
+    setNamesOn,
     get totalSize() {
       return totalSize;
     },
