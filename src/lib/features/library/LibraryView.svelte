@@ -22,6 +22,7 @@
     invokeCopyFileUnique,
   } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
+  import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
 
   let {
     fileList,
@@ -120,6 +121,16 @@
   );
 
   const isCustomCollection = $derived(activeCollection?.type === "custom");
+
+  const recentFilesWarning = $derived(
+    !library.recentsDisabled &&
+      library.recentFiles.length / library.recentFilesLimit >= 0.9,
+  );
+
+  function openRecentsSettings() {
+    localStorage.setItem("vyu-settings-last-section", "library");
+    menuStore.settingsOpen = true;
+  }
 
   const isShowingFolders = $derived(
     isViewingCollection && library.showFolders,
@@ -1059,7 +1070,7 @@
         {/each}
       {:else}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
-        <span class="library-breadcrumb-segment active">Collections</span>
+        <span class="library-breadcrumb-segment active">Collections <span class="library-header-count">({library.collections.length})</span></span>
       {/if}
     </div>
   {/if}
@@ -1067,14 +1078,25 @@
   {#if library.activeTab === "recents"}
     <div class="library-collection-header">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-      <span class="library-breadcrumb-segment active">Recents</span>
+      <span class="library-breadcrumb-segment active">Recents
+        {#if library.recentsDisabled}
+          <span class="library-header-count">(Off)</span>
+        {:else}
+          <button
+            class="library-header-count tooltip-ctrl"
+            class:warning={recentFilesWarning}
+            data-tooltip="Recents limit — older files drop off once full"
+            onclick={openRecentsSettings}
+          >({library.recentFiles.length}/{library.recentFilesLimit})</button>
+        {/if}
+      </span>
     </div>
   {/if}
 
   {#if library.activeTab === "favorites"}
     <div class="library-collection-header">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-      <span class="library-breadcrumb-segment active">Favorites</span>
+      <span class="library-breadcrumb-segment active">Favorites <span class="library-header-count">({library.favorites.length})</span></span>
     </div>
   {/if}
 
@@ -1098,7 +1120,7 @@
         {/each}
       {:else}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
-        <span class="library-breadcrumb-segment active">{libraryRootName}</span>
+        <span class="library-breadcrumb-segment active">{libraryRootName} <span class="library-header-count">({libraryDirFiles.length})</span></span>
       {/if}
     </div>
   {/if}
@@ -2968,6 +2990,27 @@
     color: var(--text-primary, #ccc);
     font-weight: 500;
     cursor: default;
+  }
+
+  .library-header-count {
+    color: var(--text-dim, #555);
+    font-weight: 400;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+  }
+
+  .library-header-count.warning {
+    color: var(--red, #dc2626);
+    opacity: 0.75;
+    transition: opacity 0.15s ease;
+  }
+
+  .library-header-count.warning:hover {
+    opacity: 1;
   }
 
   .library-breadcrumb-sep {
