@@ -161,6 +161,10 @@
     }
   }
 
+  const libraryRootName = $derived(
+    libraryBasePath ? getFileName(libraryBasePath) : "",
+  );
+
   const libraryBreadcrumb = $derived.by(() => {
     const current = libraryDirPath;
     const base = libraryBasePath;
@@ -1047,10 +1051,14 @@
                 ? library.closeCollection()
                 : library.openCollection(seg.path)}
           >
+            {#if i === 0}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+            {/if}
             {seg.label}
           </button>
         {/each}
       {:else}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
         <span class="library-breadcrumb-segment active">Collections</span>
       {/if}
     </div>
@@ -1058,30 +1066,40 @@
 
   {#if library.activeTab === "recents"}
     <div class="library-collection-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
       <span class="library-breadcrumb-segment active">Recents</span>
     </div>
   {/if}
 
   {#if library.activeTab === "favorites"}
     <div class="library-collection-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
       <span class="library-breadcrumb-segment active">Favorites</span>
     </div>
   {/if}
 
-  {#if library.activeTab === "library" && libraryDirPath && libraryBreadcrumb.length > 0}
+  {#if library.activeTab === "library" && libraryDirPath}
     <div class="library-collection-header">
-      {#each libraryBreadcrumb as seg, i}
-        {#if i > 0}
-          <span class="library-breadcrumb-sep">/</span>
-        {/if}
-        <button
-          class="library-breadcrumb-segment"
-          class:active={i === libraryBreadcrumb.length - 1}
-          onclick={() => (libraryDirPath = seg.path)}
-        >
-          {seg.label}
-        </button>
-      {/each}
+      {#if libraryBreadcrumb.length > 0}
+        {#each libraryBreadcrumb as seg, i}
+          {#if i > 0}
+            <span class="library-breadcrumb-sep">/</span>
+          {/if}
+          <button
+            class="library-breadcrumb-segment"
+            class:active={i === libraryBreadcrumb.length - 1}
+            onclick={() => (libraryDirPath = seg.path)}
+          >
+            {#if i === 0}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+            {/if}
+            {i === 0 ? libraryRootName : seg.label}
+          </button>
+        {/each}
+      {:else}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+        <span class="library-breadcrumb-segment active">{libraryRootName}</span>
+      {/if}
     </div>
   {/if}
 
@@ -2937,6 +2955,9 @@
     border-radius: 3px;
     transition: color 0.1s;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .library-breadcrumb-segment:hover {

@@ -211,70 +211,41 @@
       {onCloseLibrary}
     />
   </div>
-  {#if !libraryOpen || folderName}
+  {#if !libraryOpen}
     <span class="divider">/</span>
-  {/if}
-  {#if libraryOpen}
-    {#if folderEditing}
+    {#if editing}
       <input
-        bind:this={folderInputEl}
-        bind:value={folderEditValue}
+        bind:this={inputEl}
+        bind:value={editValue}
         class="filename-input"
         type="text"
         onkeydown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            commitFolderRename();
+            commitRename();
           }
           if (e.key === "Escape") {
             e.preventDefault();
-            cancelFolderEdit();
+            cancelEdit();
           }
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label="Rename folder"
+        aria-label="Rename file"
       />
     {:else}
       <button
-        class="filename filename-btn folder-name-btn"
-        onclick={startFolderEditing}
-        aria-label="Rename folder"
+        class="filename filename-btn"
+        onmouseenter={showFilenameTooltip}
+        onmouseleave={hideFilenameTooltip}
+        onclick={fileSrc ? startEditing : undefined}
+        aria-label="Rename file"
+        ><Marquee
+          text={fileName}
+          scrollOnHover
+          class="filename-marquee"
+        /></button
       >
-        <Marquee text={folderName} scrollOnHover class="filename-marquee" />
-      </button>
     {/if}
-  {:else if editing}
-    <input
-      bind:this={inputEl}
-      bind:value={editValue}
-      class="filename-input"
-      type="text"
-      onkeydown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          commitRename();
-        }
-        if (e.key === "Escape") {
-          e.preventDefault();
-          cancelEdit();
-        }
-      }}
-      onmousedown={(e) => e.stopPropagation()}
-      aria-label="Rename file"
-    />
-  {:else}
-    <button
-      class="filename filename-btn"
-      onmouseenter={showFilenameTooltip}
-      onmouseleave={hideFilenameTooltip}
-      onclick={fileSrc ? startEditing : undefined}
-      aria-label="Rename file"
-      ><Marquee
-        text={fileName}
-        scrollOnHover
-        class="filename-marquee"
-      /></button
-    >
   {/if}
   {#if !libraryOpen && fileSrc}
     <span class="divider">/</span>
@@ -353,14 +324,5 @@
 </div>
 
 <style>
-  .folder-name-btn {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: center;
-    height: 34px;
-    padding: 2px 0 0 0;
-  }
+  
 </style>
