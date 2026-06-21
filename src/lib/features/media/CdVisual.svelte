@@ -45,6 +45,7 @@
   let dragStartX = 0;
   let dragStartY = 0;
   let wasInCenter = false;
+  let dragRect: DOMRect | null = null;
 
   // Calculate angle from center point
   function calculateAngle(
@@ -83,6 +84,7 @@
     const dx = svgPt.x - 325;
     const dy = svgPt.y - 325;
     wasInCenter = Math.sqrt(dx * dx + dy * dy) <= centerLabelRadius;
+    dragRect = rect;
 
     lastAngle = calculateAngle(point.clientX, point.clientY, rect);
     isDragging = true;
@@ -94,8 +96,7 @@
   function handleDragMove(e: MouseEvent | TouchEvent) {
     if (!isDragging) return;
 
-    const svg = e.currentTarget as SVGSVGElement;
-    const rect = svg.getBoundingClientRect();
+    const rect = dragRect!;
     const point = e instanceof TouchEvent ? e.touches[0] : e;
 
     const currentAngle = calculateAngle(point.clientX, point.clientY, rect);
@@ -162,8 +163,14 @@
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     let rafId: number;
     let currentScale = 1;
+    let frameCount = 0;
 
     function tick() {
+      frameCount++;
+      if (frameCount % 3 !== 0) {
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
       analyser!.getByteFrequencyData(freqData);
 
       // Deep bass only (~20–170 Hz).

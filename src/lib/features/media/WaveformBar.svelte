@@ -80,6 +80,8 @@
   let canvasEl = $state<HTMLCanvasElement | null>(null);
   let peaks = $state<Float32Array | null>(null);
   let decodeFailed = $state(false);
+  let cachedCanvasW = 0;
+  let cachedCanvasH = 0;
 
   function pct(time: number): number {
     if (getTimestampPct) return getTimestampPct(time);
@@ -121,9 +123,13 @@
     const canvas = canvasEl;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
+    let w = cachedCanvasW;
+    let h = cachedCanvasH;
+    if (w === 0 || h === 0) {
+      const rect = canvas.getBoundingClientRect();
+      w = rect.width;
+      h = rect.height;
+    }
     if (w === 0 || h === 0) return;
 
     canvas.width = w * dpr;
@@ -175,7 +181,12 @@
   $effect(() => {
     const canvas = canvasEl;
     if (!canvas) return;
-    const ro = new ResizeObserver(() => draw());
+    const ro = new ResizeObserver((entries) => {
+      const rect = entries[0].contentRect;
+      cachedCanvasW = rect.width;
+      cachedCanvasH = rect.height;
+      draw();
+    });
     ro.observe(canvas.parentElement!);
     return () => ro.disconnect();
   });

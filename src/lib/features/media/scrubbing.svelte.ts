@@ -41,6 +41,10 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     let pendingTime: number | null = null;
     let seekInProgress = false;
     let lastSeekTime = 0;
+    // RAF-coalesced UI updates — playhead and waveform track at vsync rate
+    let uiRafId: number | null = null;
+    let uiSecs: number | null = null;
+    let uiProgress: number | null = null;
 
     const computeTime = (clientX: number): number => {
       const ratio = Math.max(
@@ -72,11 +76,24 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     mediaEl.addEventListener("seeked", onSeeked);
     doSeek(computeTime(e.clientX));
 
+    function flushUI() {
+      if (uiSecs !== null) {
+        deps.setRawCurrentSecs(uiSecs);
+        deps.setProgress(uiProgress!);
+        uiSecs = null;
+        uiProgress = null;
+      }
+      uiRafId = null;
+    }
+
     function onMouseMove(ev: MouseEvent) {
       const time = computeTime(ev.clientX);
-      // Always update UI immediately — keeps the playhead tracking the mouse smoothly
-      deps.setRawCurrentSecs(time);
-      deps.setProgress((time / mediaEl!.duration) * 100);
+      // RAF-coalesce UI updates — playhead and waveform track at vsync
+      uiSecs = time;
+      uiProgress = (time / mediaEl!.duration) * 100;
+      if (!uiRafId) {
+        uiRafId = requestAnimationFrame(flushUI);
+      }
 
       if (seekInProgress) {
         // A seek is in flight — coalesce into pendingTime; the seeked
@@ -97,6 +114,12 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       mediaEl!.removeEventListener("seeked", onSeeked);
+      // Flush any pending UI update
+      if (uiRafId !== null) {
+        cancelAnimationFrame(uiRafId);
+        uiRafId = null;
+      }
+      flushUI();
       // Final seek to the last pending position.
       // Cancels any in-flight seek — the browser will decode the new target.
       if (pendingTime !== null) {
@@ -123,6 +146,10 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     let pendingTime: number | null = null;
     let seekInProgress = false;
     let lastSeekTime = 0;
+    // RAF-coalesced UI updates — playhead and waveform track at vsync rate
+    let uiRafId: number | null = null;
+    let uiSecs: number | null = null;
+    let uiProgress: number | null = null;
 
     const doSeek = (time: number) => {
       seekInProgress = true;
@@ -143,10 +170,24 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
 
     audioEl.addEventListener("seeked", onSeeked);
 
+    function flushUI() {
+      if (uiSecs !== null) {
+        deps.setRawCurrentSecs(uiSecs);
+        deps.setProgress(uiProgress!);
+        uiSecs = null;
+        uiProgress = null;
+      }
+      uiRafId = null;
+    }
+
     discScrubStore.discScrubHandlers.onScrubMove = (_e, newProgress) => {
       const time = (newProgress / 100) * audioEl!.duration;
-      deps.setRawCurrentSecs(time);
-      deps.setProgress(newProgress);
+      // RAF-coalesce UI updates
+      uiSecs = time;
+      uiProgress = newProgress;
+      if (!uiRafId) {
+        uiRafId = requestAnimationFrame(flushUI);
+      }
 
       if (seekInProgress) {
         pendingTime = time;
@@ -161,6 +202,12 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     discScrubStore.discScrubHandlers.onScrubEnd = () => {
       deps.setIsScrubbing(false);
       audioEl!.removeEventListener("seeked", onSeeked);
+      // Flush any pending UI update
+      if (uiRafId !== null) {
+        cancelAnimationFrame(uiRafId);
+        uiRafId = null;
+      }
+      flushUI();
       if (pendingTime !== null) {
         seekInProgress = true;
         audioEl!.currentTime = pendingTime;
