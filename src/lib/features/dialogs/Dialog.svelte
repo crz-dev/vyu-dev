@@ -2479,33 +2479,26 @@
               <button class="share-btn" onclick={() => {}}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
-                    d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  /><path
-                    d="M19 10v2a7 7 0 01-14 0v-2"
+                    d="M9 18V5l12-2v13"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
-                  /><line
-                    x1="12"
-                    y1="19"
-                    x2="12"
-                    y2="23"
+                    stroke-linejoin="round"
+                  /><circle
+                    cx="6"
+                    cy="18"
+                    r="3"
                     stroke="currentColor"
                     stroke-width="2"
-                    stroke-linecap="round"
-                  /><line
-                    x1="8"
-                    y1="23"
-                    x2="16"
-                    y2="23"
+                  /><circle
+                    cx="18"
+                    cy="16"
+                    r="3"
                     stroke="currentColor"
                     stroke-width="2"
-                    stroke-linecap="round"
                   /></svg
                 >
-                Transcriptor
+                Shazam
               </button>
             {:else}
               <button
@@ -2648,17 +2641,17 @@
                     stroke="currentColor"
                     stroke-width="2"
                   /><path
-                    d="M8.5 16C10 14.8 13 14.3 15.5 15"
+                    d="M9 15c2-1.2 4-1.2 6 0"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
                   /><path
-                    d="M7 13.5C10 11 14.5 10.5 17 12"
+                    d="M7.5 12.5c3-1.8 6-1.8 9 0"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
                   /><path
-                    d="M6 11C10 7.5 15 7 18.5 9.5"
+                    d="M6 10c4-2.4 8-2.4 12 0"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
@@ -2733,11 +2726,18 @@
                   shareAction(() => invokeOpenInVlc(filePath), "Opened in VLC")}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  ><polygon
-                    points="5 3 19 12 5 21 5 3"
+                  ><rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="3"
                     stroke="currentColor"
                     stroke-width="2"
-                    stroke-linecap="round"
+                  /><polygon
+                    points="8 7 16 12 8 17"
+                    stroke="currentColor"
+                    stroke-width="2"
                     stroke-linejoin="round"
                   /></svg
                 >
