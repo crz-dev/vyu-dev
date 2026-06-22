@@ -43,6 +43,7 @@ pub fn run() {
             get_thumbnail,
             get_thumbnail_cache_size,
             clear_thumbnail_cache,
+            migrate_thumbnail_cache,
             prepare_display_image,
             prepare_video_display,
             extract_cover_art,

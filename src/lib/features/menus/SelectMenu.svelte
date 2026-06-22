@@ -250,8 +250,8 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M5 12h14" />
-          <path d="m12 5 7 7-7 7" />
+          <path d="M22 2 11 13" />
+          <path d="M22 2 15 22 11 13 2 9 22 2" />
         </svg>
         <span>Move to</span>
       </button>

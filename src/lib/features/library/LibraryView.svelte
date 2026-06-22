@@ -60,6 +60,7 @@
   let collectionFirstFiles = $state<Record<string, string>>({});
   let renamingPath = $state<string | null>(null);
   let renameValue = $state("");
+  let renameOriginal = $state("");
   let showAddCollectionDialog = $state(false);
   let addCollectionDialogMode = $state<"link" | "create" | null>(null);
   let newCollectionName = $state("");
@@ -81,6 +82,17 @@
   }>({ visible: false, x: 0, y: 0, path: "" });
   let libCtxPinned = $state(false);
   let libCtxKey = $state(0);
+
+  // Collection context menu state
+  let colCtxMenu = $state<{
+    visible: boolean;
+    x: number;
+    y: number;
+    path: string;
+    name: string;
+  }>({ visible: false, x: 0, y: 0, path: "", name: "" });
+  let colCtxPinned = $state(false);
+  let colCtxKey = $state(0);
 
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
@@ -592,13 +604,15 @@
   function startRename(path: string, currentName: string) {
     renamingPath = path;
     renameValue = currentName;
+    renameOriginal = currentName;
   }
 
   function confirmRename() {
-    if (renamingPath) {
+    if (!renamingPath) return;
+    if (renameValue !== renameOriginal) {
       library.renameCollection(renamingPath, renameValue);
-      renamingPath = null;
     }
+    renamingPath = null;
   }
 
   function cancelRename() {
@@ -652,6 +666,12 @@
     }
   }
 
+  function ctxCollect() {
+    closeLibCtxMenu();
+    library.setCollectMode(true);
+    library.setActiveTab("collections");
+  }
+
   function ctxFavorite() {
     const path = libCtxMenu.path;
     closeLibCtxMenu();
@@ -674,6 +694,52 @@
     } catch {
       showToast({ message: "Failed to delete file", color: "red" });
     }
+  }
+
+  function openColCtxMenu(e: MouseEvent, path: string, name: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    const menuW = 200;
+    const menuH = 220;
+    const { x, y } = computeContextMenuPosition(e.clientX, e.clientY, menuW, menuH);
+    colCtxMenu = { visible: true, x, y, path, name };
+    colCtxPinned = false;
+    colCtxKey++;
+  }
+
+  function closeColCtxMenu() {
+    if (colCtxPinned) return;
+    colCtxMenu = { ...colCtxMenu, visible: false };
+    colCtxPinned = false;
+  }
+
+  function forceCloseColCtxMenu() {
+    colCtxMenu = { ...colCtxMenu, visible: false };
+    colCtxPinned = false;
+  }
+
+  function ctxRenameCol() {
+    const { path, name } = colCtxMenu;
+    closeColCtxMenu();
+    startRename(path, name);
+  }
+
+  function ctxCollectCol() {
+    closeColCtxMenu();
+    library.setCollectMode(true);
+    library.setActiveTab("collections");
+  }
+
+  function ctxShowInExplorerCol() {
+    const path = colCtxMenu.path;
+    closeColCtxMenu();
+    invokeOpenDirectory(path);
+  }
+
+  function ctxDeleteCol() {
+    const path = colCtxMenu.path;
+    closeColCtxMenu();
+    library.removeCollection(path);
   }
 
   async function addFavoriteFromFile() {
@@ -1168,7 +1234,7 @@
 <div
   class="library-view"
   onkeydown={handleKeydown}
-  onclick={closeLibCtxMenu}
+  onclick={() => { confirmRename(); closeLibCtxMenu(); closeColCtxMenu(); }}
   role="region"
   aria-label="File library"
 >
@@ -2572,6 +2638,7 @@
                 <div
                   class="library-collection-card"
                   class:collect-mode={library.collectMode}
+                  class:renaming={renamingPath === col.path}
                   role="button"
                   tabindex="0"
                   onclick={() => {
@@ -2582,10 +2649,7 @@
                     }
                   }}
                   ondblclick={() => startRename(col.path, col.name)}
-                  oncontextmenu={(e) => {
-                    e.preventDefault();
-                    startRename(col.path, col.name);
-                  }}
+                  oncontextmenu={(e) => openColCtxMenu(e, col.path, col.name)}
                   onkeydown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -2624,22 +2688,25 @@
                   {/if}
                   <div class="library-collection-name">
                     {#if renamingPath === col.path}
+                      <!-- svelte-ignore a11y_autofocus -->
                       <input
                         class="library-rename-input"
                         type="text"
                         bind:value={renameValue}
+                        autofocus
                         onblur={confirmRename}
+                        onmousedown={(e) => e.stopPropagation()}
                         onkeydown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault();
+                            e.stopPropagation();
                             confirmRename();
                           } else if (e.key === "Escape") {
                             e.preventDefault();
+                            e.stopPropagation();
                             cancelRename();
                           }
                         }}
-                        onclick={(e) => e.stopPropagation()}
-                        ondblclick={(e) => e.stopPropagation()}
                       />
                     {:else}
                       <span>{col.name}</span>
@@ -2811,42 +2878,28 @@
         </button>
       </div>
       <div class="edit-menu-card">
+
         <button
           class="ctx-item green"
-          onclick={ctxOpenWith}
+          onclick={ctxMoveTo}
           role="menuitem"
           style="animation-delay: 0ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><polyline
-              points="15 3 21 3 21 9"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><line
-              x1="10"
-              y1="14"
-              x2="21"
-              y2="3"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /></svg
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-          Open with...
+            <path d="M22 2 11 13" />
+            <path d="M22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+          Move to
         </button>
         <div class="ctx-sep"></div>
         <button
           class="ctx-item blue"
-          onclick={ctxMoveTo}
+          onclick={ctxCollect}
           role="menuitem"
           style="animation-delay: 55ms"
         >
@@ -2857,9 +2910,19 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+            /><line
+              x1="12" y1="11" x2="12" y2="17"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><line
+              x1="9" y1="14" x2="15" y2="14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
             /></svg
           >
-          Move to...
+          Collect
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -2887,6 +2950,205 @@
         <button
           class="ctx-item red"
           onclick={ctxDelete}
+          role="menuitem"
+          style="animation-delay: 165ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><polyline
+              points="3 6 5 6 21 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M19 6l-1 14H6L5 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M10 11v6M14 11v6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M9 6V4h6v2"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
+          >
+          Delete
+        </button>
+      </div>
+    </div>
+    {/key}
+  {/if}
+
+  {#if colCtxMenu.visible}
+    {#key colCtxKey}
+    <div
+      class="context-menu lib-ctx"
+      class:pinned={colCtxPinned}
+      style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
+      role="menu"
+      tabindex="-1"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => e.stopPropagation()}
+    >
+      <div
+        class="ctx-drag"
+        role="button"
+        tabindex="0"
+        aria-label="Drag to move"
+        onmousedown={(e) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const startMenuX = colCtxMenu.x;
+          const startMenuY = colCtxMenu.y;
+          function onMouseMove(ev: MouseEvent) {
+            colCtxMenu.x = startMenuX + ev.clientX - startX;
+            colCtxMenu.y = startMenuY + ev.clientY - startY;
+          }
+          function onMouseUp() {
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+          }
+          window.addEventListener("mousemove", onMouseMove);
+          window.addEventListener("mouseup", onMouseUp);
+        }}
+      >
+        <button
+          class="ctx-pin tooltip-below"
+          class:active={colCtxPinned}
+          data-tooltip={colCtxPinned ? "Unpin" : "Pin"}
+          onclick={(e) => {
+            e.stopPropagation();
+            colCtxPinned = !colCtxPinned;
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={colCtxPinned ? "Unpin" : "Pin"}
+        >
+          <svg
+            width="9"
+            height="9"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
+          </svg>
+        </button>
+        <span class="ctx-dots">
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+        </span>
+        <button
+          class="ctx-close tooltip-below"
+          data-tooltip="Close"
+          onclick={(e) => {
+            e.stopPropagation();
+            forceCloseColCtxMenu();
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label="Close"
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="edit-menu-card">
+        <button
+          class="ctx-item green"
+          onclick={ctxRenameCol}
+          role="menuitem"
+          style="animation-delay: 0ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+          Rename
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item blue"
+          onclick={ctxCollectCol}
+          role="menuitem"
+          style="animation-delay: 55ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><path
+              d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /><line
+              x1="12" y1="11" x2="12" y2="17"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><line
+              x1="9" y1="14" x2="15" y2="14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
+          >
+          Collect
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item yellow"
+          onclick={ctxShowInExplorerCol}
+          role="menuitem"
+          style="animation-delay: 110ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><path
+              d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /><polyline
+              points="15 3 21 3 21 9"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /><line
+              x1="10" y1="14" x2="21" y2="3"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >
+          Show in explorer
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item red"
+          onclick={ctxDeleteCol}
           role="menuitem"
           style="animation-delay: 165ms"
         >
@@ -3259,21 +3521,23 @@
     transition: background 0.15s;
   }
 
-  .library-collection-card:hover .library-collection-name {
+  .library-collection-card:hover .library-collection-name,
+  .library-collection-card.renaming .library-collection-name {
     background: rgba(0, 0, 0, 0.65);
   }
 
   .library-rename-input {
     width: 100%;
-    background: var(--bg-primary, #000);
-    border: 1px solid var(--text-muted, #888);
-    border-radius: 2px;
+    background: transparent;
+    border: none;
     color: var(--text-primary, #fff);
     font-size: 12px;
     font-family: var(--font-family);
     text-align: center;
     padding: 1px 4px;
     outline: none;
+    caret-color: var(--text-primary, #fff);
+    cursor: text;
   }
 
   .library-collection-remove {

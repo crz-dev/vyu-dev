@@ -7,6 +7,7 @@ import {
   invokeRenameFile,
   invokeCopyFileUnique,
   invokeDeleteFile,
+  invokeMigrateThumbnailCache,
 } from "$lib/features/media/tools";
 import {
   loadViewDensity,
@@ -434,6 +435,7 @@ function createLibrary() {
       const newPath = parent + (parent.endsWith("\\") || parent.endsWith("/") ? "" : (path.includes("\\") ? "\\" : "/")) + trimmed;
       try {
         await invokeRenameFile(path, newPath);
+        await invokeMigrateThumbnailCache(path, newPath);
         collections = collections.map((c) =>
           c.path === path ? { ...c, name: trimmed, path: newPath } : c,
         );

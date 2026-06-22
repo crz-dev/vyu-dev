@@ -835,3 +835,10 @@ export async function invokeDeleteCollectionFolder(
 ): Promise<void> {
   return invoke("delete_collection_folder", { path });
 }
+
+export async function invokeMigrateThumbnailCache(
+  oldDir: string,
+  newDir: string,
+): Promise<void> {
+  return invoke("migrate_thumbnail_cache", { oldDir, newDir });
+}
