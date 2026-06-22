@@ -23,13 +23,14 @@
     invokeCopyFile,
     invokeCopyFileUnique,
     invokeDeleteFile,
+    invokeIdentifySong,
   } from "$lib/features/media/tools";
   import {
     loadShareOutputDir,
     saveShareOutputDir,
   } from "$lib/services/storage";
   import { listen } from "@tauri-apps/api/event";
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  import { showToast, updateToast } from "$lib/features/toast/toast.svelte";
 
   let {
     contextMenu,
@@ -225,6 +226,38 @@
   }
 
   // Share: Send to handlers
+
+  async function handleShazam() {
+    closeShare();
+    const toastId = showToast({
+      message: "Identifying\u2026",
+      color: "blue",
+      duration: 0,
+    });
+    try {
+      const result = await invokeIdentifySong(filePath);
+      if (result) {
+        updateToast(toastId, {
+          message: `\uD83C\uDFB5 ${result.title} \u2014 ${result.artist}`,
+          color: "blue",
+          duration: 3000,
+        });
+      } else {
+        updateToast(toastId, {
+          message: "Couldn't identify this song",
+          color: "blue",
+          duration: 3000,
+        });
+      }
+    } catch {
+      updateToast(toastId, {
+        message:
+          "Shazam failed \u2014 check your internet connection",
+        color: "blue",
+        duration: 3000,
+      });
+    }
+  }
 
   async function shareAction(fn: () => Promise<void>, successMsg: string) {
     try {
@@ -2476,7 +2509,7 @@
               </button>
             {/if}
             {#if isAudio}
-              <button class="share-btn" onclick={() => {}}>
+              <button class="share-btn" onclick={handleShazam}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M9 18V5l12-2v13"

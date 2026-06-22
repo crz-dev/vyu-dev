@@ -5,9 +5,64 @@ use std::process::Command;
 use std::os::windows::process::CommandExt;
 #[cfg(target_os = "windows")]
 use windows::core::Interface;
+use serde::Serialize;
 
 use crate::constants::CREATE_NO_WINDOW;
 use crate::util::canonicalize_path;
+
+#[derive(Serialize)]
+pub struct SongIdentification {
+    pub title: String,
+    pub artist: String,
+}
+
+#[tauri::command]
+pub async fn identify_song(
+    app: tauri::AppHandle,
+    file_path: String,
+) -> Result<Option<SongIdentification>, String> {
+    use tauri_plugin_shell::ShellExt;
+
+    let p = PathBuf::from(&file_path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+
+    let sidecar = app
+        .shell()
+        .sidecar("songrec")
+        .map_err(|e| format!("Failed to create sidecar command: {e}"))?;
+
+    let output = sidecar
+        .args(["audio-file-to-recognized-song", &file_path])
+        .output()
+        .await
+        .map_err(|e| format!("Failed to run songrec: {e}"))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout)
+        .map_err(|e| format!("Invalid songrec output: {e}"))?;
+
+    match value.get("track") {
+        Some(track) => {
+            let title = track
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown")
+                .to_string();
+            let artist = track
+                .get("subtitle")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown")
+                .to_string();
+            Ok(Some(SongIdentification { title, artist }))
+        }
+        None => Ok(None),
+    }
+}
 
 #[tauri::command]
 pub fn print_file(path: String) -> Result<(), String> {

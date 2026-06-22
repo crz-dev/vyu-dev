@@ -36,6 +36,7 @@ Before creating code, find the existing owner.
 | Shared thumbnail cache                   | `services/thumbnailCache.ts`                         |
 | Clipboard                                | `services/clipboard.ts`                              |
 | Collection directory operations          | `commands/collections.rs`                            |
+| Sidecar binary execution (songrec)       | `commands/external_apps.rs`                          |
 | Session state                            | `services/session.ts`                                |
 | Tauri wrappers / FFmpeg orchestration    | `features/media/tools.ts`, `ffmpeg.ts`, `sources.ts` |
 | Constants                                | `shared/constants.ts`                                |

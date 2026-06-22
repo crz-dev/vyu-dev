@@ -27,6 +27,10 @@
     "fs:allow-unwatch",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
-    "core:window:allow-close"
+    "core:window:allow-close",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [{ "name": "binaries/songrec", "sidecar": true }]
+    }
   ]
 }

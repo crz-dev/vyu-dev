@@ -20,6 +20,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             delete_file,
             trash_file,
@@ -61,6 +62,7 @@ pub fn run() {
             open_with_dialog,
             convert_audio_to_waveform_video,
             convert_image_to_pdf,
+            identify_song,
             get_files_total_size,
             db_get_file_metadata,
             db_save_file_metadata,

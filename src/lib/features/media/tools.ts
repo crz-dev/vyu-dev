@@ -812,6 +812,12 @@ export async function invokeOpenWithDialog(path: string): Promise<void> {
   return invoke("open_with_dialog", { path });
 }
 
+export async function invokeIdentifySong(
+  path: string,
+): Promise<{ title: string; artist: string } | null> {
+  return invoke("identify_song", { filePath: path });
+}
+
 export async function invokeGetFilesTotalSize(
   paths: string[],
 ): Promise<number> {
