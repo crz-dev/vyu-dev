@@ -29,6 +29,13 @@
     return getSelectedPaths?.() ?? [];
   }
 
+  let allFavorited = $derived.by(() => {
+    void selectedCount;
+    if (selectedCount === 0) return false;
+    const paths = getPaths();
+    return paths.length > 0 && paths.every((p) => library.isFavorite(p));
+  });
+
   $effect(() => {
     if (!visible) library.setCollectMode(false);
   });
@@ -77,8 +84,7 @@
   function toggleFavorite() {
     const paths = getPaths();
     if (paths.length === 0) return;
-    const allFavorited = paths.every((p) => library.isFavorite(p));
-    if (allFavorited) {
+    if (paths.every((p) => library.isFavorite(p))) {
       for (const p of paths) library.removeFavorite(p);
       showToast({
         message: `Removed ${paths.length === 1 ? "file" : `${paths.length} files`} from favorites`,
@@ -86,7 +92,8 @@
       });
     } else {
       for (const p of paths) {
-        if (!library.isFavorite(p)) library.addFavorite(p);
+        if (library.isFavorite(p)) library.removeFavorite(p);
+        library.addFavorite(p);
       }
       showToast({
         message: `Added ${paths.length === 1 ? "file" : `${paths.length} files`} to favorites`,
@@ -270,7 +277,7 @@
           width="13"
           height="13"
           viewBox="0 0 24 24"
-          fill="none"
+          fill={allFavorited ? "currentColor" : "none"}
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
@@ -280,7 +287,7 @@
             points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
           />
         </svg>
-        <span>Favorite</span>
+        <span>{allFavorited ? "Unfavorite" : "Favorite"}</span>
       </button>
       <button class="edit-menu-btn red sub" onclick={deleteFiles}>
         <svg
