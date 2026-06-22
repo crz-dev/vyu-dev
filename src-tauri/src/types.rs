@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::{Mutex, Semaphore, oneshot};
 
 #[derive(serde::Serialize)]
@@ -86,7 +87,7 @@ impl ThumbState {
 /// When multiple requests arrive for the same (path, mtime, size),
 /// only one generates; others await the result.
 pub struct InFlightRegistry {
-    map: Mutex<HashMap<String, Vec<oneshot::Sender<Result<Vec<u8>, String>>>>>,
+    map: Mutex<HashMap<String, Vec<oneshot::Sender<Result<Arc<Vec<u8>>, String>>>>>,
 }
 
 impl InFlightRegistry {
@@ -102,7 +103,7 @@ impl InFlightRegistry {
     pub async fn register(
         &self,
         key: &str,
-    ) -> Option<oneshot::Receiver<Result<Vec<u8>, String>>> {
+    ) -> Option<oneshot::Receiver<Result<Arc<Vec<u8>>, String>>> {
         let mut map = self.map.lock().await;
         if let Some(senders) = map.get_mut(key) {
             let (tx, rx) = oneshot::channel();
@@ -116,12 +117,19 @@ impl InFlightRegistry {
 
     /// Signals all waiters with the result and removes the entry.
     pub async fn complete(&self, key: &str, result: Result<Vec<u8>, String>) {
+        let shared = result.map(Arc::new);
         let mut map = self.map.lock().await;
         if let Some(senders) = map.remove(key) {
             for sender in senders {
-                let _ = sender.send(result.clone());
+                let _ = sender.send(shared.clone());
             }
         }
+    }
+
+    /// Removes the entry without signalling — call when the generating task
+    /// fails before producing a result, so future requests don't deadlock.
+    pub async fn cancel(&self, key: &str) {
+        self.map.lock().await.remove(key);
     }
 }
 

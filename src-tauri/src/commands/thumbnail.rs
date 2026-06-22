@@ -267,21 +267,24 @@ pub async fn get_thumbnail(
     if let Some(rx) = state.inflight.register(&inflight_key).await {
         return rx
             .await
-            .unwrap_or(Ok(vec![]))
-            .map(|bytes| format_data_url(&bytes));
+            .unwrap_or(Ok(std::sync::Arc::new(vec![])))
+            .map(|bytes| format_data_url(&bytes[..]));
     }
 
     let cache_dir = thumb_cache_dir(&app).to_path_buf();
     let sem = state.sem_for_kind(&kind);
-    let _permit = sem
-        .acquire()
-        .await
-        .map_err(|e| format!("Semaphore error: {e}"))?;
+    let _permit = sem.acquire().await;
+    let _permit = match _permit {
+        Ok(p) => p,
+        Err(e) => {
+            state.inflight.cancel(&inflight_key).await;
+            return Err(format!("Semaphore error: {e}"));
+        }
+    };
 
     let path_c = path.clone();
     let cache_dir_c = cache_dir.clone();
 
-    // ── All blocking work (metadata, cache ops, generation) ──
     let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<(Vec<u8>, String), String> {
         let src_meta = fs::metadata(&path_c).map_err(|e| format!("Cannot access file: {e}"))?;
         let mtime = src_meta
@@ -295,14 +298,12 @@ pub async fn get_thumbnail(
         let thumb_path = cache_dir_c.join(format!("{cache_key}.jpg"));
         let src_path = cache_dir_c.join(format!("{cache_key}.src"));
 
-        // ── Disk cache check ──
         if thumb_path.exists() {
             if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
                 return Ok((jpeg_bytes, cache_key));
             }
         }
 
-        // ── Generate ──
         let jpeg_bytes = if use_image_crate {
             thumbnail_via_image_crate(
                 Path::new(&path_c),
@@ -314,18 +315,25 @@ pub async fn get_thumbnail(
             thumbnail_via_ffmpeg(&path_c, &thumb_path, &src_path, &kind, thumb_size)
         }?;
 
-        // ── Track cache size and evict only when near the limit ──
         if let Ok(meta) = fs::metadata(&thumb_path) {
             record_cache_write(meta.len(), &cache_dir_c);
         }
 
         Ok((jpeg_bytes, cache_key))
     })
-    .await
-    .map_err(|e| format!("Thread join error: {e}"))?
-    .map_err(|e| e)?;
+    .await;
 
-    let (jpeg_bytes, _cache_key) = spawn_result;
+    let (jpeg_bytes, _cache_key) = match spawn_result {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            state.inflight.cancel(&inflight_key).await;
+            return Err(e);
+        }
+        Err(e) => {
+            state.inflight.cancel(&inflight_key).await;
+            return Err(format!("Thread join error: {e}"));
+        }
+    };
 
     state
         .inflight

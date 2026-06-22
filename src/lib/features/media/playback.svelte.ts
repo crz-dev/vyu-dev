@@ -142,9 +142,12 @@ export function createPlaybackUI(
     const diamonds = container.querySelectorAll(".volume-diamond");
     if (diamonds.length === 0) return;
 
+    const firstRect = diamonds[0].getBoundingClientRect();
+    const lastRect = diamonds[diamonds.length - 1].getBoundingClientRect();
+
     function dragTo(clientX: number, clientY: number) {
-      const first = diamonds[0].getBoundingClientRect();
-      const last = diamonds[diamonds.length - 1].getBoundingClientRect();
+      const first = firstRect;
+      const last = lastRect;
       let ratio: number;
       if (vertical) {
         const firstCenter = first.top + first.height / 2;
@@ -246,9 +249,12 @@ export function createPlaybackUI(
     const diamonds = container.querySelectorAll(".speed-diamond");
     if (diamonds.length === 0) return;
 
+    const firstRect = diamonds[0].getBoundingClientRect();
+    const lastRect = diamonds[diamonds.length - 1].getBoundingClientRect();
+
     function dragTo(clientX: number, clientY: number) {
-      const first = diamonds[0].getBoundingClientRect();
-      const last = diamonds[diamonds.length - 1].getBoundingClientRect();
+      const first = firstRect;
+      const last = lastRect;
       const steps = SPEED_STEPS;
       let ratio: number;
       if (vertical) {

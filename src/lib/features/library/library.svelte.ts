@@ -48,9 +48,13 @@ const MAX_CONCURRENT = 4;
 
 type LibraryTab = "library" | "recents" | "collections" | "favorites";
 
+const CACHE_MAX = 500;
+
 function createLibrary() {
   const cache = $state<Record<string, string>>({});
-  let pending: string[] = [];
+  const cacheOrder: string[] = [];
+  let pendingSet = new Set<string>();
+  let pendingOrder: string[] = [];
   let inflight = 0;
 
   // Active tab
@@ -111,16 +115,36 @@ function createLibrary() {
   // Favorites state
   let favorites = $state<string[]>(loadFavorites());
 
+  function evictCacheOne() {
+    const oldest = cacheOrder.shift();
+    if (oldest !== undefined) delete cache[oldest];
+  }
+
+  function touchCache(path: string) {
+    const idx = cacheOrder.indexOf(path);
+    if (idx !== -1) cacheOrder.splice(idx, 1);
+    cacheOrder.push(path);
+  }
+
+  function setCacheEntry(path: string, dataUrl: string) {
+    if (path in cache) touchCache(path);
+    else {
+      cache[path] = dataUrl;
+      cacheOrder.push(path);
+      if (cacheOrder.length > CACHE_MAX) evictCacheOne();
+    }
+  }
+
   async function loadOne(path: string) {
     inflight++;
+    pendingSet.delete(path);
     try {
       const dataUrl = await invokeGetThumbnail(path, 256);
       if (dataUrl) {
-        cache[path] = dataUrl;
+        setCacheEntry(path, dataUrl);
         setCached(path, 256, dataUrl);
       }
     } catch {
-      // generation failed — skip silently
     } finally {
       inflight--;
       kick();
@@ -128,39 +152,45 @@ function createLibrary() {
   }
 
   function kick() {
-    if (inflight >= MAX_CONCURRENT || pending.length === 0) return;
-    const path = pending.shift()!;
+    if (inflight >= MAX_CONCURRENT || pendingOrder.length === 0) return;
+    const path = pendingOrder.shift()!;
+    pendingSet.delete(path);
     loadOne(path);
   }
 
   function requestThumbnail(path: string) {
-    if (path in cache) return cache[path];
-    // Check the shared cache before hitting the backend.
+    if (path in cache) {
+      touchCache(path);
+      return cache[path];
+    }
     const shared = sharedGetCached(path, 256);
     if (shared) {
-      cache[path] = shared;
+      setCacheEntry(path, shared);
       return shared;
     }
-    if (inflight >= MAX_CONCURRENT) {
-      if (!pending.includes(path)) pending.push(path);
-    } else {
-      if (!pending.includes(path)) pending.push(path);
-      kick();
+    if (!pendingSet.has(path)) {
+      pendingSet.add(path);
+      pendingOrder.push(path);
     }
+    kick();
     return "";
   }
 
   function cancelPending(path: string) {
-    pending = pending.filter((p) => p !== path);
+    if (pendingSet.delete(path)) {
+      pendingOrder = pendingOrder.filter((p) => p !== path);
+    }
   }
 
   function clearQueue() {
-    pending = [];
+    pendingSet.clear();
+    pendingOrder = [];
     inflight = 0;
   }
 
   function rebuildQueue(fileList: string[], currentIndex: number) {
-    pending = [];
+    pendingSet.clear();
+    pendingOrder = [];
     inflight = 0;
 
     const order: number[] = [currentIndex];
@@ -174,7 +204,8 @@ function createLibrary() {
     for (const idx of order) {
       const path = fileList[idx];
       if (!(path in cache)) {
-        pending.push(path);
+        pendingSet.add(path);
+        pendingOrder.push(path);
       }
     }
 

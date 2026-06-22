@@ -140,6 +140,8 @@ function createMarkupStore() {
   let currentStroke = $state<FreehandStroke | null>(null);
   let filePath = "";
   let sessionStrokes = new Map<string, MarkupStroke[]>();
+  const sessionStrokesOrder: string[] = [];
+  const SESSION_STROKES_MAX = 100;
   let displayWidth = $state(0);
   let displayHeight = $state(0);
 
@@ -396,7 +398,7 @@ function createMarkupStore() {
 
   function addPoint(x: number, y: number) {
     if (currentStroke) {
-      currentStroke.points = [...currentStroke.points, { x, y }];
+      currentStroke.points.push({ x, y });
     }
   }
 
@@ -1154,6 +1156,11 @@ function createMarkupStore() {
   function saveToSession() {
     if (filePath) {
       sessionStrokes.set(filePath, [...strokes]);
+      sessionStrokesOrder.push(filePath);
+      if (sessionStrokesOrder.length > SESSION_STROKES_MAX) {
+        const oldest = sessionStrokesOrder.shift();
+        if (oldest !== undefined) sessionStrokes.delete(oldest);
+      }
     }
   }
 

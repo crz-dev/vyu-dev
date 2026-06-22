@@ -26,15 +26,12 @@ export async function copyFrameToClipboard(
   if (!ctx) throw new Error("Could not get canvas context.");
   ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
-  const dataUrl = canvas.toDataURL("image/png");
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
   canvas.width = 0;
   canvas.height = 0;
-  const commaIdx = dataUrl.indexOf(",");
-  if (commaIdx === -1) throw new Error("Could not encode frame as PNG.");
-  const binary = atob(dataUrl.slice(commaIdx + 1));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const blob = new Blob([bytes], { type: "image/png" });
+  if (!blob) throw new Error("Could not encode frame as PNG.");
 
   if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
     throw new Error("Image clipboard API is unavailable in this runtime.");

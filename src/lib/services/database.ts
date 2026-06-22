@@ -23,12 +23,49 @@ interface BatchEntry {
   last_viewed: number | null;
 }
 
+const metaCache = new Map<string, FileMetadata>();
+const metaCacheOrder: string[] = [];
+const META_CACHE_MAX = 200;
+
+function touchMetaCache(path: string) {
+  const idx = metaCacheOrder.indexOf(path);
+  if (idx !== -1) metaCacheOrder.splice(idx, 1);
+  metaCacheOrder.push(path);
+}
+
+function evictMetaCache() {
+  const oldest = metaCacheOrder.shift();
+  if (oldest !== undefined) metaCache.delete(oldest);
+}
+
+function invalidateMetaCache(path: string) {
+  metaCache.delete(path);
+  const idx = metaCacheOrder.indexOf(path);
+  if (idx !== -1) metaCacheOrder.splice(idx, 1);
+}
+
+function setMetaCache(path: string, meta: FileMetadata) {
+  if (metaCache.has(path)) touchMetaCache(path);
+  else {
+    metaCache.set(path, meta);
+    metaCacheOrder.push(path);
+    if (metaCacheOrder.length > META_CACHE_MAX) evictMetaCache();
+  }
+}
+
 async function getMeta(path: string): Promise<FileMetadata | null> {
   if (!path) return null;
+  const cached = metaCache.get(path);
+  if (cached) {
+    touchMetaCache(path);
+    return cached;
+  }
   try {
-    return await invoke<FileMetadata | null>("db_get_file_metadata", {
+    const result = await invoke<FileMetadata | null>("db_get_file_metadata", {
       path,
     });
+    if (result) setMetaCache(path, result);
+    return result;
   } catch {
     return null;
   }
@@ -52,6 +89,7 @@ async function saveMeta(
   }>,
 ): Promise<void> {
   if (!path) return;
+  invalidateMetaCache(path);
   try {
     await invoke("db_save_file_metadata", {
       path,
