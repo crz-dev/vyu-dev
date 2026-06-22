@@ -25,6 +25,7 @@
   import { showToast } from "$lib/features/toast/toast.svelte";
   import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
   import { computeContextMenuPosition } from "$lib/services/session";
+  import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
 
   let {
     fileList,
@@ -62,8 +63,10 @@
   let renameValue = $state("");
   let renameOriginal = $state("");
   let showAddCollectionDialog = $state(false);
-  let addCollectionDialogMode = $state<"link" | "create" | null>(null);
   let newCollectionName = $state("");
+  let newCollectionThumbnail = $state<string | null>(null);
+  let nameError = $state(false);
+  let nameErrorTimer: ReturnType<typeof setTimeout> | null = null;
   let collectionToDelete = $state<string | null>(null);
 
   // Library folder browsing state
@@ -537,8 +540,13 @@
 
   function openAddCollectionDialog() {
     showAddCollectionDialog = true;
-    addCollectionDialogMode = null;
     newCollectionName = "";
+    newCollectionThumbnail = null;
+    clearNameError();
+  }
+
+  function addCollAnimStyle(delayIndex: number): string {
+    return `animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: ${TS_DROP_ANIM_DELAYS_MS[delayIndex]}ms`;
   }
 
   async function addCollection() {
@@ -549,12 +557,51 @@
     }
   }
 
+  function clearNameError() {
+    nameError = false;
+    if (nameErrorTimer) {
+      clearTimeout(nameErrorTimer);
+      nameErrorTimer = null;
+    }
+  }
+
+  function triggerNameError() {
+    clearNameError();
+    nameError = true;
+    nameErrorTimer = setTimeout(() => {
+      nameError = false;
+      nameErrorTimer = null;
+    }, 2000);
+  }
+
+  async function pickThumbnail() {
+    const selected = await open({
+      multiple: false,
+      filters: [{
+        name: "Images",
+        extensions: ["png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "avif"],
+      }],
+    });
+    if (selected) {
+      newCollectionThumbnail = selected as string;
+    }
+  }
+
   async function confirmCreateCollection() {
     const name = newCollectionName.trim();
-    if (!name) return;
+    if (!name) {
+      triggerNameError();
+      return;
+    }
+    if (library.collections.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+      triggerNameError();
+      return;
+    }
+    clearNameError();
     showAddCollectionDialog = false;
-    await library.createCustomCollection(name);
+    await library.createCustomCollection(name, newCollectionThumbnail ?? undefined);
     newCollectionName = "";
+    newCollectionThumbnail = null;
   }
 
   function startDeleteCollection(path: string) {
@@ -1075,6 +1122,14 @@
     const cols = library.collections;
     for (const col of cols) {
       if (collectionFirstFiles[col.path]) continue;
+      if (col.thumbnailPath) {
+        collectionFirstFiles = {
+          ...collectionFirstFiles,
+          [col.path]: col.thumbnailPath,
+        };
+        library.requestThumbnail(col.thumbnailPath);
+        continue;
+      }
       (async () => {
         try {
           const sep = col.path.includes("\\") ? "\\" : "/";
@@ -3193,69 +3248,93 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="library-dialog-overlay"
+      class:library-dialog-overlay-anim={showAddCollectionDialog}
       role="presentation"
       onmousedown={(e) => {
         if (e.target === e.currentTarget) showAddCollectionDialog = false;
       }}
     >
-      <div class="library-dialog" role="dialog" aria-modal="true">
+      <div class="library-dialog library-dialog-anim" role="dialog" aria-modal="true">
         <div class="library-dialog-header">
-          <p class="library-dialog-title">Add Collection</p>
+          <div class="library-dialog-header-left">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              <line x1="12" y1="11" x2="12" y2="17" />
+              <line x1="9" y1="14" x2="15" y2="14" />
+            </svg>
+            <p class="library-dialog-title">Add Collection</p>
+          </div>
           <button
             class="library-dialog-close"
             onclick={() => (showAddCollectionDialog = false)}
             aria-label="Close"
-          >✕</button>
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <div class="library-dialog-body">
-          {#if addCollectionDialogMode === null}
-            <div class="library-dialog-options">
-              <button class="library-dialog-option" onclick={addCollection}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
-                <span>Link folder from computer</span>
-              </button>
-              <button
-                class="library-dialog-option"
-                onclick={() => (addCollectionDialogMode = "create")}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                <span>Create new collection</span>
-              </button>
-            </div>
-          {:else}
-            <div class="library-dialog-create">
-              <label class="library-dialog-label" for="collection-name">Collection name</label>
-              <input
-                id="collection-name"
-                class="library-dialog-input"
-                type="text"
-                bind:value={newCollectionName}
-                placeholder="Enter collection name"
-                onkeydown={(e) => {
-                  if (e.key === "Enter") confirmCreateCollection();
-                  if (e.key === "Escape") { showAddCollectionDialog = false; }
-                }}
-              />
-            </div>
-          {/if}
-        </div>
-        {#if addCollectionDialogMode === "create"}
-          <div class="library-dialog-actions">
-            <button
-              class="library-dialog-btn library-dialog-btn-secondary"
-              onclick={() => { showAddCollectionDialog = false; addCollectionDialogMode = null; }}
-            >Cancel</button>
-            <button
-              class="library-dialog-btn library-dialog-btn-primary"
-              onclick={confirmCreateCollection}
-            >Create</button>
+          <div class="edit-menu-card">
+            <button class="library-dialog-option library-dialog-option-yellow" style={addCollAnimStyle(0)} onclick={addCollection}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Sync folder from computer</span>
+            </button>
           </div>
-        {/if}
+          <div class="library-dialog-or">
+            <span class="library-dialog-or-line"></span>
+            <span class="library-dialog-or-text">or</span>
+            <span class="library-dialog-or-line"></span>
+          </div>
+          <div class="edit-menu-card">
+            <button
+              class="library-dialog-option library-dialog-option-blue"
+              onclick={confirmCreateCollection}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Create new collection</span>
+            </button>
+            <div class="library-dialog-row">
+              <div class="library-dialog-name-wrap">
+                <svg class="library-dialog-name-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                <input
+                  id="collection-name"
+                  class="library-dialog-input"
+                  class:library-dialog-input-error={nameError}
+                  type="text"
+                  autocomplete="off"
+                  bind:value={newCollectionName}
+                  placeholder="Name"
+                  onkeydown={(e) => {
+                    if (e.key === "Enter") confirmCreateCollection();
+                    if (e.key === "Escape") { showAddCollectionDialog = false; }
+                  }}
+                  oninput={clearNameError}
+                />
+              </div>
+              <button class="library-dialog-thumb-btn" onclick={pickThumbnail}>
+                {#if newCollectionThumbnail}
+                  <span class="library-dialog-thumb-name">{getFileName(newCollectionThumbnail)}</span>
+                {:else}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <span>Cover</span>
+                {/if}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   {/if}
@@ -4178,14 +4257,22 @@
     z-index: 1000;
   }
 
+  .library-dialog-overlay-anim {
+    animation: uiOverlayFadeIn 150ms ease forwards;
+  }
+
   .library-dialog {
-    background: var(--bg-elevated, #1a1a1a);
-    border: 1px solid var(--bg-border, #2a2a2a);
+    background: var(--bg-secondary, #111);
+    border: 0.5px solid var(--bg-border, #2a2a2a);
     border-radius: 12px;
     padding: 0;
     min-width: 340px;
     max-width: 400px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  }
+
+  .library-dialog-anim {
+    animation: uiDialogPopIn 250ms cubic-bezier(0.22, 0.8, 0.3, 1) forwards;
   }
 
   .library-dialog-sm {
@@ -4197,90 +4284,179 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px 0;
+    padding: 16px 20px 12px;
+    border-bottom: 0.5px solid var(--bg-elevated, #1a1a1a);
+  }
+
+  .library-dialog-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary, #fff);
   }
 
   .library-dialog-title {
     font-family: var(--font-family);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--text-primary, #fff);
     margin: 0;
   }
 
   .library-dialog-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     background: none;
     border: none;
     color: var(--text-muted, #888);
     cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    border-radius: 4px;
-    line-height: 1;
+    border-radius: 7px;
+    flex-shrink: 0;
   }
 
   .library-dialog-close:hover {
-    color: var(--text-primary, #fff);
-    background: var(--bg-secondary, #111);
+    color: var(--red, #e74c3c);
+    background: var(--red-bg-faint, rgba(231, 76, 60, 0.1));
   }
 
   .library-dialog-body {
-    padding: 16px 20px;
-  }
-
-  .library-dialog-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding: 12px 20px;
   }
 
   .library-dialog-option {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--bg-secondary, #111);
-    border: 1px solid var(--bg-border, #2a2a2a);
-    border-radius: 8px;
-    color: var(--text-primary, #fff);
+    gap: 9px;
+    padding: 7px 10px;
+    border: 0.5px solid transparent;
+    border-radius: 7px;
     font-family: var(--font-family);
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
-    transition: background 0.1s, border-color 0.1s;
+    transition: filter 0.12s;
     text-align: left;
   }
 
-  .library-dialog-option:hover {
-    background: var(--bg-tertiary, #222);
-    border-color: var(--text-muted, #888);
+  .library-dialog-option-blue {
+    background: var(--blue-bg);
+    color: var(--blue-light);
   }
 
-  .library-dialog-create {
+  .library-dialog-option-blue:hover {
+    background: var(--blue-bg-hover);
+  }
+
+  .library-dialog-option-yellow {
+    background: var(--yellow-bg);
+    color: var(--yellow-soft);
+  }
+
+  .library-dialog-option-yellow:hover {
+    background: var(--yellow-bg-hover);
+  }
+
+  .library-dialog-or {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 8px;
+    padding: 2px 0;
   }
 
-  .library-dialog-label {
+  .library-dialog-or-line {
+    flex: 1;
+    height: 0.5px;
+    background: var(--bg-elevated, #1a1a1a);
+  }
+
+  .library-dialog-or-text {
     font-family: var(--font-family);
-    font-size: 13px;
+    font-size: 11px;
+    color: var(--text-dim, #555);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+
+  .library-dialog-thumb-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 0.5px solid var(--bg-border, #2a2a2a);
+    border-radius: 7px;
+    background: var(--bg-primary, #0a0a0a);
+    color: var(--text-muted, #888);
+    font-family: var(--font-family);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+    text-align: left;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  .library-dialog-thumb-btn:hover {
+    background: var(--bg-secondary, #111);
+    border-color: var(--text-muted, #888);
     color: var(--text-secondary, #ccc);
   }
 
+  .library-dialog-thumb-name {
+    color: var(--text-secondary, #ccc);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .library-dialog-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  .library-dialog-name-wrap {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+
+  .library-dialog-name-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--text-dim, #555);
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  .library-dialog-name-wrap > .library-dialog-input {
+    padding-left: 30px;
+  }
+
   .library-dialog-input {
-    padding: 10px 12px;
+    padding: 8px 10px;
     background: var(--bg-primary, #0a0a0a);
-    border: 1px solid var(--bg-border, #2a2a2a);
-    border-radius: 6px;
+    border: 0.5px solid var(--bg-border, #2a2a2a);
+    border-radius: 7px;
     color: var(--text-primary, #fff);
     font-family: var(--font-family);
-    font-size: 13px;
+    font-size: 12px;
     outline: none;
     transition: border-color 0.1s;
   }
 
   .library-dialog-input:focus {
-    border-color: var(--yellow, #f5c518);
+    border-color: var(--text-muted, #888);
+  }
+
+  .library-dialog-input-error {
+    border-color: var(--red-border, rgba(231, 76, 60, 0.35));
+  }
+
+  .library-dialog-input-error:focus {
+    border-color: var(--red-border, rgba(231, 76, 60, 0.35));
   }
 
   .library-dialog-input::placeholder {
@@ -4290,15 +4466,15 @@
   .library-dialog-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
     padding: 0 20px 16px;
   }
 
   .library-dialog-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: 7px 16px;
+    border-radius: 7px;
     font-family: var(--font-family);
-    font-size: 13px;
+    font-size: 12px;
     border: none;
     cursor: pointer;
     transition: background 0.1s;
@@ -4307,20 +4483,11 @@
   .library-dialog-btn-secondary {
     background: var(--bg-secondary, #111);
     color: var(--text-secondary, #ccc);
-    border: 1px solid var(--bg-border, #2a2a2a);
+    border: 0.5px solid var(--bg-border, #2a2a2a);
   }
 
   .library-dialog-btn-secondary:hover {
     background: var(--bg-tertiary, #222);
-  }
-
-  .library-dialog-btn-primary {
-    background: var(--yellow, #f5c518);
-    color: #000;
-  }
-
-  .library-dialog-btn-primary:hover {
-    background: var(--yellow-hover, #e0b214);
   }
 
   .library-dialog-btn-danger {

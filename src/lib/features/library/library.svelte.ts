@@ -396,7 +396,7 @@ function createLibrary() {
     saveCollections(collections);
   }
 
-  async function createCustomCollection(name: string) {
+  async function createCustomCollection(name: string, thumbnailPath?: string) {
     const trimmed = name.trim();
     if (!trimmed) return;
     try {
@@ -404,7 +404,7 @@ function createLibrary() {
       if (collections.some((c) => c.path === path)) return;
       collections = [
         ...collections,
-        { name: trimmed, path, type: "custom", createdAt: Date.now() },
+        { name: trimmed, path, type: "custom", createdAt: Date.now(), thumbnailPath },
       ];
       saveCollections(collections);
     } catch (err) {

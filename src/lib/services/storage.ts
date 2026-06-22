@@ -504,6 +504,7 @@ export interface CollectionItem {
   path: string;
   type?: "linked" | "custom";
   createdAt?: number;
+  thumbnailPath?: string;
 }
 
 export function loadCollections(): CollectionItem[] {
@@ -524,6 +525,7 @@ export function loadCollections(): CollectionItem[] {
       path: c.path,
       type: c.type ?? ("linked" as const),
       createdAt: c.createdAt ?? Date.now() - (filtered.length - 1 - i) * 1000,
+      thumbnailPath: c.thumbnailPath,
     }));
   } catch {
     return [];
