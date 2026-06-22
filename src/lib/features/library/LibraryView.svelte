@@ -24,6 +24,7 @@
   } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
   import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
+  import { computeContextMenuPosition } from "$lib/services/session";
 
   let {
     fileList,
@@ -79,6 +80,7 @@
     path: string;
   }>({ visible: false, x: 0, y: 0, path: "" });
   let libCtxPinned = $state(false);
+  let libCtxKey = $state(0);
 
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
@@ -458,8 +460,12 @@
   function openLibCtxMenu(e: MouseEvent, path: string) {
     e.preventDefault();
     e.stopPropagation();
-    libCtxMenu = { visible: true, x: e.clientX, y: e.clientY, path };
+    const menuW = 200;
+    const menuH = 220;
+    const { x, y } = computeContextMenuPosition(e.clientX, e.clientY, menuW, menuH);
+    libCtxMenu = { visible: true, x, y, path };
     libCtxPinned = false;
+    libCtxKey++;
   }
 
   function closeLibCtxMenu() {
@@ -2558,6 +2564,7 @@
   </div>
 
   {#if libCtxMenu.visible}
+    {#key libCtxKey}
     <div
       class="context-menu lib-ctx"
       class:pinned={libCtxPinned}
@@ -2754,6 +2761,7 @@
         </button>
       </div>
     </div>
+    {/key}
   {/if}
 
   {#if showAddCollectionDialog}
