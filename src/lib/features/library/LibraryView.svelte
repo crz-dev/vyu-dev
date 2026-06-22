@@ -14,6 +14,7 @@
   import { readDir } from "@tauri-apps/plugin-fs";
   import {
     invokeOpenWithDialog,
+    invokeOpenDirectory,
     invokeTrashFile,
     invokeRenameFile,
     invokeBatchStat,
@@ -1060,7 +1061,9 @@
             onclick={() =>
               seg.path === null
                 ? library.closeCollection()
-                : library.openCollection(seg.path)}
+                : i === breadcrumb.length - 1
+                  ? invokeOpenDirectory(seg.path)
+                  : library.openCollection(seg.path)}
           >
             {#if i === 0}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
@@ -1110,7 +1113,10 @@
           <button
             class="library-breadcrumb-segment"
             class:active={i === libraryBreadcrumb.length - 1}
-            onclick={() => (libraryDirPath = seg.path)}
+            onclick={() =>
+              i === libraryBreadcrumb.length - 1
+                ? invokeOpenDirectory(seg.path)
+                : (libraryDirPath = seg.path)}
           >
             {#if i === 0}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
@@ -1120,7 +1126,7 @@
         {/each}
       {:else}
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
-        <span class="library-breadcrumb-segment active">{libraryRootName} <span class="library-header-count">({libraryDirFiles.length})</span></span>
+        <button class="library-breadcrumb-segment active" onclick={() => invokeOpenDirectory(libraryDirPath!)}>{libraryRootName} <span class="library-header-count">({libraryDirFiles.length})</span></button>
       {/if}
     </div>
   {/if}
@@ -2990,6 +2996,14 @@
     color: var(--text-primary, #ccc);
     font-weight: 500;
     cursor: default;
+  }
+
+  button.library-breadcrumb-segment.active {
+    cursor: pointer;
+  }
+
+  button.library-breadcrumb-segment.active:hover {
+    opacity: 0.7;
   }
 
   .library-header-count {
