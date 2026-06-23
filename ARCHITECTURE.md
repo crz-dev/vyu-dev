@@ -45,7 +45,6 @@ Before creating code, find the existing owner.
 | Markup actions                           | `features/markup/markupActions.ts`                    |
 | Theme                                    | `features/theme/theme.svelte.ts`                      |
 | Typography                               | `features/font/font.svelte.ts`                        |
-| Glow effects                             | `features/glow/glow.svelte.ts`                        |
 | Audio effects engine                     | `features/effects/effects-engine.ts`                  |
 | Equalizer                                | `features/equalizer/*`                                |
 | File open / delete / navigation          | `features/fileActions/*`                              |

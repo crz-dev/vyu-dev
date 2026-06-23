@@ -210,16 +210,6 @@ export function saveTheme(t: "dark" | "light" | "system"): void {
   localStorage.setItem("vyu-theme", t);
 }
 
-export function loadGlow(): number {
-  const v = localStorage.getItem("vyu-glow");
-  if (v === "1" || v === "2" || v === "3") return Number(v);
-  return 0;
-}
-
-export function saveGlow(v: number): void {
-  localStorage.setItem("vyu-glow", String(v));
-}
-
 export function loadSliderMode(): { volume?: boolean; speed?: boolean } {
   try {
     const raw = localStorage.getItem("vyu-slider-mode");

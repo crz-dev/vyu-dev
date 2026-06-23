@@ -166,11 +166,9 @@
 
   import { theme as themeStore } from "$lib/features/theme/theme.svelte";
   import { font as fontStore } from "$lib/features/font/font.svelte";
-  import { glow as glowStore } from "$lib/features/glow/glow.svelte";
   import { library } from "$lib/features/library/library.svelte";
   let uiMode = $state<"simple" | "advanced">("advanced");
   let transition = $state<"none" | "fade" | "slide">("fade");
-  let glowLevel = $state(glowStore.level);
   let allowZoomOut = $state(false);
   let alwaysShowControls = $state(false);
 
@@ -788,84 +786,7 @@
                 </div>
               </div>
             </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="5" /><line
-                    x1="12"
-                    y1="1"
-                    x2="12"
-                    y2="3"
-                  /><line x1="12" y1="21" x2="12" y2="23" /><line
-                    x1="4.22"
-                    y1="4.22"
-                    x2="5.64"
-                    y2="5.64"
-                  /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line
-                    x1="1"
-                    y1="12"
-                    x2="3"
-                    y2="12"
-                  /><line x1="21" y1="12" x2="23" y2="12" /><line
-                    x1="4.22"
-                    y1="19.78"
-                    x2="5.64"
-                    y2="18.36"
-                  /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Glow</span>
-                  <span class="settings-hint"
-                    >Adds a soft glow to interactive controls</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-4">
-                  <button
-                    class="pill-btn"
-                    class:active={glowLevel === 0}
-                    onclick={() => {
-                      glowLevel = 0;
-                      glowStore.setLevel(0);
-                    }}>Off</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={glowLevel === 1}
-                    onclick={() => {
-                      glowLevel = 1;
-                      glowStore.setLevel(1);
-                    }}>Low</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={glowLevel === 2}
-                    onclick={() => {
-                      glowLevel = 2;
-                      glowStore.setLevel(2);
-                    }}>Med</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={glowLevel === 3}
-                    onclick={() => {
-                      glowLevel = 3;
-                      glowStore.setLevel(3);
-                    }}>High</button
-                  >
-                </div>
-              </div>
-            </div>
+
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
