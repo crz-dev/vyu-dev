@@ -82,6 +82,9 @@
   let decodeFailed = $state(false);
   let cachedCanvasW = 0;
   let cachedCanvasH = 0;
+  let bgCanvas: OffscreenCanvas | null = null;
+  let bgW = 0;
+  let bgH = 0;
 
   function pct(time: number): number {
     if (getTimestampPct) return getTimestampPct(time);
@@ -119,6 +122,28 @@
     }
   }
 
+  function drawBackground(w: number, h: number, dpr: number) {
+    if (!peaks || w === 0 || h === 0) return;
+    const offscreen = new OffscreenCanvas(w * dpr, h * dpr);
+    const ctx = offscreen.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    const barWidth = w / peaks.length;
+    const midY = h / 2;
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    for (let i = 0; i < peaks.length; i++) {
+      const amp = peaks[i] * midY;
+      const x = i * barWidth;
+      ctx.fillRect(x, midY - amp, Math.max(barWidth - 1, 1), amp * 2);
+    }
+
+    bgCanvas = offscreen;
+    bgW = w;
+    bgH = h;
+  }
+
   function draw() {
     const canvas = canvasEl;
     if (!canvas) return;
@@ -132,27 +157,28 @@
     }
     if (w === 0 || h === 0) return;
 
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+    }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
     if (!peaks || decodeFailed) return;
 
-    const barWidth = w / peaks.length;
-    const midY = h / 2;
-
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    for (let i = 0; i < peaks.length; i++) {
-      const amp = peaks[i] * midY;
-      const x = i * barWidth;
-      ctx.fillRect(x, midY - amp, Math.max(barWidth - 1, 1), amp * 2);
+    if (!bgCanvas || bgW !== w || bgH !== h) {
+      drawBackground(w, h, dpr);
+    }
+    if (bgCanvas) {
+      ctx.drawImage(bgCanvas, 0, 0, w, h);
     }
 
     const clipX = (progress / 100) * w;
     if (clipX > 0) {
+      const barWidth = w / peaks.length;
+      const midY = h / 2;
       ctx.save();
       ctx.beginPath();
       ctx.rect(0, 0, clipX, h);
@@ -169,7 +195,10 @@
 
   $effect(() => {
     const path = filePath;
-    if (path) loadPeaks(path);
+    if (path) {
+      bgCanvas = null;
+      loadPeaks(path);
+    }
   });
 
   $effect(() => {
@@ -185,6 +214,7 @@
       const rect = entries[0].contentRect;
       cachedCanvasW = rect.width;
       cachedCanvasH = rect.height;
+      bgCanvas = null;
       draw();
     });
     ro.observe(canvas.parentElement!);

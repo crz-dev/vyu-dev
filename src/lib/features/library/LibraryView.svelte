@@ -124,6 +124,64 @@
   const listFontSize = $derived(densityMap(library.density, 16, 13, 10));
   const listTypeFontSize = $derived(densityMap(library.density, 14, 12, 9));
 
+  // Grid virtualization state
+  let scrollTop = $state(0);
+  let containerHeight = $state(0);
+  let containerWidth = $state(0);
+  const GRID_GAP = 6;
+  const GRID_OVERSCAN = 3;
+
+  const gridColCount = $derived(
+    containerWidth > 0
+      ? Math.max(1, Math.floor((containerWidth + GRID_GAP) / (gridMinCol + GRID_GAP)))
+      : 1
+  );
+  const gridRowHeight = $derived(
+    containerWidth > 0 && gridColCount > 0
+      ? (containerWidth - (gridColCount - 1) * GRID_GAP) / gridColCount
+      : gridMinCol
+  );
+  const gridRowStep = $derived(gridRowHeight + GRID_GAP);
+
+  const flatGridItems = $derived.by(() => {
+    if (library.viewMode !== "grid" || library.dividersOn) return null;
+    const items: { type: "folder" | "file"; path: string }[] = [];
+    if (library.activeTab === "favorites") {
+      items.push({ type: "file", path: "__add_favorite__" });
+    }
+    if (isViewingCollection) {
+      items.push({ type: "file", path: "__add_files__" });
+    }
+    if (isShowingFolders) {
+      for (const fp of currentFolderPaths) {
+        items.push({ type: "folder", path: fp });
+      }
+    }
+    for (const section of displaySections) {
+      for (const path of section.items) {
+        if (!isShowingFolders || !folderPathSet.has(path)) {
+          items.push({ type: "file", path });
+        }
+      }
+    }
+    return items;
+  });
+
+  const gridVirtualRange = $derived.by(() => {
+    if (!flatGridItems || flatGridItems.length === 0) return null;
+    const totalRows = Math.ceil(flatGridItems.length / gridColCount);
+    const firstRow = Math.max(0, Math.floor(scrollTop / gridRowStep) - GRID_OVERSCAN);
+    const lastRow = Math.min(
+      totalRows - 1,
+      Math.ceil((scrollTop + containerHeight) / gridRowStep) + GRID_OVERSCAN
+    );
+    const firstIdx = firstRow * gridColCount;
+    const lastIdx = Math.min(flatGridItems.length - 1, (lastRow + 1) * gridColCount - 1);
+    const topSpacer = firstRow * gridRowStep;
+    const bottomSpacer = Math.max(0, (totalRows - lastRow - 1) * gridRowStep);
+    return { firstIdx, lastIdx, topSpacer, bottomSpacer };
+  });
+
   const activePaths = $derived(
     currentIndex >= 0 && currentIndex < fileList.length
       ? new Set([fileList[currentIndex]])
@@ -906,13 +964,16 @@
     }
   }
 
-  // Scrollbar auto-hide
+  // Scrollbar auto-hide and virtualization tracking
   function onScroll() {
     scrollActive = true;
     if (scrollTimer) clearTimeout(scrollTimer);
     scrollTimer = setTimeout(() => {
       scrollActive = false;
     }, 3000);
+    if (scrollEl) {
+      scrollTop = scrollEl.scrollTop;
+    }
   }
 
   function rectsOverlap(
@@ -1593,6 +1654,8 @@
     class:select-mode={selectMode}
     class:dragging={isDragging}
     bind:this={scrollEl}
+    bind:clientHeight={containerHeight}
+    bind:clientWidth={containerWidth}
     onscroll={onScroll}
     onmousedown={handleDragStart}
   >
@@ -1607,10 +1670,154 @@
         >
           {#if showFileGrid}
             {#if library.viewMode === "grid"}
-              <div
-                class="library-grid"
-                style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
-              >
+              {#if gridVirtualRange && !library.dividersOn}
+                <!-- Virtualized grid (no dividers) -->
+                <div
+                  class="library-grid"
+                  style="grid-template-columns: repeat({gridColCount}, 1fr); position: relative;"
+                >
+                  <div style="height: {gridVirtualRange.topSpacer}px; grid-column: 1 / -1;" aria-hidden="true"></div>
+                  {#each flatGridItems!.slice(gridVirtualRange.firstIdx, gridVirtualRange.lastIdx + 1) as item, i (item.path)}
+                    {#if item.type === "folder"}
+                      {@render folderCard(item.path, "library-subfolder-card")}
+                    {:else if item.path === "__add_favorite__"}
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="library-placeholder-card"
+                        role="button"
+                        tabindex="0"
+                        onclick={addFavoriteFromFile}
+                        onkeydown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            addFavoriteFromFile();
+                          }
+                        }}
+                      >
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                      </div>
+                    {:else if item.path === "__add_files__"}
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="library-placeholder-card"
+                        role="button"
+                        tabindex="0"
+                        onclick={addFilesToCollection}
+                        onkeydown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            addFilesToCollection();
+                          }
+                        }}
+                      >
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </div>
+                    {:else}
+                      {@const path = item.path}
+                      {@const active = activePaths.has(path)}
+                      {@const selected = library.isSelected(path)}
+                      {@const badge = getMediaBadge(path)}
+                      <div
+                        class="library-cell"
+                        class:active
+                        class:selected
+                        class:names-on={library.namesOn}
+                        data-path={path}
+                        role="button"
+                        tabindex="0"
+                        onclick={(e) => {
+                          if (dragSuppressedClick) return;
+                          if (selectMode || e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            library.toggleSelect(path);
+                          } else {
+                            onSelect(path);
+                          }
+                        }}
+                        oncontextmenu={(e) => openLibCtxMenu(e, path)}
+                        onkeydown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            if (selectMode || e.ctrlKey || e.metaKey) {
+                              library.toggleSelect(path);
+                            } else {
+                              onSelect(path);
+                            }
+                          }
+                        }}
+                      >
+                        {#if thumbFor(path)}
+                          <img class="library-thumb" src={thumbFor(path)} alt="" draggable="false" />
+                        {:else}
+                          <div class="library-placeholder"></div>
+                        {/if}
+                        {#if library.namesOn}
+                          <div class="file-name-label">{getFileName(path)}</div>
+                        {/if}
+                        <div
+                          class="library-checkbox"
+                          class:checked={selected}
+                          role="checkbox"
+                          tabindex="0"
+                          aria-checked={selected}
+                          aria-label="Select file"
+                          onclick={(e) => { e.stopPropagation(); library.toggleSelect(path); }}
+                          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); library.toggleSelect(path); } }}
+                        >
+                          {#if selected}
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          {/if}
+                        </div>
+                        {#if badge === "video"}
+                          <div class="library-badge">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                          </div>
+                        {:else if badge === "gif"}
+                          <div class="library-badge">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="23 4 23 10 17 10" />
+                              <polyline points="1 20 1 14 7 14" />
+                              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                            </svg>
+                          </div>
+                        {:else if badge === "audio"}
+                          <div class="library-badge">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M9 18V5l12-2v13" />
+                              <circle cx="6" cy="18" r="3" />
+                              <circle cx="18" cy="16" r="3" />
+                            </svg>
+                          </div>
+                        {:else if badge === "pdf"}
+                          <div class="library-badge library-badge-pdf">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                              <line x1="9" y1="13" x2="15" y2="13" />
+                              <line x1="12" y1="13" x2="12" y2="18" />
+                            </svg>
+                          </div>
+                        {/if}
+                      </div>
+                    {/if}
+                  {/each}
+                  <div style="height: {gridVirtualRange.bottomSpacer}px; grid-column: 1 / -1;" aria-hidden="true"></div>
+                </div>
+              {:else}
+                <!-- Non-virtualized grid (dividers on or fallback) -->
+                <div
+                  class="library-grid"
+                  style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
+                >
                 {#if library.activeTab === "favorites"}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
@@ -1874,6 +2081,7 @@
                   {/each}
                 {/each}
               </div>
+              {/if}
             {:else if library.viewMode === "river"}
               <div class="library-river">
                 {#if library.activeTab === "favorites"}
