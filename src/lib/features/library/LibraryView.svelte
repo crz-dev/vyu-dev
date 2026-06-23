@@ -2938,32 +2938,34 @@
                         </svg>
                       </div>
                     {/if}
-                    <div class="library-collection-name">
-                      {#if renamingPath === col.path}
-                        <!-- svelte-ignore a11y_autofocus -->
-                        <input
-                          class="library-rename-input"
-                          type="text"
-                          bind:value={renameValue}
-                          autofocus
-                          onblur={confirmRename}
-                          onmousedown={(e) => e.stopPropagation()}
-                          onkeydown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              confirmRename();
-                            } else if (e.key === "Escape") {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              cancelRename();
-                            }
-                          }}
-                        />
-                      {:else}
-                        <span>{col.name}</span>
-                      {/if}
-                    </div>
+                    {#if library.namesOn || renamingPath === col.path}
+                      <div class="library-collection-name">
+                        {#if renamingPath === col.path}
+                          <!-- svelte-ignore a11y_autofocus -->
+                          <input
+                            class="library-rename-input"
+                            type="text"
+                            bind:value={renameValue}
+                            autofocus
+                            onblur={confirmRename}
+                            onmousedown={(e) => e.stopPropagation()}
+                            onkeydown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                confirmRename();
+                              } else if (e.key === "Escape") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                cancelRename();
+                              }
+                            }}
+                          />
+                        {:else}
+                          <span>{col.name}</span>
+                        {/if}
+                      </div>
+                    {/if}
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
                     <div
                       class="library-collection-remove"
@@ -3927,6 +3929,7 @@
     text-overflow: ellipsis;
     z-index: 1;
     transition: background 0.15s;
+    animation: labelSlideUp 190ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
   }
 
   .library-collection-card:hover .library-collection-name,
