@@ -5,7 +5,6 @@ mod window_state;
 mod commands;
 mod database;
 use commands::*;
-use database::*;
 
 use std::fs;
 use std::sync::atomic::AtomicBool;

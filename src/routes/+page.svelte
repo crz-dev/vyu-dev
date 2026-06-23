@@ -34,7 +34,7 @@
   import {
     createFfmpegHelpers,
     createEnsureFfprobe,
-  } from "$lib/features/media/ffmpegHelpers";
+  } from "$lib/features/media/ffmpeg";
   import { invokeOpenDirectory } from "$lib/features/media/tools";
   import {
     showFilenameTooltip,

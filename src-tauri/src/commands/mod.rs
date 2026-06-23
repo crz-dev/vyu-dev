@@ -8,6 +8,8 @@ pub mod clipboard;
 pub mod integrity;
 pub mod external_apps;
 pub mod collections;
+pub mod database;
+pub use database::*;
 
 pub use thumbnail::*;
 pub use display::*;
