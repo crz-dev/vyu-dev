@@ -51,6 +51,7 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
 
     function onPause() {
       cancelAnimationFrame(rafId);
+      deps.setPlaying(false);
     }
 
     mediaEl.addEventListener("play", onPlay);

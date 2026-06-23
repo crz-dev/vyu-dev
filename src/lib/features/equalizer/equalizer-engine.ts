@@ -49,12 +49,11 @@ class EqualizerEngine {
       return true;
     }
 
-    // If a previous disconnect() is still ramping down, let the old graph's
-    // deferred cleanup run — the old source is already disconnected so the
-    // old graph outputs silence.  We only null the stale references so the
-    // new graph can be built immediately on top.
-    this.source = null;
-    this.connectedElement = null;
+    // Tear down the old graph so effectsEngine.setup() performs a full
+    // rebuild instead of short-circuiting on a stale cached chain.
+    if (this.connectedElement) {
+      this.disconnect();
+    }
 
     try {
       const ctx = this.ensureContext();
