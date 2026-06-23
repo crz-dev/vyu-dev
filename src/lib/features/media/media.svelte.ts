@@ -1,3 +1,4 @@
+// Central media state
 import { volumeToActual } from "$lib/features/media/playback.svelte";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
@@ -119,8 +120,7 @@ export function createMedia(
     const isAudio = pathIsAudio(path);
     const isPdf = pathIsPdf(path);
 
-    // Single Tauri call for all per-file metadata (timestamps, clips, resume).
-    // Replaces 3 separate invocations — the data lives in one SQLite row.
+    // Batch metadata fetch
     let timestamps: VideoMarker[] = [];
     let clipBoundaries: ClipBoundary[] = [];
     let resumePoint: number | null = null;
@@ -145,7 +145,7 @@ export function createMedia(
                 }))
                 .sort((a, b) => a.time - b.time);
             } catch {
-              /* ignore parse errors */
+              /* empty */
             }
           }
           if (isVideo && meta.clips_data) {
@@ -169,7 +169,7 @@ export function createMedia(
                 }))
                 .sort((a, b) => a.time - b.time);
             } catch {
-              /* ignore parse errors */
+              /* empty */
             }
           }
           if (meta.last_position != null && isFinite(meta.last_position)) {

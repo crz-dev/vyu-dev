@@ -1,3 +1,4 @@
+// Context menu actions
 import { invokeShowInExplorer } from "$lib/features/media/tools";
 import {
   copyImageToClipboard,

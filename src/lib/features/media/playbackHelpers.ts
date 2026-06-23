@@ -1,3 +1,4 @@
+// Playback helpers
 import { isAudio } from "$lib/shared/media-kind";
 import type { MediaState } from "./media.svelte";
 

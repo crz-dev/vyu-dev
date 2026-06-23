@@ -178,7 +178,6 @@
     toggleSpeedSliderMode();
   }
 
-  // Connect audio element to the shared equalizer engine
   $effect(() => {
     const el = audioEl();
     if (!el) return;

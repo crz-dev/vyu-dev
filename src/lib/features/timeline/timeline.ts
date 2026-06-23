@@ -1,3 +1,4 @@
+// Timeline markers
 import type { VideoMarker } from "$lib/shared/types";
 
 export function createTimeline() {

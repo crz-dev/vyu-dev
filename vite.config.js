@@ -12,7 +12,6 @@ const pkg = JSON.parse(readFileSync(join(__dirname, "package.json"), "utf-8"));
 
 const host = process.env.TAURI_DEV_HOST;
 
-// https://vite.dev/config/
 export default defineConfig(async () => ({
   plugins: [sveltekit()],
 
@@ -20,9 +19,7 @@ export default defineConfig(async () => ({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
 
-  // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
-  //
-  // 1. prevent Vite from obscuring rust errors
+  // 1. Prevent Vite from obscuring Rust errors
   clearScreen: false,
   // 2. target modern Chrome (WebView2) — skip unnecessary transpilation
   build: {

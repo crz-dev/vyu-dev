@@ -1,28 +1,28 @@
-/** Draw colors — hex values matching CD_COLORS plus black as default. */
+// Markup state
 export const DRAW_COLORS = [
-  "#000000", // Black (default)
-  "#f87171", // Red
-  "#f97316", // Orange
-  "#f5c518", // Yellow
-  "#4ade80", // Green
-  "#06b6d4", // Cyan
-  "#3b82f6", // Blue
-  "#a855f7", // Purple
-  "#ec4899", // Pink
-  "#888888", // Gray
-  "#ffffff", // White
+  "#000000",
+  "#f87171",
+  "#f97316",
+  "#f5c518",
+  "#4ade80",
+  "#06b6d4",
+  "#3b82f6",
+  "#a855f7",
+  "#ec4899",
+  "#888888",
+  "#ffffff"
 ];
 
-/** Highlighter colors — bright, saturated tones typical of marker pens. */
+// Highlighter colors
 export const HIGHLIGHT_COLORS = [
-  "#f5c518", // Yellow (default)
-  "#4ade80", // Green
-  "#06b6d4", // Cyan
-  "#3b82f6", // Blue
-  "#ec4899", // Pink
-  "#f97316", // Orange
-  "#a855f7", // Purple
-  "#f87171", // Red
+  "#f5c518",
+  "#4ade80",
+  "#06b6d4",
+  "#3b82f6",
+  "#ec4899",
+  "#f97316",
+  "#a855f7",
+  "#f87171"
 ];
 
 import {
@@ -48,7 +48,7 @@ export interface FreehandStroke {
   opacity: number;
 }
 
-/** Alias kept for backward compat — tools.ts imports DrawStroke. */
+// DrawStroke alias
 export type DrawStroke = FreehandStroke;
 
 export type ShapeKind = "square" | "circle" | "triangle";
@@ -145,7 +145,7 @@ function createMarkupStore() {
   let displayWidth = $state(0);
   let displayHeight = $state(0);
 
-  // Precomputed axis-aligned bounding boxes (normalized coords) for spatial filtering
+  // Precomputed AABBs
   interface BBox {
     minX: number;
     maxX: number;
@@ -275,7 +275,7 @@ function createMarkupStore() {
   function selectShape(index: number | null) {
     selectedIndex = index;
     selectedIndices = index !== null ? [index] : [];
-    // Sync selected shape's properties into the draw defaults
+    // Sync shape defaults
     if (index !== null) {
       const s = strokes[index];
       if (s && s.type === "shape") {
@@ -409,12 +409,10 @@ function createMarkupStore() {
     currentStroke = null;
   }
 
-  /** Place a shape at normalized (cx, cy) with default size. Auto-selects the new shape. */
   function placeShape(cx: number, cy: number) {
     placeShapeSized(cx, cy, 0.08, 0.08);
   }
 
-  /** Place a shape at normalized (cx, cy) with explicit width/height. Auto-selects. */
   function placeShapeSized(
     cx: number,
     cy: number,
@@ -439,7 +437,6 @@ function createMarkupStore() {
     selectedIndices = [selectedIndex];
   }
 
-  /** Place a sized text box at normalized (x, y) center with explicit fontSize and boxExtraWidth. Auto-selects. */
   function placeTextSized(
     x: number,
     y: number,
@@ -469,7 +466,6 @@ function createMarkupStore() {
     selectedIndices = [selectedIndex];
   }
 
-  /** Place a text box at normalized (x, y) center. Auto-selects. */
   function placeText(x: number, y: number) {
     const stroke: PlacedText = {
       type: "text",
@@ -494,7 +490,6 @@ function createMarkupStore() {
     selectedIndices = [selectedIndex];
   }
 
-  /** Place a straight line between two normalized points. */
   function placeLine(
     x1: number,
     y1: number,
@@ -518,7 +513,6 @@ function createMarkupStore() {
     strokes = [...strokes, stroke];
   }
 
-  /** Convert the current freehand stroke into a path-based PlacedLine with arrowheads. */
   function endPathLine(lineType: LineKind) {
     if (!currentStroke || currentStroke.points.length === 0) {
       currentStroke = null;
@@ -738,7 +732,6 @@ function createMarkupStore() {
     selectedIndices = [];
   }
 
-  /** Distance in CSS px from point (px,py) to line segment (x1,y1)-(x2,y2). */
   function distToSegment(
     px: number,
     py: number,
@@ -758,7 +751,6 @@ function createMarkupStore() {
     return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
   }
 
-  /** Find the topmost stroke under normalized point (nx, ny). Returns index or null. */
   function findStrokeAt(
     nx: number,
     ny: number,
@@ -769,12 +761,11 @@ function createMarkupStore() {
     const py = ny * h;
     for (let i = strokes.length - 1; i >= 0; i--) {
       const s = strokes[i];
-      // Quick bounding-box rejection (normalized coords)
+      // BBox rejection
       const bb = strokeBboxes[i];
       if (nx < bb.minX || nx > bb.maxX || ny < bb.minY || ny > bb.maxY)
         continue;
       if (s.type === "shape") {
-        // Check if (nx, ny) is inside the shape's bounding box, accounting for rotation
         const halfW = s.width / 2;
         const halfH = s.height / 2;
         const dx = nx - s.cx;
@@ -791,7 +782,7 @@ function createMarkupStore() {
         )
           return i;
       } else if (s.type === "text") {
-        // Inline a simple bbox check using overlay dimensions
+        // Inline bbox check
         const fontSize = s.fontSize;
         const estCharW = fontSize * 0.6;
         const textW = Math.max(
@@ -866,7 +857,6 @@ function createMarkupStore() {
     return null;
   }
 
-  /** Delete the topmost stroke under normalized point (nx, ny). Returns true if deleted. */
   function deleteStrokeAt(
     nx: number,
     ny: number,
@@ -886,7 +876,6 @@ function createMarkupStore() {
     return true;
   }
 
-  /** Translate a stroke by normalized delta (dx, dy). */
   function moveStrokeBy(idx: number, dx: number, dy: number) {
     const s = strokes[idx];
     if (!s) return;
@@ -944,7 +933,6 @@ function createMarkupStore() {
     strokes = next;
   }
 
-  /** Translate all selected strokes by normalized delta (dx, dy). */
   function moveSelectedStrokesBy(dx: number, dy: number) {
     if (selectedIndices.length === 0) return;
     let next = [...strokes];
@@ -1005,7 +993,6 @@ function createMarkupStore() {
     strokes = next;
   }
 
-  /** Compute overlap between two axis-aligned rectangles. */
   function rectsOverlap(
     ax1: number,
     ay1: number,
@@ -1019,7 +1006,6 @@ function createMarkupStore() {
     return ax1 < bx2 && ax2 > bx1 && ay1 < by2 && ay2 > by1;
   }
 
-  /** Find all stroke indices whose bounding box overlaps the normalized rectangle (nx1,ny1)-(nx2,ny2). */
   function findStrokesInRect(
     nx1: number,
     ny1: number,
@@ -1039,7 +1025,7 @@ function createMarkupStore() {
     const selBottom = Math.max(ny1, ny2);
     for (let i = 0; i < strokes.length; i++) {
       const s = strokes[i];
-      // Quick bounding-box rejection (normalized coords)
+      // BBox rejection
       const bb = strokeBboxes[i];
       if (
         bb.maxX < selLeft ||

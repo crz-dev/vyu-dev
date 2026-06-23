@@ -18,7 +18,7 @@
     fullscreen?: boolean;
   } = $props();
 
-  // ── Layout constants ──
+  // Layout constants
   const ITEM_W = 70;
   const ITEM_GAP = 6;
   const ITEM_STEP = ITEM_W + ITEM_GAP;
@@ -26,24 +26,22 @@
   const VIDEO_EXTS_SET = new Set(VIDEO_EXTS);
   const AUDIO_EXTS_SET = new Set(AUDIO_EXTS);
 
-  // ── Element refs ──
   let trackEl: HTMLDivElement | null = $state(null);
   let barEl: HTMLDivElement | null = $state(null);
   let trackWidth = $state(0);
   let scrollLeft = $state(0);
 
-  // ── RAF-throttled scroll ──
+  // RAF scroll
   let _scrollRaf: number | null = null;
 
-  // ── Animation gate ──
+  // Animation gate
   // Thumbnails are NOT fetched until the open-transition finishes.
   let afterOpen = $state(false);
 
-  // ── Thumbnail state ──
+  // Thumbnails
   let loaded = $state(new Map<string, string>());
   let fetching = $state(new Set<string>());
 
-  // ── Generating toast ──
   // Delay the toast so it doesn't flash when thumbnails are already cached.
   const generating = $derived(afterOpen && loaded.size < fileList.length);
   let showToast = $state(false);
@@ -63,7 +61,7 @@
     };
   });
 
-  // ── Virtual-scroll computed range ──
+  // Virtual scroll range
   const firstIdx = $derived(
     Math.max(0, Math.floor(scrollLeft / ITEM_STEP) - OVERSCAN),
   );
@@ -84,7 +82,7 @@
     })),
   );
 
-  // ── Center-outward loading queue ──
+  // Center-outward load queue
   let loadQueue = $state<string[]>([]);
   let observed = $state(new Set<string>());
 
@@ -108,7 +106,7 @@
     loadQueue = order.map((idx) => fileList[idx]);
   });
 
-  // ── IntersectionObserver ──
+  // IntersectionObserver
   let observer: IntersectionObserver | null = null;
 
   $effect(() => {
@@ -132,8 +130,7 @@
     };
   });
 
-  // Observe newly rendered elements (re-runs when visibleItems changes
-  // so that elements created after mount are registered with the observer).
+  // Observe newly rendered elements (re-runs when visibleItems changes)
   $effect(() => {
     visibleItems;
     const els = trackEl?.querySelectorAll("[data-path]");
@@ -144,10 +141,8 @@
     }
   });
 
-  // ── Queue processor ──
-  // Starts up to MAX_CONCURRENT fetches in center-outward order.
-  // The throttle ensures the visual fill-in expands outward from the current file
-  // rather than all items starting simultaneously and completing in random order.
+  // Queue processor
+  // Process queue in center-outward order — fills outward from current file
   const MAX_CONCURRENT = 4;
   $effect(() => {
     if (!afterOpen) return;
@@ -165,7 +160,6 @@
     }
   });
 
-  // ── Fetch logic ──
   async function fetchOne(path: string) {
     fetching = new Set(fetching).add(path);
     try {
@@ -182,7 +176,7 @@
     fetching = next;
   }
 
-  // ── Cleanup when bar closes ──
+  // Cleanup on close
   $effect(() => {
     if (!visible) {
       afterOpen = false;
@@ -192,14 +186,13 @@
     }
   });
 
-  // ── Open/close animation gate ──
   function onTransitionEnd(e: TransitionEvent) {
     if (e.propertyName === "transform" && visible) {
       afterOpen = true;
     }
   }
 
-  // ── Scroll handlers (RAF-throttled) ──
+  // Scroll handlers
   function onScroll() {
     if (_scrollRaf === null) {
       _scrollRaf = requestAnimationFrame(() => {
@@ -222,8 +215,7 @@
         behavior: "smooth",
       });
     } else {
-      // Element outside virtual window (e.g., wrap from last→first or first→last).
-      // Compute scroll position that centers the target item.
+      // Element outside virtual window — center-scroll to target item
       const targetScroll =
         currentIndex * ITEM_STEP - (trackEl.clientWidth - ITEM_W) / 2;
       trackEl.scrollTo({
@@ -233,7 +225,6 @@
     }
   });
 
-  // ── Click handler ──
   function handleClick(index: number) {
     if (index === currentIndex) return;
     onSelect(index);

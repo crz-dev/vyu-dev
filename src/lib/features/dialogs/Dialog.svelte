@@ -225,8 +225,6 @@
     showToast({ message: "Print dialog opened", color: "blue" });
   }
 
-  // Share: Send to handlers
-
   async function handleShazam() {
     closeShare();
     const toastId = showToast({
@@ -463,7 +461,6 @@
     let unlisten: (() => void) | undefined;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
-      // Extract the directory from the chosen output path
       const sep = outputPath.includes("\\") ? "\\" : "/";
       const lastSep = outputPath.lastIndexOf(sep);
       const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";

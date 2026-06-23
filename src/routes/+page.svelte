@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Imports
   import {
     createPlaybackUI,
     formatTime,
@@ -93,7 +92,6 @@
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { effectsEngine } from "$lib/features/effects/effects-engine";
 
-  // State declarations
   let filePath = $state("");
   let fileSrc = $state("");
   let fileName = $state("no file open");
@@ -152,7 +150,6 @@
   let ffmpegInstalling = $state(false);
   let ffmpegInstallError = $state("");
 
-  // Feature modules: menu and ffmpeg helpers
   const menuActions = createMenuActions({
     closeContextMenu: () => contextMenuStore.close(),
     getFilePath: () => filePath,
@@ -181,7 +178,6 @@
       setFfprobeAvailable: (v) => (ffprobeAvailable = v),
     });
 
-  // Feature modules: viewer and media foundation
   const style = createViewerStyle();
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
   const clips = createClips({
@@ -219,7 +215,6 @@
     }),
   );
 
-  // Feature modules: viewer effects and playback poller
   const viewerFx = createViewerEffects({
     getVideoEl: () => videoEl,
     getViewerEl: () => viewerEl,
@@ -253,7 +248,6 @@
     toggleFullscreen,
   } = viewerFx;
 
-  // Feature modules: playback and marker controls
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
   const playbackUI = createPlaybackUI(
     getMediaEl,
@@ -364,7 +358,6 @@
     removeClipBoundary,
   } = markerActions;
 
-  // Prop bundles: timeline and playback (must be after state + playback modules)
   const timelineProps = $derived({
     progress,
     currentTimeSecs: rawCurrentSecs,
@@ -498,7 +491,6 @@
     speedDragging: playbackUI.speedDragging,
   });
 
-  // Feature modules: file operations and navigation
   const pdf = createPdf();
   const navigation = createNavigation({
     setFilePath: (v) => (filePath = v),
@@ -608,7 +600,6 @@
     togglePlay,
   });
 
-  // Feature modules: input handling (keybind, context menu)
   const configuredKeydown = createKeybindHandler({
     areDialogsOpen: () =>
       areDialogsOpen({
@@ -662,7 +653,6 @@
     const target = e.target as HTMLElement;
     if (target.closest("button, .progress-bar, .fs-progress")) return;
     if (!fileSrc) return;
-    // Pixel estimates for context menu dimensions
     const menuW = 200;
     const menuH = isVideo || isAudio ? 300 : 260;
     contextMenuStore.open(e, menuW, menuH);
@@ -671,7 +661,6 @@
     contextMenuStore.close();
   }
 
-  // Feature modules: edit, markup, delete, and context actions
   const editActions = createEditActions({
     getFilePath: () => filePath,
     getFileName: () => fileName,
@@ -801,7 +790,6 @@
     closeTimestampEditor,
   });
 
-  // Prop bundle: shell (must be after all feature modules)
   const _shellProps = $derived({
     fileName,
     fileSrc,
@@ -866,7 +854,6 @@
     invokeOpenDirectory,
   });
 
-  // Lifecycle
   setupInit({
     volume: { get: () => volume, set: (v) => (volume = v) },
     loopMode: {

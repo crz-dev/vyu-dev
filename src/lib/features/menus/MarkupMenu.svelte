@@ -40,7 +40,6 @@
   let clearAllConfirmTimeout: ReturnType<typeof setTimeout> | null =
     $state(null);
 
-  // Text sub-tool state
   let activeTextTool: "color" | "font" | "style" | "alignment" | null =
     $state(null);
   let textFontDropdownOpen = $state(false);
@@ -55,7 +54,6 @@
   ];
   const TEXT_APP_FONTS = ["Geist", "Satoshi"];
 
-  // Draw sub-tool state
   let activeDrawTool: "color" | "thickness" | "opacity" | null = $state(null);
   let thicknessTrackEl: HTMLDivElement | null = $state(null);
   let isThicknessDragging = $state(false);
@@ -64,7 +62,6 @@
   let isOpacityDragging = $state(false);
   let localOpacity = $state(1);
 
-  // Highlight sub-tool state
   let activeHighlightTool: "color" | "thickness" | "opacity" | null =
     $state(null);
   let highlightThicknessTrackEl: HTMLDivElement | null = $state(null);
@@ -293,7 +290,6 @@
     }
   }
 
-  // Thickness slider
   function updateThicknessFromX(clientX: number) {
     if (!thicknessTrackEl) return;
     const rect = thicknessTrackEl.getBoundingClientRect();
@@ -325,7 +321,6 @@
 
   const thicknessScrubberPct = $derived(((localThickness - 1) / 19) * 100);
 
-  // Opacity slider
   function updateOpacityFromX(clientX: number) {
     if (!opacityTrackEl) return;
     const rect = opacityTrackEl.getBoundingClientRect();
@@ -358,7 +353,6 @@
 
   const opacityScrubberPct = $derived((localOpacity / 1) * 100);
 
-  // Highlight thickness slider
   function updateHighlightThicknessFromX(clientX: number) {
     if (!highlightThicknessTrackEl) return;
     const rect = highlightThicknessTrackEl.getBoundingClientRect();
@@ -392,7 +386,6 @@
     (localHighlightThickness / 40) * 100,
   );
 
-  // Highlight opacity slider
   function updateHighlightOpacityFromX(clientX: number) {
     if (!highlightOpacityTrackEl) return;
     const rect = highlightOpacityTrackEl.getBoundingClientRect();

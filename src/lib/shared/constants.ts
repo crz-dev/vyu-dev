@@ -1,3 +1,5 @@
+// App constants
+// ── File extensions ──
 export const IMAGE_EXTS = [
   "jpg",
   "jpeg",
@@ -5,7 +7,7 @@ export const IMAGE_EXTS = [
   "gif",
   "webp",
   "bmp",
-  "svg", // browser-native — not in backend IMAGE_EXTS_RUST (no Rust-side processing needed)
+  "svg",
   "avif",
   "tiff",
   "tif",
@@ -13,7 +15,6 @@ export const IMAGE_EXTS = [
   "jxl",
   "heic",
   "heif",
-  // RAW camera formats
   "dng",
   "cr2",
   "cr3",
@@ -69,8 +70,9 @@ export const ALL_EXTS = [
 ];
 export const ALL_EXTS_SET: ReadonlySet<string> = new Set(ALL_EXTS);
 
-/** CSS color variables used for vinyl CD visual center labels and progress rings.
- *  Index is persisted per audio file in localStorage (`vyu-cd-color-{path}`). */
+// ── CD colors ──
+
+// CD visual colors
 export const CD_COLORS = [
   "var(--red)",
   "var(--orange)",
@@ -84,8 +86,9 @@ export const CD_COLORS = [
   "var(--text-primary)",
 ];
 
-/** Image formats that browsers cannot render natively in &lt;img&gt; tags.
- *  These need to be decoded server-side (Rust image crate / ffmpeg) and served as PNG. */
+// ── Browser-unsupported formats ──
+
+
 export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
   "tiff",
   "tif",
@@ -93,7 +96,6 @@ export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
   "jxl",
   "heic",
   "heif",
-  // RAW camera formats
   "dng",
   "cr2",
   "cr3",
@@ -116,8 +118,9 @@ export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
   "gpr",
 ]);
 
-/** Video formats that browsers cannot play natively.
- *  These need to be remuxed server-side (ffmpeg -c copy → MP4) for playback. */
+// ── Remux formats ──
+
+
 export const REMUX_VIDEO_EXTS = new Set(["ts", "m2ts"]);
 
 export const VOLUME_SEGMENTS = 8;
@@ -133,7 +136,7 @@ export type LoopMode = (typeof LOOP_MODES)[number];
 export const ZOOM_MIN = 10;
 export const VOLUME_STEP = 1 / VOLUME_SEGMENTS;
 
-// Sort constants
+// ── Sort and loop ──
 export const SORT_MODES = [
   { value: "name", label: "Name" },
   { value: "date-modified", label: "Date modified" },

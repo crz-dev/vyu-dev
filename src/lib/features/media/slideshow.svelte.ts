@@ -1,3 +1,4 @@
+// Slideshow state
 import { isPdf, isTimedMedia } from "$lib/shared/media-kind";
 
 export type SlideshowOrder = "next" | "shuffle";

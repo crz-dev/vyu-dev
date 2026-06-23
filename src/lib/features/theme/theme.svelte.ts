@@ -1,3 +1,4 @@
+// Theme state
 import { loadTheme, saveTheme } from "$lib/services/storage";
 
 export type ThemeMode = "dark" | "light" | "system";
@@ -35,7 +36,6 @@ function createTheme() {
     document.documentElement.setAttribute("data-theme", t);
   }
 
-  // Reactive state
   const initialResolved = resolveEffective(saved);
   let mode = $state<ThemeMode>(saved);
   let resolved = $state<ResolvedTheme>(initialResolved);
@@ -47,7 +47,6 @@ function createTheme() {
     targetBg: "",
   });
 
-  // Apply initial theme
   if (typeof document !== "undefined") {
     applyTheme(initialResolved);
   }

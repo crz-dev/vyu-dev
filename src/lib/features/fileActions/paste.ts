@@ -1,3 +1,4 @@
+// Paste handler
 import { tempDir, join } from "@tauri-apps/api/path";
 import { writeFile, mkdir } from "@tauri-apps/plugin-fs";
 import { save } from "@tauri-apps/plugin-dialog";

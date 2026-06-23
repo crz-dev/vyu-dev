@@ -1,3 +1,4 @@
+// File navigation
 import { createMedia } from "$lib/features/media/media.svelte";
 import { createFolderWatcher } from "$lib/features/navigation/folderWatcher.svelte";
 import { editing } from "$lib/features/editing/editing.svelte";
@@ -113,7 +114,6 @@ export function createNavigation(deps: NavigationDeps) {
         : deps.getSortMode()) as "name" | "date-modified" | "size" | "type",
       deps.getSortDesc(),
     );
-    // Start watching the parent folder
     const folder = getParentFolder(path);
     if (folder) folderWatcher.startWatching(folder);
   }
@@ -172,7 +172,6 @@ export function createNavigation(deps: NavigationDeps) {
       }
       idx = (idx + direction + fileList.length) % fileList.length;
     } while (idx !== startIdx);
-    // No other audio file found — do nothing
   }
 
   function handlePrevClick() {
@@ -239,9 +238,7 @@ export function createNavigation(deps: NavigationDeps) {
     viewer.resetZoom();
     viewer.state.baseZoomLevel = 100;
     if (slideshow.active) slideshow.onMediaLoaded();
-    // After metadata load, video intrinsic size may have changed.
-    // If the mouse is no longer over the video wrapper, reset hover state
-    // so arrow keys don't seek in a stale hover zone.
+    // Reset hover state after metadata load if mouse moved off video
     const cropContainerEl = deps.getCropContainerEl();
     if (cropContainerEl && !cropContainerEl.matches(":hover")) {
       deps.setHoverZone("none");
@@ -256,8 +253,7 @@ export function createNavigation(deps: NavigationDeps) {
     audioEl.muted = deps.getMuted();
     audioEl.loop = deps.getLoopMode() === "loop";
     deps.getPlaybackUI().initSliderMode(true, true);
-    // Explicitly start playback so audio plays immediately after file switch
-    // regardless of browser autoplay policy or element reuse state.
+    // Force playback after file switch (bypasses autoplay policy)
     audioEl.play().catch(() => {});
     setMediaState({
       fileDimensions: "",
@@ -269,8 +265,7 @@ export function createNavigation(deps: NavigationDeps) {
     });
     if (deps.getIsLoadingFile()) media.finishLoading(setMediaState);
     if (slideshow.active) slideshow.onMediaLoaded();
-    // After metadata load, if the mouse is no longer over the audio wrapper,
-    // reset hover state so arrow keys don't seek in a stale hover zone.
+    // Reset hover state after metadata load if mouse moved off audio
     if (audioEl?.parentElement && !audioEl.parentElement.matches(":hover")) {
       deps.setHoverZone("none");
     }
@@ -278,7 +273,6 @@ export function createNavigation(deps: NavigationDeps) {
 
   function onSortChange(mode: SortMode, desc: boolean) {
     sort.change(mode, desc);
-    // Re-sort the current folder
     const filePath = deps.getFilePath();
     if (filePath) {
       const folder = getParentFolder(filePath);

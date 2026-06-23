@@ -1,3 +1,4 @@
+// Filesystem operations
 import { invoke } from "@tauri-apps/api/core";
 import { readDir } from "@tauri-apps/plugin-fs";
 import { ALL_EXTS_SET } from "$lib/shared/constants";
@@ -113,10 +114,7 @@ export async function readMediaFilesInFolder(
   return sorted;
 }
 
-/**
- * Re-scan a folder bypassing the cache. Used by the file watcher
- * when filesystem changes are detected.
- */
+// Bypass cache rescan
 export async function rescanFolder(
   folderPath: string,
   mode: SortMode = "name",

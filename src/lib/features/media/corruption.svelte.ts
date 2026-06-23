@@ -1,3 +1,4 @@
+// Corruption state
 import { invokeFixMedia } from "$lib/features/media/tools";
 import { showToast } from "$lib/features/toast/toast.svelte";
 

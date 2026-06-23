@@ -1,3 +1,4 @@
+// Menu visibility state
 import { editing } from "$lib/features/editing/editing.svelte";
 
 function createMenuVisibilityStore() {

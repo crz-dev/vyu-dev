@@ -1,3 +1,4 @@
+// EQ band config
 export const BANDS = [
   30, 60, 125, 250, 500, 1000, 2000, 4000, 8000, 16000,
 ] as const;

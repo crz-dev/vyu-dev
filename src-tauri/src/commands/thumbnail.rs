@@ -1,3 +1,4 @@
+// Thumbnail generation
 use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -13,16 +14,12 @@ use crate::constants::{
 use crate::types::{MediaKind, ThumbState};
 use crate::util::{format_data_url, hash_path_xxh3, run_ffmpeg};
 
-/// Soft cache limit — eviction removes oldest entries when exceeded.
 const MAX_CACHE_BYTES: u64 = 500 * 1024 * 1024;
-/// Hysteresis margin to avoid thrashing eviction on every write.
 const EVICTION_MARGIN: u64 = 10 * 1024 * 1024;
 
-/// Tracks total cache size across generations so we only scan
-/// the directory when eviction is actually needed.
+/// Total cache size tracker
 static CACHE_USED: AtomicU64 = AtomicU64::new(u64::MAX);
 
-/// Resolved once on first access, then reused for every request.
 static CACHED_THUMB_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 pub fn thumb_cache_dir(app: &tauri::AppHandle) -> &Path {
@@ -37,13 +34,7 @@ pub fn thumb_cache_dir(app: &tauri::AppHandle) -> &Path {
     })
 }
 
-/// Opens a JPEG using decoder-scale-down to avoid full-resolution decode.
-/// For a 6000×4000 JPEG targeted at 120px, this decodes at ~750×500
-/// (IDCT scale 1/8) instead of the full 6000×4000, reducing pixel data
-/// by ~64×. Returns `Err` for non-JPEG or decoder failure (caller falls back).
-///
-/// Uses the `jpeg-decoder` crate directly because the `image` crate's
-/// JPEG decoder (zune-jpeg) does not expose IDCT scaling.
+/// Scaled JPEG decode
 fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage, String> {
     let ext = path
         .extension()
@@ -57,8 +48,7 @@ fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage,
     let file = fs::File::open(path).map_err(|e| format!("Cannot open JPEG: {e}"))?;
     let mut decoder = jpeg_decoder::Decoder::new(BufReader::new(file));
 
-    // Request scale-down — picks the largest IDCT factor (1/8, 1/4, 1/2, 1/1)
-    // that yields dimensions >= short_side. Returns actual output size.
+    // Pick largest IDCT factor (1/8, 1/4, 1/2, 1/1) that yields dimensions >= short_side
     let (w, h) = decoder
         .scale(short_side as u16, short_side as u16)
         .map_err(|e| format!("JPEG scale config: {e}"))?;
@@ -75,10 +65,7 @@ fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage,
         .ok_or_else(|| "JPEG decode produced invalid buffer".into())
 }
 
-/// Encodes the processed image as a thumbnail JPEG and writes it to cache.
-/// Shared by both the JPEG fast-path and the generic image-crate path.
-/// Cache writes are best-effort — failures are silently ignored so that
-/// a full disk degrades to regeneration rather than breaking thumbnails.
+/// Encode + write thumbnail
 fn encode_and_save_thumbnail(
     img: &image::DynamicImage,
     thumb_path: &Path,
@@ -128,8 +115,7 @@ fn encode_and_save_thumbnail(
     Ok(jpeg_bytes)
 }
 
-/// In-process image-crate thumbnail: decode (with JPEG scale-down fast path),
-/// resize to `short_side`, encode as JPEG.
+/// In-process thumbnail
 fn thumbnail_via_image_crate(
     path: &Path,
     thumb_path: &Path,
@@ -200,10 +186,7 @@ fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<S
     Ok(None)
 }
 
-/// FFmpeg-based thumbnail dispatcher.
-/// Audio without embedded cover art returns `None` (the frontend
-/// shows a placeholder icon) — no waveform generation at thumbnail
-/// size since 120×120 is too small for a readable waveform.
+/// FFmpeg thumbnail
 fn thumbnail_via_ffmpeg(
     path: &str,
     thumb_path: &Path,
@@ -240,8 +223,7 @@ fn thumbnail_via_ffmpeg(
     }
 }
 
-/// Single-file thumbnail command.
-/// Returns a base64 JPEG data URL, or empty string for PDFs / unsupported types.
+/// Thumbnail command
 #[tauri::command]
 pub async fn get_thumbnail(
     app: tauri::AppHandle,
@@ -263,7 +245,7 @@ pub async fn get_thumbnail(
 
     let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
 
-    // ── In-flight dedup (keyed by hash + size — mtime known later) ──
+    // In-flight dedup (keyed by hash + size)
     let hash = hash_path_xxh3(&path);
     let inflight_key = format!("{hash}_{thumb_size}");
     if let Some(rx) = state.inflight.register(&inflight_key).await {
@@ -345,16 +327,7 @@ pub async fn get_thumbnail(
     Ok(format_data_url(&jpeg_bytes))
 }
 
-// ── Cache size tracking ──────────────────────────────────────────
-
-/// Records a newly written cache entry and lazily initialises the
-/// shared counter. The counter lets us skip full directory scans
-/// on the hot path — eviction only scans when the counter exceeds
-/// the limit plus a hysteresis margin.
-///
-/// On first call the counter is intialised from disk (one-time scan
-/// per session). The counter is best-effort — drift is corrected
-/// during eviction and by `get_thumbnail_cache_size`.
+/// Record cache entry
 fn record_cache_write(written_bytes: u64, cache_dir: &Path) {
     let prev = CACHE_USED.fetch_add(written_bytes, Ordering::AcqRel);
     if prev == u64::MAX {
@@ -378,7 +351,7 @@ fn record_cache_write(written_bytes: u64, cache_dir: &Path) {
     }
 }
 
-/// Returns the total size in bytes of all cached thumbnail JPEGs in a given directory.
+/// Cache folder size
 fn compute_cache_size(cache_dir: &Path) -> u64 {
     let Ok(entries) = fs::read_dir(cache_dir) else {
         return 0;
@@ -392,8 +365,7 @@ fn compute_cache_size(cache_dir: &Path) -> u64 {
     total
 }
 
-/// Soft eviction: if cache exceeds `MAX_CACHE_BYTES`, remove oldest
-/// entries until under limit. Updates the shared counter on completion.
+/// Evict oldest entries
 fn try_evict_cache(cache_dir: &Path) {
     let Ok(entries) = fs::read_dir(cache_dir) else {
         return;
@@ -432,9 +404,7 @@ fn try_evict_cache(cache_dir: &Path) {
     CACHE_USED.fetch_sub(freed, Ordering::Relaxed);
 }
 
-// ── Admin commands ───────────────────────────────────────────────
-
-/// Returns the total size in bytes of all cached thumbnail JPEGs.
+/// Cache total size
 #[tauri::command]
 pub async fn get_thumbnail_cache_size(app: tauri::AppHandle) -> Result<u64, String> {
     let cache_dir = thumb_cache_dir(&app);
@@ -444,7 +414,7 @@ pub async fn get_thumbnail_cache_size(app: tauri::AppHandle) -> Result<u64, Stri
     Ok(size)
 }
 
-/// Deletes all files in the thumbnail cache folder and returns bytes freed.
+/// Clear cache
 #[tauri::command]
 pub async fn clear_thumbnail_cache(app: tauri::AppHandle) -> Result<u64, String> {
     let cache_dir = thumb_cache_dir(&app);
@@ -465,12 +435,7 @@ pub async fn clear_thumbnail_cache(app: tauri::AppHandle) -> Result<u64, String>
     Ok(freed)
 }
 
-// ── Cache migration ─────────────────────────────────────────────
-
-/// Copies cached thumbnails keyed under `old_dir` paths to new
-/// cache entries keyed under `new_dir` paths. Used after a
-/// directory rename so thumbnails don't need to regenerate.
-/// Returns the number of cache entries migrated.
+/// Migrate cache entries
 #[tauri::command]
 pub async fn migrate_thumbnail_cache(
     app: tauri::AppHandle,

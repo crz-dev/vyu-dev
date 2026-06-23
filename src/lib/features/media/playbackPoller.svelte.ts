@@ -1,3 +1,4 @@
+// Playback poller
 import { markerStore } from "$lib/features/markers/markers.svelte";
 
 export interface PlaybackPollerDeps {

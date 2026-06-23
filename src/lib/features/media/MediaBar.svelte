@@ -55,12 +55,10 @@
   let sortMenuX = $state(0);
   let sortMenuY = $state(0);
 
-  // Library sort menu state
   let libSortMenuVisible = $state(false);
   let libSortMenuX = $state(0);
   let libSortMenuY = $state(0);
 
-  // Library view menu state
   let viewMenuVisible = $state(false);
   let viewMenuX = $state(0);
   let viewMenuY = $state(0);

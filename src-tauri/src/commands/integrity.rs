@@ -1,3 +1,4 @@
+// File integrity
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -122,8 +123,7 @@ pub fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
     match fix_result {
         Ok(()) => {
             if mode == "replace" {
-                // Rename original to a backup before putting the fixed file in place.
-                // This prevents data loss if the process crashes mid-replacement.
+                // Backup before replace
                 let stem = input
                     .file_stem()
                     .and_then(|s| s.to_str())

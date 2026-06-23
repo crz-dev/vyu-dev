@@ -1,3 +1,4 @@
+// localStorage persistence
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
 import type { LoopMode } from "$lib/shared/constants";
 
@@ -271,7 +272,7 @@ export function saveSortDesc(desc: boolean): void {
   localStorage.setItem("vyu-sort-desc", desc ? "true" : "false");
 }
 
-// Audio customize
+// ── Audio layout ──
 export type AudioLayoutMode = "retro" | "modern";
 
 export function loadAudioLayoutMode(): AudioLayoutMode {
@@ -292,7 +293,7 @@ export function saveShareOutputDir(dir: string): void {
   localStorage.setItem("vyu-share-output-dir", dir);
 }
 
-// Markup custom draw colors
+// ── Markup custom colors ──
 export function loadMarkupCustomColors(): string[] {
   try {
     const raw = localStorage.getItem("vyu-markup-custom-colors");
@@ -302,7 +303,7 @@ export function loadMarkupCustomColors(): string[] {
       return parsed.map((c) => (typeof c === "string" ? c : ""));
     }
   } catch {
-    /* ignore */
+    /* empty */
   }
   return ["", "", ""];
 }
@@ -311,7 +312,7 @@ export function saveMarkupCustomColors(colors: string[]): void {
   localStorage.setItem("vyu-markup-custom-colors", JSON.stringify(colors));
 }
 
-// Highlight custom colors
+// ── Highlight custom colors ──
 export function loadHighlightCustomColors(): string[] {
   try {
     const raw = localStorage.getItem("vyu-highlight-custom-colors");
@@ -321,7 +322,7 @@ export function loadHighlightCustomColors(): string[] {
       return parsed.map((c) => (typeof c === "string" ? c : ""));
     }
   } catch {
-    /* ignore */
+    /* empty */
   }
   return ["", "", "", "", "", ""];
 }
@@ -330,7 +331,7 @@ export function saveHighlightCustomColors(colors: string[]): void {
   localStorage.setItem("vyu-highlight-custom-colors", JSON.stringify(colors));
 }
 
-// Text custom colors
+// ── Text custom colors ──
 export function loadTextCustomColors(): string[] {
   try {
     const raw = localStorage.getItem("vyu-text-custom-colors");
@@ -340,7 +341,7 @@ export function loadTextCustomColors(): string[] {
       return parsed.map((c) => (typeof c === "string" ? c : ""));
     }
   } catch {
-    /* ignore */
+    /* empty */
   }
   return [""];
 }
@@ -407,7 +408,7 @@ export function loadRecentFiles(limit = 20): RecentFileItem[] {
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      // Migrate from old format (string[]) to new format (RecentFileItem[])
+      // Migrate from string[] to RecentFileItem[]
       if (parsed.length > 0 && typeof parsed[0] === "string") {
         const now = Date.now();
         const migrated: RecentFileItem[] = parsed.map(
@@ -491,7 +492,7 @@ export function saveShowThumbnails(enabled: boolean): void {
   localStorage.setItem("vyu-show-thumbnails", String(enabled));
 }
 
-// Collections
+// ── Collections ──
 
 export interface CollectionItem {
   name: string;
@@ -530,7 +531,7 @@ export function saveCollections(items: CollectionItem[]): void {
   localStorage.setItem("vyu-collections", JSON.stringify(items));
 }
 
-// Favorites
+// ── Favorites ──
 
 export interface FavoriteItem {
   path: string;
@@ -543,7 +544,7 @@ export function loadFavorites(): FavoriteItem[] {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    // Migrate from old format (string[]) to new format (FavoriteItem[])
+    // Migrate from string[] to FavoriteItem[]
     if (parsed.length > 0 && typeof parsed[0] === "string") {
       const now = Date.now();
       return parsed.map((p: string, i: number) => ({

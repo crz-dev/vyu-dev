@@ -1,3 +1,4 @@
+// Keybindings
 import { VOLUME_STEP } from "$lib/shared/constants";
 
 type KeybindActions = {

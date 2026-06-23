@@ -1,3 +1,4 @@
+// Editing state
 import { invoke } from "@tauri-apps/api/core";
 import type { CropBounds } from "$lib/shared/types";
 

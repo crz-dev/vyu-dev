@@ -1,3 +1,4 @@
+// Clip boundaries
 import { open } from "@tauri-apps/plugin-dialog";
 import type { ClipBoundary, ClipPair } from "$lib/shared/types";
 import {

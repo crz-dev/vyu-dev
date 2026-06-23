@@ -1,6 +1,4 @@
-// Worker is disabled (disableWorker: true): Tauri's asset:// protocol is not
-// supported by WebView2 Web Workers. Rendering runs on the main thread instead.
-// Pages are rendered lazily via IntersectionObserver for large documents.
+// PDF rendering
 import { convertFileSrc } from "@tauri-apps/api/core";
 import type {
   PDFDocumentProxy,
@@ -59,7 +57,6 @@ export function createPdf() {
     for (const page of state.pages) {
       page.rendered = false;
     }
-    // Trigger observer to re-render visible pages
     if (observer && pdfContainerEl) {
       for (const page of state.pages) {
         if (page.canvasRef) observer.observe(page.canvasRef);
@@ -119,7 +116,6 @@ export function createPdf() {
           const canvas = entry.target as HTMLCanvasElement;
           const page = state.pages.find((p) => p.canvasRef === canvas);
           if (page && !page.rendered) {
-            // Try to get the page object from the pdfDoc
             pdfDoc
               ?.getPage(page.pageNum)
               ?.then((p: PDFPageProxy) => scheduleRender(p, page))
@@ -178,7 +174,6 @@ export function createPdf() {
       const numPages = pdfDoc.numPages;
       state.pageCount = numPages;
 
-      // Pre-fetch all pages
       const pagePromises: Promise<PDFPageProxy>[] = [];
       for (let i = 1; i <= numPages; i++) {
         pagePromises.push(pdfDoc.getPage(i));

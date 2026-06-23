@@ -1,3 +1,4 @@
+// Scrub state
 function createDiscScrubStore() {
   let discScrubHandlers = $state<{
     onScrubMove: (e: MouseEvent | TouchEvent, newProgress: number) => void;
@@ -41,7 +42,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     let pendingTime: number | null = null;
     let seekInProgress = false;
     let lastSeekTime = 0;
-    // RAF-coalesced UI updates — playhead and waveform track at vsync rate
+    // RAF-coalesced UI updates at vsync rate
     let uiRafId: number | null = null;
     let uiSecs: number | null = null;
     let uiProgress: number | null = null;
@@ -57,8 +58,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     const doSeek = (time: number) => {
       seekInProgress = true;
       mediaEl!.currentTime = time;
-      // Update UI immediately from intended position — don't read back
-      // currentTime (may lag behind the synchronous setter on some engines).
+      // Use intended position, not currentTime (may lag behind setter)
       deps.setRawCurrentSecs(time);
       deps.setProgress((time / mediaEl!.duration) * 100);
     };
@@ -88,7 +88,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
 
     function onMouseMove(ev: MouseEvent) {
       const time = computeTime(ev.clientX);
-      // RAF-coalesce UI updates — playhead and waveform track at vsync
+      // RAF-coalesce UI updates
       uiSecs = time;
       uiProgress = (time / mediaEl!.duration) * 100;
       if (!uiRafId) {
@@ -96,11 +96,9 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
       }
 
       if (seekInProgress) {
-        // A seek is in flight — coalesce into pendingTime; the seeked
-        // handler will pick it up.
+        // A seek is in flight — coalesce into pendingTime; the seeked handler will pick it up.
         pendingTime = time;
       } else if (Date.now() - lastSeekTime >= SEEK_THROTTLE_MS) {
-        // Enough time since last seek — fire one now
         doSeek(time);
         lastSeekTime = Date.now();
       } else {
@@ -114,14 +112,12 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       mediaEl!.removeEventListener("seeked", onSeeked);
-      // Flush any pending UI update
       if (uiRafId !== null) {
         cancelAnimationFrame(uiRafId);
         uiRafId = null;
       }
       flushUI();
-      // Final seek to the last pending position.
-      // Cancels any in-flight seek — the browser will decode the new target.
+      // Final seek to the last pending position. Cancels any in-flight seek — the browser will decode the new target.
       if (pendingTime !== null) {
         seekInProgress = true;
         mediaEl!.currentTime = pendingTime;
@@ -146,7 +142,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     let pendingTime: number | null = null;
     let seekInProgress = false;
     let lastSeekTime = 0;
-    // RAF-coalesced UI updates — playhead and waveform track at vsync rate
+    // RAF-coalesce UI updates
     let uiRafId: number | null = null;
     let uiSecs: number | null = null;
     let uiProgress: number | null = null;
@@ -202,7 +198,6 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     discScrubStore.discScrubHandlers.onScrubEnd = () => {
       deps.setIsScrubbing(false);
       audioEl!.removeEventListener("seeked", onSeeked);
-      // Flush any pending UI update
       if (uiRafId !== null) {
         cancelAnimationFrame(uiRafId);
         uiRafId = null;
@@ -215,7 +210,6 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
         deps.setProgress((pendingTime / audioEl!.duration) * 100);
       }
       if (wasPlaying) audioEl!.play();
-      // Reset handlers
       discScrubStore.discScrubHandlers.onScrubMove = () => {};
       discScrubStore.discScrubHandlers.onScrubEnd = () => {};
     };

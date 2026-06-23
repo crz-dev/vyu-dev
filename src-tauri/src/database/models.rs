@@ -1,3 +1,4 @@
+// DB models
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]

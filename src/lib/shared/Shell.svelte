@@ -426,7 +426,6 @@
   });
 
   // Clear viewer menu selection state when library opens
-  // Multi-delete state
   const multiDeleteConfirm = $derived(deleteStore.multiDeleteConfirm);
   const multiDeleteCount = $derived(deleteStore.multiDeletePaths.length);
   const multiDeletePermanently = $derived(deleteStore.multiDeletePermanently);

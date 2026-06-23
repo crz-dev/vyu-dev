@@ -1,3 +1,4 @@
+// SQLite persistence
 import { invoke } from "@tauri-apps/api/core";
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
 import type { EqSettings } from "./storage";
@@ -114,7 +115,7 @@ async function clearField(path: string, field: string): Promise<void> {
   }
 }
 
-// ── Timestamps ──
+// Timestamps
 
 export async function readTimestamps(filePath: string): Promise<VideoMarker[]> {
   if (!filePath) return [];
@@ -150,7 +151,7 @@ export async function deleteTimestamps(filePath: string): Promise<void> {
   await clearField(filePath, "timestamp_data");
 }
 
-// ── Clip boundaries ──
+// Clip boundaries
 
 export async function readClipBoundaries(
   filePath: string,
@@ -192,7 +193,7 @@ export async function deleteClipBoundaries(filePath: string): Promise<void> {
   await clearField(filePath, "clips_data");
 }
 
-// ── Resume point ──
+// Resume point
 
 export async function loadResumePoint(
   filePath: string,
@@ -219,7 +220,7 @@ export async function deleteResumePoint(filePath: string): Promise<void> {
   await clearField(filePath, "last_position");
 }
 
-// ── CD color ──
+// CD color
 
 export async function loadCdColor(filePath: string): Promise<number> {
   if (!filePath) return -1;
@@ -240,7 +241,7 @@ export async function saveCdColor(
   await saveMeta(filePath, { cd_color: index });
 }
 
-// ── EQ settings ──
+// EQ settings
 
 export async function loadEqSettings(
   filePath: string,
@@ -273,7 +274,7 @@ export async function saveEqSettings(
   await saveMeta(filePath, { eq_data: JSON.stringify(settings) });
 }
 
-// ── Migration from localStorage ──
+// Migration from localStorage
 
 export async function migrateFromLocalStorage(): Promise<void> {
   const PREFIXES = [

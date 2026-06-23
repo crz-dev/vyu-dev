@@ -1,3 +1,4 @@
+// FFmpeg utilities
 import type { MediaProperties } from "$lib/shared/types";
 import {
   fetchMediaProperties,

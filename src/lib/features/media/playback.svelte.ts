@@ -1,3 +1,4 @@
+// Playback UI state
 import { VOLUME_SEGMENTS } from "$lib/shared/constants";
 
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 2, 3];
@@ -344,8 +345,6 @@ export function createPlaybackUI(
     const mediaEl = mediaElRef();
     if (mediaEl) mediaEl.playbackRate = speed;
   }
-
-  // Continuous slider tooltip helpers
 
   function showVolumeSliderTooltip(
     trackEl: HTMLDivElement | null,

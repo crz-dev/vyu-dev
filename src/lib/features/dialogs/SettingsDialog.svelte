@@ -195,7 +195,6 @@
   let minimizeToTray = $state(false);
   let startOnLogin = $state(false);
 
-  // Cache state
   let thumbnailCacheSizeText = $state("Calculating…");
   let clearingThumbnailCache = $state(false);
 

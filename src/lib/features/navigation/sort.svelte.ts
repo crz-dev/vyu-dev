@@ -1,3 +1,4 @@
+// Sort state
 import {
   loadSortMode,
   saveSortMode,

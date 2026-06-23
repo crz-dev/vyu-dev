@@ -1,3 +1,4 @@
+// Database commands
 use rusqlite::params;
 use tauri::State;
 
@@ -159,8 +160,7 @@ pub fn db_set_setting(
     Ok(())
 }
 
-/// Batch-migrate a set of file metadata entries from localStorage.
-/// Runs inside a single transaction for atomicity.
+/// Migrate from localStorage
 #[tauri::command]
 pub fn db_batch_upsert_file_metadata(
     db: State<'_, DbConnection>,

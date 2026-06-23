@@ -1,3 +1,4 @@
+// Properties actions
 import {
   copyPathToClipboard,
   copyAllPropertiesToClipboard,

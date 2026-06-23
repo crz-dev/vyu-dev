@@ -1,3 +1,4 @@
+// Media conversion
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -9,8 +10,7 @@ use crate::constants::{
 };
 use crate::util::{ffmpeg_command, ffprobe_command, hash_path_xxh3, resolve_output_path, unique_path};
 
-/// Write a minimal flat (single-layer, no transparency) PSD file.
-/// Image data is raw planar: all R, then all G, then all B.
+/// Write PSD file
 fn write_psd_flat(path: &Path, width: u32, height: u32, rgb: &[u8]) -> Result<(), String> {
     let mut f = fs::File::create(path).map_err(|e| format!("Failed to create PSD: {e}"))?;
 
@@ -52,7 +52,7 @@ fn write_psd_flat(path: &Path, width: u32, height: u32, rgb: &[u8]) -> Result<()
     Ok(())
 }
 
-/// Converts a media file to a browser-compatible format for opening in the browser.
+/// Convert for browser
 fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
     let ext = PathBuf::from(path)
         .extension()
@@ -572,7 +572,7 @@ pub async fn convert_image_to_pdf(
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-/// Opens a media file in the default browser, converting unsupported formats first.
+/// Open in browser
 #[tauri::command]
 pub async fn open_in_browser(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);

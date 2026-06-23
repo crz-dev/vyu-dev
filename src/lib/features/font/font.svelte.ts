@@ -1,3 +1,4 @@
+// Font state
 import { loadFont, saveFont } from "$lib/services/storage";
 
 export type FontFamily = "geist" | "satoshi" | "system";
@@ -19,7 +20,6 @@ function createFont() {
     }
   }
 
-  // Apply on init
   if (typeof document !== "undefined") {
     applyFont(saved);
   }

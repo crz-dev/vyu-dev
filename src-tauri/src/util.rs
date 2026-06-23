@@ -1,3 +1,4 @@
+// Utilities
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -8,13 +9,12 @@ use xxhash_rust::xxh3::xxh3_64;
 use std::os::windows::process::CommandExt;
 use crate::constants::CREATE_NO_WINDOW;
 
-/// Deterministic hash for cache filenames (xxh3 is fast and consistent across runs).
+/// Cache filename hash
 pub fn hash_path_xxh3(path: &str) -> String {
     format!("{:016x}", xxh3_64(path.as_bytes()))
 }
 
-/// Resolve a user-supplied path to its canonical form.
-/// Returns an error if the path doesn't exist or contains suspicious components.
+/// Canonicalize path
 pub fn canonicalize_path(path: &str) -> Result<PathBuf, String> {
     let p = Path::new(path);
     if !p.exists() {
@@ -126,7 +126,6 @@ pub fn unique_path(path: PathBuf) -> PathBuf {
     candidate
 }
 
-/// Returns a `Command` pre-configured to run ffmpeg without a console window.
 pub fn ffmpeg_command() -> Command {
     let mut cmd = Command::new("ffmpeg");
     #[cfg(target_os = "windows")]
@@ -134,7 +133,6 @@ pub fn ffmpeg_command() -> Command {
     cmd
 }
 
-/// Returns a `Command` pre-configured to run ffprobe without a console window.
 pub fn ffprobe_command() -> Command {
     let mut cmd = Command::new("ffprobe");
     #[cfg(target_os = "windows")]
@@ -142,9 +140,7 @@ pub fn ffprobe_command() -> Command {
     cmd
 }
 
-/// Spawns ffmpeg with the given args, polls completion with a timeout, and returns
-/// `Ok(Some(path))` on success, `Ok(None)` on failure/timeout, or `Err` on system error.
-/// Cleans up `output_path` on any non-success outcome.
+/// Run ffmpeg with timeout
 pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Result<Option<String>, String> {
     let mut child = ffmpeg_command()
         .args(args)
@@ -199,7 +195,7 @@ pub fn cleanup_vyu_temp() {
     let _ = std::fs::remove_dir_all(&temp_dir);
 }
 
-/// Extracts a segment from a video using ffmpeg stream copy, falling back to re-encode.
+/// Extract video segment
 pub fn ffmpeg_extract_segment(input: &Path, output: &Path, start: f64, end: f64) -> Result<(), String> {
     let fast_err = match ffmpeg_command()
         .args([
@@ -251,8 +247,7 @@ pub fn ffmpeg_extract_segment(input: &Path, output: &Path, start: f64, end: f64)
     }
 }
 
-/// Check if a cached file exists and is at least as recent as the source.
-/// Returns the cached path if fresh, None otherwise.
+/// Check cache freshness
 pub fn check_cache(path: &Path, cache_dir: &Path, ext: &str) -> Option<PathBuf> {
     let hash = hash_path_xxh3(&path.to_string_lossy());
     let cached = cache_dir.join(format!("{hash}.{ext}"));
@@ -268,8 +263,7 @@ pub fn check_cache(path: &Path, cache_dir: &Path, ext: &str) -> Option<PathBuf> 
     if cached_time >= src_time { Some(cached) } else { None }
 }
 
-/// Resolve output path given input file, output directory, optional custom path,
-/// a suffix (e.g. "_converted"), and target extension.
+/// Resolve output path
 pub fn resolve_output_path(
     input: &Path,
     output_dir: &str,

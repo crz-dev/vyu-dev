@@ -1,12 +1,10 @@
+// Schema migrations
 use rusqlite::Connection;
 
-/// Current schema version. Increment when adding new migrations.
 const SCHEMA_VERSION: i32 = 1;
 
 pub fn run(conn: &mut Connection) -> Result<(), String> {
-    // The _migrations table must exist before we can check the current version.
-    // This table creation is intentionally outside the migration transaction:
-    // it is idempotent (IF NOT EXISTS) and we need it to store version tracking.
+    // The _migrations table must exist before version check. Creation is outside the migration transaction.
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS _migrations (
             version INTEGER PRIMARY KEY,

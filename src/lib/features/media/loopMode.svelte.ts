@@ -1,3 +1,4 @@
+// Loop mode state
 import { saveLoopMode } from "$lib/services/storage";
 import { LOOP_MODES, type LoopMode } from "$lib/shared/constants";
 

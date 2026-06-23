@@ -1,3 +1,4 @@
+// Markup actions
 import { save } from "@tauri-apps/plugin-dialog";
 import { renderMarkupOnImage } from "$lib/features/media/tools";
 import { getFileExt, getParentFolder } from "$lib/services/files";

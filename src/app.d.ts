@@ -1,3 +1,4 @@
+// Global type declarations
 export {};
 
 declare global {

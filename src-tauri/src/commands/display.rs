@@ -1,3 +1,4 @@
+// Display pipeline
 use std::fs;
 use std::path::{Path, PathBuf};
 use image::ImageEncoder;
@@ -19,9 +20,7 @@ fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     dir
 }
 
-/// Decodes a browser-unsupported image and returns a cached PNG path for display.
-/// Uses the image crate for formats it supports (TIFF), ffmpeg for PSD/JXL.
-/// For browser-supported formats, returns None (frontend uses the original file).
+/// Decode unsupported image
 #[tauri::command]
 pub async fn prepare_display_image(
     app: tauri::AppHandle,
@@ -102,9 +101,7 @@ pub async fn prepare_display_image(
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-/// Remuxes a browser-unsupported video (TS, M2TS) to MP4 for playback.
-/// Uses ffmpeg -c copy (no re-encode) so it's fast and lossless.
-/// Returns the cached MP4 path, or None if the format doesn't need remuxing.
+/// Remux video
 #[tauri::command]
 pub async fn prepare_video_display(
     app: tauri::AppHandle,
@@ -162,8 +159,7 @@ pub async fn prepare_video_display(
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-/// Extracts embedded album art from an audio file using ffmpeg.
-/// Returns the cached image path, or None if no cover art exists / ffmpeg fails.
+/// Extract cover art
 #[tauri::command]
 pub async fn extract_cover_art(app: tauri::AppHandle, path: String) -> Result<Option<String>, String> {
     use crate::util::run_ffmpeg;

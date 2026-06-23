@@ -1,3 +1,4 @@
+// Effects chain
 import { generateReverbIR } from "./reverb-ir";
 
 class EffectsEngine {
@@ -27,11 +28,7 @@ class EffectsEngine {
     this.audioEl = el;
   }
 
-  /**
-   * Builds the effects chain and returns the last node.
-   * Call once per media element connection. Idempotent after first setup.
-   * Chain: source → reverb(dry+wet) → chorus(dry+wet) → distortion → tail
-   */
+  // Setup effects chain
   setup(ctx: AudioContext, sourceNode: MediaElementAudioSourceNode): AudioNode {
     if (this.tearingDown) {
       this.teardown();
@@ -43,7 +40,6 @@ class EffectsEngine {
     this.teardown();
     this.ctx = ctx;
 
-    // --- Reverb ---
     const ir = generateReverbIR(ctx, 1.8, 50);
     this.reverbConvolver = ctx.createConvolver();
     this.reverbConvolver.buffer = ir;
@@ -60,7 +56,6 @@ class EffectsEngine {
     this.reverbConvolver.connect(this.reverbWetGain);
     this.reverbWetGain.connect(this.reverbMerge);
 
-    // --- Chorus ---
     this.chorusDelay = ctx.createDelay(0.05);
     this.chorusDelay.delayTime.value = 0.02;
     this.chorusLFO = ctx.createOscillator();
@@ -85,7 +80,6 @@ class EffectsEngine {
     this.chorusDelay.connect(this.chorusWetGain);
     this.chorusWetGain.connect(this.chorusMerge);
 
-    // --- Distortion ---
     this.distortionShaper = ctx.createWaveShaper();
     this.distortionShaper.curve = makeDistortionCurve(0);
     this.distortionShaper.oversample = "none";
@@ -132,7 +126,7 @@ class EffectsEngine {
       try {
         this.chorusLFO.stop();
       } catch {
-        /* already stopped */
+        /* stopped */
       }
     }
     this.disconnectNode(this.chorusDelay);
@@ -174,7 +168,7 @@ class EffectsEngine {
     try {
       node.disconnect();
     } catch {
-      /* already disconnected */
+      /* disconnected */
     }
   }
 }
@@ -186,8 +180,7 @@ function clamp01(v: number): number {
 function makeDistortionCurve(amountPercent: number): Float32Array {
   const n = 256;
   const curve = new Float32Array(n);
-  // Tanh soft-clipping: smooth saturation with odd harmonics.
-  // drive=1 (near-linear) at 0%, drive=10 (heavy saturation) at 100%.
+  // Tanh soft-clipping: drive=1 (linear) at 0%, drive=10 (saturation) at 100%
   const drive = 1 + 9 * (amountPercent / 100);
   for (let i = 0; i < n; i++) {
     const x = (i * 2) / n - 1;

@@ -1,3 +1,4 @@
+// Tauri setup
 mod constants;
 mod types;
 mod util;
@@ -87,8 +88,7 @@ pub fn run() {
 
             util::cleanup_vyu_temp();
 
-            // Silently clean up orphaned thumbnail cache entries in background.
-            // Runs once at startup; does not block the main thread.
+            // Silently clean orphaned thumbnail cache entries in background at startup
             let cache_dir = commands::thumbnail::thumb_cache_dir(app.handle()).to_path_buf();
             std::thread::spawn(move || {
                 if cache_dir.exists() {

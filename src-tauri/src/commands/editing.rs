@@ -1,8 +1,9 @@
+// Image editing
 use std::path::PathBuf;
 
 use crate::util::{canonicalize_path, ffmpeg_command, hash_path_xxh3};
 
-/// Exports the currently visible crop region of an image using ffmpeg.
+/// Crop export
 #[tauri::command]
 pub async fn export_cropped_media(
     path: String,
@@ -89,7 +90,7 @@ pub async fn export_cropped_media(
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-/// Exports an edited image with brightness/contrast/saturation/hue/rotation/flip/crop.
+/// Edit export
 #[tauri::command]
 pub async fn export_edited_media(
     path: String,
@@ -232,7 +233,7 @@ pub async fn export_edited_media(
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-/// Backs up the source file to a temp directory before editing.
+/// Backup source
 #[tauri::command]
 pub async fn backup_file(source: String) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {

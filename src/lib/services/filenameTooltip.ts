@@ -1,6 +1,7 @@
+// Filename tooltip
 import {
-  showFloatingTooltip,
   hideFloatingTooltip,
+  showFloatingTooltip,
 } from "$lib/services/session";
 
 const FILENAME_TOOLTIP_ID = "filename-tooltip";

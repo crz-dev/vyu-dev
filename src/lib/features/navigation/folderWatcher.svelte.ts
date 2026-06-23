@@ -1,3 +1,4 @@
+// Folder watcher
 import { watchImmediate } from "@tauri-apps/plugin-fs";
 import { rescanFolder } from "$lib/services/files";
 import type { SortMode } from "$lib/shared/constants";
@@ -61,7 +62,6 @@ export function createFolderWatcher(opts: {
         opts.getSortDesc(),
       );
 
-      // Current file still exists in the folder
       const stillHere = newList.indexOf(prevPath);
       if (stillHere !== -1) {
         opts.setFileList(newList);
@@ -69,7 +69,7 @@ export function createFolderWatcher(opts: {
         return;
       }
 
-      // Current file was removed — advance to nearest neighbor
+      // File removed — advance to nearest
       if (newList.length > 0) {
         const nextIdx = Math.min(prevIndex, newList.length - 1);
         opts.setFileList(newList);
@@ -77,7 +77,6 @@ export function createFolderWatcher(opts: {
         return;
       }
 
-      // Folder is now empty
       opts.closeFile();
     } catch (e) {
       console.error("onFolderChanged failed:", e);

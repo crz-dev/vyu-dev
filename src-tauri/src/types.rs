@@ -1,3 +1,4 @@
+// Shared Rust types
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, Semaphore, oneshot};
@@ -52,9 +53,7 @@ pub struct BatchStatItem {
     pub birthtime_ms: f64,
 }
 
-/// Managed state for the thumbnail system.
-/// Dedicated semaphores per work type prevent fast image work
-/// from being blocked by slow FFmpeg operations.
+/// Thumbnail manager state
 pub struct ThumbState {
     pub image_sem: Semaphore,
     pub video_sem: Semaphore,
@@ -83,9 +82,7 @@ impl ThumbState {
     }
 }
 
-/// Prevents duplicate generation of the same thumbnail.
-/// When multiple requests arrive for the same (path, mtime, size),
-/// only one generates; others await the result.
+/// In-flight dedup
 pub struct InFlightRegistry {
     map: Mutex<HashMap<String, Vec<oneshot::Sender<Result<Arc<Vec<u8>>, String>>>>>,
 }
@@ -97,9 +94,7 @@ impl InFlightRegistry {
         }
     }
 
-    /// If another task is already generating this thumbnail,
-    /// returns a receiver for its result. Otherwise registers
-    /// this task as the generator and returns `None`.
+    /// Register or await in-flight
     pub async fn register(
         &self,
         key: &str,
@@ -115,7 +110,7 @@ impl InFlightRegistry {
         }
     }
 
-    /// Signals all waiters with the result and removes the entry.
+    /// Signal waiters
     pub async fn complete(&self, key: &str, result: Result<Vec<u8>, String>) {
         let shared = result.map(Arc::new);
         let mut map = self.map.lock().await;
@@ -126,18 +121,13 @@ impl InFlightRegistry {
         }
     }
 
-    /// Removes the entry without signalling — call when the generating task
-    /// fails before producing a result, so future requests don't deadlock.
+    /// Remove without signalling (failure path)
     pub async fn cancel(&self, key: &str) {
         self.map.lock().await.remove(key);
     }
 }
 
-/// Bundles the boolean checks that repeat at the top of most Tauri commands.
-/// Construct via `MediaKind::from_ext(ext)`.
-///
-/// Uses a single `match` (O(1)) instead of six linear slice scans.
-/// Extensions must match `*_RUST` constants in `constants.rs`.
+/// Media kind boolean helpers
 #[derive(Clone)]
 pub struct MediaKind {
     pub is_image: bool,
@@ -160,11 +150,11 @@ impl MediaKind {
         };
 
         match ext {
-            // ── Standard images (image crate) ──
+            // Standard images (image crate)
             "jpg" | "jpeg" | "png" | "webp" | "bmp" | "avif" => kind.is_image = true,
             "tiff" | "tif" => kind.is_image = true,
 
-            // ── FFmpeg images (image crate cannot decode) ──
+            // FFmpeg images
             "jxl" | "heic" | "heif" => {
                 kind.is_image = true;
                 kind.is_ffmpeg_image = true;
@@ -178,7 +168,7 @@ impl MediaKind {
                 kind.is_ffmpeg_image = true;
             }
 
-            // ── RAW camera formats ──
+            // RAW camera formats
             "dng" | "cr2" | "cr3" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "raf" | "rw2"
             | "orf" | "pef" | "3fr" | "fff" | "iiq" | "kdc" | "mef" | "mos" | "x3f"
             | "gpr" => {
@@ -186,15 +176,15 @@ impl MediaKind {
                 kind.is_raw = true;
             }
 
-            // ── Video ──
+            // Video
             "mp4" | "webm" | "mkv" | "avi" | "mov" | "wmv" | "mpeg" | "mpg" | "ts" | "m2ts"
             | "m4v" => kind.is_video = true,
 
-            // ── Audio ──
+            // Audio
             "mp3" | "wav" | "flac" | "ogg" | "aac" | "wma" | "m4a" | "opus" | "aiff"
             | "alac" => kind.is_audio = true,
 
-            // ── Document ──
+            // Document
             "pdf" => kind.is_document = true,
 
             _ => {}

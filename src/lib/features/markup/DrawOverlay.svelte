@@ -23,19 +23,15 @@
   let resizeObs: ResizeObserver | null = $state(null);
   let isPointerDown = $state(false);
 
-  // Non-path line drag state
   let lineStart = $state<{ x: number; y: number } | null>(null);
   let previewEnd = $state<{ x: number; y: number } | null>(null);
 
-  // Shape drag state
   let shapeDragStart = $state<{ x: number; y: number } | null>(null);
   let shapePreviewEnd = $state<{ x: number; y: number } | null>(null);
 
-  // Straight highlight drag state
   let highlightStraightStart = $state<{ x: number; y: number } | null>(null);
   let highlightStraightPreview = $state<{ x: number; y: number } | null>(null);
 
-  // Transform handle drag state
   type HandleType =
     | "left"
     | "right"
@@ -61,13 +57,11 @@
   let hoverTarget = $state(0);
   let hoverRaf = 0;
 
-  // Shape move drag state
   let isMovingShape = $state(false);
   let moveOrigin = $state<{ x: number; y: number } | null>(null);
   let moveStartCx = $state(0);
   let moveStartCy = $state(0);
 
-  // Text handle drag state
   let textDragOrigin = $state<{ x: number; y: number } | null>(null);
   let textDragStartFontSize = $state(16);
   let textDragStartRotation = $state(0);
@@ -75,30 +69,24 @@
   let textDragStartX = $state(0);
   let textDragStartY = $state(0);
 
-  // Text move drag state
   let isTextMoving = $state(false);
   let textMoveStartPos = $state<{ x: number; y: number } | null>(null);
   let textMoveStartX = $state(0);
   let textMoveStartY = $state(0);
 
-  // Select mode move state (any stroke type)
   let isSelectMoving = $state(false);
   let selectMoveOrigin = $state<{ x: number; y: number } | null>(null);
   let selectMoveStartData = $state<Record<string, number> | null>(null);
 
-  // Select mode selection box
   let selectBoxStart = $state<{ x: number; y: number } | null>(null);
   let selectBoxEnd = $state<{ x: number; y: number } | null>(null);
 
-  // Text drag-to-place state
   let textPlaceDragStart = $state<{ x: number; y: number } | null>(null);
   let textPlaceDragEnd = $state<{ x: number; y: number } | null>(null);
 
-  // Text box sizing constants
   const TEXT_PADDING = 6; // CSS px padding around text for hit area
   let hasTextStrokes = $derived(markup.strokes.some((s) => s.type === "text"));
 
-  // Inline editing state
   let editingTextIndex = $state<number | null>(null);
   let editingCaretVisible = $state(false);
   let editingCaretInterval: ReturnType<typeof setInterval> | null =
@@ -131,7 +119,7 @@
     stopCaretBlink();
   }
 
-  // ── Helpers ───────────────────────────────────────────
+  // ── Helpers ──
 
   function lerpHover() {
     const target = hoverTarget;
@@ -427,7 +415,6 @@
 
     const drawY = boxTop + pad;
 
-    // Rotation
     ctx.save();
     if (t.rotation !== 0) {
       ctx.translate(px, py);
@@ -435,7 +422,6 @@
       ctx.translate(-px, -py);
     }
 
-    // Background
     if (t.bgEnabled) {
       ctx.fillStyle = t.bgColor;
       ctx.globalAlpha = 0.85;
@@ -443,11 +429,9 @@
       ctx.globalAlpha = 1;
     }
 
-    // Text
     ctx.fillStyle = t.color;
     ctx.fillText(text, drawX, drawY + lineHeight / 2);
 
-    // Caret
     if (isEditing && caretVisible) {
       const caretX =
         align === "left"
@@ -465,7 +449,6 @@
       ctx.stroke();
     }
 
-    // Underline
     if (t.underline) {
       const underlineY = drawY + lineHeight / 2 + fontSize * 0.4;
       ctx.strokeStyle = t.color;
@@ -482,7 +465,6 @@
       ctx.stroke();
     }
 
-    // Strikethrough
     if (t.strikethrough) {
       const strikeY = drawY + lineHeight / 2 + fontSize * 0.05;
       ctx.strokeStyle = t.color;
@@ -557,7 +539,6 @@
       ctx.translate(-cx, -cy);
     }
 
-    // White solid outline
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
@@ -568,13 +549,11 @@
     const rotR = 5 + tAnim;
     const delR = 6 + tAnim;
 
-    // Corner diamonds only (4 corners)
     drawDiamond(ctx, bbox.left, bbox.top, cornerSize, "#ffffff", "#ffffff");
     drawDiamond(ctx, bbox.right, bbox.top, cornerSize, "#ffffff", "#ffffff");
     drawDiamond(ctx, bbox.left, bbox.bottom, cornerSize, "#ffffff", "#ffffff");
     drawDiamond(ctx, bbox.right, bbox.bottom, cornerSize, "#ffffff", "#ffffff");
 
-    // Rotate handle — white circle above top center
     const rotGap = 16;
     const rotY = cy - boxH / 2 - rotGap;
     ctx.fillStyle = "#ffffff";
@@ -585,7 +564,6 @@
     ctx.fill();
     ctx.stroke();
 
-    // Delete handle — red circle with X off the top-right corner
     const delX = bbox.right + 14;
     const delY = bbox.top - 14;
     ctx.fillStyle = "#ef4444";
@@ -595,7 +573,6 @@
     ctx.arc(delX, delY, delR, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    // Draw X
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -647,7 +624,7 @@
   ): HandleType | null {
     const cx = t.x * w;
     const cy = t.y * h;
-    // Un-rotate mouse into text-local coordinate space
+    // un-rotate to text space
     const cos = Math.cos(-t.rotation);
     const sin = Math.sin(-t.rotation);
     const dx = px - cx;
@@ -657,7 +634,7 @@
 
     const handles = getTextHandlePositions(t, w, h, ctx);
 
-    // Corner / rotate / delete point hits (higher priority)
+    // corner/rotate/delete hits
     const pointKeys: HandleType[] = [
       "topLeft",
       "topRight",
@@ -674,7 +651,7 @@
       if (Math.sqrt(hx * hx + hy * hy) <= HIT_RADIUS) return key;
     }
 
-    // Edge line-segment hits (lower priority — full edge is draggable)
+    // edge hits
     const bbox = getTextBbox(t, w, h, ctx);
     const left = bbox.left,
       right = bbox.right;
@@ -901,7 +878,6 @@
     ctx.translate(cx, cy);
     ctx.rotate(s.rotation);
 
-    // White solid bounding-box outline
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
     ctx.setLineDash([]);
@@ -910,13 +886,11 @@
     const t = hoverScale;
     const cornerSize = 5 + t * 2;
 
-    // Corner diamonds only (4 corners)
     drawDiamond(ctx, -hw, -hh, cornerSize, "#ffffff", "#ffffff");
     drawDiamond(ctx, hw, -hh, cornerSize, "#ffffff", "#ffffff");
     drawDiamond(ctx, -hw, hh, cornerSize, "#ffffff", "#ffffff");
     drawDiamond(ctx, hw, hh, cornerSize, "#ffffff", "#ffffff");
 
-    // Rotation handle — white circle
     const rotGap = 16;
     const rotY = -hh - rotGap;
     const rotR = 5 + t;
@@ -928,7 +902,6 @@
     ctx.fill();
     ctx.stroke();
 
-    // Delete handle — red X (fixed offset from top-right corner)
     const delX = hw + 14;
     const delY = -hh - 14;
     const delR = 6 + t;
@@ -939,7 +912,6 @@
     ctx.arc(delX, delY, delR, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    // Draw X
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -964,7 +936,7 @@
   ): HandleType | null {
     const cx = s.cx * w;
     const cy = s.cy * h;
-    // Un-rotate mouse into shape-local coordinate space
+    // un-rotate to shape space
     const cos = Math.cos(-s.rotation);
     const sin = Math.sin(-s.rotation);
     const dx = px - cx;
@@ -974,7 +946,7 @@
 
     const handles = getHandlePositions(s, w, h);
 
-    // Corner / rotate / delete point hits (higher priority)
+    // corner/rotate/delete hits
     const pointKeys: HandleType[] = [
       "topLeft",
       "topRight",
@@ -991,7 +963,7 @@
       if (Math.sqrt(hx * hx + hy * hy) <= HIT_RADIUS) return key;
     }
 
-    // Edge line-segment hits (lower priority — full edge is draggable)
+    // edge hits
     const hw = (s.width * w) / 2;
     const hh = (s.height * h) / 2;
     const left = cx - hw,
@@ -1045,7 +1017,7 @@
     );
   }
 
-  // ── Overlay geometry ──────────────────────────────────
+  // Overlay geometry
 
   function updateOverlayRect() {
     if (!containerEl || !mediaEl) return;
@@ -1061,7 +1033,7 @@
     markup.displayHeight = mr.height;
   }
 
-  // ── Rendering ─────────────────────────────────────────
+  // Rendering
 
   function redrawAll() {
     const canvas = canvasEl;
@@ -1081,10 +1053,8 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    // If strokes are hidden, skip rendering everything
     if (markup.strokesHidden) return;
 
-    // Draw committed strokes
     for (const stroke of markup.strokes) {
       if (stroke.type === "freehand") {
         drawFreehand(ctx, stroke, w, h);
@@ -1124,7 +1094,6 @@
       }
     }
 
-    // Draw in-progress freehand / path-line stroke
     const cur = markup.currentStroke;
     if (cur) {
       drawFreehand(ctx, cur, w, h);
@@ -1140,7 +1109,7 @@
       drawHighlightFreehand(ctx, curHL, w, h);
     }
 
-    // Draw non-path line preview during drag
+    // preview during drag
     if (lineStart && previewEnd) {
       drawLinePreview(
         ctx,
@@ -1153,7 +1122,6 @@
       );
     }
 
-    // Draw shape preview during drag
     if (shapeDragStart && shapePreviewEnd) {
       drawShapePreview(
         ctx,
@@ -1166,7 +1134,6 @@
       );
     }
 
-    // Draw text drag-to-place preview
     if (textPlaceDragStart && textPlaceDragEnd) {
       const x1 = textPlaceDragStart.x * w;
       const y1 = textPlaceDragStart.y * h;
@@ -1184,7 +1151,6 @@
       }
     }
 
-    // Draw selection box (select mode)
     if (selectBoxStart && selectBoxEnd) {
       const x1 = selectBoxStart.x * w;
       const y1 = selectBoxStart.y * h;
@@ -1204,7 +1170,6 @@
       }
     }
 
-    // Draw straight highlight preview during drag
     if (highlightStraightStart && highlightStraightPreview) {
       drawHighlightStraightBar(
         ctx,
@@ -1220,7 +1185,6 @@
       );
     }
 
-    // Draw transform handles for all selected shapes or texts
     for (const selIdx of markup.selectedIndices) {
       const stroke = markup.strokes[selIdx];
       if (stroke && stroke.type === "shape") {
@@ -1233,7 +1197,7 @@
     ctx.globalAlpha = 1;
   }
 
-  // ── Lifecycle ─────────────────────────────────────────
+  // Lifecycle
 
   $effect(() => {
     if (
@@ -1260,7 +1224,6 @@
         resizeObs.disconnect();
         resizeObs = null;
       }
-      // Reset drag state when tool deactivated
       lineStart = null;
       previewEnd = null;
       shapeDragStart = null;
@@ -1280,7 +1243,6 @@
   });
 
   $effect(() => {
-    // Redraw when strokes, tool, mode, or erase states change
     const _strokes = markup.strokes;
     const _current = markup.currentStroke;
     const _tool = markup.activeTool;
@@ -1317,7 +1279,7 @@
     };
   });
 
-  // ── Coordinate helpers ───────────────────────────────
+  // Coords
 
   function toNormal(clientX: number, clientY: number) {
     if (overlayRect.width <= 0 || overlayRect.height <= 0)
@@ -1331,7 +1293,7 @@
     };
   }
 
-  // ── Transform handle drag ────────────────────────────
+  // Transform handle drag
 
   function handleDragMove(e: PointerEvent) {
     if (!dragHandle || !canvasEl) return;
@@ -1349,7 +1311,7 @@
       if (!dragStartShape) return;
       const update: Partial<PlacedShape> = {};
 
-      // Un-rotate drag delta into shape-local coordinate space
+      // un-rotate delta
       const cos = Math.cos(-stroke.rotation);
       const sin = Math.sin(-stroke.rotation);
       const ldx = cos * dx - sin * dy;
@@ -1381,7 +1343,7 @@
           break;
         }
         case "topLeft": {
-          // Bottom-right corner stays fixed
+          // BR fixed
           const newW = Math.max(0.01, dragStartShape.width - ldx);
           const newH = Math.max(0.01, dragStartShape.height - ldy);
           update.width = newW;
@@ -1391,7 +1353,7 @@
           break;
         }
         case "topRight": {
-          // Bottom-left corner stays fixed
+          // BL fixed
           const newW = Math.max(0.01, dragStartShape.width + ldx);
           const newH = Math.max(0.01, dragStartShape.height - ldy);
           update.width = newW;
@@ -1401,7 +1363,7 @@
           break;
         }
         case "bottomLeft": {
-          // Top-right corner stays fixed
+          // TR fixed
           const newW = Math.max(0.01, dragStartShape.width - ldx);
           const newH = Math.max(0.01, dragStartShape.height + ldy);
           update.width = newW;
@@ -1411,7 +1373,7 @@
           break;
         }
         case "bottomRight": {
-          // Top-left corner stays fixed
+          // TL fixed
           const newW = Math.max(0.01, dragStartShape.width + ldx);
           const newH = Math.max(0.01, dragStartShape.height + ldy);
           update.width = newW;
@@ -1547,7 +1509,7 @@
     return null;
   }
 
-  // ── Pointer handlers ──────────────────────────────────
+  // Pointer handlers
 
   function handlePointerDown(e: PointerEvent) {
     if (
@@ -1563,7 +1525,7 @@
     isPointerDown = true;
     const p = toNormal(e.clientX, e.clientY);
 
-    // Remove (eraser) mode — delete strokes under cursor
+    // eraser mode
     if (markup.removeActive) {
       const w = overlayRect.width;
       const h = overlayRect.height;
@@ -1573,14 +1535,14 @@
       return;
     }
 
-    // Select mode — handle hits, body clicks, or selection box
+    // select mode
     if (markup.selectActive) {
       const w = overlayRect.width;
       const h = overlayRect.height;
       const rawPx = p.x * w;
       const rawPy = p.y * h;
 
-      // 1. Check transform handle hit on currently selected stroke
+      // 1. handle hit
       const sel = markup.selectedIndex;
       if (sel !== null) {
         const stroke = markup.strokes[sel];
@@ -1604,7 +1566,7 @@
             canvasEl?.setPointerCapture(e.pointerId);
             return;
           }
-          // Click inside body → start move (moves all selected strokes)
+          // body click → move
           if (isInsideShapeBounds(stroke, p.x, p.y)) {
             isSelectMoving = true;
             selectMoveOrigin = p;
@@ -1662,7 +1624,7 @@
               canvasEl?.setPointerCapture(e.pointerId);
               return;
             }
-            // Click inside text body → start move (moves all selected)
+            // text body → move
             const bbox = getTextBbox(stroke, w, h, ctx);
             if (
               rawPx >= bbox.left &&
@@ -1681,10 +1643,10 @@
         }
       }
 
-      // 2. Click on any stroke → move all selected, or start a new single selection
+      // 2. stroke click
       const hitIdx = markup.findStrokeAt(p.x, p.y, w, h);
       if (hitIdx !== null) {
-        // If the clicked stroke is already part of the selection, keep multi-select and move all
+        // multi-select: keep selection, move all
         if (!markup.selectedIndices.includes(hitIdx)) {
           markup.selectShape(hitIdx);
         }
@@ -1696,7 +1658,7 @@
         return;
       }
 
-      // 3. Click on empty → start selection box
+      // 3. empty click → selection box
       markup.selectShape(null);
       selectBoxStart = p;
       selectBoxEnd = p;
@@ -1705,7 +1667,7 @@
       return;
     }
 
-    // Highlight mode — handle separately
+    // highlight mode
     if (markup.highlightActive) {
       if (markup.highlightMode === "free") {
         markup.startHighlightStroke(p.x, p.y);
@@ -1717,11 +1679,11 @@
       return;
     }
 
-    // Text mode — click to place, click to select, enter inline editing
+    // text mode
     if (markup.textActive) {
       isPointerDown = false;
 
-      // 1. Check text handle hit on currently selected text first
+      // 1. text handle hit
       const selText = markup.selectedIndex;
       if (selText !== null) {
         const selStroke = markup.strokes[selText];
@@ -1791,7 +1753,7 @@
         }
       }
 
-      // 2. Click on any text body → start move-drag (will enter editing on release if no drag)
+      // 2. text body → move
       const hitIdx = findTextAtPoint(p.x, p.y);
       if (hitIdx !== null) {
         if (editingTextIndex !== null && editingTextIndex !== hitIdx) {
@@ -1799,7 +1761,6 @@
         }
         markup.selectShape(hitIdx);
         editingTextIndex = hitIdx;
-        // Start tracking drag — enter editing on release if no movement
         isPointerDown = true;
         isTextMoving = true;
         textMoveStartPos = p;
@@ -1814,7 +1775,7 @@
         return;
       }
 
-      // 3. Click outside — start drag-to-place text box (like shapes)
+      // 3. outside → place
       if (editingTextIndex !== null) exitEditing();
       markup.selectShape(null);
       textPlaceDragStart = p;
@@ -1826,11 +1787,10 @@
     }
 
     const tool = markup.activeTool;
-    // Convert normalized coords to CSS-pixel positions relative to overlay (canvas)
     const rawPx = p.x * overlayRect.width;
     const rawPy = p.y * overlayRect.height;
 
-    // Check transform handle hit first — takes priority over all tools
+    // handle hit first
     const sel = markup.selectedIndex;
     if (sel !== null) {
       const stroke = markup.strokes[sel];
@@ -1858,9 +1818,8 @@
             cy: stroke.cy,
           };
           canvasEl?.setPointerCapture(e.pointerId);
-          return; // skip normal tool dispatch
+          return;
         }
-        // Click inside selected shape → start move drag
         if (isInsideShapeBounds(stroke, p.x, p.y)) {
           isMovingShape = true;
           moveOrigin = p;
@@ -1869,10 +1828,8 @@
           canvasEl?.setPointerCapture(e.pointerId);
           return;
         }
-        // Click outside shape bounds → deselect
         markup.selectShape(null);
       } else if (stroke && stroke.type === "text" && canvasEl) {
-        // Text handle hit check for non-text modes
         const ctx = canvasEl.getContext("2d");
         if (ctx) {
           const hit = hitTestTextHandle(
@@ -1934,7 +1891,6 @@
     }
 
     if (isShapeTool(tool)) {
-      // Click on existing shape → select it for transform
       const hitIdx = findShapeAtPoint(p.x, p.y);
       if (hitIdx !== null) {
         markup.selectShape(hitIdx);
@@ -1942,17 +1898,17 @@
         redrawAll();
         return;
       }
-      // Start shape drag — sized on release, default size on click-only
+      // shape drag
       shapeDragStart = p;
       shapePreviewEnd = p;
       canvasEl?.setPointerCapture(e.pointerId);
     } else if (isLineTool(tool) && !markup.pathMode) {
-      // Non-path line — start drag
+      // non-path line drag
       lineStart = p;
       previewEnd = p;
       canvasEl?.setPointerCapture(e.pointerId);
     } else {
-      // Freehand or path-mode line — start stroke
+      // freehand stroke
       markup.startStroke(p.x, p.y);
       canvasEl?.setPointerCapture(e.pointerId);
     }
@@ -1968,7 +1924,6 @@
     )
       return;
 
-    // Remove mode — continuously delete strokes under cursor
     if (markup.removeActive && isPointerDown) {
       e.preventDefault();
       const p = toNormal(e.clientX, e.clientY);
@@ -1979,13 +1934,12 @@
       return;
     }
 
-    // Handle drag takes priority (transform handles)
+    // handle drag first
     if (dragHandle) {
       handleDragMove(e);
       return;
     }
 
-    // Select mode — move dragged strokes
     if (markup.selectActive && isSelectMoving && selectMoveOrigin) {
       e.preventDefault();
       const p = toNormal(e.clientX, e.clientY);
@@ -2376,14 +2330,12 @@
             redrawAll();
             return;
           }
-          // Printable character
           if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
             e.preventDefault();
             markup.updateText(editingTextIndex, { text: s.text + e.key });
             redrawAll();
             return;
           }
-          // Paste
           if (e.ctrlKey && e.key === "v") {
             e.preventDefault();
             const idx = editingTextIndex;

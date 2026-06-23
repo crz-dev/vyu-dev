@@ -43,7 +43,6 @@
 
   let dragRect: DOMRect | null = null;
 
-  // Calculate angle from center point
   function calculateAngle(
     clientX: number,
     clientY: number,
@@ -74,7 +73,7 @@
 
     lastAngle = calculateAngle(point.clientX, point.clientY, rect);
     isDragging = true;
-    rotation = progress * 3.6; // Convert progress to degrees (100% = 360°)
+    rotation = progress * 3.6;
 
     onScrubStart(e);
   }
@@ -95,11 +94,9 @@
     rotation += deltaAngle;
     lastAngle = currentAngle;
 
-    // Normalize rotation to 0-360 range for progress calculation
     let normalizedRotation = rotation % 360;
     if (normalizedRotation < 0) normalizedRotation += 360;
 
-    // Convert rotation to progress (0-100%)
     const newProgress = normalizedRotation / 3.6;
 
     onScrubMove(e, newProgress);
@@ -113,23 +110,19 @@
     onScrubEnd();
   }
 
-  // Sync rotation with progress when not dragging
   $effect(() => {
     if (!isDragging) {
       rotation = progress * 3.6;
     }
   });
 
-  // Bass-reactive scale pulse
   $effect(() => {
     const el = audioEl();
     if (!el) return;
 
-    // Connect the audio element through the shared equalizer engine
-    // (idempotent — safe to call multiple times for the same element)
+    // Connect audio to shared equalizer engine (idempotent)
     eqEngine.connectMediaElement(el);
 
-    // Get the analyser from the shared engine (chain: source → filters → gain → analyser → destination)
     const analyser = eqEngine.getAnalyser();
     if (!analyser) {
       // Engine could not connect — bail silently
@@ -149,10 +142,7 @@
       }
       analyser!.getByteFrequencyData(freqData);
 
-      // Deep bass only (~20–170 Hz).
-      // At fftSize=256, sampleRate≈44100, each bin ≈ 86 Hz.
-      // Bins 0–1 cover 0–172 Hz — sub-bass and low bass.
-      // Weight bin 0 (DC/sub-bass) at 1.0, bin 1 at 0.6 so deeper bass dominates.
+      // Deep bass only ~20-170 Hz. Bins 0-1 cover 0-172 Hz. Weight bin 0 at 1.0, bin 1 at 0.6
       const b0 = freqData[0] / 255;
       const b1 = freqData[1] / 255;
       const avg = (b0 * 1.0 + b1 * 0.6) / 1.6;

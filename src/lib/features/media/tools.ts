@@ -1,3 +1,4 @@
+// Tauri invoke wrappers
 import { invoke } from "@tauri-apps/api/core";
 import type {
   MediaProperties,
@@ -85,15 +86,18 @@ export async function exportCroppedImage(
   if (!ctx) throw new Error("Could not create canvas context");
   ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
   URL.revokeObjectURL(url);
-
   await saveCanvasToFile(canvas, outputPath);
 }
+
+// ── File operations ──
 
 export async function invokeBatchStat(
   paths: string[],
 ): Promise<BatchStatItem[]> {
   return invoke("batch_stat", { paths });
 }
+
+// ── Thumbnails ──
 
 export async function invokeGetThumbnail(
   path: string,
@@ -102,11 +106,15 @@ export async function invokeGetThumbnail(
   return invoke("get_thumbnail", { path, size: size ?? null });
 }
 
+// ── Media properties ──
+
 export async function invokeGetMediaProperties(
   path: string,
 ): Promise<MediaProperties> {
   return invoke("get_media_properties", { path });
 }
+
+// ── FFmpeg ──
 
 export async function invokeCheckFfprobe(): Promise<boolean> {
   return invoke("check_ffprobe");
@@ -169,6 +177,8 @@ export async function invokeCopyFileUnique(
   return invoke("copy_file_unique", { source, outputDir });
 }
 
+// ── Clipboard ──
+
 export async function invokeCopyImageToClipboard(path: string): Promise<void> {
   return invoke("copy_image_to_clipboard", { path });
 }
@@ -211,6 +221,8 @@ export async function invokeExportCroppedMedia(
     rotation,
   });
 }
+
+// ── Conversion ──
 
 export async function invokeConvertMedia(
   path: string,
@@ -257,6 +269,8 @@ export async function invokeExtractCoverArt(
 ): Promise<string | null> {
   return invoke("extract_cover_art", { path });
 }
+
+// ── Editing ──
 
 export async function exportEditedImage(
   filePath: string,
@@ -686,7 +700,6 @@ function renderText(
 
   const drawY = boxTop + pad;
 
-  // Rotation
   ctx.save();
   if (t.rotation !== 0) {
     ctx.translate(px, py);
@@ -694,7 +707,6 @@ function renderText(
     ctx.translate(-px, -py);
   }
 
-  // Background
   if (t.bgEnabled) {
     ctx.fillStyle = t.bgColor;
     ctx.globalAlpha = 0.85;
@@ -702,11 +714,9 @@ function renderText(
     ctx.globalAlpha = 1;
   }
 
-  // Text
   ctx.fillStyle = t.color;
   ctx.fillText(text, drawX, drawY + lineHeight / 2);
 
-  // Underline
   if (t.underline) {
     const underlineY = drawY + lineHeight / 2 + 2;
     ctx.strokeStyle = t.color;
@@ -723,7 +733,6 @@ function renderText(
     ctx.stroke();
   }
 
-  // Strikethrough
   if (t.strikethrough) {
     const strikeY = drawY + lineHeight / 2 - fontSize * 0.3;
     ctx.strokeStyle = t.color;
@@ -769,8 +778,6 @@ export async function invokeExportEditedMedia(
   });
 }
 
-// Share: Send to
-
 export async function invokePrintFile(path: string): Promise<void> {
   return invoke("print_file", { path });
 }
@@ -790,8 +797,6 @@ export async function invokeSetLockScreen(path: string): Promise<void> {
 export async function invokeCreateDesktopShortcut(path: string): Promise<void> {
   return invoke("create_desktop_shortcut", { path });
 }
-
-// Share: Open with
 
 export async function invokeOpenInPhotos(path: string): Promise<void> {
   return invoke("open_in_photos", { path });
@@ -894,6 +899,8 @@ export async function installFfmpegWithPolling(options?: {
     error: "Install still running. Reopen Properties in a moment.",
   };
 }
+
+// ── Display ──
 
 export async function prepareDisplayPath(path: string): Promise<string> {
   if (isBrowserUnsupportedImage(path)) {

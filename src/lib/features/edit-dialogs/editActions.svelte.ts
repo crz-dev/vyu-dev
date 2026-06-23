@@ -1,3 +1,4 @@
+// Edit actions
 import { save } from "@tauri-apps/plugin-dialog";
 import { getFileExt } from "$lib/services/files";
 import { editing } from "$lib/features/editing/editing.svelte";

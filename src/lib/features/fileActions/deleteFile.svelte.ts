@@ -1,3 +1,4 @@
+// Delete file state
 import { invokeDeleteFile, invokeTrashFile } from "$lib/features/media/tools";
 import {
   loadSkipDeleteConfirmation,

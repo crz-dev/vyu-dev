@@ -1,3 +1,4 @@
+// Library state
 import {
   invokeGetThumbnail,
   invokeGetFilesTotalSize,
@@ -63,10 +64,8 @@ function createLibrary() {
   let pendingOrder: string[] = [];
   let inflight = 0;
 
-  // Active tab
   let activeTab = $state<LibraryTab>("library");
 
-  // Recent files
   let recentFilesLimit = $state(loadRecentFilesLimit());
   let recentsDisabled = $state(loadRecentsDisabled());
   let recentFiles = $state<RecentFileItem[]>(loadRecentFiles(recentFilesLimit));
@@ -78,14 +77,11 @@ function createLibrary() {
     return map;
   });
 
-  // Library settings
   let showFolders = $state(loadShowFolders());
   let showThumbnails = $state(loadShowThumbnails());
 
-  // View mode
   let viewMode = $state<"grid" | "list" | "river" | "filmstrip">("grid");
 
-  // View density (0 = large thumbnails, 1 = small thumbnails)
   let density = $state(loadViewDensity());
 
   // Sort state (independent from main view)
@@ -94,7 +90,6 @@ function createLibrary() {
   let savedSortMode = $state<SortMode>(sortMode);
   let savedSortDesc = $state(sortDesc);
 
-  // Total size
   let totalSize = $state(0);
   let totalSizeLoading = $state(false);
 
@@ -106,7 +101,6 @@ function createLibrary() {
   let dividersOn = $state(loadDividersOn());
   let namesOn = $state(loadNamesOn());
 
-  // Multi-select state
   let selectedPaths = $state<Record<string, boolean>>({});
   let collectMode = $state(false);
   let deleteOriginalAfterCopy = $state(false);
@@ -114,11 +108,9 @@ function createLibrary() {
   // Scan trigger — increment to force directory re-scan
   let scanKey = $state(0);
 
-  // Collections state
   let collections = $state<CollectionItem[]>(loadCollections());
   let activeCollectionPath = $state<string | null>(null);
 
-  // Favorites state
   let favorites = $state<FavoriteItem[]>(loadFavorites());
   let favoriteTimestamps = $derived.by(() => {
     const map: Record<string, number> = {};

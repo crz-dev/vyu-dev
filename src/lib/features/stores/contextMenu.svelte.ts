@@ -1,3 +1,4 @@
+// Context menu state
 import { computeContextMenuPosition } from "$lib/services/session";
 
 export interface ContextMenuState {

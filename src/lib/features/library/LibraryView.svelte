@@ -53,14 +53,12 @@
   let scrollTimer: ReturnType<typeof setTimeout> | null = null;
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
 
-  // Drag-to-select state
   let dragStart: { x: number; y: number } | null = $state(null);
   let dragEnd: { x: number; y: number } | null = $state(null);
   let isDragging = $state(false);
   let dragSuppressedClick = $state(false);
   let lastClickedIndex: number | null = null;
 
-  // Collection state
   let collectionFiles = $state<string[]>([]);
   let collectionFolders = $state<string[]>([]);
   let collectionFirstFiles = $state<Record<string, string>>({});
@@ -74,14 +72,12 @@
   let nameErrorTimer: ReturnType<typeof setTimeout> | null = null;
   let collectionToDelete = $state<string | null>(null);
 
-  // Library folder browsing state
   let libraryDirPath = $state<string | null>(null);
   let libraryBasePath = $state<string | null>(null);
   let libraryDirFolders = $state<string[]>([]);
   let libraryDirFiles = $state<string[]>([]);
   let folderStats = $state<Record<string, BatchStatItem>>({});
 
-  // Library context menu state
   let libCtxMenu = $state<{
     visible: boolean;
     x: number;
@@ -91,7 +87,6 @@
   let libCtxPinned = $state(false);
   let libCtxKey = $state(0);
 
-  // Collection context menu state
   let colCtxMenu = $state<{
     visible: boolean;
     x: number;
@@ -124,7 +119,6 @@
   const listFontSize = $derived(densityMap(library.density, 16, 13, 10));
   const listTypeFontSize = $derived(densityMap(library.density, 14, 12, 9));
 
-  // Grid virtualization state
   let scrollTop = $state(0);
   let containerHeight = $state(0);
   let containerWidth = $state(0);
@@ -1056,7 +1050,6 @@
     };
   });
 
-  // Fade-in on mount
   $effect(() => {
     requestAnimationFrame(() => {
       mounted = true;
@@ -1067,7 +1060,6 @@
     };
   });
 
-  // Reset scroll to top when switching tabs
   $effect(() => {
     library.activeTab;
     if (scrollEl) {
@@ -1075,7 +1067,6 @@
     }
   });
 
-  // Observer lifecycle
   $effect(() => {
     observer = new IntersectionObserver(
       (entries) => {
@@ -1094,7 +1085,6 @@
     return () => observer?.disconnect();
   });
 
-  // Re-observe elements when content changes
   $effect(() => {
     sortedFiles;
     const els = scrollEl?.querySelectorAll("[data-path]");
@@ -1106,12 +1096,10 @@
     }
   });
 
-  // Rebuild center-outward load queue
   $effect(() => {
     library.rebuildQueue(fileList, currentIndex);
   });
 
-  // Compute total size on mount
   $effect(() => {
     if (fileList.length > 0) {
       library.computeTotalSize(fileList);
@@ -1137,7 +1125,6 @@
     }
   });
 
-  // Scan library directory for subfolders and files
   $effect(() => {
     const path = libraryDirPath;
     library.scanKey;
@@ -1175,7 +1162,6 @@
     })();
   });
 
-  // Load folder stats for date-modified and size sort
   $effect(() => {
     const folders = libraryDirFolders;
     if (folders.length === 0 || library.activeTab !== "library") {
@@ -1196,7 +1182,6 @@
     })();
   });
 
-  // Load collection files when active collection changes
   $effect(() => {
     const path = library.activeCollectionPath;
     library.scanKey;
@@ -1234,7 +1219,6 @@
     })();
   });
 
-  // Load stats and size for collection files
   $effect(() => {
     if (isViewingCollection && collectionFiles.length > 0) {
       library.computeTotalSize(collectionFiles);
@@ -1242,7 +1226,6 @@
     }
   });
 
-  // Load first file for each collection card thumbnail
   $effect(() => {
     if (library.activeTab !== "collections") return;
     const cols = library.collections;
@@ -1299,7 +1282,6 @@
     }
   });
 
-  // Cleanup
   $effect(() => {
     return () => {
       library.clearQueue();
@@ -1315,7 +1297,6 @@
     const items = filmstrip.querySelectorAll<HTMLElement>("[data-path]");
     const scrollLeft = filmstrip.scrollLeft;
     const containerRight = scrollLeft + filmstrip.clientWidth;
-    // Find the first visible item
     for (const el of items) {
       const offset = el.offsetLeft;
       const width = el.offsetWidth;
@@ -1342,7 +1323,6 @@
     if (!filmstrip) return;
     const el = filmstrip;
 
-    // Initial section detection
     requestAnimationFrame(updateFilmstripSection);
 
     function onFilmstripWheel(e: WheelEvent) {
@@ -1354,7 +1334,6 @@
           0,
           Math.min(el.scrollLeft + e.deltaY, maxScroll),
         );
-        // Update section after scroll
         requestAnimationFrame(updateFilmstripSection);
       }
     }

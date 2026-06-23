@@ -1,3 +1,4 @@
+// Global mouse handler
 export function createGlobalMouseHandler(deps: {
   contextMenuStore: { isOpen: boolean; close: () => void };
   menuStore: {

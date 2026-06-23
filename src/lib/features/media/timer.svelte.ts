@@ -1,3 +1,4 @@
+// Timer state
 import { formatTime } from "$lib/features/media/playback.svelte";
 
 function createTimerStore() {

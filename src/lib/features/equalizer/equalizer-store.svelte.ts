@@ -1,3 +1,4 @@
+// EQ state
 import { eqEngine } from "./equalizer-engine";
 import {
   loadEqSettings as dbLoadEqSettings,
@@ -47,7 +48,6 @@ function createEqualizerStore(): EqualizerStore {
       bypass = settings.bypass;
       outputGain = settings.outputGain;
       activePreset = settings.activePreset;
-      // Apply to engine
       eqEngine.applyValues(settings.bands);
       eqEngine.setOutputGain(settings.outputGain);
       eqEngine.setBypass(settings.bypass);

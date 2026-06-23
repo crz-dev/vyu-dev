@@ -1,7 +1,4 @@
-/**
- * Generates a stereo impulse response buffer for ConvolverNode reverb.
- * Uses decaying white noise — simple, cheap, sounds decent.
- */
+// Reverb IR
 export function generateReverbIR(
   ctx: AudioContext,
   durationSecs: number,

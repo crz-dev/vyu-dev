@@ -1,3 +1,4 @@
+// EQ engine
 import { BAND_FREQUENCIES, BAND_Q } from "./band-config";
 import { effectsEngine } from "../effects/effects-engine";
 
@@ -98,9 +99,7 @@ class EqualizerEngine {
   disconnect(): void {
     this.cancelPendingCleanup();
 
-    // Ramp output gain to zero before disconnecting to avoid DC pop/crackle.
-    // The ramp is scheduled on the audio thread; cleanup is deferred so the
-    // audio thread can process the ramp before nodes are torn down.
+    // Ramp gain to zero before disconnect to avoid DC pop/crackle
     if (this.outputGain && this.ctx) {
       const now = this.ctx.currentTime;
       this.outputGain.gain.cancelScheduledValues(now);
@@ -111,7 +110,7 @@ class EqualizerEngine {
       try {
         this.source.disconnect();
       } catch {
-        // already disconnected
+        /* disconnected */
       }
       this.source = null;
     }
@@ -122,9 +121,7 @@ class EqualizerEngine {
     // short-circuiting on the cached graph whose input was just severed.
     effectsEngine.teardown();
 
-    // Snapshot the current graph nodes for deferred cleanup.  The instance
-    // fields are nulled so that a subsequent connectMediaElement() can build
-    // a new graph immediately while the old graph's gain ramp finishes.
+    // Snapshot nodes for deferred cleanup; null fields so new graph builds immediately
     if (this.stageAnimFrame !== null) {
       cancelAnimationFrame(this.stageAnimFrame);
       this.stageAnimFrame = null;
@@ -155,7 +152,7 @@ class EqualizerEngine {
     if (this.pendingCleanup !== null) {
       clearTimeout(this.pendingCleanup);
       this.pendingCleanup = null;
-      // The ramp was interrupted — clean up orphaned nodes immediately.
+      // Ramp interrupted — clean up orphans immediately
       this.cleanupOrphaned();
     }
   }
@@ -165,7 +162,7 @@ class EqualizerEngine {
       try {
         node.disconnect();
       } catch {
-        /* already disconnected */
+        /* disconnected */
       }
     }
     this.orphanedNodes = [];
@@ -179,7 +176,7 @@ class EqualizerEngine {
       try {
         f.disconnect();
       } catch {
-        // already disconnected
+        /* disconnected */
       }
     }
     this.filters = [];
@@ -187,7 +184,7 @@ class EqualizerEngine {
       try {
         this.outputGain.disconnect();
       } catch {
-        // already disconnected
+        /* disconnected */
       }
       this.outputGain = null;
     }
@@ -195,7 +192,7 @@ class EqualizerEngine {
       try {
         this.analyser.disconnect();
       } catch {
-        // already disconnected
+        /* disconnected */
       }
       this.analyser = null;
     }
@@ -286,7 +283,7 @@ class EqualizerEngine {
       try {
         node.disconnect();
       } catch {
-        /* already disconnected */
+        /* disconnected */
       }
     }
     this.stageNodes = [];
@@ -432,7 +429,7 @@ class EqualizerEngine {
       try {
         this.source.disconnect();
       } catch {
-        // already disconnected
+        /* disconnected */
       }
       this.source = null;
     }

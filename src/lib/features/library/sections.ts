@@ -1,3 +1,4 @@
+// Library sections
 import {
   IMAGE_EXTS,
   VIDEO_EXTS,
@@ -13,9 +14,7 @@ const VIDEO_SET = new Set(VIDEO_EXTS);
 const AUDIO_SET = new Set(AUDIO_EXTS);
 const DOCUMENT_SET = new Set(DOCUMENT_EXTS);
 
-// ---------------------------------------------------------------------------
 // Size tiers
-// ---------------------------------------------------------------------------
 type Tier = "small" | "medium" | "large";
 
 function getTier(count: number): Tier {
@@ -24,9 +23,7 @@ function getTier(count: number): Tier {
   return "large";
 }
 
-// ---------------------------------------------------------------------------
 // Type sort — no adaptation
-// ---------------------------------------------------------------------------
 const TYPE_LABELS = [
   "Images",
   "Videos",
@@ -45,9 +42,7 @@ function extCategory(ext: string): string {
   return "Other";
 }
 
-// ---------------------------------------------------------------------------
 // Name sort — adaptive alpha ranges
-// ---------------------------------------------------------------------------
 interface AlphaRange {
   label: string;
   test: (c: string) => boolean;
@@ -111,9 +106,7 @@ function alphaLabel(t: Tier, first: string): string {
   return "#";
 }
 
-// ---------------------------------------------------------------------------
 // Size sort — adaptive ranges
-// ---------------------------------------------------------------------------
 const KB = 1024;
 const MB = 1024 * KB;
 const GB = 1024 * MB;
@@ -161,9 +154,7 @@ function sizeLabel(t: Tier, bytes: number): string {
   return "Other";
 }
 
-// ---------------------------------------------------------------------------
 // Date-modified sort — adaptive labels
-// ---------------------------------------------------------------------------
 const MONTH_NAMES = [
   "January",
   "February",
@@ -210,9 +201,7 @@ function dateGroupKey(t: Tier, ms: number, now: Date): string {
   return "Older";
 }
 
-// ---------------------------------------------------------------------------
 // Section assembly
-// ---------------------------------------------------------------------------
 export interface Section {
   label: string;
   items: string[];

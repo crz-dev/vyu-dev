@@ -1,3 +1,4 @@
+// Window state
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -72,7 +73,7 @@ pub fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool
         if state.width > 0 && state.height > 0 {
             let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
         }
-        // Accept up to dual 6K (2 x 6144 x 2 x 3456 ≈ 12288 x 6912) plus some slack.
+        // Limit: dual 6K (12288 x 6912) + slack
         let plausible = state.x > -12288 && state.x < 12288 && state.y > -6912 && state.y < 6912;
         if plausible {
             let _ =
@@ -81,7 +82,7 @@ pub fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool
         let _ = window.maximize();
     } else {
         let valid_size = state.width >= 400 && state.height >= 300;
-        // Accept up to dual 6K (2 x 6144 x 2 x 3456 ≈ 12288 x 6912) plus some slack.
+        // Limit: dual 6K (12288 x 6912) + slack
         let plausible = state.x > -12288 && state.x < 12288 && state.y > -6912 && state.y < 6912;
 
         if valid_size {
