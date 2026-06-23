@@ -145,6 +145,10 @@
 
   const isCustomCollection = $derived(activeCollection?.type === "custom");
 
+  const collectionItemCount = $derived(
+    collectionFolders.length + collectionFiles.length,
+  );
+
   const recentFilesWarning = $derived(
     !library.recentsDisabled &&
       library.recentFiles.length / library.recentFilesLimit >= 0.9,
@@ -745,7 +749,10 @@
   }
 
   function ctxCollect() {
+    const path = libCtxMenu.path;
     closeLibCtxMenu();
+    library.clearSelection();
+    library.toggleSelect(path);
     library.setCollectMode(true);
     library.setActiveTab("collections");
   }
@@ -1422,6 +1429,11 @@
               >
             {/if}
             {seg.label}
+            {#if i === breadcrumb.length - 1}
+              <span class="library-header-count"
+                >({collectionItemCount})</span
+              >
+            {/if}
           </button>
         {/each}
       {:else}

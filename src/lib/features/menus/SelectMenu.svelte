@@ -205,10 +205,14 @@
         <span class="ctx-dot"></span>
         <span class="ctx-dot"></span>
       </span>
-      <span
-        >{selectedCount}
-        {selectedCount === 1 ? "file" : "files"} selected</span
-      >
+      {#if library.collectMode && selectedCount === 1}
+        <span>{getFileName(getPaths()[0])} selected</span>
+      {:else}
+        <span
+          >{selectedCount}
+          {selectedCount === 1 ? "file" : "files"} selected</span
+        >
+      {/if}
       <span class="ctx-dots">
         <span class="ctx-dot"></span>
         <span class="ctx-dot"></span>
