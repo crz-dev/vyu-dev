@@ -229,7 +229,9 @@ function createLibrary() {
   }
 
   function setActiveTab(tab: LibraryTab) {
-    if (tab !== "collections" && collectMode) collectMode = false;
+    if (tab !== "collections" && collectMode) {
+      collectMode = false;
+    }
 
     const prev = activeTab;
     const prevSpecial =
@@ -551,6 +553,13 @@ function createLibrary() {
     setCollectMode(false);
   }
 
+  function setCollectionThumbnail(path: string, thumbnailPath: string | null) {
+    collections = collections.map((c) =>
+      c.path === path ? { ...c, thumbnailPath: thumbnailPath ?? undefined } : c,
+    );
+    saveCollections(collections);
+  }
+
   return {
     get cache() {
       return cache;
@@ -671,6 +680,7 @@ function createLibrary() {
     },
     setCollectMode,
     copySelectedToCollection,
+    setCollectionThumbnail,
   };
 }
 

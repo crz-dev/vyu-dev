@@ -807,10 +807,32 @@
     startRename(path, name);
   }
 
-  function ctxCollectCol() {
+  async function ctxChangeCoverCol() {
+    const { path } = colCtxMenu;
     closeColCtxMenu();
-    library.setCollectMode(true);
-    library.setActiveTab("collections");
+    const selected = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "Images",
+          extensions: [
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "bmp",
+            "webp",
+            "tiff",
+            "avif",
+          ],
+        },
+      ],
+    });
+    if (selected) {
+      library.setCollectionThumbnail(path, selected as string);
+      delete collectionFirstFiles[path];
+      collectionFirstFiles = { ...collectionFirstFiles };
+    }
   }
 
   function ctxShowInExplorerCol() {
@@ -822,7 +844,7 @@
   function ctxDeleteCol() {
     const path = colCtxMenu.path;
     closeColCtxMenu();
-    library.removeCollection(path);
+    startDeleteCollection(path);
   }
 
   async function addFavoriteFromFile() {
@@ -3324,36 +3346,34 @@
           <div class="ctx-sep"></div>
           <button
             class="ctx-item blue"
-            onclick={ctxCollectCol}
+            onclick={ctxChangeCoverCol}
             role="menuitem"
             style="animation-delay: 55ms"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><path
-                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+              ><rect
+                x="3"
+                y="3"
+                width="18"
+                height="18"
+                rx="2"
+                ry="2"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /><line
-                x1="12"
-                y1="11"
-                x2="12"
-                y2="17"
+              /><circle
+                cx="8.5"
+                cy="8.5"
+                r="1.5"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
-              /><line
-                x1="9"
-                y1="14"
-                x2="15"
-                y2="14"
+              /><polyline
+                points="21 15 16 10 5 21"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
+                fill="none"
               /></svg
             >
-            Collect
+            Change cover
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -3362,28 +3382,9 @@
             role="menuitem"
             style="animation-delay: 110ms"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
               ><path
-                d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /><polyline
-                points="15 3 21 3 21 9"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /><line
-                x1="10"
-                y1="14"
-                x2="21"
-                y2="3"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
               /></svg
             >
             Show in explorer
@@ -3595,6 +3596,7 @@
   {/if}
 
   {#if collectionToDelete}
+    {@const delCol = library.collections.find((c) => c.path === collectionToDelete)}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="library-dialog-overlay library-dialog-overlay-anim"
@@ -3629,7 +3631,9 @@
               <path d="M14 11v6" />
               <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
-            <p class="library-dialog-title">Delete collection?</p>
+            <p class="library-dialog-title">
+              {delCol?.type === "linked" ? "Delete sync with folder?" : "Delete collection?"}
+            </p>
           </div>
           <button
             class="library-dialog-close"
@@ -3652,8 +3656,13 @@
         <div class="library-dialog-body" style="padding-bottom: 4px;">
           <div class="edit-menu-card">
             <p class="library-dialog-warning">
-              This will permanently delete the collection folder and all files
-              inside it.
+              {#if delCol?.type === "linked"}
+                This will remove the link to this folder from the application.
+                The folder and its contents will not be affected.
+              {:else}
+                This will permanently delete the collection folder and all files
+                inside it.
+              {/if}
             </p>
           </div>
         </div>
