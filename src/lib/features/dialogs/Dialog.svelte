@@ -260,8 +260,9 @@
     try {
       await fn();
       showToast({ message: successMsg, color: "green" });
-    } catch (e: any) {
-      const msg = typeof e === "string" ? e : e?.message || "Action failed";
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : typeof e === "string" ? e : "Action failed";
       const appNotFoundMatch = msg.match(
         /^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/,
       );
@@ -356,8 +357,13 @@
         ],
       });
       success = true;
-    } catch (e: any) {
-      const msg = typeof e === "string" ? e : e?.message || "Conversion failed";
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+            ? e
+            : "Conversion failed";
       console.error("Save as failed:", e);
       showToast({ message: msg, color: "red" });
     } finally {
@@ -507,8 +513,13 @@
         ],
       });
       success = true;
-    } catch (e: any) {
-      const msg = typeof e === "string" ? e : e?.message || "Conversion failed";
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+            ? e
+            : "Conversion failed";
       console.error("Save as failed:", e);
       showToast({ message: msg, color: "red" });
     } finally {
