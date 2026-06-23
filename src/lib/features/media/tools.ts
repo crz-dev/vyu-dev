@@ -50,10 +50,14 @@ async function saveCanvasToFile(
         : "image/png";
 
   const outBlob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((b) => {
-      if (b) resolve(b);
-      else reject(new Error("Canvas toBlob returned null"));
-    }, mimeType, 0.92);
+    canvas.toBlob(
+      (b) => {
+        if (b) resolve(b);
+        else reject(new Error("Canvas toBlob returned null"));
+      },
+      mimeType,
+      0.92,
+    );
   });
   const arrayBuffer = await outBlob.arrayBuffer();
   const { writeFile } = await import("@tauri-apps/plugin-fs");

@@ -5,7 +5,11 @@
     DOCUMENT_EXTS,
     ALL_EXTS,
   } from "$lib/shared/constants";
-  import { getFileExt, getFileName, getParentFolder } from "$lib/services/files";
+  import {
+    getFileExt,
+    getFileName,
+    getParentFolder,
+  } from "$lib/services/files";
   import { fade } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
   import { getSections, type Section } from "$lib/features/library/sections";
@@ -135,7 +139,8 @@
   );
 
   const activeCollection = $derived(
-    library.collections.find((c) => c.path === library.activeCollectionPath) ?? null,
+    library.collections.find((c) => c.path === library.activeCollectionPath) ??
+      null,
   );
 
   const isCustomCollection = $derived(activeCollection?.type === "custom");
@@ -150,9 +155,7 @@
     menuStore.settingsOpen = true;
   }
 
-  const isShowingFolders = $derived(
-    isViewingCollection && library.showFolders,
-  );
+  const isShowingFolders = $derived(isViewingCollection && library.showFolders);
 
   const currentFolderPaths = $derived.by(() => {
     if (!library.showFolders) return [];
@@ -168,7 +171,11 @@
         cmp = getFileName(a).localeCompare(getFileName(b), undefined, {
           sensitivity: "base",
         });
-      } else if (mode === "date-modified" || mode === "date-opened" || mode === "date-created") {
+      } else if (
+        mode === "date-modified" ||
+        mode === "date-opened" ||
+        mode === "date-created"
+      ) {
         const aTime = stats[a]?.mtime_ms ?? 0;
         const bTime = stats[b]?.mtime_ms ?? 0;
         cmp = aTime - bTime;
@@ -247,7 +254,8 @@
     if (library.activeTab === "recents") return library.getRecentPaths();
     if (library.activeTab === "favorites") return library.getFavoritePaths();
     if (isViewingCollection) return collectionFiles;
-    if (library.activeTab === "library" && libraryDirPath) return libraryDirFiles;
+    if (library.activeTab === "library" && libraryDirPath)
+      return libraryDirFiles;
     return fileList;
   });
 
@@ -577,10 +585,21 @@
   async function pickThumbnail() {
     const selected = await open({
       multiple: false,
-      filters: [{
-        name: "Images",
-        extensions: ["png", "jpg", "jpeg", "gif", "bmp", "webp", "tiff", "avif"],
-      }],
+      filters: [
+        {
+          name: "Images",
+          extensions: [
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "bmp",
+            "webp",
+            "tiff",
+            "avif",
+          ],
+        },
+      ],
     });
     if (selected) {
       newCollectionThumbnail = selected as string;
@@ -593,13 +612,20 @@
       triggerNameError();
       return;
     }
-    if (library.collections.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+    if (
+      library.collections.some(
+        (c) => c.name.toLowerCase() === name.toLowerCase(),
+      )
+    ) {
       triggerNameError();
       return;
     }
     clearNameError();
     showAddCollectionDialog = false;
-    await library.createCustomCollection(name, newCollectionThumbnail ?? undefined);
+    await library.createCustomCollection(
+      name,
+      newCollectionThumbnail ?? undefined,
+    );
     newCollectionName = "";
     newCollectionThumbnail = null;
   }
@@ -671,7 +697,12 @@
     e.stopPropagation();
     const menuW = 200;
     const menuH = 220;
-    const { x, y } = computeContextMenuPosition(e.clientX, e.clientY, menuW, menuH);
+    const { x, y } = computeContextMenuPosition(
+      e.clientX,
+      e.clientY,
+      menuW,
+      menuH,
+    );
     libCtxMenu = { visible: true, x, y, path };
     libCtxPinned = false;
     libCtxKey++;
@@ -748,7 +779,12 @@
     e.stopPropagation();
     const menuW = 200;
     const menuH = 220;
-    const { x, y } = computeContextMenuPosition(e.clientX, e.clientY, menuW, menuH);
+    const { x, y } = computeContextMenuPosition(
+      e.clientX,
+      e.clientY,
+      menuW,
+      menuH,
+    );
     colCtxMenu = { visible: true, x, y, path, name };
     colCtxPinned = false;
     colCtxKey++;
@@ -810,10 +846,7 @@
 
   function handleKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
-    if (
-      target &&
-      target.closest("input, textarea, [contenteditable='true']")
-    ) {
+    if (target && target.closest("input, textarea, [contenteditable='true']")) {
       return;
     }
     if (e.key === "Escape") {
@@ -1296,7 +1329,11 @@
 <div
   class="library-view"
   onkeydown={handleKeydown}
-  onclick={() => { confirmRename(); closeLibCtxMenu(); closeColCtxMenu(); }}
+  onclick={() => {
+    confirmRename();
+    closeLibCtxMenu();
+    closeColCtxMenu();
+  }}
   role="region"
   aria-label="File library"
 >
@@ -1348,22 +1385,63 @@
                   : library.openCollection(seg.path)}
           >
             {#if i === 0}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path
+                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                /></svg
+              >
             {/if}
             {seg.label}
           </button>
         {/each}
       {:else}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" /></svg>
-        <span class="library-breadcrumb-segment active">Collections <span class="library-header-count">({library.collections.length})</span></span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path
+            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+          /></svg
+        >
+        <span class="library-breadcrumb-segment active"
+          >Collections <span class="library-header-count"
+            >({library.collections.length})</span
+          ></span
+        >
       {/if}
     </div>
   {/if}
 
   {#if library.activeTab === "recents"}
     <div class="library-collection-header">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-      <span class="library-breadcrumb-segment active">Recents
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><circle cx="12" cy="12" r="10" /><polyline
+          points="12 6 12 12 16 14"
+        /></svg
+      >
+      <span class="library-breadcrumb-segment active"
+        >Recents
         {#if library.recentsDisabled}
           <span class="library-header-count">(Off)</span>
         {:else}
@@ -1372,7 +1450,8 @@
             class:warning={recentFilesWarning}
             data-tooltip="Recents limit — older files drop off once full"
             onclick={openRecentsSettings}
-          >({library.recentFiles.length}/{library.recentFilesLimit})</button>
+            >({library.recentFiles.length}/{library.recentFilesLimit})</button
+          >
         {/if}
       </span>
     </div>
@@ -1380,8 +1459,24 @@
 
   {#if library.activeTab === "favorites"}
     <div class="library-collection-header">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-      <span class="library-breadcrumb-segment active">Favorites <span class="library-header-count">({library.favorites.length})</span></span>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><polygon
+          points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+        /></svg
+      >
+      <span class="library-breadcrumb-segment active"
+        >Favorites <span class="library-header-count"
+          >({library.favorites.length})</span
+        ></span
+      >
     </div>
   {/if}
 
@@ -1401,14 +1496,60 @@
                 : (libraryDirPath = seg.path)}
           >
             {#if i === 0}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><rect x="3" y="3" width="7" height="7" /><rect
+                  x="14"
+                  y="3"
+                  width="7"
+                  height="7"
+                /><rect x="14" y="14" width="7" height="7" /><rect
+                  x="3"
+                  y="14"
+                  width="7"
+                  height="7"
+                /></svg
+              >
             {/if}
             {i === 0 ? libraryRootName : seg.label}
           </button>
         {/each}
       {:else}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
-        <button class="library-breadcrumb-segment active" onclick={() => invokeOpenDirectory(libraryDirPath!)}>{libraryRootName} <span class="library-header-count">({libraryDirFiles.length})</span></button>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><rect x="3" y="3" width="7" height="7" /><rect
+            x="14"
+            y="3"
+            width="7"
+            height="7"
+          /><rect x="14" y="14" width="7" height="7" /><rect
+            x="3"
+            y="14"
+            width="7"
+            height="7"
+          /></svg
+        >
+        <button
+          class="library-breadcrumb-segment active"
+          onclick={() => invokeOpenDirectory(libraryDirPath!)}
+          >{libraryRootName}
+          <span class="library-header-count">({libraryDirFiles.length})</span
+          ></button
+        >
       {/if}
     </div>
   {/if}
@@ -1423,7 +1564,9 @@
     onscroll={onScroll}
     onmousedown={handleDragStart}
   >
-    <div style="display: grid; grid-template: 1fr / 1fr; align-items: start; height: 100%;">
+    <div
+      style="display: grid; grid-template: 1fr / 1fr; align-items: start; height: 100%;"
+    >
       {#key library.activeTab}
         <div
           class="tab-content"
@@ -1535,10 +1678,9 @@
                 {/if}
                 {#each displaySections as section (section.label || "all")}
                   {#if section.label}
-                    <div
-                      class="divider-header"
-                      style="grid-column: 1 / -1;"
-                    >{section.label}</div>
+                    <div class="divider-header" style="grid-column: 1 / -1;">
+                      {section.label}
+                    </div>
                   {/if}
                   {#each section.items as path (path)}
                     {#if folderPathSet.has(path)}
@@ -1685,7 +1827,9 @@
                               stroke-linecap="round"
                               stroke-linejoin="round"
                             >
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <path
+                                d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                              />
                               <polyline points="14 2 14 8 20 8" />
                               <line x1="9" y1="13" x2="15" y2="13" />
                               <line x1="12" y1="13" x2="12" y2="18" />
@@ -1772,11 +1916,16 @@
                     <div
                       class="divider-header"
                       style="width: 100%; flex-shrink: 0;"
-                    >{section.label}</div>
+                    >
+                      {section.label}
+                    </div>
                   {/if}
                   {#each section.items as path (path)}
                     {#if folderPathSet.has(path)}
-                      {@render folderCard(path, "river-cell river-subfolder-cell")}
+                      {@render folderCard(
+                        path,
+                        "river-cell river-subfolder-cell",
+                      )}
                     {:else}
                       {@const active = activePaths.has(path)}
                       {@const selected = library.isSelected(path)}
@@ -1940,11 +2089,14 @@
             {:else if library.viewMode === "filmstrip"}
               <div class="library-filmstrip" style="position: relative;">
                 {#if library.dividersOn && filmstripSectionLabel}
-                  <div class="filmstrip-section-header" style="position: absolute; top: 8px; left: 28px; z-index: 5; pointer-events: none;">
+                  <div
+                    class="filmstrip-section-header"
+                    style="position: absolute; top: 8px; left: 28px; z-index: 5; pointer-events: none;"
+                  >
                     {#key filmstripSectionLabel}
-                      <span
-                        transition:fade={{ duration: 150 }}
-                      >{filmstripSectionLabel}</span>
+                      <span transition:fade={{ duration: 150 }}
+                        >{filmstripSectionLabel}</span
+                      >
                     {/key}
                   </div>
                 {/if}
@@ -2501,7 +2653,9 @@
                         <span class="list-col list-col-date">
                           {stat?.mtime_ms ? formatDate(stat.mtime_ms) : ""}
                         </span>
-                        <span class="list-col list-col-type">{getExt(path)}</span>
+                        <span class="list-col list-col-type"
+                          >{getExt(path)}</span
+                        >
                       </div>
                     {/if}
                   {/each}
@@ -2682,137 +2836,138 @@
                   stroke-linejoin="round"
                   opacity="0.4"
                 >
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  <path
+                    d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                  />
                   <line x1="12" y1="11" x2="12" y2="17" />
                   <line x1="9" y1="14" x2="15" y2="14" />
                 </svg>
               </div>
               {#each collectionSections as section (section.label || "all")}
                 {#if section.label}
-                  <div
-                    class="divider-header"
-                    style="grid-column: 1 / -1;"
-                  >{section.label}</div>
+                  <div class="divider-header" style="grid-column: 1 / -1;">
+                    {section.label}
+                  </div>
                 {/if}
                 {#each section.items as col (col.path)}
                   {@const firstFilePath = collectionFirstFiles[col.path]}
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="library-collection-card"
-                  class:collect-mode={library.collectMode}
-                  class:renaming={renamingPath === col.path}
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
-                    if (library.collectMode) {
-                      library.copySelectedToCollection(col.path);
-                    } else {
-                      library.openCollection(col.path);
-                    }
-                  }}
-                  ondblclick={() => startRename(col.path, col.name)}
-                  oncontextmenu={(e) => openColCtxMenu(e, col.path, col.name)}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="library-collection-card"
+                    class:collect-mode={library.collectMode}
+                    class:renaming={renamingPath === col.path}
+                    role="button"
+                    tabindex="0"
+                    onclick={() => {
                       if (library.collectMode) {
                         library.copySelectedToCollection(col.path);
                       } else {
                         library.openCollection(col.path);
                       }
-                    }
-                  }}
-                >
-                  {#if library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
-                    <img
-                      class="library-collection-thumb"
-                      src={library.cache[firstFilePath]}
-                      alt=""
-                      draggable="false"
-                    />
-                  {:else}
-                    <div class="library-collection-placeholder">
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                        />
-                      </svg>
-                    </div>
-                  {/if}
-                  <div class="library-collection-name">
-                    {#if renamingPath === col.path}
-                      <!-- svelte-ignore a11y_autofocus -->
-                      <input
-                        class="library-rename-input"
-                        type="text"
-                        bind:value={renameValue}
-                        autofocus
-                        onblur={confirmRename}
-                        onmousedown={(e) => e.stopPropagation()}
-                        onkeydown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            confirmRename();
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            cancelRename();
-                          }
-                        }}
-                      />
-                    {:else}
-                      <span>{col.name}</span>
-                    {/if}
-                  </div>
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div
-                    class="library-collection-remove"
-                    role="button"
-                    tabindex="0"
-                    aria-label="Remove collection"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      if (col.type === "custom") {
-                        startDeleteCollection(col.path);
-                      } else {
-                        library.removeCollection(col.path);
-                      }
                     }}
-                    onkeydown={(e: KeyboardEvent) => {
+                    ondblclick={() => startRename(col.path, col.name)}
+                    oncontextmenu={(e) => openColCtxMenu(e, col.path, col.name)}
+                    onkeydown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
+                        if (library.collectMode) {
+                          library.copySelectedToCollection(col.path);
+                        } else {
+                          library.openCollection(col.path);
+                        }
+                      }
+                    }}
+                  >
+                    {#if library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
+                      <img
+                        class="library-collection-thumb"
+                        src={library.cache[firstFilePath]}
+                        alt=""
+                        draggable="false"
+                      />
+                    {:else}
+                      <div class="library-collection-placeholder">
+                        <svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                          />
+                        </svg>
+                      </div>
+                    {/if}
+                    <div class="library-collection-name">
+                      {#if renamingPath === col.path}
+                        <!-- svelte-ignore a11y_autofocus -->
+                        <input
+                          class="library-rename-input"
+                          type="text"
+                          bind:value={renameValue}
+                          autofocus
+                          onblur={confirmRename}
+                          onmousedown={(e) => e.stopPropagation()}
+                          onkeydown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              confirmRename();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              cancelRename();
+                            }
+                          }}
+                        />
+                      {:else}
+                        <span>{col.name}</span>
+                      {/if}
+                    </div>
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div
+                      class="library-collection-remove"
+                      role="button"
+                      tabindex="0"
+                      aria-label="Remove collection"
+                      onclick={(e) => {
+                        e.stopPropagation();
                         if (col.type === "custom") {
                           startDeleteCollection(col.path);
                         } else {
                           library.removeCollection(col.path);
                         }
-                      }
-                    }}
-                  >
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
+                      }}
+                      onkeydown={(e: KeyboardEvent) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          if (col.type === "custom") {
+                            startDeleteCollection(col.path);
+                          } else {
+                            library.removeCollection(col.path);
+                          }
+                        }
+                      }}
                     >
-                      <path d="M18 6L6 18M6 6l12 12" />
-                    </svg>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                      >
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-              {/each}
+                {/each}
               {/each}
             </div>
             {#if library.collections.length === 0}
@@ -2850,397 +3005,423 @@
 
   {#if libCtxMenu.visible}
     {#key libCtxKey}
-    <div
-      class="context-menu lib-ctx"
-      class:pinned={libCtxPinned}
-      style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
-      role="menu"
-      tabindex="-1"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-    >
       <div
-        class="ctx-drag"
-        role="button"
-        tabindex="0"
-        aria-label="Drag to move"
-        onmousedown={(e) => {
-          e.preventDefault();
-          const startX = e.clientX;
-          const startY = e.clientY;
-          const startMenuX = libCtxMenu.x;
-          const startMenuY = libCtxMenu.y;
-
-          function onMouseMove(ev: MouseEvent) {
-            libCtxMenu.x = startMenuX + ev.clientX - startX;
-            libCtxMenu.y = startMenuY + ev.clientY - startY;
-          }
-
-          function onMouseUp() {
-            window.removeEventListener("mousemove", onMouseMove);
-            window.removeEventListener("mouseup", onMouseUp);
-          }
-
-          window.addEventListener("mousemove", onMouseMove);
-          window.addEventListener("mouseup", onMouseUp);
-        }}
+        class="context-menu lib-ctx"
+        class:pinned={libCtxPinned}
+        style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
+        role="menu"
+        tabindex="-1"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
       >
-        <button
-          class="ctx-pin tooltip-below"
-          class:active={libCtxPinned}
-          data-tooltip={libCtxPinned ? "Unpin" : "Pin"}
-          onclick={(e) => {
-            e.stopPropagation();
-            libCtxPinned = !libCtxPinned;
-          }}
-          onmousedown={(e) => e.stopPropagation()}
-          aria-label={libCtxPinned ? "Unpin" : "Pin"}
-        >
-          <svg
-            width="9"
-            height="9"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path
-              d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
-            />
-          </svg>
-        </button>
-        <span class="ctx-dots">
-          <span class="ctx-dot"></span>
-          <span class="ctx-dot"></span>
-          <span class="ctx-dot"></span>
-        </span>
-        <button
-          class="ctx-close tooltip-below"
-          data-tooltip="Close"
-          onclick={(e) => {
-            e.stopPropagation();
-            forceCloseLibCtxMenu();
-          }}
-          onmousedown={(e) => e.stopPropagation()}
-          aria-label="Close"
-        >
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="edit-menu-card">
+        <div
+          class="ctx-drag"
+          role="button"
+          tabindex="0"
+          aria-label="Drag to move"
+          onmousedown={(e) => {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMenuX = libCtxMenu.x;
+            const startMenuY = libCtxMenu.y;
 
-        <button
-          class="ctx-item green"
-          onclick={ctxMoveTo}
-          role="menuitem"
-          style="animation-delay: 0ms"
+            function onMouseMove(ev: MouseEvent) {
+              libCtxMenu.x = startMenuX + ev.clientX - startX;
+              libCtxMenu.y = startMenuY + ev.clientY - startY;
+            }
+
+            function onMouseUp() {
+              window.removeEventListener("mousemove", onMouseMove);
+              window.removeEventListener("mouseup", onMouseUp);
+            }
+
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
+          }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <button
+            class="ctx-pin tooltip-below"
+            class:active={libCtxPinned}
+            data-tooltip={libCtxPinned ? "Unpin" : "Pin"}
+            onclick={(e) => {
+              e.stopPropagation();
+              libCtxPinned = !libCtxPinned;
+            }}
+            onmousedown={(e) => e.stopPropagation()}
+            aria-label={libCtxPinned ? "Unpin" : "Pin"}
           >
-            <path d="M22 2 11 13" />
-            <path d="M22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-          Move to
-        </button>
-        <div class="ctx-sep"></div>
-        <button
-          class="ctx-item blue"
-          onclick={ctxCollect}
-          role="menuitem"
-          style="animation-delay: 55ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+              />
+            </svg>
+          </button>
+          <span class="ctx-dots">
+            <span class="ctx-dot"></span>
+            <span class="ctx-dot"></span>
+            <span class="ctx-dot"></span>
+          </span>
+          <button
+            class="ctx-close tooltip-below"
+            data-tooltip="Close"
+            onclick={(e) => {
+              e.stopPropagation();
+              forceCloseLibCtxMenu();
+            }}
+            onmousedown={(e) => e.stopPropagation()}
+            aria-label="Close"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="edit-menu-card">
+          <button
+            class="ctx-item green"
+            onclick={ctxMoveTo}
+            role="menuitem"
+            style="animation-delay: 0ms"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-            /><line
-              x1="12" y1="11" x2="12" y2="17"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><line
-              x1="9" y1="14" x2="15" y2="14"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+            >
+              <path d="M22 2 11 13" />
+              <path d="M22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+            Move to
+          </button>
+          <div class="ctx-sep"></div>
+          <button
+            class="ctx-item blue"
+            onclick={ctxCollect}
+            role="menuitem"
+            style="animation-delay: 55ms"
           >
-          Collect
-        </button>
-        <div class="ctx-sep"></div>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxFavorite}
-          role="menuitem"
-          style="animation-delay: 110ms"
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill={library.isFavorite(libCtxMenu.path) ? "currentColor" : "none"}
-            ><polygon
-              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /><line
+                x1="12"
+                y1="11"
+                x2="12"
+                y2="17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><line
+                x1="9"
+                y1="14"
+                x2="15"
+                y2="14"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            Collect
+          </button>
+          <div class="ctx-sep"></div>
+          <button
+            class="ctx-item yellow"
+            onclick={ctxFavorite}
+            role="menuitem"
+            style="animation-delay: 110ms"
           >
-          {library.isFavorite(libCtxMenu.path) ? "Unfavorite" : "Favorite"}
-        </button>
-        <div class="ctx-sep"></div>
-        <button
-          class="ctx-item red"
-          onclick={ctxDelete}
-          role="menuitem"
-          style="animation-delay: 165ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="3 6 5 6 21 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M19 6l-1 14H6L5 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill={library.isFavorite(libCtxMenu.path)
+                ? "currentColor"
+                : "none"}
+              ><polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+            {library.isFavorite(libCtxMenu.path) ? "Unfavorite" : "Favorite"}
+          </button>
+          <div class="ctx-sep"></div>
+          <button
+            class="ctx-item red"
+            onclick={ctxDelete}
+            role="menuitem"
+            style="animation-delay: 165ms"
           >
-          Delete
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            Delete
+          </button>
+        </div>
       </div>
-    </div>
     {/key}
   {/if}
 
   {#if colCtxMenu.visible}
     {#key colCtxKey}
-    <div
-      class="context-menu lib-ctx"
-      class:pinned={colCtxPinned}
-      style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
-      role="menu"
-      tabindex="-1"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-    >
       <div
-        class="ctx-drag"
-        role="button"
-        tabindex="0"
-        aria-label="Drag to move"
-        onmousedown={(e) => {
-          e.preventDefault();
-          const startX = e.clientX;
-          const startY = e.clientY;
-          const startMenuX = colCtxMenu.x;
-          const startMenuY = colCtxMenu.y;
-          function onMouseMove(ev: MouseEvent) {
-            colCtxMenu.x = startMenuX + ev.clientX - startX;
-            colCtxMenu.y = startMenuY + ev.clientY - startY;
-          }
-          function onMouseUp() {
-            window.removeEventListener("mousemove", onMouseMove);
-            window.removeEventListener("mouseup", onMouseUp);
-          }
-          window.addEventListener("mousemove", onMouseMove);
-          window.addEventListener("mouseup", onMouseUp);
-        }}
+        class="context-menu lib-ctx"
+        class:pinned={colCtxPinned}
+        style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
+        role="menu"
+        tabindex="-1"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={(e) => e.stopPropagation()}
       >
-        <button
-          class="ctx-pin tooltip-below"
-          class:active={colCtxPinned}
-          data-tooltip={colCtxPinned ? "Unpin" : "Pin"}
-          onclick={(e) => {
-            e.stopPropagation();
-            colCtxPinned = !colCtxPinned;
+        <div
+          class="ctx-drag"
+          role="button"
+          tabindex="0"
+          aria-label="Drag to move"
+          onmousedown={(e) => {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMenuX = colCtxMenu.x;
+            const startMenuY = colCtxMenu.y;
+            function onMouseMove(ev: MouseEvent) {
+              colCtxMenu.x = startMenuX + ev.clientX - startX;
+              colCtxMenu.y = startMenuY + ev.clientY - startY;
+            }
+            function onMouseUp() {
+              window.removeEventListener("mousemove", onMouseMove);
+              window.removeEventListener("mouseup", onMouseUp);
+            }
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
           }}
-          onmousedown={(e) => e.stopPropagation()}
-          aria-label={colCtxPinned ? "Unpin" : "Pin"}
         >
-          <svg
-            width="9"
-            height="9"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <button
+            class="ctx-pin tooltip-below"
+            class:active={colCtxPinned}
+            data-tooltip={colCtxPinned ? "Unpin" : "Pin"}
+            onclick={(e) => {
+              e.stopPropagation();
+              colCtxPinned = !colCtxPinned;
+            }}
+            onmousedown={(e) => e.stopPropagation()}
+            aria-label={colCtxPinned ? "Unpin" : "Pin"}
           >
-            <path d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23" />
-          </svg>
-        </button>
-        <span class="ctx-dots">
-          <span class="ctx-dot"></span>
-          <span class="ctx-dot"></span>
-          <span class="ctx-dot"></span>
-        </span>
-        <button
-          class="ctx-close tooltip-below"
-          data-tooltip="Close"
-          onclick={(e) => {
-            e.stopPropagation();
-            forceCloseColCtxMenu();
-          }}
-          onmousedown={(e) => e.stopPropagation()}
-          aria-label="Close"
-        >
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+              />
+            </svg>
+          </button>
+          <span class="ctx-dots">
+            <span class="ctx-dot"></span>
+            <span class="ctx-dot"></span>
+            <span class="ctx-dot"></span>
+          </span>
+          <button
+            class="ctx-close tooltip-below"
+            data-tooltip="Close"
+            onclick={(e) => {
+              e.stopPropagation();
+              forceCloseColCtxMenu();
+            }}
+            onmousedown={(e) => e.stopPropagation()}
+            aria-label="Close"
           >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="edit-menu-card">
+          <button
+            class="ctx-item green"
+            onclick={ctxRenameCol}
+            role="menuitem"
+            style="animation-delay: 0ms"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              <path d="m15 5 4 4" />
+            </svg>
+            Rename
+          </button>
+          <div class="ctx-sep"></div>
+          <button
+            class="ctx-item blue"
+            onclick={ctxCollectCol}
+            role="menuitem"
+            style="animation-delay: 55ms"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /><line
+                x1="12"
+                y1="11"
+                x2="12"
+                y2="17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><line
+                x1="9"
+                y1="14"
+                x2="15"
+                y2="14"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            Collect
+          </button>
+          <div class="ctx-sep"></div>
+          <button
+            class="ctx-item yellow"
+            onclick={ctxShowInExplorerCol}
+            role="menuitem"
+            style="animation-delay: 110ms"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /><polyline
+                points="15 3 21 3 21 9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /><line
+                x1="10"
+                y1="14"
+                x2="21"
+                y2="3"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+            Show in explorer
+          </button>
+          <div class="ctx-sep"></div>
+          <button
+            class="ctx-item red"
+            onclick={ctxDeleteCol}
+            role="menuitem"
+            style="animation-delay: 165ms"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            Delete
+          </button>
+        </div>
       </div>
-      <div class="edit-menu-card">
-        <button
-          class="ctx-item green"
-          onclick={ctxRenameCol}
-          role="menuitem"
-          style="animation-delay: 0ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-            <path d="m15 5 4 4" />
-          </svg>
-          Rename
-        </button>
-        <div class="ctx-sep"></div>
-        <button
-          class="ctx-item blue"
-          onclick={ctxCollectCol}
-          role="menuitem"
-          style="animation-delay: 55ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><line
-              x1="12" y1="11" x2="12" y2="17"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><line
-              x1="9" y1="14" x2="15" y2="14"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
-          >
-          Collect
-        </button>
-        <div class="ctx-sep"></div>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxShowInExplorerCol}
-          role="menuitem"
-          style="animation-delay: 110ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><polyline
-              points="15 3 21 3 21 9"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><line
-              x1="10" y1="14" x2="21" y2="3"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /></svg
-          >
-          Show in explorer
-        </button>
-        <div class="ctx-sep"></div>
-        <button
-          class="ctx-item red"
-          onclick={ctxDeleteCol}
-          role="menuitem"
-          style="animation-delay: 165ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="3 6 5 6 21 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M19 6l-1 14H6L5 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
-          >
-          Delete
-        </button>
-      </div>
-    </div>
     {/key}
   {/if}
 
@@ -3254,11 +3435,26 @@
         if (e.target === e.currentTarget) showAddCollectionDialog = false;
       }}
     >
-      <div class="library-dialog library-dialog-anim" role="dialog" aria-modal="true">
+      <div
+        class="library-dialog library-dialog-anim"
+        role="dialog"
+        aria-modal="true"
+      >
         <div class="library-dialog-header">
           <div class="library-dialog-header-left">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+              />
               <line x1="12" y1="11" x2="12" y2="17" />
               <line x1="9" y1="14" x2="15" y2="14" />
             </svg>
@@ -3269,16 +3465,39 @@
             onclick={() => (showAddCollectionDialog = false)}
             aria-label="Close"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
         <div class="library-dialog-body">
           <div class="edit-menu-card">
-            <button class="library-dialog-option library-dialog-option-yellow" style={addCollAnimStyle(0)} onclick={addCollection}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            <button
+              class="library-dialog-option library-dialog-option-yellow"
+              style={addCollAnimStyle(0)}
+              onclick={addCollection}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                />
               </svg>
               <span>Sync folder from computer</span>
             </button>
@@ -3293,7 +3512,16 @@
               class="library-dialog-option library-dialog-option-blue"
               onclick={confirmCreateCollection}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -3301,9 +3529,23 @@
             </button>
             <div class="library-dialog-row">
               <div class="library-dialog-name-wrap">
-                <svg class="library-dialog-name-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                <svg
+                  class="library-dialog-name-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                  />
+                  <path
+                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                  />
                 </svg>
                 <input
                   id="collection-name"
@@ -3315,16 +3557,29 @@
                   placeholder="Name"
                   onkeydown={(e) => {
                     if (e.key === "Enter") confirmCreateCollection();
-                    if (e.key === "Escape") { showAddCollectionDialog = false; }
+                    if (e.key === "Escape") {
+                      showAddCollectionDialog = false;
+                    }
                   }}
                   oninput={clearNameError}
                 />
               </div>
               <button class="library-dialog-thumb-btn" onclick={pickThumbnail}>
                 {#if newCollectionThumbnail}
-                  <span class="library-dialog-thumb-name">{getFileName(newCollectionThumbnail)}</span>
+                  <span class="library-dialog-thumb-name"
+                    >{getFileName(newCollectionThumbnail)}</span
+                  >
                 {:else}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <polyline points="21 15 16 10 5 21" />
@@ -3348,10 +3603,26 @@
         if (e.target === e.currentTarget) cancelDeleteCollection();
       }}
     >
-      <div class="library-dialog library-dialog-sm library-dialog-anim" role="dialog" aria-modal="true">
+      <div
+        class="library-dialog library-dialog-sm library-dialog-anim"
+        role="dialog"
+        aria-modal="true"
+      >
         <div class="library-dialog-header">
-          <div class="library-dialog-header-left" style="color: var(--red, #e74c3c);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <div
+            class="library-dialog-header-left"
+            style="color: var(--red, #e74c3c);"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
               <path d="M10 11v6" />
@@ -3365,7 +3636,15 @@
             onclick={cancelDeleteCollection}
             aria-label="Close"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
@@ -3373,20 +3652,24 @@
         <div class="library-dialog-body" style="padding-bottom: 4px;">
           <div class="edit-menu-card">
             <p class="library-dialog-warning">
-              This will permanently delete the collection folder and all files inside it.
+              This will permanently delete the collection folder and all files
+              inside it.
             </p>
           </div>
         </div>
         <div class="library-dialog-actions" style="justify-content: center;">
-          <div class="edit-menu-card" style="flex-direction: row; gap: 6px; width: fit-content;">
+          <div
+            class="edit-menu-card"
+            style="flex-direction: row; gap: 6px; width: fit-content;"
+          >
             <button
               class="library-dialog-btn library-dialog-btn-secondary"
-              onclick={cancelDeleteCollection}
-            >Cancel</button>
+              onclick={cancelDeleteCollection}>Cancel</button
+            >
             <button
               class="library-dialog-btn library-dialog-btn-danger"
-              onclick={confirmDeleteCollection}
-            >Delete</button>
+              onclick={confirmDeleteCollection}>Delete</button
+            >
           </div>
         </div>
       </div>
@@ -4408,7 +4691,10 @@
     font-family: var(--font-family);
     font-size: 12px;
     cursor: pointer;
-    transition: background 0.1s, border-color 0.1s, color 0.1s;
+    transition:
+      background 0.1s,
+      border-color 0.1s,
+      color 0.1s;
     text-align: left;
     box-sizing: border-box;
     white-space: nowrap;

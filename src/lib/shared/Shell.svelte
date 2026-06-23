@@ -433,7 +433,12 @@
   const multiDeleteNoAsk = $derived(deleteStore.multiDeleteNoAsk);
 
   function onPerformMultiDelete() {
-    performMultiDelete({ refreshView: () => { library.clearSelection(); library.triggerRescan(); } });
+    performMultiDelete({
+      refreshView: () => {
+        library.clearSelection();
+        library.triggerRescan();
+      },
+    });
   }
 
   function onCloseMultiDeleteConfirm() {

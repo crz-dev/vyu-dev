@@ -57,10 +57,13 @@ export function setupInit(s: InitState) {
     if (initial) s.loadFile(initial);
 
     if (typeof requestIdleCallback === "function") {
-      requestIdleCallback(() => {
-        migrateFromLocalStorage();
-        cleanupStaleStorageEntries();
-      }, { timeout: 3000 });
+      requestIdleCallback(
+        () => {
+          migrateFromLocalStorage();
+          cleanupStaleStorageEntries();
+        },
+        { timeout: 3000 },
+      );
     } else {
       setTimeout(() => {
         migrateFromLocalStorage();

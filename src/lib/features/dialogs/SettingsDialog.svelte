@@ -1992,7 +1992,8 @@
                 <div class="settings-label-text">
                   <span class="settings-label">Show folders</span>
                   <span class="settings-hint"
-                    >Display folders alongside files in the library and collection views</span
+                    >Display folders alongside files in the library and
+                    collection views</span
                   >
                 </div>
               </div>

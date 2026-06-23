@@ -1639,8 +1639,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   overflow: hidden;
 }
 
-
-
 @keyframes appDropdownIn {
   0% {
     opacity: 0;

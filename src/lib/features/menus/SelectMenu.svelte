@@ -109,7 +109,12 @@
     deleteStore.multiDeletePaths = paths;
     if (deleteStore.multiDeleteNoAsk) {
       handleClose();
-      performMultiDelete({ refreshView: () => { library.clearSelection(); library.triggerRescan(); } });
+      performMultiDelete({
+        refreshView: () => {
+          library.clearSelection();
+          library.triggerRescan();
+        },
+      });
     } else {
       deleteStore.multiDeleteConfirm = true;
       handleClose();
@@ -166,15 +171,18 @@
               library.toggleDeleteOriginalAfterCopy();
             }}
             onmousedown={(e) => e.stopPropagation()}
-            aria-label={library.deleteOriginalAfterCopy ? "Delete original" : "Copy original"}
+            aria-label={library.deleteOriginalAfterCopy
+              ? "Delete original"
+              : "Copy original"}
           >
             <span class="toggle-track">
               <span class="toggle-knob"></span>
             </span>
           </button>
-          <span
-            class="toggle-tooltip"
-            >{library.deleteOriginalAfterCopy ? "Delete original" : "Copy original"}</span
+          <span class="toggle-tooltip"
+            >{library.deleteOriginalAfterCopy
+              ? "Delete original"
+              : "Copy original"}</span
           >
         </div>
       {:else}
@@ -237,76 +245,80 @@
       </div>
     </div>
   {:else}
-  <div class="edit-menu-card">
-    <div class="edit-menu-row">
-      <button class="edit-menu-btn green sub" onclick={moveFiles}>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M22 2 11 13" />
-          <path d="M22 2 15 22 11 13 2 9 22 2" />
-        </svg>
-        <span>Move to</span>
-      </button>
-      <button class="edit-menu-btn blue sub" onclick={activateCollectMode}>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          <line x1="12" y1="11" x2="12" y2="17" />
-          <line x1="9" y1="14" x2="15" y2="14" />
-        </svg>
-        <span>Collect</span>
-      </button>
-      <button class="edit-menu-btn yellow sub" onclick={toggleFavorite}>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill={allFavorited ? "currentColor" : "none"}
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polygon
-            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-          />
-        </svg>
-        <span>{allFavorited ? "Unfavorite" : "Favorite"}</span>
-      </button>
-      <button class="edit-menu-btn red sub" onclick={deleteFiles}>
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        </svg>
-        <span>Delete</span>
-      </button>
+    <div class="edit-menu-card">
+      <div class="edit-menu-row">
+        <button class="edit-menu-btn green sub" onclick={moveFiles}>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M22 2 11 13" />
+            <path d="M22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+          <span>Move to</span>
+        </button>
+        <button class="edit-menu-btn blue sub" onclick={activateCollectMode}>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+            />
+            <line x1="12" y1="11" x2="12" y2="17" />
+            <line x1="9" y1="14" x2="15" y2="14" />
+          </svg>
+          <span>Collect</span>
+        </button>
+        <button class="edit-menu-btn yellow sub" onclick={toggleFavorite}>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill={allFavorited ? "currentColor" : "none"}
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+            />
+          </svg>
+          <span>{allFavorited ? "Unfavorite" : "Favorite"}</span>
+        </button>
+        <button class="edit-menu-btn red sub" onclick={deleteFiles}>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="3 6 5 6 21 6" />
+            <path
+              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+            />
+          </svg>
+          <span>Delete</span>
+        </button>
+      </div>
     </div>
-  </div>
   {/if}
 </div>
 

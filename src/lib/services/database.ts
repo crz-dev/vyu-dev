@@ -93,12 +93,14 @@ async function saveMeta(
   try {
     await invoke("db_save_file_metadata", {
       path,
-      lastPosition: "last_position" in fields ? fields.last_position ?? null : null,
-      timestampData: "timestamp_data" in fields ? fields.timestamp_data ?? null : null,
-      clipsData: "clips_data" in fields ? fields.clips_data ?? null : null,
-      eqData: "eq_data" in fields ? fields.eq_data ?? null : null,
-      cdColor: "cd_color" in fields ? fields.cd_color ?? null : null,
-      lastViewed: "last_viewed" in fields ? fields.last_viewed ?? null : null,
+      lastPosition:
+        "last_position" in fields ? (fields.last_position ?? null) : null,
+      timestampData:
+        "timestamp_data" in fields ? (fields.timestamp_data ?? null) : null,
+      clipsData: "clips_data" in fields ? (fields.clips_data ?? null) : null,
+      eqData: "eq_data" in fields ? (fields.eq_data ?? null) : null,
+      cdColor: "cd_color" in fields ? (fields.cd_color ?? null) : null,
+      lastViewed: "last_viewed" in fields ? (fields.last_viewed ?? null) : null,
     });
   } catch (e) {
     console.error("Failed to save file metadata:", e);
@@ -121,7 +123,9 @@ export async function readTimestamps(filePath: string): Promise<VideoMarker[]> {
   try {
     const meta = await getMeta(filePath);
     if (!meta?.timestamp_data) return [];
-    const parsed = JSON.parse(meta.timestamp_data) as Array<Partial<VideoMarker>>;
+    const parsed = JSON.parse(meta.timestamp_data) as Array<
+      Partial<VideoMarker>
+    >;
     return parsed
       .filter((ts) => typeof ts?.time === "number")
       .map((ts) => ({
@@ -150,7 +154,9 @@ export async function deleteTimestamps(filePath: string): Promise<void> {
 
 // ── Clip boundaries ──
 
-export async function readClipBoundaries(filePath: string): Promise<ClipBoundary[]> {
+export async function readClipBoundaries(
+  filePath: string,
+): Promise<ClipBoundary[]> {
   if (!filePath) return [];
   try {
     const meta = await getMeta(filePath);
@@ -190,7 +196,9 @@ export async function deleteClipBoundaries(filePath: string): Promise<void> {
 
 // ── Resume point ──
 
-export async function loadResumePoint(filePath: string): Promise<number | null> {
+export async function loadResumePoint(
+  filePath: string,
+): Promise<number | null> {
   if (!filePath) return null;
   try {
     const meta = await getMeta(filePath);
@@ -226,7 +234,10 @@ export async function loadCdColor(filePath: string): Promise<number> {
   }
 }
 
-export async function saveCdColor(filePath: string, index: number): Promise<void> {
+export async function saveCdColor(
+  filePath: string,
+  index: number,
+): Promise<void> {
   if (!filePath) return;
   await saveMeta(filePath, { cd_color: index });
 }

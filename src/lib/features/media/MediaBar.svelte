@@ -443,14 +443,14 @@
   </div>
 </div>
 
-  <SelectMenu
-    visible={libraryOpen && selectMenuVisible}
-    {selectedCount}
-    getSelectedPaths={getSelectedPaths ?? (() => [])}
-    {onSelectAll}
-    onClose={onCloseSelectMenu ?? (() => {})}
-    onMoved={onSelectMenuMoved}
-  />
+<SelectMenu
+  visible={libraryOpen && selectMenuVisible}
+  {selectedCount}
+  getSelectedPaths={getSelectedPaths ?? (() => [])}
+  {onSelectAll}
+  onClose={onCloseSelectMenu ?? (() => {})}
+  onMoved={onSelectMenuMoved}
+/>
 
 {#if sortMenuVisible}
   <SortMenu
@@ -480,7 +480,11 @@
         : library.activeTab === "favorites"
           ? FAVORITES_SORT_MODES
           : SORT_MODES}
-    separatorIndex={library.activeTab === "recents" || library.activeTab === "collections" || library.activeTab === "favorites" ? 0 : -1}
+    separatorIndex={library.activeTab === "recents" ||
+    library.activeTab === "collections" ||
+    library.activeTab === "favorites"
+      ? 0
+      : -1}
   />
 {/if}
 

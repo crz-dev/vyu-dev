@@ -35,7 +35,11 @@ import {
   loadNamesOn,
   saveNamesOn,
 } from "$lib/services/storage";
-import type { CollectionItem, RecentFileItem, FavoriteItem } from "$lib/services/storage";
+import type {
+  CollectionItem,
+  RecentFileItem,
+  FavoriteItem,
+} from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
 import { getParentFolder } from "$lib/services/files";
 import {
@@ -404,7 +408,13 @@ function createLibrary() {
       if (collections.some((c) => c.path === path)) return;
       collections = [
         ...collections,
-        { name: trimmed, path, type: "custom", createdAt: Date.now(), thumbnailPath },
+        {
+          name: trimmed,
+          path,
+          type: "custom",
+          createdAt: Date.now(),
+          thumbnailPath,
+        },
       ];
       saveCollections(collections);
     } catch (err) {
@@ -432,7 +442,14 @@ function createLibrary() {
     const col = collections.find((c) => c.path === path);
     if (!col) return;
     const parent = getParentFolder(path);
-    const newPath = parent + (parent.endsWith("\\") || parent.endsWith("/") ? "" : (path.includes("\\") ? "\\" : "/")) + trimmed;
+    const newPath =
+      parent +
+      (parent.endsWith("\\") || parent.endsWith("/")
+        ? ""
+        : path.includes("\\")
+          ? "\\"
+          : "/") +
+      trimmed;
     if (newPath === path) return;
     try {
       await invokeRenameFile(path, newPath);

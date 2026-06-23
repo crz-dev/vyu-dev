@@ -165,8 +165,18 @@ function sizeLabel(t: Tier, bytes: number): string {
 // Date-modified sort — adaptive labels
 // ---------------------------------------------------------------------------
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function dateGroupKey(t: Tier, ms: number, now: Date): string {
@@ -298,7 +308,16 @@ export function getSections(
     sortMode === "date-created" ||
     sortMode === "date-favorited"
   ) {
-    const knownOrder = ["Today", "Yesterday", "This Week", "Last Week", "This Month", "Last Month", "Older", "Unknown"];
+    const knownOrder = [
+      "Today",
+      "Yesterday",
+      "This Week",
+      "Last Week",
+      "This Month",
+      "Last Month",
+      "Older",
+      "Unknown",
+    ];
     const dateKeys = [...groups.keys()].sort((a, b) => {
       const ai = knownOrder.indexOf(a);
       const bi = knownOrder.indexOf(b);

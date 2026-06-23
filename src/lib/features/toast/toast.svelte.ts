@@ -17,7 +17,9 @@ export interface ToastOptions {
   prepend?: boolean;
 }
 
-interface ToastItem extends Required<Omit<ToastOptions, "actions" | "prepend" | "icon">> {
+interface ToastItem extends Required<
+  Omit<ToastOptions, "actions" | "prepend" | "icon">
+> {
   id: number;
   actions: ToastAction[];
   exiting: boolean;

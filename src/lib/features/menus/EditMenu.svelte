@@ -940,7 +940,10 @@
                 }}
               ></div>
               {#if scrubberTooltipVisible}
-                <div class="color-scrubber-tooltip" style="left: {scrubberPct}%">
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {scrubberPct}%"
+                >
                   <span>{displayValue}</span>
                 </div>
               {/if}

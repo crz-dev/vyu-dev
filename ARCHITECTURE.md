@@ -17,47 +17,47 @@ Shared backend:
 
 Before creating code, find the existing owner.
 
-| Concern                                  | Module                                               |
-| ---------------------------------------- | ---------------------------------------------------- |
-| Open/close, navigate, display state      | `features/media/media.svelte.ts`                     |
-| Zoom, pan, fit, fullscreen               | `features/viewer/viewer.svelte.ts`                   |
-| Image/video/PDF views                    | `features/viewer/*`                                  |
-| Rotation, flip, brightness, crop, export | `features/editing/editing.svelte.ts`                 |
-| Playback                                 | `features/media/playback.svelte.ts`                  |
-| Clips                                    | `features/media/clips.svelte.ts`                     |
-| Slideshow                                | `features/media/slideshow.svelte.ts`                 |
-| Markers                                  | `features/markers/*`                                 |
-| PDF rendering                            | `features/pdf/pdf.svelte.ts`                         |
-| Drawing / markup                         | `features/markup/markup.svelte.ts`                   |
-| Theme                                    | `features/theme/theme.svelte.ts`                     |
-| Typography                               | `features/font/font.svelte.ts`                       |
-| Filesystem scans / folder cache          | `services/files.ts`                                  |
-| Storage                                  | `services/storage.ts`                                |
-| Shared thumbnail cache                   | `services/thumbnailCache.ts`                         |
-| Clipboard                                | `services/clipboard.ts`                              |
-| Collection directory operations          | `commands/collections.rs`                            |
-| Sidecar binary execution (songrec)       | `commands/external_apps.rs`                          |
-| Session state                            | `services/session.ts`                                |
-| Tauri wrappers / FFmpeg orchestration    | `features/media/tools.ts`, `ffmpeg.ts`, `sources.ts` |
-| Constants                                | `shared/constants.ts`                                |
-| Shared types                             | `shared/types.ts`                                    |
-| Keybinds                                 | `shared/keybinds.ts`                                 |
-| Library view                             | `features/library/*`                                 |
-| Library section grouping                | `features/library/sections.ts`                       |
-| Toasts                                   | `features/toast/*`                                   |
-| Media-kind detection                     | `shared/media-kind.ts`                               |
-| Shared UI primitives                     | `shared/*.svelte`                                    |
-| Dialogs                                  | `features/dialogs/*`                                 |
-| Dialog/menu state                        | `features/stores/*`                                  |
-| Context actions                          | `features/actions/*`                                 |
-| Edit/export orchestration                | `features/edit-dialogs/*`                            |
+| Concern                                  | Module                                                |
+| ---------------------------------------- | ----------------------------------------------------- |
+| Open/close, navigate, display state      | `features/media/media.svelte.ts`                      |
+| Zoom, pan, fit, fullscreen               | `features/viewer/viewer.svelte.ts`                    |
+| Image/video/PDF views                    | `features/viewer/*`                                   |
+| Rotation, flip, brightness, crop, export | `features/editing/editing.svelte.ts`                  |
+| Playback                                 | `features/media/playback.svelte.ts`                   |
+| Clips                                    | `features/media/clips.svelte.ts`                      |
+| Slideshow                                | `features/media/slideshow.svelte.ts`                  |
+| Markers                                  | `features/markers/*`                                  |
+| PDF rendering                            | `features/pdf/pdf.svelte.ts`                          |
+| Drawing / markup                         | `features/markup/markup.svelte.ts`                    |
+| Theme                                    | `features/theme/theme.svelte.ts`                      |
+| Typography                               | `features/font/font.svelte.ts`                        |
+| Filesystem scans / folder cache          | `services/files.ts`                                   |
+| Storage                                  | `services/storage.ts`                                 |
+| Shared thumbnail cache                   | `services/thumbnailCache.ts`                          |
+| Clipboard                                | `services/clipboard.ts`                               |
+| Collection directory operations          | `commands/collections.rs`                             |
+| Sidecar binary execution (songrec)       | `commands/external_apps.rs`                           |
+| Session state                            | `services/session.ts`                                 |
+| Tauri wrappers / FFmpeg orchestration    | `features/media/tools.ts`, `ffmpeg.ts`, `sources.ts`  |
+| Constants                                | `shared/constants.ts`                                 |
+| Shared types                             | `shared/types.ts`                                     |
+| Keybinds                                 | `shared/keybinds.ts`                                  |
+| Library view                             | `features/library/*`                                  |
+| Library section grouping                 | `features/library/sections.ts`                        |
+| Toasts                                   | `features/toast/*`                                    |
+| Media-kind detection                     | `shared/media-kind.ts`                                |
+| Shared UI primitives                     | `shared/*.svelte`                                     |
+| Dialogs                                  | `features/dialogs/*`                                  |
+| Dialog/menu state                        | `features/stores/*`                                   |
+| Context actions                          | `features/actions/*`                                  |
+| Edit/export orchestration                | `features/edit-dialogs/*`                             |
 | Database persistence (SQLite)            | `database/` (Rust), `services/database.ts` (frontend) |
-| Window state persistence                 | `window_state.rs`                                    |
-| File metadata formatting                 | `shared/file-meta.ts`                                |
-| Menus                                    | `features/menus/*`                                   |
-| Timeline                                 | `features/timeline/*`                                |
-| Navigation                               | `features/navigation/*`                              |
-| Thumbnail generation, cache, dedup       | `commands/thumbnail.rs`                              |
+| Window state persistence                 | `window_state.rs`                                     |
+| File metadata formatting                 | `shared/file-meta.ts`                                 |
+| Menus                                    | `features/menus/*`                                    |
+| Timeline                                 | `features/timeline/*`                                 |
+| Navigation                               | `features/navigation/*`                               |
+| Thumbnail generation, cache, dedup       | `commands/thumbnail.rs`                               |
 
 ## State pattern
 

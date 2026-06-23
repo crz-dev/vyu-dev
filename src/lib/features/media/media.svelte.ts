@@ -131,7 +131,9 @@ export function createMedia(
         if (meta) {
           if (meta.timestamp_data) {
             try {
-              const raw = JSON.parse(meta.timestamp_data) as Array<Partial<VideoMarker>>;
+              const raw = JSON.parse(meta.timestamp_data) as Array<
+                Partial<VideoMarker>
+              >;
               timestamps = raw
                 .filter((ts) => typeof ts?.time === "number")
                 .map((ts) => ({
@@ -142,11 +144,15 @@ export function createMedia(
                   title: typeof ts.title === "string" ? ts.title : "",
                 }))
                 .sort((a, b) => a.time - b.time);
-            } catch { /* ignore parse errors */ }
+            } catch {
+              /* ignore parse errors */
+            }
           }
           if (isVideo && meta.clips_data) {
             try {
-              const raw = JSON.parse(meta.clips_data) as Array<Partial<ClipBoundary>>;
+              const raw = JSON.parse(meta.clips_data) as Array<
+                Partial<ClipBoundary>
+              >;
               clipBoundaries = raw
                 .filter(
                   (m) =>
@@ -162,7 +168,9 @@ export function createMedia(
                   title: typeof m.title === "string" ? m.title : "",
                 }))
                 .sort((a, b) => a.time - b.time);
-            } catch { /* ignore parse errors */ }
+            } catch {
+              /* ignore parse errors */
+            }
           }
           if (meta.last_position != null && isFinite(meta.last_position)) {
             resumePoint = meta.last_position;

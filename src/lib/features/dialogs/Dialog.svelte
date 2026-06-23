@@ -251,8 +251,7 @@
       }
     } catch {
       updateToast(toastId, {
-        message:
-          "Shazam failed \u2014 check your internet connection",
+        message: "Shazam failed \u2014 check your internet connection",
         color: "blue",
         duration: 3000,
       });
@@ -1695,7 +1694,10 @@
               stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg
             >Cancel
           </button>
-          <button class="delete-confirm-btn" onclick={() => performMultiDelete?.()}>
+          <button
+            class="delete-confirm-btn"
+            onclick={() => performMultiDelete?.()}
+          >
             <svg
               width="12"
               height="12"
