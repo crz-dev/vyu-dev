@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { readDir } from "@tauri-apps/plugin-fs";
-import { ALL_EXTS } from "$lib/shared/constants";
+import { ALL_EXTS_SET } from "$lib/shared/constants";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -102,7 +102,7 @@ export async function readMediaFilesInFolder(
   if (cached) return cached;
   const entries = await readDir(folder);
   const list = entries
-    .filter((e) => ALL_EXTS.includes(getFileExt(e.name ?? "")))
+    .filter((e) => ALL_EXTS_SET.has(getFileExt(e.name ?? "")))
     .map((e) => `${folder}${sep}${e.name}`);
   const sorted = await sortFileList(list, mode, desc);
   folderCache.set(key, sorted);
@@ -126,7 +126,7 @@ export async function rescanFolder(
   const entries = await readDir(folderPath);
   const sep = detectSep(folderPath + "\\");
   const list = entries
-    .filter((e) => ALL_EXTS.includes(getFileExt(e.name ?? "")))
+    .filter((e) => ALL_EXTS_SET.has(getFileExt(e.name ?? "")))
     .map((e) => `${folderPath}${sep}${e.name}`);
   return sortFileList(list, mode, desc);
 }

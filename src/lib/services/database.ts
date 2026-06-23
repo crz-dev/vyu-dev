@@ -24,33 +24,31 @@ interface BatchEntry {
 }
 
 const metaCache = new Map<string, FileMetadata>();
-const metaCacheOrder: string[] = [];
 const META_CACHE_MAX = 200;
 
 function touchMetaCache(path: string) {
-  const idx = metaCacheOrder.indexOf(path);
-  if (idx !== -1) metaCacheOrder.splice(idx, 1);
-  metaCacheOrder.push(path);
+  const val = metaCache.get(path);
+  if (val !== undefined) {
+    metaCache.delete(path);
+    metaCache.set(path, val);
+  }
 }
 
 function evictMetaCache() {
-  const oldest = metaCacheOrder.shift();
-  if (oldest !== undefined) metaCache.delete(oldest);
+  const firstKey = metaCache.keys().next().value;
+  if (firstKey !== undefined) metaCache.delete(firstKey);
 }
 
 function invalidateMetaCache(path: string) {
   metaCache.delete(path);
-  const idx = metaCacheOrder.indexOf(path);
-  if (idx !== -1) metaCacheOrder.splice(idx, 1);
 }
 
 function setMetaCache(path: string, meta: FileMetadata) {
-  if (metaCache.has(path)) touchMetaCache(path);
-  else {
-    metaCache.set(path, meta);
-    metaCacheOrder.push(path);
-    if (metaCacheOrder.length > META_CACHE_MAX) evictMetaCache();
+  if (metaCache.has(path)) {
+    metaCache.delete(path);
   }
+  metaCache.set(path, meta);
+  if (metaCache.size > META_CACHE_MAX) evictMetaCache();
 }
 
 async function getMeta(path: string): Promise<FileMetadata | null> {

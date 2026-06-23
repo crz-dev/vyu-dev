@@ -219,7 +219,7 @@ export function createMedia(
 
     const baseSrc = convertFileSrc(await prepareDisplayPath(path));
     set({
-      fileSrc: `${baseSrc}${baseSrc.includes("?") ? "&" : "?"}_t=${Date.now()}`,
+      fileSrc: baseSrc,
     });
 
     try {

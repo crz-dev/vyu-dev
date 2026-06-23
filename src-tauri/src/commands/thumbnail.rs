@@ -472,56 +472,62 @@ pub async fn clear_thumbnail_cache(app: tauri::AppHandle) -> Result<u64, String>
 /// directory rename so thumbnails don't need to regenerate.
 /// Returns the number of cache entries migrated.
 #[tauri::command]
-pub fn migrate_thumbnail_cache(
+pub async fn migrate_thumbnail_cache(
     app: tauri::AppHandle,
     old_dir: String,
     new_dir: String,
 ) -> Result<usize, String> {
     let cache_dir = thumb_cache_dir(&app).to_path_buf();
-    let mut migrated = 0usize;
 
-    let entries = fs::read_dir(&cache_dir).map_err(|e| format!("Failed to read cache: {e}"))?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut migrated = 0usize;
 
-    for entry in entries {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
-        let path = entry.path();
+        let entries =
+            fs::read_dir(&cache_dir).map_err(|e| format!("Failed to read cache: {e}"))?;
 
-        if path.extension().and_then(|e| e.to_str()) != Some("src") {
-            continue;
-        }
+        for entry in entries {
+            let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
+            let path = entry.path();
 
-        let src_content = match fs::read_to_string(&path) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-        let stored_path = src_content.trim();
+            if path.extension().and_then(|e| e.to_str()) != Some("src") {
+                continue;
+            }
 
-        if let Some(relative) = stored_path.strip_prefix(&old_dir) {
-            let relative = relative.trim_start_matches('\\').trim_start_matches('/');
-            let new_path = Path::new(&new_dir).join(relative);
-            let new_hash = hash_path_xxh3(&new_path.to_string_lossy());
-
-            let filename = match path.file_stem().and_then(|s| s.to_str()) {
-                Some(f) => f.to_string(),
-                None => continue,
+            let src_content = match fs::read_to_string(&path) {
+                Ok(c) => c,
+                Err(_) => continue,
             };
+            let stored_path = src_content.trim();
 
-            if let Some(pos) = filename.find('_') {
-                let rest = &filename[pos + 1..];
-                let new_filename = format!("{}_{}", new_hash, rest);
+            if let Some(relative) = stored_path.strip_prefix(&old_dir) {
+                let relative = relative.trim_start_matches('\\').trim_start_matches('/');
+                let new_path = Path::new(&new_dir).join(relative);
+                let new_hash = hash_path_xxh3(&new_path.to_string_lossy());
 
-                let jpg_path = path.with_extension("jpg");
-                let new_jpg = cache_dir.join(format!("{}.jpg", new_filename));
-                let new_src = cache_dir.join(format!("{}.src", new_filename));
+                let filename = match path.file_stem().and_then(|s| s.to_str()) {
+                    Some(f) => f.to_string(),
+                    None => continue,
+                };
 
-                if jpg_path.exists() && !new_jpg.exists() {
-                    let _ = fs::copy(&jpg_path, &new_jpg);
-                    let _ = fs::copy(&path, &new_src);
-                    migrated += 1;
+                if let Some(pos) = filename.find('_') {
+                    let rest = &filename[pos + 1..];
+                    let new_filename = format!("{}_{}", new_hash, rest);
+
+                    let jpg_path = path.with_extension("jpg");
+                    let new_jpg = cache_dir.join(format!("{}.jpg", new_filename));
+                    let new_src = cache_dir.join(format!("{}.src", new_filename));
+
+                    if jpg_path.exists() && !new_jpg.exists() {
+                        let _ = fs::copy(&jpg_path, &new_jpg);
+                        let _ = fs::copy(&path, &new_src);
+                        migrated += 1;
+                    }
                 }
             }
         }
-    }
 
-    Ok(migrated)
+        Ok(migrated)
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
 }

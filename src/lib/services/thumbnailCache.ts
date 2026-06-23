@@ -1,7 +1,6 @@
 import { invokeGetThumbnail } from "$lib/features/media/tools";
 
 const cache = new Map<string, string>();
-const cacheOrder: string[] = [];
 const MAX_CACHE = 500;
 
 let pendingSet = new Set<string>();
@@ -14,14 +13,16 @@ function cacheKey(path: string, size: number): string {
 }
 
 function evictOne() {
-  const oldest = cacheOrder.shift();
-  if (oldest !== undefined) cache.delete(oldest);
+  const firstKey = cache.keys().next().value;
+  if (firstKey !== undefined) cache.delete(firstKey);
 }
 
 function touch(key: string) {
-  const idx = cacheOrder.indexOf(key);
-  if (idx !== -1) cacheOrder.splice(idx, 1);
-  cacheOrder.push(key);
+  const val = cache.get(key);
+  if (val !== undefined) {
+    cache.delete(key);
+    cache.set(key, val);
+  }
 }
 
 async function loadOne(key: string, path: string, size: number) {
@@ -31,8 +32,7 @@ async function loadOne(key: string, path: string, size: number) {
     const dataUrl = await invokeGetThumbnail(path, size);
     if (dataUrl) {
       cache.set(key, dataUrl);
-      cacheOrder.push(key);
-      if (cacheOrder.length > MAX_CACHE) evictOne();
+      if (cache.size > MAX_CACHE) evictOne();
     }
   } catch {
   } finally {
@@ -66,12 +66,11 @@ export function requestThumbnail(path: string, size: number = 120): string {
 
 export function setCached(path: string, size: number, dataUrl: string): void {
   const key = cacheKey(path, size);
-  if (cache.has(key)) touch(key);
-  else {
-    cache.set(key, dataUrl);
-    cacheOrder.push(key);
-    if (cacheOrder.length > MAX_CACHE) evictOne();
+  if (cache.has(key)) {
+    cache.delete(key);
   }
+  cache.set(key, dataUrl);
+  if (cache.size > MAX_CACHE) evictOne();
 }
 
 export function getCached(

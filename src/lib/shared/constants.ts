@@ -67,6 +67,7 @@ export const ALL_EXTS = [
   ...AUDIO_EXTS,
   ...DOCUMENT_EXTS,
 ];
+export const ALL_EXTS_SET: ReadonlySet<string> = new Set(ALL_EXTS);
 
 /** CSS color variables used for vinyl CD visual center labels and progress rings.
  *  Index is persisted per audio file in localStorage (`vyu-cd-color-{path}`). */

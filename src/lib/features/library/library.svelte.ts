@@ -58,6 +58,7 @@ const CACHE_MAX = 500;
 function createLibrary() {
   const cache = $state<Record<string, string>>({});
   const cacheOrder: string[] = [];
+  const indexMap = new Map<string, number>();
   let pendingSet = new Set<string>();
   let pendingOrder: string[] = [];
   let inflight = 0;
@@ -128,14 +129,23 @@ function createLibrary() {
   });
 
   function evictCacheOne() {
-    const oldest = cacheOrder.shift();
-    if (oldest !== undefined) delete cache[oldest];
+    while (cacheOrder.length > 0) {
+      const oldest = cacheOrder.shift()!;
+      indexMap.delete(oldest);
+      if (oldest !== "") {
+        delete cache[oldest];
+        return;
+      }
+    }
   }
 
   function touchCache(path: string) {
-    const idx = cacheOrder.indexOf(path);
-    if (idx !== -1) cacheOrder.splice(idx, 1);
-    cacheOrder.push(path);
+    const idx = indexMap.get(path);
+    if (idx !== undefined) {
+      cacheOrder[idx] = "";
+      cacheOrder.push(path);
+      indexMap.set(path, cacheOrder.length - 1);
+    }
   }
 
   function setCacheEntry(path: string, dataUrl: string) {
@@ -143,6 +153,7 @@ function createLibrary() {
     else {
       cache[path] = dataUrl;
       cacheOrder.push(path);
+      indexMap.set(path, cacheOrder.length - 1);
       if (cacheOrder.length > CACHE_MAX) evictCacheOne();
     }
   }

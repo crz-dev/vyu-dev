@@ -18,7 +18,7 @@ pub fn db_get_file_metadata(
 ) -> Result<Option<FileMetadata>, String> {
     let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
-        .prepare(
+        .prepare_cached(
             "SELECT path, last_position, timestamp_data, clips_data, eq_data,
                     cd_color, last_viewed, updated_at
              FROM file_metadata
@@ -60,30 +60,33 @@ pub fn db_save_file_metadata(
     let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     let now = now_secs();
 
-    conn.execute(
-        "INSERT INTO file_metadata
-            (path, last_position, timestamp_data, clips_data, eq_data,
-             cd_color, last_viewed, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-         ON CONFLICT(path) DO UPDATE SET
-            last_position = COALESCE(?2, file_metadata.last_position),
-            timestamp_data = COALESCE(?3, file_metadata.timestamp_data),
-            clips_data = COALESCE(?4, file_metadata.clips_data),
-            eq_data = COALESCE(?5, file_metadata.eq_data),
-            cd_color = COALESCE(?6, file_metadata.cd_color),
-            last_viewed = COALESCE(?7, file_metadata.last_viewed),
-            updated_at = ?8",
-        params![
-            path,
-            last_position,
-            timestamp_data,
-            clips_data,
-            eq_data,
-            cd_color,
-            last_viewed,
-            now,
-        ],
-    )
+    let mut stmt = conn
+        .prepare_cached(
+            "INSERT INTO file_metadata
+                (path, last_position, timestamp_data, clips_data, eq_data,
+                 cd_color, last_viewed, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+             ON CONFLICT(path) DO UPDATE SET
+                last_position = COALESCE(?2, file_metadata.last_position),
+                timestamp_data = COALESCE(?3, file_metadata.timestamp_data),
+                clips_data = COALESCE(?4, file_metadata.clips_data),
+                eq_data = COALESCE(?5, file_metadata.eq_data),
+                cd_color = COALESCE(?6, file_metadata.cd_color),
+                last_viewed = COALESCE(?7, file_metadata.last_viewed),
+                updated_at = ?8",
+        )
+        .map_err(|e| format!("Failed to prepare query: {e}"))?;
+
+    stmt.execute(params![
+        path,
+        last_position,
+        timestamp_data,
+        clips_data,
+        eq_data,
+        cd_color,
+        last_viewed,
+        now,
+    ])
     .map_err(|e| format!("Failed to save file metadata: {e}"))?;
 
     Ok(())
@@ -127,11 +130,10 @@ pub fn db_get_setting(
     key: String,
 ) -> Result<Option<String>, String> {
     let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
-    let result = conn.query_row(
-        "SELECT value FROM settings WHERE key = ?1",
-        params![key],
-        |row| row.get(0),
-    );
+    let mut stmt = conn
+        .prepare_cached("SELECT value FROM settings WHERE key = ?1")
+        .map_err(|e| format!("Failed to prepare query: {e}"))?;
+    let result = stmt.query_row(params![key], |row| row.get(0));
     match result {
         Ok(val) => Ok(Some(val)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -146,12 +148,14 @@ pub fn db_set_setting(
     value: String,
 ) -> Result<(), String> {
     let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
-    conn.execute(
-        "INSERT INTO settings (key, value) VALUES (?1, ?2)
-         ON CONFLICT(key) DO UPDATE SET value = ?2",
-        params![key, value],
-    )
-    .map_err(|e| format!("Failed to save setting: {e}"))?;
+    let mut stmt = conn
+        .prepare_cached(
+            "INSERT INTO settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value = ?2",
+        )
+        .map_err(|e| format!("Failed to prepare query: {e}"))?;
+    stmt.execute(params![key, value])
+        .map_err(|e| format!("Failed to save setting: {e}"))?;
     Ok(())
 }
 

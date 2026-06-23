@@ -32,6 +32,8 @@ function createViewer() {
 
   let fsHideTimer: ReturnType<typeof setTimeout> | undefined;
   let lastPinchDist = 0;
+  let wheelRafId = 0;
+  let pendingWheel: { clientX: number; clientY: number; deltaY: number; currentTarget: HTMLElement } | null = null;
 
   function setVideoEl(el: HTMLVideoElement | null) {
     state.videoEl = el;
@@ -136,26 +138,42 @@ function createViewer() {
 
     e.preventDefault();
 
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const mouseX = e.clientX - rect.left - rect.width / 2;
-    const mouseY = e.clientY - rect.top - rect.height / 2;
+    pendingWheel = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      deltaY: e.deltaY,
+      currentTarget: e.currentTarget as HTMLElement,
+    };
 
-    const oldScale = state.zoomLevel / 100;
-    const raw = state.zoomLevel * (e.deltaY > 0 ? 1 / 1.1 : 1.1);
-    const newZoom = clampZoom(raw, state.baseZoomLevel);
-    const newScale = newZoom / 100;
+    if (!wheelRafId) {
+      wheelRafId = requestAnimationFrame(() => {
+        wheelRafId = 0;
+        if (!pendingWheel) return;
+        const { clientX, clientY, deltaY, currentTarget } = pendingWheel;
+        pendingWheel = null;
 
-    if (newZoom <= state.baseZoomLevel) {
-      state.translateX = 0;
-      state.translateY = 0;
-    } else {
-      state.translateX =
-        mouseX - (mouseX - state.translateX) * (newScale / oldScale);
-      state.translateY =
-        mouseY - (mouseY - state.translateY) * (newScale / oldScale);
+        const rect = currentTarget.getBoundingClientRect();
+        const mouseX = clientX - rect.left - rect.width / 2;
+        const mouseY = clientY - rect.top - rect.height / 2;
+
+        const oldScale = state.zoomLevel / 100;
+        const raw = state.zoomLevel * (deltaY > 0 ? 1 / 1.1 : 1.1);
+        const newZoom = clampZoom(raw, state.baseZoomLevel);
+        const newScale = newZoom / 100;
+
+        if (newZoom <= state.baseZoomLevel) {
+          state.translateX = 0;
+          state.translateY = 0;
+        } else {
+          state.translateX =
+            mouseX - (mouseX - state.translateX) * (newScale / oldScale);
+          state.translateY =
+            mouseY - (mouseY - state.translateY) * (newScale / oldScale);
+        }
+
+        state.zoomLevel = newZoom;
+      });
     }
-
-    state.zoomLevel = newZoom;
   }
 
   function handleTouchZoom(e: TouchEvent) {

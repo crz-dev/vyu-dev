@@ -241,7 +241,6 @@
       getAudioEl: () => audioEl,
       getIsScrubbing: () => isScrubbing,
       setRawCurrentSecs: (v) => (rawCurrentSecs = v),
-      setRawDurationSecs: (v) => (rawDurationSecs = v),
       setProgress: (v) => (progress = v),
       setPlaying: (v) => (playing = v),
     }),

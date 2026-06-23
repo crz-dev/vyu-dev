@@ -7,7 +7,6 @@ export interface PlaybackPollerDeps {
   getAudioEl: () => HTMLAudioElement | null;
   getIsScrubbing: () => boolean;
   setRawCurrentSecs: (v: number) => void;
-  setRawDurationSecs: (v: number) => void;
   setProgress: (v: number) => void;
   setPlaying: (v: boolean) => void;
 }
@@ -28,16 +27,14 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
       if (!el) return;
 
       if (!deps.getIsScrubbing()) {
-        deps.setRawCurrentSecs(el.currentTime);
-        deps.setRawDurationSecs(el.duration || 0);
-        deps.setProgress(
-          el.duration > 0 ? (el.currentTime / el.duration) * 100 : 0,
-        );
-        deps.setPlaying(!el.paused);
+        const t = el.currentTime;
+        const d = el.duration || 0;
+        deps.setRawCurrentSecs(t);
+        deps.setProgress(d > 0 ? (t / d) * 100 : 0);
 
         // AB loop enforcement
         const ab = markerStore.abLoopRegion;
-        if (ab && el.currentTime >= ab.end) {
+        if (ab && t >= ab.end) {
           el.currentTime = ab.start;
         }
       }
@@ -46,6 +43,7 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
     }
 
     function onPlay() {
+      deps.setPlaying(true);
       rafId = requestAnimationFrame(poll);
     }
 

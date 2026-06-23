@@ -8,11 +8,11 @@ use crate::util::canonicalize_path;
 pub async fn batch_stat(paths: Vec<String>) -> Result<Vec<BatchStatItem>, String> {
     let items = tauri::async_runtime::spawn_blocking(move || {
         paths
-            .iter()
+            .into_iter()
             .map(|p| {
-                let meta = fs::metadata(p).ok();
+                let meta = fs::metadata(&p).ok();
                 BatchStatItem {
-                    path: p.clone(),
+                    path: p,
                     size: meta.as_ref().map(|m| m.len()).unwrap_or(0),
                     mtime_ms: meta
                         .as_ref()

@@ -87,26 +87,27 @@ pub fn run() {
 
             util::cleanup_vyu_temp();
 
-            // Silently clean up orphaned thumbnail cache entries.
-            // Runs once at startup; sequential scan of `.src` files is acceptable
-            // — most point to valid paths, so the hot delete path is rarely hit.
-            let cache_dir = commands::thumbnail::thumb_cache_dir(app.handle());
-            if cache_dir.exists() {
-                if let Ok(entries) = fs::read_dir(cache_dir) {
-                    for entry in entries.flatten() {
-                        let p = entry.path();
-                        if p.extension().map_or(false, |e| e == "src") {
-                            if let Ok(src) = fs::read_to_string(&p) {
-                                let src = src.trim();
-                                if !std::path::Path::new(src).exists() {
-                                    let _ = fs::remove_file(&p);
-                                    let _ = fs::remove_file(p.with_extension("jpg"));
+            // Silently clean up orphaned thumbnail cache entries in background.
+            // Runs once at startup; does not block the main thread.
+            let cache_dir = commands::thumbnail::thumb_cache_dir(app.handle()).to_path_buf();
+            std::thread::spawn(move || {
+                if cache_dir.exists() {
+                    if let Ok(entries) = fs::read_dir(&cache_dir) {
+                        for entry in entries.flatten() {
+                            let p = entry.path();
+                            if p.extension().map_or(false, |e| e == "src") {
+                                if let Ok(src) = fs::read_to_string(&p) {
+                                    let src = src.trim();
+                                    if !std::path::Path::new(src).exists() {
+                                        let _ = fs::remove_file(&p);
+                                        let _ = fs::remove_file(p.with_extension("jpg"));
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
+            });
 
             let mut args: Vec<String> = std::env::args().collect();
             let window = app

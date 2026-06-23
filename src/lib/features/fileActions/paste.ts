@@ -5,7 +5,7 @@ import {
   invokeGetClipboardFilePath,
   invokeCopyFile,
 } from "$lib/features/media/tools";
-import { ALL_EXTS } from "$lib/shared/constants";
+import { ALL_EXTS_SET } from "$lib/shared/constants";
 import { getFileExt } from "$lib/services/files";
 import { showToast } from "$lib/features/toast/toast.svelte";
 
@@ -77,7 +77,7 @@ export function createPasteHandler(deps: PasteDeps) {
       const clipboardFile = await invokeGetClipboardFilePath();
       if (clipboardFile) {
         const ext = getFileExt(clipboardFile);
-        if (ALL_EXTS.includes(ext)) {
+        if (ALL_EXTS_SET.has(ext)) {
           await deps.loadFile(clipboardFile);
           return;
         }
@@ -101,7 +101,7 @@ export function createPasteHandler(deps: PasteDeps) {
       });
       const match = decoded.find((l) => {
         const ext = getFileExt(l);
-        return ALL_EXTS.includes(ext);
+        return ALL_EXTS_SET.has(ext);
       });
       if (match) {
         await deps.loadFile(match);

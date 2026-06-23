@@ -14,16 +14,17 @@ export function createViewerStyle() {
   });
   const colorFilter = $derived.by(() => {
     const parts: string[] = [];
-    const s = editing.snapshot;
-    if (s.brightness !== 1) parts.push(`brightness(${s.brightness})`);
-    if (s.contrast !== 1) parts.push(`contrast(${s.contrast})`);
-    if (s.saturation !== 1) parts.push(`saturate(${s.saturation})`);
-    if (s.hue !== 0) parts.push(`hue-rotate(${s.hue}deg)`);
+    const { brightness, contrast, saturation, hue } = editing.snapshot;
+    if (brightness !== 1) parts.push(`brightness(${brightness})`);
+    if (contrast !== 1) parts.push(`contrast(${contrast})`);
+    if (saturation !== 1) parts.push(`saturate(${saturation})`);
+    if (hue !== 0) parts.push(`hue-rotate(${hue}deg)`);
     return parts.length ? ` filter: ${parts.join(" ")};` : "";
   });
-  const imageStyle = $derived(
-    `transform: translate(${viewer.state.translateX}px, ${viewer.state.translateY}px) scale(${imageScale}) rotate(${editing.snapshot.rotation}deg) scaleX(${editing.snapshot.flipped ? -1 : 1}) scaleY(${editing.snapshot.flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`,
-  );
+  const imageStyle = $derived.by(() => {
+    const { rotation, flipped, flippedVertical } = editing.snapshot;
+    return `transform: translate(${viewer.state.translateX}px, ${viewer.state.translateY}px) scale(${imageScale}) rotate(${rotation}deg) scaleX(${flipped ? -1 : 1}) scaleY(${flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`;
+  });
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
   const videoInnerStyle = $derived(

@@ -3,7 +3,7 @@
     VIDEO_EXTS,
     AUDIO_EXTS,
     DOCUMENT_EXTS,
-    ALL_EXTS,
+    ALL_EXTS_SET,
   } from "$lib/shared/constants";
   import {
     getFileExt,
@@ -671,7 +671,7 @@
       const full = `${path}${sep}${e.name}`;
       if (e.isDirectory) {
         folders.push(full);
-      } else if (ALL_EXTS.includes(getFileExt(e.name ?? ""))) {
+      } else if (ALL_EXTS_SET.has(getFileExt(e.name ?? ""))) {
         filesList.push(full);
       }
     }
@@ -1038,6 +1038,7 @@
     sortedFiles;
     const els = scrollEl?.querySelectorAll("[data-path]");
     if (els && observer) {
+      observer.disconnect();
       for (const el of els) {
         observer.observe(el);
       }
@@ -1094,7 +1095,7 @@
           const full = `${path}${sep}${e.name}`;
           if (e.isDirectory) {
             folders.push(full);
-          } else if (ALL_EXTS.includes(getFileExt(e.name ?? ""))) {
+          } else if (ALL_EXTS_SET.has(getFileExt(e.name ?? ""))) {
             files.push(full);
           }
         }
@@ -1153,7 +1154,7 @@
           const full = `${path}${sep}${e.name}`;
           if (e.isDirectory) {
             folders.push(full);
-          } else if (ALL_EXTS.includes(getFileExt(e.name ?? ""))) {
+          } else if (ALL_EXTS_SET.has(getFileExt(e.name ?? ""))) {
             files.push(full);
           }
         }
@@ -1199,7 +1200,7 @@
           const sep = col.path.includes("\\") ? "\\" : "/";
           const entries = await readDir(col.path);
           const first = entries.find((e) =>
-            ALL_EXTS.includes(getFileExt(e.name ?? "")),
+            ALL_EXTS_SET.has(getFileExt(e.name ?? "")),
           );
           if (first) {
             const filePath = `${col.path}${sep}${first.name}`;

@@ -152,6 +152,7 @@ pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Resul
         .map_err(|e| format!("Failed to spawn ffmpeg: {e}"))?;
 
     let start = Instant::now();
+    let mut sleep_ms = 1u64;
     loop {
         match child.try_wait() {
             Ok(Some(exit_status)) => {
@@ -162,13 +163,22 @@ pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Resul
                 return Ok(None);
             }
             Ok(None) => {
-                if start.elapsed() > timeout {
+                let elapsed = start.elapsed();
+                if elapsed > timeout {
                     let _ = child.kill();
                     let _ = child.wait();
                     let _ = fs::remove_file(output_path);
                     return Ok(None);
                 }
-                std::thread::sleep(Duration::from_millis(100));
+                std::thread::sleep(Duration::from_millis(sleep_ms));
+                // Adaptive sleep: 1ms for first 100ms, 10ms for next 1s, then 100ms
+                if elapsed < Duration::from_millis(100) {
+                    sleep_ms = 1;
+                } else if elapsed < Duration::from_secs(1) {
+                    sleep_ms = 10;
+                } else {
+                    sleep_ms = 100;
+                }
             }
             Err(e) => {
                 let _ = fs::remove_file(output_path);

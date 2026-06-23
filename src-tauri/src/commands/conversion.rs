@@ -124,189 +124,193 @@ fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-pub fn convert_media(
+pub async fn convert_media(
     path: String,
     output_dir: String,
     format: String,
     preset: String,
     custom_output: Option<String>,
 ) -> Result<String, String> {
-    let input = PathBuf::from(&path);
-    if !input.exists() {
-        return Err("Source file does not exist".into());
-    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let input = PathBuf::from(&path);
+        if !input.exists() {
+            return Err("Source file does not exist".into());
+        }
 
-    let ext = format.to_lowercase();
+        let ext = format.to_lowercase();
 
-    let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", &ext);
-    let output_path = unique_path(output_path);
+        let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", &ext);
+        let output_path = unique_path(output_path);
 
-    // PSD encoding: FFmpeg has no PSD encoder, so write it directly using the image crate.
-    if ext == "psd" {
-        let img = image::open(&input).map_err(|e| format!("Failed to decode image: {e}"))?;
-        let rgb = img.to_rgb8();
-        write_psd_flat(&output_path, rgb.width(), rgb.height(), &rgb)?;
-        return Ok(output_path.to_string_lossy().to_string());
-    }
+        // PSD encoding: FFmpeg has no PSD encoder, so write it directly using the image crate.
+        if ext == "psd" {
+            let img = image::open(&input).map_err(|e| format!("Failed to decode image: {e}"))?;
+            let rgb = img.to_rgb8();
+            write_psd_flat(&output_path, rgb.width(), rgb.height(), &rgb)?;
+            return Ok(output_path.to_string_lossy().to_string());
+        }
 
-    let mut args: Vec<String> = vec![
-        "-y".into(),
-        "-hide_banner".into(),
-        "-loglevel".into(),
-        "error".into(),
-        "-i".into(),
-        input.to_string_lossy().to_string(),
-    ];
+        let mut args: Vec<String> = vec![
+            "-y".into(),
+            "-hide_banner".into(),
+            "-loglevel".into(),
+            "error".into(),
+            "-i".into(),
+            input.to_string_lossy().to_string(),
+        ];
 
-    match ext.as_str() {
-        "mp4" => {
-            args.push("-c:v".into());
-            args.push("libx264".into());
-            args.push("-c:a".into());
-            args.push("aac".into());
-            args.push("-movflags".into());
-            args.push("+faststart".into());
-        }
-        "webm" => {
-            args.push("-c:v".into());
-            args.push("libvpx-vp9".into());
-            args.push("-c:a".into());
-            args.push("libopus".into());
-        }
-        "mkv" => {
-            args.push("-c:v".into());
-            args.push("libx264".into());
-            args.push("-c:a".into());
-            args.push("aac".into());
-        }
-        "gif" => {
-            args.push("-vf".into());
-            args.push("fps=30,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into());
-            args.push("-loop".into());
-            args.push("0".into());
-        }
-        "png" => {
-            args.push("-c:v".into());
-            args.push("png".into());
-        }
-        "jpg" | "jpeg" => {
-            args.push("-q:v".into());
-            args.push("2".into());
-        }
-        "webp" => {
-            args.push("-c:v".into());
-            args.push("libwebp".into());
-        }
-        "mp3" => {
-            args.push("-c:a".into());
-            args.push("libmp3lame".into());
-            args.push("-q:a".into());
-            args.push("2".into());
-        }
-        "wav" => {
-            args.push("-c:a".into());
-            args.push("pcm_s16le".into());
-        }
-        "flac" => {
-            args.push("-c:a".into());
-            args.push("flac".into());
-            args.push("-compression_level".into());
-            args.push("5".into());
-        }
-        "ogg" => {
-            args.push("-c:a".into());
-            args.push("libvorbis".into());
-            args.push("-q:a".into());
-            args.push("4".into());
-        }
-        "aac" => {
-            args.push("-c:a".into());
-            args.push("aac".into());
-            args.push("-b:a".into());
-            args.push("192k".into());
-        }
-        "opus" => {
-            args.push("-c:a".into());
-            args.push("libopus".into());
-            args.push("-b:a".into());
-            args.push("128k".into());
-        }
-        _ => {}
-    }
-
-    if ext != "gif"
-        && ext != "png"
-        && ext != "jpg"
-        && ext != "jpeg"
-        && ext != "webp"
-        && ext != "mp3"
-        && ext != "wav"
-        && ext != "flac"
-        && ext != "ogg"
-        && ext != "aac"
-        && ext != "opus"
-    {
-        match preset.as_str() {
-            "Fast" => {
-                args.push("-preset".into());
-                args.push("fast".into());
-                args.push("-crf".into());
-                args.push("28".into());
+        match ext.as_str() {
+            "mp4" => {
+                args.push("-c:v".into());
+                args.push("libx264".into());
+                args.push("-c:a".into());
+                args.push("aac".into());
+                args.push("-movflags".into());
+                args.push("+faststart".into());
             }
-            "Balanced" => {
-                args.push("-preset".into());
-                args.push("medium".into());
-                args.push("-crf".into());
-                args.push("23".into());
+            "webm" => {
+                args.push("-c:v".into());
+                args.push("libvpx-vp9".into());
+                args.push("-c:a".into());
+                args.push("libopus".into());
             }
-            "Quality" => {
-                args.push("-preset".into());
-                args.push("slow".into());
-                args.push("-crf".into());
-                args.push("18".into());
+            "mkv" => {
+                args.push("-c:v".into());
+                args.push("libx264".into());
+                args.push("-c:a".into());
+                args.push("aac".into());
             }
-            "Lossless" => {
-                args.push("-preset".into());
-                args.push("veryslow".into());
-                args.push("-crf".into());
+            "gif" => {
+                args.push("-vf".into());
+                args.push("fps=30,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into());
+                args.push("-loop".into());
                 args.push("0".into());
             }
+            "png" => {
+                args.push("-c:v".into());
+                args.push("png".into());
+            }
+            "jpg" | "jpeg" => {
+                args.push("-q:v".into());
+                args.push("2".into());
+            }
+            "webp" => {
+                args.push("-c:v".into());
+                args.push("libwebp".into());
+            }
+            "mp3" => {
+                args.push("-c:a".into());
+                args.push("libmp3lame".into());
+                args.push("-q:a".into());
+                args.push("2".into());
+            }
+            "wav" => {
+                args.push("-c:a".into());
+                args.push("pcm_s16le".into());
+            }
+            "flac" => {
+                args.push("-c:a".into());
+                args.push("flac".into());
+                args.push("-compression_level".into());
+                args.push("5".into());
+            }
+            "ogg" => {
+                args.push("-c:a".into());
+                args.push("libvorbis".into());
+                args.push("-q:a".into());
+                args.push("4".into());
+            }
+            "aac" => {
+                args.push("-c:a".into());
+                args.push("aac".into());
+                args.push("-b:a".into());
+                args.push("192k".into());
+            }
+            "opus" => {
+                args.push("-c:a".into());
+                args.push("libopus".into());
+                args.push("-b:a".into());
+                args.push("128k".into());
+            }
             _ => {}
         }
-    } else if ext == "webp" {
-        match preset.as_str() {
-            "Fast" => {
-                args.push("-quality".into());
-                args.push("50".into());
+
+        if ext != "gif"
+            && ext != "png"
+            && ext != "jpg"
+            && ext != "jpeg"
+            && ext != "webp"
+            && ext != "mp3"
+            && ext != "wav"
+            && ext != "flac"
+            && ext != "ogg"
+            && ext != "aac"
+            && ext != "opus"
+        {
+            match preset.as_str() {
+                "Fast" => {
+                    args.push("-preset".into());
+                    args.push("fast".into());
+                    args.push("-crf".into());
+                    args.push("28".into());
+                }
+                "Balanced" => {
+                    args.push("-preset".into());
+                    args.push("medium".into());
+                    args.push("-crf".into());
+                    args.push("23".into());
+                }
+                "Quality" => {
+                    args.push("-preset".into());
+                    args.push("slow".into());
+                    args.push("-crf".into());
+                    args.push("18".into());
+                }
+                "Lossless" => {
+                    args.push("-preset".into());
+                    args.push("veryslow".into());
+                    args.push("-crf".into());
+                    args.push("0".into());
+                }
+                _ => {}
             }
-            "Balanced" => {
-                args.push("-quality".into());
-                args.push("75".into());
+        } else if ext == "webp" {
+            match preset.as_str() {
+                "Fast" => {
+                    args.push("-quality".into());
+                    args.push("50".into());
+                }
+                "Balanced" => {
+                    args.push("-quality".into());
+                    args.push("75".into());
+                }
+                "Quality" => {
+                    args.push("-quality".into());
+                    args.push("90".into());
+                }
+                "Lossless" => {
+                    args.push("-lossless".into());
+                    args.push("1".into());
+                }
+                _ => {}
             }
-            "Quality" => {
-                args.push("-quality".into());
-                args.push("90".into());
-            }
-            "Lossless" => {
-                args.push("-lossless".into());
-                args.push("1".into());
-            }
-            _ => {}
         }
-    }
 
-    args.push(output_path.to_string_lossy().to_string());
+        args.push(output_path.to_string_lossy().to_string());
 
-    let output = ffmpeg_command()
-        .args(&args)
-        .output()
-        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+        let output = ffmpeg_command()
+            .args(&args)
+            .output()
+            .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
 
-    if output.status.success() {
-        Ok(output_path.to_string_lossy().to_string())
-    } else {
-        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
-    }
+        if output.status.success() {
+            Ok(output_path.to_string_lossy().to_string())
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+        }
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
 }
 
 #[tauri::command]
@@ -487,92 +491,99 @@ pub fn convert_audio_to_waveform_video(
 }
 
 #[tauri::command]
-pub fn convert_image_to_pdf(
+pub async fn convert_image_to_pdf(
     path: String,
     output_dir: String,
     custom_output: Option<String>,
 ) -> Result<String, String> {
     use image::codecs::jpeg::JpegEncoder;
 
-    let input = PathBuf::from(&path);
-    if !input.exists() {
-        return Err("Source file does not exist".into());
-    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let input = PathBuf::from(&path);
+        if !input.exists() {
+            return Err("Source file does not exist".into());
+        }
 
-    let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", "pdf");
-    let output_path = unique_path(output_path);
+        let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", "pdf");
+        let output_path = unique_path(output_path);
 
-    let img = image::open(&input).map_err(|e| format!("Failed to open image: {e}"))?;
-    let rgb = img.to_rgb8();
-    let (w, h) = rgb.dimensions();
+        let img = image::open(&input).map_err(|e| format!("Failed to open image: {e}"))?;
+        let rgb = img.to_rgb8();
+        let (w, h) = rgb.dimensions();
 
-    let mut jpeg_data = Vec::new();
-    let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 90);
-    rgb.write_with_encoder(encoder)
-        .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
+        let mut jpeg_data = Vec::new();
+        let encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 90);
+        rgb.write_with_encoder(encoder)
+            .map_err(|e| format!("Failed to encode JPEG: {e}"))?;
 
-    let mut pdf: Vec<u8> = Vec::with_capacity(1024 + jpeg_data.len());
-    let mut offsets: Vec<usize> = Vec::new();
+        let mut pdf: Vec<u8> = Vec::with_capacity(1024 + jpeg_data.len());
+        let mut offsets: Vec<usize> = Vec::new();
 
-    pdf.extend_from_slice(b"%PDF-1.4\n");
-    offsets.push(pdf.len());
-    pdf.extend_from_slice(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
-    offsets.push(pdf.len());
-    pdf.extend_from_slice(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
-    offsets.push(pdf.len());
-    let page = format!(
-        "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {w} {h}] \
-         /Resources << /XObject << /Img 5 0 R >> >> /Contents 4 0 R >>\nendobj\n"
-    );
-    pdf.extend_from_slice(page.as_bytes());
-    offsets.push(pdf.len());
-    let content = format!("q\n{w} 0 0 {h} 0 0 cm\n/Img Do\nQ\n");
-    let content_stream = format!(
-        "4 0 obj\n<< /Length {} >>\nstream\n{}\nendstream\nendobj\n",
-        content.len(),
-        content
-    );
-    pdf.extend_from_slice(content_stream.as_bytes());
-    offsets.push(pdf.len());
-    let img_header = format!(
-        "5 0 obj\n<< /Type /XObject /Subtype /Image /Width {w} /Height {h} \
-         /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {len} >>\nstream\n",
-        w = w,
-        h = h,
-        len = jpeg_data.len()
-    );
-    pdf.extend_from_slice(img_header.as_bytes());
-    pdf.extend_from_slice(&jpeg_data);
-    pdf.extend_from_slice(b"\nendstream\nendobj\n");
+        pdf.extend_from_slice(b"%PDF-1.4\n");
+        offsets.push(pdf.len());
+        pdf.extend_from_slice(b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+        offsets.push(pdf.len());
+        pdf.extend_from_slice(b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+        offsets.push(pdf.len());
+        let page = format!(
+            "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {w} {h}] \
+             /Resources << /XObject << /Img 5 0 R >> >> /Contents 4 0 R >>\nendobj\n"
+        );
+        pdf.extend_from_slice(page.as_bytes());
+        offsets.push(pdf.len());
+        let content = format!("q\n{w} 0 0 {h} 0 0 cm\n/Img Do\nQ\n");
+        let content_stream = format!(
+            "4 0 obj\n<< /Length {} >>\nstream\n{}\nendstream\nendobj\n",
+            content.len(),
+            content
+        );
+        pdf.extend_from_slice(content_stream.as_bytes());
+        offsets.push(pdf.len());
+        let img_header = format!(
+            "5 0 obj\n<< /Type /XObject /Subtype /Image /Width {w} /Height {h} \
+             /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {len} >>\nstream\n",
+            w = w,
+            h = h,
+            len = jpeg_data.len()
+        );
+        pdf.extend_from_slice(img_header.as_bytes());
+        pdf.extend_from_slice(&jpeg_data);
+        pdf.extend_from_slice(b"\nendstream\nendobj\n");
 
-    let xref_start = pdf.len();
-    pdf.extend_from_slice(b"xref\n");
-    let total = offsets.len() + 1;
-    pdf.extend_from_slice(format!("0 {total}\n").as_bytes());
-    pdf.extend_from_slice(b"0000000000 65535 f \r\n");
-    for offset in &offsets {
-        let entry = format!("{:010} 00000 n \r\n", offset);
-        pdf.extend_from_slice(entry.as_bytes());
-    }
+        let xref_start = pdf.len();
+        pdf.extend_from_slice(b"xref\n");
+        let total = offsets.len() + 1;
+        pdf.extend_from_slice(format!("0 {total}\n").as_bytes());
+        pdf.extend_from_slice(b"0000000000 65535 f \r\n");
+        for offset in &offsets {
+            let entry = format!("{:010} 00000 n \r\n", offset);
+            pdf.extend_from_slice(entry.as_bytes());
+        }
 
-    pdf.extend_from_slice(
-        format!("trailer\n<< /Size {total} /Root 1 0 R >>\nstartxref\n{xref_start}\n%%EOF\n")
-            .as_bytes(),
-    );
+        pdf.extend_from_slice(
+            format!("trailer\n<< /Size {total} /Root 1 0 R >>\nstartxref\n{xref_start}\n%%EOF\n")
+                .as_bytes(),
+        );
 
-    fs::write(&output_path, &pdf).map_err(|e| format!("Failed to write PDF: {e}"))?;
-    Ok(output_path.to_string_lossy().to_string())
+        fs::write(&output_path, &pdf).map_err(|e| format!("Failed to write PDF: {e}"))?;
+        Ok(output_path.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
 }
 
 /// Opens a media file in the default browser, converting unsupported formats first.
 #[tauri::command]
-pub fn open_in_browser(path: String) -> Result<(), String> {
+pub async fn open_in_browser(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());
     }
 
-    let converted = convert_for_browser(&path);
+    let path_clone = path.clone();
+    let converted = tauri::async_runtime::spawn_blocking(move || convert_for_browser(&path_clone))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?;
     let open_path = match converted {
         Ok(Some(ref c)) => c.as_str(),
         _ => &path,
