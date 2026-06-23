@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::constants::REMUX_VIDEO_EXTS_RUST;
 use crate::types::{ClipProcessResult, ClipSegment};
-use crate::util::{ffmpeg_command, format_clip_tag, sanitize_segments, unique_path};
+use crate::util::{ffmpeg_command, format_clip_tag, hash_path_xxh3, sanitize_segments, unique_path};
 
 #[tauri::command]
 pub fn process_video_clips(
@@ -76,11 +76,13 @@ pub fn process_video_clips(
             ffmpeg_extract_segment(&input, &output_path, seg.start, seg.end)?;
             outputs.push(output_path.to_string_lossy().to_string());
         } else {
-            let stamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_millis())
-                .unwrap_or(0);
-            let temp_dir = std::env::temp_dir().join(format!("vyu-clips-{stamp}"));
+            let temp_dir = std::env::temp_dir().join(format!(
+                "vyu-clips-{}",
+                hash_path_xxh3(&format!("{}:{}", path, SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_nanos())
+                    .unwrap_or(0)))
+            ));
             fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed creating temp dir: {e}"))?;
             let mut temp_files: Vec<PathBuf> = Vec::new();
             for (idx, seg) in clean_segments.iter().enumerate() {

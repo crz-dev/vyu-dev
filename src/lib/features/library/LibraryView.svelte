@@ -28,6 +28,7 @@
   } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
   import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
+  import { saveLastDialogSection } from "$lib/services/storage";
   import { computeContextMenuPosition } from "$lib/services/session";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
 
@@ -155,7 +156,7 @@
   );
 
   function openRecentsSettings() {
-    localStorage.setItem("vyu-settings-last-section", "library");
+    saveLastDialogSection("settings", "library");
     menuStore.settingsOpen = true;
   }
 
@@ -1428,9 +1429,7 @@
             {/if}
             {seg.label}
             {#if i === breadcrumb.length - 1}
-              <span class="library-header-count"
-                >({collectionItemCount})</span
-              >
+              <span class="library-header-count">({collectionItemCount})</span>
             {/if}
           </button>
         {/each}
@@ -3397,7 +3396,15 @@
             role="menuitem"
             style="animation-delay: 110ms"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
               ><path
                 d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
               /></svg
@@ -3611,7 +3618,9 @@
   {/if}
 
   {#if collectionToDelete}
-    {@const delCol = library.collections.find((c) => c.path === collectionToDelete)}
+    {@const delCol = library.collections.find(
+      (c) => c.path === collectionToDelete,
+    )}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="library-dialog-overlay library-dialog-overlay-anim"
@@ -3647,7 +3656,9 @@
               <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
             </svg>
             <p class="library-dialog-title">
-              {delCol?.type === "linked" ? "Delete sync with folder?" : "Delete collection?"}
+              {delCol?.type === "linked"
+                ? "Delete sync with folder?"
+                : "Delete collection?"}
             </p>
           </div>
           <button

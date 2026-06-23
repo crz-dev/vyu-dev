@@ -152,9 +152,9 @@ pub fn run() {
                 let file_path = args.swap_remove(1);
                 let escaped =
                     serde_json::to_string(&file_path).expect("failed to JSON-escape file path");
-                window
-                    .eval(&format!("window.__INITIAL_FILE__ = {}", escaped))
-                    .expect("failed to set initial file via eval");
+                if let Err(e) = window.eval(&format!("window.__INITIAL_FILE__ = {}", escaped)) {
+                    eprintln!("failed to set initial file via eval: {e}");
+                }
             }
             Ok(())
         })

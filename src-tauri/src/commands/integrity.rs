@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::types::{FixResult, MediaKind};
-use crate::util::{ffmpeg_command, unique_path};
+use crate::util::{ffmpeg_command, hash_path_xxh3, unique_path};
 
 fn fix_image(input: &Path, output: &Path) -> Result<(), String> {
     let img = image::open(input).map_err(|e| format!("Failed to open image: {e}"))?;
@@ -96,13 +96,13 @@ pub fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
         let fixed_name = format!("{stem}_fixed.{ext}");
         unique_path(parent.join(&fixed_name))
     } else {
-        let stamp = SystemTime::now()
+        let hash = hash_path_xxh3(&format!("{}:{}", path, SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis())
-            .unwrap_or(0);
+            .map(|d| d.as_nanos())
+            .unwrap_or(0)));
         let tmp = std::env::temp_dir()
             .join("Vyu-temp")
-            .join(format!("fix-{stamp}.{ext}"));
+            .join(format!("fix-{hash}.{ext}"));
         if let Some(p) = tmp.parent() {
             let _ = fs::create_dir_all(p);
         }

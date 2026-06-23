@@ -31,14 +31,14 @@ pub async fn batch_stat(paths: Vec<String>) -> Result<Vec<BatchStatItem>, String
             .collect::<Vec<_>>()
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| format!("Thread join error: {e}"))?;
     Ok(items)
 }
 
 #[tauri::command]
 pub fn delete_file(path: String) -> Result<(), String> {
     let p = canonicalize_path(&path)?;
-    std::fs::remove_file(&p).map_err(|e| e.to_string())
+    std::fs::remove_file(&p).map_err(|e| format!("Failed to delete file: {e}"))
 }
 
 #[tauri::command]
@@ -102,7 +102,7 @@ pub fn copy_file_unique(source: String, output_dir: String) -> Result<String, St
 #[tauri::command]
 pub fn trash_file(path: String) -> Result<(), String> {
     let p = canonicalize_path(&path)?;
-    trash::delete(&p).map_err(|e| e.to_string())
+    trash::delete(&p).map_err(|e| format!("Failed to move to trash: {e}"))
 }
 
 #[tauri::command]
@@ -182,6 +182,6 @@ pub async fn get_files_total_size(paths: Vec<String>) -> Result<u64, String> {
         total
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| format!("Thread join error: {e}"))?;
     Ok(total)
 }

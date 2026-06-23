@@ -8,7 +8,7 @@ use windows::core::Interface;
 use serde::Serialize;
 
 use crate::constants::CREATE_NO_WINDOW;
-use crate::util::canonicalize_path;
+use crate::util::{canonicalize_path, ffprobe_command};
 
 #[derive(Serialize)]
 pub struct SongIdentification {
@@ -186,6 +186,7 @@ pub fn set_lock_screen(path: String) -> Result<(), String> {
                 windows::Win32::System::Registry::REG_SZ,
                 Some(data_bytes),
             );
+            let _ = windows::Win32::System::Registry::RegCloseKey(key);
             if set_err.0 != 0 {
                 return Err(format!(
                     "Failed to set registry value: error {:#x}",
@@ -479,8 +480,7 @@ pub fn get_media_properties(path: String) -> Result<crate::types::MediaPropertie
         return Err("File does not exist".into());
     }
 
-    let output = Command::new("ffprobe")
-        .creation_flags(CREATE_NO_WINDOW)
+    let output = ffprobe_command()
         .args([
             "-v",
             "error",
@@ -555,8 +555,7 @@ pub fn get_media_properties(path: String) -> Result<crate::types::MediaPropertie
 
 #[tauri::command]
 pub fn check_ffprobe() -> bool {
-    Command::new("ffprobe")
-        .creation_flags(CREATE_NO_WINDOW)
+    ffprobe_command()
         .arg("-version")
         .output()
         .map(|o| o.status.success())

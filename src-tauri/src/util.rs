@@ -134,6 +134,14 @@ pub fn ffmpeg_command() -> Command {
     cmd
 }
 
+/// Returns a `Command` pre-configured to run ffprobe without a console window.
+pub fn ffprobe_command() -> Command {
+    let mut cmd = Command::new("ffprobe");
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    cmd
+}
+
 /// Spawns ffmpeg with the given args, polls completion with a timeout, and returns
 /// `Ok(Some(path))` on success, `Ok(None)` on failure/timeout, or `Err` on system error.
 /// Cleans up `output_path` on any non-success outcome.

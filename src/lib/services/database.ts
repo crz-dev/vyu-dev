@@ -275,10 +275,6 @@ export async function saveEqSettings(
   await saveMeta(filePath, { eq_data: JSON.stringify(settings) });
 }
 
-export async function deleteEqSettings(filePath: string): Promise<void> {
-  await clearField(filePath, "eq_data");
-}
-
 // ── Migration from localStorage ──
 
 export async function migrateFromLocalStorage(): Promise<void> {

@@ -55,10 +55,3 @@ export interface CropBounds {
   right: number;
   bottom: number;
 }
-
-export interface VideoMarkerDragRange {
-  visible: boolean;
-  start: number;
-  end: number;
-  phase: "idle" | "dragging" | "converting" | "fading";
-}

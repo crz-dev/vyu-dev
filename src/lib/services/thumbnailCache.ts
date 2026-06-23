@@ -84,10 +84,6 @@ export function getCached(
   return val;
 }
 
-export function hasCached(path: string, size: number = 120): boolean {
-  return cache.has(cacheKey(path, size));
-}
-
 export function cancelPending(path: string) {
   const prefix = `${path}\0`;
   pendingOrder = pendingOrder.filter((k) => {
@@ -95,12 +91,4 @@ export function cancelPending(path: string) {
     if (!keep) pendingSet.delete(k);
     return keep;
   });
-}
-
-export function clearCache() {
-  cache.clear();
-  cacheOrder.length = 0;
-  pendingSet.clear();
-  pendingOrder = [];
-  inflight = 0;
 }

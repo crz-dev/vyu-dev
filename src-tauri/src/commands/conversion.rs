@@ -1,14 +1,13 @@
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+#[cfg(target_os = "linux")]
 use std::process::Command;
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
 use crate::constants::{
-    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST, CREATE_NO_WINDOW,
+    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST,
 };
-use crate::util::{ffmpeg_command, hash_path_xxh3, resolve_output_path, unique_path};
+use crate::util::{ffmpeg_command, ffprobe_command, hash_path_xxh3, resolve_output_path, unique_path};
 
 /// Write a minimal flat (single-layer, no transparency) PSD file.
 /// Image data is raw planar: all R, then all G, then all B.
@@ -370,8 +369,7 @@ pub fn convert_audio_to_waveform_video(
     }
 
     // Step 2: Probe audio duration
-    let duration_ms: f64 = Command::new("ffprobe")
-        .creation_flags(CREATE_NO_WINDOW)
+    let duration_ms: f64 = ffprobe_command()
         .args([
             "-v", "error",
             "-show_entries", "format=duration",

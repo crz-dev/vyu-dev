@@ -77,6 +77,8 @@ fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage,
 
 /// Encodes the processed image as a thumbnail JPEG and writes it to cache.
 /// Shared by both the JPEG fast-path and the generic image-crate path.
+/// Cache writes are best-effort — failures are silently ignored so that
+/// a full disk degrades to regeneration rather than breaking thumbnails.
 fn encode_and_save_thumbnail(
     img: &image::DynamicImage,
     thumb_path: &Path,

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    loadLastDialogSection,
+    saveLastDialogSection,
+  } from "$lib/services/storage";
+
   let {
     helpOpen,
     closeHelp,
@@ -7,11 +12,7 @@
     closeHelp: () => void;
   } = $props();
 
-  const LAST_SECTION_KEY = "vyu-help-last-section";
-
-  let activeSection = $state(
-    localStorage.getItem(LAST_SECTION_KEY) ?? "quick-start",
-  );
+  let activeSection = $state(loadLastDialogSection("help") || "quick-start");
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
   let isScrolling = $state(false);
@@ -19,7 +20,7 @@
   let flashTimeout: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
-    localStorage.setItem(LAST_SECTION_KEY, activeSection);
+    saveLastDialogSection("help", activeSection);
   });
 
   $effect(() => {

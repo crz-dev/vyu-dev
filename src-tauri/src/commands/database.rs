@@ -16,7 +16,7 @@ pub fn db_get_file_metadata(
     db: State<'_, DbConnection>,
     path: String,
 ) -> Result<Option<FileMetadata>, String> {
-    let conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
         .prepare(
             "SELECT path, last_position, timestamp_data, clips_data, eq_data,
@@ -24,7 +24,7 @@ pub fn db_get_file_metadata(
              FROM file_metadata
              WHERE path = ?1",
         )
-        .map_err(|e| format!("Query prepare error: {e}"))?;
+        .map_err(|e| format!("Failed to prepare query: {e}"))?;
 
     let result = stmt.query_row(params![path], |row| {
         Ok(FileMetadata {
@@ -42,7 +42,7 @@ pub fn db_get_file_metadata(
     match result {
         Ok(meta) => Ok(Some(meta)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-        Err(e) => Err(format!("Query error: {e}")),
+        Err(e) => Err(format!("Failed to execute query: {e}")),
     }
 }
 
@@ -57,7 +57,7 @@ pub fn db_save_file_metadata(
     cd_color: Option<i32>,
     last_viewed: Option<i64>,
 ) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     let now = now_secs();
 
     conn.execute(
@@ -104,7 +104,7 @@ pub fn db_clear_file_metadata_field(
         _ => return Err(format!("Unknown field: {field}")),
     };
 
-    let conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     conn.execute(sql, params![path])
         .map_err(|e| format!("Failed to clear field: {e}"))?;
     Ok(())
@@ -115,7 +115,7 @@ pub fn db_delete_file_metadata(
     db: State<'_, DbConnection>,
     path: String,
 ) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     conn.execute("DELETE FROM file_metadata WHERE path = ?1", params![path])
         .map_err(|e| format!("Failed to delete file metadata: {e}"))?;
     Ok(())
@@ -126,7 +126,7 @@ pub fn db_get_setting(
     db: State<'_, DbConnection>,
     key: String,
 ) -> Result<Option<String>, String> {
-    let conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     let result = conn.query_row(
         "SELECT value FROM settings WHERE key = ?1",
         params![key],
@@ -135,7 +135,7 @@ pub fn db_get_setting(
     match result {
         Ok(val) => Ok(Some(val)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-        Err(e) => Err(format!("Query error: {e}")),
+        Err(e) => Err(format!("Failed to execute query: {e}")),
     }
 }
 
@@ -145,7 +145,7 @@ pub fn db_set_setting(
     key: String,
     value: String,
 ) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     conn.execute(
         "INSERT INTO settings (key, value) VALUES (?1, ?2)
          ON CONFLICT(key) DO UPDATE SET value = ?2",
@@ -162,10 +162,10 @@ pub fn db_batch_upsert_file_metadata(
     db: State<'_, DbConnection>,
     entries: Vec<FileMetadataBatchEntry>,
 ) -> Result<(), String> {
-    let mut conn = db.0.lock().map_err(|e| format!("DB lock error: {e}"))?;
+    let mut conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
     let tx = conn
         .transaction()
-        .map_err(|e| format!("Transaction begin error: {e}"))?;
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
 
     let now = now_secs();
 
@@ -194,11 +194,11 @@ pub fn db_batch_upsert_file_metadata(
                 now,
             ],
         )
-        .map_err(|e| format!("Batch upsert error: {e}"))?;
+        .map_err(|e| format!("Failed to batch upsert: {e}"))?;
     }
 
     tx.commit()
-        .map_err(|e| format!("Transaction commit error: {e}"))?;
+        .map_err(|e| format!("Failed to commit transaction: {e}"))?;
     Ok(())
 }
 

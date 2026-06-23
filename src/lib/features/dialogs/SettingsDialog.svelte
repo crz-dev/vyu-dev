@@ -8,6 +8,10 @@
   } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
   import type { LoopMode } from "$lib/shared/constants";
+  import {
+    loadLastDialogSection,
+    saveLastDialogSection,
+  } from "$lib/services/storage";
 
   let {
     settingsOpen,
@@ -17,11 +21,7 @@
     closeSettings: () => void;
   } = $props();
 
-  const LAST_SECTION_KEY = "vyu-settings-last-section";
-
-  let activeSection = $state(
-    localStorage.getItem(LAST_SECTION_KEY) ?? "appearance",
-  );
+  let activeSection = $state(loadLastDialogSection("settings") || "appearance");
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
   let isScrolling = $state(false);
@@ -29,7 +29,7 @@
   let flashTimeout: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
-    localStorage.setItem(LAST_SECTION_KEY, activeSection);
+    saveLastDialogSection("settings", activeSection);
   });
 
   $effect(() => {

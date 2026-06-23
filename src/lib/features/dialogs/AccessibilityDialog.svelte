@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    loadLastDialogSection,
+    saveLastDialogSection,
+  } from "$lib/services/storage";
+
   let {
     accessibilityOpen,
     closeAccessibility,
@@ -7,10 +12,8 @@
     closeAccessibility: () => void;
   } = $props();
 
-  const LAST_SECTION_KEY = "vyu-accessibility-last-section";
-
   let activeSection = $state(
-    localStorage.getItem(LAST_SECTION_KEY) ?? "vision",
+    loadLastDialogSection("accessibility") || "vision",
   );
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
@@ -19,7 +22,7 @@
   let flashTimeout: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
-    localStorage.setItem(LAST_SECTION_KEY, activeSection);
+    saveLastDialogSection("accessibility", activeSection);
   });
 
   $effect(() => {

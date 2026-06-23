@@ -385,8 +385,12 @@ export function saveEqSettings(filePath: string, settings: EqSettings): void {
   localStorage.setItem(`vyu-eq-${filePath}`, JSON.stringify(settings));
 }
 
-export function deleteEqSettings(filePath: string): void {
-  if (filePath) localStorage.removeItem(`vyu-eq-${filePath}`);
+export function loadLastDialogSection(dialog: string): string {
+  return localStorage.getItem(`vyu-${dialog}-last-section`) ?? "";
+}
+
+export function saveLastDialogSection(dialog: string, section: string): void {
+  localStorage.setItem(`vyu-${dialog}-last-section`, section);
 }
 
 export function loadViewDensity(): number {
