@@ -2532,7 +2532,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   font-size: 11px;
   text-align: center;
   outline: none;
-  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .text-size-input::-webkit-inner-spin-button,
