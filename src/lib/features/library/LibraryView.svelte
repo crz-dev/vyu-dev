@@ -1383,11 +1383,8 @@
       class:active={library.activeTab === "collections"}
       class:collect-mode={library.collectMode}
       onclick={() => {
-        if (isViewingCollection) {
-          library.closeCollection();
-        } else {
-          library.setActiveTab("collections");
-        }
+        library.closeCollection();
+        library.setActiveTab("collections");
       }}>Collections</button
     >
     <button
@@ -1645,7 +1642,7 @@
                     </svg>
                   </div>
                 {/if}
-                {#if isCustomCollection}
+                {#if isViewingCollection}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
                     class="library-placeholder-card"

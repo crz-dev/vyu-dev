@@ -77,6 +77,7 @@
   }
 
   function activateCollectMode() {
+    library.closeCollection();
     library.setCollectMode(true);
     library.setActiveTab("collections");
   }
