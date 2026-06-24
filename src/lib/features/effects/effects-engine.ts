@@ -28,6 +28,14 @@ class EffectsEngine {
 
   private pitchNode: AudioWorkletNode | null = null;
 
+  private filterLowpass: BiquadFilterNode | null = null;
+  private filterBandpass: BiquadFilterNode | null = null;
+  private filterWaveshaper: WaveShaperNode | null = null;
+  private filterDelay: DelayNode | null = null;
+  private filterLFO: OscillatorNode | null = null;
+  private filterLFOGain: GainNode | null = null;
+  private activeFilter: string | null = null;
+
   private orphanedNodes: AudioNode[] = [];
   private pendingCleanup: ReturnType<typeof setTimeout> | null = null;
 
@@ -35,6 +43,11 @@ class EffectsEngine {
   private lastChorus = 0;
   private lastDistortion = 0;
   private lastPitch = 0;
+  private lastFilter: string | null = null;
+
+  private savedReverb = 0;
+  private savedChorus = 0;
+  private savedDistortion = 0;
 
   async init(ctx: AudioContext): Promise<void> {
     if (this.initialized) {
@@ -97,6 +110,9 @@ class EffectsEngine {
     this.setReverb(this.lastReverb);
     this.setChorus(this.lastChorus);
     this.setDistortion(this.lastDistortion);
+    if (this.lastFilter) {
+      this.setFilter(this.lastFilter);
+    }
 
     this.outputGain.gain.setValueAtTime(0, ctx.currentTime);
     this.outputGain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.03);
@@ -266,6 +282,232 @@ class EffectsEngine {
     }
   }
 
+  setFilter(preset: string | null): void {
+    this.lastFilter = preset;
+
+    this.clearFilterNodes();
+
+    if (this.pitchNode) {
+      this.pitchNode.parameters.get("pitchSemitones")!.value = this.lastPitch;
+      (
+        this.pitchNode as unknown as { playbackRate: { value: number } }
+      ).playbackRate.value = 1.0;
+    }
+
+    if (!preset) {
+      this.reconnectDirectPath();
+      this.reverbWetGain!.gain.value = this.savedReverb;
+      this.reverbDryGain!.gain.value = 1 - this.savedReverb;
+      this.chorusWetGain!.gain.value = this.savedChorus;
+      this.chorusDryGain!.gain.value = 1 - this.savedChorus;
+      this.chorusLFOGain!.gain.value = this.savedChorus * 0.012;
+      this.distWetGain!.gain.value = this.savedDistortion;
+      this.distDryGain!.gain.value = 1 - this.savedDistortion;
+      return;
+    }
+
+    if (preset === "nightcore") {
+      this.savedReverb = this.reverbWetGain!.gain.value;
+      this.savedChorus = this.chorusWetGain!.gain.value;
+      this.savedDistortion = this.distWetGain!.gain.value;
+
+      if (this.pitchNode) {
+        this.pitchNode.parameters.get("pitchSemitones")!.value = 4;
+        (
+          this.pitchNode as unknown as { playbackRate: { value: number } }
+        ).playbackRate.value = 1.2;
+      }
+
+      this.reverbWetGain!.gain.value = 0.1;
+      this.reverbDryGain!.gain.value = 0.9;
+      this.chorusWetGain!.gain.value = 0.2;
+      this.chorusDryGain!.gain.value = 0.8;
+      this.chorusLFOGain!.gain.value = 0.2 * 0.012;
+
+      this.activeFilter = "nightcore";
+      return;
+    }
+
+    if (!this.ctx || !this.outputGain) return;
+    this.insertFilterChain(preset);
+  }
+
+  getActiveFilter(): string | null {
+    return this.activeFilter;
+  }
+
+  private clearFilterNodes(): void {
+    if (this.filterLFO) {
+      try {
+        this.filterLFO.stop();
+      } catch {
+        /* stopped */
+      }
+    }
+
+    const filterNodes = [
+      this.filterLowpass,
+      this.filterBandpass,
+      this.filterWaveshaper,
+      this.filterDelay,
+      this.filterLFO,
+      this.filterLFOGain,
+    ].filter((n) => n !== null) as AudioNode[];
+
+    for (const node of filterNodes) {
+      try {
+        node.disconnect();
+      } catch {
+        /* disconnected */
+      }
+    }
+
+    this.filterLowpass = null;
+    this.filterBandpass = null;
+    this.filterWaveshaper = null;
+    this.filterDelay = null;
+    this.filterLFO = null;
+    this.filterLFOGain = null;
+    this.activeFilter = null;
+  }
+
+  private reconnectDirectPath(): void {
+    if (!this.outputGain) return;
+    const sources = this.getFilterSources();
+    for (const source of sources) {
+      try {
+        source.connect(this.outputGain);
+      } catch {
+        /* already connected */
+      }
+    }
+  }
+
+  private getFilterSources(): AudioNode[] {
+    if (this.pitchNode) {
+      return [this.pitchNode];
+    }
+    const sources: AudioNode[] = [];
+    if (this.distDryGain) sources.push(this.distDryGain);
+    if (this.distWetGain) sources.push(this.distWetGain);
+    return sources;
+  }
+
+  private disconnectSourcesFromOutput(): void {
+    if (!this.outputGain) return;
+    const sources = this.getFilterSources();
+    for (const source of sources) {
+      try {
+        source.disconnect(this.outputGain);
+      } catch {
+        /* not connected */
+      }
+    }
+  }
+
+  private insertFilterChain(preset: string): void {
+    const ctx = this.ctx!;
+    const outputGain = this.outputGain!;
+
+    this.disconnectSourcesFromOutput();
+    const sources = this.getFilterSources();
+
+    let lastNode: AudioNode;
+
+    if (preset === "lofi") {
+      this.savedReverb = this.reverbWetGain!.gain.value;
+      this.savedChorus = this.chorusWetGain!.gain.value;
+      this.savedDistortion = this.distWetGain!.gain.value;
+
+      if (this.pitchNode) {
+        (
+          this.pitchNode as unknown as { playbackRate: { value: number } }
+        ).playbackRate.value = 0.8;
+      }
+
+      this.reverbWetGain!.gain.value = 0.2;
+      this.reverbDryGain!.gain.value = 0.8;
+      this.distWetGain!.gain.value = 0.1;
+      this.distDryGain!.gain.value = 0.9;
+
+      this.filterLowpass = ctx.createBiquadFilter();
+      this.filterLowpass.type = "lowpass";
+      this.filterLowpass.frequency.value = 1800;
+
+      this.filterBandpass = ctx.createBiquadFilter();
+      this.filterBandpass.type = "peaking";
+      this.filterBandpass.frequency.value = 200;
+      this.filterBandpass.gain.value = 4;
+      this.filterBandpass.Q.value = 0.8;
+
+      this.filterWaveshaper = ctx.createWaveShaper();
+      this.filterWaveshaper.curve = this.makeDistortionCurve(8);
+      this.filterWaveshaper.oversample = "2x";
+
+      this.filterDelay = ctx.createDelay(0.01);
+      this.filterDelay.delayTime.value = 0.004;
+
+      this.filterLFO = ctx.createOscillator();
+      this.filterLFO.type = "sine";
+      this.filterLFO.frequency.value = 0.3;
+
+      this.filterLFOGain = ctx.createGain();
+      this.filterLFOGain.gain.value = 0.0015;
+
+      this.filterLFO.connect(this.filterLFOGain);
+      this.filterLFOGain.connect(this.filterDelay.delayTime);
+      this.filterLFO.start();
+
+      for (const source of sources) {
+        source.connect(this.filterLowpass);
+      }
+      this.filterLowpass.connect(this.filterBandpass);
+      this.filterBandpass.connect(this.filterWaveshaper);
+      this.filterWaveshaper.connect(this.filterDelay);
+      lastNode = this.filterDelay;
+    } else if (preset === "eightBit") {
+      this.filterWaveshaper = ctx.createWaveShaper();
+      this.filterWaveshaper.curve = this.makeDistortionCurve(100);
+      this.filterWaveshaper.oversample = "none";
+
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = "highpass";
+      highpass.frequency.value = 800;
+      this.filterLowpass = highpass;
+
+      this.filterDelay = ctx.createDelay(0.03);
+      this.filterDelay.delayTime.value = 0.02;
+
+      for (const source of sources) {
+        source.connect(this.filterWaveshaper);
+      }
+      this.filterWaveshaper.connect(highpass);
+      highpass.connect(this.filterDelay);
+      lastNode = this.filterDelay;
+    } else if (preset === "radio") {
+      this.filterBandpass = ctx.createBiquadFilter();
+      this.filterBandpass.type = "bandpass";
+      this.filterBandpass.frequency.value = 1800;
+      this.filterBandpass.Q.value = 1.5;
+
+      this.filterWaveshaper = ctx.createWaveShaper();
+      this.filterWaveshaper.curve = this.makeDistortionCurve(20);
+      this.filterWaveshaper.oversample = "2x";
+
+      for (const source of sources) {
+        source.connect(this.filterBandpass);
+      }
+      this.filterBandpass.connect(this.filterWaveshaper);
+      lastNode = this.filterWaveshaper;
+    } else {
+      this.reconnectDirectPath();
+      return;
+    }
+
+    lastNode.connect(outputGain);
+    this.activeFilter = preset;
+  }
+
   disconnect(): void {
     this.cancelPendingCleanup();
 
@@ -279,6 +521,14 @@ class EffectsEngine {
     if (this.chorusLFO) {
       try {
         this.chorusLFO.stop();
+      } catch {
+        /* stopped */
+      }
+    }
+
+    if (this.filterLFO) {
+      try {
+        this.filterLFO.stop();
       } catch {
         /* stopped */
       }
@@ -300,6 +550,12 @@ class EffectsEngine {
       this.distWetGain,
       this.distDryGain,
       this.pitchNode,
+      this.filterLowpass,
+      this.filterBandpass,
+      this.filterWaveshaper,
+      this.filterDelay,
+      this.filterLFO,
+      this.filterLFOGain,
     ].filter((n) => n !== null) as AudioNode[];
 
     this.inputGain = null;
@@ -317,6 +573,13 @@ class EffectsEngine {
     this.distWetGain = null;
     this.distDryGain = null;
     this.pitchNode = null;
+    this.filterLowpass = null;
+    this.filterBandpass = null;
+    this.filterWaveshaper = null;
+    this.filterDelay = null;
+    this.filterLFO = null;
+    this.filterLFOGain = null;
+    this.activeFilter = null;
     this.initialized = false;
 
     this.pendingCleanup = setTimeout(() => {
@@ -341,6 +604,14 @@ class EffectsEngine {
       }
     }
 
+    if (this.filterLFO) {
+      try {
+        this.filterLFO.stop();
+      } catch {
+        /* stopped */
+      }
+    }
+
     this.orphanedNodes = [
       this.inputGain,
       this.outputGain,
@@ -357,6 +628,12 @@ class EffectsEngine {
       this.distWetGain,
       this.distDryGain,
       this.pitchNode,
+      this.filterLowpass,
+      this.filterBandpass,
+      this.filterWaveshaper,
+      this.filterDelay,
+      this.filterLFO,
+      this.filterLFOGain,
     ].filter((n) => n !== null) as AudioNode[];
 
     this.inputGain = null;
@@ -374,6 +651,13 @@ class EffectsEngine {
     this.distWetGain = null;
     this.distDryGain = null;
     this.pitchNode = null;
+    this.filterLowpass = null;
+    this.filterBandpass = null;
+    this.filterWaveshaper = null;
+    this.filterDelay = null;
+    this.filterLFO = null;
+    this.filterLFOGain = null;
+    this.activeFilter = null;
     this.initialized = false;
     this.ctx = null;
 

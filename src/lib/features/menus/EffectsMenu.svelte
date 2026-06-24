@@ -195,7 +195,9 @@
     e: Event,
   ) {
     e.stopPropagation();
-    activeFilter = activeFilter === key ? null : key;
+    const newFilter = activeFilter === key ? null : key;
+    activeFilter = newFilter;
+    effectsStore.setFilter(newFilter);
   }
 
   function toggleStageItem(
@@ -231,7 +233,10 @@
       stageRowOpen = false;
       visualRowOpen = false;
       activeTuneItem = null;
-      activeFilter = null;
+      if (activeFilter !== null) {
+        activeFilter = null;
+        effectsStore.setFilter(null);
+      }
       pinned = false;
     }
   });
@@ -249,6 +254,7 @@
       tuneValues.reverb = effectsStore.reverb;
       tuneValues.chorus = effectsStore.chorus;
       tuneValues.distortion = effectsStore.distortion;
+      activeFilter = effectsStore.activeFilter;
     }
   });
 </script>

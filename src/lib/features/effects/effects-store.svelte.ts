@@ -2,17 +2,21 @@
 import { fxEngine } from "./effects-engine";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
+export type FilterPreset = "nightcore" | "lofi" | "eightBit" | "radio";
+
 export interface EffectsStore {
   readonly pitch: number;
   readonly reverb: number;
   readonly chorus: number;
   readonly distortion: number;
+  readonly activeFilter: FilterPreset | null;
   readonly currentFilePath: string;
   loadForFile: (filePath: string) => void;
   setPitch: (value: number) => void;
   setReverb: (value: number) => void;
   setChorus: (value: number) => void;
   setDistortion: (value: number) => void;
+  setFilter: (preset: FilterPreset | null) => void;
   resetAll: () => void;
 }
 
@@ -41,6 +45,7 @@ function createEffectsStore(): EffectsStore {
   let reverb = $state(0);
   let chorus = $state(0);
   let distortion = $state(0);
+  let activeFilter = $state<FilterPreset | null>(null);
   let currentFilePath = $state("");
 
   function loadForFile(filePath: string) {
@@ -50,6 +55,10 @@ function createEffectsStore(): EffectsStore {
     reverb = 0;
     chorus = 0;
     distortion = 0;
+    activeFilter = null;
+    if (fxEngine.isInitialized()) {
+      fxEngine.setFilter(null);
+    }
   }
 
   function setPitch(value: number) {
@@ -92,16 +101,26 @@ function createEffectsStore(): EffectsStore {
     }
   }
 
+  function setFilter(preset: FilterPreset | null) {
+    activeFilter = preset;
+    ensureEngine();
+    if (fxEngine.isInitialized()) {
+      fxEngine.setFilter(preset);
+    }
+  }
+
   function resetAll() {
     pitch = 0;
     reverb = 0;
     chorus = 0;
     distortion = 0;
+    activeFilter = null;
     if (fxEngine.isInitialized()) {
       fxEngine.setPitch(0);
       fxEngine.setReverb(0);
       fxEngine.setChorus(0);
       fxEngine.setDistortion(0);
+      fxEngine.setFilter(null);
     }
   }
 
@@ -118,6 +137,9 @@ function createEffectsStore(): EffectsStore {
     get distortion() {
       return distortion;
     },
+    get activeFilter() {
+      return activeFilter;
+    },
     get currentFilePath() {
       return currentFilePath;
     },
@@ -126,6 +148,7 @@ function createEffectsStore(): EffectsStore {
     setReverb,
     setChorus,
     setDistortion,
+    setFilter,
     resetAll,
   };
 }
