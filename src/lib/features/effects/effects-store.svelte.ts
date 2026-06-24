@@ -16,15 +16,24 @@ export interface EffectsStore {
   resetAll: () => void;
 }
 
-async function ensureEngine(): Promise<void> {
-  if (fxEngine.isInitialized()) return;
+let engineInitPending = false;
+
+function ensureEngine(): void {
+  if (fxEngine.isInitialized() || engineInitPending) return;
   const ctx = eqEngine.getContext();
   if (!ctx) return;
   const analyser = eqEngine.getAnalyser();
   if (!analyser) return;
-  await fxEngine.init(ctx);
-  analyser.connect(fxEngine.getInputNode()!);
-  eqEngine.setEffectsOutput(fxEngine.getOutputNode()!);
+  engineInitPending = true;
+  fxEngine
+    .init(ctx)
+    .then(() => {
+      analyser.connect(fxEngine.getInputNode()!);
+      eqEngine.setEffectsOutput(fxEngine.getOutputNode()!);
+    })
+    .finally(() => {
+      engineInitPending = false;
+    });
 }
 
 function createEffectsStore(): EffectsStore {
@@ -43,40 +52,40 @@ function createEffectsStore(): EffectsStore {
     distortion = 0;
   }
 
-  async function setPitch(value: number) {
+  function setPitch(value: number) {
     pitch = value;
     if (value || reverb || chorus || distortion) {
-      await ensureEngine();
+      ensureEngine();
       fxEngine.setPitch(value);
     } else if (fxEngine.isInitialized()) {
       fxEngine.setPitch(0);
     }
   }
 
-  async function setReverb(value: number) {
+  function setReverb(value: number) {
     reverb = value;
     if (value || chorus || distortion || pitch) {
-      await ensureEngine();
+      ensureEngine();
       fxEngine.setReverb(value);
     } else if (fxEngine.isInitialized()) {
       fxEngine.setReverb(0);
     }
   }
 
-  async function setChorus(value: number) {
+  function setChorus(value: number) {
     chorus = value;
     if (reverb || value || distortion || pitch) {
-      await ensureEngine();
+      ensureEngine();
       fxEngine.setChorus(value);
     } else if (fxEngine.isInitialized()) {
       fxEngine.setChorus(0);
     }
   }
 
-  async function setDistortion(value: number) {
+  function setDistortion(value: number) {
     distortion = value;
     if (reverb || chorus || value || pitch) {
-      await ensureEngine();
+      ensureEngine();
       fxEngine.setDistortion(value);
     } else if (fxEngine.isInitialized()) {
       fxEngine.setDistortion(0);

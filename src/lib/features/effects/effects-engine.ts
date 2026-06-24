@@ -117,11 +117,11 @@ class EffectsEngine {
 
   private buildChorus(ctx: AudioContext): void {
     this.chorusDelay = ctx.createDelay(0.05);
-    this.chorusDelay.delayTime.value = 0.03;
+    this.chorusDelay.delayTime.value = 0.025;
 
     this.chorusLFO = ctx.createOscillator();
     this.chorusLFO.type = "sine";
-    this.chorusLFO.frequency.value = 0.5;
+    this.chorusLFO.frequency.value = 0.8;
 
     this.chorusLFOGain = ctx.createGain();
     this.chorusLFOGain.gain.value = 0;
@@ -153,12 +153,22 @@ class EffectsEngine {
   }
 
   private createReverbIR(ctx: AudioContext): AudioBuffer {
-    const length = ctx.sampleRate * 2;
+    const length = ctx.sampleRate * 2.5;
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
       const data = buffer.getChannelData(ch);
+      const offset = ch * 7;
+      const erTimes = [0.013, 0.029, 0.047, 0.067];
+      const erGains = [0.7, 0.5, 0.35, 0.2];
       for (let i = 0; i < length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.5);
+        const t = i / ctx.sampleRate;
+        let val = 0;
+        for (let j = 0; j < erTimes.length; j++) {
+          const d = t - erTimes[j] - offset * 0.001;
+          if (d >= 0 && d < 0.003) val += erGains[j] * (1 - d / 0.003);
+        }
+        val += (Math.random() * 2 - 1) * Math.pow(1 - i / length, 3.0);
+        data[i] = val;
       }
     }
     return buffer;
@@ -229,7 +239,7 @@ class EffectsEngine {
     const dry = 1 - wet;
     this.chorusWetGain.gain.value = wet;
     this.chorusDryGain.gain.value = dry;
-    this.chorusLFOGain.gain.value = wet * 0.005;
+    this.chorusLFOGain.gain.value = wet * 0.012;
   }
 
   setDistortion(value: number): void {
@@ -244,7 +254,7 @@ class EffectsEngine {
     const wet = value / 100;
     const dry = 1 - wet;
     this.waveshaper.curve = this.makeDistortionCurve(value);
-    this.distMakeupGain.gain.value = Math.pow(1 - wet, 2.5) * 0.7 + 0.02;
+    this.distMakeupGain.gain.value = Math.pow(1 - wet, 2.0) * 0.7 + 0.06;
     this.distWetGain.gain.value = wet;
     this.distDryGain.gain.value = dry;
   }
