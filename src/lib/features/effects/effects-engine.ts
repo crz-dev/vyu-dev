@@ -34,6 +34,7 @@ class EffectsEngine {
   private filterDelay: DelayNode | null = null;
   private filterLFO: OscillatorNode | null = null;
   private filterLFOGain: GainNode | null = null;
+  private filterHighshelf: BiquadFilterNode | null = null;
   private activeFilter: string | null = null;
 
   private orphanedNodes: AudioNode[] = [];
@@ -313,16 +314,26 @@ class EffectsEngine {
 
       if (this.pitchNode) {
         this.pitchNode.parameters.get("pitchSemitones")!.value = 4;
-        (
-          this.pitchNode as unknown as { playbackRate: { value: number } }
-        ).playbackRate.value = 1.2;
       }
 
       this.reverbWetGain!.gain.value = 0.1;
       this.reverbDryGain!.gain.value = 0.9;
       this.chorusWetGain!.gain.value = 0.2;
       this.chorusDryGain!.gain.value = 0.8;
-      this.chorusLFOGain!.gain.value = 0.2 * 0.012;
+      this.chorusLFOGain!.gain.value = 0.15 * 0.012;
+
+      this.disconnectSourcesFromOutput();
+      const sources = this.getFilterSources();
+
+      this.filterHighshelf = this.ctx!.createBiquadFilter();
+      this.filterHighshelf.type = "highshelf";
+      this.filterHighshelf.frequency.value = 8000;
+      this.filterHighshelf.gain.value = 3;
+
+      for (const source of sources) {
+        source.connect(this.filterHighshelf);
+      }
+      this.filterHighshelf.connect(this.outputGain!);
 
       this.activeFilter = "nightcore";
       return;
@@ -352,6 +363,7 @@ class EffectsEngine {
       this.filterDelay,
       this.filterLFO,
       this.filterLFOGain,
+      this.filterHighshelf,
     ].filter((n) => n !== null) as AudioNode[];
 
     for (const node of filterNodes) {
@@ -368,6 +380,7 @@ class EffectsEngine {
     this.filterDelay = null;
     this.filterLFO = null;
     this.filterLFOGain = null;
+    this.filterHighshelf = null;
     this.activeFilter = null;
   }
 
@@ -550,6 +563,7 @@ class EffectsEngine {
       this.filterDelay,
       this.filterLFO,
       this.filterLFOGain,
+      this.filterHighshelf,
     ].filter((n) => n !== null) as AudioNode[];
 
     this.inputGain = null;
@@ -573,6 +587,7 @@ class EffectsEngine {
     this.filterDelay = null;
     this.filterLFO = null;
     this.filterLFOGain = null;
+    this.filterHighshelf = null;
     this.activeFilter = null;
     this.initialized = false;
 
@@ -628,6 +643,7 @@ class EffectsEngine {
       this.filterDelay,
       this.filterLFO,
       this.filterLFOGain,
+      this.filterHighshelf,
     ].filter((n) => n !== null) as AudioNode[];
 
     this.inputGain = null;
@@ -651,6 +667,7 @@ class EffectsEngine {
     this.filterDelay = null;
     this.filterLFO = null;
     this.filterLFOGain = null;
+    this.filterHighshelf = null;
     this.activeFilter = null;
     this.initialized = false;
     this.ctx = null;

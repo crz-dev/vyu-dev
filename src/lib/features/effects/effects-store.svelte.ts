@@ -118,11 +118,11 @@ function createEffectsStore(): EffectsStore {
     if (fxEngine.isInitialized()) {
       fxEngine.setFilter(preset);
     }
-    if (preset === "lofi") {
+    if (preset === "lofi" || preset === "nightcore") {
       if (savedPlaybackSpeed === null && playbackSpeedFn) {
         savedPlaybackSpeed = 1.0;
       }
-      playbackSpeedFn?.(0.8);
+      playbackSpeedFn?.(preset === "lofi" ? 0.8 : 1.1);
     } else if (savedPlaybackSpeed !== null && playbackSpeedFn) {
       playbackSpeedFn(savedPlaybackSpeed);
       savedPlaybackSpeed = null;
