@@ -3,6 +3,8 @@ import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
 let workletRegistered = false;
 let workletRegistration: Promise<void> | null = null;
+let bitcrusherRegistered = false;
+let bitcrusherRegistration: Promise<void> | null = null;
 
 class EffectsEngine {
   private ctx: AudioContext | null = null;
@@ -27,6 +29,11 @@ class EffectsEngine {
   private distDryGain: GainNode | null = null;
 
   private pitchNode: AudioWorkletNode | null = null;
+
+  private bitCrusherNode: AudioWorkletNode | null = null;
+  private bitCrusherGain: GainNode | null = null;
+  private bitLowpass: BiquadFilterNode | null = null;
+  private bitNotch: BiquadFilterNode | null = null;
 
   private filterLowpass: BiquadFilterNode | null = null;
   private filterBandpass: BiquadFilterNode | null = null;
@@ -233,22 +240,46 @@ class EffectsEngine {
   }
 
   private async ensureWorklet(): Promise<void> {
-    if (workletRegistered) return;
-    if (workletRegistration) {
-      await workletRegistration;
-      return;
-    }
+    if (workletRegistered && bitcrusherRegistered) return;
     if (!this.ctx) return;
-    workletRegistration = this.ctx.audioWorklet
-      .addModule("/soundtouch-processor.js")
-      .then(() => {
-        workletRegistered = true;
-      })
-      .catch((err) => {
-        console.error("[fx] soundtouch worklet registration failed:", err);
-        workletRegistration = null;
-      });
-    await workletRegistration;
+
+    const tasks: Promise<void>[] = [];
+
+    if (!workletRegistered) {
+      if (workletRegistration) {
+        tasks.push(workletRegistration);
+      } else {
+        workletRegistration = this.ctx.audioWorklet
+          .addModule("/soundtouch-processor.js")
+          .then(() => {
+            workletRegistered = true;
+          })
+          .catch((err) => {
+            console.error("[fx] soundtouch worklet registration failed:", err);
+            workletRegistration = null;
+          });
+        tasks.push(workletRegistration);
+      }
+    }
+
+    if (!bitcrusherRegistered) {
+      if (bitcrusherRegistration) {
+        tasks.push(bitcrusherRegistration);
+      } else {
+        bitcrusherRegistration = this.ctx.audioWorklet
+          .addModule("/bitcrusher-processor.js")
+          .then(() => {
+            bitcrusherRegistered = true;
+          })
+          .catch((err) => {
+            console.error("[fx] bitcrusher worklet registration failed:", err);
+            bitcrusherRegistration = null;
+          });
+        tasks.push(bitcrusherRegistration);
+      }
+    }
+
+    await Promise.all(tasks);
   }
 
   setReverb(value: number): void {
@@ -377,6 +408,10 @@ class EffectsEngine {
       this.filterLFO,
       this.filterLFOGain,
       this.filterHighshelf,
+      this.bitCrusherNode,
+      this.bitCrusherGain,
+      this.bitLowpass,
+      this.bitNotch,
     ].filter((n) => n !== null) as AudioNode[];
 
     for (const node of filterNodes) {
@@ -395,6 +430,10 @@ class EffectsEngine {
     this.filterLFO = null;
     this.filterLFOGain = null;
     this.filterHighshelf = null;
+    this.bitCrusherNode = null;
+    this.bitCrusherGain = null;
+    this.bitLowpass = null;
+    this.bitNotch = null;
     this.activeFilter = null;
   }
 
@@ -487,23 +526,29 @@ class EffectsEngine {
       this.filterWaveshaper.connect(this.filterDelay);
       lastNode = this.filterDelay;
     } else if (preset === "eightBit") {
-      this.filterWaveshaper = ctx.createWaveShaper();
-      this.filterWaveshaper.curve = this.makeBitCrushCurve(4);
-      this.filterWaveshaper.oversample = "none";
+      this.bitCrusherNode = new AudioWorkletNode(ctx, "bitcrusher-processor", {
+        parameterData: { bits: 6, normfreq: 0.25 },
+      });
 
-      this.filterMakeupGain = ctx.createGain();
-      this.filterMakeupGain.gain.value = 0.6;
+      this.bitCrusherGain = ctx.createGain();
+      this.bitCrusherGain.gain.value = 0.8;
 
-      this.filterLowpass = ctx.createBiquadFilter();
-      this.filterLowpass.type = "lowpass";
-      this.filterLowpass.frequency.value = 6000;
+      this.bitLowpass = ctx.createBiquadFilter();
+      this.bitLowpass.type = "lowpass";
+      this.bitLowpass.frequency.value = 4500;
+
+      this.bitNotch = ctx.createBiquadFilter();
+      this.bitNotch.type = "notch";
+      this.bitNotch.frequency.value = 6000;
+      this.bitNotch.Q.value = 0.8;
 
       for (const source of sources) {
-        source.connect(this.filterWaveshaper);
+        source.connect(this.bitCrusherNode);
       }
-      this.filterWaveshaper.connect(this.filterMakeupGain);
-      this.filterMakeupGain.connect(this.filterLowpass);
-      lastNode = this.filterLowpass;
+      this.bitCrusherNode.connect(this.bitCrusherGain);
+      this.bitCrusherGain.connect(this.bitLowpass);
+      this.bitLowpass.connect(this.bitNotch);
+      lastNode = this.bitNotch;
     } else if (preset === "radio") {
       this.filterBandpass = ctx.createBiquadFilter();
       this.filterBandpass.type = "bandpass";
@@ -570,6 +615,10 @@ class EffectsEngine {
       this.distWetGain,
       this.distDryGain,
       this.pitchNode,
+      this.bitCrusherNode,
+      this.bitCrusherGain,
+      this.bitLowpass,
+      this.bitNotch,
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
@@ -595,6 +644,10 @@ class EffectsEngine {
     this.distWetGain = null;
     this.distDryGain = null;
     this.pitchNode = null;
+    this.bitCrusherNode = null;
+    this.bitCrusherGain = null;
+    this.bitLowpass = null;
+    this.bitNotch = null;
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
@@ -652,6 +705,10 @@ class EffectsEngine {
       this.distWetGain,
       this.distDryGain,
       this.pitchNode,
+      this.bitCrusherNode,
+      this.bitCrusherGain,
+      this.bitLowpass,
+      this.bitNotch,
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
@@ -677,6 +734,10 @@ class EffectsEngine {
     this.distWetGain = null;
     this.distDryGain = null;
     this.pitchNode = null;
+    this.bitCrusherNode = null;
+    this.bitCrusherGain = null;
+    this.bitLowpass = null;
+    this.bitNotch = null;
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
