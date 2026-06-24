@@ -38,6 +38,7 @@ class EffectsEngine {
   private bitTremoloGain: GainNode | null = null;
   private bitTremoloLFO: OscillatorNode | null = null;
   private bitTremoloLFOGain: GainNode | null = null;
+  private arpInterval: ReturnType<typeof setInterval> | null = null;
 
   private filterLowpass: BiquadFilterNode | null = null;
   private filterBandpass: BiquadFilterNode | null = null;
@@ -343,6 +344,10 @@ class EffectsEngine {
     }
 
     if (!preset) {
+      if (this.arpInterval) {
+        clearInterval(this.arpInterval);
+        this.arpInterval = null;
+      }
       this.reconnectDirectPath();
       this.reverbWetGain!.gain.value = this.savedReverb;
       this.reverbDryGain!.gain.value = 1 - this.savedReverb;
@@ -416,6 +421,11 @@ class EffectsEngine {
       } catch {
         /* stopped */
       }
+    }
+
+    if (this.arpInterval) {
+      clearInterval(this.arpInterval);
+      this.arpInterval = null;
     }
 
     const filterNodes = [
@@ -583,11 +593,21 @@ class EffectsEngine {
       this.bitTremoloLFO.frequency.value = 4;
 
       this.bitTremoloLFOGain = ctx.createGain();
-      this.bitTremoloLFOGain.gain.value = 0.04;
+      this.bitTremoloLFOGain.gain.value = 0.01;
 
       this.bitTremoloLFO.connect(this.bitTremoloLFOGain);
       this.bitTremoloLFOGain.connect(this.bitTremoloGain.gain);
       this.bitTremoloLFO.start();
+
+      const arpNotes = [0, 4, 7, 12];
+      let arpIndex = 0;
+      this.arpInterval = setInterval(() => {
+        if (!this.pitchNode) return;
+        const base = this.lastPitch;
+        this.pitchNode.parameters.get("pitchSemitones")!.value =
+          base + arpNotes[arpIndex % arpNotes.length];
+        arpIndex++;
+      }, 50);
 
       for (const source of sources) {
         source.connect(this.bitCrusherNode);
@@ -654,6 +674,11 @@ class EffectsEngine {
       } catch {
         /* stopped */
       }
+    }
+
+    if (this.arpInterval) {
+      clearInterval(this.arpInterval);
+      this.arpInterval = null;
     }
 
     this.orphanedNodes = [
@@ -760,6 +785,11 @@ class EffectsEngine {
       } catch {
         /* stopped */
       }
+    }
+
+    if (this.arpInterval) {
+      clearInterval(this.arpInterval);
+      this.arpInterval = null;
     }
 
     this.orphanedNodes = [
