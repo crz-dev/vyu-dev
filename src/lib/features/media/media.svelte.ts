@@ -18,6 +18,7 @@ import {
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
 import { formatMetaDate, getMetaValue } from "$lib/shared/file-meta";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+import { fxEngine } from "$lib/features/effects/effects-engine";
 import { library } from "$lib/features/library/library.svelte";
 
 export interface MediaState {
@@ -99,6 +100,7 @@ export function createMedia(
     if (audioEl) {
       audioEl.pause();
     }
+    fxEngine.disconnect();
     eqEngine.disconnect();
     if (videoEl) {
       videoEl.removeAttribute("src");

@@ -21,6 +21,7 @@ class EqualizerEngine {
   private stagePanner: PannerNode | null = null;
   private stageGainNode: GainNode | null = null;
   private stageAnimFrame: number | null = null;
+  private effectsOutput: AudioNode | null = null;
 
   private pendingCleanup: ReturnType<typeof setTimeout> | null = null;
   private orphanedNodes: AudioNode[] = [];
@@ -29,8 +30,24 @@ class EqualizerEngine {
     return this.analyser;
   }
 
+  getContext(): AudioContext | null {
+    return this.ctx;
+  }
+
   getConnectedElement(): HTMLMediaElement | null {
     return this.connectedElement;
+  }
+
+  setEffectsOutput(node: AudioNode): void {
+    this.effectsOutput = node;
+    this.teardownStage();
+    this.applyStage();
+  }
+
+  clearEffectsOutput(): void {
+    this.effectsOutput = null;
+    this.teardownStage();
+    this.applyStage();
   }
 
   private ensureContext(): AudioContext {
@@ -112,6 +129,7 @@ class EqualizerEngine {
     }
     this.stageGainNode = null;
     this.stagePanner = null;
+    this.effectsOutput = null;
 
     const oldSource = this.source;
     this.source = null;
@@ -285,9 +303,10 @@ class EqualizerEngine {
   private applyStage(): void {
     if (!this.analyser || !this.ctx) return;
 
+    const source = this.effectsOutput ?? this.analyser;
     const mode = this.stageMode;
     if (!mode || mode === "stereo") {
-      this.analyser.connect(this.ctx.destination);
+      source.connect(this.ctx.destination);
       return;
     }
 
@@ -299,7 +318,7 @@ class EqualizerEngine {
       gainL.gain.value = 0.5;
       gainR.gain.value = 0.5;
 
-      this.analyser.connect(splitter);
+      source.connect(splitter);
       splitter.connect(gainL, 0);
       splitter.connect(gainR, 1);
       gainL.connect(merger, 0, 0);
@@ -317,7 +336,7 @@ class EqualizerEngine {
       const merger = this.ctx.createChannelMerger(2);
 
       // Direct path L→L, R→R
-      this.analyser.connect(splitter);
+      source.connect(splitter);
       splitter.connect(merger, 0, 0);
       splitter.connect(merger, 1, 1);
 
@@ -365,22 +384,13 @@ class EqualizerEngine {
     }
 
     if (mode === "eightD") {
-      const gain = this.ctx.createGain();
-      gain.gain.value = 1;
+      const panner = this.ctx.createStereoPanner();
 
-      const panner = this.ctx.createPanner();
-      panner.panningModel = "HRTF";
-      panner.distanceModel = "linear";
-      panner.rolloffFactor = 0;
-      panner.positionY.value = 0;
-
-      this.analyser.connect(gain);
-      gain.connect(panner);
+      source.connect(panner);
       panner.connect(this.ctx.destination);
 
-      this.stageGainNode = gain;
-      this.stagePanner = panner;
-      this.stageNodes = [gain, panner];
+      this.stagePanner = panner as unknown as PannerNode;
+      this.stageNodes = [panner];
       this.startOrbitalAnimation();
       return;
     }
@@ -388,13 +398,11 @@ class EqualizerEngine {
 
   private startOrbitalAnimation(): void {
     const animate = () => {
-      if (!this.stagePanner || !this.stageGainNode || !this.ctx) return;
-      const speed = (2 * Math.PI) / 14;
+      if (!this.stagePanner || !this.ctx) return;
+      const speed = (2 * Math.PI) / 12;
       const angle = this.ctx.currentTime * speed;
-      const x = Math.cos(angle);
-      this.stagePanner.positionX.value = x;
-      this.stagePanner.positionZ.value = Math.sin(angle);
-      this.stageGainNode.gain.value = 0.85 + Math.abs(x) * 0.3;
+      (this.stagePanner as unknown as StereoPannerNode).pan.value =
+        Math.sin(angle);
       this.stageAnimFrame = requestAnimationFrame(animate);
     };
     this.stageAnimFrame = requestAnimationFrame(animate);
@@ -409,6 +417,7 @@ class EqualizerEngine {
     }
     this.stageGainNode = null;
     this.stagePanner = null;
+    this.effectsOutput = null;
 
     // Ramp output gain to zero before tearing down to avoid pop/crackle
     if (this.outputGain && this.ctx) {

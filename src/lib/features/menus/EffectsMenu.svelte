@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+  import { effectsStore } from "$lib/features/effects/effects-store.svelte";
 
   let {
     visible,
@@ -54,13 +55,24 @@
     ];
   }
 
+  function applyTuneToStore(
+    item: "pitch" | "reverb" | "chorus" | "distortion",
+    val: number,
+  ) {
+    if (item === "reverb") effectsStore.setReverb(val);
+    else if (item === "chorus") effectsStore.setChorus(val);
+    else if (item === "distortion") effectsStore.setDistortion(val);
+  }
+
   function updateTuneFromX(clientX: number) {
     if (!tuneTrackEl || !activeTuneItem) return;
     const rect = tuneTrackEl.getBoundingClientRect();
     const x = clientX - rect.left;
     const pct = Math.max(0, Math.min(1, x / rect.width));
     const { min, max } = getTuneRange();
-    tuneValues[activeTuneItem] = Math.round(min + pct * (max - min));
+    const val = Math.round(min + pct * (max - min));
+    tuneValues[activeTuneItem] = val;
+    applyTuneToStore(activeTuneItem, val);
   }
 
   function handleTunePointerDown(e: PointerEvent) {
@@ -85,6 +97,7 @@
   function jumpToTune(val: number) {
     if (!activeTuneItem) return;
     tuneValues[activeTuneItem] = val;
+    applyTuneToStore(activeTuneItem, val);
   }
 
   const tuneScrubberPct = $derived.by(() => {
@@ -231,6 +244,9 @@
   $effect(() => {
     if (filePath) {
       activeStage = eqEngine.getStageMode();
+      tuneValues.reverb = effectsStore.reverb;
+      tuneValues.chorus = effectsStore.chorus;
+      tuneValues.distortion = effectsStore.distortion;
     }
   });
 </script>

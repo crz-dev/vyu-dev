@@ -92,6 +92,7 @@
   } from "$lib/features/edit-dialogs/editActions.svelte";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+  import { effectsStore } from "$lib/features/effects/effects-store.svelte";
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -898,6 +899,7 @@
     if (!path) return;
 
     eqStore.loadForFile(path);
+    effectsStore.loadForFile(path);
 
     if (isVideo && videoEl) {
       eqEngine.connectMediaElement(videoEl);
