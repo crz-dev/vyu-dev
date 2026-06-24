@@ -73,6 +73,7 @@ class EqualizerEngine {
 
     try {
       const ctx = this.ensureContext();
+      el.preservesPitch = false;
       this.source = ctx.createMediaElementSource(el);
 
       this.filters = BAND_FREQUENCIES.map((freq, i) => {
@@ -302,6 +303,15 @@ class EqualizerEngine {
 
   private applyStage(): void {
     if (!this.analyser || !this.ctx) return;
+
+    // Disconnect analyser from destination to avoid double playback.
+    // When effects are active, source = effectsOutput; without this,
+    // both analyser→destination and effects→destination play simultaneously.
+    try {
+      this.analyser.disconnect(this.ctx.destination);
+    } catch {
+      /* not connected */
+    }
 
     const source = this.effectsOutput ?? this.analyser;
     const mode = this.stageMode;

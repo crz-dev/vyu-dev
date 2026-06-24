@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     dependencies:
+      "@soundtouchjs/audio-worklet":
+        specifier: ^2.0.4
+        version: 2.0.4
       "@tauri-apps/api":
         specifier: ^2
         version: 2.10.1
@@ -652,6 +655,30 @@ packages:
       }
     cpu: [x64]
     os: [win32]
+
+  "@soundtouchjs/audio-worklet@2.0.4":
+    resolution:
+      {
+        integrity: sha512-Qfj0wjo3sG5vLsgEeepvs0xo9KjhpicYB1JOMEqnLyy79/DPleNE3x2qwVTdb7ATl0NVFtSyGJggLmY1M40viA==,
+      }
+
+  "@soundtouchjs/core@2.0.4":
+    resolution:
+      {
+        integrity: sha512-QVCEtyyVPPFGA4WW9NAXKZb/ujLpUGZeMexkuqJYwh0lVZ5fV+iWQHfI86xLpBSo676E0M+5cskBd6gecV8pUA==,
+      }
+
+  "@soundtouchjs/interpolation-strategy-lanczos@2.0.4":
+    resolution:
+      {
+        integrity: sha512-yjmKTFqxcfZbR34gVybaMjrYJETvYk6gKzgRpZ1NQsIdQdLJnbFnvn88H2HH7NUUZgcUTtC+y9fsQWFurw755w==,
+      }
+
+  "@soundtouchjs/worklet-base@2.0.4":
+    resolution:
+      {
+        integrity: sha512-2gj49iFxrsvxuecFYIfeJFcgnMp6y5lSHCa5kykBPFOsnmSIfTVJYJCNrFNn4m6hWhobBQbdS/TfHptKehaBLg==,
+      }
 
   "@standard-schema/spec@1.1.0":
     resolution:
@@ -1457,6 +1484,22 @@ snapshots:
 
   "@rollup/rollup-win32-x64-msvc@4.60.1":
     optional: true
+
+  "@soundtouchjs/audio-worklet@2.0.4":
+    dependencies:
+      "@soundtouchjs/core": 2.0.4
+      "@soundtouchjs/interpolation-strategy-lanczos": 2.0.4
+      "@soundtouchjs/worklet-base": 2.0.4
+
+  "@soundtouchjs/core@2.0.4":
+    dependencies:
+      "@soundtouchjs/interpolation-strategy-lanczos": 2.0.4
+
+  "@soundtouchjs/interpolation-strategy-lanczos@2.0.4": {}
+
+  "@soundtouchjs/worklet-base@2.0.4":
+    dependencies:
+      "@soundtouchjs/core": 2.0.4
 
   "@standard-schema/spec@1.1.0": {}
 

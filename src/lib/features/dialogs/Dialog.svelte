@@ -264,7 +264,11 @@
       showToast({ message: successMsg, color: "green" });
     } catch (e) {
       const msg =
-        e instanceof Error ? e.message : typeof e === "string" ? e : "Action failed";
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+            ? e
+            : "Action failed";
       const appNotFoundMatch = msg.match(
         /^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/,
       );
@@ -2129,11 +2133,20 @@
         {/if}
         <div
           class="props-row"
-          onclick={() => copyPropValue(library.privacyMode ? "••••••••••••••••••" : (fileCreated || "Unknown"))}
+          onclick={() =>
+            copyPropValue(
+              library.privacyMode
+                ? "••••••••••••••••••"
+                : fileCreated || "Unknown",
+            )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              copyPropValue(library.privacyMode ? "••••••••••••••••••" : (fileCreated || "Unknown"));
+              copyPropValue(
+                library.privacyMode
+                  ? "••••••••••••••••••"
+                  : fileCreated || "Unknown",
+              );
             }
           }}
           role="button"
@@ -2163,15 +2176,28 @@
             >
             Created
           </span>
-          <span class="props-v">{library.privacyMode ? "••••••••••••••••••" : (fileCreated || "Unknown")}</span>
+          <span class="props-v"
+            >{library.privacyMode
+              ? "••••••••••••••••••"
+              : fileCreated || "Unknown"}</span
+          >
         </div>
         <div
           class="props-row"
-          onclick={() => copyPropValue(library.privacyMode ? "••••••••••••••••••" : (fileModified || "Unknown"))}
+          onclick={() =>
+            copyPropValue(
+              library.privacyMode
+                ? "••••••••••••••••••"
+                : fileModified || "Unknown",
+            )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              copyPropValue(library.privacyMode ? "••••••••••••••••••" : (fileModified || "Unknown"));
+              copyPropValue(
+                library.privacyMode
+                  ? "••••••••••••••••••"
+                  : fileModified || "Unknown",
+              );
             }
           }}
           role="button"
@@ -2201,7 +2227,11 @@
             >
             Modified
           </span>
-          <span class="props-v">{library.privacyMode ? "••••••••••••••••••" : (fileModified || "Unknown")}</span>
+          <span class="props-v"
+            >{library.privacyMode
+              ? "••••••••••••••••••"
+              : fileModified || "Unknown"}</span
+          >
         </div>
         <div
           class="props-row"
@@ -2230,7 +2260,11 @@
             >
             Folder
           </span>
-          <span class="props-v">{library.privacyMode ? obscurePath(parentFolder() || "Unknown") : (parentFolder() || "Unknown")}</span>
+          <span class="props-v"
+            >{library.privacyMode
+              ? obscurePath(parentFolder() || "Unknown")
+              : parentFolder() || "Unknown"}</span
+          >
         </div>
         <div
           class="props-row"
@@ -2267,7 +2301,11 @@
             >
             Path
           </span>
-          <span class="props-v">{library.privacyMode ? obscurePath(filePath || "Unknown") : (filePath || "Unknown")}</span>
+          <span class="props-v"
+            >{library.privacyMode
+              ? obscurePath(filePath || "Unknown")
+              : filePath || "Unknown"}</span
+          >
         </div>
       </div>
       <div class="props-actions-card">

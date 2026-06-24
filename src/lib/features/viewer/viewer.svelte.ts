@@ -34,7 +34,12 @@ function createViewer() {
   let fsHideTimer: ReturnType<typeof setTimeout> | undefined;
   let lastPinchDist = 0;
   let wheelRafId = 0;
-  let pendingWheel: { clientX: number; clientY: number; deltaY: number; currentTarget: HTMLElement } | null = null;
+  let pendingWheel: {
+    clientX: number;
+    clientY: number;
+    deltaY: number;
+    currentTarget: HTMLElement;
+  } | null = null;
 
   function setVideoEl(el: HTMLVideoElement | null) {
     state.videoEl = el;

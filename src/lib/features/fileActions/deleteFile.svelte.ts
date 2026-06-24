@@ -80,7 +80,9 @@ export async function performMultiDelete(deps: MultiDeleteActionsDeps) {
   if (paths.length === 0) return;
   deleteStore.multiDeleteConfirm = false;
   if (deleteStore.multiDeleteNoAsk) saveSkipDeleteConfirmation();
-  const deleteFn = deleteStore.multiDeletePermanently ? invokeDeleteFile : invokeTrashFile;
+  const deleteFn = deleteStore.multiDeletePermanently
+    ? invokeDeleteFile
+    : invokeTrashFile;
   const results = await Promise.allSettled(paths.map((path) => deleteFn(path)));
   let successCount = 0;
   let failCount = 0;

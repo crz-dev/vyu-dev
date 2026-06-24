@@ -75,8 +75,8 @@ export async function copyAllPropertiesToClipboard(
     `Dimensions: ${fileDimensions || "Unknown"}`,
     ...(isVideo ? [`Duration: ${durationDisplay}`] : []),
     `Size: ${fileSize || "Unknown"}`,
-    `Created: ${privacyMode ? "••••••••••••••••••" : (fileCreated || "Unknown")}`,
-    `Modified: ${privacyMode ? "••••••••••••••••••" : (fileModified || "Unknown")}`,
+    `Created: ${privacyMode ? "••••••••••••••••••" : fileCreated || "Unknown"}`,
+    `Modified: ${privacyMode ? "••••••••••••••••••" : fileModified || "Unknown"}`,
     ...(privacyMode
       ? []
       : [

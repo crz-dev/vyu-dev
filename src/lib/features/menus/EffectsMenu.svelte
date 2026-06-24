@@ -59,7 +59,8 @@
     item: "pitch" | "reverb" | "chorus" | "distortion",
     val: number,
   ) {
-    if (item === "reverb") effectsStore.setReverb(val);
+    if (item === "pitch") effectsStore.setPitch(val);
+    else if (item === "reverb") effectsStore.setReverb(val);
     else if (item === "chorus") effectsStore.setChorus(val);
     else if (item === "distortion") effectsStore.setDistortion(val);
   }
@@ -244,6 +245,7 @@
   $effect(() => {
     if (filePath) {
       activeStage = eqEngine.getStageMode();
+      tuneValues.pitch = effectsStore.pitch;
       tuneValues.reverb = effectsStore.reverb;
       tuneValues.chorus = effectsStore.chorus;
       tuneValues.distortion = effectsStore.distortion;

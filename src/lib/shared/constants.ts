@@ -88,7 +88,6 @@ export const CD_COLORS = [
 
 // ── Browser-unsupported formats ──
 
-
 export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
   "tiff",
   "tif",
@@ -119,7 +118,6 @@ export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
 ]);
 
 // ── Remux formats ──
-
 
 export const REMUX_VIDEO_EXTS = new Set(["ts", "m2ts"]);
 

@@ -10,7 +10,7 @@ export const DRAW_COLORS = [
   "#a855f7",
   "#ec4899",
   "#888888",
-  "#ffffff"
+  "#ffffff",
 ];
 
 // Highlighter colors
@@ -22,7 +22,7 @@ export const HIGHLIGHT_COLORS = [
   "#ec4899",
   "#f97316",
   "#a855f7",
-  "#f87171"
+  "#f87171",
 ];
 
 import {

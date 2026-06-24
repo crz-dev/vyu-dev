@@ -1,5 +1,8 @@
-// Audio effects engine — reverb, chorus, distortion
+// Audio effects engine — reverb, chorus, distortion, pitch
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+
+let workletRegistered = false;
+let workletRegistration: Promise<void> | null = null;
 
 class EffectsEngine {
   private ctx: AudioContext | null = null;
@@ -23,14 +26,17 @@ class EffectsEngine {
   private distWetGain: GainNode | null = null;
   private distDryGain: GainNode | null = null;
 
+  private pitchNode: AudioWorkletNode | null = null;
+
   private orphanedNodes: AudioNode[] = [];
   private pendingCleanup: ReturnType<typeof setTimeout> | null = null;
 
   private lastReverb = 0;
   private lastChorus = 0;
   private lastDistortion = 0;
+  private lastPitch = 0;
 
-  init(ctx: AudioContext): void {
+  async init(ctx: AudioContext): Promise<void> {
     if (this.initialized) {
       this.disconnect();
     }
@@ -46,6 +52,21 @@ class EffectsEngine {
     this.buildReverb(ctx);
     this.buildChorus(ctx);
     this.buildDistortion(ctx);
+
+    await this.ensureWorklet();
+    if (workletRegistered) {
+      const { SoundTouchNode } = await import("@soundtouchjs/audio-worklet");
+      const stNode = new SoundTouchNode({ context: ctx });
+      stNode.playbackRate.value = 1.0;
+      stNode.pitchSemitones.value = this.lastPitch;
+      this.pitchNode = stNode as unknown as AudioWorkletNode;
+      console.log(
+        "[fx] SoundTouchNode created, pitchSemitones =",
+        this.lastPitch,
+      );
+    } else {
+      console.warn("[fx] worklet not registered, pitch disabled");
+    }
 
     this.inputGain.connect(this.reverbDryGain!);
     this.inputGain.connect(this.convolver!);
@@ -64,8 +85,14 @@ class EffectsEngine {
     this.waveshaper!.connect(this.distMakeupGain!);
     this.distMakeupGain!.connect(this.distWetGain!);
 
-    this.distDryGain!.connect(this.outputGain!);
-    this.distWetGain!.connect(this.outputGain!);
+    if (this.pitchNode) {
+      this.distDryGain!.connect(this.pitchNode);
+      this.distWetGain!.connect(this.pitchNode);
+      this.pitchNode.connect(this.outputGain!);
+    } else {
+      this.distDryGain!.connect(this.outputGain!);
+      this.distWetGain!.connect(this.outputGain!);
+    }
 
     this.setReverb(this.lastReverb);
     this.setChorus(this.lastChorus);
@@ -166,6 +193,25 @@ class EffectsEngine {
     return this.outputGain;
   }
 
+  private async ensureWorklet(): Promise<void> {
+    if (workletRegistered) return;
+    if (workletRegistration) {
+      await workletRegistration;
+      return;
+    }
+    if (!this.ctx) return;
+    workletRegistration = this.ctx.audioWorklet
+      .addModule("/soundtouch-processor.js")
+      .then(() => {
+        workletRegistered = true;
+      })
+      .catch((err) => {
+        console.error("[fx] soundtouch worklet registration failed:", err);
+        workletRegistration = null;
+      });
+    await workletRegistration;
+  }
+
   setReverb(value: number): void {
     this.lastReverb = value;
     if (!this.reverbWetGain || !this.reverbDryGain) return;
@@ -177,7 +223,8 @@ class EffectsEngine {
 
   setChorus(value: number): void {
     this.lastChorus = value;
-    if (!this.chorusWetGain || !this.chorusDryGain || !this.chorusLFOGain) return;
+    if (!this.chorusWetGain || !this.chorusDryGain || !this.chorusLFOGain)
+      return;
     const wet = value / 100;
     const dry = 1 - wet;
     this.chorusWetGain.gain.value = wet;
@@ -187,13 +234,26 @@ class EffectsEngine {
 
   setDistortion(value: number): void {
     this.lastDistortion = value;
-    if (!this.distWetGain || !this.distDryGain || !this.waveshaper || !this.distMakeupGain) return;
+    if (
+      !this.distWetGain ||
+      !this.distDryGain ||
+      !this.waveshaper ||
+      !this.distMakeupGain
+    )
+      return;
     const wet = value / 100;
     const dry = 1 - wet;
     this.waveshaper.curve = this.makeDistortionCurve(value);
     this.distMakeupGain.gain.value = Math.pow(1 - wet, 2.5) * 0.7 + 0.02;
     this.distWetGain.gain.value = wet;
     this.distDryGain.gain.value = dry;
+  }
+
+  setPitch(value: number): void {
+    this.lastPitch = value;
+    if (this.pitchNode) {
+      this.pitchNode.parameters.get("pitchSemitones")!.value = value;
+    }
   }
 
   disconnect(): void {
@@ -229,6 +289,7 @@ class EffectsEngine {
       this.distMakeupGain,
       this.distWetGain,
       this.distDryGain,
+      this.pitchNode,
     ].filter((n) => n !== null) as AudioNode[];
 
     this.inputGain = null;
@@ -245,6 +306,7 @@ class EffectsEngine {
     this.distMakeupGain = null;
     this.distWetGain = null;
     this.distDryGain = null;
+    this.pitchNode = null;
     this.initialized = false;
 
     this.pendingCleanup = setTimeout(() => {
@@ -253,9 +315,9 @@ class EffectsEngine {
     }, 50);
   }
 
-  reconnect(ctx: AudioContext): void {
+  async reconnect(ctx: AudioContext): Promise<void> {
     this.disconnect();
-    this.init(ctx);
+    await this.init(ctx);
   }
 
   destroy(): void {
@@ -284,6 +346,7 @@ class EffectsEngine {
       this.distMakeupGain,
       this.distWetGain,
       this.distDryGain,
+      this.pitchNode,
     ].filter((n) => n !== null) as AudioNode[];
 
     this.inputGain = null;
@@ -300,6 +363,7 @@ class EffectsEngine {
     this.distMakeupGain = null;
     this.distWetGain = null;
     this.distDryGain = null;
+    this.pitchNode = null;
     this.initialized = false;
     this.ctx = null;
 
