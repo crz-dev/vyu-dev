@@ -34,6 +34,10 @@ class EffectsEngine {
   private bitCrusherGain: GainNode | null = null;
   private bitLowpass: BiquadFilterNode | null = null;
   private bitNotch: BiquadFilterNode | null = null;
+  private bitMidBoost: BiquadFilterNode | null = null;
+  private bitTremoloGain: GainNode | null = null;
+  private bitTremoloLFO: OscillatorNode | null = null;
+  private bitTremoloLFOGain: GainNode | null = null;
 
   private filterLowpass: BiquadFilterNode | null = null;
   private filterBandpass: BiquadFilterNode | null = null;
@@ -383,6 +387,13 @@ class EffectsEngine {
     }
 
     if (!this.ctx || !this.outputGain) return;
+
+    if (preset === "eightBit") {
+      this.savedReverb = this.reverbWetGain!.gain.value;
+      this.reverbWetGain!.gain.value = 0.08;
+      this.reverbDryGain!.gain.value = 0.92;
+    }
+
     this.insertFilterChain(preset);
   }
 
@@ -394,6 +405,14 @@ class EffectsEngine {
     if (this.filterLFO) {
       try {
         this.filterLFO.stop();
+      } catch {
+        /* stopped */
+      }
+    }
+
+    if (this.bitTremoloLFO) {
+      try {
+        this.bitTremoloLFO.stop();
       } catch {
         /* stopped */
       }
@@ -412,6 +431,10 @@ class EffectsEngine {
       this.bitCrusherGain,
       this.bitLowpass,
       this.bitNotch,
+      this.bitMidBoost,
+      this.bitTremoloGain,
+      this.bitTremoloLFO,
+      this.bitTremoloLFOGain,
     ].filter((n) => n !== null) as AudioNode[];
 
     for (const node of filterNodes) {
@@ -434,6 +457,10 @@ class EffectsEngine {
     this.bitCrusherGain = null;
     this.bitLowpass = null;
     this.bitNotch = null;
+    this.bitMidBoost = null;
+    this.bitTremoloGain = null;
+    this.bitTremoloLFO = null;
+    this.bitTremoloLFOGain = null;
     this.activeFilter = null;
   }
 
@@ -542,13 +569,35 @@ class EffectsEngine {
       this.bitNotch.frequency.value = 6000;
       this.bitNotch.Q.value = 0.8;
 
+      this.bitMidBoost = ctx.createBiquadFilter();
+      this.bitMidBoost.type = "peaking";
+      this.bitMidBoost.frequency.value = 1000;
+      this.bitMidBoost.gain.value = 3;
+      this.bitMidBoost.Q.value = 1.2;
+
+      this.bitTremoloGain = ctx.createGain();
+      this.bitTremoloGain.gain.value = 1.0;
+
+      this.bitTremoloLFO = ctx.createOscillator();
+      this.bitTremoloLFO.type = "sine";
+      this.bitTremoloLFO.frequency.value = 4;
+
+      this.bitTremoloLFOGain = ctx.createGain();
+      this.bitTremoloLFOGain.gain.value = 0.04;
+
+      this.bitTremoloLFO.connect(this.bitTremoloLFOGain);
+      this.bitTremoloLFOGain.connect(this.bitTremoloGain.gain);
+      this.bitTremoloLFO.start();
+
       for (const source of sources) {
         source.connect(this.bitCrusherNode);
       }
       this.bitCrusherNode.connect(this.bitCrusherGain);
       this.bitCrusherGain.connect(this.bitLowpass);
       this.bitLowpass.connect(this.bitNotch);
-      lastNode = this.bitNotch;
+      this.bitNotch.connect(this.bitMidBoost);
+      this.bitMidBoost.connect(this.bitTremoloGain);
+      lastNode = this.bitTremoloGain;
     } else if (preset === "radio") {
       this.filterBandpass = ctx.createBiquadFilter();
       this.filterBandpass.type = "bandpass";
@@ -599,6 +648,14 @@ class EffectsEngine {
       }
     }
 
+    if (this.bitTremoloLFO) {
+      try {
+        this.bitTremoloLFO.stop();
+      } catch {
+        /* stopped */
+      }
+    }
+
     this.orphanedNodes = [
       this.inputGain,
       this.outputGain,
@@ -619,6 +676,10 @@ class EffectsEngine {
       this.bitCrusherGain,
       this.bitLowpass,
       this.bitNotch,
+      this.bitMidBoost,
+      this.bitTremoloGain,
+      this.bitTremoloLFO,
+      this.bitTremoloLFOGain,
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
@@ -648,6 +709,10 @@ class EffectsEngine {
     this.bitCrusherGain = null;
     this.bitLowpass = null;
     this.bitNotch = null;
+    this.bitMidBoost = null;
+    this.bitTremoloGain = null;
+    this.bitTremoloLFO = null;
+    this.bitTremoloLFOGain = null;
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
@@ -689,6 +754,14 @@ class EffectsEngine {
       }
     }
 
+    if (this.bitTremoloLFO) {
+      try {
+        this.bitTremoloLFO.stop();
+      } catch {
+        /* stopped */
+      }
+    }
+
     this.orphanedNodes = [
       this.inputGain,
       this.outputGain,
@@ -709,6 +782,10 @@ class EffectsEngine {
       this.bitCrusherGain,
       this.bitLowpass,
       this.bitNotch,
+      this.bitMidBoost,
+      this.bitTremoloGain,
+      this.bitTremoloLFO,
+      this.bitTremoloLFOGain,
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
@@ -738,6 +815,10 @@ class EffectsEngine {
     this.bitCrusherGain = null;
     this.bitLowpass = null;
     this.bitNotch = null;
+    this.bitMidBoost = null;
+    this.bitTremoloGain = null;
+    this.bitTremoloLFO = null;
+    this.bitTremoloLFOGain = null;
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
