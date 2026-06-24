@@ -35,6 +35,7 @@ class EffectsEngine {
   private filterLFO: OscillatorNode | null = null;
   private filterLFOGain: GainNode | null = null;
   private filterHighshelf: BiquadFilterNode | null = null;
+  private filterMakeupGain: GainNode | null = null;
   private activeFilter: string | null = null;
 
   private orphanedNodes: AudioNode[] = [];
@@ -208,6 +209,17 @@ class EffectsEngine {
     return curve;
   }
 
+  private makeBitCrushCurve(bits: number): Float32Array {
+    const samples = 256;
+    const curve = new Float32Array(samples);
+    const step = Math.pow(0.5, bits);
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = Math.round(x / step) * step;
+    }
+    return curve;
+  }
+
   isInitialized(): boolean {
     return this.initialized;
   }
@@ -360,6 +372,7 @@ class EffectsEngine {
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
+      this.filterMakeupGain,
       this.filterDelay,
       this.filterLFO,
       this.filterLFOGain,
@@ -377,6 +390,7 @@ class EffectsEngine {
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
+    this.filterMakeupGain = null;
     this.filterDelay = null;
     this.filterLFO = null;
     this.filterLFOGain = null;
@@ -474,23 +488,22 @@ class EffectsEngine {
       lastNode = this.filterDelay;
     } else if (preset === "eightBit") {
       this.filterWaveshaper = ctx.createWaveShaper();
-      this.filterWaveshaper.curve = this.makeDistortionCurve(100);
+      this.filterWaveshaper.curve = this.makeBitCrushCurve(4);
       this.filterWaveshaper.oversample = "none";
 
-      const highpass = ctx.createBiquadFilter();
-      highpass.type = "highpass";
-      highpass.frequency.value = 800;
-      this.filterLowpass = highpass;
+      this.filterMakeupGain = ctx.createGain();
+      this.filterMakeupGain.gain.value = 0.6;
 
-      this.filterDelay = ctx.createDelay(0.03);
-      this.filterDelay.delayTime.value = 0.02;
+      this.filterLowpass = ctx.createBiquadFilter();
+      this.filterLowpass.type = "lowpass";
+      this.filterLowpass.frequency.value = 6000;
 
       for (const source of sources) {
         source.connect(this.filterWaveshaper);
       }
-      this.filterWaveshaper.connect(highpass);
-      highpass.connect(this.filterDelay);
-      lastNode = this.filterDelay;
+      this.filterWaveshaper.connect(this.filterMakeupGain);
+      this.filterMakeupGain.connect(this.filterLowpass);
+      lastNode = this.filterLowpass;
     } else if (preset === "radio") {
       this.filterBandpass = ctx.createBiquadFilter();
       this.filterBandpass.type = "bandpass";
@@ -560,6 +573,7 @@ class EffectsEngine {
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
+      this.filterMakeupGain,
       this.filterDelay,
       this.filterLFO,
       this.filterLFOGain,
@@ -584,6 +598,7 @@ class EffectsEngine {
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
+    this.filterMakeupGain = null;
     this.filterDelay = null;
     this.filterLFO = null;
     this.filterLFOGain = null;
@@ -640,6 +655,7 @@ class EffectsEngine {
       this.filterLowpass,
       this.filterBandpass,
       this.filterWaveshaper,
+      this.filterMakeupGain,
       this.filterDelay,
       this.filterLFO,
       this.filterLFOGain,
@@ -664,6 +680,7 @@ class EffectsEngine {
     this.filterLowpass = null;
     this.filterBandpass = null;
     this.filterWaveshaper = null;
+    this.filterMakeupGain = null;
     this.filterDelay = null;
     this.filterLFO = null;
     this.filterLFOGain = null;
