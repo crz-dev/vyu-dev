@@ -1415,11 +1415,13 @@
       class:active={library.activeTab === "library"}
       onclick={() => library.setActiveTab("library")}>Library</button
     >
-    <button
-      class="library-tab"
-      class:active={library.activeTab === "recents"}
-      onclick={() => library.setActiveTab("recents")}>Recents</button
-    >
+    {#if !library.privacyMode}
+      <button
+        class="library-tab"
+        class:active={library.activeTab === "recents"}
+        onclick={() => library.setActiveTab("recents")}>Recents</button
+      >
+    {/if}
     <button
       class="library-tab"
       class:active={library.activeTab === "collections"}

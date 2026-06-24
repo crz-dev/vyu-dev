@@ -269,7 +269,7 @@ function createLibrary() {
   }
 
   function addRecent(path: string) {
-    if (recentsDisabled) return;
+    if (recentsDisabled || privacyMode) return;
     const idx = recentFiles.findIndex((r) => r.path === path);
     if (idx !== -1) recentFiles.splice(idx, 1);
     recentFiles.unshift({ path, openedAt: Date.now() });
@@ -324,6 +324,9 @@ function createLibrary() {
   function setPrivacyMode(enabled: boolean) {
     privacyMode = enabled;
     savePrivacyMode(enabled);
+    if (enabled && activeTab === "recents") {
+      setActiveTab("library");
+    }
   }
 
   function setDensity(v: number) {
