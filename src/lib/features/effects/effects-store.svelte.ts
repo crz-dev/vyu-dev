@@ -23,15 +23,17 @@ export interface EffectsStore {
 }
 
 let engineInitPending = false;
+let engineInitPromise: Promise<void> | null = null;
 
-function ensureEngine(): void {
-  if (fxEngine.isInitialized() || engineInitPending) return;
+function ensureEngine(): Promise<void> {
+  if (fxEngine.isInitialized()) return Promise.resolve();
+  if (engineInitPromise) return engineInitPromise;
   const ctx = eqEngine.getContext();
-  if (!ctx) return;
+  if (!ctx) return Promise.resolve();
   const analyser = eqEngine.getAnalyser();
-  if (!analyser) return;
+  if (!analyser) return Promise.resolve();
   engineInitPending = true;
-  fxEngine
+  engineInitPromise = fxEngine
     .init(ctx)
     .then(() => {
       analyser.connect(fxEngine.getInputNode()!);
@@ -39,7 +41,9 @@ function ensureEngine(): void {
     })
     .finally(() => {
       engineInitPending = false;
+      engineInitPromise = null;
     });
+  return engineInitPromise;
 }
 
 function createEffectsStore(): EffectsStore {
@@ -81,8 +85,9 @@ function createEffectsStore(): EffectsStore {
   function setPitch(value: number) {
     pitch = value;
     if (value || reverb || chorus || distortion) {
-      ensureEngine();
-      fxEngine.setPitch(value);
+      ensureEngine().then(() => {
+        fxEngine.setPitch(value);
+      });
     } else if (fxEngine.isInitialized()) {
       fxEngine.setPitch(0);
     }
@@ -91,8 +96,9 @@ function createEffectsStore(): EffectsStore {
   function setReverb(value: number) {
     reverb = value;
     if (value || chorus || distortion || pitch) {
-      ensureEngine();
-      fxEngine.setReverb(value);
+      ensureEngine().then(() => {
+        fxEngine.setReverb(value);
+      });
     } else if (fxEngine.isInitialized()) {
       fxEngine.setReverb(0);
     }
@@ -101,8 +107,9 @@ function createEffectsStore(): EffectsStore {
   function setChorus(value: number) {
     chorus = value;
     if (reverb || value || distortion || pitch) {
-      ensureEngine();
-      fxEngine.setChorus(value);
+      ensureEngine().then(() => {
+        fxEngine.setChorus(value);
+      });
     } else if (fxEngine.isInitialized()) {
       fxEngine.setChorus(0);
     }
@@ -111,8 +118,9 @@ function createEffectsStore(): EffectsStore {
   function setDistortion(value: number) {
     distortion = value;
     if (reverb || chorus || value || pitch) {
-      ensureEngine();
-      fxEngine.setDistortion(value);
+      ensureEngine().then(() => {
+        fxEngine.setDistortion(value);
+      });
     } else if (fxEngine.isInitialized()) {
       fxEngine.setDistortion(0);
     }
@@ -120,10 +128,9 @@ function createEffectsStore(): EffectsStore {
 
   function setFilter(preset: FilterPreset | null) {
     activeFilter = preset;
-    ensureEngine();
-    if (fxEngine.isInitialized()) {
+    ensureEngine().then(() => {
       fxEngine.setFilter(preset);
-    }
+    });
     if (preset === "lofi" || preset === "nightcore") {
       backgroundPlaybackSpeedFn?.(preset === "lofi" ? 0.8 : 1.1);
     } else if (savedPlaybackSpeed !== null) {
