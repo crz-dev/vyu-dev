@@ -308,6 +308,7 @@
   );
 
   const displayFiles = $derived.by(() => {
+    if (library.activeTab === "recents" && library.privacyMode) return [];
     if (library.activeTab === "recents") return library.getRecentPaths();
     if (library.activeTab === "favorites") return library.getFavoritePaths();
     if (isViewingCollection) return collectionFiles;
@@ -1415,13 +1416,11 @@
       class:active={library.activeTab === "library"}
       onclick={() => library.setActiveTab("library")}>Library</button
     >
-    {#if !library.privacyMode}
-      <button
-        class="library-tab"
-        class:active={library.activeTab === "recents"}
-        onclick={() => library.setActiveTab("recents")}>Recents</button
-      >
-    {/if}
+    <button
+      class="library-tab"
+      class:active={library.activeTab === "recents"}
+      onclick={() => library.setActiveTab("recents")}>Recents</button
+    >
     <button
       class="library-tab"
       class:active={library.activeTab === "collections"}
@@ -1516,7 +1515,7 @@
       >
       <span class="library-breadcrumb-segment active"
         >Recents
-        {#if library.recentsDisabled}
+        {#if library.recentsDisabled || library.privacyMode}
           <span class="library-header-count">(Off)</span>
         {:else}
           <button

@@ -324,9 +324,6 @@ function createLibrary() {
   function setPrivacyMode(enabled: boolean) {
     privacyMode = enabled;
     savePrivacyMode(enabled);
-    if (enabled && activeTab === "recents") {
-      setActiveTab("library");
-    }
   }
 
   function setDensity(v: number) {
