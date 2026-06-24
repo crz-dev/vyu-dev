@@ -73,7 +73,7 @@ class EqualizerEngine {
 
     try {
       const ctx = this.ensureContext();
-      el.preservesPitch = false;
+      el.preservesPitch = true;
       this.source = ctx.createMediaElementSource(el);
 
       this.filters = BAND_FREQUENCIES.map((freq, i) => {
