@@ -890,11 +890,17 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <rect x="4" y="10" width="4" height="10" rx="1" />
-                <rect x="10" y="4" width="4" height="16" rx="1" />
-                <rect x="16" y="7" width="4" height="13" rx="1" />
+                <rect x="3" y="3" width="5" height="5" rx="1" />
+                <rect x="10" y="3" width="5" height="5" rx="1" />
+                <rect x="17" y="3" width="5" height="5" rx="1" />
+                <rect x="3" y="10" width="5" height="5" rx="1" />
+                <rect x="10" y="10" width="5" height="5" rx="1" />
+                <rect x="17" y="10" width="5" height="5" rx="1" />
+                <rect x="3" y="17" width="5" height="5" rx="1" />
+                <rect x="10" y="17" width="5" height="5" rx="1" />
+                <rect x="17" y="17" width="5" height="5" rx="1" />
               </svg>
-              <span>Spectrogram</span>
+              <span>Spectrum</span>
             </button>
           </div>
         {/if}
