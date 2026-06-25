@@ -828,11 +828,10 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <rect x="3" y="8" width="2" height="8" rx="1" />
-                <rect x="7" y="5" width="2" height="14" rx="1" />
-                <rect x="11" y="3" width="2" height="18" rx="1" />
-                <rect x="15" y="7" width="2" height="10" rx="1" />
-                <rect x="19" y="10" width="2" height="4" rx="1" />
+                <rect x="3" y="14" width="3" height="6" rx="1" />
+                <rect x="8" y="8" width="3" height="12" rx="1" />
+                <rect x="13" y="4" width="3" height="16" rx="1" />
+                <rect x="18" y="10" width="3" height="10" rx="1" />
               </svg>
               <span>Pulse</span>
             </button>
@@ -851,10 +850,9 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <rect x="3" y="14" width="3" height="6" rx="1" />
-                <rect x="8" y="8" width="3" height="12" rx="1" />
-                <rect x="13" y="4" width="3" height="16" rx="1" />
-                <rect x="18" y="10" width="3" height="10" rx="1" />
+                <path d="M12 3c-4 0-7 3-7 7v9l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2v-9c0-4-3-7-7-7z" fill="currentColor" fill-opacity="0.12" />
+                <circle cx="9" cy="9" r="1.2" fill="currentColor" />
+                <circle cx="15" cy="9" r="1.2" fill="currentColor" />
               </svg>
               <span>Spectrum</span>
             </button>
@@ -869,11 +867,11 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                stroke-width="2"
+                stroke-width="2.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M3 12h3l1.5-5 2 10 2.5-7 2 4h3" />
+                <path d="M2 12h4l2-6 3 12 3-8 2 4h4" />
               </svg>
               <span>Heartbeat</span>
             </button>

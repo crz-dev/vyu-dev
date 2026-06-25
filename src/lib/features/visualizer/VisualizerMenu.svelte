@@ -73,22 +73,9 @@
 
   onMount(() => {
     mounted = true;
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  });
-
-  $effect(() => {
-    if (!visible || !mounted) return;
-
-    const analyser = eqEngine.getAnalyser();
-    if (!analyser) return;
-
-    const freqData = new Uint8Array(analyser.frequencyBinCount);
-    const timeData = new Uint8Array(analyser.fftSize);
 
     if (type === "diamonds") {
-      particles = createParticles(60, analyser.frequencyBinCount);
+      particles = createParticles(60, 512);
     }
     if (type === "pulse") {
       barsState = createBarsState();
@@ -97,47 +84,61 @@
       scopeState = createScopeState();
     }
 
-    const canvas = canvasEl;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.imageSmoothingEnabled = true;
+    let freqData: Uint8Array<ArrayBuffer> | null = null;
+    let timeData: Uint8Array<ArrayBuffer> | null = null;
+    let ctx: CanvasRenderingContext2D | null = null;
 
     function tick(timestamp: number) {
-      if (timestamp - lastFrame < 16.67) {
-        rafId = requestAnimationFrame(tick);
+      // Self-cancel when unmounted or canvas gone
+      if (!mounted) {
+        rafId = 0;
         return;
       }
-      const dt = (timestamp - lastFrame) / 1000;
-      lastFrame = timestamp;
 
-      ctx!.imageSmoothingEnabled = true;
-
-      drawBackground(ctx!, CANVAS_W, CANVAS_H);
-
-      if (type === "heartbeat") {
-        analyser!.getByteTimeDomainData(timeData);
-        drawScope(ctx!, timeData, CANVAS_W, CANVAS_H, scopeState!, dt);
-      } else {
-        analyser!.getByteFrequencyData(freqData);
-        if (type === "pulse") {
-          drawBars(ctx!, freqData, CANVAS_W, CANVAS_H, barsState!);
-        } else if (type === "spectrum") {
-          drawSpectrum(ctx!, freqData, CANVAS_W, CANVAS_H);
-        } else if (type === "diamonds") {
-          drawParticles(
-            ctx!,
-            freqData,
-            CANVAS_W,
-            CANVAS_H,
-            particles,
-            timestamp / 1000,
-          );
-        }
+      // Lazily grab context when canvas becomes available
+      if (!ctx && canvasEl) {
+        ctx = canvasEl.getContext("2d");
+      }
+      // Drop context when canvas is removed
+      if (!canvasEl) {
+        ctx = null;
       }
 
-      drawVignette(ctx!, CANVAS_W, CANVAS_H);
+      if (ctx && canvasEl) {
+        if (timestamp - lastFrame >= 16.67) {
+          const dt = (timestamp - lastFrame) / 1000;
+          lastFrame = timestamp;
+
+          const analyser = eqEngine.getAnalyser();
+          if (analyser) {
+            if (!freqData || freqData.length !== analyser.frequencyBinCount) {
+              freqData = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (!timeData || timeData.length !== analyser.fftSize) {
+              timeData = new Uint8Array(analyser.fftSize);
+            }
+
+            ctx.imageSmoothingEnabled = true;
+            drawBackground(ctx, CANVAS_W, CANVAS_H);
+
+            if (type === "heartbeat") {
+              analyser.getByteTimeDomainData(timeData);
+              drawScope(ctx, timeData, CANVAS_W, CANVAS_H, scopeState!, dt);
+            } else {
+              analyser.getByteFrequencyData(freqData);
+              if (type === "pulse") {
+                drawBars(ctx, freqData, CANVAS_W, CANVAS_H, barsState!);
+              } else if (type === "spectrum") {
+                drawSpectrum(ctx, freqData, CANVAS_W, CANVAS_H);
+              } else if (type === "diamonds") {
+                drawParticles(ctx, freqData, CANVAS_W, CANVAS_H, particles, timestamp / 1000);
+              }
+            }
+
+            drawVignette(ctx, CANVAS_W, CANVAS_H);
+          }
+        }
+      }
 
       rafId = requestAnimationFrame(tick);
     }
@@ -145,8 +146,8 @@
     rafId = requestAnimationFrame(tick);
 
     return () => {
+      mounted = false;
       if (rafId) cancelAnimationFrame(rafId);
-      rafId = 0;
     };
   });
 </script>
@@ -171,33 +172,33 @@
           if ((e.target as HTMLElement).closest("button")) return;
           e.preventDefault();
           onMoved?.();
-          const menu = (e.currentTarget as HTMLElement).closest(
+          const wrapper = (e.currentTarget as HTMLElement).closest(
             ".visualizer-wrapper",
           ) as HTMLElement;
-          if (!menu) return;
+          if (!wrapper) return;
           const startX = e.clientX;
           const startY = e.clientY;
-          const rect = menu.getBoundingClientRect();
+          const rect = wrapper.getBoundingClientRect();
           const startLeft = rect.left;
           const startTop = rect.top;
-          const savedTransition = menu.style.transition;
-          menu.style.transition = "none";
+          const savedTransition = wrapper.style.transition;
+          wrapper.style.transition = "none";
 
-          function onMouseMove(ev: MouseEvent) {
-            menu.style.left = `${startLeft + ev.clientX - startX}px`;
-            menu.style.top = `${startTop + ev.clientY - startY}px`;
-            menu.style.transform = "none";
+          function onPointerMove(ev: PointerEvent) {
+            wrapper.style.left = `${startLeft + ev.clientX - startX}px`;
+            wrapper.style.top = `${startTop + ev.clientY - startY}px`;
+            wrapper.style.transform = "none";
           }
 
-          function onMouseUp() {
-            menu.style.transition = savedTransition;
-            menu.style.transform = "";
-            window.removeEventListener("mousemove", onMouseMove);
-            window.removeEventListener("mouseup", onMouseUp);
+          function onPointerUp() {
+            wrapper.style.transition = savedTransition;
+            wrapper.style.transform = "";
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerUp);
           }
 
-          window.addEventListener("mousemove", onMouseMove);
-          window.addEventListener("mouseup", onMouseUp);
+          window.addEventListener("pointermove", onPointerMove);
+          window.addEventListener("pointerup", onPointerUp);
         }}
       >
         <button

@@ -60,6 +60,8 @@ class EqualizerEngine {
     return this.ctx;
   }
 
+  private sourceElement: HTMLMediaElement | null = null;
+
   connectMediaElement(el: HTMLMediaElement): boolean {
     if (this.connectedElement === el && this.source) {
       this.ensureContext();
@@ -74,7 +76,14 @@ class EqualizerEngine {
     try {
       const ctx = this.ensureContext();
       el.preservesPitch = true;
-      this.source = ctx.createMediaElementSource(el);
+
+      // Reuse existing source node if same element (createMediaElementSource is once-per-element)
+      if (this.sourceElement === el && this.source) {
+        // Source node still bound to element — just rebuild the filter chain
+      } else {
+        this.source = ctx.createMediaElementSource(el);
+        this.sourceElement = el;
+      }
 
       this.filters = BAND_FREQUENCIES.map((freq, i) => {
         const filter = ctx.createBiquadFilter();
@@ -132,8 +141,9 @@ class EqualizerEngine {
     this.stagePanner = null;
     this.effectsOutput = null;
 
+    // Keep source node alive — createMediaElementSource is once-per-element,
+    // so we reuse it when reconnecting the same element.
     const oldSource = this.source;
-    this.source = null;
 
     this.orphanedNodes = [
       ...this.filters,
@@ -147,9 +157,10 @@ class EqualizerEngine {
     this.stageNodes = [];
     this.stageMode = null;
 
-    // Allow the 30ms gain ramp to complete before tearing down the graph.
+    // Allow the 30ms gain ramp to complete before tearing down the filter chain.
     this.pendingCleanup = setTimeout(() => {
       this.pendingCleanup = null;
+      // Disconnect source from old filters, but keep the source node itself alive
       if (oldSource) {
         try {
           oldSource.disconnect();
@@ -444,6 +455,7 @@ class EqualizerEngine {
       }
       this.source = null;
     }
+    this.sourceElement = null;
     this.connectedElement = null;
 
     // Snapshot nodes for deferred cleanup (same pattern as disconnect)

@@ -8,6 +8,7 @@ import { markerStore } from "$lib/features/markers/markers.svelte";
 import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
 import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
+import { visualizerStore } from "$lib/features/visualizer/visualizer-store.svelte";
 import { corruption } from "$lib/features/media/corruption.svelte";
 import {
   clearFolderCache,
@@ -120,6 +121,9 @@ export function createNavigation(deps: NavigationDeps) {
 
   async function navigate(direction: number) {
     if (deps.getFileList().length === 0) return;
+    if (!menuStore.effectsMenuVisible) {
+      visualizerStore.closeAll();
+    }
     slideshow.stop();
     editing.exitCropMode();
     const next = await media.navigate(
@@ -135,6 +139,9 @@ export function createNavigation(deps: NavigationDeps) {
   async function navigateToIndex(index: number) {
     const fileList = deps.getFileList();
     if (fileList.length === 0 || index === deps.getCurrentIndex()) return;
+    if (!menuStore.effectsMenuVisible) {
+      visualizerStore.closeAll();
+    }
     slideshow.stop();
     editing.exitCropMode();
     deps.setCurrentIndex(index);
@@ -144,6 +151,9 @@ export function createNavigation(deps: NavigationDeps) {
 
   async function navigateToEdge(first: boolean) {
     if (deps.getFileList().length === 0) return;
+    if (!menuStore.effectsMenuVisible) {
+      visualizerStore.closeAll();
+    }
     slideshow.stop();
     editing.exitCropMode();
     const next = await media.navigateToEdge(
@@ -164,6 +174,9 @@ export function createNavigation(deps: NavigationDeps) {
     do {
       const ext = getFileExt(fileList[idx]);
       if (AUDIO_EXTS.includes(ext)) {
+        if (!menuStore.effectsMenuVisible) {
+          visualizerStore.closeAll();
+        }
         slideshow.stop();
         editing.exitCropMode();
         deps.setCurrentIndex(idx);
