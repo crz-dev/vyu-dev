@@ -1,5 +1,4 @@
 // Canvas renderers for the four visualizer types
-// All functions are pure — they receive canvas context and data, draw, return nothing.
 
 // EQ band colors (dark theme) — one per band, 30Hz → 16kHz
 // Matches BAND_COLORS in EqualizerMenu.svelte
@@ -23,7 +22,7 @@ const GRADIENT_STOPS: [number, string][] = EQ_GRADIENT_COLORS.map(
 // Logarithmic frequency bin mapping — spreads bins across 20Hz–20kHz
 function getLogIndex(i: number, total: number, bufferLength: number): number {
   const logMin = Math.log10(20);
-  const logMax = Math.log10(20000);
+  const logMax = Math.log10(10000);
   const logFreq = logMin + (i / total) * (logMax - logMin);
   return Math.min(
     bufferLength - 1,
@@ -68,10 +67,42 @@ export function getGradientColor(t: number): string {
   return stops[stops.length - 1][1];
 }
 
+// ── Background + Vignette ─────────────────────────────────────────────
+
+export function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
+  grad.addColorStop(0, "#121212");
+  grad.addColorStop(1, "#060606");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
+export function drawVignette(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  const grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.75);
+  grad.addColorStop(0, "rgba(0,0,0,0)");
+  grad.addColorStop(1, "rgba(0,0,0,0.4)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
 // ── Bars ───────────────────────────────────────────────────────────────
 
 const BAR_COUNT = 80;
 const BAR_GAP = 2;
+
+function perceptualWeight(binIndex: number, totalBins: number, value: number): number {
+  const t = binIndex / totalBins;
+  const highBoost = 1.0 + t * 0.8;
+  return Math.min(255, value * highBoost);
+}
 
 export interface BarsState {
   peaks: number[];
@@ -92,26 +123,26 @@ export function drawBars(
   h: number,
   state: BarsState,
 ): void {
-  ctx.clearRect(0, 0, w, h);
-
   const totalGap = BAR_GAP * (BAR_COUNT - 1);
   const barWidth = (w - totalGap) / BAR_COUNT;
 
-  // Reflection pass (drawn first, behind main bars)
+  // Reflection pass (drawn first, behind main bars) — vertical alpha fade
   ctx.save();
-  ctx.globalAlpha = 0.2;
   ctx.translate(0, h);
   ctx.scale(1, -1);
   for (let i = 0; i < BAR_COUNT; i++) {
     const binIdx = getLogIndex(i, BAR_COUNT, freqData.length);
-    const value = freqData[binIdx] ?? 0;
-    const barHeight = Math.max(2, (value / 255) * h * 0.4);
+    const rawValue = (freqData[binIdx] ?? 0) * 0.65;
+    const value = perceptualWeight(i, BAR_COUNT, rawValue);
+    const barHeight = Math.min(h * 0.4 * 0.95, (value / 255) * h * 0.4);
     const x = i * (barWidth + BAR_GAP);
     const y = 0;
-    const radius = Math.min(barWidth / 2, 3);
+    const radius = Math.min(barWidth / 2, 5);
     const t = (x + barWidth / 2) / w;
     const color = getGradientColor(t);
 
+    // Alpha fades from 0.18 at top → 0.02 at bottom of reflection
+    ctx.globalAlpha = 0.02 + 0.16 * (1 - barHeight / (h * 0.4));
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -133,11 +164,12 @@ export function drawBars(
   // Main bars
   for (let i = 0; i < BAR_COUNT; i++) {
     const binIdx = getLogIndex(i, BAR_COUNT, freqData.length);
-    const value = freqData[binIdx] ?? 0;
-    const barHeight = Math.max(2, (value / 255) * h);
+    const rawValue = (freqData[binIdx] ?? 0) * 0.65;
+    const value = perceptualWeight(i, BAR_COUNT, rawValue);
+    const barHeight = Math.min(h * 0.95, (value / 255) * h);
     const x = i * (barWidth + BAR_GAP);
     const y = h - barHeight;
-    const radius = Math.min(barWidth / 2, 3);
+    const radius = Math.min(barWidth / 2, 5);
     const t = (x + barWidth / 2) / w;
     const color = getGradientColor(t);
 
@@ -151,6 +183,23 @@ export function drawBars(
     }
 
     ctx.fillStyle = color;
+
+    // Bar top glow
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = -2;
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x, y + radius);
+    ctx.arcTo(x, y, x + radius, y, radius);
+    ctx.arcTo(x + barWidth, y, x + barWidth, y + radius, radius);
+    ctx.lineTo(x + barWidth, h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Main bar fill (no shadow)
     ctx.beginPath();
     ctx.moveTo(x, h);
     ctx.lineTo(x, y + radius);
@@ -163,7 +212,7 @@ export function drawBars(
     // Diamond peak — matches equalizer knob (11px, 45° rotation)
     const peakY = h - state.peaks[i];
     if (state.peaks[i] > 2) {
-      const diamondSize = 11;
+      const diamondSize = 7;
       const cx = x + barWidth / 2;
 
       ctx.save();
@@ -173,7 +222,7 @@ export function drawBars(
       // Glow
       ctx.globalAlpha = 0.5;
       ctx.shadowColor = color;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6;
       ctx.fillStyle = color;
       ctx.fillRect(
         -diamondSize / 2,
@@ -206,12 +255,11 @@ export function drawSpectrum(
   w: number,
   h: number,
 ): void {
-  ctx.clearRect(0, 0, w, h);
-
   const points = 80;
 
   // Log-mapped + rolling average across 5 neighboring bins
   const coords: [number, number][] = [];
+  let totalEnergy = 0;
   for (let i = 0; i < points; i++) {
     const binIdx = getLogIndex(i, points, freqData.length);
     let sum = 0;
@@ -224,26 +272,22 @@ export function drawSpectrum(
       }
     }
     const smoothed = sum / count;
+    totalEnergy += smoothed;
     const x = (i / (points - 1)) * w;
     const y = h - (smoothed / 255) * h * 0.9;
     coords.push([x, y]);
   }
 
+  // Energy-driven fill alpha: 0.2 at silence → 0.5 at loud
+  const avgEnergy = totalEnergy / points;
+  const fillAlpha = 0.2 + (avgEnergy / 255) * 0.3;
+
   const gradient = createWarmToCoolGradient(ctx, w);
 
-  // Build the bezier path with left-edge taper
+  // Build the bezier path
   function tracePath() {
     ctx.beginPath();
     ctx.moveTo(0, h);
-    // Taper: ramp from bottom to first point over ~5% of width
-    const taperWidth = w * 0.05;
-    const taperSteps = 3;
-    for (let t = 1; t <= taperSteps; t++) {
-      const frac = t / taperSteps;
-      const tx = taperWidth * frac;
-      const ty = h - (h - coords[0][1]) * frac;
-      ctx.lineTo(tx, ty);
-    }
     for (let i = 0; i < coords.length; i++) {
       const [x, y] = coords[i];
       if (i === 0) {
@@ -258,13 +302,13 @@ export function drawSpectrum(
     ctx.closePath();
   }
 
-  // Fill — EQ gradient at 35% opacity, fading to transparent at top
+  // Fill — EQ gradient at energy-driven opacity, fading to transparent at top
   tracePath();
   const fillGrad = ctx.createLinearGradient(0, 0, 0, h);
   fillGrad.addColorStop(0, "rgba(0,0,0,0)");
   fillGrad.addColorStop(1, "rgba(0,0,0,0.4)");
   ctx.fillStyle = gradient;
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = fillAlpha;
   ctx.fill();
   ctx.fillStyle = fillGrad;
   ctx.globalAlpha = 0.3;
@@ -274,14 +318,6 @@ export function drawSpectrum(
   // Stroke — glow pass (lineWidth 8 at 15% opacity)
   ctx.beginPath();
   ctx.moveTo(0, h);
-  const taperWidth = w * 0.05;
-  const taperSteps = 3;
-  for (let t = 1; t <= taperSteps; t++) {
-    const frac = t / taperSteps;
-    const tx = taperWidth * frac;
-    const ty = h - (h - coords[0][1]) * frac;
-    ctx.lineTo(tx, ty);
-  }
   for (let i = 0; i < coords.length; i++) {
     const [x, y] = coords[i];
     if (i === 0) {
@@ -301,12 +337,6 @@ export function drawSpectrum(
   // Stroke — main pass (lineWidth 2.5 at full opacity)
   ctx.beginPath();
   ctx.moveTo(0, h);
-  for (let t = 1; t <= taperSteps; t++) {
-    const frac = t / taperSteps;
-    const tx = taperWidth * frac;
-    const ty = h - (h - coords[0][1]) * frac;
-    ctx.lineTo(tx, ty);
-  }
   for (let i = 0; i < coords.length; i++) {
     const [x, y] = coords[i];
     if (i === 0) {
@@ -324,14 +354,23 @@ export function drawSpectrum(
 
 // ── Scope ──────────────────────────────────────────────────────────────
 
+export interface ScopeState {
+  prevTimeData: Uint8Array | null;
+  scanX: number;
+}
+
+export function createScopeState(): ScopeState {
+  return { prevTimeData: null, scanX: 0 };
+}
+
 export function drawScope(
   ctx: CanvasRenderingContext2D,
   timeData: Uint8Array,
   w: number,
   h: number,
+  state: ScopeState,
+  dt: number,
 ): void {
-  ctx.clearRect(0, 0, w, h);
-
   const gradient = createWarmToCoolGradient(ctx, w);
 
   // Grid lines at 25%, 50%, 75%
@@ -342,6 +381,18 @@ export function drawScope(
     ctx.moveTo(0, h * frac);
     ctx.lineTo(w, h * frac);
     ctx.stroke();
+
+    // Tick marks — small 4px dashes at each grid line
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 1;
+    const tickSpacing = w / 16;
+    for (let tx = tickSpacing; tx < w; tx += tickSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(tx, h * frac - 3);
+      ctx.lineTo(tx, h * frac + 1);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
   }
 
   // Vertical center line at 50% width
@@ -351,6 +402,22 @@ export function drawScope(
   ctx.moveTo(w / 2, 0);
   ctx.lineTo(w / 2, h);
   ctx.stroke();
+
+  // Phosphor glow trail — previous frame at reduced opacity
+  if (state.prevTimeData) {
+    ctx.beginPath();
+    for (let i = 0; i < state.prevTimeData.length; i++) {
+      const x = (i / (state.prevTimeData.length - 1)) * w;
+      const y = (state.prevTimeData[i] / 255) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.1;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 
   // Build waveform path (zero crossing at 50% canvas height)
   function traceWave() {
@@ -380,6 +447,15 @@ export function drawScope(
   ctx.lineWidth = 2;
   ctx.globalAlpha = 1;
   ctx.stroke();
+
+  // Scanline — sweeps left to right
+  state.scanX = (state.scanX + dt * 0.4) % 1;
+  const sx = state.scanX * w;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.06)";
+  ctx.fillRect(sx - 1, 0, 3, h);
+
+  // Store current frame for next phosphor trail
+  state.prevTimeData = new Uint8Array(timeData);
 }
 
 // ── Particles ──────────────────────────────────────────────────────────
@@ -416,8 +492,11 @@ export function createParticles(count: number, binCount: number): Particle[] {
     } else if (band === 2) {
       size = 8 + Math.random() * 6; // mid-high: 8–14px
     } else {
-      size = 4 + Math.random() * 4; // high freq: 4–8px
+      size = 6 + Math.random() * 6; // high freq: 6–12px (boosted visibility)
     }
+
+    // High-freq particles get higher base opacity
+    const baseOpacity = band === 3 ? 0.75 + Math.random() * 0.25 : 0.6 + Math.random() * 0.4;
 
     return {
       x: Math.random(),
@@ -425,7 +504,7 @@ export function createParticles(count: number, binCount: number): Particle[] {
       baseX: Math.random(),
       size,
       speed: 0.002 + Math.random() * 0.003,
-      opacity: 0.6 + Math.random() * 0.4,
+      opacity: baseOpacity,
       color: getGradientColor(t),
       frequencyBin: bin,
       sineOffset: Math.random() * Math.PI * 2,
@@ -442,8 +521,6 @@ export function drawParticles(
   particles: Particle[],
   time: number,
 ): void {
-  ctx.clearRect(0, 0, w, h);
-
   // Overall energy for silence detection
   let totalEnergy = 0;
   for (let i = 0; i < freqData.length; i += 8) {
@@ -516,6 +593,17 @@ export function drawParticles(
       -renderSize / 2,
       renderSize,
       renderSize,
+    );
+
+    // Inner highlight — small bright core
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = alpha * p.opacity * 0.3;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(
+      -renderSize / 4,
+      -renderSize / 4,
+      renderSize / 2,
+      renderSize / 2,
     );
     ctx.restore();
   }

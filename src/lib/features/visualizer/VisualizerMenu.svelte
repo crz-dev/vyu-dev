@@ -11,10 +11,14 @@
     drawSpectrum,
     drawScope,
     drawParticles,
+    drawBackground,
+    drawVignette,
     createParticles,
     createBarsState,
+    createScopeState,
     type Particle,
     type BarsState,
+    type ScopeState,
   } from "./renderers";
 
   let {
@@ -44,6 +48,7 @@
   let lastFrame = 0;
   let particles: Particle[] = [];
   let barsState: BarsState | null = null;
+  let scopeState: ScopeState | null = null;
   let mounted = $state(false);
 
   const visible = $derived(visualizerStore.isActive(type));
@@ -88,6 +93,9 @@
     if (type === "pulse") {
       barsState = createBarsState();
     }
+    if (type === "heartbeat") {
+      scopeState = createScopeState();
+    }
 
     const canvas = canvasEl;
     if (!canvas) return;
@@ -101,16 +109,19 @@
         rafId = requestAnimationFrame(tick);
         return;
       }
+      const dt = (timestamp - lastFrame) / 1000;
       lastFrame = timestamp;
 
       ctx!.imageSmoothingEnabled = true;
 
+      drawBackground(ctx!, CANVAS_W, CANVAS_H);
+
       if (type === "heartbeat") {
         analyser!.getByteTimeDomainData(timeData);
-        drawScope(ctx!, timeData, CANVAS_W, CANVAS_H);
+        drawScope(ctx!, timeData, CANVAS_W, CANVAS_H, scopeState!, dt);
       } else {
         analyser!.getByteFrequencyData(freqData);
-    if (type === "pulse") {
+        if (type === "pulse") {
           drawBars(ctx!, freqData, CANVAS_W, CANVAS_H, barsState!);
         } else if (type === "spectrum") {
           drawSpectrum(ctx!, freqData, CANVAS_W, CANVAS_H);
@@ -126,6 +137,8 @@
         }
       }
 
+      drawVignette(ctx!, CANVAS_W, CANVAS_H);
+
       rafId = requestAnimationFrame(tick);
     }
 
@@ -139,7 +152,11 @@
 </script>
 
 {#if visible}
-  <div class="visualizer-wrapper" style:top="{menuTop + layoutY}px" style:left="calc(50% + {layoutX}px)">
+  <div
+    class="visualizer-wrapper"
+    style:top="{menuTop + layoutY}px"
+    style:left="calc(50% + {layoutX}px)"
+  >
     <div
       class="edit-menu visualizer-menu"
       class:pinned
@@ -174,6 +191,7 @@
 
           function onMouseUp() {
             menu.style.transition = savedTransition;
+            menu.style.transform = "";
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
           }
@@ -253,6 +271,7 @@
   .visualizer-wrapper {
     position: fixed;
     z-index: 1099;
+    transform: translateX(-1.5%);
     transition:
       left 0.25s cubic-bezier(0.22, 0.9, 0.3, 1),
       top 0.25s cubic-bezier(0.22, 0.9, 0.3, 1);
@@ -265,7 +284,7 @@
   canvas {
     display: block;
     width: 100%;
-    border-radius: 0 0 9px 9px;
+    border-radius: 0 0 12px 12px;
     background: var(--bg-primary);
   }
 </style>
