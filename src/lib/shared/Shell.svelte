@@ -14,6 +14,7 @@
   import MarkupMenu from "$lib/features/menus/MarkupMenu.svelte";
   import EffectsMenu from "$lib/features/menus/EffectsMenu.svelte";
   import EqualizerMenu from "$lib/features/menus/EqualizerMenu.svelte";
+  import VisualizerMenu from "$lib/features/visualizer/VisualizerMenu.svelte";
   import SettingsDialog from "$lib/features/dialogs/SettingsDialog.svelte";
   import AccessibilityDialog from "$lib/features/dialogs/AccessibilityDialog.svelte";
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
@@ -505,81 +506,23 @@
     let effectsOffset = 0;
     let eqOffset = 0;
 
-    if (peerCount === 2) {
-      const halfGap = (MENU_WIDTH + GAP) / 2;
-      const open = [
-        editOpen ? "edit" : "",
-        markupOpen ? "markup" : "",
-        effectsOpen ? "effects" : "",
-        eqOpen ? "eq" : "",
-      ].filter(Boolean);
-      if (open.length === 2) {
-        const left = open[0];
-        const right = open[1];
-        const off = (k: string) =>
-          k === "edit"
-            ? "edit"
-            : k === "markup"
-              ? "markup"
-              : k === "effects"
-                ? "effects"
-                : "eq";
-        if (left === "edit") editOffset = -halfGap;
-        else if (left === "markup") markupOffset = -halfGap;
-        else if (left === "effects") effectsOffset = -halfGap;
-        else eqOffset = -halfGap;
-        if (right === "edit") editOffset = halfGap;
-        else if (right === "markup") markupOffset = halfGap;
-        else if (right === "effects") effectsOffset = halfGap;
-        else eqOffset = halfGap;
-      }
-    } else if (peerCount === 3) {
-      const open = [];
-      if (editOpen) open.push("edit");
-      if (markupOpen) open.push("markup");
-      if (effectsOpen) open.push("effects");
-      if (eqOpen) open.push("eq");
-      // Spread three menus: left, center, right
-      if (open.length === 3) {
-        const halfGap = (MENU_WIDTH + GAP) / 2;
-        const fullGap = MENU_WIDTH + GAP;
-        const off = (k: string) =>
-          k === "edit"
-            ? "edit"
-            : k === "markup"
-              ? "markup"
-              : k === "effects"
-                ? "effects"
-                : "eq";
-        // Center stays at 0, left at -fullGap, right at +fullGap
-        for (let i = 0; i < open.length; i++) {
-          const val =
-            open[i] === "edit"
-              ? "editOffset"
-              : open[i] === "markup"
-                ? "markupOffset"
-                : open[i] === "effects"
-                  ? "effectsOffset"
-                  : "eqOffset";
-          if (i === 0) {
-            if (val === "editOffset") editOffset = -fullGap;
-            else if (val === "markupOffset") markupOffset = -fullGap;
-            else if (val === "effectsOffset") effectsOffset = -fullGap;
-            else eqOffset = -fullGap;
-          } else if (i === 2) {
-            if (val === "editOffset") editOffset = fullGap;
-            else if (val === "markupOffset") markupOffset = fullGap;
-            else if (val === "effectsOffset") effectsOffset = fullGap;
-            else eqOffset = fullGap;
-          }
-        }
-      }
-    } else if (peerCount === 4) {
+    if (peerCount >= 2) {
       const fullGap = MENU_WIDTH + GAP;
-      editOffset = -fullGap * 1.5;
-      markupOffset = -fullGap * 0.5;
-      effectsOffset = fullGap * 0.5;
-      eqOffset = fullGap * 1.5;
+      const ordered = [
+        editOpen ? "edit" : null,
+        markupOpen ? "markup" : null,
+        effectsOpen ? "effects" : null,
+        eqOpen ? "eq" : null,
+      ].filter(Boolean) as string[];
+      const center = (ordered.length - 1) / 2;
+      const offsets: Record<string, number> = {};
+      for (let i = 0; i < ordered.length; i++) {
+        offsets[ordered[i]] = (i - center) * fullGap;
+      }
+      editOffset = offsets["edit"] ?? 0;
+      markupOffset = offsets["markup"] ?? 0;
+      effectsOffset = offsets["effects"] ?? 0;
+      eqOffset = offsets["eq"] ?? 0;
     }
 
     // Clip shifts based on peer menu presence
@@ -924,6 +867,11 @@
     styleOverride={equalizerMenuStyle}
     {isVideo}
   />
+
+  <VisualizerMenu type="bars" />
+  <VisualizerMenu type="spectrum" />
+  <VisualizerMenu type="scope" />
+  <VisualizerMenu type="particles" />
 
   {#key settingsOpen}
     <SettingsDialog {settingsOpen} closeSettings={() => closeSettings()} />
