@@ -32,10 +32,11 @@
     particles: "Particles",
   };
 
-  const CANVAS_W = 260;
+  const CANVAS_W = 386;
   const CANVAS_H = 140;
 
   let pinned = $state(false);
+  let menuTop = $state(0);
   let canvasEl: HTMLCanvasElement | null = $state(null);
   let rafId = 0;
   let lastFrame = 0;
@@ -48,6 +49,17 @@
   function close() {
     visualizerStore.close(type);
   }
+
+  $effect(() => {
+    if (!visible) return;
+    const wrapper = document.querySelector(
+      ".edit-menu-wrapper",
+    ) as HTMLElement | null;
+    if (wrapper) {
+      const rect = wrapper.getBoundingClientRect();
+      menuTop = rect.bottom + 6;
+    }
+  });
 
   onMount(() => {
     mounted = true;
@@ -78,16 +90,6 @@
     if (!ctx) return;
 
     ctx.imageSmoothingEnabled = true;
-    if (type === "bars" || type === "spectrum") {
-      ctx.shadowColor = "rgba(255, 68, 68, 0.15)";
-      ctx.shadowBlur = 4;
-    } else if (type === "scope") {
-      ctx.shadowColor = "rgba(0, 204, 102, 0.15)";
-      ctx.shadowBlur = 4;
-    } else {
-      ctx.shadowColor = "rgba(170, 68, 255, 0.15)";
-      ctx.shadowBlur = 4;
-    }
 
     function tick(timestamp: number) {
       if (timestamp - lastFrame < 16.67) {
@@ -95,6 +97,8 @@
         return;
       }
       lastFrame = timestamp;
+
+      ctx!.imageSmoothingEnabled = true;
 
       if (type === "scope") {
         analyser!.getByteTimeDomainData(timeData);
@@ -130,11 +134,11 @@
 </script>
 
 {#if visible}
-  <div class="visualizer-wrapper">
+  <div class="visualizer-wrapper" style:top="{menuTop}px">
     <div
       class="edit-menu visualizer-menu"
       class:pinned
-      transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
+      transition:fly={{ y: -26, duration: 220, opacity: 0.15 }}
     >
       <div
         class="ctx-drag"
@@ -179,6 +183,7 @@
           onclick={(e) => {
             e.stopPropagation();
             pinned = !pinned;
+            visualizerStore.setPinned(type, pinned);
           }}
           onmousedown={(e) => e.stopPropagation()}
           aria-label={pinned ? "Unpin" : "Pin"}
@@ -246,19 +251,18 @@
     left: 50%;
     top: 42px;
     transform: translateX(-50%);
-    z-index: 1100;
+    z-index: 1099;
     transition: left 0.25s cubic-bezier(0.22, 0.9, 0.3, 1);
   }
 
   .visualizer-menu {
-    padding: 4px;
+    padding: 0;
   }
 
   canvas {
     display: block;
-    width: 260px;
-    height: 140px;
-    border-radius: 6px;
+    width: 100%;
+    border-radius: 0 0 9px 9px;
     background: var(--bg-primary);
   }
 </style>

@@ -4,16 +4,23 @@ export type VisualizerType = "bars" | "spectrum" | "scope" | "particles";
 export interface VisualizerStore {
   readonly active: ReadonlySet<VisualizerType>;
   readonly isActive: (name: VisualizerType) => boolean;
+  readonly isPinned: (name: VisualizerType) => boolean;
   toggle: (name: VisualizerType) => void;
   close: (name: VisualizerType) => void;
   closeAll: () => void;
+  setPinned: (name: VisualizerType, value: boolean) => void;
 }
 
 function createVisualizerStore(): VisualizerStore {
   let active = $state(new Set<VisualizerType>());
+  const pinned = new Set<VisualizerType>();
 
   function isActive(name: VisualizerType): boolean {
     return active.has(name);
+  }
+
+  function isPinned(name: VisualizerType): boolean {
+    return pinned.has(name);
   }
 
   function toggle(name: VisualizerType) {
@@ -35,7 +42,19 @@ function createVisualizerStore(): VisualizerStore {
 
   function closeAll() {
     if (active.size === 0) return;
-    active = new Set();
+    if (pinned.size === 0) {
+      active = new Set();
+    } else {
+      active = new Set([...active].filter((t) => pinned.has(t)));
+    }
+  }
+
+  function setPinned(name: VisualizerType, value: boolean) {
+    if (value) {
+      pinned.add(name);
+    } else {
+      pinned.delete(name);
+    }
   }
 
   return {
@@ -43,9 +62,11 @@ function createVisualizerStore(): VisualizerStore {
       return active;
     },
     isActive,
+    isPinned,
     toggle,
     close,
     closeAll,
+    setPinned,
   };
 }
 
