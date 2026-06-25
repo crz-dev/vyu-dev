@@ -26,10 +26,10 @@
   } = $props();
 
   const TITLES: Record<VisualizerType, string> = {
-    bars: "Bars",
+    pulse: "Pulse",
     spectrum: "Spectrum",
-    scope: "Scope",
-    particles: "Particles",
+    heartbeat: "Heartbeat",
+    diamonds: "Diamonds",
   };
 
   const CANVAS_W = 386;
@@ -37,6 +37,8 @@
 
   let pinned = $state(false);
   let menuTop = $state(0);
+  let layoutX = $state(0);
+  let layoutY = $state(0);
   let canvasEl: HTMLCanvasElement | null = $state(null);
   let rafId = 0;
   let lastFrame = 0;
@@ -50,15 +52,18 @@
     visualizerStore.close(type);
   }
 
-  $effect(() => {
+  $effect.pre(() => {
     if (!visible) return;
     const wrapper = document.querySelector(
       ".edit-menu-wrapper",
     ) as HTMLElement | null;
     if (wrapper) {
       const rect = wrapper.getBoundingClientRect();
-      menuTop = rect.bottom + 6;
+      menuTop = rect.bottom + 10;
     }
+    const pos = visualizerStore.getLayoutPosition(type);
+    layoutX = pos.left;
+    layoutY = pos.top;
   });
 
   onMount(() => {
@@ -77,10 +82,10 @@
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     const timeData = new Uint8Array(analyser.fftSize);
 
-    if (type === "particles") {
+    if (type === "diamonds") {
       particles = createParticles(60, analyser.frequencyBinCount);
     }
-    if (type === "bars") {
+    if (type === "pulse") {
       barsState = createBarsState();
     }
 
@@ -100,16 +105,16 @@
 
       ctx!.imageSmoothingEnabled = true;
 
-      if (type === "scope") {
+      if (type === "heartbeat") {
         analyser!.getByteTimeDomainData(timeData);
         drawScope(ctx!, timeData, CANVAS_W, CANVAS_H);
       } else {
         analyser!.getByteFrequencyData(freqData);
-        if (type === "bars") {
+    if (type === "pulse") {
           drawBars(ctx!, freqData, CANVAS_W, CANVAS_H, barsState!);
         } else if (type === "spectrum") {
           drawSpectrum(ctx!, freqData, CANVAS_W, CANVAS_H);
-        } else if (type === "particles") {
+        } else if (type === "diamonds") {
           drawParticles(
             ctx!,
             freqData,
@@ -134,7 +139,7 @@
 </script>
 
 {#if visible}
-  <div class="visualizer-wrapper" style:top="{menuTop}px">
+  <div class="visualizer-wrapper" style:top="{menuTop + layoutY}px" style:left="calc(50% + {layoutX}px)">
     <div
       class="edit-menu visualizer-menu"
       class:pinned
@@ -145,7 +150,8 @@
         role="button"
         tabindex="0"
         aria-label="Drag to move"
-        onmousedown={(e) => {
+        onpointerdown={(e) => {
+          if ((e.target as HTMLElement).closest("button")) return;
           e.preventDefault();
           onMoved?.();
           const menu = (e.currentTarget as HTMLElement).closest(
@@ -185,7 +191,6 @@
             pinned = !pinned;
             visualizerStore.setPinned(type, pinned);
           }}
-          onmousedown={(e) => e.stopPropagation()}
           aria-label={pinned ? "Unpin" : "Pin"}
         >
           <svg
@@ -223,7 +228,6 @@
             e.stopPropagation();
             close();
           }}
-          onmousedown={(e) => e.stopPropagation()}
           aria-label="Close"
         >
           <svg
@@ -248,11 +252,10 @@
 <style>
   .visualizer-wrapper {
     position: fixed;
-    left: 50%;
-    top: 42px;
-    transform: translateX(-50%);
     z-index: 1099;
-    transition: left 0.25s cubic-bezier(0.22, 0.9, 0.3, 1);
+    transition:
+      left 0.25s cubic-bezier(0.22, 0.9, 0.3, 1),
+      top 0.25s cubic-bezier(0.22, 0.9, 0.3, 1);
   }
 
   .visualizer-menu {

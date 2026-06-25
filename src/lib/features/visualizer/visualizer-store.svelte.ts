@@ -1,10 +1,21 @@
 // Visualizer state — tracks which floating visualizer windows are active (ephemeral)
-export type VisualizerType = "bars" | "spectrum" | "scope" | "particles";
+export type VisualizerType = "pulse" | "spectrum" | "heartbeat" | "diamonds";
+
+const COL_W = 386;
+const COL_GAP = 16;
+const ROW_GAP = 16;
+const ROW_H = 165;
+
+export interface LayoutPos {
+  left: number;
+  top: number;
+}
 
 export interface VisualizerStore {
-  readonly active: ReadonlySet<VisualizerType>;
+  readonly active: readonly VisualizerType[];
   readonly isActive: (name: VisualizerType) => boolean;
   readonly isPinned: (name: VisualizerType) => boolean;
+  readonly getLayoutPosition: (name: VisualizerType) => LayoutPos;
   toggle: (name: VisualizerType) => void;
   close: (name: VisualizerType) => void;
   closeAll: () => void;
@@ -12,11 +23,11 @@ export interface VisualizerStore {
 }
 
 function createVisualizerStore(): VisualizerStore {
-  let active = $state(new Set<VisualizerType>());
+  let active = $state<VisualizerType[]>([]);
   const pinned = new Set<VisualizerType>();
 
   function isActive(name: VisualizerType): boolean {
-    return active.has(name);
+    return active.includes(name);
   }
 
   function isPinned(name: VisualizerType): boolean {
@@ -24,28 +35,24 @@ function createVisualizerStore(): VisualizerStore {
   }
 
   function toggle(name: VisualizerType) {
-    const next = new Set(active);
-    if (next.has(name)) {
-      next.delete(name);
+    if (active.includes(name)) {
+      active = active.filter((t) => t !== name);
     } else {
-      next.add(name);
+      active = [...active, name];
     }
-    active = next;
   }
 
   function close(name: VisualizerType) {
-    if (!active.has(name)) return;
-    const next = new Set(active);
-    next.delete(name);
-    active = next;
+    if (!active.includes(name)) return;
+    active = active.filter((t) => t !== name);
   }
 
   function closeAll() {
-    if (active.size === 0) return;
+    if (active.length === 0) return;
     if (pinned.size === 0) {
-      active = new Set();
+      active = [];
     } else {
-      active = new Set([...active].filter((t) => pinned.has(t)));
+      active = active.filter((t) => pinned.has(t));
     }
   }
 
@@ -57,12 +64,31 @@ function createVisualizerStore(): VisualizerStore {
     }
   }
 
+  function getLayoutPosition(name: VisualizerType): LayoutPos {
+    const idx = active.indexOf(name);
+    if (idx === -1) return { left: 0, top: 0 };
+
+    const count = active.length;
+    const cols = count <= 1 ? 1 : 2;
+    const rows = Math.ceil(count / cols);
+    const row = Math.floor(idx / cols);
+    const col = idx % cols;
+
+    const rowItems = row < rows - 1 ? cols : count - (rows - 1) * cols;
+    const rowWidth = rowItems * COL_W + (rowItems - 1) * COL_GAP;
+    const left = -(rowWidth / 2) + col * (COL_W + COL_GAP);
+    const top = row * (ROW_H + ROW_GAP);
+
+    return { left, top };
+  }
+
   return {
     get active() {
       return active;
     },
     isActive,
     isPinned,
+    getLayoutPosition,
     toggle,
     close,
     closeAll,

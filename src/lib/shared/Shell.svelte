@@ -868,10 +868,10 @@
     {isVideo}
   />
 
-  <VisualizerMenu type="bars" />
+  <VisualizerMenu type="pulse" />
   <VisualizerMenu type="spectrum" />
-  <VisualizerMenu type="scope" />
-  <VisualizerMenu type="particles" />
+  <VisualizerMenu type="heartbeat" />
+  <VisualizerMenu type="diamonds" />
 
   {#key settingsOpen}
     <SettingsDialog {settingsOpen} closeSettings={() => closeSettings()} />

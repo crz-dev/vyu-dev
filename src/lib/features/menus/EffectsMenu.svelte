@@ -216,10 +216,9 @@
   }
 
   function toggleVisualMode(
-    name: "bars" | "particles" | "spectrogram" | "scope",
+    name: "pulse" | "spectrum" | "heartbeat" | "diamonds",
   ) {
-    const mapped = name === "spectrogram" ? "spectrum" : name;
-    visualizerStore.toggle(mapped);
+    visualizerStore.toggle(name);
   }
 
   $effect(() => {
@@ -816,8 +815,8 @@
           >
             <button
               class="edit-menu-btn blue sub"
-              class:active={visualizerStore.isActive("bars")}
-              onclick={() => toggleVisualMode("bars")}
+              class:active={visualizerStore.isActive("pulse")}
+              onclick={() => toggleVisualMode("pulse")}
             >
               <svg
                 width="13"
@@ -835,35 +834,12 @@
                 <rect x="15" y="7" width="2" height="10" rx="1" />
                 <rect x="19" y="10" width="2" height="4" rx="1" />
               </svg>
-              <span>Bars</span>
-            </button>
-            <button
-              class="edit-menu-btn blue sub"
-              class:active={visualizerStore.isActive("particles")}
-              onclick={() => toggleVisualMode("particles")}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="8" cy="8" r="1.5" />
-                <circle cx="16" cy="6" r="1.5" />
-                <circle cx="12" cy="14" r="1.5" />
-                <circle cx="6" cy="18" r="1.5" />
-                <circle cx="18" cy="16" r="1.5" />
-              </svg>
-              <span>Particles</span>
+              <span>Pulse</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
               class:active={visualizerStore.isActive("spectrum")}
-              onclick={() => toggleVisualMode("spectrogram")}
+              onclick={() => toggleVisualMode("spectrum")}
             >
               <svg
                 width="13"
@@ -875,22 +851,17 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <rect x="3" y="3" width="5" height="5" rx="1" />
-                <rect x="10" y="3" width="5" height="5" rx="1" />
-                <rect x="17" y="3" width="5" height="5" rx="1" />
-                <rect x="3" y="10" width="5" height="5" rx="1" />
-                <rect x="10" y="10" width="5" height="5" rx="1" />
-                <rect x="17" y="10" width="5" height="5" rx="1" />
-                <rect x="3" y="17" width="5" height="5" rx="1" />
-                <rect x="10" y="17" width="5" height="5" rx="1" />
-                <rect x="17" y="17" width="5" height="5" rx="1" />
+                <rect x="3" y="14" width="3" height="6" rx="1" />
+                <rect x="8" y="8" width="3" height="12" rx="1" />
+                <rect x="13" y="4" width="3" height="16" rx="1" />
+                <rect x="18" y="10" width="3" height="10" rx="1" />
               </svg>
               <span>Spectrum</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
-              class:active={visualizerStore.isActive("scope")}
-              onclick={() => toggleVisualMode("scope")}
+              class:active={visualizerStore.isActive("heartbeat")}
+              onclick={() => toggleVisualMode("heartbeat")}
             >
               <svg
                 width="13"
@@ -902,9 +873,28 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M3 12c3-4 6 4 9 0s6 4 9 0" />
+                <path d="M3 12h3l1.5-5 2 10 2.5-7 2 4h3" />
               </svg>
-              <span>Scope</span>
+              <span>Heartbeat</span>
+            </button>
+            <button
+              class="edit-menu-btn blue sub"
+              class:active={visualizerStore.isActive("diamonds")}
+              onclick={() => toggleVisualMode("diamonds")}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon points="12,3 21,12 12,21 3,12" fill="none" stroke-width="2.5" />
+              </svg>
+              <span>Diamonds</span>
             </button>
           </div>
         {/if}
