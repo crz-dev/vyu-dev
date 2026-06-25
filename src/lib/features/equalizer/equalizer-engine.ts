@@ -91,7 +91,7 @@ class EqualizerEngine {
         : this.dbToLinear(this.outputGainDb);
 
       this.analyser = ctx.createAnalyser();
-      this.analyser.fftSize = 256;
+      this.analyser.fftSize = 1024;
       this.analyser.smoothingTimeConstant = 0.8;
 
       // Source → filters → outputGain → analyser → destination

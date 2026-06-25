@@ -47,6 +47,7 @@ Before creating code, find the existing owner.
 | Typography                                | `features/font/font.svelte.ts`                        |
 | Audio effects engine                      | `features/effects/effects-engine.ts`                  |
 | Equalizer                                 | `features/equalizer/*`                                |
+| Visualizer windows                        | `features/visualizer/*`                               |
 | File open / delete / navigation           | `features/fileActions/*`                              |
 | Clipboard paste intake                    | `features/fileActions/paste.ts`                       |
 | Window controls                           | `features/window/windowControls.ts`                   |

@@ -2,6 +2,7 @@
   import { fly } from "svelte/transition";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";
+  import { visualizerStore } from "$lib/features/visualizer/visualizer-store.svelte";
 
   let {
     visible,
@@ -22,7 +23,6 @@
   let filterRowOpen = $state(false);
   let stageRowOpen = $state(false);
   let visualRowOpen = $state(false);
-  let activeVisuals: Set<string> = $state(new Set());
   let activeTuneItem: "pitch" | "reverb" | "chorus" | "distortion" | null =
     $state(null);
   let tuneValues = $state({ pitch: 0, reverb: 0, chorus: 0, distortion: 0 });
@@ -215,14 +215,11 @@
     }
   }
 
-  function toggleVisualMode(name: string) {
-    const next = new Set(activeVisuals);
-    if (next.has(name)) {
-      next.delete(name);
-    } else {
-      next.add(name);
-    }
-    activeVisuals = next;
+  function toggleVisualMode(
+    name: "bars" | "particles" | "spectrogram" | "scope",
+  ) {
+    const mapped = name === "spectrogram" ? "spectrum" : name;
+    visualizerStore.toggle(mapped);
   }
 
   $effect(() => {
@@ -240,6 +237,7 @@
         activeFilter = null;
         effectsStore.setFilter(null);
       }
+      visualizerStore.closeAll();
       pinned = false;
     }
   });
@@ -818,7 +816,7 @@
           >
             <button
               class="edit-menu-btn blue sub"
-              class:active={activeVisuals.has("bars")}
+              class:active={visualizerStore.isActive("bars")}
               onclick={() => toggleVisualMode("bars")}
             >
               <svg
@@ -841,7 +839,7 @@
             </button>
             <button
               class="edit-menu-btn blue sub"
-              class:active={activeVisuals.has("particles")}
+              class:active={visualizerStore.isActive("particles")}
               onclick={() => toggleVisualMode("particles")}
             >
               <svg
@@ -864,7 +862,7 @@
             </button>
             <button
               class="edit-menu-btn blue sub"
-              class:active={activeVisuals.has("spectrogram")}
+              class:active={visualizerStore.isActive("spectrum")}
               onclick={() => toggleVisualMode("spectrogram")}
             >
               <svg
@@ -891,7 +889,7 @@
             </button>
             <button
               class="edit-menu-btn blue sub"
-              class:active={activeVisuals.has("scope")}
+              class:active={visualizerStore.isActive("scope")}
               onclick={() => toggleVisualMode("scope")}
             >
               <svg

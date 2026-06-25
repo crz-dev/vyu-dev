@@ -211,6 +211,7 @@ main {
   overflow: hidden;
   padding: 16px;
   box-sizing: border-box;
+  position: relative;
 }
 
 main:not(.fullscreen).thumbnail-bar-open .viewer {

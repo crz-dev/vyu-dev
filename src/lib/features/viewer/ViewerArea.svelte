@@ -22,6 +22,8 @@
   import type { PlaybackUIStore } from "$lib/features/media/playback.svelte";
   import type { ClipsStore } from "$lib/features/media/clips.svelte";
   import type { PdfStore } from "$lib/features/pdf/pdf.svelte";
+  import { visualizerStore } from "$lib/features/visualizer/visualizer-store.svelte";
+  import VisualizerWindow from "$lib/features/visualizer/VisualizerWindow.svelte";
 
   let {
     fileSrc,
@@ -374,6 +376,35 @@
           >open a file</span
         ></button
       >
+    {/if}
+
+    {#if visualizerStore.isActive("bars")}
+      <VisualizerWindow
+        type="bars"
+        title="Bars"
+        onClose={() => visualizerStore.close("bars")}
+      />
+    {/if}
+    {#if visualizerStore.isActive("spectrum")}
+      <VisualizerWindow
+        type="spectrum"
+        title="Spectrum"
+        onClose={() => visualizerStore.close("spectrum")}
+      />
+    {/if}
+    {#if visualizerStore.isActive("scope")}
+      <VisualizerWindow
+        type="scope"
+        title="Scope"
+        onClose={() => visualizerStore.close("scope")}
+      />
+    {/if}
+    {#if visualizerStore.isActive("particles")}
+      <VisualizerWindow
+        type="particles"
+        title="Particles"
+        onClose={() => visualizerStore.close("particles")}
+      />
     {/if}
   </div>
   <div
