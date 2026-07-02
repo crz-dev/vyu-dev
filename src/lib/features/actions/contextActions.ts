@@ -118,14 +118,12 @@ export function ctxProperties(opts: {
   closeContextMenu: () => void;
   setPropertiesOpen: (v: boolean) => void;
   clearMediaProps: () => void;
-  clearFfmpegError: () => void;
   isStillOpen: () => boolean;
   ensureFfprobeAndLoad: () => Promise<void>;
 }) {
   opts.closeContextMenu();
   opts.setPropertiesOpen(true);
   opts.clearMediaProps();
-  opts.clearFfmpegError();
   void (async () => {
     await opts.ensureFfprobeAndLoad();
     if (!opts.isStillOpen()) return;

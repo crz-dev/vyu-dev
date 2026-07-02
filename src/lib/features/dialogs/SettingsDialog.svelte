@@ -1,11 +1,7 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
-  import {
-    invokeCheckFfprobe,
-    invokeInstallFfmpeg,
-    invokeCleanupTempFolder,
-  } from "$lib/features/media/tools";
+  import { invokeCleanupTempFolder } from "$lib/features/media/tools";
   import { showToast } from "$lib/features/toast/toast.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import {
@@ -226,30 +222,6 @@
     clearingThumbnailCache = false;
   }
 
-  async function handleCheckFfmpeg() {
-    ffmpegChecking = true;
-    ffmpegStatusText = "";
-    try {
-      const available = await invokeCheckFfprobe();
-      ffmpegStatusText = available ? "Available" : "Not found";
-    } catch {
-      ffmpegStatusText = "Error";
-    }
-    ffmpegChecking = false;
-  }
-
-  async function handleReinstallFfmpeg() {
-    ffmpegInstalling = true;
-    try {
-      await invokeInstallFfmpeg();
-      ffmpegStatusText = "Installed";
-    } catch (e) {
-      ffmpegStatusText = "Failed";
-      console.error(e);
-    }
-    ffmpegInstalling = false;
-  }
-
   async function handleCopyAppInfo() {
     try {
       const [version, tauriVersion] = await Promise.all([
@@ -301,9 +273,6 @@
   let editorOutputFolder = $state("~/Videos/Editor");
   let processOutputFolder = $state("~/Videos/Exports");
 
-  let ffmpegChecking = $state(false);
-  let ffmpegStatusText = $state("");
-  let ffmpegInstalling = $state(false);
   let cleaningTempFolder = $state(false);
   let flagsOpen = $state(false);
   let resetConfirming = $state(false);
@@ -2411,49 +2380,6 @@
               >
               Debug
             </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="16 18 22 12 16 6" /><polyline
-                    points="8 6 2 12 8 18"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">FFmpeg Status</span>
-                  <span class="settings-hint"
-                    >ffmpeg and ffprobe availability</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn"
-                  onclick={handleCheckFfmpeg}
-                  disabled={ffmpegChecking}
-                >
-                  {ffmpegChecking ? "Checking\u2026" : "Check"}
-                </button>
-                <button
-                  class="settings-action-btn"
-                  onclick={handleReinstallFfmpeg}
-                  disabled={ffmpegInstalling}
-                >
-                  {ffmpegInstalling ? "Installing\u2026" : "Reinstall"}
-                </button>
-                {#if ffmpegStatusText}
-                  <span class="debug-status">{ffmpegStatusText}</span>
-                {/if}
-              </div>
-            </div>
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg

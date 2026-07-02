@@ -1,0 +1,4 @@
+# FFmpeg binaries (25MB+) downloaded by scripts/dl-ffmpeg.ps1 before tauri build.
+# Stub files auto-created by build.rs are not tracked.
+*
+!.gitignore

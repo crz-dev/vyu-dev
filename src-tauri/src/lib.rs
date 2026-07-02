@@ -27,8 +27,7 @@ pub fn run() {
             show_in_explorer,
             open_directory,
             get_media_properties,
-            check_ffprobe,
-            install_ffmpeg,
+
             process_video_clips,
             rename_file,
             copy_file,
@@ -82,6 +81,10 @@ pub fn run() {
 
             if let Err(e) = database::connection::init(app.handle()) {
                 eprintln!("Database initialization failed: {e}");
+            }
+
+            if let Ok(resource_dir) = app.path().resource_dir() {
+                util::init_ffmpeg_path(&resource_dir);
             }
 
             app.manage(types::ThumbState::new());

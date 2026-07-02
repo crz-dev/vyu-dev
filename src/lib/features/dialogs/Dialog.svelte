@@ -74,14 +74,8 @@
     fileCreated,
     fileModified,
     durationDisplay,
-    ffprobeChecked,
-    ffprobeAvailable,
-    ffmpegInstalling,
-    ffmpegInstallError,
     mediaPropsLoading,
     mediaProps,
-    installFfmpegAndWait,
-    refreshFfprobeAvailability,
     loadMediaProperties,
     showValue,
     propsCopyPath,
@@ -150,14 +144,8 @@
     fileCreated: string;
     fileModified: string;
     durationDisplay: string;
-    ffprobeChecked: boolean;
-    ffprobeAvailable: boolean;
-    ffmpegInstalling: boolean;
-    ffmpegInstallError: string;
     mediaPropsLoading: boolean;
     mediaProps: MediaProperties | null;
-    installFfmpegAndWait: () => void;
-    refreshFfprobeAvailability: () => Promise<void>;
     loadMediaProperties: () => Promise<void>;
     showValue: (v: string | undefined) => string;
     propsCopyPath: () => void;
@@ -1903,43 +1891,6 @@
             <span class="props-v">{durationDisplay}</span>
           </div>
         {/if}
-        {#if ffprobeChecked && !ffprobeAvailable}
-          <div class="ffprobe-note">
-            <p class="ffprobe-title">Advanced metadata needs FFmpeg</p>
-            <p class="ffprobe-sub">
-              To show Container, Codec, Color, and Frame Rate, install FFmpeg.
-              Your files stay local on your device and are not uploaded
-              anywhere.
-            </p>
-            <div class="ffprobe-actions">
-              <button
-                class="props-btn"
-                onclick={installFfmpegAndWait}
-                disabled={ffmpegInstalling}
-              >
-                {ffmpegInstalling ? "Installing FFmpeg..." : "Install FFmpeg"}
-              </button>
-              <button
-                class="props-btn props-btn-secondary"
-                onclick={async () => {
-                  await refreshFfprobeAvailability();
-                  if (ffprobeAvailable) {
-                    await loadMediaProperties();
-                  }
-                }}
-                disabled={ffmpegInstalling}
-              >
-                Retry detection
-              </button>
-              {#if ffmpegInstalling}
-                <div class="ffprobe-progress"><span></span></div>
-              {/if}
-            </div>
-            {#if ffmpegInstallError}
-              <p class="ffprobe-error">{ffmpegInstallError}</p>
-            {/if}
-          </div>
-        {:else}
           <div
             class="props-row"
             onclick={() =>
@@ -2130,7 +2081,6 @@
               >
             </div>
           {/if}
-        {/if}
         <div
           class="props-row"
           onclick={() =>

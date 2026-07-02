@@ -27,7 +27,7 @@ export interface ClipsDeps {
   getVideoEl: () => HTMLVideoElement | null;
   getAudioEl: () => HTMLAudioElement | null;
   getFileParentFolder: () => string;
-  ensureFfprobe: () => Promise<boolean>;
+  ensureFfprobe?: () => Promise<boolean>;
 }
 
 export type ClipsStore = ReturnType<typeof createClips>;
@@ -229,7 +229,7 @@ export function createClips(deps: ClipsDeps) {
   }
 
   async function triggerSegments() {
-    const ready = await deps.ensureFfprobe();
+    const ready = deps.ensureFfprobe ? await deps.ensureFfprobe() : true;
     if (!ready) return;
 
     const segments = sanitizeClipPairs();

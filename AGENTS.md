@@ -13,14 +13,14 @@ See `ARCHITECTURE.md` before creating modules, moving state, changing ownership 
 | Type check | `pnpm check`              |
 | Format     | `pnpm prettier --write .` |
 
-**Prereqs:** Rust toolchain + FFmpeg on PATH. Not bundled — `install_ffmpeg()` via winget when missing.
+**Prereqs:** Rust toolchain. FFmpeg is bundled — gyan.dev "essentials" build ships with the installer.
 
 ## Hard rules
 
 - **State goes in `src/lib/features/*/` only.** `src/routes/+page.svelte` is a layout shell — no state, no handlers, no business logic.
 - **New top-level dependencies (npm or cargo) require an explicit reason before adding.**
 - **SvelteKit routes stay as-is.** Intentionally a single-page app. Do not add routes.
-- **FFmpeg stays external.** Backend shells out to `ffmpeg` on PATH. Do not bundle it.
+- **FFmpeg is bundled.** gyan.dev "essentials" build ships with the installer. Backend resolves from app resources, falling back to PATH in dev mode.
 - **Top-level toolbar icons stay fixed.** Shell bar design is locked.
 - **Constants must stay in sync.** `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` must match `*_RUST` constants in `src-tauri/src/constants.rs`.
 
@@ -76,6 +76,7 @@ Temp dirs must be unique per operation. Concurrent operations must never share a
 - Early returns over nested if/else.
 - Comments explain why, not what.
 - No JSDoc on private helpers.
+- Comments are terse: `// Section label` or `// Brief rationale`. No multi-sentence explanations. No inline comments on obvious operations.
 - Avoid redundant guards already covered by earlier checks.
 - Named functions over anonymous handlers unless closure state is required.
 - `console.error` only for caught-and-swallowed failures.

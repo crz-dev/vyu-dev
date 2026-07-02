@@ -2,12 +2,32 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use xxhash_rust::xxh3::xxh3_64;
 
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 use crate::constants::CREATE_NO_WINDOW;
+
+static BUNDLED_FFMPEG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
+
+// Bundled FFmpeg path
+pub fn init_ffmpeg_path(resource_dir: &Path) {
+    let ffmpeg = resource_dir.join("ffmpeg.exe");
+    let ffprobe = resource_dir.join("ffprobe.exe");
+    // Ignore dev-mode stubs (<1MB)
+    const MIN_SIZE: u64 = 1_000_000;
+    let dir = if ffmpeg.exists() && ffprobe.exists()
+        && ffmpeg.metadata().map(|m| m.len()).unwrap_or(0) >= MIN_SIZE
+        && ffprobe.metadata().map(|m| m.len()).unwrap_or(0) >= MIN_SIZE
+    {
+        Some(resource_dir.to_path_buf())
+    } else {
+        None
+    };
+    _ = BUNDLED_FFMPEG_DIR.set(dir);
+}
 
 /// Cache filename hash
 pub fn hash_path_xxh3(path: &str) -> String {
@@ -126,15 +146,35 @@ pub fn unique_path(path: PathBuf) -> PathBuf {
     candidate
 }
 
+fn ffmpeg_path() -> &'static str {
+    BUNDLED_FFMPEG_DIR
+        .get_or_init(|| None)
+        .as_ref()
+        .and_then(|d| d.join("ffmpeg.exe").to_str().map(|s| {
+            Box::leak(s.to_string().into_boxed_str()) as &str
+        }))
+        .unwrap_or("ffmpeg")
+}
+
+fn ffprobe_path() -> &'static str {
+    BUNDLED_FFMPEG_DIR
+        .get_or_init(|| None)
+        .as_ref()
+        .and_then(|d| d.join("ffprobe.exe").to_str().map(|s| {
+            Box::leak(s.to_string().into_boxed_str()) as &str
+        }))
+        .unwrap_or("ffprobe")
+}
+
 pub fn ffmpeg_command() -> Command {
-    let mut cmd = Command::new("ffmpeg");
+    let mut cmd = Command::new(ffmpeg_path());
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NO_WINDOW);
     cmd
 }
 
 pub fn ffprobe_command() -> Command {
-    let mut cmd = Command::new("ffprobe");
+    let mut cmd = Command::new(ffprobe_path());
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NO_WINDOW);
     cmd

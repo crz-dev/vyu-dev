@@ -555,39 +555,6 @@ pub fn get_media_properties(path: String) -> Result<crate::types::MediaPropertie
 }
 
 #[tauri::command]
-pub fn check_ffprobe() -> bool {
-    ffprobe_command()
-        .arg("-version")
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
-}
-
-#[tauri::command]
-pub fn install_ffmpeg() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    {
-        let status = Command::new("winget")
-            .creation_flags(CREATE_NO_WINDOW)
-            .args([
-                "install",
-                "--id",
-                "Gyan.FFmpeg",
-                "--accept-package-agreements",
-                "--accept-source-agreements",
-            ])
-            .status()
-            .map_err(|e| format!("Failed to start FFmpeg install: {e}"))?;
-        if !status.success() {
-            return Err(format!("FFmpeg install exited with code {:?}", status.code()));
-        }
-        return Ok(());
-    }
-    #[cfg(not(target_os = "windows"))]
-    Err("Automatic FFmpeg install is currently only supported on Windows.".into())
-}
-
-#[tauri::command]
 pub fn open_devtools(window: tauri::WebviewWindow) {
     window.open_devtools();
 }

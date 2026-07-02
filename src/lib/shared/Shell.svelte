@@ -131,12 +131,6 @@
     closeEffectsMenu,
     equalizerMenuVisible,
     closeEqualizerMenu,
-    ffprobeChecked,
-    ffprobeAvailable,
-    ffmpegInstalling,
-    ffmpegInstallError,
-    installFfmpegAndWait,
-    refreshFfprobeAvailability,
     openConvertedFile,
     showInExplorer,
     onSelect,
@@ -314,12 +308,6 @@
     closeEffectsMenu: () => void;
     equalizerMenuVisible: boolean;
     closeEqualizerMenu: () => void;
-    ffprobeChecked: boolean;
-    ffprobeAvailable: boolean;
-    ffmpegInstalling: boolean;
-    ffmpegInstallError: string;
-    installFfmpegAndWait: () => Promise<void>;
-    refreshFfprobeAvailability: () => Promise<void>;
     openConvertedFile: (path: string) => Promise<void>;
     showInExplorer: (path: string) => Promise<void>;
     onSelect: (index: number) => void;
@@ -771,14 +759,8 @@
     {fileCreated}
     {fileModified}
     {durationDisplay}
-    {ffprobeChecked}
-    {ffprobeAvailable}
-    {ffmpegInstalling}
-    {ffmpegInstallError}
     {mediaPropsLoading}
     {mediaProps}
-    {installFfmpegAndWait}
-    {refreshFfprobeAvailability}
     {loadMediaProperties}
     {showValue}
     {propsCopyPath}

@@ -15,10 +15,7 @@ import {
   ctxProperties,
   ctxShare,
 } from "./contextActions";
-import {
-  refreshFfprobeAvailability,
-  loadMediaProperties,
-} from "$lib/features/media/ffmpeg";
+import { loadMediaProperties } from "$lib/features/media/ffmpeg";
 
 export interface ContextActionDeps {
   filePath: () => string;
@@ -37,10 +34,6 @@ export interface ContextActionDeps {
   setPropertiesOpen: (v: boolean) => void;
   setMediaProps: (v: MediaProperties | null) => void;
   setMediaPropsLoading: (v: boolean) => void;
-  clearFfmpegError: () => void;
-  ffprobeAvailable: () => boolean;
-  setFfprobeChecked: (v: boolean) => void;
-  setFfprobeAvailable: (v: boolean) => void;
   setShareOpen: (v: boolean) => void;
   deleteActions: { ctxDelete: (close: () => void) => void };
 }
@@ -109,20 +102,13 @@ export function createContextActionFns(deps: ContextActionDeps) {
       closeContextMenu: deps.closeContextMenu,
       setPropertiesOpen: deps.setPropertiesOpen,
       clearMediaProps: () => deps.setMediaProps(null),
-      clearFfmpegError: deps.clearFfmpegError,
       isStillOpen: deps.propertiesOpen,
       ensureFfprobeAndLoad: async () => {
-        await refreshFfprobeAvailability({
-          setFfprobeChecked: deps.setFfprobeChecked,
-          setFfprobeAvailable: deps.setFfprobeAvailable,
+        await loadMediaProperties({
+          filePath: deps.filePath(),
+          setMediaProps: deps.setMediaProps,
+          setMediaPropsLoading: deps.setMediaPropsLoading,
         });
-        if (deps.ffprobeAvailable()) {
-          await loadMediaProperties({
-            filePath: deps.filePath(),
-            setMediaProps: deps.setMediaProps,
-            setMediaPropsLoading: deps.setMediaPropsLoading,
-          });
-        }
       },
     });
   }

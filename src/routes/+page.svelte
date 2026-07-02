@@ -30,10 +30,7 @@
     loadPlaybackSpeed,
     savePlaybackSpeed,
   } from "$lib/services/storage";
-  import {
-    createFfmpegHelpers,
-    createEnsureFfprobe,
-  } from "$lib/features/media/ffmpeg";
+  import { createFfmpegHelpers } from "$lib/features/media/ffmpeg";
   import { invokeOpenDirectory } from "$lib/features/media/tools";
   import {
     showFilenameTooltip,
@@ -147,10 +144,6 @@
   let speedSliderMode = $state(false);
   let mediaProps = $state<MediaProperties | null>(null);
   let mediaPropsLoading = $state(false);
-  let ffprobeAvailable = $state(true);
-  let ffprobeChecked = $state(false);
-  let ffmpegInstalling = $state(false);
-  let ffmpegInstallError = $state("");
 
   const menuActions = createMenuActions({
     closeContextMenu: () => contextMenuStore.close(),
@@ -169,15 +162,11 @@
     closeSlideshowMenu,
   } = menuActions;
   const menuBindings = createMenuBindings();
-  const { runInstallFfmpeg, runRefreshFfprobe, runLoadMediaProperties } =
+  const { runLoadMediaProperties } =
     createFfmpegHelpers({
       filePath: () => filePath,
       setMediaProps: (v) => (mediaProps = v),
       setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-      setFfmpegInstallError: (v) => (ffmpegInstallError = v),
-      setFfmpegInstalling: (v) => (ffmpegInstalling = v),
-      setFfprobeChecked: (v) => (ffprobeChecked = v),
-      setFfprobeAvailable: (v) => (ffprobeAvailable = v),
     });
 
   const style = createViewerStyle();
@@ -189,17 +178,6 @@
     getVideoEl: () => videoEl,
     getAudioEl: () => audioEl,
     getFileParentFolder: () => getParentFolder(filePath),
-    ensureFfprobe: createEnsureFfprobe({
-      getFfprobeChecked: () => ffprobeChecked,
-      getFfprobeAvailable: () => ffprobeAvailable,
-      setFfprobeChecked: (v) => (ffprobeChecked = v),
-      setFfprobeAvailable: (v) => (ffprobeAvailable = v),
-      setFfmpegInstallError: (v) => (ffmpegInstallError = v),
-      setFfmpegInstalling: (v) => (ffmpegInstalling = v),
-      filePath: () => filePath,
-      setMediaProps: (v) => (mediaProps = v),
-      setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-    }),
   });
   const durationDisplay = $derived(formatTime(rawDurationSecs));
   const anyMenuOpen = $derived(
@@ -737,10 +715,6 @@
     setPropertiesOpen: (v) => (propertiesOpen = v),
     setMediaProps: (v) => (mediaProps = v),
     setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-    clearFfmpegError: () => (ffmpegInstallError = ""),
-    ffprobeAvailable: () => ffprobeAvailable,
-    setFfprobeChecked: (v) => (ffprobeChecked = v),
-    setFfprobeAvailable: (v) => (ffprobeAvailable = v),
     setShareOpen: (v) => (shareOpen = v),
     deleteActions,
   });
@@ -835,10 +809,6 @@
     closeEditMenu,
     closeMarkupMenu,
     closeEffectsMenu,
-    ffprobeChecked,
-    ffprobeAvailable,
-    ffmpegInstalling,
-    ffmpegInstallError,
     openConvertedFile,
     showValue,
     muted,
@@ -981,8 +951,6 @@
   effectsMenuVisible={menuStore.effectsMenuVisible}
   equalizerMenuVisible={menuStore.equalizerMenuVisible}
   closeEqualizerMenu={() => (menuStore.equalizerMenuVisible = false)}
-  installFfmpegAndWait={runInstallFfmpeg}
-  refreshFfprobeAvailability={runRefreshFfprobe}
   showInExplorer={ctxShowInExplorerFn}
   loadMediaProperties={runLoadMediaProperties}
   onRenamed={async (newPath: string) => {
