@@ -54,6 +54,14 @@ pub fn init(app: &tauri::AppHandle) -> Result<(), String> {
     conn.execute_batch("PRAGMA busy_timeout=5000;")
         .map_err(|e| format!("Failed to set busy_timeout pragma: {e}"))?;
 
+    // 64MB page cache — reduces disk I/O for large JSON blob queries
+    conn.execute_batch("PRAGMA cache_size=-64000;")
+        .map_err(|e| format!("Failed to set cache_size pragma: {e}"))?;
+
+    // Keep temp tables/indexes in memory, not on disk
+    conn.execute_batch("PRAGMA temp_store=MEMORY;")
+        .map_err(|e| format!("Failed to set temp_store pragma: {e}"))?;
+
     crate::database::migrations::run(&mut conn)?;
 
     app.manage(DbConnection(Mutex::new(conn)));

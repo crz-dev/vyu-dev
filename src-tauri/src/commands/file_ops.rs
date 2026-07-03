@@ -12,32 +12,43 @@ use std::os::windows::ffi::OsStrExt;
 
 #[tauri::command]
 pub async fn batch_stat(paths: Vec<String>) -> Result<Vec<BatchStatItem>, String> {
-    let items = tauri::async_runtime::spawn_blocking(move || {
-        paths
-            .into_iter()
-            .map(|p| {
-                let meta = fs::metadata(&p).ok();
-                BatchStatItem {
-                    path: p,
-                    size: meta.as_ref().map(|m| m.len()).unwrap_or(0),
-                    mtime_ms: meta
-                        .as_ref()
-                        .and_then(|m| m.modified().ok())
-                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map(|d| d.as_secs_f64() * 1000.0)
-                        .unwrap_or(0.0),
-                    birthtime_ms: meta
-                        .as_ref()
-                        .and_then(|m| m.created().ok())
-                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map(|d| d.as_secs_f64() * 1000.0)
-                        .unwrap_or(0.0),
-                }
+    const CHUNK_SIZE: usize = 8;
+    let handles: Vec<_> = paths
+        .chunks(CHUNK_SIZE)
+        .map(|chunk| {
+            let chunk = chunk.to_vec();
+            tauri::async_runtime::spawn_blocking(move || {
+                chunk
+                    .into_iter()
+                    .map(|p| {
+                        let meta = fs::metadata(&p).ok();
+                        BatchStatItem {
+                            path: p,
+                            size: meta.as_ref().map(|m| m.len()).unwrap_or(0),
+                            mtime_ms: meta
+                                .as_ref()
+                                .and_then(|m| m.modified().ok())
+                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                .map(|d| d.as_secs_f64() * 1000.0)
+                                .unwrap_or(0.0),
+                            birthtime_ms: meta
+                                .as_ref()
+                                .and_then(|m| m.created().ok())
+                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                .map(|d| d.as_secs_f64() * 1000.0)
+                                .unwrap_or(0.0),
+                        }
+                    })
+                    .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>()
-    })
-    .await
-    .map_err(|e| format!("Thread join error: {e}"))?;
+        })
+        .collect();
+
+    let results = futures::future::join_all(handles).await;
+    let mut items = Vec::with_capacity(paths.len());
+    for r in results {
+        items.extend(r.map_err(|e| format!("Thread join error: {e}"))?);
+    }
     Ok(items)
 }
 
@@ -215,16 +226,27 @@ pub fn cleanup_temp_folder() {
 
 #[tauri::command]
 pub async fn get_files_total_size(paths: Vec<String>) -> Result<u64, String> {
-    let total = tauri::async_runtime::spawn_blocking(move || {
-        let mut total: u64 = 0;
-        for p in &paths {
-            if let Ok(meta) = fs::metadata(p) {
-                total = total.saturating_add(meta.len());
-            }
-        }
-        total
-    })
-    .await
-    .map_err(|e| format!("Thread join error: {e}"))?;
+    const CHUNK_SIZE: usize = 8;
+    let handles: Vec<_> = paths
+        .chunks(CHUNK_SIZE)
+        .map(|chunk| {
+            let chunk = chunk.to_vec();
+            tauri::async_runtime::spawn_blocking(move || {
+                let mut total: u64 = 0;
+                for p in &chunk {
+                    if let Ok(meta) = fs::metadata(p) {
+                        total = total.saturating_add(meta.len());
+                    }
+                }
+                total
+            })
+        })
+        .collect();
+
+    let results = futures::future::join_all(handles).await;
+    let mut total: u64 = 0;
+    for r in results {
+        total = total.saturating_add(r.map_err(|e| format!("Thread join error: {e}"))?);
+    }
     Ok(total)
 }

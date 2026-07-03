@@ -45,10 +45,7 @@ import type {
 } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
 import { getParentFolder } from "$lib/services/files";
-import {
-  getCached as sharedGetCached,
-  setCached,
-} from "$lib/services/thumbnailCache";
+import { getCached as sharedGetCached } from "$lib/services/thumbnailCache";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -174,7 +171,6 @@ function createLibrary() {
       for (const [p, dataUrl] of Object.entries(results)) {
         if (dataUrl) {
           setCacheEntry(p, dataUrl);
-          setCached(p, 256, dataUrl);
         }
       }
     } catch {

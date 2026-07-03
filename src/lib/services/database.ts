@@ -14,6 +14,19 @@ export interface FileMetadata {
   updated_at: number;
 }
 
+export interface FileMetadataLight {
+  path: string;
+  last_position: number | null;
+  timestamp_data: string | null;
+  clips_data: string | null;
+  updated_at: number;
+}
+
+export interface FileMetadataPosition {
+  path: string;
+  last_position: number | null;
+}
+
 interface BatchEntry {
   path: string;
   last_position: number | null;
@@ -74,6 +87,49 @@ export async function getFileMetadata(
   path: string,
 ): Promise<FileMetadata | null> {
   return getMeta(path);
+}
+
+/// Light query — avoids loading eq_data and cd_color blobs
+export async function getFileMetadataLight(
+  path: string,
+): Promise<FileMetadataLight | null> {
+  if (!path) return null;
+  try {
+    return await invoke<FileMetadataLight | null>(
+      "db_get_file_metadata_light",
+      { path },
+    );
+  } catch {
+    return null;
+  }
+}
+
+/// Position-only query — for resume playback restore
+const positionCache = new Map<string, FileMetadataPosition>();
+const POSITION_CACHE_MAX = 200;
+
+export async function getFileMetadataPosition(
+  path: string,
+): Promise<FileMetadataPosition | null> {
+  if (!path) return null;
+  const cached = positionCache.get(path);
+  if (cached) return cached;
+  try {
+    const result = await invoke<FileMetadataPosition | null>(
+      "db_get_file_metadata_position",
+      { path },
+    );
+    if (result) {
+      positionCache.set(path, result);
+      if (positionCache.size > POSITION_CACHE_MAX) {
+        const first = positionCache.keys().next().value;
+        if (first !== undefined) positionCache.delete(first);
+      }
+    }
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 async function saveMeta(
@@ -200,7 +256,7 @@ export async function loadResumePoint(
 ): Promise<number | null> {
   if (!filePath) return null;
   try {
-    const meta = await getMeta(filePath);
+    const meta = await getFileMetadataPosition(filePath);
     if (meta?.last_position == null) return null;
     return isFinite(meta.last_position) ? meta.last_position : null;
   } catch {

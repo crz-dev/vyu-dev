@@ -3,7 +3,7 @@ use rusqlite::params;
 use tauri::State;
 
 use crate::database::connection::DbConnection;
-use crate::database::models::FileMetadata;
+use crate::database::models::{FileMetadata, FileMetadataLight, FileMetadataPosition};
 
 fn now_secs() -> i64 {
     std::time::SystemTime::now()
@@ -204,6 +204,67 @@ pub fn db_batch_upsert_file_metadata(
     tx.commit()
         .map_err(|e| format!("Failed to commit transaction: {e}"))?;
     Ok(())
+}
+
+/// Lightweight metadata query — avoids loading eq_data and cd_color blobs
+#[tauri::command]
+pub fn db_get_file_metadata_light(
+    db: State<'_, DbConnection>,
+    path: String,
+) -> Result<Option<FileMetadataLight>, String> {
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let mut stmt = conn
+        .prepare_cached(
+            "SELECT path, last_position, timestamp_data, clips_data, updated_at
+             FROM file_metadata
+             WHERE path = ?1",
+        )
+        .map_err(|e| format!("Failed to prepare query: {e}"))?;
+
+    let result = stmt.query_row(params![path], |row| {
+        Ok(FileMetadataLight {
+            path: row.get(0)?,
+            last_position: row.get(1)?,
+            timestamp_data: row.get(2)?,
+            clips_data: row.get(3)?,
+            updated_at: row.get(4)?,
+        })
+    });
+
+    match result {
+        Ok(meta) => Ok(Some(meta)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(format!("Failed to execute query: {e}")),
+    }
+}
+
+/// Only position — for resume playback restore
+#[tauri::command]
+pub fn db_get_file_metadata_position(
+    db: State<'_, DbConnection>,
+    path: String,
+) -> Result<Option<FileMetadataPosition>, String> {
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let mut stmt = conn
+        .prepare_cached(
+            "SELECT path, last_position, updated_at
+             FROM file_metadata
+             WHERE path = ?1",
+        )
+        .map_err(|e| format!("Failed to prepare query: {e}"))?;
+
+    let result = stmt.query_row(params![path], |row| {
+        Ok(FileMetadataPosition {
+            path: row.get(0)?,
+            last_position: row.get(1)?,
+        })
+    });
+
+    match result {
+        Ok(meta) => Ok(Some(meta)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(format!("Failed to execute query: {e}")),
+    }
 }
 
 #[derive(serde::Deserialize)]

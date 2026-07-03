@@ -338,7 +338,11 @@ async fn thumbnail_for_path(
             }
         }
 
-        let jpeg_bytes = if use_image_crate {
+        // Non-JPEG images > 50MB use FFmpeg to avoid full-resolution memory spike
+        let is_jpeg = matches!(path_c.rsplit('.').next().unwrap_or(""), "jpg" | "jpeg");
+        let use_ffmpeg_for_large = use_image_crate && !is_jpeg && src_meta.len() > 50 * 1024 * 1024;
+
+        let jpeg_bytes = if use_image_crate && !use_ffmpeg_for_large {
             thumbnail_via_image_crate(
                 Path::new(&path_c),
                 &thumb_path,

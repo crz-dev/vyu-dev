@@ -11,7 +11,7 @@ use std::fs;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{Listener, Manager, WindowEvent};
+use tauri::{Manager, WindowEvent};
 use windows::core::w;
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 
@@ -74,6 +74,8 @@ pub fn run() {
             identify_song,
             get_files_total_size,
             db_get_file_metadata,
+            db_get_file_metadata_light,
+            db_get_file_metadata_position,
             db_save_file_metadata,
             db_clear_file_metadata_field,
             db_delete_file_metadata,
@@ -155,13 +157,6 @@ pub fn run() {
                     window_state::persist_window_state(&window_for_events, &skip_for_events);
                 }
                 _ => {}
-            });
-
-            let window_for_close = window.clone();
-            let skip_for_close = skip_save.clone();
-            app.listen("tauri://close-requested", move |_event| {
-                window_state::persist_window_state(&window_for_close, &skip_for_close);
-                util::cleanup_vyu_temp();
             });
 
             if args.len() > 1 {

@@ -4,7 +4,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
 import { getFileName } from "$lib/services/files";
 import { prepareDisplayPath } from "$lib/features/media/tools";
-import { getFileMetadata } from "$lib/services/database";
+import { getFileMetadataLight } from "$lib/services/database";
 import {
   readTimestamps as lsReadTimestamps,
   readClipBoundaries as lsReadClipBoundaries,
@@ -14,6 +14,8 @@ import {
   isVideo as pathIsVideo,
   isAudio as pathIsAudio,
   isPdf as pathIsPdf,
+  isBrowserUnsupportedImage,
+  needsRemux,
 } from "$lib/shared/media-kind";
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
 import { formatMetaDate, getMetaValue } from "$lib/shared/file-meta";
@@ -79,6 +81,7 @@ export function createMedia(
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
   let finishLoadingCalled = false;
   let loadGen = 0;
+  const STAT_CACHE_MAX = 500;
   const statCache = new Map<
     string,
     {
@@ -91,6 +94,13 @@ export function createMedia(
       mtimeMs?: unknown;
     }
   >();
+
+  function evictStatCache() {
+    if (statCache.size > STAT_CACHE_MAX) {
+      const first = statCache.keys().next().value;
+      if (first !== undefined) statCache.delete(first);
+    }
+  }
 
   function finishLoading(set: (data: Partial<MediaState>) => void): void {
     if (finishLoadingCalled) return;
@@ -173,7 +183,7 @@ export function createMedia(
     try {
       const [baseSrc, metaResult] = await Promise.all([
         prepareDisplayPath(path).then(convertFileSrc).catch(() => undefined),
-        getFileMetadata(path).catch(() => null),
+        getFileMetadataLight(path).catch(() => null),
       ]);
 
       const entry: PrefetchEntry = {};
@@ -207,6 +217,7 @@ export function createMedia(
         try {
           const info = await stat(path);
           statCache.set(path, info);
+          evictStatCache();
         } catch {
           // non-critical
         }
@@ -218,11 +229,16 @@ export function createMedia(
 
   function prefetchAdjacent(fileList: string[], currentIndex: number) {
     if (fileList.length === 0) return;
-    for (const offset of [1, -1, 2, -2]) {
+    const offsets = [1, -1, 2, -2];
+    for (const offset of offsets) {
       const idx = currentIndex + offset;
-      if (idx >= 0 && idx < fileList.length) {
-        prefetchFile(fileList[idx]);
+      if (idx < 0 || idx >= fileList.length) continue;
+      // Skip heavy prefetch (±2) for formats that need conversion
+      if (Math.abs(offset) >= 2) {
+        const p = fileList[idx];
+        if (isBrowserUnsupportedImage(p) || needsRemux(p)) continue;
       }
+      prefetchFile(fileList[idx]);
     }
   }
 
@@ -253,7 +269,7 @@ export function createMedia(
       resumePoint = cached.meta.resumePoint;
     } else if (isVideo || isAudio) {
       try {
-        const meta = await getFileMetadata(path);
+        const meta = await getFileMetadataLight(path);
         if (gen !== loadGen) return;
         if (meta) {
           if (meta.timestamp_data) {
@@ -320,6 +336,7 @@ export function createMedia(
         info = await stat(path);
         if (gen !== loadGen) return;
         statCache.set(path, info);
+        evictStatCache();
       }
       set({
         fileSize: formatFileSize(info.size),
