@@ -14,15 +14,22 @@ export interface ViewerEffectsDeps {
 }
 
 export function createViewerEffects(deps: ViewerEffectsDeps) {
+  let cachedViewerEl: HTMLElement | null = null;
+  let cachedPadH = 0;
+  let cachedPadV = 0;
+
   function getViewerContentSize(): { width: number; height: number } {
     const viewerEl = deps.getViewerEl();
     if (!viewerEl) return { width: 0, height: 0 };
-    const style = getComputedStyle(viewerEl);
-    const padH = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-    const padV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    if (viewerEl !== cachedViewerEl) {
+      const style = getComputedStyle(viewerEl);
+      cachedPadH = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      cachedPadV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      cachedViewerEl = viewerEl;
+    }
     return {
-      width: viewerEl.clientWidth - padH,
-      height: viewerEl.clientHeight - padV,
+      width: viewerEl.clientWidth - cachedPadH,
+      height: viewerEl.clientHeight - cachedPadV,
     };
   }
 

@@ -125,7 +125,8 @@ export function createMedia(
     }
   }
 
-  function parseTimestamps(data: string): VideoMarker[] {
+  function parseTimestamps(data: string | null | undefined): VideoMarker[] {
+    if (!data || data === "[]" || data === "null") return [];
     try {
       const raw = JSON.parse(data) as Array<Partial<VideoMarker>>;
       return raw
@@ -143,7 +144,8 @@ export function createMedia(
     }
   }
 
-  function parseClipBoundaries(data: string): ClipBoundary[] {
+  function parseClipBoundaries(data: string | null | undefined): ClipBoundary[] {
+    if (!data || data === "[]" || data === "null") return [];
     try {
       const raw = JSON.parse(data) as Array<Partial<ClipBoundary>>;
       return raw
@@ -199,6 +201,16 @@ export function createMedia(
         if (first) prefetchCache.delete(first);
       }
       prefetchCache.set(path, entry);
+
+      // Pre-warm stat cache — displayFile checks this before IPC
+      if (!statCache.has(path)) {
+        try {
+          const info = await stat(path);
+          statCache.set(path, info);
+        } catch {
+          // non-critical
+        }
+      }
     } catch {
       // Prefetch failures are non-critical
     }

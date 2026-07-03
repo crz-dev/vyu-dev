@@ -113,18 +113,20 @@
   $effect(() => {
     observer = new IntersectionObserver(
       (entries) => {
-        let changed = false;
+        let added: string[] = [];
         for (const entry of entries) {
           if (entry.isIntersecting) {
             const path = (entry.target as HTMLElement).dataset.path;
             if (path && !observed.has(path)) {
-              observed = new Set(observed).add(path);
-              changed = true;
+              added.push(path);
             }
           }
         }
+        if (added.length > 0) {
+          observed = new Set([...observed, ...added]);
+        }
       },
-      { rootMargin: "150px" },
+      { rootMargin: "50px" },
     );
     return () => {
       observer?.disconnect();
@@ -142,6 +144,9 @@
     }
   });
 
+  // Stale guard — incremented on close/cleanup to cancel in-flight batches
+  let _fetchGen = 0;
+
   // Queue processor
   // Process queue in center-outward order — fills outward from current file
   const BATCH_SIZE = 6;
@@ -151,27 +156,35 @@
     if (fetching.size >= MAX_CONCURRENT) return;
     // Collect a batch of uncached paths in queue order
     const batch: string[] = [];
+    const cacheHits: [string, string][] = [];
     for (const path of loadQueue) {
       if (loaded.has(path) || fetching.has(path)) continue;
       const cached = getCached(path);
       if (cached) {
-        loaded = new Map(loaded).set(path, cached);
+        cacheHits.push([path, cached]);
         continue;
       }
       batch.push(path);
       if (batch.length >= BATCH_SIZE) break;
     }
+    if (cacheHits.length > 0) {
+      const updated = new Map(loaded);
+      for (const [path, dataUrl] of cacheHits) updated.set(path, dataUrl);
+      loaded = updated;
+    }
     if (batch.length > 0) fetchBatch(batch);
   });
 
   async function fetchBatch(paths: string[]) {
-    for (const p of paths) fetching = new Set(fetching).add(p);
+    const localGen = ++_fetchGen;
+    fetching = new Set([...fetching, ...paths]);
     try {
       const results = await invokeGetThumbnails(paths, 120);
-      let updated = loaded;
+      if (localGen !== _fetchGen) return; // stale — discarded
+      const updated = new Map(loaded);
       for (const [p, dataUrl] of Object.entries(results)) {
         if (dataUrl) {
-          updated = new Map(updated).set(p, dataUrl);
+          updated.set(p, dataUrl);
           setCached(p, 120, dataUrl);
         }
       }
@@ -187,6 +200,7 @@
   // Cleanup on close
   $effect(() => {
     if (!visible) {
+      _fetchGen++;
       afterOpen = false;
       observed = new Set();
       loadQueue = [];

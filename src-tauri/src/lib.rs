@@ -104,6 +104,8 @@ pub fn run() {
             // Silently clean orphaned thumbnail cache entries in background at startup
             let cache_dir = commands::thumbnail::thumb_cache_dir(app.handle()).to_path_buf();
             std::thread::spawn(move || {
+                // Defer 5s — avoids I/O contention during app init
+                std::thread::sleep(Duration::from_secs(5));
                 if cache_dir.exists() {
                     if let Ok(entries) = fs::read_dir(&cache_dir) {
                         for entry in entries.flatten() {
