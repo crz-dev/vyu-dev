@@ -5,6 +5,11 @@ use std::path::PathBuf;
 use crate::types::BatchStatItem;
 use crate::util::canonicalize_path;
 
+#[cfg(target_os = "windows")]
+use std::ffi::OsStr;
+#[cfg(target_os = "windows")]
+use std::os::windows::ffi::OsStrExt;
+
 #[tauri::command]
 pub async fn batch_stat(paths: Vec<String>) -> Result<Vec<BatchStatItem>, String> {
     let items = tauri::async_runtime::spawn_blocking(move || {
@@ -103,7 +108,44 @@ pub fn copy_file_unique(source: String, output_dir: String) -> Result<String, St
 #[tauri::command]
 pub fn trash_file(path: String) -> Result<(), String> {
     let p = canonicalize_path(&path)?;
-    trash::delete(&p).map_err(|e| format!("Failed to move to trash: {e}"))
+    trash_file_inner(&p)
+}
+
+#[cfg(target_os = "windows")]
+fn trash_file_inner(p: &std::path::Path) -> Result<(), String> {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::Shell::{
+        SHFileOperationW, SHFILEOPSTRUCTW, FO_DELETE, FOF_ALLOWUNDO,
+    };
+
+    let wide: Vec<u16> = OsStr::new(p.as_os_str())
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .chain(std::iter::once(0))
+        .collect();
+
+    let mut op = SHFILEOPSTRUCTW {
+        hwnd: HWND::default(),
+        wFunc: FO_DELETE,
+        pFrom: windows::core::PCWSTR::from_raw(wide.as_ptr()),
+        pTo: windows::core::PCWSTR::null(),
+        fFlags: FOF_ALLOWUNDO.0 as u16,
+        fAnyOperationsAborted: false.into(),
+        hNameMappings: std::ptr::null_mut(),
+        lpszProgressTitle: windows::core::PCWSTR::null(),
+    };
+
+    let result = unsafe { SHFileOperationW(&mut op) };
+    if result == 0 {
+        Ok(())
+    } else {
+        Err(format!("Failed to move to trash: error code {result}"))
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn trash_file_inner(_p: &std::path::Path) -> Result<(), String> {
+    Err("Trash is not supported on this platform".into())
 }
 
 #[tauri::command]
