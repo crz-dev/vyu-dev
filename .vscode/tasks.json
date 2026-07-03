@@ -18,6 +18,21 @@
         "panel": "shared"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Tauri Build",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["tauri", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
     }
   ]
 }
