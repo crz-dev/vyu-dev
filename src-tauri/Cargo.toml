@@ -33,6 +33,7 @@ windows = { version = "0.61", features = [
     "Win32_System_Com",
     "Win32_System_Registry",
 ] }
+futures = "0.3.32"
 
 [profile.release]
 lto = "thin"

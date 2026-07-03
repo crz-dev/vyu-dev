@@ -1,10 +1,12 @@
 // Thumbnail generation
+use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+use futures::future::join_all;
 use image::GenericImageView;
 use tauri::Manager;
 
@@ -186,6 +188,37 @@ fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<S
     Ok(None)
 }
 
+/// Extract embedded JPEG preview from RAW file
+fn try_extract_raw_preview(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
+    let stream_idx = crate::util::find_embedded_jpeg_stream(path);
+    let idx = match stream_idx {
+        Some(i) => i,
+        None => return Ok(None),
+    };
+
+    run_ffmpeg(
+        &[
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            path,
+            "-map",
+            &format!("0:v:{idx}"),
+            "-c:v",
+            "copy",
+            "-vframes",
+            "1",
+            "-q:v",
+            "4",
+            &thumb_path.to_string_lossy(),
+        ],
+        thumb_path,
+        FFMPEG_THUMB_TIMEOUT,
+    )
+}
+
 /// FFmpeg thumbnail
 fn thumbnail_via_ffmpeg(
     path: &str,
@@ -196,7 +229,26 @@ fn thumbnail_via_ffmpeg(
 ) -> Result<Vec<u8>, String> {
     let result = if kind.is_video {
         generate_video_frame(path, thumb_path, size)
-    } else if kind.is_ffmpeg_image || kind.is_raw {
+    } else if kind.is_ffmpeg_image {
+        generate_ffmpeg_image_frame(path, thumb_path, size)
+    } else if kind.is_raw {
+        // Fast path: extract embedded JPEG preview, decode + scale via image crate
+        let fast_result = try_extract_raw_preview(path, thumb_path);
+        if let Ok(Some(_)) = fast_result {
+            let cached_thumb = thumb_path.to_path_buf();
+            match open_jpeg_scaled(thumb_path, size)
+                .or_else(|_| image::open(thumb_path).map_err(|e| format!("Failed to open embedded JPEG: {e}")))
+            {
+                Ok(img) => {
+                    let bytes = encode_and_save_thumbnail(&img, &cached_thumb, src_path, size, Path::new(path))?;
+                    let _ = fs::write(src_path, path);
+                    return Ok(bytes);
+                }
+                Err(_) => {
+                    let _ = fs::remove_file(thumb_path);
+                }
+            }
+        }
         generate_ffmpeg_image_frame(path, thumb_path, size)
     } else if kind.is_audio {
         match try_extract_audio_cover_art(path, thumb_path) {
@@ -223,15 +275,14 @@ fn thumbnail_via_ffmpeg(
     }
 }
 
-/// Thumbnail command
-#[tauri::command]
-pub async fn get_thumbnail(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, ThumbState>,
-    path: String,
-    size: Option<u32>,
+/// Inner thumbnail logic shared by single and batch commands
+async fn thumbnail_for_path(
+    _app: &tauri::AppHandle,
+    state: &ThumbState,
+    cache_dir: &Path,
+    path: &str,
+    thumb_size: u32,
 ) -> Result<String, String> {
-    let thumb_size = size.unwrap_or(THUMB_SHORT_SIDE);
     let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
     let kind = MediaKind::from_ext(&ext);
 
@@ -246,7 +297,7 @@ pub async fn get_thumbnail(
     let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
 
     // In-flight dedup (keyed by hash + size)
-    let hash = hash_path_xxh3(&path);
+    let hash = hash_path_xxh3(path);
     let inflight_key = format!("{hash}_{thumb_size}");
     if let Some(rx) = state.inflight.register(&inflight_key).await {
         return rx
@@ -255,7 +306,6 @@ pub async fn get_thumbnail(
             .map(|bytes| format_data_url(&bytes[..]));
     }
 
-    let cache_dir = thumb_cache_dir(&app).to_path_buf();
     let sem = state.sem_for_kind(&kind);
     let _permit = sem.acquire().await;
     let _permit = match _permit {
@@ -266,8 +316,8 @@ pub async fn get_thumbnail(
         }
     };
 
-    let path_c = path.clone();
-    let cache_dir_c = cache_dir.clone();
+    let path_c = path.to_string();
+    let cache_dir_c = cache_dir.to_path_buf();
 
     let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<(Vec<u8>, String), String> {
         let src_meta = fs::metadata(&path_c).map_err(|e| format!("Cannot access file: {e}"))?;
@@ -325,6 +375,52 @@ pub async fn get_thumbnail(
         .await;
 
     Ok(format_data_url(&jpeg_bytes))
+}
+
+/// Single thumbnail command
+#[tauri::command]
+pub async fn get_thumbnail(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, ThumbState>,
+    path: String,
+    size: Option<u32>,
+) -> Result<String, String> {
+    let thumb_size = size.unwrap_or(THUMB_SHORT_SIDE);
+    let cache_dir = thumb_cache_dir(&app).to_path_buf();
+    thumbnail_for_path(&app, &state, &cache_dir, &path, thumb_size).await
+}
+
+/// Batch thumbnail command — process multiple paths in a single IPC call
+#[tauri::command]
+pub async fn get_thumbnails(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, ThumbState>,
+    paths: Vec<String>,
+    size: Option<u32>,
+) -> Result<HashMap<String, String>, String> {
+    let thumb_size = size.unwrap_or(THUMB_SHORT_SIDE);
+    let cache_dir = thumb_cache_dir(&app).to_path_buf();
+    let state_ref: &ThumbState = &state;
+
+    let futs: Vec<_> = paths
+        .into_iter()
+        .map(|path| {
+            let app = app.clone();
+            let cache_dir = cache_dir.clone();
+            async move {
+                let result =
+                    thumbnail_for_path(&app, state_ref, &cache_dir, &path, thumb_size).await;
+                (path, result)
+            }
+        })
+        .collect();
+
+    let results = join_all(futs).await;
+    let mut map = HashMap::new();
+    for (path, result) in results {
+        map.insert(path, result.unwrap_or_default());
+    }
+    Ok(map)
 }
 
 /// Record cache entry

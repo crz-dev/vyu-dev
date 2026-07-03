@@ -1,7 +1,7 @@
 <script lang="ts">
   import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
-  import { invokeGetThumbnail } from "$lib/features/media/tools";
+  import { invokeGetThumbnails } from "$lib/features/media/tools";
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
 
@@ -144,36 +144,43 @@
 
   // Queue processor
   // Process queue in center-outward order — fills outward from current file
+  const BATCH_SIZE = 6;
   const MAX_CONCURRENT = 4;
   $effect(() => {
     if (!afterOpen) return;
     if (fetching.size >= MAX_CONCURRENT) return;
+    // Collect a batch of uncached paths in queue order
+    const batch: string[] = [];
     for (const path of loadQueue) {
       if (loaded.has(path) || fetching.has(path)) continue;
-      // Check the shared cache before hitting the backend.
       const cached = getCached(path);
       if (cached) {
         loaded = new Map(loaded).set(path, cached);
         continue;
       }
-      fetchOne(path);
-      return; // one per effect run — re-triggers when a slot opens
+      batch.push(path);
+      if (batch.length >= BATCH_SIZE) break;
     }
+    if (batch.length > 0) fetchBatch(batch);
   });
 
-  async function fetchOne(path: string) {
-    fetching = new Set(fetching).add(path);
+  async function fetchBatch(paths: string[]) {
+    for (const p of paths) fetching = new Set(fetching).add(p);
     try {
-      const dataUrl = await invokeGetThumbnail(path);
-      if (dataUrl) {
-        loaded = new Map(loaded).set(path, dataUrl);
-        setCached(path, 120, dataUrl);
+      const results = await invokeGetThumbnails(paths, 120);
+      let updated = loaded;
+      for (const [p, dataUrl] of Object.entries(results)) {
+        if (dataUrl) {
+          updated = new Map(updated).set(p, dataUrl);
+          setCached(p, 120, dataUrl);
+        }
       }
+      loaded = updated;
     } catch {
       // Silently fail — thumbnail stays as placeholder
     }
     const next = new Set(fetching);
-    next.delete(path);
+    for (const p of paths) next.delete(p);
     fetching = next;
   }
 

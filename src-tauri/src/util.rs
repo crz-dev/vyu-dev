@@ -12,20 +12,32 @@ use crate::constants::CREATE_NO_WINDOW;
 
 static BUNDLED_FFMPEG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
 
-// Bundled FFmpeg path
-pub fn init_ffmpeg_path(resource_dir: &Path) {
-    let ffmpeg = resource_dir.join("ffmpeg.exe");
-    let ffprobe = resource_dir.join("ffprobe.exe");
-    // Ignore dev-mode stubs (<1MB)
+fn find_ffmpeg_dir(dir: &Path) -> Option<PathBuf> {
+    let ffmpeg = dir.join("ffmpeg.exe");
+    let ffprobe = dir.join("ffprobe.exe");
     const MIN_SIZE: u64 = 1_000_000;
-    let dir = if ffmpeg.exists() && ffprobe.exists()
+    if ffmpeg.exists() && ffprobe.exists()
         && ffmpeg.metadata().map(|m| m.len()).unwrap_or(0) >= MIN_SIZE
         && ffprobe.metadata().map(|m| m.len()).unwrap_or(0) >= MIN_SIZE
     {
-        Some(resource_dir.to_path_buf())
-    } else {
-        None
-    };
+        return Some(dir.to_path_buf());
+    }
+    None
+}
+
+// Bundled FFmpeg path
+pub fn init_ffmpeg_path(resource_dir: &Path) {
+    let dir = find_ffmpeg_dir(resource_dir)
+        .or_else(|| {
+            // Nested resources/ (some Tauri configurations use a subdirectory)
+            find_ffmpeg_dir(&resource_dir.join("resources"))
+        })
+        .or_else(|| {
+            // Dev mode: resource_dir is the binary dir (target/debug),
+            // real resources live in the source tree at CARGO_MANIFEST_DIR/resources/
+            let src = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources");
+            find_ffmpeg_dir(&src)
+        });
     _ = BUNDLED_FFMPEG_DIR.set(dir);
 }
 
@@ -222,6 +234,34 @@ pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Resul
             }
         }
     }
+}
+
+/// Find embedded JPEG preview stream index in RAW files
+pub fn find_embedded_jpeg_stream(input: &str) -> Option<u32> {
+    let output = ffprobe_command()
+        .args([
+            "-v",
+            "error",
+            "-select_streams",
+            "v",
+            "-show_entries",
+            "stream=index,codec_name",
+            "-of",
+            "csv=p=0",
+            input,
+        ])
+        .output()
+        .ok()?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for line in stdout.lines() {
+        let parts: Vec<&str> = line.split(',').collect();
+        if parts.len() == 2 && (parts[1] == "mjpeg" || parts[1] == "jpeg") {
+            if let Ok(idx) = parts[0].parse::<u32>() {
+                return Some(idx);
+            }
+        }
+    }
+    None
 }
 
 pub fn format_data_url(bytes: &[u8]) -> String {

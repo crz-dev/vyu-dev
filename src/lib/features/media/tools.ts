@@ -106,6 +106,13 @@ export async function invokeGetThumbnail(
   return invoke("get_thumbnail", { path, size: size ?? null });
 }
 
+export async function invokeGetThumbnails(
+  paths: string[],
+  size?: number,
+): Promise<Record<string, string>> {
+  return invoke("get_thumbnails", { paths, size: size ?? null });
+}
+
 // ── Media properties ──
 
 export async function invokeGetMediaProperties(

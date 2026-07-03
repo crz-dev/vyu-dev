@@ -1,6 +1,6 @@
 // Library state
 import {
-  invokeGetThumbnail,
+  invokeGetThumbnails,
   invokeGetFilesTotalSize,
   invokeBatchStat,
   invokeCreateCollectionFolder,
@@ -157,11 +157,25 @@ function createLibrary() {
   async function loadOne(path: string) {
     inflight++;
     pendingSet.delete(path);
+
+    // Batch with adjacent queued items
+    const BATCH_SIZE = 8;
+    const batchPaths: string[] = [path];
+    const defer: string[] = [];
+    for (const p of pendingOrder) {
+      if (batchPaths.length >= BATCH_SIZE) { defer.push(p); continue; }
+      pendingSet.delete(p);
+      batchPaths.push(p);
+    }
+    pendingOrder = defer;
+
     try {
-      const dataUrl = await invokeGetThumbnail(path, 256);
-      if (dataUrl) {
-        setCacheEntry(path, dataUrl);
-        setCached(path, 256, dataUrl);
+      const results = await invokeGetThumbnails(batchPaths, 256);
+      for (const [p, dataUrl] of Object.entries(results)) {
+        if (dataUrl) {
+          setCacheEntry(p, dataUrl);
+          setCached(p, 256, dataUrl);
+        }
       }
     } catch {
     } finally {

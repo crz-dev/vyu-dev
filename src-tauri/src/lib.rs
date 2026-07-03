@@ -40,6 +40,7 @@ pub fn run() {
             export_edited_media,
             convert_media,
             get_thumbnail,
+            get_thumbnails,
             get_thumbnail_cache_size,
             clear_thumbnail_cache,
             migrate_thumbnail_cache,

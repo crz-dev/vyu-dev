@@ -1,5 +1,5 @@
 // Thumbnail cache
-import { invokeGetThumbnail } from "$lib/features/media/tools";
+import { invokeGetThumbnails } from "$lib/features/media/tools";
 
 const cache = new Map<string, string>();
 const MAX_CACHE = 500;
@@ -8,6 +8,7 @@ let pendingSet = new Set<string>();
 let pendingOrder: string[] = [];
 let inflight = 0;
 const MAX_CONCURRENT = 4;
+const BATCH_SIZE = 8;
 
 function cacheKey(path: string, size: number): string {
   return `${path}\0${size}`;
@@ -29,11 +30,29 @@ function touch(key: string) {
 async function loadOne(key: string, path: string, size: number) {
   inflight++;
   pendingSet.delete(key);
+
+  // Batch with adjacent queued items (same size)
+  const batchPaths: string[] = [path];
+  const defer: string[] = [];
+  for (const k of pendingOrder) {
+    const [p, s] = k.split("\0");
+    if (Number(s) === size && batchPaths.length < BATCH_SIZE) {
+      pendingSet.delete(k);
+      batchPaths.push(p);
+    } else {
+      defer.push(k);
+    }
+  }
+  pendingOrder = defer;
+
   try {
-    const dataUrl = await invokeGetThumbnail(path, size);
-    if (dataUrl) {
-      cache.set(key, dataUrl);
-      if (cache.size > MAX_CACHE) evictOne();
+    const results = await invokeGetThumbnails(batchPaths, size);
+    for (const [p, dataUrl] of Object.entries(results)) {
+      if (dataUrl) {
+        const ck = cacheKey(p, size);
+        cache.set(ck, dataUrl);
+        if (cache.size > MAX_CACHE) evictOne();
+      }
     }
   } catch {
   } finally {
