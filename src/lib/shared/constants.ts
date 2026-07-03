@@ -7,7 +7,7 @@ export const IMAGE_EXTS = [
   "gif",
   "webp",
   "bmp",
-  "svg",
+  "svg", // intentionally absent from IMAGE_EXTS_RUST — browser-native, never needs server-side processing
   "avif",
   "tiff",
   "tif",

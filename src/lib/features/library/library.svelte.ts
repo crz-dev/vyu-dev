@@ -480,8 +480,7 @@ function createLibrary() {
     if (newPath === path) return;
     try {
       await invokeRenameFile(path, newPath);
-      const migrated = await invokeMigrateThumbnailCache(path, newPath);
-      console.log(`Migrated ${migrated} thumbnail cache entries`);
+      await invokeMigrateThumbnailCache(path, newPath);
       collections = collections.map((c) =>
         c.path === path ? { ...c, name: trimmed, path: newPath } : c,
       );

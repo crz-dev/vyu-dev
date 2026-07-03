@@ -867,7 +867,6 @@ export async function fetchMediaProperties(
 export async function prepareDisplayPath(path: string): Promise<string> {
   if (isBrowserUnsupportedImage(path)) {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
       const displayPath = await invoke<string | null>("prepare_display_image", {
         path,
       });
@@ -879,7 +878,6 @@ export async function prepareDisplayPath(path: string): Promise<string> {
   }
   if (needsRemux(path)) {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
       const displayPath = await invoke<string | null>("prepare_video_display", {
         path,
       });

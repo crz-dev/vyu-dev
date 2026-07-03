@@ -1,5 +1,4 @@
 // Menu visibility state
-import { editing } from "$lib/features/editing/editing.svelte";
 
 function createMenuVisibilityStore() {
   let editMenuVisible = $state(false);
@@ -175,12 +174,13 @@ export const menuStore = createMenuVisibilityStore();
 export interface MenuActionsDeps {
   closeContextMenu: () => void;
   getFilePath: () => string;
+  setEditingFilePath: (path: string) => void;
 }
 
 export function createMenuActions(deps: MenuActionsDeps) {
   function openEditMenu() {
     deps.closeContextMenu();
-    editing.setFilePath(deps.getFilePath());
+    deps.setEditingFilePath(deps.getFilePath());
     menuStore.editMenuVisible = true;
   }
 

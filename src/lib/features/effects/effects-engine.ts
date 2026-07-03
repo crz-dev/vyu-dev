@@ -1,5 +1,4 @@
 // Audio effects engine — reverb, chorus, distortion, pitch
-import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
 let workletRegistered = false;
 let workletRegistration: Promise<void> | null = null;
@@ -87,10 +86,6 @@ class EffectsEngine {
       stNode.playbackRate.value = 1.0;
       stNode.pitchSemitones.value = this.lastPitch;
       this.pitchNode = stNode as unknown as AudioWorkletNode;
-      console.log(
-        "[fx] SoundTouchNode created, pitchSemitones =",
-        this.lastPitch,
-      );
     } else {
       console.warn("[fx] worklet not registered, pitch disabled");
     }
