@@ -43,8 +43,11 @@ export interface InitState {
 
 export function setupInit(s: InitState) {
   onMount(() => {
-    const initial = window.__INITIAL_FILE__;
-    if (initial) s.loadFile(initial);
+    (async () => {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const initial = await invoke<string | null>("get_initial_file");
+      if (initial) s.loadFile(initial);
+    })();
 
     if (typeof requestIdleCallback === "function") {
       requestIdleCallback(

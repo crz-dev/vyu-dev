@@ -1,9 +1,9 @@
 // Loop mode state
-import { saveLoopMode } from "$lib/services/storage";
+import { loadLoopMode, saveLoopMode } from "$lib/services/storage";
 import { LOOP_MODES, type LoopMode } from "$lib/shared/constants";
 
 function createLoopModeStore() {
-  let loopMode = $state<LoopMode>("loop");
+  let loopMode = $state<LoopMode>(loadLoopMode());
 
   function applyToMedia(
     mode: LoopMode,

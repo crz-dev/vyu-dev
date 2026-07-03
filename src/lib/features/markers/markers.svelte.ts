@@ -155,6 +155,20 @@ function getProgressBar(): HTMLElement | null {
 }
 
 export function createMarkerActions(deps: MarkerActionsDeps) {
+  let activeWindowListeners: Array<{
+    type: string;
+    handler: EventListenerOrEventListenerObject;
+  }> | null = null;
+
+  function cleanupWindowListeners() {
+    if (activeWindowListeners) {
+      for (const { type, handler } of activeWindowListeners) {
+        window.removeEventListener(type, handler);
+      }
+      activeWindowListeners = null;
+    }
+  }
+
   function saveTimestamps() {
     writeTimestamps(deps.getFilePath(), markerStore.timestamps);
   }
@@ -415,6 +429,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
+    cleanupWindowListeners();
 
     const mediaEl = deps.getMediaEl();
     const duration = deps.getRawDurationSecs();
@@ -462,8 +477,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     }
 
     function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      cleanupWindowListeners();
       if (moved) {
         markerStore.timestampDragJustEnded = true;
         setTimeout(() => {
@@ -476,6 +490,10 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    activeWindowListeners = [
+      { type: "mousemove", handler: onMouseMove as EventListener },
+      { type: "mouseup", handler: onMouseUp as EventListener },
+    ];
   }
 
   function setABLoop(start: number, end: number) {
@@ -528,6 +546,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
+    cleanupWindowListeners();
 
     const duration = deps.getRawDurationSecs();
     if (duration <= 0) return;
@@ -564,8 +583,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     }
 
     function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      cleanupWindowListeners();
       if (moved) {
         markerStore.loopMarkerJustDragged = true;
         setTimeout(() => {
@@ -581,12 +599,17 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    activeWindowListeners = [
+      { type: "mousemove", handler: onMouseMove as EventListener },
+      { type: "mouseup", handler: onMouseUp as EventListener },
+    ];
   }
 
   function startClipMarkerDrag(e: MouseEvent, id: string) {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
+    cleanupWindowListeners();
 
     deps.onClipMenuReopen();
 
@@ -630,8 +653,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     }
 
     function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      cleanupWindowListeners();
       if (moved) {
         deps.clips.clipMarkerJustDragged = true;
         setTimeout(() => {
@@ -643,6 +665,10 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    activeWindowListeners = [
+      { type: "mousemove", handler: onMouseMove as EventListener },
+      { type: "mouseup", handler: onMouseUp as EventListener },
+    ];
   }
 
   function seekToTimestamp(time: number) {
@@ -726,5 +752,6 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     onEditorDeleteSegment,
     getTitleEditorWidthCh,
     removeClipBoundary,
+    cleanupWindowListeners,
   };
 }

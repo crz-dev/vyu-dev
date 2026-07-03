@@ -66,6 +66,7 @@ export function createMedia(
 ) {
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
   let finishLoadingCalled = false;
+  let loadGen = 0;
   const statCache = new Map<
     string,
     {
@@ -116,6 +117,7 @@ export function createMedia(
     path: string,
     set: (data: Partial<MediaState>) => void,
   ): Promise<void> {
+    const gen = ++loadGen;
     releaseMediaResources();
 
     const isVideo = pathIsVideo(path);
@@ -130,6 +132,7 @@ export function createMedia(
     if (isVideo || isAudio) {
       try {
         const meta = await getFileMetadata(path);
+        if (gen !== loadGen) return;
         if (meta) {
           if (meta.timestamp_data) {
             try {
@@ -218,8 +221,10 @@ export function createMedia(
     onReset(path);
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (gen !== loadGen) return;
 
     const baseSrc = convertFileSrc(await prepareDisplayPath(path));
+    if (gen !== loadGen) return;
     set({
       fileSrc: baseSrc,
     });
@@ -228,6 +233,7 @@ export function createMedia(
       let info = statCache.get(path);
       if (!info) {
         info = await stat(path);
+        if (gen !== loadGen) return;
         statCache.set(path, info);
       }
       set({

@@ -25,10 +25,25 @@ export interface ScrubbingDeps {
 }
 
 export function createScrubbingActions(deps: ScrubbingDeps) {
+  let activeWindowListeners: Array<{
+    type: string;
+    handler: EventListenerOrEventListenerObject;
+  }> | null = null;
+
+  function cleanupWindowListeners() {
+    if (activeWindowListeners) {
+      for (const { type, handler } of activeWindowListeners) {
+        window.removeEventListener(type, handler);
+      }
+      activeWindowListeners = null;
+    }
+  }
+
   function startScrubbing(e: MouseEvent) {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
+    cleanupWindowListeners();
     const mediaEl = deps.getIsVideo() ? deps.getVideoEl() : deps.getAudioEl();
     if (!mediaEl || !mediaEl.duration) return;
     const bar = e.currentTarget as HTMLElement;
@@ -109,15 +124,14 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
 
     function onMouseUp() {
       deps.setIsScrubbing(false);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      cleanupWindowListeners();
       mediaEl!.removeEventListener("seeked", onSeeked);
       if (uiRafId !== null) {
         cancelAnimationFrame(uiRafId);
         uiRafId = null;
       }
       flushUI();
-      // Final seek to the last pending position. Cancels any in-flight seek — the browser will decode the new target.
+      // Final seek to the last pending position
       if (pendingTime !== null) {
         seekInProgress = true;
         mediaEl!.currentTime = pendingTime;
@@ -129,6 +143,10 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    activeWindowListeners = [
+      { type: "mousemove", handler: onMouseMove as EventListener },
+      { type: "mouseup", handler: onMouseUp as EventListener },
+    ];
   }
 
   function startDiscScrubbing(e: MouseEvent | TouchEvent) {
@@ -218,5 +236,6 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
   return {
     startScrubbing,
     startDiscScrubbing,
+    cleanupWindowListeners,
   };
 }

@@ -134,9 +134,24 @@ export function createPlaybackUI(
     volumeTooltipVisible = true;
   }
 
+  let activeWindowListeners: Array<{
+    type: string;
+    handler: EventListenerOrEventListenerObject;
+  }> | null = null;
+
+  function cleanupWindowListeners() {
+    if (activeWindowListeners) {
+      for (const { type, handler } of activeWindowListeners) {
+        window.removeEventListener(type, handler);
+      }
+      activeWindowListeners = null;
+    }
+  }
+
   function startVolumeDrag(e: MouseEvent, vertical = false) {
     if (e.button !== 0) return;
     e.preventDefault();
+    cleanupWindowListeners();
     volumeDragging = true;
     const container = e.currentTarget as HTMLElement;
     const containerRect = container.getBoundingClientRect();
@@ -182,14 +197,17 @@ export function createPlaybackUI(
       dragTo(ev.clientX, ev.clientY);
     }
     function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      cleanupWindowListeners();
       volumeDragging = false;
       volumeTooltipVisible = false;
     }
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    activeWindowListeners = [
+      { type: "mousemove", handler: onMouseMove as EventListener },
+      { type: "mouseup", handler: onMouseUp as EventListener },
+    ];
   }
 
   function handleVolumeScroll(e: WheelEvent) {
@@ -249,6 +267,7 @@ export function createPlaybackUI(
   function startSpeedDrag(e: MouseEvent, vertical = false) {
     if (e.button !== 0) return;
     e.preventDefault();
+    cleanupWindowListeners();
     speedDragging = true;
     const container = e.currentTarget as HTMLElement;
     const containerRect = container.getBoundingClientRect();
@@ -300,14 +319,17 @@ export function createPlaybackUI(
     }
 
     function onMouseUp() {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      cleanupWindowListeners();
       speedDragging = false;
       speedTooltipVisible = false;
     }
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    activeWindowListeners = [
+      { type: "mousemove", handler: onMouseMove as EventListener },
+      { type: "mouseup", handler: onMouseUp as EventListener },
+    ];
   }
 
   function handleSpeedScroll(e: WheelEvent) {
@@ -569,6 +591,7 @@ export function createPlaybackUI(
     hideVolumeSliderTooltip,
     showSpeedSliderTooltip,
     hideSpeedSliderTooltip,
+    cleanupWindowListeners,
   };
 }
 

@@ -23,8 +23,8 @@
     isVideo: boolean;
     videoEl: HTMLVideoElement | null;
     isGifVideo: boolean;
-    timelineProps: any;
-    playbackProps: any;
+    timelineProps: Record<string, unknown>;
+    playbackProps: Record<string, unknown>;
     toggleFullscreen: () => void;
     fileListLength: number;
     currentIndex: number;

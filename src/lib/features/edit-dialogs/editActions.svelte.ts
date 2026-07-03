@@ -182,27 +182,6 @@ export function createEditActions(deps: EditActionsDeps) {
     );
   }
 
-  $effect(() => {
-    const snap = editing.snapshot;
-    void snap.rotation;
-    void snap.flipped;
-    void snap.flippedVertical;
-    void snap.brightness;
-    void snap.contrast;
-    void snap.saturation;
-    void snap.hue;
-    void snap.cropBounds.left;
-    void snap.cropBounds.top;
-    void snap.cropBounds.right;
-    void snap.cropBounds.bottom;
-    void snap.cropAspectRatio;
-    void markup.hasUnapplied;
-
-    if (unsavedToastDismissed) {
-      unsavedToastDismissed = false;
-    }
-  });
-
   let prevShouldShow = false;
 
   $effect(() => {

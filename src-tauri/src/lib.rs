@@ -15,6 +15,14 @@ use tauri::{Listener, Manager, WindowEvent};
 use windows::core::w;
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 
+struct InitialFile(std::sync::Mutex<Option<String>>);
+
+#[tauri::command]
+fn get_initial_file(state: tauri::State<'_, InitialFile>) -> Option<String> {
+    let mut guard = state.0.lock().ok()?;
+    guard.take()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -74,6 +82,7 @@ pub fn run() {
             db_batch_upsert_file_metadata,
             create_collection_folder,
             delete_collection_folder,
+            get_initial_file,
         ])
         .setup(|app| {
             unsafe {
@@ -155,11 +164,9 @@ pub fn run() {
 
             if args.len() > 1 {
                 let file_path = args.swap_remove(1);
-                let escaped =
-                    serde_json::to_string(&file_path).expect("failed to JSON-escape file path");
-                if let Err(e) = window.eval(&format!("window.__INITIAL_FILE__ = {}", escaped)) {
-                    eprintln!("failed to set initial file via eval: {e}");
-                }
+                app.manage(InitialFile(std::sync::Mutex::new(Some(file_path))));
+            } else {
+                app.manage(InitialFile(std::sync::Mutex::new(None)));
             }
             Ok(())
         })

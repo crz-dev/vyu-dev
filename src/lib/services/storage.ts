@@ -302,8 +302,8 @@ export function loadMarkupCustomColors(): string[] {
     if (Array.isArray(parsed) && parsed.length === 3) {
       return parsed.map((c) => (typeof c === "string" ? c : ""));
     }
-  } catch {
-    /* empty */
+  } catch (e) {
+    console.error("Failed to load markup custom colors:", e);
   }
   return ["", "", ""];
 }
@@ -321,8 +321,8 @@ export function loadHighlightCustomColors(): string[] {
     if (Array.isArray(parsed) && parsed.length >= 6) {
       return parsed.map((c) => (typeof c === "string" ? c : ""));
     }
-  } catch {
-    /* empty */
+  } catch (e) {
+    console.error("Failed to load highlight custom colors:", e);
   }
   return ["", "", "", "", "", ""];
 }
@@ -340,8 +340,8 @@ export function loadTextCustomColors(): string[] {
     if (Array.isArray(parsed) && parsed.length >= 1) {
       return parsed.map((c) => (typeof c === "string" ? c : ""));
     }
-  } catch {
-    /* empty */
+  } catch (e) {
+    console.error("Failed to load text custom colors:", e);
   }
   return [""];
 }

@@ -284,11 +284,10 @@ function createLibrary() {
 
   function addRecent(path: string) {
     if (recentsDisabled || privacyMode) return;
-    const idx = recentFiles.findIndex((r) => r.path === path);
-    if (idx !== -1) recentFiles.splice(idx, 1);
-    recentFiles.unshift({ path, openedAt: Date.now() });
-    if (recentFiles.length > recentFilesLimit)
-      recentFiles.length = recentFilesLimit;
+    recentFiles = [
+      { path, openedAt: Date.now() },
+      ...recentFiles.filter((r) => r.path !== path),
+    ].slice(0, recentFilesLimit);
     saveRecentFiles(recentFiles, recentFilesLimit);
   }
 
