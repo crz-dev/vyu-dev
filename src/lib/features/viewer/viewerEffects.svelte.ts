@@ -81,25 +81,33 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
     const viewerEl = deps.getViewerEl();
     if (!viewerEl) return;
     const el = viewerEl;
+    let rafId: number | null = null;
     const observer = new ResizeObserver(() => {
-      if (
-        deps.getFileSrc() &&
-        !deps.getIsVideo() &&
-        deps.getImageNaturalWidth() > 0 &&
-        deps.getImageNaturalHeight() > 0 &&
-        Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
-      ) {
-        const { width, height } = getViewerContentSize();
-        viewer.fitToScreen(
-          width,
-          height,
-          deps.getImageNaturalWidth(),
-          deps.getImageNaturalHeight(),
-        );
-      }
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        if (
+          deps.getFileSrc() &&
+          !deps.getIsVideo() &&
+          deps.getImageNaturalWidth() > 0 &&
+          deps.getImageNaturalHeight() > 0 &&
+          Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
+        ) {
+          const { width, height } = getViewerContentSize();
+          viewer.fitToScreen(
+            width,
+            height,
+            deps.getImageNaturalWidth(),
+            deps.getImageNaturalHeight(),
+          );
+        }
+      });
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }
 
   function refitOnChangeEffect() {

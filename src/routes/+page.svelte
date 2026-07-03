@@ -48,7 +48,7 @@
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
-  import { createMarkupActions } from "$lib/features/markup/markupActions";
+
   import { showToast } from "$lib/features/toast/toast.svelte";
   import Shell from "$lib/shared/Shell.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
@@ -681,12 +681,32 @@
     handleReset,
     handleUpdateApplyNoAsk,
   } = editActions;
-  const { handleMarkupApply, handleMarkupExport } = createMarkupActions({
-    getFilePath: () => filePath,
-    getFileName: () => fileName,
-    loadFile,
-    folderWatcher,
-  });
+  let _markupActions:
+    | {
+        handleMarkupApply: (canvasDataUrl?: string) => Promise<void>;
+        handleMarkupExport: (canvasDataUrl?: string) => Promise<void>;
+      }
+    | null = null;
+  async function ensureMarkupActions() {
+    if (!_markupActions) {
+      const { createMarkupActions } = await import("$lib/features/markup/markupActions");
+      _markupActions = createMarkupActions({
+        getFilePath: () => filePath,
+        getFileName: () => fileName,
+        loadFile,
+        folderWatcher,
+      });
+    }
+    return _markupActions;
+  }
+  async function handleMarkupApply(canvasDataUrl?: string) {
+    const a = await ensureMarkupActions();
+    return a.handleMarkupApply(canvasDataUrl);
+  }
+  async function handleMarkupExport(canvasDataUrl?: string) {
+    const a = await ensureMarkupActions();
+    return a.handleMarkupExport(canvasDataUrl);
+  }
   const deleteActions = createDeleteActions({
     getFilePath: () => filePath,
     getFileList: () => fileList,

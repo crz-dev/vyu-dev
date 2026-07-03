@@ -51,6 +51,18 @@ export interface MediaState {
   resumePoint: number | null;
 }
 
+interface PrefetchEntry {
+  baseSrc?: string;
+  meta?: {
+    timestamps: VideoMarker[];
+    clipBoundaries: ClipBoundary[];
+    resumePoint: number | null;
+  };
+}
+
+const prefetchCache = new Map<string, PrefetchEntry>();
+const MAX_PREFETCH = 10;
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -113,69 +125,130 @@ export function createMedia(
     }
   }
 
+  function parseTimestamps(data: string): VideoMarker[] {
+    try {
+      const raw = JSON.parse(data) as Array<Partial<VideoMarker>>;
+      return raw
+        .filter((ts) => typeof ts?.time === "number")
+        .map((ts) => ({
+          id:
+            ts.id ||
+            `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          time: ts.time as number,
+          title: typeof ts.title === "string" ? ts.title : "",
+        }))
+        .sort((a, b) => a.time - b.time);
+    } catch {
+      return [];
+    }
+  }
+
+  function parseClipBoundaries(data: string): ClipBoundary[] {
+    try {
+      const raw = JSON.parse(data) as Array<Partial<ClipBoundary>>;
+      return raw
+        .filter(
+          (m) =>
+            typeof m?.time === "number" &&
+            (m.kind === "start" || m.kind === "end"),
+        )
+        .map((m) => ({
+          id:
+            m.id ||
+            `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}`,
+          time: m.time as number,
+          kind: m.kind as "start" | "end",
+          title: typeof m.title === "string" ? m.title : "",
+        }))
+        .sort((a, b) => a.time - b.time);
+    } catch {
+      return [];
+    }
+  }
+
+  async function prefetchFile(path: string) {
+    if (prefetchCache.has(path)) return;
+    try {
+      const [baseSrc, metaResult] = await Promise.all([
+        prepareDisplayPath(path).then(convertFileSrc).catch(() => undefined),
+        getFileMetadata(path).catch(() => null),
+      ]);
+
+      const entry: PrefetchEntry = {};
+      if (baseSrc) entry.baseSrc = baseSrc;
+      if (metaResult) {
+        const timestamps: VideoMarker[] = [];
+        const clipBoundaries: ClipBoundary[] = [];
+        let resumePoint: number | null = null;
+
+        if (metaResult.timestamp_data) {
+          timestamps.push(...parseTimestamps(metaResult.timestamp_data));
+        }
+        if (metaResult.clips_data) {
+          clipBoundaries.push(...parseClipBoundaries(metaResult.clips_data));
+        }
+        if (metaResult.last_position != null && isFinite(metaResult.last_position)) {
+          resumePoint = metaResult.last_position;
+        }
+
+        entry.meta = { timestamps, clipBoundaries, resumePoint };
+      }
+
+      if (prefetchCache.size >= MAX_PREFETCH) {
+        const first = prefetchCache.keys().next().value;
+        if (first) prefetchCache.delete(first);
+      }
+      prefetchCache.set(path, entry);
+    } catch {
+      // Prefetch failures are non-critical
+    }
+  }
+
+  function prefetchAdjacent(fileList: string[], currentIndex: number) {
+    if (fileList.length === 0) return;
+    for (const offset of [1, -1, 2, -2]) {
+      const idx = currentIndex + offset;
+      if (idx >= 0 && idx < fileList.length) {
+        prefetchFile(fileList[idx]);
+      }
+    }
+  }
+
   async function displayFile(
     path: string,
     set: (data: Partial<MediaState>) => void,
   ): Promise<void> {
     const gen = ++loadGen;
+
+    // Consume prefetch cache if available
+    const cached = prefetchCache.get(path);
+    if (cached) prefetchCache.delete(path);
+
     releaseMediaResources();
 
     const isVideo = pathIsVideo(path);
     const isAudio = pathIsAudio(path);
     const isPdf = pathIsPdf(path);
 
-    // Batch metadata fetch
+    // Batch metadata fetch — use cached or fresh
     let timestamps: VideoMarker[] = [];
     let clipBoundaries: ClipBoundary[] = [];
     let resumePoint: number | null = null;
 
-    if (isVideo || isAudio) {
+    if (cached?.meta) {
+      timestamps = cached.meta.timestamps;
+      clipBoundaries = cached.meta.clipBoundaries;
+      resumePoint = cached.meta.resumePoint;
+    } else if (isVideo || isAudio) {
       try {
         const meta = await getFileMetadata(path);
         if (gen !== loadGen) return;
         if (meta) {
           if (meta.timestamp_data) {
-            try {
-              const raw = JSON.parse(meta.timestamp_data) as Array<
-                Partial<VideoMarker>
-              >;
-              timestamps = raw
-                .filter((ts) => typeof ts?.time === "number")
-                .map((ts) => ({
-                  id:
-                    ts.id ||
-                    `ts-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                  time: ts.time as number,
-                  title: typeof ts.title === "string" ? ts.title : "",
-                }))
-                .sort((a, b) => a.time - b.time);
-            } catch {
-              /* empty */
-            }
+            timestamps = parseTimestamps(meta.timestamp_data);
           }
           if (isVideo && meta.clips_data) {
-            try {
-              const raw = JSON.parse(meta.clips_data) as Array<
-                Partial<ClipBoundary>
-              >;
-              clipBoundaries = raw
-                .filter(
-                  (m) =>
-                    typeof m?.time === "number" &&
-                    (m.kind === "start" || m.kind === "end"),
-                )
-                .map((m) => ({
-                  id:
-                    m.id ||
-                    `${m.kind}-${m.time}-${Math.random().toString(36).slice(2, 8)}`,
-                  time: m.time as number,
-                  kind: m.kind as "start" | "end",
-                  title: typeof m.title === "string" ? m.title : "",
-                }))
-                .sort((a, b) => a.time - b.time);
-            } catch {
-              /* empty */
-            }
+            clipBoundaries = parseClipBoundaries(meta.clips_data);
           }
           if (meta.last_position != null && isFinite(meta.last_position)) {
             resumePoint = meta.last_position;
@@ -223,7 +296,7 @@ export function createMedia(
     await new Promise((resolve) => requestAnimationFrame(resolve));
     if (gen !== loadGen) return;
 
-    const baseSrc = convertFileSrc(await prepareDisplayPath(path));
+    const baseSrc = cached?.baseSrc ?? convertFileSrc(await prepareDisplayPath(path));
     if (gen !== loadGen) return;
     set({
       fileSrc: baseSrc,
@@ -381,5 +454,6 @@ export function createMedia(
     onImageLoad,
     onVideoLoad,
     finishLoading,
+    prefetchAdjacent,
   };
 }

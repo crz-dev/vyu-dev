@@ -16,6 +16,7 @@ export function createFolderWatcher(opts: {
 }) {
   let unwatchFn: (() => void) | null = null;
   let watchDebounce: ReturnType<typeof setTimeout> | null = null;
+  let lastStartedAt = 0;
 
   function stopWatching() {
     if (watchDebounce) {
@@ -29,6 +30,7 @@ export function createFolderWatcher(opts: {
   }
 
   function startWatching(folderPath: string) {
+    lastStartedAt = Date.now();
     stopWatching();
     watchImmediate(
       folderPath,
@@ -51,6 +53,11 @@ export function createFolderWatcher(opts: {
   }
 
   async function onFolderChanged(folderPath: string) {
+    // Suppress the initial watchImmediate callback — it fires right after
+    // startWatching but no real filesystem change occurred yet. A 1s window
+    // covers the loadFile + rescan cascade without missing real events.
+    if (Date.now() - lastStartedAt < 1000) return;
+
     const prevPath = opts.getFilePath();
     const prevList = [...opts.getFileList()];
     const prevIndex = opts.getCurrentIndex();
