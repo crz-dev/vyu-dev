@@ -149,14 +149,14 @@
     if (isViewingCollection) {
       items.push({ type: "file", path: "__add_files__" });
     }
-    if (isShowingFolders) {
+    if (library.showFolders) {
       for (const fp of currentFolderPaths) {
         items.push({ type: "folder", path: fp });
       }
     }
     for (const section of displaySections) {
       for (const path of section.items) {
-        if (!isShowingFolders || !folderPathSet.has(path)) {
+        if (!library.showFolders || !folderPathSet.has(path)) {
           items.push({ type: "file", path });
         }
       }
@@ -1151,6 +1151,7 @@
       try {
         const sep = path.includes("\\") ? "\\" : "/";
         const entries = await readDir(path);
+        if (library.activeTab !== "library") return;
         const folders: string[] = [];
         const files: string[] = [];
         for (const e of entries) {
@@ -1170,6 +1171,7 @@
         libraryDirFolders = folders;
         libraryDirFiles = files;
       } catch {
+        if (library.activeTab !== "library") return;
         libraryDirFolders = [];
         libraryDirFiles = [];
       }
@@ -3213,59 +3215,59 @@
                       }
                     }}
                   >
-                    {#if library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
-                      <img
-                        class="library-collection-thumb"
-                        src={library.cache[firstFilePath]}
-                        alt=""
-                        draggable="false"
-                      />
-                    {:else}
-                      <div class="library-collection-placeholder">
-                        <svg
-                          width="32"
-                          height="32"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path
-                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                          />
-                        </svg>
-                      </div>
-                    {/if}
-                    {#if library.namesOn || renamingPath === col.path}
-                      <div class="library-collection-name">
-                        {#if renamingPath === col.path}
-                          <!-- svelte-ignore a11y_autofocus -->
-                          <input
-                            class="library-rename-input"
-                            type="text"
-                            bind:value={renameValue}
-                            autofocus
-                            onblur={confirmRename}
-                            onmousedown={(e) => e.stopPropagation()}
-                            onkeydown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                confirmRename();
-                              } else if (e.key === "Escape") {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                cancelRename();
-                              }
-                            }}
-                          />
-                        {:else}
-                          <span>{col.name}</span>
-                        {/if}
-                      </div>
-                    {/if}
+                    <div class="library-collection-content">
+                      {#if library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
+                        <img
+                          class="library-collection-thumb"
+                          src={library.cache[firstFilePath]}
+                          alt=""
+                          draggable="false"
+                        />
+                      {:else}
+                        <div class="library-collection-placeholder">
+                          <svg
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                            />
+                          </svg>
+                        </div>
+                      {/if}
+                    </div>
+                    <div class="library-collection-name">
+                      {#if renamingPath === col.path}
+                        <!-- svelte-ignore a11y_autofocus -->
+                        <input
+                          class="library-rename-input"
+                          type="text"
+                          bind:value={renameValue}
+                          autofocus
+                          onblur={confirmRename}
+                          onmousedown={(e) => e.stopPropagation()}
+                          onkeydown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              confirmRename();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              cancelRename();
+                            }
+                          }}
+                        />
+                      {:else}
+                        <span>{col.name}</span>
+                      {/if}
+                    </div>
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
                     <div
                       class="library-collection-remove"
@@ -4186,8 +4188,6 @@
     border-radius: 4px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     border: 1px solid var(--bg-border, #2a2a2a);
     background: var(--bg-secondary, #111);
     color: var(--text-primary, #fff);
@@ -4208,13 +4208,19 @@
     border-color: var(--accent-blue, #3b82f6);
   }
 
+  .library-collection-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 0;
+  }
+
   .library-collection-thumb {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    position: absolute;
-    inset: 0;
-    border-radius: 3px;
   }
 
   .library-collection-placeholder {
@@ -4222,31 +4228,18 @@
     align-items: center;
     justify-content: center;
     color: var(--blue-light);
-    padding-bottom: 16px;
   }
 
   .library-collection-name {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    right: 4px;
-    padding: 4px 6px;
-    background: rgba(0, 0, 0, 0.35);
-    border-radius: 4px;
     font-family: var(--font-family);
-    font-size: 12px;
+    font-size: 11px;
+    color: var(--text-primary, #fff);
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    z-index: 1;
-    transition: background 0.15s;
-    animation: labelSlideUp 190ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
-  }
-
-  .library-collection-card:hover .library-collection-name,
-  .library-collection-card.renaming .library-collection-name {
-    background: rgba(0, 0, 0, 0.65);
+    max-width: 100%;
+    padding: 2px 4px 4px;
   }
 
   .library-rename-input {
