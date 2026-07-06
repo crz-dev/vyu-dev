@@ -6,8 +6,10 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
-use futures::future::join_all;
+use futures::stream::FuturesUnordered;
+use futures::StreamExt;
 use image::GenericImageView;
+use tauri::Emitter;
 use tauri::Manager;
 
 use crate::constants::{
@@ -319,7 +321,7 @@ async fn thumbnail_for_path(
     let path_c = path.to_string();
     let cache_dir_c = cache_dir.to_path_buf();
 
-    let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<(Vec<u8>, String), String> {
+    let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<(Vec<u8>, String, String), String> {
         let src_meta = fs::metadata(&path_c).map_err(|e| format!("Cannot access file: {e}"))?;
         let mtime = src_meta
             .modified()
@@ -334,7 +336,8 @@ async fn thumbnail_for_path(
 
         if thumb_path.exists() {
             if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
-                return Ok((jpeg_bytes, cache_key));
+                let data_url = format_data_url(&jpeg_bytes);
+                return Ok((jpeg_bytes, cache_key, data_url));
             }
         }
 
@@ -357,11 +360,12 @@ async fn thumbnail_for_path(
             record_cache_write(meta.len(), &cache_dir_c);
         }
 
-        Ok((jpeg_bytes, cache_key))
+        let data_url = format_data_url(&jpeg_bytes);
+        Ok((jpeg_bytes, cache_key, data_url))
     })
     .await;
 
-    let (jpeg_bytes, _cache_key) = match spawn_result {
+    let (jpeg_bytes, _cache_key, data_url) = match spawn_result {
         Ok(Ok(result)) => result,
         Ok(Err(e)) => {
             state.inflight.cancel(&inflight_key).await;
@@ -375,10 +379,10 @@ async fn thumbnail_for_path(
 
     state
         .inflight
-        .complete(&inflight_key, Ok(jpeg_bytes.clone()))
+        .complete(&inflight_key, Ok(jpeg_bytes))
         .await;
 
-    Ok(format_data_url(&jpeg_bytes))
+    Ok(data_url)
 }
 
 /// Single thumbnail command
@@ -395,6 +399,8 @@ pub async fn get_thumbnail(
 }
 
 /// Batch thumbnail command — process multiple paths in a single IPC call
+/// Emits `thumbnail-progress` events as each result completes so the frontend
+/// can render thumbnails incrementally instead of waiting for all to finish.
 #[tauri::command]
 pub async fn get_thumbnails(
     app: tauri::AppHandle,
@@ -404,9 +410,10 @@ pub async fn get_thumbnails(
 ) -> Result<HashMap<String, String>, String> {
     let thumb_size = size.unwrap_or(THUMB_SHORT_SIDE);
     let cache_dir = thumb_cache_dir(&app).to_path_buf();
+
     let state_ref: &ThumbState = &state;
 
-    let futs: Vec<_> = paths
+    let mut tasks: FuturesUnordered<_> = paths
         .into_iter()
         .map(|path| {
             let app = app.clone();
@@ -419,12 +426,22 @@ pub async fn get_thumbnails(
         })
         .collect();
 
-    let results = join_all(futs).await;
-    let mut map = HashMap::new();
-    for (path, result) in results {
-        map.insert(path, result.unwrap_or_default());
+    let mut results = HashMap::new();
+    while let Some((path, result)) = tasks.next().await {
+        match result {
+            Ok(data_url) => {
+                let _ = app.emit(
+                    "thumbnail-progress",
+                    serde_json::json!({ "path": &path, "dataUrl": &data_url }),
+                );
+                results.insert(path, data_url);
+            }
+            Err(_) => {
+                results.insert(path, String::new());
+            }
+        }
     }
-    Ok(map)
+    Ok(results)
 }
 
 /// Record cache entry

@@ -140,6 +140,6 @@ These decisions are intentional and should not be changed without discussion.
 | Temp dirs use hash-based subdirectories                | Prevents concurrent-operation conflicts.             |
 | Cross-volume rename uses copy+delete fallback          | Required for `ERROR_NOT_SAME_DEVICE`.                |
 | JPEG scale-down via `jpeg-decoder` (not `image`)       | `image` uses `zune-jpeg` which lacks IDCT scaling    |
-| Dedicated semaphore pools: 4 image, 2 video, 2 audio   | Prevents fast image work from blocking behind FFmpeg |
+| Dedicated semaphore pools: 16 image, 2 video, 2 audio  | Prevents fast image work from blocking behind FFmpeg |
 | Atomic eviction counter (best-effort, synced on query) | Eliminates full directory scans from hot path        |
 | Inflight dedup keyed by `{hash}_{size}` (no mtime)     | Allows metadata stat inside `spawn_blocking`         |

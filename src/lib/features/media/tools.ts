@@ -1,5 +1,6 @@
 // Tauri invoke wrappers
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import type {
   MediaProperties,
   ClipJobResult,
@@ -111,6 +112,15 @@ export async function invokeGetThumbnails(
   size?: number,
 ): Promise<Record<string, string>> {
   return invoke("get_thumbnails", { paths, size: size ?? null });
+}
+
+// Listen for streaming thumbnail results from get_thumbnails
+export function onThumbnailProgress(
+  callback: (path: string, dataUrl: string) => void,
+): Promise<() => void> {
+  return listen<{ path: string; dataUrl: string }>("thumbnail-progress", (event) => {
+    callback(event.payload.path, event.payload.dataUrl);
+  });
 }
 
 // ── Media properties ──

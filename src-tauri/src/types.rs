@@ -64,7 +64,7 @@ pub struct ThumbState {
 impl ThumbState {
     pub fn new() -> Self {
         Self {
-            image_sem: Semaphore::new(8),
+            image_sem: Semaphore::new(16),
             video_sem: Semaphore::new(2),
             audio_sem: Semaphore::new(2),
             inflight: InFlightRegistry::new(),

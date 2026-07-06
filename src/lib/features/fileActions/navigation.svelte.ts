@@ -15,6 +15,7 @@ import {
   getParentFolder,
   getFileExt,
 } from "$lib/services/files";
+import { requestThumbnail } from "$lib/services/thumbnailCache";
 import {
   AUDIO_EXTS,
   type LoopMode,
@@ -132,6 +133,19 @@ export function createNavigation(deps: NavigationDeps) {
     if (folder) folderWatcher.startWatching(folder);
     if (loadedIndex >= 0) {
       media.prefetchAdjacent(deps.getFileList(), loadedIndex);
+      // Warm thumbnail cache center-outward while the bar transition plays
+      const files = deps.getFileList();
+      const count = Math.min(24, files.length);
+      const order: number[] = [loadedIndex];
+      let l = loadedIndex - 1;
+      let r = loadedIndex + 1;
+      while (order.length < count && (l >= 0 || r < files.length)) {
+        if (l >= 0) order.push(l--);
+        if (r < files.length) order.push(r++);
+      }
+      for (const idx of order) {
+        requestThumbnail(files[idx], 120);
+      }
     }
   }
 

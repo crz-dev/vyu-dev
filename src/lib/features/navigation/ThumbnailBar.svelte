@@ -1,7 +1,7 @@
 <script lang="ts">
   import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
-  import { invokeGetThumbnails } from "$lib/features/media/tools";
+  import { invokeGetThumbnails, onThumbnailProgress } from "$lib/features/media/tools";
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
 
@@ -147,13 +147,15 @@
   // Stale guard — incremented on close/cleanup to cancel in-flight batches
   let _fetchGen = 0;
 
+  let inflightBatches = $state(0);
+
   // Queue processor
   // Process queue in center-outward order — fills outward from current file
   const BATCH_SIZE = 6;
   const MAX_CONCURRENT = 4;
   $effect(() => {
     if (!afterOpen) return;
-    if (fetching.size >= MAX_CONCURRENT) return;
+    if (inflightBatches >= MAX_CONCURRENT) return;
     // Collect a batch of uncached paths in queue order
     const batch: string[] = [];
     const cacheHits: [string, string][] = [];
@@ -176,31 +178,51 @@
   });
 
   async function fetchBatch(paths: string[]) {
-    const localGen = ++_fetchGen;
+    const localGen = _fetchGen;
+    inflightBatches++;
     fetching = new Set([...fetching, ...paths]);
+
+    // Listen for streaming results from the backend
+    let unlisten: (() => void) | null = null;
     try {
+      unlisten = await onThumbnailProgress((path, dataUrl) => {
+        if (localGen !== _fetchGen) return;
+        if (!dataUrl) return;
+        setCached(path, 120, dataUrl);
+        if (!loaded.has(path)) {
+          loaded = new Map([...loaded, [path, dataUrl]]);
+        }
+      });
+
       const results = await invokeGetThumbnails(paths, 120);
-      if (localGen !== _fetchGen) return; // stale — discarded
+      if (localGen !== _fetchGen) return;
+      // Process any results not delivered via streaming
       const updated = new Map(loaded);
+      let changed = false;
       for (const [p, dataUrl] of Object.entries(results)) {
-        if (dataUrl) {
+        if (dataUrl && !updated.has(p)) {
           updated.set(p, dataUrl);
           setCached(p, 120, dataUrl);
+          changed = true;
         }
       }
-      loaded = updated;
+      if (changed) loaded = updated;
     } catch {
       // Silently fail — thumbnail stays as placeholder
+    } finally {
+      unlisten?.();
+      const next = new Set(fetching);
+      for (const p of paths) next.delete(p);
+      fetching = next;
+      inflightBatches--;
     }
-    const next = new Set(fetching);
-    for (const p of paths) next.delete(p);
-    fetching = next;
   }
 
   // Cleanup on close
   $effect(() => {
     if (!visible) {
       _fetchGen++;
+      inflightBatches = 0;
       afterOpen = false;
       observed = new Set();
       loadQueue = [];
