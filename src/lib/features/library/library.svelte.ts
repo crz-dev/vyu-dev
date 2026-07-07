@@ -73,7 +73,7 @@ function createLibrary() {
 
   let recentFilesLimit = $state(loadRecentFilesLimit());
   let recentsDisabled = $state(loadRecentsDisabled());
-  let recentFiles = $state<RecentFileItem[]>(loadRecentFiles(recentFilesLimit));
+  let recentFiles = $state<RecentFileItem[]>(loadRecentFiles(loadRecentFilesLimit()));
   let recentTimestamps = $derived.by(() => {
     const map: Record<string, number> = {};
     for (const item of recentFiles) {
@@ -92,8 +92,8 @@ function createLibrary() {
   // Sort state (independent from main view)
   let sortMode = $state<SortMode>(loadSortMode());
   let sortDesc = $state(loadSortDesc());
-  let savedSortMode = $state<SortMode>(sortMode);
-  let savedSortDesc = $state(sortDesc);
+  let savedSortMode = $state<SortMode>(loadSortMode());
+  let savedSortDesc = $state(loadSortDesc());
 
   let totalSize = $state(0);
   let totalSizeLoading = $state(false);
