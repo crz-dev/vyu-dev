@@ -104,7 +104,15 @@ class EqualizerEngine {
       this.analyser.smoothingTimeConstant = 0.8;
 
       // Source → filters → outputGain → analyser → destination
-      this.source.connect(this.filters[0]);
+      try {
+        this.source.connect(this.filters[0]);
+      } catch (e) {
+        // Source node may already be disconnected — rebuild with new source
+        console.warn("[eq] source.connect failed, creating new source:", e);
+        this.source = ctx.createMediaElementSource(el);
+        this.sourceElement = el;
+        this.source.connect(this.filters[0]);
+      }
       for (let i = 1; i < this.filters.length; i++) {
         this.filters[i - 1].connect(this.filters[i]);
       }
@@ -141,9 +149,16 @@ class EqualizerEngine {
     this.stagePanner = null;
     this.effectsOutput = null;
 
-    // Keep source node alive — createMediaElementSource is once-per-element,
-    // so we reuse it when reconnecting the same element.
-    const oldSource = this.source;
+    // Disconnect source from old filters immediately, but keep the source node alive.
+    // createMediaElementSource is once-per-element — we must reuse it when reconnecting
+    // the same element.
+    if (this.source) {
+      try {
+        this.source.disconnect();
+      } catch {
+        /* disconnected */
+      }
+    }
 
     this.orphanedNodes = [
       ...this.filters,
@@ -160,14 +175,6 @@ class EqualizerEngine {
     // Allow the 30ms gain ramp to complete before tearing down the filter chain.
     this.pendingCleanup = setTimeout(() => {
       this.pendingCleanup = null;
-      // Disconnect source from old filters, but keep the source node itself alive
-      if (oldSource) {
-        try {
-          oldSource.disconnect();
-        } catch {
-          /* disconnected */
-        }
-      }
       this.cleanupOrphaned();
     }, 50);
   }

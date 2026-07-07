@@ -906,11 +906,17 @@
     const path = filePath;
     if (!path) return;
 
-    eqStore.loadForFile(path);
+    eqStore.loadForFile(path).catch((e) =>
+      console.error("Failed to load EQ settings:", e),
+    );
     effectsStore.loadForFile(path);
 
     if (isVideo && videoEl) {
-      eqEngine.connectMediaElement(videoEl);
+      try {
+        eqEngine.connectMediaElement(videoEl);
+      } catch (e) {
+        console.error("Failed to connect EQ to video element:", e);
+      }
     }
   });
 
@@ -918,7 +924,11 @@
   $effect(() => {
     const el = videoEl;
     if (el && filePath && isVideo) {
-      eqEngine.connectMediaElement(el);
+      try {
+        eqEngine.connectMediaElement(el);
+      } catch (e) {
+        console.error("Failed to connect EQ to video element:", e);
+      }
     }
   });
 

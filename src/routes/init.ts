@@ -44,9 +44,13 @@ export interface InitState {
 export function setupInit(s: InitState) {
   onMount(() => {
     (async () => {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const initial = await invoke<string | null>("get_initial_file");
-      if (initial) s.loadFile(initial);
+      try {
+        const { invoke } = await import("@tauri-apps/api/core");
+        const initial = await invoke<string | null>("get_initial_file");
+        if (initial) await s.loadFile(initial);
+      } catch (e) {
+        console.error("Failed to load initial file:", e);
+      }
     })();
 
     if (typeof requestIdleCallback === "function") {
@@ -104,6 +108,9 @@ export function setupInit(s: InitState) {
       })
       .then((fn) => {
         unlistenDragDrop = fn;
+      })
+      .catch((e) => {
+        console.error("Failed to register drag-drop listener:", e);
       });
 
     window.addEventListener("keydown", s.handleKeydown);

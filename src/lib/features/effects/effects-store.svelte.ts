@@ -29,15 +29,38 @@ function ensureEngine(): Promise<void> {
   if (fxEngine.isInitialized()) return Promise.resolve();
   if (engineInitPromise) return engineInitPromise;
   const ctx = eqEngine.getContext();
-  if (!ctx) return Promise.resolve();
+  if (!ctx) {
+    console.warn("[fx] cannot initialize — no AudioContext");
+    return Promise.reject(new Error("No AudioContext"));
+  }
   const analyser = eqEngine.getAnalyser();
-  if (!analyser) return Promise.resolve();
+  if (!analyser) {
+    console.warn("[fx] cannot initialize — no analyser node");
+    return Promise.reject(new Error("No analyser node"));
+  }
   engineInitPending = true;
   engineInitPromise = fxEngine
     .init(ctx)
     .then(() => {
-      analyser.connect(fxEngine.getInputNode()!);
-      eqEngine.setEffectsOutput(fxEngine.getOutputNode()!);
+      const inputNode = fxEngine.getInputNode();
+      const outputNode = fxEngine.getOutputNode();
+      if (inputNode) {
+        try {
+          analyser.connect(inputNode);
+        } catch (e) {
+          console.error("[fx] failed to connect analyser to effects input:", e);
+        }
+      }
+      if (outputNode) {
+        try {
+          eqEngine.setEffectsOutput(outputNode);
+        } catch (e) {
+          console.error("[fx] failed to set effects output:", e);
+        }
+      }
+    })
+    .catch((e) => {
+      console.error("[fx] engine initialization failed:", e);
     })
     .finally(() => {
       engineInitPending = false;

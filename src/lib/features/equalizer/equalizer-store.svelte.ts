@@ -20,7 +20,7 @@ export interface EqualizerStore {
   readonly outputGain: number;
   readonly activePreset: string;
   readonly currentFilePath: string;
-  loadForFile: (filePath: string) => void;
+  loadForFile: (filePath: string) => Promise<void>;
   saveForFile: (filePath?: string) => void;
   applyPreset: (name: string, values: number[]) => void;
   setBand: (index: number, value: number) => void;
