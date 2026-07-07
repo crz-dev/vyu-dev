@@ -239,16 +239,8 @@ function createLibrary() {
     pendingSet.clear();
     pendingOrder = [];
 
-    const order: number[] = [currentIndex];
-    let l = currentIndex - 1;
-    let r = currentIndex + 1;
-    while (l >= 0 || r < fileList.length) {
-      if (l >= 0) order.push(l--);
-      if (r < fileList.length) order.push(r++);
-    }
-
-    for (const idx of order) {
-      const path = fileList[idx];
+    for (let i = 0; i < fileList.length; i++) {
+      const path = fileList[i];
       if (!(path in cache)) {
         pendingSet.add(path);
         pendingOrder.push(path);
