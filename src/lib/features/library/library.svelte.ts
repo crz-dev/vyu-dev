@@ -1,6 +1,7 @@
 // Library state
 import {
   invokeGetThumbnails,
+  onThumbnailProgress,
   invokeGetFilesTotalSize,
   invokeBatchStat,
   invokeCreateCollectionFolder,
@@ -45,11 +46,15 @@ import type {
 } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
 import { getParentFolder } from "$lib/services/files";
-import { getCached as sharedGetCached } from "$lib/services/thumbnailCache";
+import {
+  getCached as sharedGetCached,
+  setCached as sharedSetCached,
+} from "$lib/services/thumbnailCache";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
-const MAX_CONCURRENT = 4;
+const MAX_CONCURRENT = 2;
+const THUMB_SIZE = 256;
 
 type LibraryTab = "library" | "recents" | "collections" | "favorites";
 
@@ -62,6 +67,7 @@ function createLibrary() {
   let pendingSet = new Set<string>();
   let pendingOrder: string[] = [];
   let inflight = 0;
+  let _fetchGen = 0;
 
   let activeTab = $state<LibraryTab>("library");
 
@@ -142,6 +148,7 @@ function createLibrary() {
   }
 
   function setCacheEntry(path: string, dataUrl: string) {
+    sharedSetCached(path, THUMB_SIZE, dataUrl);
     if (path in cache) touchCache(path);
     else {
       cache[path] = dataUrl;
@@ -152,6 +159,7 @@ function createLibrary() {
   }
 
   async function loadOne(path: string) {
+    const localGen = _fetchGen;
     inflight++;
     pendingSet.delete(path);
 
@@ -166,15 +174,24 @@ function createLibrary() {
     }
     pendingOrder = defer;
 
+    let unlisten: (() => void) | null = null;
     try {
-      const results = await invokeGetThumbnails(batchPaths, 256);
+      unlisten = await onThumbnailProgress((p, dataUrl) => {
+        if (localGen !== _fetchGen) return;
+        if (!dataUrl) return;
+        if (!(p in cache)) setCacheEntry(p, dataUrl);
+      });
+
+      const results = await invokeGetThumbnails(batchPaths, THUMB_SIZE);
+      if (localGen !== _fetchGen) return;
       for (const [p, dataUrl] of Object.entries(results)) {
-        if (dataUrl) {
+        if (dataUrl && !(p in cache)) {
           setCacheEntry(p, dataUrl);
         }
       }
     } catch {
     } finally {
+      unlisten?.();
       inflight--;
       kick();
     }
@@ -218,9 +235,9 @@ function createLibrary() {
   }
 
   function rebuildQueue(fileList: string[], currentIndex: number) {
+    _fetchGen++;
     pendingSet.clear();
     pendingOrder = [];
-    inflight = 0;
 
     const order: number[] = [currentIndex];
     let l = currentIndex - 1;

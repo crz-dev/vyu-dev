@@ -125,6 +125,11 @@ impl InFlightRegistry {
     pub async fn cancel(&self, key: &str) {
         self.map.lock().await.remove(key);
     }
+
+    /// Check if a key has waiters or is being produced
+    pub async fn contains(&self, key: &str) -> bool {
+        self.map.lock().await.contains_key(key)
+    }
 }
 
 /// Media kind boolean helpers

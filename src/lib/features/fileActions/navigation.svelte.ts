@@ -146,6 +146,11 @@ export function createNavigation(deps: NavigationDeps) {
       for (const idx of order) {
         requestThumbnail(files[idx], 120);
       }
+      // Warm library-sized thumbnails (fewer — first screen only)
+      const libCount = Math.min(8, order.length);
+      for (let i = 0; i < libCount; i++) {
+        requestThumbnail(files[order[i]], 256);
+      }
     }
   }
 

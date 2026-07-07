@@ -3144,7 +3144,7 @@
 
           {#if library.activeTab === "collections" && !library.activeCollectionPath}
             <div
-              class="library-placeholder-grid"
+              class="library-grid"
               style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -4188,20 +4188,23 @@
     border-radius: 4px;
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--bg-border, #2a2a2a);
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 2px solid transparent;
     background: var(--bg-secondary, #111);
     color: var(--text-primary, #fff);
     cursor: pointer;
     position: relative;
     overflow: hidden;
     transition:
-      border-color 0.15s,
-      background 0.15s;
+      border-color 0.1s,
+      transform 0.15s;
   }
 
   .library-collection-card:hover {
-    border-color: var(--text-muted, #888);
-    background: var(--bg-elevated, #1a1a1a);
+    border-color: var(--border-hover, #555);
+    transform: scale(1.02);
   }
 
   .library-collection-card.collect-mode {
@@ -4209,17 +4212,16 @@
   }
 
   .library-collection-content {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    min-height: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .library-collection-thumb {
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: cover;
   }
 
@@ -4238,8 +4240,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
-    padding: 2px 4px 4px;
+    max-width: 90%;
   }
 
   .library-rename-input {
