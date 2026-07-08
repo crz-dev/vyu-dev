@@ -127,11 +127,9 @@ export function createMedia(
     eqEngine.disconnect();
     if (videoEl) {
       videoEl.removeAttribute("src");
-      videoEl.load();
     }
     if (audioEl) {
       audioEl.removeAttribute("src");
-      audioEl.load();
     }
   }
 

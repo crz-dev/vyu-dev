@@ -81,10 +81,13 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     const onSeeked = () => {
       seekInProgress = false;
       if (pendingTime !== null) {
-        const t = pendingTime;
-        pendingTime = null;
-        lastSeekTime = Date.now();
-        doSeek(t);
+        const elapsed = Date.now() - lastSeekTime;
+        if (elapsed >= SEEK_THROTTLE_MS) {
+          const t = pendingTime;
+          pendingTime = null;
+          lastSeekTime = Date.now();
+          doSeek(t);
+        }
       }
     };
 
@@ -138,7 +141,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
         deps.setRawCurrentSecs(pendingTime);
         deps.setProgress((pendingTime / mediaEl!.duration) * 100);
       }
-      if (wasPlaying) mediaEl!.play();
+      if (wasPlaying) mediaEl!.play().catch(() => {});
     }
 
     window.addEventListener("mousemove", onMouseMove);
@@ -175,10 +178,13 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
     const onSeeked = () => {
       seekInProgress = false;
       if (pendingTime !== null) {
-        const t = pendingTime;
-        pendingTime = null;
-        lastSeekTime = Date.now();
-        doSeek(t);
+        const elapsed = Date.now() - lastSeekTime;
+        if (elapsed >= SEEK_THROTTLE_MS) {
+          const t = pendingTime;
+          pendingTime = null;
+          lastSeekTime = Date.now();
+          doSeek(t);
+        }
       }
     };
 
@@ -227,7 +233,7 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
         deps.setRawCurrentSecs(pendingTime);
         deps.setProgress((pendingTime / audioEl!.duration) * 100);
       }
-      if (wasPlaying) audioEl!.play();
+      if (wasPlaying) audioEl!.play().catch(() => {});
       discScrubStore.discScrubHandlers.onScrubMove = () => {};
       discScrubStore.discScrubHandlers.onScrubEnd = () => {};
     };

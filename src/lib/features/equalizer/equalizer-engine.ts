@@ -133,10 +133,14 @@ class EqualizerEngine {
 
     // Ramp gain to zero before disconnect to avoid DC pop/crackle
     if (this.outputGain && this.ctx) {
-      const now = this.ctx.currentTime;
-      this.outputGain.gain.cancelScheduledValues(now);
-      this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
-      this.outputGain.gain.linearRampToValueAtTime(0, now + 0.03);
+      try {
+        const now = this.ctx.currentTime;
+        this.outputGain.gain.cancelScheduledValues(now);
+        this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
+        this.outputGain.gain.linearRampToValueAtTime(0, now + 0.03);
+      } catch {
+        // AudioContext may be in a closed or error state — skip ramp
+      }
     }
     this.connectedElement = null;
 
@@ -449,10 +453,14 @@ class EqualizerEngine {
 
     // Ramp output gain to zero before tearing down to avoid pop/crackle
     if (this.outputGain && this.ctx) {
-      const now = this.ctx.currentTime;
-      this.outputGain.gain.cancelScheduledValues(now);
-      this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
-      this.outputGain.gain.linearRampToValueAtTime(0, now + 0.03);
+      try {
+        const now = this.ctx.currentTime;
+        this.outputGain.gain.cancelScheduledValues(now);
+        this.outputGain.gain.setValueAtTime(this.outputGain.gain.value, now);
+        this.outputGain.gain.linearRampToValueAtTime(0, now + 0.03);
+      } catch {
+        // AudioContext may be in a closed or error state — skip ramp
+      }
     }
     if (this.source) {
       try {

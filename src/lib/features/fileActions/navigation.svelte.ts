@@ -161,15 +161,19 @@ export function createNavigation(deps: NavigationDeps) {
     }
     slideshow.stop();
     editing.exitCropMode();
-    const next = await media.navigate(
-      direction,
-      deps.getFileList(),
-      deps.getCurrentIndex(),
-      setMediaState,
-    );
-    deps.setCurrentIndex(next);
-    library.addRecent(deps.getFileList()[next]);
-    media.prefetchAdjacent(deps.getFileList(), next);
+    try {
+      const next = await media.navigate(
+        direction,
+        deps.getFileList(),
+        deps.getCurrentIndex(),
+        setMediaState,
+      );
+      deps.setCurrentIndex(next);
+      library.addRecent(deps.getFileList()[next]);
+      media.prefetchAdjacent(deps.getFileList(), next);
+    } catch (e) {
+      console.error("Navigation failed:", e);
+    }
   }
 
   async function navigateToIndex(index: number) {

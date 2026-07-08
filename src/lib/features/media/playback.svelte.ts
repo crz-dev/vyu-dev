@@ -14,7 +14,11 @@ export function createPlaybackActions(
     const mediaEl = mediaElRef();
     if (!mediaEl) return;
 
-    mediaEl.paused ? mediaEl.play() : mediaEl.pause();
+    if (mediaEl.paused) {
+      mediaEl.play().catch(() => {});
+    } else {
+      mediaEl.pause();
+    }
   }
 
   function toggleMute(set: (muted: boolean) => void, currentMuted: boolean) {

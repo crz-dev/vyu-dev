@@ -27,17 +27,21 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
       const el = mediaEl;
       if (!el) return;
 
-      if (!deps.getIsScrubbing()) {
-        const t = el.currentTime;
-        const d = el.duration || 0;
-        deps.setRawCurrentSecs(t);
-        deps.setProgress(d > 0 ? (t / d) * 100 : 0);
+      try {
+        if (!deps.getIsScrubbing()) {
+          const t = el.currentTime;
+          const d = el.duration || 0;
+          deps.setRawCurrentSecs(t);
+          deps.setProgress(d > 0 ? (t / d) * 100 : 0);
 
-        // AB loop enforcement
-        const ab = markerStore.abLoopRegion;
-        if (ab && t >= ab.end) {
-          el.currentTime = ab.start;
+          // AB loop enforcement
+          const ab = markerStore.abLoopRegion;
+          if (ab && t >= ab.end) {
+            el.currentTime = ab.start;
+          }
         }
+      } catch {
+        // Decoder may be in a bad state — keep polling to maintain RAF chain
       }
 
       rafId = requestAnimationFrame(poll);

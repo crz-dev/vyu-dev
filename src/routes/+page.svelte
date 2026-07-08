@@ -932,6 +932,20 @@
     }
   });
 
+  // Bypass EQ during scrubbing to prevent AudioContext/decoder interaction
+  let scrubbingEqBypassed = $state(false);
+  $effect(() => {
+    if (isScrubbing) {
+      if (!scrubbingEqBypassed) {
+        eqEngine.setBypass(true);
+        scrubbingEqBypassed = true;
+      }
+    } else if (scrubbingEqBypassed) {
+      eqEngine.setBypass(false);
+      scrubbingEqBypassed = false;
+    }
+  });
+
   // Close thumbnail bar when library opens
   $effect(() => {
     if (menuStore.libraryOpen) {
