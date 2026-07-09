@@ -1428,15 +1428,25 @@
         }
         updateSection();
 
-        // Wheel: convert vertical scroll to horizontal (instant, no easing)
+        // Wheel: snap to adjacent cell with light cooldown to avoid overskip
+        let lastWheel = 0;
         function onWheel(e: WheelEvent) {
           if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
             e.preventDefault();
             e.stopPropagation();
+            const now = performance.now();
+            if (now - lastWheel < 15) return;
+            lastWheel = now;
             let delta = e.deltaY;
             if (e.deltaMode === 1) delta *= 40;
             else if (e.deltaMode === 2) delta = Math.sign(delta) * strip.clientWidth;
-            strip.scrollLeft = Math.max(0, Math.min(strip.scrollLeft + delta, strip.scrollWidth - strip.clientWidth));
+            if (sortedFiles.length === 0) return;
+            const dir = delta > 0 ? 1 : -1;
+            const next = Math.max(0, Math.min(sortedFiles.length - 1, highlightIndex + dir));
+            if (next !== highlightIndex) {
+              highlightIndex = next;
+              scrollToFilmstripCell(sortedFiles[next]);
+            }
           }
         }
 
