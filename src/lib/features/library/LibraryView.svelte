@@ -51,8 +51,6 @@
   let viewEl: HTMLDivElement | null = $state(null);
   let observer: IntersectionObserver | null = null;
   let mounted = $state(false);
-  let scrollActive = $state(false);
-  let scrollTimer: ReturnType<typeof setTimeout> | null = null;
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
   let filmstripHighlightTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1043,13 +1041,8 @@
     }
   }
 
-  // Scrollbar auto-hide and virtualization tracking
+  // Virtualization tracking
   function onScroll() {
-    scrollActive = true;
-    if (scrollTimer) clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      scrollActive = false;
-    }, 3000);
     if (scrollEl) {
       scrollTop = scrollEl.scrollTop;
     }
@@ -1142,7 +1135,6 @@
     });
     return () => {
       mounted = false;
-      if (scrollTimer) clearTimeout(scrollTimer);
     };
   });
 
@@ -1778,7 +1770,6 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="library-scroll"
-    class:scroll-active={scrollActive}
     class:select-mode={selectMode}
     class:dragging={isDragging}
     class:filmstrip={library.viewMode === "filmstrip"}
@@ -4446,9 +4437,8 @@
     overflow-y: auto;
     scroll-behavior: smooth;
     padding: 16px 24px;
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    transition: scrollbar-color 0.3s;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
   .library-scroll.filmstrip {
@@ -4456,21 +4446,7 @@
   }
 
   .library-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .library-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .library-scroll::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 2px;
-    transition: background 0.3s;
-  }
-
-  .library-scroll.scroll-active {
-    scrollbar-color: var(--bg-shimmer, #333) transparent;
+    display: none;
   }
 
   .library-scroll.dragging {
@@ -4480,10 +4456,6 @@
 
   .library-scroll.dragging * {
     user-select: none;
-  }
-
-  .library-scroll.scroll-active::-webkit-scrollbar-thumb {
-    background: var(--bg-shimmer, #333);
   }
 
   /* Filmstrip view */
