@@ -397,6 +397,16 @@ export function saveViewDensity(v: number): void {
   localStorage.setItem("vyu-view-density", String(Math.max(0, Math.min(1, v))));
 }
 
+export function loadViewMode(): "grid" | "list" | "river" | "filmstrip" {
+  const raw = localStorage.getItem("vyu-view-mode");
+  if (raw === "grid" || raw === "list" || raw === "river" || raw === "filmstrip") return raw;
+  return "grid";
+}
+
+export function saveViewMode(v: string): void {
+  localStorage.setItem("vyu-view-mode", v);
+}
+
 export interface RecentFileItem {
   path: string;
   openedAt: number;

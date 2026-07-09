@@ -48,6 +48,7 @@
   } = $props();
 
   let scrollEl: HTMLDivElement | null = $state(null);
+  let viewEl: HTMLDivElement | null = $state(null);
   let observer: IntersectionObserver | null = null;
   let mounted = $state(false);
   let scrollActive = $state(false);
@@ -55,6 +56,7 @@
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
   let filmstripHighlightTimer: ReturnType<typeof setTimeout> | null = null;
+  let filmstripReady = $state(false);
 
   let dragStart: { x: number; y: number } | null = $state(null);
   let dragEnd: { x: number; y: number } | null = $state(null);
@@ -991,28 +993,28 @@
           e.preventDefault();
           e.stopPropagation();
           highlightIndex = sortedFiles.length - 1;
-          scrollFilmstripToHighlight();
+          scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
         }
         if (e.ctrlKey && e.key === "ArrowLeft") {
           e.preventDefault();
           e.stopPropagation();
           highlightIndex = 0;
-          scrollFilmstripToHighlight();
+          scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
         }
         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
           e.preventDefault();
           e.stopPropagation();
           highlightIndex = Math.min(highlightIndex + 1, sortedFiles.length - 1);
-          scrollFilmstripToHighlight();
+          scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
         }
         if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
           e.preventDefault();
           e.stopPropagation();
           highlightIndex = Math.max(highlightIndex - 1, 0);
-          scrollFilmstripToHighlight();
+          scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
         }
         if (e.key === "Enter" || e.key === " ") {
@@ -1022,6 +1024,7 @@
           if (path) onSelect(path);
           return;
         }
+        return;
       }
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
@@ -1133,6 +1136,7 @@
   $effect(() => {
     requestAnimationFrame(() => {
       mounted = true;
+      viewEl?.focus({ preventScroll: true });
     });
     return () => {
       mounted = false;
@@ -1343,7 +1347,13 @@
     }
   });
 
-  // Sync highlightIndex when currentIndex changes while in filmstrip
+  $effect(() => {
+    return () => {
+      library.clearQueue();
+    };
+  });
+
+  // Sync filmstrip highlight to current file (separate from scroll effect)
   $effect(() => {
     if (library.viewMode !== "filmstrip") return;
     void currentIndex;
@@ -1355,154 +1365,139 @@
     }
   });
 
-  // Scroll to current file on open, density change, currentIndex change, or view mode switch
+  // Filmstrip: scroll-to-current, wheel scroll, highlight tracking, section labels
   $effect(() => {
-    if (!mounted || !scrollEl) return;
-    void library.density;
-    void library.viewMode;
-    void currentIndex;
-    if (fileList.length === 0 || currentIndex < 0 || currentIndex >= fileList.length) return;
-    if (library.viewMode === "filmstrip") {
-      const path = fileList[currentIndex];
-      if (!path) return;
-      const el = scrollEl.querySelector(
-        `[data-path="${cssAttr(path)}"]`,
-      ) as HTMLElement | null;
-      if (el) {
-        const filmstrip = scrollEl.querySelector(".library-filmstrip") as HTMLElement | null;
-        if (filmstrip) {
-          const cellLeft = el.offsetLeft;
-          const cellW = el.offsetWidth;
-          filmstrip.scrollLeft = Math.max(0, cellLeft - (filmstrip.clientWidth / 2) + (cellW / 2));
-        }
-        el.focus({ preventScroll: true });
-      }
-    } else {
-      const el = scrollEl.querySelector(
-        `[data-path="${cssAttr(fileList[currentIndex])}"]`,
-      ) as HTMLElement | null;
-      if (el) {
-        el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      }
-    }
-  });
-
-  $effect(() => {
-    return () => {
-      library.clearQueue();
-    };
-  });
-
-  function updateFilmstripSection() {
     if (!scrollEl) return;
-    const filmstrip = scrollEl.querySelector(
-      ".library-filmstrip",
-    ) as HTMLElement | null;
-    if (!filmstrip) return;
-    const items = filmstrip.querySelectorAll<HTMLElement>("[data-path]");
-    const scrollLeft = filmstrip.scrollLeft;
-    const containerRight = scrollLeft + filmstrip.clientWidth;
-    for (const el of items) {
-      const offset = el.offsetLeft;
-      const width = el.offsetWidth;
-      if (offset + width > scrollLeft && offset < containerRight) {
-        const path = el.dataset.path;
+    void library.viewMode;
+    void library.activeTab;
+    void currentIndex;
+    void library.density;
+
+    if (library.viewMode !== "filmstrip") {
+      // Grid/list: scroll current file into view
+      if (fileList.length > 0 && currentIndex >= 0 && currentIndex < fileList.length) {
+        const el = scrollEl.querySelector(
+          `[data-path="${cssAttr(fileList[currentIndex])}"]`,
+        ) as HTMLElement | null;
+        if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+      return;
+    }
+
+    filmstripReady = false;
+
+    // Double rAF + setTimeout: wait for browser layout + paint before scrolling
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const stripEl = scrollEl?.querySelector(".library-filmstrip") as HTMLElement | null;
+        if (!stripEl) return;
+        const strip = stripEl;
+
+        // Scroll to current file (instant on open)
+        const path = fileList[currentIndex];
         if (path) {
-          const label = pathSectionMap.get(path);
-          if (label && label !== filmstripSectionLabel) {
-            filmstripSectionLabel = label;
+          scrollToFilmstripCellInstant(path);
+          // Fallback: if scroll didn't take effect, retry after layout settles
+          setTimeout(() => {
+            if (strip.scrollLeft === 0 && currentIndex > 0) {
+              scrollToFilmstripCellInstant(path);
+            }
+            filmstripReady = true;
+          }, 50);
+        } else {
+          filmstripReady = true;
+        }
+
+        // Update section label for visible cells
+        function updateSection() {
+          const items = strip.querySelectorAll<HTMLElement>("[data-path]");
+          const sl = strip.scrollLeft;
+          const cr = sl + strip.clientWidth;
+          for (const el of items) {
+            if (el.offsetLeft + el.offsetWidth > sl && el.offsetLeft < cr) {
+              const p = el.dataset.path;
+              if (p) {
+                const label = pathSectionMap.get(p);
+                if (label && label !== filmstripSectionLabel) {
+                  filmstripSectionLabel = label;
+                }
+              }
+              return;
+            }
           }
         }
-        return;
-      }
-    }
-  }
+        updateSection();
 
-  // Attach wheel listener on filmstrip — scrolls horizontally, highlights centered cell on settle
-  $effect(() => {
-    if (library.viewMode !== "filmstrip" || !scrollEl) return;
-    void library.activeTab;
-    const filmstrip = scrollEl.querySelector(
-      ".library-filmstrip",
-    ) as HTMLElement | null;
-    if (!filmstrip) return;
-    const el = filmstrip;
-
-    requestAnimationFrame(updateFilmstripSection);
-
-    function onFilmstripWheel(e: WheelEvent) {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        e.stopPropagation();
-        const maxScroll = el.scrollWidth - el.clientWidth;
-        el.scrollLeft = Math.max(
-          0,
-          Math.min(el.scrollLeft + e.deltaY, maxScroll),
-        );
-        requestAnimationFrame(updateFilmstripSection);
-      }
-    }
-
-    function onFilmstripScroll() {
-      requestAnimationFrame(updateFilmstripSection);
-      if (filmstripHighlightTimer) clearTimeout(filmstripHighlightTimer);
-      filmstripHighlightTimer = setTimeout(updateFilmstripHighlight, 150);
-    }
-
-    function updateFilmstripHighlight() {
-      if (!scrollEl) return;
-      const strip = scrollEl.querySelector(".library-filmstrip") as HTMLElement | null;
-      if (!strip) return;
-      const center = strip.scrollLeft + strip.clientWidth / 2;
-      const cells = strip.querySelectorAll<HTMLElement>("[data-path]");
-      let closest = -1;
-      let closestDist = Infinity;
-      cells.forEach((c, i) => {
-        const cx = c.offsetLeft + c.offsetWidth / 2;
-        const dist = Math.abs(cx - center);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = i;
+        // Wheel: convert vertical scroll to horizontal (instant, not smooth)
+        function onWheel(e: WheelEvent) {
+          if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+            e.preventDefault();
+            e.stopPropagation();
+            strip.scrollTo({
+              left: Math.max(0, Math.min(strip.scrollLeft + e.deltaY, strip.scrollWidth - strip.clientWidth)),
+              behavior: 'instant',
+            });
+            requestAnimationFrame(updateSection);
+          }
         }
-      });
-      if (closest >= 0) highlightIndex = closest;
-    }
 
-    el.addEventListener("wheel", onFilmstripWheel, { passive: false });
-    el.addEventListener("scroll", onFilmstripScroll);
-    return () => {
-      el.removeEventListener("wheel", onFilmstripWheel);
-      el.removeEventListener("scroll", onFilmstripScroll);
-      if (filmstripHighlightTimer) clearTimeout(filmstripHighlightTimer);
-    };
+        // Scroll: update highlight to centered cell
+        let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+        function onScroll() {
+          requestAnimationFrame(updateSection);
+          if (highlightTimer) clearTimeout(highlightTimer);
+          highlightTimer = setTimeout(() => {
+            const center = strip.scrollLeft + strip.clientWidth / 2;
+            const cells = strip.querySelectorAll<HTMLElement>("[data-path]");
+            let closest = -1;
+            let closestDist = Infinity;
+            cells.forEach((c, i) => {
+              const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+              if (dist < closestDist) {
+                closestDist = dist;
+                closest = i;
+              }
+            });
+            if (closest >= 0) highlightIndex = closest;
+          }, 60);
+        }
+
+        strip.addEventListener("wheel", onWheel, { passive: false });
+        strip.addEventListener("scroll", onScroll);
+
+        // Cleanup on effect re-run or unmount
+        return () => {
+          strip.removeEventListener("wheel", onWheel);
+          strip.removeEventListener("scroll", onScroll);
+          if (highlightTimer) clearTimeout(highlightTimer);
+        };
+      });
+    });
   });
 
   function cssAttr(path: string) {
     return path.replace(/\\/g, "\\\\");
   }
 
-  function focusFilmstripCell(path: string) {
-    const el = scrollEl?.querySelector(
-      `.library-filmstrip [data-path="${cssAttr(path)}"]`,
-    ) as HTMLElement | null;
-    el?.focus();
+  function scrollToFilmstripCell(path: string) {
+    const strip = scrollEl?.querySelector(".library-filmstrip") as HTMLElement | null;
+    if (!strip) return;
+    const el = strip.querySelector(`[data-path="${cssAttr(path)}"]`) as HTMLElement | null;
+    if (el) {
+      const target = Math.max(0, el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2);
+      strip.scrollTo({ left: target, behavior: 'smooth' });
+      el.focus({ preventScroll: true });
+    }
   }
 
-  function scrollFilmstripToHighlight() {
-    if (!scrollEl) return;
-    const path = sortedFiles[highlightIndex];
-    if (!path) return;
-    const el = scrollEl.querySelector(
-      `[data-path="${cssAttr(path)}"]`,
-    ) as HTMLElement | null;
-    if (!el) return;
-    const filmstrip = scrollEl.querySelector(".library-filmstrip") as HTMLElement | null;
-    if (filmstrip) {
-      const cellLeft = el.offsetLeft;
-      const cellW = el.offsetWidth;
-      filmstrip.scrollLeft = Math.max(0, cellLeft - (filmstrip.clientWidth / 2) + (cellW / 2));
+  function scrollToFilmstripCellInstant(path: string) {
+    const strip = scrollEl?.querySelector(".library-filmstrip") as HTMLElement | null;
+    if (!strip) return;
+    const el = strip.querySelector(`[data-path="${cssAttr(path)}"]`) as HTMLElement | null;
+    if (el) {
+      strip.scrollTo({ left: Math.max(0, el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2), behavior: 'instant' });
+      el.focus({ preventScroll: true });
     }
-    el.focus({ preventScroll: true });
   }
 
   // Window-level drag handlers
@@ -1557,6 +1552,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="library-view"
+  tabindex="-1"
+  bind:this={viewEl}
   onkeydown={handleKeydown}
   onclick={() => {
     confirmRename();
@@ -1796,7 +1793,7 @@
     onmousedown={handleDragStart}
   >
     <div
-      style="display: grid; grid-template: 1fr / 1fr; align-items: start; height: 100%;"
+      style="display: grid; grid-template: 1fr / 1fr; align-items: start; height: 100%; overflow: hidden;"
     >
       {#key library.activeTab}
         <div
@@ -2561,7 +2558,7 @@
                 {/each}
               </div>
             {:else if library.viewMode === "filmstrip"}
-              <div class="library-filmstrip" style="position: relative;">
+              <div class="library-filmstrip" style="position: relative; opacity: {filmstripReady ? 1 : 0}; transition: opacity 0.15s ease;">
                 {#if library.dividersOn && filmstripSectionLabel}
                   <div
                     class="filmstrip-section-header"
@@ -4178,11 +4175,13 @@
     flex-direction: column;
     overflow: hidden;
     background: var(--bg-primary, #0a0a0a);
+    outline: none;
   }
 
   .tab-content {
     width: 100%;
     height: 100%;
+    min-width: 0;
   }
 
   .library-tabs {
@@ -4489,12 +4488,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    width: 100%;
     height: 100%;
     padding: 0 24px;
+    box-sizing: border-box;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
-    scroll-behavior: auto;
+    scroll-behavior: smooth;
   }
 
   .library-filmstrip::-webkit-scrollbar {

@@ -47,6 +47,8 @@ export function createKeybindHandler(actions: KeybindActions) {
       if (
         e.key === "ArrowLeft" ||
         e.key === "ArrowRight" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown" ||
         (e.ctrlKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))
       ) {
         return;

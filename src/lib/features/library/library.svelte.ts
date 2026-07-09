@@ -14,6 +14,8 @@ import {
 import {
   loadViewDensity,
   saveViewDensity,
+  loadViewMode,
+  saveViewMode,
   loadRecentFiles,
   saveRecentFiles,
   loadRecentFilesLimit,
@@ -86,7 +88,7 @@ function createLibrary() {
   let showFolders = $state(loadShowFolders());
   let showThumbnails = $state(loadShowThumbnails());
 
-  let viewMode = $state<"grid" | "list" | "river" | "filmstrip">("grid");
+  let viewMode = $state<"grid" | "list" | "river" | "filmstrip">(loadViewMode());
 
   let density = $state(loadViewDensity());
 
@@ -262,6 +264,7 @@ function createLibrary() {
 
   function setViewMode(mode: "grid" | "list" | "river" | "filmstrip") {
     viewMode = mode;
+    saveViewMode(mode);
   }
 
   function setActiveTab(tab: LibraryTab) {
