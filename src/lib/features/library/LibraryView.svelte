@@ -4385,7 +4385,14 @@
   .filmstrip-placeholder {
     width: 100%;
     height: 100%;
-    background: var(--bg-secondary, #111);
+    background: linear-gradient(
+      90deg,
+      var(--bg-secondary) 20%,
+      var(--bg-shimmer) 50%,
+      var(--bg-secondary) 80%
+    );
+    background-size: 200% 100%;
+    animation: thumbShimmer 3s ease-in-out infinite;
   }
 
   .filmstrip-subfolder-cell {
@@ -4454,7 +4461,14 @@
   .river-placeholder {
     width: 100%;
     height: 100%;
-    background: var(--bg-secondary, #111);
+    background: linear-gradient(
+      90deg,
+      var(--bg-secondary) 20%,
+      var(--bg-shimmer) 50%,
+      var(--bg-secondary) 80%
+    );
+    background-size: 200% 100%;
+    animation: thumbShimmer 3s ease-in-out infinite;
   }
 
   .river-subfolder-cell {
@@ -4564,7 +4578,14 @@
   .library-placeholder {
     width: 100%;
     height: 100%;
-    background: var(--bg-secondary, #111);
+    background: linear-gradient(
+      90deg,
+      var(--bg-secondary) 20%,
+      var(--bg-shimmer) 50%,
+      var(--bg-secondary) 80%
+    );
+    background-size: 200% 100%;
+    animation: thumbShimmer 3s ease-in-out infinite;
   }
 
   /* Media-type badges */
@@ -4840,7 +4861,14 @@
   .list-placeholder {
     width: 100%;
     height: 100%;
-    background: var(--bg-secondary, #111);
+    background: linear-gradient(
+      90deg,
+      var(--bg-secondary) 20%,
+      var(--bg-shimmer) 50%,
+      var(--bg-secondary) 80%
+    );
+    background-size: 200% 100%;
+    animation: thumbShimmer 3s ease-in-out infinite;
   }
 
   /* Empty state */

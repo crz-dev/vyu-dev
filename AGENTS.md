@@ -74,7 +74,7 @@ Temp dirs must be unique per operation. Concurrent operations must never share a
 ## Code style
 
 - Early returns over nested if/else.
-- Comments explain why, not what.
+- Small simple comments explaining what that part is. **Only if necessary.**
 - No JSDoc on private helpers.
 - Comments are terse: `// Section label` or `// Brief rationale`. No multi-sentence explanations. No inline comments on obvious operations.
 - Avoid redundant guards already covered by earlier checks.
