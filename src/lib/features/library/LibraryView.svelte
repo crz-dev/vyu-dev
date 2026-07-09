@@ -57,6 +57,7 @@
   let highlightIndex = $state(0);
   let filmstripHighlightTimer: ReturnType<typeof setTimeout> | null = null;
   let filmstripReady = $state(false);
+  let lastManualHighlight = 0;
 
   let dragStart: { x: number; y: number } | null = $state(null);
   let dragEnd: { x: number; y: number } | null = $state(null);
@@ -556,18 +557,15 @@
 
   const folderPathSet = $derived(new Set(currentFolderPaths));
 
-  // For filmstrip — track which section label is currently visible
-  let filmstripSectionLabel = $state("");
-
-  // Build a quick path→section lookup when sections change
-  const pathSectionMap = $derived.by(() => {
-    const map = new Map<string, string>();
-    for (const s of sections) {
-      for (const p of s.items) {
-        map.set(p, s.label);
-      }
-    }
-    return map;
+  // Filmstrip section dividers — files grouped by section label (folders rendered separately)
+  const filmstripSections = $derived.by(() => {
+    const raw = displaySections;
+    return raw
+      .map(s => ({
+        label: s.label,
+        items: s.items.filter(p => !folderPathSet.has(p)),
+      }))
+      .filter(s => s.items.length > 0);
   });
 
   const displaySections = $derived(
@@ -992,6 +990,7 @@
         if (e.ctrlKey && e.key === "ArrowRight") {
           e.preventDefault();
           e.stopPropagation();
+          lastManualHighlight = performance.now();
           highlightIndex = sortedFiles.length - 1;
           scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
@@ -999,6 +998,7 @@
         if (e.ctrlKey && e.key === "ArrowLeft") {
           e.preventDefault();
           e.stopPropagation();
+          lastManualHighlight = performance.now();
           highlightIndex = 0;
           scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
@@ -1006,6 +1006,7 @@
         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
           e.preventDefault();
           e.stopPropagation();
+          lastManualHighlight = performance.now();
           highlightIndex = Math.min(highlightIndex + 1, sortedFiles.length - 1);
           scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
@@ -1013,6 +1014,7 @@
         if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
           e.preventDefault();
           e.stopPropagation();
+          lastManualHighlight = performance.now();
           highlightIndex = Math.max(highlightIndex - 1, 0);
           scrollToFilmstripCell(sortedFiles[highlightIndex]);
           return;
@@ -1408,26 +1410,6 @@
           filmstripReady = true;
         }
 
-        // Update section label for visible cells
-        function updateSection() {
-          const items = strip.querySelectorAll<HTMLElement>("[data-path]");
-          const sl = strip.scrollLeft;
-          const cr = sl + strip.clientWidth;
-          for (const el of items) {
-            if (el.offsetLeft + el.offsetWidth > sl && el.offsetLeft < cr) {
-              const p = el.dataset.path;
-              if (p) {
-                const label = pathSectionMap.get(p);
-                if (label && label !== filmstripSectionLabel) {
-                  filmstripSectionLabel = label;
-                }
-              }
-              return;
-            }
-          }
-        }
-        updateSection();
-
         // Wheel: snap to adjacent cell with light cooldown to avoid overskip
         let lastWheel = 0;
         function onWheel(e: WheelEvent) {
@@ -1444,6 +1426,7 @@
             const dir = delta > 0 ? 1 : -1;
             const next = Math.max(0, Math.min(sortedFiles.length - 1, highlightIndex + dir));
             if (next !== highlightIndex) {
+              lastManualHighlight = performance.now();
               highlightIndex = next;
               scrollToFilmstripCell(sortedFiles[next]);
             }
@@ -1453,21 +1436,24 @@
         // Scroll: update highlight to centered cell
         let highlightTimer: ReturnType<typeof setTimeout> | null = null;
         function onScroll() {
-          requestAnimationFrame(updateSection);
           if (highlightTimer) clearTimeout(highlightTimer);
           highlightTimer = setTimeout(() => {
+            if (performance.now() - lastManualHighlight < 250) return;
             const center = strip.scrollLeft + strip.clientWidth / 2;
             const cells = strip.querySelectorAll<HTMLElement>("[data-path]");
-            let closest = -1;
+            let closestPath = "";
             let closestDist = Infinity;
-            cells.forEach((c, i) => {
+            cells.forEach((c) => {
               const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
               if (dist < closestDist) {
                 closestDist = dist;
-                closest = i;
+                closestPath = c.dataset.path ?? "";
               }
             });
-            if (closest >= 0) highlightIndex = closest;
+            if (closestPath) {
+              const idx = sortedFiles.indexOf(closestPath);
+              if (idx >= 0) highlightIndex = idx;
+            }
           }, 60);
         }
 
@@ -2568,18 +2554,6 @@
               </div>
             {:else if library.viewMode === "filmstrip"}
               <div class="library-filmstrip" style="position: relative; opacity: {filmstripReady ? 1 : 0}; transition: opacity 0.15s ease;">
-                {#if library.dividersOn && filmstripSectionLabel}
-                  <div
-                    class="filmstrip-section-header"
-                    style="position: absolute; top: 8px; left: 28px; z-index: 5; pointer-events: none;"
-                  >
-                    {#key filmstripSectionLabel}
-                      <span transition:fade={{ duration: 150 }}
-                        >{filmstripSectionLabel}</span
-                      >
-                    {/key}
-                  </div>
-                {/if}
                 {#if library.activeTab === "favorites"}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
@@ -2648,14 +2622,20 @@
                     </div>
                   {/each}
                 {/if}
-                {#each sortedFiles as path (path)}
-                  {@const active = activePaths.has(path)}
-                  {@const selected = library.isSelected(path)}
-                  {@const badge = getMediaBadge(path)}
-                  {@const dim = imageDims[path]}
-                  {@const ratio = dim ? dim.w / dim.h : 4 / 3}
-                  <div
-                    class="filmstrip-cell"
+                {#each filmstripSections as section (section.label || "all")}
+                  {#if section.label}
+                    <div class="filmstrip-divider">
+                      <span class="filmstrip-divider-label">{section.label}</span>
+                    </div>
+                  {/if}
+                  {#each section.items as path (path)}
+                    {@const active = activePaths.has(path)}
+                    {@const selected = library.isSelected(path)}
+                    {@const badge = getMediaBadge(path)}
+                    {@const dim = imageDims[path]}
+                    {@const ratio = dim ? dim.w / dim.h : 4 / 3}
+                    <div
+                      class="filmstrip-cell"
                     class:active
                     class:selected
                     class:names-on={library.namesOn}
@@ -2809,6 +2789,7 @@
                       </div>
                     {/if}
                   </div>
+                  {/each}
                 {/each}
               </div>
             {:else}
@@ -4509,6 +4490,37 @@
 
   .library-filmstrip::-webkit-scrollbar {
     display: none;
+  }
+
+  .filmstrip-divider {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    align-self: stretch;
+    width: 2rem;
+    padding: 10px 0 6px;
+    position: relative;
+    justify-content: flex-start;
+  }
+
+  .filmstrip-divider::after {
+    content: '';
+    flex: 1;
+    width: 1px;
+    background: var(--border-dim, #333);
+    min-height: 8px;
+  }
+
+  .filmstrip-divider-label {
+    font-family: var(--font-family);
+    font-size: 10px;
+    color: var(--text-dim, #555);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    line-height: 1.2;
   }
 
   .filmstrip-cell {
