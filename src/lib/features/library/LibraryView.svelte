@@ -1428,10 +1428,7 @@
         }
         updateSection();
 
-        // Wheel: convert vertical scroll to horizontal (smooth, fast)
-        let targetScroll = strip.scrollLeft;
-        let scrolling = false;
-        let scrollRaf = 0;
+        // Wheel: convert vertical scroll to horizontal (instant, no easing)
         function onWheel(e: WheelEvent) {
           if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
             e.preventDefault();
@@ -1439,27 +1436,8 @@
             let delta = e.deltaY;
             if (e.deltaMode === 1) delta *= 40;
             else if (e.deltaMode === 2) delta = Math.sign(delta) * strip.clientWidth;
-            const maxScroll = strip.scrollWidth - strip.clientWidth;
-            targetScroll = Math.max(0, Math.min(strip.scrollLeft + delta, maxScroll));
-            if (!scrolling) {
-              scrolling = true;
-              scrollRaf = requestAnimationFrame(animateScroll);
-            }
+            strip.scrollLeft = Math.max(0, Math.min(strip.scrollLeft + delta, strip.scrollWidth - strip.clientWidth));
           }
-        }
-        function animateScroll() {
-          const diff = targetScroll - strip.scrollLeft;
-          if (Math.abs(diff) < 2) {
-            strip.scrollLeft = targetScroll;
-            scrolling = false;
-            requestAnimationFrame(updateSection);
-            return;
-          }
-          // Move fast, ease only at the end
-          const step = Math.sign(diff) * Math.min(Math.abs(diff), Math.max(30, Math.abs(diff) * 0.5));
-          strip.scrollLeft += step;
-          scrollRaf = requestAnimationFrame(animateScroll);
-          requestAnimationFrame(updateSection);
         }
 
         // Scroll: update highlight to centered cell
@@ -1491,7 +1469,6 @@
           strip.removeEventListener("wheel", onWheel);
           strip.removeEventListener("scroll", onScroll);
           if (highlightTimer) clearTimeout(highlightTimer);
-          if (scrollRaf) cancelAnimationFrame(scrollRaf);
         };
       });
     });
@@ -1517,7 +1494,7 @@
     if (!strip) return;
     const el = strip.querySelector(`[data-path="${cssAttr(path)}"]`) as HTMLElement | null;
     if (el) {
-      strip.scrollTo({ left: Math.max(0, el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2), behavior: 'instant' });
+      strip.scrollLeft = Math.max(0, el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2);
       el.focus({ preventScroll: true });
     }
   }
