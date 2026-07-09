@@ -17,6 +17,8 @@ type KeybindActions = {
   togglePlay: () => void;
   frameStep: (direction: -1 | 1) => void;
   toggleLibrary: () => void;
+  isLibraryOpen: () => boolean;
+  isFilmstripView: () => boolean;
 };
 
 const NAV_KEYS = new Set(["ArrowRight", "ArrowLeft", " "]);
@@ -38,6 +40,20 @@ export function createKeybindHandler(actions: KeybindActions) {
         actions.toggleLibrary();
       }
       return;
+    }
+
+    // Library is open — let library handle navigation keys
+    if (actions.isLibraryOpen()) {
+      if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        (e.ctrlKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))
+      ) {
+        return;
+      }
+      if (actions.isFilmstripView() && e.key === " ") {
+        return;
+      }
     }
 
     if (e.ctrlKey && e.key === "ArrowRight") {

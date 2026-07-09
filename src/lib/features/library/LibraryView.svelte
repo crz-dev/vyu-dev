@@ -53,6 +53,8 @@
   let scrollActive = $state(false);
   let scrollTimer: ReturnType<typeof setTimeout> | null = null;
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
+  let highlightIndex = $state(0);
+  let filmstripHighlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   let dragStart: { x: number; y: number } | null = $state(null);
   let dragEnd: { x: number; y: number } | null = $state(null);
@@ -203,11 +205,17 @@
     return { firstIdx, lastIdx, topSpacer, bottomSpacer };
   });
 
-  const activePaths = $derived(
-    currentIndex >= 0 && currentIndex < fileList.length
+  const activePaths = $derived.by(() => {
+    if (library.viewMode === "filmstrip") {
+      if (highlightIndex >= 0 && highlightIndex < sortedFiles.length) {
+        return new Set([sortedFiles[highlightIndex]]);
+      }
+      return new Set<string>();
+    }
+    return currentIndex >= 0 && currentIndex < fileList.length
       ? new Set([fileList[currentIndex]])
-      : new Set<string>(),
-  );
+      : new Set<string>();
+  });
 
   const isPlaceholderTab = $derived(
     library.activeTab === "collections" && !library.activeCollectionPath,
@@ -978,14 +986,54 @@
       library.viewMode === "filmstrip" ||
       library.viewMode === "list"
     ) {
+      if (library.viewMode === "filmstrip") {
+        if (e.ctrlKey && e.key === "ArrowRight") {
+          e.preventDefault();
+          e.stopPropagation();
+          highlightIndex = sortedFiles.length - 1;
+          scrollFilmstripToHighlight();
+          return;
+        }
+        if (e.ctrlKey && e.key === "ArrowLeft") {
+          e.preventDefault();
+          e.stopPropagation();
+          highlightIndex = 0;
+          scrollFilmstripToHighlight();
+          return;
+        }
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          e.stopPropagation();
+          highlightIndex = Math.min(highlightIndex + 1, sortedFiles.length - 1);
+          scrollFilmstripToHighlight();
+          return;
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          e.stopPropagation();
+          highlightIndex = Math.max(highlightIndex - 1, 0);
+          scrollFilmstripToHighlight();
+          return;
+        }
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          const path = sortedFiles[highlightIndex];
+          if (path) onSelect(path);
+          return;
+        }
+      }
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
         const idx = Math.min(currentIndex + 1, fileList.length - 1);
         if (idx !== currentIndex) onSelect(fileList[idx]);
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        return;
+      }
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
         const idx = Math.max(currentIndex - 1, 0);
         if (idx !== currentIndex) onSelect(fileList[idx]);
+        return;
       }
     }
   }
@@ -1295,22 +1343,45 @@
     }
   });
 
-  // Scroll to current file on open, density change, or view mode switch
+  // Sync highlightIndex when currentIndex changes while in filmstrip
+  $effect(() => {
+    if (library.viewMode !== "filmstrip") return;
+    void currentIndex;
+    if (currentIndex >= 0 && currentIndex < fileList.length) {
+      const idx = sortedFiles.indexOf(fileList[currentIndex]);
+      if (idx >= 0) highlightIndex = idx;
+    } else {
+      highlightIndex = 0;
+    }
+  });
+
+  // Scroll to current file on open, density change, currentIndex change, or view mode switch
   $effect(() => {
     if (!mounted || !scrollEl) return;
     void library.density;
     void library.viewMode;
-    const el = scrollEl.querySelector(
-      `[data-path="${fileList[currentIndex]}"]`,
-    ) as HTMLElement | null;
-    if (el) {
-      if (library.viewMode === "filmstrip") {
-        el.scrollIntoView({
-          inline: "center",
-          block: "nearest",
-          behavior: "smooth",
-        });
-      } else {
+    void currentIndex;
+    if (fileList.length === 0 || currentIndex < 0 || currentIndex >= fileList.length) return;
+    if (library.viewMode === "filmstrip") {
+      const path = fileList[currentIndex];
+      if (!path) return;
+      const el = scrollEl.querySelector(
+        `[data-path="${cssAttr(path)}"]`,
+      ) as HTMLElement | null;
+      if (el) {
+        const filmstrip = scrollEl.querySelector(".library-filmstrip") as HTMLElement | null;
+        if (filmstrip) {
+          const cellLeft = el.offsetLeft;
+          const cellW = el.offsetWidth;
+          filmstrip.scrollLeft = Math.max(0, cellLeft - (filmstrip.clientWidth / 2) + (cellW / 2));
+        }
+        el.focus({ preventScroll: true });
+      }
+    } else {
+      const el = scrollEl.querySelector(
+        `[data-path="${cssAttr(fileList[currentIndex])}"]`,
+      ) as HTMLElement | null;
+      if (el) {
         el.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }
     }
@@ -1347,7 +1418,7 @@
     }
   }
 
-  // Attach non-passive wheel listener directly on filmstrip for horizontal scroll
+  // Attach wheel listener on filmstrip — scrolls horizontally, highlights centered cell on settle
   $effect(() => {
     if (library.viewMode !== "filmstrip" || !scrollEl) return;
     void library.activeTab;
@@ -1371,16 +1442,68 @@
         requestAnimationFrame(updateFilmstripSection);
       }
     }
+
     function onFilmstripScroll() {
       requestAnimationFrame(updateFilmstripSection);
+      if (filmstripHighlightTimer) clearTimeout(filmstripHighlightTimer);
+      filmstripHighlightTimer = setTimeout(updateFilmstripHighlight, 150);
     }
+
+    function updateFilmstripHighlight() {
+      if (!scrollEl) return;
+      const strip = scrollEl.querySelector(".library-filmstrip") as HTMLElement | null;
+      if (!strip) return;
+      const center = strip.scrollLeft + strip.clientWidth / 2;
+      const cells = strip.querySelectorAll<HTMLElement>("[data-path]");
+      let closest = -1;
+      let closestDist = Infinity;
+      cells.forEach((c, i) => {
+        const cx = c.offsetLeft + c.offsetWidth / 2;
+        const dist = Math.abs(cx - center);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = i;
+        }
+      });
+      if (closest >= 0) highlightIndex = closest;
+    }
+
     el.addEventListener("wheel", onFilmstripWheel, { passive: false });
     el.addEventListener("scroll", onFilmstripScroll);
     return () => {
       el.removeEventListener("wheel", onFilmstripWheel);
       el.removeEventListener("scroll", onFilmstripScroll);
+      if (filmstripHighlightTimer) clearTimeout(filmstripHighlightTimer);
     };
   });
+
+  function cssAttr(path: string) {
+    return path.replace(/\\/g, "\\\\");
+  }
+
+  function focusFilmstripCell(path: string) {
+    const el = scrollEl?.querySelector(
+      `.library-filmstrip [data-path="${cssAttr(path)}"]`,
+    ) as HTMLElement | null;
+    el?.focus();
+  }
+
+  function scrollFilmstripToHighlight() {
+    if (!scrollEl) return;
+    const path = sortedFiles[highlightIndex];
+    if (!path) return;
+    const el = scrollEl.querySelector(
+      `[data-path="${cssAttr(path)}"]`,
+    ) as HTMLElement | null;
+    if (!el) return;
+    const filmstrip = scrollEl.querySelector(".library-filmstrip") as HTMLElement | null;
+    if (filmstrip) {
+      const cellLeft = el.offsetLeft;
+      const cellW = el.offsetWidth;
+      filmstrip.scrollLeft = Math.max(0, cellLeft - (filmstrip.clientWidth / 2) + (cellW / 2));
+    }
+    el.focus({ preventScroll: true });
+  }
 
   // Window-level drag handlers
   $effect(() => {
@@ -4371,6 +4494,7 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+    scroll-behavior: auto;
   }
 
   .library-filmstrip::-webkit-scrollbar {

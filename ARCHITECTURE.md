@@ -67,6 +67,7 @@ Before creating code, find the existing owner.
 | Filesystem scans / folder cache           | `services/files.ts`                                   |
 | Storage                                   | `services/storage.ts`                                 |
 | Shared thumbnail cache                    | `services/thumbnailCache.ts`                          |
+| Thumbnail generation indicator            | `features/thumbnails/*`                               |
 | Clipboard                                 | `services/clipboard.ts`                               |
 | Filename tooltip                          | `services/filenameTooltip.ts`                         |
 | Session state                             | `services/session.ts`                                 |

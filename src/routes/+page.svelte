@@ -641,6 +641,8 @@
     togglePlay,
     frameStep: createFrameStep({ getVideoEl: () => videoEl }),
     toggleLibrary: () => (menuStore.libraryOpen = !menuStore.libraryOpen),
+    isLibraryOpen: () => menuStore.libraryOpen,
+    isFilmstripView: () => library.viewMode === "filmstrip",
   });
   function handleKeydown(e: KeyboardEvent) {
     configuredKeydown(e);
