@@ -68,6 +68,7 @@ function createLibrary() {
   let pendingOrder: string[] = [];
   let inflight = 0;
   let _fetchGen = 0;
+  let _generating = $state(false);
 
   let activeTab = $state<LibraryTab>("library");
 
@@ -194,6 +195,7 @@ function createLibrary() {
       unlisten?.();
       inflight--;
       kick();
+      updateGenerating();
     }
   }
 
@@ -202,6 +204,7 @@ function createLibrary() {
     const path = pendingOrder.shift()!;
     pendingSet.delete(path);
     loadOne(path);
+    updateGenerating();
   }
 
   function requestThumbnail(path: string) {
@@ -226,12 +229,18 @@ function createLibrary() {
     if (pendingSet.delete(path)) {
       pendingOrder = pendingOrder.filter((p) => p !== path);
     }
+    updateGenerating();
+  }
+
+  function updateGenerating() {
+    _generating = pendingOrder.length > 0 || inflight > 0;
   }
 
   function clearQueue() {
     pendingSet.clear();
     pendingOrder = [];
     inflight = 0;
+    _generating = false;
   }
 
   function rebuildQueue(fileList: string[], currentIndex: number) {
@@ -247,6 +256,7 @@ function createLibrary() {
       }
     }
 
+    _generating = pendingOrder.length > 0;
     kick();
   }
 
@@ -684,6 +694,9 @@ function createLibrary() {
     renameCollection,
     get activeCollectionPath() {
       return activeCollectionPath;
+    },
+    get generating() {
+      return _generating;
     },
     get scanKey() {
       return scanKey;

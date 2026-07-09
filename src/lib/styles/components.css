@@ -1329,44 +1329,6 @@ main:not(.fullscreen).thumbnail-bar-open .video-inner video {
   pointer-events: auto;
 }
 
-.thumb-gen-toast {
-  position: absolute;
-  top: -36px;
-  left: 0;
-  right: 0;
-  width: fit-content;
-  margin: 0 auto;
-  z-index: 95;
-  background: var(--bg-secondary);
-  border: 0.5px solid var(--bg-border);
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-family: var(--font-family);
-  padding: 5px 8px;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  pointer-events: none;
-  animation: uiToastPopIn 190ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
-}
-
-.thumb-gen-progress {
-  height: 2px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 1px;
-  overflow: hidden;
-}
-
-.thumb-gen-progress-bar {
-  height: 100%;
-  width: 40%;
-  background: var(--text-dim);
-  border-radius: 1px;
-  animation: exportProgress 1.2s infinite ease-in-out;
-}
-
 .thumbnail-bar.fullscreen {
   bottom: 0;
   z-index: 101;

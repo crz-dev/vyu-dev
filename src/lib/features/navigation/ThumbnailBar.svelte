@@ -4,6 +4,7 @@
   import { invokeGetThumbnails, onThumbnailProgress } from "$lib/features/media/tools";
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
+  import ThumbnailGenToast from "$lib/features/thumbnails/ThumbnailGenToast.svelte";
 
   let {
     fileList,
@@ -283,11 +284,8 @@
   ontransitionend={onTransitionEnd}
 >
   {#if showToast}
-    <div class="thumb-gen-toast">
-      <span>Generating folder thumbnails...</span>
-      <div class="thumb-gen-progress">
-        <div class="thumb-gen-progress-bar"></div>
-      </div>
+    <div style="position: absolute; top: -36px; left: 0; right: 0; display: flex; justify-content: center; z-index: 95; pointer-events: none;">
+      <ThumbnailGenToast />
     </div>
   {/if}
 

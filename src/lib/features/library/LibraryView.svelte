@@ -31,6 +31,7 @@
   import { saveLastDialogSection } from "$lib/services/storage";
   import { computeContextMenuPosition } from "$lib/services/session";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
+  import ThumbnailGenToast from "$lib/features/thumbnails/ThumbnailGenToast.svelte";
 
   let {
     fileList,
@@ -71,6 +72,23 @@
   let nameError = $state(false);
   let nameErrorTimer: ReturnType<typeof setTimeout> | null = null;
   let collectionToDelete = $state<string | null>(null);
+
+  let showGenToast = $state(false);
+  let genToastTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    if (library.generating) {
+      genToastTimer = setTimeout(() => {
+        showGenToast = true;
+      }, 400);
+    } else {
+      if (genToastTimer) clearTimeout(genToastTimer);
+      showGenToast = false;
+    }
+    return () => {
+      if (genToastTimer) clearTimeout(genToastTimer);
+    };
+  });
 
   let libraryDirPath = $state<string | null>(null);
   let libraryBasePath = $state<string | null>(null);
@@ -4013,9 +4031,24 @@
       </div>
     </div>
   {/if}
+
+  {#if showGenToast}
+    <div class="library-gen-toast-wrapper">
+      <ThumbnailGenToast />
+    </div>
+  {/if}
 </div>
 
 <style>
+  .library-gen-toast-wrapper {
+    position: fixed;
+    bottom: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 95;
+    pointer-events: none;
+  }
+
   .library-view {
     flex: 1;
     display: flex;
