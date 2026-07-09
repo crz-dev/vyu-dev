@@ -1781,6 +1781,7 @@
     class:scroll-active={scrollActive}
     class:select-mode={selectMode}
     class:dragging={isDragging}
+    class:filmstrip={library.viewMode === "filmstrip"}
     bind:this={scrollEl}
     bind:clientHeight={containerHeight}
     bind:clientWidth={containerWidth}
@@ -1788,11 +1789,14 @@
     onmousedown={handleDragStart}
   >
     <div
-      style="display: grid; grid-template: 1fr / 1fr; align-items: start; height: 100%; overflow: hidden;"
+      style={library.viewMode === "filmstrip"
+        ? "display: grid; grid-template-columns: 1fr; align-items: start; height: 100%; overflow: hidden;"
+        : "display: grid; grid-template-columns: 1fr; align-items: start; min-height: 100%;"}
     >
       {#key library.activeTab}
         <div
           class="tab-content"
+          class:filmstrip-mode={library.viewMode === "filmstrip"}
           transition:fade={{ duration: 150 }}
           style="grid-area: 1 / 1;"
         >
@@ -4170,8 +4174,13 @@
 
   .tab-content {
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     min-width: 0;
+  }
+
+  .tab-content.filmstrip-mode {
+    min-height: 0;
+    height: 100%;
   }
 
   .library-tabs {
@@ -4440,6 +4449,10 @@
     scrollbar-width: thin;
     scrollbar-color: transparent transparent;
     transition: scrollbar-color 0.3s;
+  }
+
+  .library-scroll.filmstrip {
+    overflow-y: hidden;
   }
 
   .library-scroll::-webkit-scrollbar {
