@@ -3268,7 +3268,7 @@
           {#if library.activeTab === "collections" && !library.activeCollectionPath}
             <div
               class="library-grid"
-              style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
+              style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, {gridMinCol}px));"
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
