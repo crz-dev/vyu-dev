@@ -3209,6 +3209,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   position: relative;
   cursor: pointer;
   flex-shrink: 0;
+  max-height: calc(100vh - 286px - var(--thumb-bar-h));
 }
 .audio-modern-thumbnail .album-cover {
   width: 100%;
