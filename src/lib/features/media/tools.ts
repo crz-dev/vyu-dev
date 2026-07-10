@@ -118,9 +118,12 @@ export async function invokeGetThumbnails(
 export function onThumbnailProgress(
   callback: (path: string, dataUrl: string) => void,
 ): Promise<() => void> {
-  return listen<{ path: string; dataUrl: string }>("thumbnail-progress", (event) => {
-    callback(event.payload.path, event.payload.dataUrl);
-  });
+  return listen<{ path: string; dataUrl: string }>(
+    "thumbnail-progress",
+    (event) => {
+      callback(event.payload.path, event.payload.dataUrl);
+    },
+  );
 }
 
 // ── Media properties ──

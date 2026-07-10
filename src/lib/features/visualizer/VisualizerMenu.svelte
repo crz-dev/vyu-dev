@@ -131,7 +131,14 @@
               } else if (type === "spectrum") {
                 drawSpectrum(ctx, freqData, CANVAS_W, CANVAS_H);
               } else if (type === "diamonds") {
-                drawParticles(ctx, freqData, CANVAS_W, CANVAS_H, particles, timestamp / 1000);
+                drawParticles(
+                  ctx,
+                  freqData,
+                  CANVAS_W,
+                  CANVAS_H,
+                  particles,
+                  timestamp / 1000,
+                );
               }
             }
 

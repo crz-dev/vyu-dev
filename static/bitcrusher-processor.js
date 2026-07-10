@@ -1,8 +1,8 @@
 class BitCrusherProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
-      { name: 'bits', defaultValue: 6, minValue: 1, maxValue: 16 },
-      { name: 'normfreq', defaultValue: 0.25, minValue: 0.01, maxValue: 1.0 }
+      { name: "bits", defaultValue: 6, minValue: 1, maxValue: 16 },
+      { name: "normfreq", defaultValue: 0.25, minValue: 0.01, maxValue: 1.0 },
     ];
   }
 
@@ -37,4 +37,4 @@ class BitCrusherProcessor extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor('bitcrusher-processor', BitCrusherProcessor);
+registerProcessor("bitcrusher-processor", BitCrusherProcessor);

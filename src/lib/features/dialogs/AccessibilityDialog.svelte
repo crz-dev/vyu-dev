@@ -3,6 +3,7 @@
     loadLastDialogSection,
     saveLastDialogSection,
   } from "$lib/services/storage";
+  import { accessibility } from "$lib/features/accessibility/accessibility.svelte";
 
   let {
     accessibilityOpen,
@@ -102,7 +103,7 @@
       highContrast,
       largeText,
       reduceMotion,
-      colorBlindMode,
+      colorBlindMode: accessibility.colorBlindMode,
       screenReaderHints,
       focusIndicators,
       appBrightness,
@@ -141,9 +142,6 @@
   let highContrast = $state(false);
   let largeText = $state(false);
   let reduceMotion = $state(false);
-  let colorBlindMode = $state<
-    "none" | "protanopia" | "deuteranopia" | "tritanopia"
-  >("none");
   let screenReaderHints = $state(false);
   let focusIndicators = $state(true);
   let appBrightness = $state(1.0);
@@ -630,25 +628,30 @@
                 <div class="pill-group pill-group-4">
                   <button
                     class="pill-btn"
-                    class:active={colorBlindMode === "none"}
-                    onclick={() => (colorBlindMode = "none")}>None</button
+                    class:active={accessibility.colorBlindMode === "none"}
+                    onclick={() => accessibility.setColorBlindMode("none")}
+                    >None</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={colorBlindMode === "protanopia"}
-                    onclick={() => (colorBlindMode = "protanopia")}
+                    class:active={accessibility.colorBlindMode === "protanopia"}
+                    onclick={() =>
+                      accessibility.setColorBlindMode("protanopia")}
                     >Protan</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={colorBlindMode === "deuteranopia"}
-                    onclick={() => (colorBlindMode = "deuteranopia")}
+                    class:active={accessibility.colorBlindMode ===
+                      "deuteranopia"}
+                    onclick={() =>
+                      accessibility.setColorBlindMode("deuteranopia")}
                     >Deuter</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={colorBlindMode === "tritanopia"}
-                    onclick={() => (colorBlindMode = "tritanopia")}
+                    class:active={accessibility.colorBlindMode === "tritanopia"}
+                    onclick={() =>
+                      accessibility.setColorBlindMode("tritanopia")}
                     >Tritan</button
                   >
                 </div>

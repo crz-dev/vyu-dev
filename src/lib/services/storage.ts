@@ -399,7 +399,13 @@ export function saveViewDensity(v: number): void {
 
 export function loadViewMode(): "grid" | "list" | "river" | "filmstrip" {
   const raw = localStorage.getItem("vyu-view-mode");
-  if (raw === "grid" || raw === "list" || raw === "river" || raw === "filmstrip") return raw;
+  if (
+    raw === "grid" ||
+    raw === "list" ||
+    raw === "river" ||
+    raw === "filmstrip"
+  )
+    return raw;
   return "grid";
 }
 
@@ -586,4 +592,24 @@ export function loadPrivacyMode(): boolean {
 
 export function savePrivacyMode(enabled: boolean): void {
   localStorage.setItem("vyu-privacy-mode", String(enabled));
+}
+
+// ── Color Blind Mode ──
+
+export type ColorBlindMode =
+  | "none"
+  | "protanopia"
+  | "deuteranopia"
+  | "tritanopia";
+
+export function loadColorBlindMode(): ColorBlindMode {
+  const raw = localStorage.getItem("vyu-colorblind-mode");
+  if (raw === "protanopia" || raw === "deuteranopia" || raw === "tritanopia") {
+    return raw;
+  }
+  return "none";
+}
+
+export function saveColorBlindMode(mode: ColorBlindMode): void {
+  localStorage.setItem("vyu-colorblind-mode", mode);
 }

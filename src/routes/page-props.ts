@@ -40,7 +40,9 @@ export interface TimelineProps {
   showLoopMarkerTooltip: (e: MouseEvent, which: "start" | "end") => void;
 }
 
-export function buildTimelineProps(deps: TimelineProps): Record<string, unknown> {
+export function buildTimelineProps(
+  deps: TimelineProps,
+): Record<string, unknown> {
   return { ...deps };
 }
 
@@ -71,7 +73,9 @@ export interface AudioMarkerProps {
   showLoopMarkerTooltip: (e: MouseEvent, which: "start" | "end") => void;
 }
 
-export function buildAudioMarkerProps(deps: AudioMarkerProps): Record<string, unknown> {
+export function buildAudioMarkerProps(
+  deps: AudioMarkerProps,
+): Record<string, unknown> {
   return { ...deps };
 }
 
@@ -134,6 +138,8 @@ export interface PlaybackProps {
   speedDragging: boolean;
 }
 
-export function buildPlaybackProps(deps: PlaybackProps): Record<string, unknown> {
+export function buildPlaybackProps(
+  deps: PlaybackProps,
+): Record<string, unknown> {
   return { ...deps };
 }

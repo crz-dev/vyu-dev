@@ -1,0 +1,13 @@
+/* Color blind correction filters — applied via data-colorblind attribute on <main> */
+
+[data-colorblind="protanopia"] {
+  filter: url(#cvd-protanopia);
+}
+
+[data-colorblind="deuteranopia"] {
+  filter: url(#cvd-deuteranopia);
+}
+
+[data-colorblind="tritanopia"] {
+  filter: url(#cvd-tritanopia);
+}

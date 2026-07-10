@@ -15,7 +15,9 @@
 <div class="error-container">
   <div class="error-card">
     <h1>Something went wrong</h1>
-    <p class="error-message">{$page.status === 404 ? "Page not found" : "An unexpected error occurred"}</p>
+    <p class="error-message">
+      {$page.status === 404 ? "Page not found" : "An unexpected error occurred"}
+    </p>
     {#if $page.error}
       <p class="error-detail">{$page.error.message}</p>
     {/if}

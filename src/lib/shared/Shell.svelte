@@ -17,6 +17,7 @@
   import VisualizerMenu from "$lib/features/visualizer/VisualizerMenu.svelte";
   import SettingsDialog from "$lib/features/dialogs/SettingsDialog.svelte";
   import AccessibilityDialog from "$lib/features/dialogs/AccessibilityDialog.svelte";
+  import { accessibility } from "$lib/features/accessibility/accessibility.svelte";
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
@@ -585,9 +586,41 @@
     }
     return "";
   });
+
+  let mainEl = $state<HTMLElement | null>(null);
+
+  $effect(() => {
+    if (mainEl) {
+      mainEl.setAttribute("data-colorblind", accessibility.colorBlindMode);
+    }
+  });
 </script>
 
+<svg aria-hidden="true" style="position:absolute;width:0;height:0">
+  <defs>
+    <filter id="cvd-protanopia" color-interpolation-filters="linearRGB">
+      <feColorMatrix
+        type="matrix"
+        values="0.567 0.433 0 0 0 0.558 0.442 0 0 0 0 0.242 0.758 0 0 0 0 0 1 0"
+      />
+    </filter>
+    <filter id="cvd-deuteranopia" color-interpolation-filters="linearRGB">
+      <feColorMatrix
+        type="matrix"
+        values="0.625 0.375 0 0 0 0.7 0.3 0 0 0 0 0.3 0.7 0 0 0 0 0 1 0"
+      />
+    </filter>
+    <filter id="cvd-tritanopia" color-interpolation-filters="linearRGB">
+      <feColorMatrix
+        type="matrix"
+        values="0.95 0.05 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0"
+      />
+    </filter>
+  </defs>
+</svg>
+
 <main
+  bind:this={mainEl}
   class:fullscreen={viewerStateIsFullscreen}
   class:menu-open={anyMenuOpen}
   class:thumbnail-bar-open={thumbnailBarVisible}

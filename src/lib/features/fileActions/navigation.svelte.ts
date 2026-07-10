@@ -37,9 +37,8 @@ const PREV_DOUBLE_CLICK_MS = 1200;
 
 async function closeVisualizers() {
   try {
-    const { visualizerStore } = await import(
-      "$lib/features/visualizer/visualizer-store.svelte"
-    );
+    const { visualizerStore } =
+      await import("$lib/features/visualizer/visualizer-store.svelte");
     visualizerStore.closeAll();
   } catch {
     // Non-critical — visualizers will be cleaned up on next call

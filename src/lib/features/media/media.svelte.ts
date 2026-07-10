@@ -152,7 +152,9 @@ export function createMedia(
     }
   }
 
-  function parseClipBoundaries(data: string | null | undefined): ClipBoundary[] {
+  function parseClipBoundaries(
+    data: string | null | undefined,
+  ): ClipBoundary[] {
     if (!data || data === "[]" || data === "null") return [];
     try {
       const raw = JSON.parse(data) as Array<Partial<ClipBoundary>>;
@@ -180,7 +182,9 @@ export function createMedia(
     if (prefetchCache.has(path)) return;
     try {
       const [baseSrc, metaResult] = await Promise.all([
-        prepareDisplayPath(path).then(convertFileSrc).catch(() => undefined),
+        prepareDisplayPath(path)
+          .then(convertFileSrc)
+          .catch(() => undefined),
         getFileMetadataLight(path).catch(() => null),
       ]);
 
@@ -197,7 +201,10 @@ export function createMedia(
         if (metaResult.clips_data) {
           clipBoundaries.push(...parseClipBoundaries(metaResult.clips_data));
         }
-        if (metaResult.last_position != null && isFinite(metaResult.last_position)) {
+        if (
+          metaResult.last_position != null &&
+          isFinite(metaResult.last_position)
+        ) {
           resumePoint = metaResult.last_position;
         }
 
@@ -322,7 +329,8 @@ export function createMedia(
     await new Promise((resolve) => requestAnimationFrame(resolve));
     if (gen !== loadGen) return;
 
-    const baseSrc = cached?.baseSrc ?? convertFileSrc(await prepareDisplayPath(path));
+    const baseSrc =
+      cached?.baseSrc ?? convertFileSrc(await prepareDisplayPath(path));
     if (gen !== loadGen) return;
     set({
       fileSrc: baseSrc,

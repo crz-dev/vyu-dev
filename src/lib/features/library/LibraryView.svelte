@@ -372,8 +372,7 @@
       } else if (mode === "type") {
         const aExt = getFileExt(a);
         const bExt = getFileExt(b);
-        cmp =
-          typeRank(aExt) - typeRank(bExt) || aExt.localeCompare(bExt);
+        cmp = typeRank(aExt) - typeRank(bExt) || aExt.localeCompare(bExt);
       } else if (mode === "size") {
         const aSize = statMap[a]?.size ?? 0;
         const bSize = statMap[b]?.size ?? 0;
@@ -563,11 +562,11 @@
   const filmstripSections = $derived.by(() => {
     const raw = displaySections;
     return raw
-      .map(s => ({
+      .map((s) => ({
         label: s.label,
-        items: s.items.filter(p => !folderPathSet.has(p)),
+        items: s.items.filter((p) => !folderPathSet.has(p)),
       }))
-      .filter(s => s.items.length > 0);
+      .filter((s) => s.items.length > 0);
   });
 
   const displaySections = $derived(
@@ -1373,7 +1372,11 @@
 
     if (library.viewMode !== "filmstrip") {
       // Grid/list: scroll current file into view
-      if (fileList.length > 0 && currentIndex >= 0 && currentIndex < fileList.length) {
+      if (
+        fileList.length > 0 &&
+        currentIndex >= 0 &&
+        currentIndex < fileList.length
+      ) {
         const el = scrollEl.querySelector(
           `[data-path="${cssAttr(fileList[currentIndex])}"]`,
         ) as HTMLElement | null;
@@ -1387,7 +1390,9 @@
     // Double rAF + setTimeout: wait for browser layout + paint before scrolling
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const stripEl = scrollEl?.querySelector(".library-filmstrip") as HTMLElement | null;
+        const stripEl = scrollEl?.querySelector(
+          ".library-filmstrip",
+        ) as HTMLElement | null;
         if (!stripEl) return;
         const strip = stripEl;
 
@@ -1417,10 +1422,14 @@
             lastWheel = now;
             let delta = e.deltaY;
             if (e.deltaMode === 1) delta *= 40;
-            else if (e.deltaMode === 2) delta = Math.sign(delta) * strip.clientWidth;
+            else if (e.deltaMode === 2)
+              delta = Math.sign(delta) * strip.clientWidth;
             if (sortedFiles.length === 0) return;
             const dir = delta > 0 ? 1 : -1;
-            const next = Math.max(0, Math.min(sortedFiles.length - 1, highlightIndex + dir));
+            const next = Math.max(
+              0,
+              Math.min(sortedFiles.length - 1, highlightIndex + dir),
+            );
             if (next !== highlightIndex) {
               lastManualHighlight = performance.now();
               highlightIndex = next;
@@ -1471,22 +1480,36 @@
   }
 
   function scrollToFilmstripCell(path: string) {
-    const strip = scrollEl?.querySelector(".library-filmstrip") as HTMLElement | null;
+    const strip = scrollEl?.querySelector(
+      ".library-filmstrip",
+    ) as HTMLElement | null;
     if (!strip) return;
-    const el = strip.querySelector(`[data-path="${cssAttr(path)}"]`) as HTMLElement | null;
+    const el = strip.querySelector(
+      `[data-path="${cssAttr(path)}"]`,
+    ) as HTMLElement | null;
     if (el) {
-      const target = Math.max(0, el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2);
-      strip.scrollTo({ left: target, behavior: 'smooth' });
+      const target = Math.max(
+        0,
+        el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2,
+      );
+      strip.scrollTo({ left: target, behavior: "smooth" });
       el.focus({ preventScroll: true });
     }
   }
 
   function scrollToFilmstripCellInstant(path: string) {
-    const strip = scrollEl?.querySelector(".library-filmstrip") as HTMLElement | null;
+    const strip = scrollEl?.querySelector(
+      ".library-filmstrip",
+    ) as HTMLElement | null;
     if (!strip) return;
-    const el = strip.querySelector(`[data-path="${cssAttr(path)}"]`) as HTMLElement | null;
+    const el = strip.querySelector(
+      `[data-path="${cssAttr(path)}"]`,
+    ) as HTMLElement | null;
     if (el) {
-      strip.scrollLeft = Math.max(0, el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2);
+      strip.scrollLeft = Math.max(
+        0,
+        el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2,
+      );
       el.focus({ preventScroll: true });
     }
   }
@@ -2516,7 +2539,12 @@
                 {/each}
               </div>
             {:else if library.viewMode === "filmstrip"}
-              <div class="library-filmstrip" style="position: relative; opacity: {filmstripReady ? 1 : 0}; transition: opacity 0.15s ease;">
+              <div
+                class="library-filmstrip"
+                style="position: relative; opacity: {filmstripReady
+                  ? 1
+                  : 0}; transition: opacity 0.15s ease;"
+              >
                 {#if library.activeTab === "favorites"}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <div
@@ -2552,7 +2580,9 @@
                 {#each filmstripSections as section (section.label || "all")}
                   {#if section.label}
                     <div class="filmstrip-divider">
-                      <span class="filmstrip-divider-label">{section.label}</span>
+                      <span class="filmstrip-divider-label"
+                        >{section.label}</span
+                      >
                     </div>
                   {/if}
                   {#each section.items as path (path)}
@@ -2563,159 +2593,159 @@
                     {@const ratio = dim ? dim.w / dim.h : 4 / 3}
                     <div
                       class="filmstrip-cell"
-                    class:active
-                    class:selected
-                    class:names-on={library.namesOn}
-                    class:privacy-blur={library.privacyMode}
-                    data-path={path}
-                    role="button"
-                    tabindex="0"
-                    style="height: {active
-                      ? filmstripBase * 1.33
-                      : filmstripBase}px; width: {(active
-                      ? filmstripBase * 1.33
-                      : filmstripBase) * ratio}px;"
-                    onclick={(e) => {
-                      if (dragSuppressedClick) return;
-                      if (selectMode || e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        library.toggleSelect(path);
-                      } else {
-                        onSelect(path);
-                      }
-                    }}
-                    oncontextmenu={(e) => openLibCtxMenu(e, path)}
-                    onkeydown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
+                      class:active
+                      class:selected
+                      class:names-on={library.namesOn}
+                      class:privacy-blur={library.privacyMode}
+                      data-path={path}
+                      role="button"
+                      tabindex="0"
+                      style="height: {active
+                        ? filmstripBase * 1.33
+                        : filmstripBase}px; width: {(active
+                        ? filmstripBase * 1.33
+                        : filmstripBase) * ratio}px;"
+                      onclick={(e) => {
+                        if (dragSuppressedClick) return;
                         if (selectMode || e.ctrlKey || e.metaKey) {
+                          e.preventDefault();
                           library.toggleSelect(path);
                         } else {
                           onSelect(path);
                         }
-                      }
-                    }}
-                  >
-                    {#if thumbFor(path)}
-                      <img
-                        class="filmstrip-thumb"
-                        src={thumbFor(path)}
-                        alt=""
-                        draggable="false"
-                        onload={(e) => onImageLoad(path, e)}
-                      />
-                    {:else}
-                      <div class="filmstrip-placeholder"></div>
-                    {/if}
-                    {#if library.namesOn}
-                      <div class="file-name-label">{getFileName(path)}</div>
-                    {/if}
-                    <div
-                      class="library-checkbox"
-                      class:checked={selected}
-                      role="checkbox"
-                      tabindex="0"
-                      aria-checked={selected}
-                      aria-label="Select file"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        library.toggleSelect(path);
                       }}
+                      oncontextmenu={(e) => openLibCtxMenu(e, path)}
                       onkeydown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          e.stopPropagation();
-                          library.toggleSelect(path);
+                          if (selectMode || e.ctrlKey || e.metaKey) {
+                            library.toggleSelect(path);
+                          } else {
+                            onSelect(path);
+                          }
                         }
                       }}
                     >
-                      {#if selected}
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="3"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                      {#if thumbFor(path)}
+                        <img
+                          class="filmstrip-thumb"
+                          src={thumbFor(path)}
+                          alt=""
+                          draggable="false"
+                          onload={(e) => onImageLoad(path, e)}
+                        />
+                      {:else}
+                        <div class="filmstrip-placeholder"></div>
                       {/if}
-                    </div>
-                    {#if badge}
+                      {#if library.namesOn}
+                        <div class="file-name-label">{getFileName(path)}</div>
+                      {/if}
                       <div
-                        class="library-badge"
-                        class:library-badge-pdf={badge === "pdf"}
+                        class="library-checkbox"
+                        class:checked={selected}
+                        role="checkbox"
+                        tabindex="0"
+                        aria-checked={selected}
+                        aria-label="Select file"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          library.toggleSelect(path);
+                        }}
+                        onkeydown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            library.toggleSelect(path);
+                          }
+                        }}
                       >
-                        {#if badge === "video"}
+                        {#if selected}
                           <svg
                             width="10"
                             height="10"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
-                            stroke-width="2.5"
+                            stroke-width="3"
                             stroke-linecap="round"
                             stroke-linejoin="round"
                           >
-                            <polygon points="5 3 19 12 5 21 5 3" />
-                          </svg>
-                        {:else if badge === "gif"}
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <polyline points="23 4 23 10 17 10" />
-                            <polyline points="1 20 1 14 7 14" />
-                            <path
-                              d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
-                            />
-                          </svg>
-                        {:else if badge === "audio"}
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <path d="M9 18V5l12-2v13" />
-                            <circle cx="6" cy="18" r="3" />
-                            <circle cx="18" cy="16" r="3" />
-                          </svg>
-                        {:else if badge === "pdf"}
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="1.8"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          >
-                            <path
-                              d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                            />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="9" y1="13" x2="15" y2="13" />
-                            <line x1="12" y1="13" x2="12" y2="18" />
+                            <polyline points="20 6 9 17 4 12" />
                           </svg>
                         {/if}
                       </div>
-                    {/if}
-                  </div>
+                      {#if badge}
+                        <div
+                          class="library-badge"
+                          class:library-badge-pdf={badge === "pdf"}
+                        >
+                          {#if badge === "video"}
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                          {:else if badge === "gif"}
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <polyline points="23 4 23 10 17 10" />
+                              <polyline points="1 20 1 14 7 14" />
+                              <path
+                                d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                              />
+                            </svg>
+                          {:else if badge === "audio"}
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path d="M9 18V5l12-2v13" />
+                              <circle cx="6" cy="18" r="3" />
+                              <circle cx="18" cy="16" r="3" />
+                            </svg>
+                          {:else if badge === "pdf"}
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path
+                                d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                              />
+                              <polyline points="14 2 14 8 20 8" />
+                              <line x1="9" y1="13" x2="15" y2="13" />
+                              <line x1="12" y1="13" x2="12" y2="18" />
+                            </svg>
+                          {/if}
+                        </div>
+                      {/if}
+                    </div>
                   {/each}
                 {/each}
                 {#if isShowingFolders}
@@ -4417,7 +4447,7 @@
   }
 
   .filmstrip-divider::after {
-    content: '';
+    content: "";
     flex: 1;
     width: 1px;
     background: var(--border-dim, #333);

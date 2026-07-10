@@ -1891,102 +1891,159 @@
             <span class="props-v">{durationDisplay}</span>
           </div>
         {/if}
-          <div
-            class="props-row"
-            onclick={() =>
+        <div
+          class="props-row"
+          onclick={() =>
+            copyPropValue(
+              mediaPropsLoading
+                ? "Loading..."
+                : showValue(mediaProps?.container),
+            )}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
               copyPropValue(
                 mediaPropsLoading
                   ? "Loading..."
                   : showValue(mediaProps?.container),
-              )}
-            onkeydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                copyPropValue(
-                  mediaPropsLoading
-                    ? "Loading..."
-                    : showValue(mediaProps?.container),
-                );
-              }
-            }}
-            role="button"
-            tabindex="0"
-          >
-            <span class="props-k">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path
-                  d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
-                /></svg
-              >
-              Container
-            </span>
-            <span class="props-v"
-              >{mediaPropsLoading
-                ? "Loading..."
-                : showValue(mediaProps?.container)}</span
+              );
+            }
+          }}
+          role="button"
+          tabindex="0"
+        >
+          <span class="props-k">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path
+                d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
+              /></svg
             >
-          </div>
-          <div
-            class="props-row"
-            onclick={() =>
+            Container
+          </span>
+          <span class="props-v"
+            >{mediaPropsLoading
+              ? "Loading..."
+              : showValue(mediaProps?.container)}</span
+          >
+        </div>
+        <div
+          class="props-row"
+          onclick={() =>
+            copyPropValue(
+              mediaPropsLoading
+                ? "Loading..."
+                : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`,
+            )}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
               copyPropValue(
                 mediaPropsLoading
                   ? "Loading..."
                   : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`,
-              )}
-            onkeydown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                copyPropValue(
-                  mediaPropsLoading
-                    ? "Loading..."
-                    : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`,
-                );
-              }
-            }}
-            role="button"
-            tabindex="0"
-          >
-            <span class="props-k">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line
-                  x1="8"
-                  y1="21"
-                  x2="16"
-                  y2="21"
-                /><line x1="12" y1="17" x2="12" y2="21" /></svg
-              >
-              Codec
-            </span>
-            <span class="props-v">
-              {mediaPropsLoading
+              );
+            }
+          }}
+          role="button"
+          tabindex="0"
+        >
+          <span class="props-k">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line
+                x1="8"
+                y1="21"
+                x2="16"
+                y2="21"
+              /><line x1="12" y1="17" x2="12" y2="21" /></svg
+            >
+            Codec
+          </span>
+          <span class="props-v">
+            {mediaPropsLoading
+              ? "Loading..."
+              : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`}
+          </span>
+        </div>
+        <div
+          class="props-row"
+          onclick={() =>
+            copyPropValue(
+              mediaPropsLoading
                 ? "Loading..."
-                : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`}
-            </span>
-          </div>
+                : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`,
+            )}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              copyPropValue(
+                mediaPropsLoading
+                  ? "Loading..."
+                  : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`,
+              );
+            }
+          }}
+          role="button"
+          tabindex="0"
+        >
+          <span class="props-k">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="12" cy="12" r="10" /><line
+                x1="14.31"
+                y1="8"
+                x2="20.05"
+                y2="17.94"
+              /><line x1="9.69" y1="8" x2="21.17" y2="8" /><line
+                x1="7.38"
+                y1="12"
+                x2="13.12"
+                y2="2.06"
+              /><line x1="9.69" y1="16" x2="3.95" y2="6.06" /><line
+                x1="14.31"
+                y1="16"
+                x2="2.83"
+                y2="16"
+              /><line x1="16.62" y1="12" x2="10.88" y2="21.94" /></svg
+            >
+            Color
+          </span>
+          <span class="props-v">
+            {mediaPropsLoading
+              ? "Loading..."
+              : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`}
+          </span>
+        </div>
+        {#if isVideo}
           <div
             class="props-row"
             onclick={() =>
               copyPropValue(
                 mediaPropsLoading
                   ? "Loading..."
-                  : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`,
+                  : showValue(mediaProps?.frame_rate),
               )}
             onkeydown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -1994,7 +2051,7 @@
                 copyPropValue(
                   mediaPropsLoading
                     ? "Loading..."
-                    : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`,
+                    : showValue(mediaProps?.frame_rate),
                 );
               }
             }}
@@ -2011,76 +2068,19 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                ><circle cx="12" cy="12" r="10" /><line
-                  x1="14.31"
-                  y1="8"
-                  x2="20.05"
-                  y2="17.94"
-                /><line x1="9.69" y1="8" x2="21.17" y2="8" /><line
-                  x1="7.38"
-                  y1="12"
-                  x2="13.12"
-                  y2="2.06"
-                /><line x1="9.69" y1="16" x2="3.95" y2="6.06" /><line
-                  x1="14.31"
-                  y1="16"
-                  x2="2.83"
-                  y2="16"
-                /><line x1="16.62" y1="12" x2="10.88" y2="21.94" /></svg
+                ><polygon
+                  points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+                /></svg
               >
-              Color
+              Frame rate
             </span>
-            <span class="props-v">
-              {mediaPropsLoading
+            <span class="props-v"
+              >{mediaPropsLoading
                 ? "Loading..."
-                : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`}
-            </span>
-          </div>
-          {#if isVideo}
-            <div
-              class="props-row"
-              onclick={() =>
-                copyPropValue(
-                  mediaPropsLoading
-                    ? "Loading..."
-                    : showValue(mediaProps?.frame_rate),
-                )}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  copyPropValue(
-                    mediaPropsLoading
-                      ? "Loading..."
-                      : showValue(mediaProps?.frame_rate),
-                  );
-                }
-              }}
-              role="button"
-              tabindex="0"
+                : showValue(mediaProps?.frame_rate)}</span
             >
-              <span class="props-k">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polygon
-                    points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
-                  /></svg
-                >
-                Frame rate
-              </span>
-              <span class="props-v"
-                >{mediaPropsLoading
-                  ? "Loading..."
-                  : showValue(mediaProps?.frame_rate)}</span
-              >
-            </div>
-          {/if}
+          </div>
+        {/if}
         <div
           class="props-row"
           onclick={() =>

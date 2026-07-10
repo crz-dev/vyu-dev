@@ -15,9 +15,10 @@ const EQ_GRADIENT_COLORS = [
   "#ec4899", // 16kHz — pink
 ];
 
-const GRADIENT_STOPS: [number, string][] = EQ_GRADIENT_COLORS.map(
-  (c, i) => [i / (EQ_GRADIENT_COLORS.length - 1), c],
-);
+const GRADIENT_STOPS: [number, string][] = EQ_GRADIENT_COLORS.map((c, i) => [
+  i / (EQ_GRADIENT_COLORS.length - 1),
+  c,
+]);
 
 // Logarithmic frequency bin mapping — spreads bins across 20Hz–20kHz
 function getLogIndex(i: number, total: number, bufferLength: number): number {
@@ -86,7 +87,14 @@ export function drawVignette(
   w: number,
   h: number,
 ): void {
-  const grad = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, w * 0.75);
+  const grad = ctx.createRadialGradient(
+    w / 2,
+    h / 2,
+    w * 0.25,
+    w / 2,
+    h / 2,
+    w * 0.75,
+  );
   grad.addColorStop(0, "rgba(0,0,0,0)");
   grad.addColorStop(1, "rgba(0,0,0,0.4)");
   ctx.fillStyle = grad;
@@ -98,7 +106,11 @@ export function drawVignette(
 const BAR_COUNT = 80;
 const BAR_GAP = 2;
 
-function perceptualWeight(binIndex: number, totalBins: number, value: number): number {
+function perceptualWeight(
+  binIndex: number,
+  totalBins: number,
+  value: number,
+): number {
   const t = binIndex / totalBins;
   const highBoost = 1.0 + t * 0.8;
   return Math.min(255, value * highBoost);
@@ -496,7 +508,8 @@ export function createParticles(count: number, binCount: number): Particle[] {
     }
 
     // High-freq particles get higher base opacity
-    const baseOpacity = band === 3 ? 0.75 + Math.random() * 0.25 : 0.6 + Math.random() * 0.4;
+    const baseOpacity =
+      band === 3 ? 0.75 + Math.random() * 0.25 : 0.6 + Math.random() * 0.4;
 
     return {
       x: Math.random(),
@@ -588,12 +601,7 @@ export function drawParticles(
     ctx.shadowColor = color;
     ctx.shadowBlur = renderSize;
     ctx.fillStyle = color;
-    ctx.fillRect(
-      -renderSize / 2,
-      -renderSize / 2,
-      renderSize,
-      renderSize,
-    );
+    ctx.fillRect(-renderSize / 2, -renderSize / 2, renderSize, renderSize);
 
     // Inner highlight — small bright core
     ctx.shadowBlur = 0;

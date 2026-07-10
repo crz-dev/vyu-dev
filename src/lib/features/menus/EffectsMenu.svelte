@@ -850,7 +850,11 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M12 3c-4 0-7 3-7 7v9l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2v-9c0-4-3-7-7-7z" fill="currentColor" fill-opacity="0.12" />
+                <path
+                  d="M12 3c-4 0-7 3-7 7v9l2.5-2 2.5 2 2.5-2 2.5 2 2.5-2 2.5 2v-9c0-4-3-7-7-7z"
+                  fill="currentColor"
+                  fill-opacity="0.12"
+                />
                 <circle cx="9" cy="9" r="1.2" fill="currentColor" />
                 <circle cx="15" cy="9" r="1.2" fill="currentColor" />
               </svg>
@@ -890,7 +894,11 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <polygon points="12,3 21,12 12,21 3,12" fill="none" stroke-width="2.5" />
+                <polygon
+                  points="12,3 21,12 12,21 3,12"
+                  fill="none"
+                  stroke-width="2.5"
+                />
               </svg>
               <span>Diamonds</span>
             </button>

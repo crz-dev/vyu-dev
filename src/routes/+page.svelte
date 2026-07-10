@@ -168,12 +168,11 @@
     closeSlideshowMenu,
   } = menuActions;
   const menuBindings = createMenuBindings();
-  const { runLoadMediaProperties } =
-    createFfmpegHelpers({
-      filePath: () => filePath,
-      setMediaProps: (v) => (mediaProps = v),
-      setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-    });
+  const { runLoadMediaProperties } = createFfmpegHelpers({
+    filePath: () => filePath,
+    setMediaProps: (v) => (mediaProps = v),
+    setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+  });
 
   const style = createViewerStyle();
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
@@ -683,15 +682,14 @@
     handleReset,
     handleUpdateApplyNoAsk,
   } = editActions;
-  let _markupActions:
-    | {
-        handleMarkupApply: (canvasDataUrl?: string) => Promise<void>;
-        handleMarkupExport: (canvasDataUrl?: string) => Promise<void>;
-      }
-    | null = null;
+  let _markupActions: {
+    handleMarkupApply: (canvasDataUrl?: string) => Promise<void>;
+    handleMarkupExport: (canvasDataUrl?: string) => Promise<void>;
+  } | null = null;
   async function ensureMarkupActions() {
     if (!_markupActions) {
-      const { createMarkupActions } = await import("$lib/features/markup/markupActions");
+      const { createMarkupActions } =
+        await import("$lib/features/markup/markupActions");
       _markupActions = createMarkupActions({
         getFilePath: () => filePath,
         getFileName: () => fileName,
@@ -908,9 +906,9 @@
     const path = filePath;
     if (!path) return;
 
-    eqStore.loadForFile(path).catch((e) =>
-      console.error("Failed to load EQ settings:", e),
-    );
+    eqStore
+      .loadForFile(path)
+      .catch((e) => console.error("Failed to load EQ settings:", e));
     effectsStore.loadForFile(path);
 
     if (isVideo && videoEl) {

@@ -5,6 +5,7 @@
 @import "$lib/styles/layout.css";
 @import "$lib/styles/components.css";
 @import "$lib/styles/theme-transition.css";
+@import "$lib/styles/accessibility.css";
 
 html,
 body {

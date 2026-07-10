@@ -1,7 +1,10 @@
 <script lang="ts">
   import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
-  import { invokeGetThumbnails, onThumbnailProgress } from "$lib/features/media/tools";
+  import {
+    invokeGetThumbnails,
+    onThumbnailProgress,
+  } from "$lib/features/media/tools";
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
   import ThumbnailGenToast from "$lib/features/thumbnails/ThumbnailGenToast.svelte";
@@ -284,7 +287,9 @@
   ontransitionend={onTransitionEnd}
 >
   {#if showToast}
-    <div style="position: absolute; top: -36px; left: 0; right: 0; display: flex; justify-content: center; z-index: 95; pointer-events: none;">
+    <div
+      style="position: absolute; top: -36px; left: 0; right: 0; display: flex; justify-content: center; z-index: 95; pointer-events: none;"
+    >
       <ThumbnailGenToast />
     </div>
   {/if}

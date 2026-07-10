@@ -76,7 +76,9 @@ function createLibrary() {
 
   let recentFilesLimit = $state(loadRecentFilesLimit());
   let recentsDisabled = $state(loadRecentsDisabled());
-  let recentFiles = $state<RecentFileItem[]>(loadRecentFiles(loadRecentFilesLimit()));
+  let recentFiles = $state<RecentFileItem[]>(
+    loadRecentFiles(loadRecentFilesLimit()),
+  );
   let recentTimestamps = $derived.by(() => {
     const map: Record<string, number> = {};
     for (const item of recentFiles) {
@@ -88,7 +90,9 @@ function createLibrary() {
   let showFolders = $state(loadShowFolders());
   let showThumbnails = $state(loadShowThumbnails());
 
-  let viewMode = $state<"grid" | "list" | "river" | "filmstrip">(loadViewMode());
+  let viewMode = $state<"grid" | "list" | "river" | "filmstrip">(
+    loadViewMode(),
+  );
 
   let density = $state(loadViewDensity());
 
@@ -171,7 +175,10 @@ function createLibrary() {
     const batchPaths: string[] = [path];
     const defer: string[] = [];
     for (const p of pendingOrder) {
-      if (batchPaths.length >= BATCH_SIZE) { defer.push(p); continue; }
+      if (batchPaths.length >= BATCH_SIZE) {
+        defer.push(p);
+        continue;
+      }
       pendingSet.delete(p);
       batchPaths.push(p);
     }

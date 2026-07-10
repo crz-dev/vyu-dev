@@ -23,8 +23,10 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
     if (!viewerEl) return { width: 0, height: 0 };
     if (viewerEl !== cachedViewerEl) {
       const style = getComputedStyle(viewerEl);
-      cachedPadH = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-      cachedPadV = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      cachedPadH =
+        parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+      cachedPadV =
+        parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
       cachedViewerEl = viewerEl;
     }
     return {
