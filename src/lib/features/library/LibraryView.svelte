@@ -170,16 +170,16 @@
     if (isViewingCollection) {
       items.push({ type: "file", path: "__add_files__" });
     }
-    if (library.showFolders) {
-      for (const fp of currentFolderPaths) {
-        items.push({ type: "folder", path: fp });
-      }
-    }
     for (const section of displaySections) {
       for (const path of section.items) {
         if (!library.showFolders || !folderPathSet.has(path)) {
           items.push({ type: "file", path });
         }
+      }
+    }
+    if (library.showFolders) {
+      for (const fp of currentFolderPaths) {
+        items.push({ type: "folder", path: fp });
       }
     }
     return items;
@@ -2094,42 +2094,6 @@
                       </svg>
                     </div>
                   {/if}
-                  {#if isShowingFolders}
-                    {#each currentFolderPaths as folderPath (folderPath)}
-                      <!-- svelte-ignore a11y_no_static_element_interactions -->
-                      <div
-                        class="library-subfolder-card"
-                        role="button"
-                        tabindex="0"
-                        onclick={() => navigateToFolder(folderPath)}
-                        onkeydown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            navigateToFolder(folderPath);
-                          }
-                        }}
-                      >
-                        <svg
-                          class="library-subfolder-icon"
-                          width="32"
-                          height="32"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="var(--yellow-soft)"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path
-                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                          />
-                        </svg>
-                        <div class="library-subfolder-name">
-                          {getFileName(folderPath)}
-                        </div>
-                      </div>
-                    {/each}
-                  {/if}
                   {#each displaySections as section (section.label || "all")}
                     {#if section.label}
                       <div class="divider-header" style="grid-column: 1 / -1;">
@@ -2298,6 +2262,42 @@
                       {/if}
                     {/each}
                   {/each}
+                  {#if isShowingFolders}
+                    {#each currentFolderPaths as folderPath (folderPath)}
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="library-subfolder-card"
+                        role="button"
+                        tabindex="0"
+                        onclick={() => navigateToFolder(folderPath)}
+                        onkeydown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigateToFolder(folderPath);
+                          }
+                        }}
+                      >
+                        <svg
+                          class="library-subfolder-icon"
+                          width="32"
+                          height="32"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="var(--yellow-soft)"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
+                          <path
+                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                          />
+                        </svg>
+                        <div class="library-subfolder-name">
+                          {getFileName(folderPath)}
+                        </div>
+                      </div>
+                    {/each}
+                  {/if}
                 </div>
               {/if}
             {:else if library.viewMode === "river"}
@@ -2333,42 +2333,6 @@
                       />
                     </svg>
                   </div>
-                {/if}
-                {#if isShowingFolders}
-                  {#each currentFolderPaths as folderPath (folderPath)}
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
-                    <div
-                      class="river-cell river-subfolder-cell"
-                      role="button"
-                      tabindex="0"
-                      style="height: {riverRowH}px; min-width: {riverRowH}px; flex-grow: 0;"
-                      onclick={() => navigateToFolder(folderPath)}
-                      onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          navigateToFolder(folderPath);
-                        }
-                      }}
-                    >
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--yellow-soft)"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                        />
-                      </svg>
-                      <div class="river-subfolder-name">
-                        {getFileName(folderPath)}
-                      </div>
-                    </div>
-                  {/each}
                 {/if}
                 {#each displaySections as section (section.label || "all")}
                   {#if section.label}
@@ -2581,42 +2545,6 @@
                     </svg>
                   </div>
                 {/if}
-                {#if isShowingFolders}
-                  {#each currentFolderPaths as folderPath (folderPath)}
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
-                    <div
-                      class="filmstrip-cell filmstrip-subfolder-cell"
-                      role="button"
-                      tabindex="0"
-                      style="height: {filmstripBase}px; min-width: {filmstripBase}px; flex-shrink: 0;"
-                      onclick={() => navigateToFolder(folderPath)}
-                      onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          navigateToFolder(folderPath);
-                        }
-                      }}
-                    >
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--yellow-soft)"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <path
-                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                        />
-                      </svg>
-                      <div class="filmstrip-subfolder-name">
-                        {getFileName(folderPath)}
-                      </div>
-                    </div>
-                  {/each}
-                {/if}
                 {#each filmstripSections as section (section.label || "all")}
                   {#if section.label}
                     <div class="filmstrip-divider">
@@ -2786,6 +2714,42 @@
                   </div>
                   {/each}
                 {/each}
+                {#if isShowingFolders}
+                  {#each currentFolderPaths as folderPath (folderPath)}
+                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                    <div
+                      class="filmstrip-cell filmstrip-subfolder-cell"
+                      role="button"
+                      tabindex="0"
+                      style="height: {filmstripBase}px; min-width: {filmstripBase}px; flex-shrink: 0;"
+                      onclick={() => navigateToFolder(folderPath)}
+                      onkeydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigateToFolder(folderPath);
+                        }
+                      }}
+                    >
+                      <svg
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--yellow-soft)"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                        />
+                      </svg>
+                      <div class="filmstrip-subfolder-name">
+                        {getFileName(folderPath)}
+                      </div>
+                    </div>
+                  {/each}
+                {/if}
               </div>
             {:else}
               <div
@@ -2954,47 +2918,6 @@
                     <span class="list-col list-col-date"></span>
                     <span class="list-col list-col-type"></span>
                   </div>
-                {/if}
-                {#if isShowingFolders}
-                  {#each currentFolderPaths as folderPath (folderPath)}
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
-                    <div
-                      class="list-row list-subfolder-row"
-                      role="button"
-                      tabindex="0"
-                      onclick={() => navigateToFolder(folderPath)}
-                      onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          navigateToFolder(folderPath);
-                        }
-                      }}
-                    >
-                      <span class="list-col list-col-check"></span>
-                      <span class="list-col list-col-thumb">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="var(--yellow-soft)"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path
-                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                          />
-                        </svg>
-                      </span>
-                      <span class="list-col list-col-name">
-                        {getFileName(folderPath)}
-                      </span>
-                      <span class="list-col list-col-size"></span>
-                      <span class="list-col list-col-date"></span>
-                      <span class="list-col list-col-type">Folder</span>
-                    </div>
-                  {/each}
                 {/if}
                 {#each displaySections as section (section.label || "all")}
                   {#if section.label}
