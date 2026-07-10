@@ -83,7 +83,7 @@
     if (library.generating) {
       genToastTimer = setTimeout(() => {
         showGenToast = true;
-      }, 400);
+      }, 1000);
     } else {
       if (genToastTimer) clearTimeout(genToastTimer);
       showGenToast = false;

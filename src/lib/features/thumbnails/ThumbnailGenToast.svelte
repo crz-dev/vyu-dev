@@ -3,7 +3,7 @@
 </script>
 
 <div class="thumb-gen-toast {className}">
-  <span>Generating thumbnails</span>
+  <span>Loading thumbnails</span>
 </div>
 
 <style>
