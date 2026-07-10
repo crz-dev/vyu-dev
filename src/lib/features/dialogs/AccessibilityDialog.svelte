@@ -620,7 +620,7 @@
                 <div class="settings-label-text">
                   <span class="settings-label">Color Blind Mode</span>
                   <span class="settings-hint"
-                    >Adjust palette for color deficiency</span
+                    >Shift colors to improve distinction</span
                   >
                 </div>
               </div>

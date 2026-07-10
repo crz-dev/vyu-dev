@@ -588,32 +588,36 @@
   });
 
   let mainEl = $state<HTMLElement | null>(null);
+  let filterEl = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
-    if (mainEl) {
-      mainEl.setAttribute("data-colorblind", accessibility.colorBlindMode);
+    if (filterEl) {
+      filterEl.setAttribute("data-colorblind", accessibility.colorBlindMode);
     }
   });
 </script>
 
+<!-- Daltonization correction filters (Fidaner/Walowit/Yun pipeline).
+     Each is a single precomputed matrix: M = I + strength * M_redist * (I - M_machado).
+     strength = 0.75. Math in linearRGB (browser handles sRGB conversion via color-interpolation-filters). -->
 <svg aria-hidden="true" style="position:absolute;width:0;height:0">
   <defs>
     <filter id="cvd-protanopia" color-interpolation-filters="linearRGB">
       <feColorMatrix
         type="matrix"
-        values="0.567 0.433 0 0 0 0.558 0.442 0 0 0 0 0.242 0.758 0 0 0 0 0 1 0"
+        values="1 0 0 0 0 -0.1912 1.1912 0 0 0 0.2273 -0.4088 1.1815 0 0 0 0 0 1 0"
       />
     </filter>
     <filter id="cvd-deuteranopia" color-interpolation-filters="linearRGB">
       <feColorMatrix
         type="matrix"
-        values="0.625 0.375 0 0 0 0.7 0.3 0 0 0 0 0.3 0.7 0 0 0 0 0 1 0"
+        values="1 0 0 0 0 -0.3281 1.3281 0 0 0 0.1969 -0.4219 1.225 0 0 0 0 0 1 0"
       />
     </filter>
     <filter id="cvd-tritanopia" color-interpolation-filters="linearRGB">
       <feColorMatrix
         type="matrix"
-        values="0.95 0.05 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0"
+        values="1.0375 -0.2869 0.2494 0 0 0 1.1759 -0.1759 0 0 0 0 1 0 0 0 0 0 1 0"
       />
     </filter>
   </defs>
@@ -663,40 +667,44 @@
   />
 
   <div
-    style="flex: 1; display: grid; grid-template: 1fr / 1fr; overflow: hidden;"
+    bind:this={filterEl}
+    style="flex: 1; display: flex; flex-direction: column; overflow: hidden;"
   >
-    {#if libraryOpen}
-      <div
-        transition:fade={{ duration: 200 }}
-        style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
-      >
-        <LibraryView
-          {fileList}
-          {currentIndex}
-          selectMode={library.selectedCount > 0}
-          onSelect={async (path) => {
-            const idx = fileList.indexOf(path);
-            if (idx !== -1) {
-              onSelect(idx);
-            } else {
-              await loadFile(path);
-            }
-            closeLibrary();
-          }}
-          onClose={closeLibrary}
-        />
-      </div>
-    {:else}
-      <div
-        transition:fade={{ duration: 200 }}
-        style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
-      >
-        {@render children?.()}
-      </div>
-    {/if}
-  </div>
+    <div
+      style="flex: 1; display: grid; grid-template: 1fr / 1fr; overflow: hidden;"
+    >
+      {#if libraryOpen}
+        <div
+          transition:fade={{ duration: 200 }}
+          style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
+        >
+          <LibraryView
+            {fileList}
+            {currentIndex}
+            selectMode={library.selectedCount > 0}
+            onSelect={async (path) => {
+              const idx = fileList.indexOf(path);
+              if (idx !== -1) {
+                onSelect(idx);
+              } else {
+                await loadFile(path);
+              }
+              closeLibrary();
+            }}
+            onClose={closeLibrary}
+          />
+        </div>
+      {:else}
+        <div
+          transition:fade={{ duration: 200 }}
+          style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
+        >
+          {@render children?.()}
+        </div>
+      {/if}
+    </div>
 
-  <MediaBar
+    <MediaBar
     fileListLength={fileList.length}
     {currentIndex}
     {fileDimensions}
@@ -758,6 +766,7 @@
     onCloseSelectMenu={() => library.clearSelection()}
     onSelectMenuMoved={() => (selectMenuMoved = true)}
   />
+  </div>
 
   <ThumbnailBar
     {fileList}
