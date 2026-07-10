@@ -1,7 +1,13 @@
 // Filesystem operations
 import { invoke } from "@tauri-apps/api/core";
 import { readDir } from "@tauri-apps/plugin-fs";
-import { ALL_EXTS_SET } from "$lib/shared/constants";
+import {
+  ALL_EXTS_SET,
+  IMAGE_EXTS,
+  VIDEO_EXTS,
+  AUDIO_EXTS,
+  DOCUMENT_EXTS,
+} from "$lib/shared/constants";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -73,6 +79,7 @@ async function sortFileList(
         const aExt = getExt(a.path);
         const bExt = getExt(b.path);
         cmp =
+          typeRank(aExt) - typeRank(bExt) ||
           aExt.localeCompare(bExt) ||
           getFileName(a.path).localeCompare(getFileName(b.path));
         break;
@@ -83,6 +90,15 @@ async function sortFileList(
 
   const sorted = entries.map((e) => e.path);
   return desc ? sorted.reverse() : sorted;
+}
+
+export function typeRank(ext: string): number {
+  if (ext === "gif") return 2;
+  if (IMAGE_EXTS.includes(ext)) return 1;
+  if (VIDEO_EXTS.includes(ext)) return 3;
+  if (AUDIO_EXTS.includes(ext)) return 4;
+  if (DOCUMENT_EXTS.includes(ext)) return 5;
+  return 6;
 }
 
 function getExt(filePath: string): string {

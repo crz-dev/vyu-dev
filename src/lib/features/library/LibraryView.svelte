@@ -9,6 +9,7 @@
     getFileExt,
     getFileName,
     getParentFolder,
+    typeRank,
   } from "$lib/services/files";
   import { fade } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
@@ -369,7 +370,10 @@
       if (mode === "name") {
         cmp = a.localeCompare(b, undefined, { sensitivity: "base" });
       } else if (mode === "type") {
-        cmp = getFileExt(a).localeCompare(getFileExt(b));
+        const aExt = getFileExt(a);
+        const bExt = getFileExt(b);
+        cmp =
+          typeRank(aExt) - typeRank(bExt) || aExt.localeCompare(bExt);
       } else if (mode === "size") {
         const aSize = statMap[a]?.size ?? 0;
         const bSize = statMap[b]?.size ?? 0;
