@@ -77,6 +77,9 @@ function createEqualizerStore(): EqualizerStore {
       bypass = false;
       eqEngine.setBypass(false);
     }
+    const gain = name === "Afterparty" ? -6 : 0;
+    outputGain = gain;
+    eqEngine.setOutputGain(gain);
     saveForFile();
   }
 
