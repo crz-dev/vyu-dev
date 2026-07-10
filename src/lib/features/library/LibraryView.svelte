@@ -1175,7 +1175,7 @@
   });
 
   $effect(() => {
-    library.rebuildQueue(fileList, currentIndex);
+    library.rebuildQueue(sortedFiles, currentIndex);
   });
 
   $effect(() => {
