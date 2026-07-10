@@ -228,7 +228,7 @@
     e.stopPropagation();
     const btn = e.currentTarget as HTMLElement;
     const rect = btn.getBoundingClientRect();
-    libSortMenuX = rect.left;
+    libSortMenuX = rect.left + 40;
     libSortMenuY = window.innerHeight - rect.top + 4;
     libSortMenuVisible = !libSortMenuVisible;
   }
