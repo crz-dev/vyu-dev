@@ -8,6 +8,7 @@
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
   import ThumbnailGenToast from "$lib/features/thumbnails/ThumbnailGenToast.svelte";
+  import { accessibility } from "$lib/features/accessibility/accessibility.svelte";
 
   let {
     fileList,
@@ -35,6 +36,12 @@
   let barEl: HTMLDivElement | null = $state(null);
   let trackWidth = $state(0);
   let scrollLeft = $state(0);
+
+  $effect(() => {
+    if (trackEl) {
+      trackEl.setAttribute("data-colorblind", accessibility.colorBlindMode);
+    }
+  });
 
   // RAF scroll
   let _scrollRaf: number | null = null;

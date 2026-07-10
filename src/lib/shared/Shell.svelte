@@ -703,8 +703,9 @@
         </div>
       {/if}
     </div>
+  </div>
 
-    <MediaBar
+  <MediaBar
     fileListLength={fileList.length}
     {currentIndex}
     {fileDimensions}
@@ -766,7 +767,6 @@
     onCloseSelectMenu={() => library.clearSelection()}
     onSelectMenuMoved={() => (selectMenuMoved = true)}
   />
-  </div>
 
   <ThumbnailBar
     {fileList}
