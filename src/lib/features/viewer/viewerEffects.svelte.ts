@@ -120,6 +120,7 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
   }
 
   function refitOnChangeEffect() {
+    cachedViewerEl = null;
     void deps.getThumbnailBarVisible();
     void editing.snapshot.rotation;
     if (
