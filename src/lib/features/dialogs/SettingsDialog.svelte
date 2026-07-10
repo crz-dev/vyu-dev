@@ -76,7 +76,7 @@
     library: "Manage your media library and history.",
     system: "System-level app behavior and updates.",
     keybinds: "View and customize keyboard shortcuts.",
-    debug: "Inspect environment, cache, and internal state.",
+    debug: "Dev tools and internal state.",
     "danger-zone": "Destructive actions that cannot be undone.",
   };
 

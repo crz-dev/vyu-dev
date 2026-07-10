@@ -1637,6 +1637,11 @@
   border-right: 0.5px solid var(--bg-elevated);
   background: var(--bg-primary);
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.settings-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .settings-nav-item {
@@ -1778,25 +1783,12 @@
 
 .settings-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden;
   padding: 16px 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   scroll-behavior: smooth;
-}
-
-.settings-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.settings-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.settings-content::-webkit-scrollbar-thumb {
-  background: var(--bg-shimmer);
-  border-radius: 2px;
 }
 
 .settings-section {
