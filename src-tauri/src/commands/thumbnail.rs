@@ -16,7 +16,7 @@ use crate::constants::{
     FFMPEG_THUMB_TIMEOUT, THUMB_JPEG_QUALITY, THUMB_SHORT_SIDE,
 };
 use crate::types::{MediaKind, ThumbState};
-use crate::util::{format_data_url, hash_path_xxh3, run_ffmpeg};
+use crate::util::{canonicalize_path, format_data_url, hash_path_xxh3, run_ffmpeg};
 
 const MAX_CACHE_BYTES: u64 = 500 * 1024 * 1024;
 const EVICTION_MARGIN: u64 = 10 * 1024 * 1024;
@@ -297,8 +297,12 @@ async fn thumbnail_for_path(
 
     let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
 
+    // Canonicalize to ensure consistent cache keys across sessions (Windows path casing)
+    let canonical = canonicalize_path(path)?;
+    let path = canonical.to_string_lossy();
+
     // In-flight dedup (keyed by hash + size)
-    let hash = hash_path_xxh3(path);
+    let hash = hash_path_xxh3(&path);
     let inflight_key = format!("{hash}_{thumb_size}");
     if let Some(rx) = state.inflight.register(&inflight_key).await {
         return rx
