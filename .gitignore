@@ -8,15 +8,12 @@ node_modules/
 
 # Generated
 /.svelte-kit/
-/src-tauri/gen/
 
 # Environment
 .env
 .env.*
-!.env.example
 
 # Editor
-/.codex/
 /.idea/
 *.swp
 *.swo
@@ -31,6 +28,7 @@ desktop.ini
 # Logs
 *.log
 tauri-dev-*.txt
+pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
