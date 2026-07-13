@@ -53,7 +53,7 @@
   import Shell from "$lib/components/Shell.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/actions/propertiesActions";
-  import { contextMenuStore } from "$lib/features/stores/contextMenu.svelte";
+  import { contextMenuStore } from "$lib/features/menus/contextMenu.svelte";
   import { createGlobalMouseHandler } from "$lib/features/actions/globalMouseHandler";
   import ApplyEditDialog from "$lib/features/dialogs/ApplyEditDialog.svelte";
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
@@ -82,7 +82,7 @@
     createMenuActions,
     createMenuBindings,
     areDialogsOpen,
-  } from "$lib/features/stores/menuVisibility.svelte";
+  } from "$lib/features/menus/menuVisibility.svelte";
   import {
     editDialogStore,
     createEditActions,

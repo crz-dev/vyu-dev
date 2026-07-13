@@ -7,7 +7,7 @@ import {
   exportEditedImage,
   invokeExportEditedMedia,
 } from "$lib/features/media/tools";
-import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
+  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 import {
   showToast,
   updateToast,

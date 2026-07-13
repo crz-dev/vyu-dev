@@ -52,8 +52,8 @@ Before creating code, find the existing owner.
 | File open / delete / navigation           | `features/file-actions/*`                             |
 | Clipboard paste intake                    | `features/file-actions/paste.ts`                      |
 | Window controls                           | `features/window/windowControls.ts`                   |
-| Context menu state                        | `features/stores/contextMenu.svelte.ts`               |
-| Menu visibility state                     | `features/stores/menuVisibility.svelte.ts`            |
+| Context menu state                        | `features/menus/contextMenu.svelte.ts`                |
+| Menu visibility state                     | `features/menus/menuVisibility.svelte.ts`             |
 | Global mouse handler                      | `features/actions/globalMouseHandler.ts`              |
 | Context actions                           | `features/actions/*`                                  |
 | Properties actions                        | `features/actions/propertiesActions.ts`               |

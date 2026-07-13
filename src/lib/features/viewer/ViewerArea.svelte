@@ -15,7 +15,7 @@
   import type { CorruptionStore } from "$lib/features/media/corruption.svelte";
   import type { SlideshowStore } from "$lib/features/media/slideshow.svelte";
   import type { MarkersStore } from "$lib/features/markers/markers.svelte";
-  import type { MenuVisibilityStore } from "$lib/features/stores/menuVisibility.svelte";
+  import type { MenuVisibilityStore } from "$lib/features/menus/menuVisibility.svelte";
   import type { SortStore } from "$lib/features/navigation/sort.svelte";
   import type { DiscScrubStore } from "$lib/features/media/scrubbing.svelte";
   import type { LoopModeStoreType } from "$lib/features/media/loopMode.svelte";

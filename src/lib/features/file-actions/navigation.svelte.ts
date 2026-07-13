@@ -7,7 +7,7 @@ import { markup } from "$lib/features/markup/markup.svelte";
 import { markerStore } from "$lib/features/markers/markers.svelte";
 import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
-import { menuStore } from "$lib/features/stores/menuVisibility.svelte";
+  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 
 import { corruption } from "$lib/features/media/corruption.svelte";
 import {
