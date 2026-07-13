@@ -4,9 +4,9 @@
 
 **A media viewer actually built for this decade — and for you.**
 
-![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078d4)
-![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)
-![License: Vyu Alpha](https://img.shields.io/badge/license-Vyu%20Alpha-blueviolet)
+![Platform: Windows](https://img.shields.io/badge/Platform-Windows-0078d4)
+![Version: Dev](https://img.shields.io/badge/Version-Dev-orange)
+![License: Vyu Dev](https://img.shields.io/badge/License-Vyu%20Dev-blueviolet)
 
 </div>
 
@@ -16,19 +16,25 @@ Vyu opens images, videos, audios, and more — with real editing, clipping, conv
 
 ## Features
 
-### Images (JPG, PNG, GIF, WebP, BMP, SVG, AVIF, HEIC/HEIF, TIFF, PSD, JXL, and 20+ RAW camera formats.)
+### Images
+
+<kbd>JPG</kbd> <kbd>PNG</kbd> <kbd>GIF</kbd> <kbd>WebP</kbd> <kbd>BMP</kbd> <kbd>SVG</kbd> <kbd>AVIF</kbd> <kbd>HEIC/HEIF</kbd> <kbd>TIFF</kbd> <kbd>PSD</kbd> <kbd>JXL</kbd> <kbd>20+ RAW</kbd>
 
 Zoom to pixel level, pan, rotate, flip. Adjust brightness, contrast, saturation, and hue with live preview. Crop with aspect-ratio presets. Full markup toolkit: draw, shapes, arrows, highlight, text. Apply edits in-place or export as a new file. Convert between formats, copy to clipboard, set as wallpaper or lock screen.
 
-### Video (MP4, WebM, MKV, AVI, MOV, WMV, MPEG, M4V, TS, M2TS.)
+### Video
 
-Frame-accurate timeline with labelled markers, A-B loop, and clip boundaries. Extract segments individually or merged. Adjust playback speed (0.25x–3x), step frame by frame, or grab the current frame as PNG. Apply edits (rotation, flip, brightness, contrast, saturation, hue), then crop and export.
+<kbd>MP4</kbd> <kbd>WebM</kbd> <kbd>MKV</kbd> <kbd>AVI</kbd> <kbd>MOV</kbd> <kbd>WMV</kbd> <kbd>MPEG</kbd> <kbd>M4V</kbd> <kbd>TS</kbd> <kbd>M2TS</kbd>
 
-### Audio (MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC.)
+Frame-accurate timeline with labelled markers, A-B loop, and clip boundaries. Extract segments individually or merged. Adjust playback speed (0.1x–3x), step frame by frame, or grab the current frame as PNG. Apply edits (rotation, flip, brightness, contrast, saturation, hue), then crop and export.
+
+### Audio
+
+<kbd>MP3</kbd> <kbd>WAV</kbd> <kbd>FLAC</kbd> <kbd>OGG</kbd> <kbd>AAC</kbd> <kbd>WMA</kbd> <kbd>M4A</kbd> <kbd>Opus</kbd> <kbd>AIFF</kbd> <kbd>ALAC</kbd>
 
 Two UI modes: Retro (vinyl disc) and Modern (cassette deck), with waveform scrubbing, markers, and clip boundaries. 10-band equalizer with per-file presets. Reverb, chorus, distortion, and pitch shift effects. Spatial audio modes: mono, stereo, surround, 8D. Filter presets: nightcore, lo-fi, 8-bit, radio. Four visualizers (pulse bars, spectrum curve, oscilloscope, particle diamonds) in floating windows. Cover art extraction.
 
-### Other (PDFs, Damaged Files)
+### Documents & recovery
 
 Page-by-page rendering via pdfjs-dist, only loads when you open a PDF. Zoom and pan, same controls as the image viewer. App attempts rebuilding of damaged and corrupted files.
 
@@ -48,7 +54,11 @@ Page-by-page rendering via pdfjs-dist, only loads when you open a PDF. Zoom and 
 
 ---
 
+<div align="center">
+
 # For developers
+
+</div>
 
 ## Design decisions
 
@@ -103,7 +113,7 @@ Dev server is pinned to port **1420** (`strictPort: true`). Make sure it's free.
 
 ## Project structure
 
-<pre style="background: #1e1e1e; color: #e0e0e0;">
+<pre style="background: #1e1e1e; color: #e0e0e0; text-align: left; display: inline-block;">
 src/                    # Frontend (Svelte + TypeScript)
 ├── routes/
 │   ├── +page.svelte    # Layout shell — wires feature modules together
@@ -135,4 +145,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Open an issue before sending a PR for 
 
 ## License
 
-Vyu is in alpha. The [Vyu Alpha License](./LICENSE) lets you read and learn from the source, but modifications, redistribution, and reuse in other projects aren't permitted yet. Moving to GPL-3.0 with the first stable release.
+This version of Vyu is in development. The [Vyu Dev License](./LICENSE) lets you read and learn from the source, but modifications, redistribution, and reuse in other projects aren't permitted yet. Moving to GPL-3.0 with the first stable release.
