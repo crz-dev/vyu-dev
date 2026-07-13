@@ -18,7 +18,7 @@
     "core:window:allow-is-fullscreen",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "**" }]
+      "allow": ["**"]
     },
     "dialog:default",
     "dialog:allow-open",

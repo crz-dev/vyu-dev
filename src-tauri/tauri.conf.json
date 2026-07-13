@@ -24,10 +24,10 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: data:; media-src 'self' asset:; style-src 'self' 'unsafe-inline'; script-src 'self' asset:; font-src 'self' data:; connect-src 'self'",
+      "csp": "default-src 'self'; img-src 'self' asset: data: http://asset.localhost https://asset.localhost; media-src 'self' asset: http://asset.localhost https://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self' asset: http://asset.localhost https://asset.localhost; font-src 'self' data:; connect-src 'self'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": ["**", "$HOME/**", "$APPDATA/**", "$TEMP/**", "$DESKTOP/**", "$DOCUMENT/**", "$PICTURE/**", "$VIDEO/**", "$MUSIC/**", "$DOWNLOAD/**"]
       }
     }
   },
