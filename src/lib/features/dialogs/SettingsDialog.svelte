@@ -1,8 +1,8 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
-  import { invokeCleanupTempFolder } from "$lib/features/media/tools";
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  import { invokeCleanupTempFolder } from "$lib/features/media/api";
+  import { showToast } from "$lib/components/toast";
   import type { LoopMode } from "$lib/shared/constants";
   import {
     loadLastDialogSection,
@@ -161,7 +161,7 @@
   }
 
   import { theme as themeStore } from "$lib/features/theme/theme.svelte";
-  import { font as fontStore } from "$lib/features/font/font.svelte";
+  import { font as fontStore } from "$lib/features/theme/font.svelte";
   import { library } from "$lib/features/library/library.svelte";
   let uiMode = $state<"simple" | "advanced">("advanced");
   let transition = $state<"none" | "fade" | "slide">("fade");

@@ -5,10 +5,10 @@ import { save } from "@tauri-apps/plugin-dialog";
 import {
   invokeGetClipboardFilePath,
   invokeCopyFile,
-} from "$lib/features/media/tools";
+} from "$lib/features/media/api";
 import { ALL_EXTS_SET } from "$lib/shared/constants";
 import { getFileExt } from "$lib/services/files";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { showToast } from "$lib/components/toast";
 
 export interface PasteDeps {
   loadFile: (path: string) => Promise<void>;

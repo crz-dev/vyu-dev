@@ -31,7 +31,7 @@
     savePlaybackSpeed,
   } from "$lib/services/storage";
   import { createFfmpegHelpers } from "$lib/features/media/ffmpeg";
-  import { invokeOpenDirectory } from "$lib/features/media/tools";
+  import { invokeOpenDirectory } from "$lib/features/media/api";
   import {
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -49,7 +49,7 @@
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
 
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  import { showToast } from "$lib/components/toast";
   import Shell from "$lib/components/Shell.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/actions/propertiesActions";
@@ -58,14 +58,14 @@
   import ApplyEditDialog from "$lib/features/dialogs/ApplyEditDialog.svelte";
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
   import { setupInit } from "$lib/services/init";
-  import { createPdf } from "$lib/features/pdf/pdf.svelte";
+  import { createPdf } from "$lib/features/viewer/pdf.svelte";
   import { corruption } from "$lib/features/media/corruption.svelte";
   import { sort } from "$lib/features/navigation/sort.svelte";
   import {
     minimizeWindow,
     maximizeWindow,
     closeWindow,
-  } from "$lib/features/window/windowControls";
+  } from "$lib/features/menus/windowControls";
   import { createFileOpenActions } from "$lib/features/file-actions/fileOpen";
   import { createNavigation } from "$lib/features/file-actions/navigation.svelte";
   import { createPanDrag } from "$lib/features/viewer/panDrag";
@@ -86,7 +86,7 @@
   import {
     editDialogStore,
     createEditActions,
-  } from "$lib/features/edit-dialogs/editActions.svelte";
+  } from "$lib/features/editing/editActions.svelte";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";

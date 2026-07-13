@@ -1,6 +1,6 @@
 // Corruption state
-import { invokeFixMedia } from "$lib/features/media/tools";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { invokeFixMedia } from "$lib/features/media/api";
+import { showToast } from "$lib/components/toast";
 
 export function createCorruption() {
   const state = $state({

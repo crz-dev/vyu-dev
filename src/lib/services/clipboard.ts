@@ -1,6 +1,6 @@
 // Clipboard operations
 import type { MediaProperties } from "$lib/shared/types";
-import { invokeCopyImageToClipboard } from "$lib/features/media/tools";
+import { invokeCopyImageToClipboard } from "$lib/features/media/api";
 
 export function showValue(v: string | undefined): string {
   return v && v.trim() ? v : "Unknown";

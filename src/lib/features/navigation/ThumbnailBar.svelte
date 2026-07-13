@@ -4,11 +4,11 @@
   import {
     invokeGetThumbnails,
     onThumbnailProgress,
-  } from "$lib/features/media/tools";
+  } from "$lib/features/media/api";
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
-  import ThumbnailGenToast from "$lib/features/thumbnails/ThumbnailGenToast.svelte";
-  import { accessibility } from "$lib/features/accessibility/accessibility.svelte";
+  import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
+  import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
   let {
     fileList,

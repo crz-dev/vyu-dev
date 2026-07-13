@@ -21,7 +21,7 @@
   import type { LoopModeStoreType } from "$lib/features/media/loopMode.svelte";
   import type { PlaybackUIStore } from "$lib/features/media/playback.svelte";
   import type { ClipsStore } from "$lib/features/media/clips.svelte";
-  import type { PdfStore } from "$lib/features/pdf/pdf.svelte";
+  import type { PdfStore } from "$lib/features/viewer/pdf.svelte";
 
   let {
     fileSrc,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { invokeRenameFile } from "$lib/features/media/tools";
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  import { invokeRenameFile } from "$lib/features/media/api";
+  import { showToast } from "$lib/components/toast";
   import { getFileName } from "$lib/services/files";
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
   import Marquee from "$lib/components/Marquee.svelte";

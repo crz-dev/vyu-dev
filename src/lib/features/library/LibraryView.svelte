@@ -26,13 +26,13 @@
     invokeCreateCollectionFolder,
     invokeDeleteCollectionFolder,
     invokeCopyFileUnique,
-  } from "$lib/features/media/tools";
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  } from "$lib/features/media/api";
+  import { showToast } from "$lib/components/toast";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import { saveLastDialogSection } from "$lib/services/storage";
   import { computeContextMenuPosition } from "$lib/services/session";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
-  import ThumbnailGenToast from "$lib/features/thumbnails/ThumbnailGenToast.svelte";
+  import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
 
   let {
     fileList,

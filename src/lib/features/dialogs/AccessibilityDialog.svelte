@@ -3,7 +3,7 @@
     loadLastDialogSection,
     saveLastDialogSection,
   } from "$lib/services/storage";
-  import { accessibility } from "$lib/features/accessibility/accessibility.svelte";
+  import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
   let {
     accessibilityOpen,

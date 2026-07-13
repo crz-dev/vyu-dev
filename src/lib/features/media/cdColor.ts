@@ -1,6 +1,6 @@
 // CD color state
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { invokeExtractCoverArt } from "$lib/features/media/tools";
+import { invokeExtractCoverArt } from "$lib/features/media/api";
 import { CD_COLORS } from "$lib/shared/constants";
 import {
   loadCdColor as dbLoadCdColor,

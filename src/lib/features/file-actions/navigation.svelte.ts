@@ -31,7 +31,7 @@ import {
   type SetMediaState,
   type SetMediaStateSetters,
 } from "./setMediaState";
-import type { PdfState } from "$lib/features/pdf/pdf.svelte";
+import type { PdfState } from "$lib/features/viewer/pdf.svelte";
 
 const PREV_DOUBLE_CLICK_MS = 1200;
 

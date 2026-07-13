@@ -3,7 +3,7 @@ import { volumeToActual } from "$lib/features/media/playback.svelte";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
 import { getFileName } from "$lib/services/files";
-import { prepareDisplayPath } from "$lib/features/media/tools";
+import { prepareDisplayPath } from "$lib/features/media/api";
 import { getFileMetadataLight } from "$lib/services/database";
 import {
   readTimestamps as lsReadTimestamps,

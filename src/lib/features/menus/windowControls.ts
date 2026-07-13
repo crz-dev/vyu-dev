@@ -1,6 +1,6 @@
 // Window controls
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { invokeCleanupTempFolder } from "$lib/features/media/tools";
+import { invokeCleanupTempFolder } from "$lib/features/media/api";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 import { fxEngine } from "$lib/features/effects/effects-engine";
 

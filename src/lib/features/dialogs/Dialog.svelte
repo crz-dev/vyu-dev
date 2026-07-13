@@ -24,7 +24,7 @@
     invokeCopyFileUnique,
     invokeDeleteFile,
     invokeIdentifySong,
-  } from "$lib/features/media/tools";
+  } from "$lib/features/media/api";
   import {
     loadShareOutputDir,
     saveShareOutputDir,
@@ -32,7 +32,7 @@
   import { library } from "$lib/features/library/library.svelte";
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
-  import { showToast, updateToast } from "$lib/features/toast/toast.svelte";
+  import { showToast, updateToast } from "$lib/components/toast";
 
   let {
     contextMenu,

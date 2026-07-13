@@ -12,8 +12,8 @@ import {
 import {
   invokeProcessVideoClips,
   invokeOpenDirectory,
-} from "$lib/features/media/tools";
-import { showToast } from "$lib/features/toast/toast.svelte";
+} from "$lib/features/media/api";
+import { showToast } from "$lib/components/toast";
 
 export interface ClipDeleteConfirmState {
   visible: boolean;

@@ -10,7 +10,7 @@ import {
   invokeCopyFileUnique,
   invokeDeleteFile,
   invokeMigrateThumbnailCache,
-} from "$lib/features/media/tools";
+} from "$lib/features/media/api";
 import {
   loadViewDensity,
   saveViewDensity,
@@ -585,14 +585,14 @@ function createLibrary() {
       }
     }
     if (successCount > 0) {
-      const { showToast } = await import("$lib/features/toast/toast.svelte");
+      const { showToast } = await import("$lib/components/toast");
       showToast({
         message: `${successCount} file${successCount === 1 ? "" : "s"} copied to collection`,
         color: "blue",
       });
     }
     if (failCount > 0) {
-      const { showToast } = await import("$lib/features/toast/toast.svelte");
+      const { showToast } = await import("$lib/components/toast");
       showToast({
         message: `Failed to copy ${failCount} file${failCount === 1 ? "" : "s"}`,
         color: "red",

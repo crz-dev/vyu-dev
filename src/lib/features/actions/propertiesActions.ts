@@ -3,10 +3,10 @@ import {
   copyPathToClipboard,
   copyAllPropertiesToClipboard,
 } from "$lib/services/clipboard";
-import { invokeOpenDirectory } from "$lib/features/media/tools";
+import { invokeOpenDirectory } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import type { MediaProperties } from "$lib/shared/types";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { showToast } from "$lib/components/toast";
 import { library } from "$lib/features/library/library.svelte";
 
 export interface PropertiesFileSnapshot {

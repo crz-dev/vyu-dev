@@ -1,5 +1,5 @@
 // Thumbnail cache
-import { invokeGetThumbnails } from "$lib/features/media/tools";
+import { invokeGetThumbnails } from "$lib/features/media/api";
 
 const cache = new Map<string, string>();
 const MAX_CACHE = 500;

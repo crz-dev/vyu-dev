@@ -1,6 +1,6 @@
 // FFmpeg utilities
 import type { MediaProperties } from "$lib/shared/types";
-import { fetchMediaProperties } from "$lib/features/media/tools";
+import { fetchMediaProperties } from "$lib/features/media/api";
 
 export async function loadMediaProperties(opts: {
   filePath: string;

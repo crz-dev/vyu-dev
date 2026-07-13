@@ -38,37 +38,36 @@ Before creating code, find the existing owner.
 | Corruption detection                      | `features/media/corruption.svelte.ts`                 |
 | FFmpeg helpers (install, ffprobe, props)  | `features/media/ffmpeg.ts`                            |
 | CD color per file                         | `features/media/cdColor.ts`                           |
-| Tauri invoke wrappers                     | `features/media/tools.ts`                             |
-| Markers                                   | `features/markers/*`                                  |
-| PDF rendering                             | `features/pdf/pdf.svelte.ts`                          |
+| Tauri invoke wrappers                     | `features/media/api.ts`                               |
+| Markers / timeline helpers                | `features/markers/*`                                  |
+| PDF rendering                             | `features/viewer/pdf.svelte.ts`                       |
 | Drawing / markup                          | `features/markup/markup.svelte.ts`                    |
 | Markup actions                            | `features/markup/markupActions.ts`                    |
-| Theme                                     | `features/theme/theme.svelte.ts`                      |
-| Accessibility                             | `features/accessibility/accessibility.svelte.ts`      |
-| Typography                                | `features/font/font.svelte.ts`                        |
+| Theme / typography                        | `features/theme/theme.svelte.ts`                      |
+| Accessibility                             | `features/menus/accessibility.svelte.ts`              |
 | Audio effects engine                      | `features/effects/effects-engine.ts`                  |
 | Equalizer                                 | `features/equalizer/*`                                |
 | Visualizer windows                        | `features/visualizer/*`                               |
 | File open / delete / navigation           | `features/file-actions/*`                             |
 | Clipboard paste intake                    | `features/file-actions/paste.ts`                      |
-| Window controls                           | `features/window/windowControls.ts`                   |
+| Window controls                           | `features/menus/windowControls.ts`                    |
 | Context menu state                        | `features/menus/contextMenu.svelte.ts`                |
 | Menu visibility state                     | `features/menus/menuVisibility.svelte.ts`             |
 | Global mouse handler                      | `features/actions/globalMouseHandler.ts`              |
 | Context actions                           | `features/actions/*`                                  |
 | Properties actions                        | `features/actions/propertiesActions.ts`               |
-| Edit/export orchestration                 | `features/edit-dialogs/*`                             |
+| Edit/export orchestration                 | `features/editing/editActions.svelte.ts`              |
 | Dialogs                                   | `features/dialogs/*`                                  |
 | Menus                                     | `features/menus/*`                                    |
-| Timeline                                  | `features/timeline/*`                                 |
+| Timeline                                  | `components/TimelineMarkers.svelte`, `markers/timeline.ts` |
 | Navigation / sort / folder watcher        | `features/navigation/*`                               |
 | Library view                              | `features/library/*`                                  |
 | Library section grouping                  | `features/library/sections.ts`                        |
-| Toasts                                    | `features/toast/*`                                    |
+| Toasts                                    | `components/toast.ts`                                 |
 | Filesystem scans / folder cache           | `services/files.ts`                                   |
 | Storage                                   | `services/storage.ts`                                 |
 | Shared thumbnail cache                    | `services/thumbnailCache.ts`                          |
-| Thumbnail generation indicator            | `features/thumbnails/*`                               |
+| Thumbnail generation indicator            | `components/ThumbnailGenToast.svelte`                 |
 | Clipboard                                 | `services/clipboard.ts`                               |
 | Filename tooltip                          | `services/filenameTooltip.ts`                         |
 | Session state                             | `services/session.ts`                                 |
@@ -77,7 +76,7 @@ Before creating code, find the existing owner.
 | Shared types                              | `shared/types.ts`                                     |
 | Keybinds                                  | `shared/keybinds.ts`                                  |
 | Media-kind detection                      | `shared/media-kind.ts`                                |
-| Shared UI primitives                      | `components/*.svelte`                                 |
+| Shared UI primitives / toast system       | `components/*`                                        |
 | File metadata formatting                  | `shared/file-meta.ts`                                 |
 | Privacy utilities                         | `shared/privacy.ts`                                   |
 | Initialization (drag-drop, paste, resume) | `services/init.ts`                                    |

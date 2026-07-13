@@ -5,8 +5,8 @@
     deleteStore,
     performMultiDelete,
   } from "$lib/features/file-actions/deleteFile.svelte";
-  import { invokeRenameFile } from "$lib/features/media/tools";
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  import { invokeRenameFile } from "$lib/features/media/api";
+  import { showToast } from "$lib/components/toast";
   import { getFileName } from "$lib/services/files";
 
   let {

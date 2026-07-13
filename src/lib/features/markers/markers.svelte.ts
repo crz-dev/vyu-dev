@@ -1,5 +1,5 @@
 // Marker state
-import { createTimeline } from "$lib/features/timeline/timeline";
+import { createTimeline } from "$lib/features/markers/timeline";
 import {
   writeTimestamps,
   deleteTimestamps,

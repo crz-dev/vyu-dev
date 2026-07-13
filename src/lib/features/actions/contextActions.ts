@@ -1,11 +1,11 @@
 // Context menu actions
-import { invokeShowInExplorer } from "$lib/features/media/tools";
+import { invokeShowInExplorer } from "$lib/features/media/api";
 import {
   copyImageToClipboard,
   copyFrameToClipboard,
   copyPathToClipboard,
 } from "$lib/services/clipboard";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { showToast } from "$lib/components/toast";
 
 export async function ctxCopyImage(opts: {
   filePath: string;

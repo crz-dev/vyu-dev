@@ -17,7 +17,7 @@
   import VisualizerMenu from "$lib/features/visualizer/VisualizerMenu.svelte";
   import SettingsDialog from "$lib/features/dialogs/SettingsDialog.svelte";
   import AccessibilityDialog from "$lib/features/dialogs/AccessibilityDialog.svelte";
-  import { accessibility } from "$lib/features/accessibility/accessibility.svelte";
+  import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";

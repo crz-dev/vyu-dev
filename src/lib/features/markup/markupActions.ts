@@ -1,9 +1,9 @@
 // Markup actions
 import { save } from "@tauri-apps/plugin-dialog";
-import { renderMarkupOnImage } from "$lib/features/media/tools";
+import { renderMarkupOnImage } from "$lib/features/media/api";
 import { getFileExt, getParentFolder } from "$lib/services/files";
 import { markup } from "./markup.svelte";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { showToast } from "$lib/components/toast";
 
 export interface MarkupActionsDeps {
   getFilePath: () => string;

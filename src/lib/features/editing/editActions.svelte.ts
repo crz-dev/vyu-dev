@@ -6,13 +6,13 @@ import { markup } from "$lib/features/markup/markup.svelte";
 import {
   exportEditedImage,
   invokeExportEditedMedia,
-} from "$lib/features/media/tools";
+} from "$lib/features/media/api";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 import {
   showToast,
   updateToast,
   dismissToast,
-} from "$lib/features/toast/toast.svelte";
+} from "$lib/components/toast";
 import {
   loadSkipApplyConfirm,
   saveSkipApplyConfirm,

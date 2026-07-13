@@ -7,7 +7,7 @@
   import Marquee from "$lib/components/Marquee.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
-  import { showToast } from "$lib/features/toast/toast.svelte";
+  import { showToast } from "$lib/components/toast";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 
   let {

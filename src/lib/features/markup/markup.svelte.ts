@@ -33,7 +33,7 @@ import {
   loadTextCustomColors,
   saveTextCustomColors,
 } from "$lib/services/storage";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { showToast } from "$lib/components/toast";
 
 export interface DrawPoint {
   x: number;

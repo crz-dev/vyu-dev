@@ -1,10 +1,10 @@
 // Delete file state
-import { invokeDeleteFile, invokeTrashFile } from "$lib/features/media/tools";
+import { invokeDeleteFile, invokeTrashFile } from "$lib/features/media/api";
 import {
   loadSkipDeleteConfirmation,
   saveSkipDeleteConfirmation,
 } from "$lib/services/storage";
-import { showToast } from "$lib/features/toast/toast.svelte";
+import { showToast } from "$lib/components/toast";
 
 export interface DeleteActionsDeps {
   getFilePath: () => string;
