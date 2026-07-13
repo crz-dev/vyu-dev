@@ -22,7 +22,7 @@ See `ARCHITECTURE.md` before creating modules, moving state, changing ownership 
 - **SvelteKit routes stay as-is.** Intentionally a single-page app. Do not add routes.
 - **FFmpeg is bundled.** gyan.dev "essentials" build ships with the installer. Backend resolves from app resources, falling back to PATH in dev mode.
 - **Top-level toolbar icons stay fixed.** Shell bar design is locked.
-- **Constants must stay in sync.** `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `shared/constants.ts` must match `*_RUST` constants in `src-tauri/src/constants.rs`.
+- **Constants must stay in sync.** `IMAGE_EXTS`, `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` in `src/lib/shared/constants.ts` must match `*_RUST` constants in `src-tauri/src/constants.rs`.
 
 ## Modification principles
 
@@ -51,6 +51,7 @@ Create a new module only when:
 
 ## Svelte / TypeScript conventions
 
+- **Reusable UI components** live in `src/lib/components/`, not in `shared/`.
 - Svelte 5 runes only — `$state`, `$derived`, `$effect`. No legacy `let`/`$:` reactivity.
 - `let` for `$state` declarations.
 - TypeScript strict mode.
@@ -92,6 +93,7 @@ Shared code:
 - `util.rs`
 - `types.rs`
 - `constants.rs`
+- `state/` — window state persistence
 
 Key constraints:
 

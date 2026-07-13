@@ -14,7 +14,7 @@ import {
   migrateFromLocalStorage,
 } from "$lib/services/database";
 import type { LoopMode } from "$lib/shared/constants";
-import { createPasteHandler } from "$lib/features/fileActions/paste";
+import { createPasteHandler } from "$lib/features/file-actions/paste";
 
 export interface InitState {
   volume: { get: () => number; set: (v: number) => void };

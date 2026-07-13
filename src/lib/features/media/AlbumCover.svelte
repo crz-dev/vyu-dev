@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Marquee from "$lib/shared/Marquee.svelte";
+  import Marquee from "$lib/components/Marquee.svelte";
 
   let {
     src = null,

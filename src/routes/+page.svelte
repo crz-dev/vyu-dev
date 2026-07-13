@@ -50,14 +50,14 @@
   import { markup } from "$lib/features/markup/markup.svelte";
 
   import { showToast } from "$lib/features/toast/toast.svelte";
-  import Shell from "$lib/shared/Shell.svelte";
+  import Shell from "$lib/components/Shell.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/actions/propertiesActions";
   import { contextMenuStore } from "$lib/features/stores/contextMenu.svelte";
   import { createGlobalMouseHandler } from "$lib/features/actions/globalMouseHandler";
   import ApplyEditDialog from "$lib/features/dialogs/ApplyEditDialog.svelte";
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
-  import { setupInit } from "./init";
+  import { setupInit } from "$lib/services/init";
   import { createPdf } from "$lib/features/pdf/pdf.svelte";
   import { corruption } from "$lib/features/media/corruption.svelte";
   import { sort } from "$lib/features/navigation/sort.svelte";
@@ -66,8 +66,8 @@
     maximizeWindow,
     closeWindow,
   } from "$lib/features/window/windowControls";
-  import { createFileOpenActions } from "$lib/features/fileActions/fileOpen";
-  import { createNavigation } from "$lib/features/fileActions/navigation.svelte";
+  import { createFileOpenActions } from "$lib/features/file-actions/fileOpen";
+  import { createNavigation } from "$lib/features/file-actions/navigation.svelte";
   import { createPanDrag } from "$lib/features/viewer/panDrag";
   import { createViewerEffects } from "$lib/features/viewer/viewerEffects.svelte";
   import { createViewerStyle } from "$lib/features/viewer/viewerStyle.svelte";
@@ -76,7 +76,7 @@
     createDeleteActions,
     performMultiDelete,
     deleteStore,
-  } from "$lib/features/fileActions/deleteFile.svelte";
+  } from "$lib/features/file-actions/deleteFile.svelte";
   import {
     menuStore,
     createMenuActions,
@@ -94,7 +94,7 @@
     buildTimelineProps,
     buildAudioMarkerProps,
     buildPlaybackProps,
-  } from "./page-props";
+  } from "$lib/shared/pageProps";
 
   let filePath = $state("");
   let fileSrc = $state("");

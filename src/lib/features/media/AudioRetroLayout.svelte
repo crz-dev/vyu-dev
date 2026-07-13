@@ -5,7 +5,7 @@
   import WaveformBar from "$lib/features/media/WaveformBar.svelte";
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
-  import Marquee from "$lib/shared/Marquee.svelte";
+  import Marquee from "$lib/components/Marquee.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
   import { showToast } from "$lib/features/toast/toast.svelte";

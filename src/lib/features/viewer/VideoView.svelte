@@ -1,7 +1,7 @@
 <script lang="ts">
   import CropOverlay from "$lib/features/editing/CropOverlay.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
-  import Controls from "$lib/shared/Controls.svelte";
+  import Controls from "$lib/components/Controls.svelte";
 
   let {
     fileSrc,

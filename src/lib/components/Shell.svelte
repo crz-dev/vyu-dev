@@ -7,9 +7,9 @@
   import {
     deleteStore,
     performMultiDelete,
-  } from "$lib/features/fileActions/deleteFile.svelte";
+  } from "$lib/features/file-actions/deleteFile.svelte";
   import Dialog from "$lib/features/dialogs/Dialog.svelte";
-  import Tooltip from "$lib/shared/Tooltip.svelte";
+  import Tooltip from "$lib/components/Tooltip.svelte";
   import EditMenu from "$lib/features/menus/EditMenu.svelte";
   import MarkupMenu from "$lib/features/menus/MarkupMenu.svelte";
   import EffectsMenu from "$lib/features/menus/EffectsMenu.svelte";
@@ -21,7 +21,7 @@
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
-  import Toast from "$lib/shared/Toast.svelte";
+  import Toast from "$lib/components/Toast.svelte";
   import { fade } from "svelte/transition";
   import type { SortMode } from "$lib/shared/constants";
   import type {

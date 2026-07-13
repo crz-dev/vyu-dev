@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Marquee from "$lib/shared/Marquee.svelte";
-  import Controls from "$lib/shared/Controls.svelte";
+  import Marquee from "$lib/components/Marquee.svelte";
+  import Controls from "$lib/components/Controls.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
   import type { SortMode } from "$lib/shared/constants";
 

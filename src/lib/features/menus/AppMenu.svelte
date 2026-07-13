@@ -3,7 +3,7 @@
   import { showToast } from "$lib/features/toast/toast.svelte";
   import { getFileName } from "$lib/services/files";
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
-  import Marquee from "$lib/shared/Marquee.svelte";
+  import Marquee from "$lib/components/Marquee.svelte";
 
   let {
     fileName,

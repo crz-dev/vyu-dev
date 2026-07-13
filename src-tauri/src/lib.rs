@@ -2,7 +2,7 @@
 mod constants;
 mod types;
 mod util;
-mod window_state;
+mod state;
 mod commands;
 mod database;
 use commands::*;
@@ -133,7 +133,7 @@ pub fn run() {
 
             let skip_save = Arc::new(AtomicBool::new(false));
 
-            window_state::restore_window_state(&window, &skip_save);
+            state::window::restore_window_state(&window, &skip_save);
 
             let window_for_events = window.clone();
             let skip_for_events = skip_save.clone();
@@ -149,12 +149,12 @@ pub fn run() {
                         }
                     };
                     if last.elapsed() > Duration::from_millis(300) {
-                        window_state::persist_window_state(&window_for_events, &skip_for_events);
+                        state::window::persist_window_state(&window_for_events, &skip_for_events);
                         *last = Instant::now();
                     }
                 }
                 WindowEvent::CloseRequested { .. } => {
-                    window_state::persist_window_state(&window_for_events, &skip_for_events);
+                    state::window::persist_window_state(&window_for_events, &skip_for_events);
                 }
                 _ => {}
             });

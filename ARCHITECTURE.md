@@ -7,7 +7,7 @@ Backend: `src-tauri/src/commands/` — one module per domain.
 Shared backend:
 
 - `util.rs`
-- `window_state.rs`
+- `state/` — window state persistence
 - `types.rs`
 - `constants.rs`
 
@@ -49,8 +49,8 @@ Before creating code, find the existing owner.
 | Audio effects engine                      | `features/effects/effects-engine.ts`                  |
 | Equalizer                                 | `features/equalizer/*`                                |
 | Visualizer windows                        | `features/visualizer/*`                               |
-| File open / delete / navigation           | `features/fileActions/*`                              |
-| Clipboard paste intake                    | `features/fileActions/paste.ts`                       |
+| File open / delete / navigation           | `features/file-actions/*`                             |
+| Clipboard paste intake                    | `features/file-actions/paste.ts`                      |
 | Window controls                           | `features/window/windowControls.ts`                   |
 | Context menu state                        | `features/stores/contextMenu.svelte.ts`               |
 | Menu visibility state                     | `features/stores/menuVisibility.svelte.ts`            |
@@ -77,13 +77,13 @@ Before creating code, find the existing owner.
 | Shared types                              | `shared/types.ts`                                     |
 | Keybinds                                  | `shared/keybinds.ts`                                  |
 | Media-kind detection                      | `shared/media-kind.ts`                                |
-| Shared UI primitives                      | `shared/*.svelte`                                     |
+| Shared UI primitives                      | `components/*.svelte`                                 |
 | File metadata formatting                  | `shared/file-meta.ts`                                 |
 | Privacy utilities                         | `shared/privacy.ts`                                   |
-| Initialization (drag-drop, paste, resume) | `routes/init.ts`                                      |
+| Initialization (drag-drop, paste, resume) | `services/init.ts`                                    |
 | Collection directory operations           | `commands/collections.rs`                             |
 | Sidecar binary execution (songrec)        | `commands/external_apps.rs`                           |
-| Window state persistence                  | `window_state.rs`                                     |
+| Window state persistence                  | `state::window`                                       |
 | Thumbnail generation, cache, dedup        | `commands/thumbnail.rs`                               |
 
 ## State pattern
