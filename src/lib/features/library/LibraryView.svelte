@@ -2085,7 +2085,7 @@
                 <!-- Non-virtualized grid (dividers on or fallback) -->
                 <div
                   class="library-grid"
-                  style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, 1fr));"
+                  style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, {gridMinCol}px));"
                 >
                   {#if library.activeTab === "favorites"}
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
