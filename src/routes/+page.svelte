@@ -213,8 +213,8 @@
   $effect(viewerFx.setVideoElEffect);
   $effect(viewerFx.resizeObserverEffect);
   $effect(viewerFx.refitOnChangeEffect);
-  $effect(
-    createPlaybackPoller({
+  $effect(() => {
+    const poller = createPlaybackPoller({
       getIsVideo: () => isVideo,
       getIsAudio: () => isAudio,
       getVideoEl: () => videoEl,
@@ -223,8 +223,13 @@
       setRawCurrentSecs: (v) => (rawCurrentSecs = v),
       setProgress: (v) => (progress = v),
       setPlaying: (v) => (playing = v),
-    }),
-  );
+    });
+    try {
+      return poller();
+    } catch (e) {
+      console.error("Playback poller effect failed:", e);
+    }
+  });
   const {
     getViewerContentSize,
     resetZoom,
@@ -582,11 +587,15 @@
     setMediaState,
   });
   $effect(() => {
-    if (filePath && isPdf && pdfContainerEl) {
-      pdf.loadFile(filePath);
-      pdf.setContainer(pdfContainerEl);
-    } else {
-      pdf.cleanup();
+    try {
+      if (filePath && isPdf && pdfContainerEl) {
+        pdf.loadFile(filePath);
+        pdf.setContainer(pdfContainerEl);
+      } else {
+        pdf.cleanup();
+      }
+    } catch (e) {
+      console.error("PDF effect failed:", e);
     }
   });
   const { openFileDialog, pickAudioFile, openConvertedFile } =

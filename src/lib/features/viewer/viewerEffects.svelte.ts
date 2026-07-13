@@ -95,20 +95,24 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        if (
-          deps.getFileSrc() &&
-          !deps.getIsVideo() &&
-          deps.getImageNaturalWidth() > 0 &&
-          deps.getImageNaturalHeight() > 0 &&
-          Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
-        ) {
-          const { width, height } = getViewerContentSize();
-          viewer.fitToScreen(
-            width,
-            height,
-            deps.getImageNaturalWidth(),
-            deps.getImageNaturalHeight(),
-          );
+        try {
+          if (
+            deps.getFileSrc() &&
+            !deps.getIsVideo() &&
+            deps.getImageNaturalWidth() > 0 &&
+            deps.getImageNaturalHeight() > 0 &&
+            Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
+          ) {
+            const { width, height } = getViewerContentSize();
+            viewer.fitToScreen(
+              width,
+              height,
+              deps.getImageNaturalWidth(),
+              deps.getImageNaturalHeight(),
+            );
+          }
+        } catch (e) {
+          console.error("resizeObserverEffect fitToScreen failed:", e);
         }
       });
     });

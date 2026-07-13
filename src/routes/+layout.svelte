@@ -14,42 +14,44 @@
   }
 
   $effect(() => {
-    const t = theme.transition;
-    if (!t.active) return;
+    try {
+      const t = theme.transition;
+      if (!t.active) return;
 
-    const el = overlayEl;
-    if (!el) return;
+      const el = overlayEl;
+      if (!el) return;
 
-    if (t.phase === "expanding") {
-      syncOverlayVars(el);
-      // Force layout, then start animation
-      el.classList.add("animating");
-      requestAnimationFrame(() => {
+      if (t.phase === "expanding") {
+        syncOverlayVars(el);
+        el.classList.add("animating");
         requestAnimationFrame(() => {
-          el.classList.add("expanding");
+          requestAnimationFrame(() => {
+            el.classList.add("expanding");
+          });
         });
-      });
 
-      // After expand duration (400ms), swap theme and fade
-      if (expandTimer) clearTimeout(expandTimer);
-      expandTimer = setTimeout(() => {
-        theme.onExpandComplete();
-      }, 400);
+        if (expandTimer) clearTimeout(expandTimer);
+        expandTimer = setTimeout(() => {
+          theme.onExpandComplete();
+        }, 400);
+      }
+
+      if (t.phase === "fading") {
+        el.classList.remove("expanding");
+        el.classList.add("fading");
+
+        setTimeout(() => {
+          el.classList.remove("animating", "expanding", "fading");
+          theme.onTransitionComplete();
+        }, 500);
+      }
+
+      return () => {
+        if (expandTimer) clearTimeout(expandTimer);
+      };
+    } catch (e) {
+      console.error("Theme transition effect failed:", e);
     }
-
-    if (t.phase === "fading") {
-      el.classList.remove("expanding");
-      el.classList.add("fading");
-
-      setTimeout(() => {
-        el.classList.remove("animating", "expanding", "fading");
-        theme.onTransitionComplete();
-      }, 500);
-    }
-
-    return () => {
-      if (expandTimer) clearTimeout(expandTimer);
-    };
   });
 </script>
 
