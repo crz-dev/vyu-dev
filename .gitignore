@@ -30,6 +30,7 @@ desktop.ini
 
 # Logs
 *.log
+tauri-dev-*.txt
 
 # TypeScript
 *.tsbuildinfo
