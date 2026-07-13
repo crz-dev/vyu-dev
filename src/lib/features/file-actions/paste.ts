@@ -8,7 +8,7 @@ import {
 } from "$lib/features/media/api";
 import { ALL_EXTS_SET } from "$lib/shared/constants";
 import { getFileExt } from "$lib/services/files";
-import { showToast } from "$lib/components/toast";
+import { showToast } from "$lib/components/toast.svelte";
 
 export interface PasteDeps {
   loadFile: (path: string) => Promise<void>;

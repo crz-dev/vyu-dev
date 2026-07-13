@@ -32,7 +32,7 @@
   import { library } from "$lib/features/library/library.svelte";
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
-  import { showToast, updateToast } from "$lib/components/toast";
+  import { showToast, updateToast } from "$lib/components/toast.svelte";
 
   let {
     contextMenu,

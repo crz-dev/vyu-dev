@@ -6,7 +6,7 @@ import {
 import { invokeOpenDirectory } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import type { MediaProperties } from "$lib/shared/types";
-import { showToast } from "$lib/components/toast";
+import { showToast } from "$lib/components/toast.svelte";
 import { library } from "$lib/features/library/library.svelte";
 
 export interface PropertiesFileSnapshot {

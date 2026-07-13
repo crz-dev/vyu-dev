@@ -8,7 +8,7 @@
   import Marquee from "$lib/components/Marquee.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
-  import { showToast } from "$lib/components/toast";
+  import { showToast } from "$lib/components/toast.svelte";
 
   let {
     fileName,

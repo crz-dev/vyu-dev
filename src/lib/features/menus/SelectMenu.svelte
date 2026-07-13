@@ -6,7 +6,7 @@
     performMultiDelete,
   } from "$lib/features/file-actions/deleteFile.svelte";
   import { invokeRenameFile } from "$lib/features/media/api";
-  import { showToast } from "$lib/components/toast";
+  import { showToast } from "$lib/components/toast.svelte";
   import { getFileName } from "$lib/services/files";
 
   let {

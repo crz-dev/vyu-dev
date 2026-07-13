@@ -5,7 +5,7 @@ import {
   copyFrameToClipboard,
   copyPathToClipboard,
 } from "$lib/services/clipboard";
-import { showToast } from "$lib/components/toast";
+import { showToast } from "$lib/components/toast.svelte";
 
 export async function ctxCopyImage(opts: {
   filePath: string;

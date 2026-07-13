@@ -4,7 +4,7 @@ import {
   loadSkipDeleteConfirmation,
   saveSkipDeleteConfirmation,
 } from "$lib/services/storage";
-import { showToast } from "$lib/components/toast";
+import { showToast } from "$lib/components/toast.svelte";
 
 export interface DeleteActionsDeps {
   getFilePath: () => string;

@@ -63,7 +63,7 @@ Before creating code, find the existing owner.
 | Navigation / sort / folder watcher        | `features/navigation/*`                               |
 | Library view                              | `features/library/*`                                  |
 | Library section grouping                  | `features/library/sections.ts`                        |
-| Toasts                                    | `components/toast.ts`                                 |
+| Toasts                                    | `components/toast.svelte.ts`                          |
 | Filesystem scans / folder cache           | `services/files.ts`                                   |
 | Storage                                   | `services/storage.ts`                                 |
 | Shared thumbnail cache                    | `services/thumbnailCache.ts`                          |

@@ -585,14 +585,14 @@ function createLibrary() {
       }
     }
     if (successCount > 0) {
-      const { showToast } = await import("$lib/components/toast");
+      const { showToast } = await import("$lib/components/toast.svelte");
       showToast({
         message: `${successCount} file${successCount === 1 ? "" : "s"} copied to collection`,
         color: "blue",
       });
     }
     if (failCount > 0) {
-      const { showToast } = await import("$lib/components/toast");
+      const { showToast } = await import("$lib/components/toast.svelte");
       showToast({
         message: `Failed to copy ${failCount} file${failCount === 1 ? "" : "s"}`,
         color: "red",

@@ -2,7 +2,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
   import { invokeCleanupTempFolder } from "$lib/features/media/api";
-  import { showToast } from "$lib/components/toast";
+  import { showToast } from "$lib/components/toast.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import {
     loadLastDialogSection,

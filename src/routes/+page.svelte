@@ -49,7 +49,7 @@
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
 
-  import { showToast } from "$lib/components/toast";
+  import { showToast } from "$lib/components/toast.svelte";
   import Shell from "$lib/components/Shell.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/actions/propertiesActions";

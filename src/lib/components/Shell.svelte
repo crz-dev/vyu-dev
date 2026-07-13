@@ -21,7 +21,7 @@
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
-  import Toast from "$lib/components/Toast.svelte";
+  import ToastStack from "$lib/components/ToastStack.svelte";
   import { fade } from "svelte/transition";
   import type { SortMode } from "$lib/shared/constants";
   import type {
@@ -852,7 +852,7 @@
     {fixReplace}
   />
 
-  <Toast />
+  <ToastStack />
 
   <EditMenu
     visible={editMenuVisible}

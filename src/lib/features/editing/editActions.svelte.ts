@@ -12,7 +12,7 @@ import {
   showToast,
   updateToast,
   dismissToast,
-} from "$lib/components/toast";
+} from "$lib/components/toast.svelte";
 import {
   loadSkipApplyConfirm,
   saveSkipApplyConfirm,

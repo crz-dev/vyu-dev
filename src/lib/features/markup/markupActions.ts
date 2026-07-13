@@ -3,7 +3,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { renderMarkupOnImage } from "$lib/features/media/api";
 import { getFileExt, getParentFolder } from "$lib/services/files";
 import { markup } from "./markup.svelte";
-import { showToast } from "$lib/components/toast";
+import { showToast } from "$lib/components/toast.svelte";
 
 export interface MarkupActionsDeps {
   getFilePath: () => string;

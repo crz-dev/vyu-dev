@@ -27,7 +27,7 @@
     invokeDeleteCollectionFolder,
     invokeCopyFileUnique,
   } from "$lib/features/media/api";
-  import { showToast } from "$lib/components/toast";
+  import { showToast } from "$lib/components/toast.svelte";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import { saveLastDialogSection } from "$lib/services/storage";
   import { computeContextMenuPosition } from "$lib/services/session";
