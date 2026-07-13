@@ -1720,6 +1720,33 @@
     </div>
   {/if}
 
+  {#if library.activeTab === "library" && !libraryDirPath}
+    <div class="library-collection-header">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><rect x="3" y="3" width="7" height="7" /><rect
+          x="14"
+          y="3"
+          width="7"
+          height="7"
+        /><rect x="14" y="14" width="7" height="7" /><rect
+          x="3"
+          y="14"
+          width="7"
+          height="7"
+        /></svg
+      >
+      <span class="library-breadcrumb-segment active">Library</span>
+    </div>
+  {/if}
+
   {#if library.activeTab === "library" && libraryDirPath}
     <div class="library-collection-header">
       {#if libraryBreadcrumb.length > 0}
