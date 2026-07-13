@@ -1,5 +1,5 @@
 // Slideshow state
-import { isPdf, isTimedMedia } from "$lib/shared/mediaKind";
+import { isPdf, isTimedMedia, isVideo, isAudio } from "$lib/shared/mediaKind";
 
 export type SlideshowOrder = "next" | "shuffle";
 export type SlideshowVideoMode = "skip" | "full";
@@ -59,8 +59,22 @@ export function createSlideshow() {
   function getNextIndex(fileList: string[], currentIndex: number): number {
     if (fileList.length <= 1) return 0;
     if (order === "shuffle") {
+      for (let offset = 1; offset < fileList.length; offset++) {
+        const pos = (shufflePos + offset) % shuffledIndices.length;
+        const idx = shuffledIndices[pos];
+        if (!isPdf(fileList[idx]) && !isAudio(fileList[idx]) && !(isVideo(fileList[idx]) && videoMode === "skip")) {
+          shufflePos = pos;
+          return idx;
+        }
+      }
       shufflePos = (shufflePos + 1) % shuffledIndices.length;
       return shuffledIndices[shufflePos];
+    }
+    for (let offset = 1; offset < fileList.length; offset++) {
+      const idx = (currentIndex + offset) % fileList.length;
+      if (!isPdf(fileList[idx]) && !isAudio(fileList[idx]) && !(isVideo(fileList[idx]) && videoMode === "skip")) {
+        return idx;
+      }
     }
     return (currentIndex + 1) % fileList.length;
   }
@@ -107,6 +121,7 @@ export function createSlideshow() {
     if (timed && videoMode === "full") {
       const mediaEl = bound.getMediaEl();
       if (mediaEl) {
+        mediaEl.loop = false;
         clearVideoListener();
         const handler = () => {
           clearVideoListener();
@@ -148,9 +163,22 @@ export function createSlideshow() {
     const fileList = bound.getFileList();
     const currentIndex = bound.getCurrentIndex();
     if (fileList.length === 0) return;
+
+    // Skip past files that would be skipped (PDFs, audio always; video only in "skip" mode)
+    let targetIndex = currentIndex;
+    for (let i = 0; i < fileList.length; i++) {
+      const path = fileList[targetIndex];
+      const document = isPdf(path);
+      if (!document && !isAudio(path) && !(isVideo(path) && videoMode === "skip")) break;
+      targetIndex = (targetIndex + 1) % fileList.length;
+    }
+    if (targetIndex !== currentIndex) {
+      bound.advanceFn(targetIndex);
+    }
+
     active = true;
     paused = false;
-    if (order === "shuffle") buildShuffle(fileList, currentIndex);
+    if (order === "shuffle") buildShuffle(fileList, targetIndex);
     schedule();
   }
 
