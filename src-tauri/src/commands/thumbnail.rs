@@ -38,7 +38,7 @@ pub fn thumb_cache_dir(app: &tauri::AppHandle) -> &Path {
     })
 }
 
-/// Scaled JPEG decode
+// Scaled JPEG decode
 fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage, String> {
     let ext = path
         .extension()
@@ -69,7 +69,7 @@ fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage,
         .ok_or_else(|| "JPEG decode produced invalid buffer".into())
 }
 
-/// Encode + write thumbnail
+// Encode + write thumbnail
 fn encode_and_save_thumbnail(
     img: &image::DynamicImage,
     thumb_path: &Path,
@@ -178,7 +178,7 @@ fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<S
     Ok(None)
 }
 
-/// Extract embedded JPEG preview from RAW file
+// Extract embedded JPEG preview from RAW file
 fn try_extract_raw_preview(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
     let stream_idx = crate::util::find_embedded_jpeg_stream(path);
     let idx = match stream_idx {
@@ -209,7 +209,7 @@ fn try_extract_raw_preview(path: &str, thumb_path: &Path) -> Result<Option<Strin
     )
 }
 
-/// FFmpeg thumbnail
+// FFmpeg thumbnail
 fn thumbnail_via_ffmpeg(
     path: &str,
     thumb_path: &Path,
@@ -265,7 +265,7 @@ fn thumbnail_via_ffmpeg(
     }
 }
 
-/// Complementary size for dual generation (120 ↔ 256)
+// Complementary size for dual generation (120 ↔ 256)
 fn complementary_thumb_size(size: u32) -> Option<u32> {
     if size == THUMB_SHORT_SIDE {
         Some(256)
@@ -276,7 +276,7 @@ fn complementary_thumb_size(size: u32) -> Option<u32> {
     }
 }
 
-/// Inner thumbnail logic shared by single and batch commands
+// Inner thumbnail logic shared by single and batch commands
 async fn thumbnail_for_path(
     _app: &tauri::AppHandle,
     state: &ThumbState,
@@ -493,7 +493,7 @@ pub async fn get_thumbnails(
     Ok(results)
 }
 
-/// Record cache entry
+// Record cache entry
 fn record_cache_write(written_bytes: u64, cache_dir: &Path) {
     let prev = CACHE_USED.fetch_add(written_bytes, Ordering::AcqRel);
     if prev == u64::MAX {
@@ -517,7 +517,7 @@ fn record_cache_write(written_bytes: u64, cache_dir: &Path) {
     }
 }
 
-/// Cache folder size
+// Cache folder size
 fn compute_cache_size(cache_dir: &Path) -> u64 {
     let Ok(entries) = fs::read_dir(cache_dir) else {
         return 0;
@@ -531,7 +531,7 @@ fn compute_cache_size(cache_dir: &Path) -> u64 {
     total
 }
 
-/// Evict oldest entries
+// Evict oldest entries
 fn try_evict_cache(cache_dir: &Path) {
     let Ok(entries) = fs::read_dir(cache_dir) else {
         return;

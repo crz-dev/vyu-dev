@@ -7,7 +7,7 @@ import type {
   BatchStatItem,
 } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
-import { isBrowserUnsupportedImage, needsRemux } from "$lib/shared/media-kind";
+import { isBrowserUnsupportedImage, needsRemux } from "$lib/shared/mediaKind";
 import type { EditSnapshot } from "$lib/features/editing/editing.svelte";
 import type {
   DrawStroke,

@@ -10,7 +10,7 @@ use crate::constants::{
 };
 use crate::util::{ffmpeg_command, ffprobe_command, hash_path_xxh3, resolve_output_path, unique_path};
 
-/// Write PSD file
+// Write PSD file — binary header follows the PSD spec (magic "8BPS", version 1, RGB color mode, 8-bit channel)
 fn write_psd_flat(path: &Path, width: u32, height: u32, rgb: &[u8]) -> Result<(), String> {
     let mut f = fs::File::create(path).map_err(|e| format!("Failed to create PSD: {e}"))?;
 
@@ -52,7 +52,7 @@ fn write_psd_flat(path: &Path, width: u32, height: u32, rgb: &[u8]) -> Result<()
     Ok(())
 }
 
-/// Convert for browser
+// Convert for browser
 fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
     let ext = PathBuf::from(path)
         .extension()

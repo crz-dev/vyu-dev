@@ -113,7 +113,8 @@ pub fn unique_path(path: PathBuf) -> PathBuf {
         .unwrap_or_else(|| Path::new("."))
         .to_path_buf();
 
-    // Exponential probe: 1, 2, 4, 8, ... then binary search
+    // Exponential probe (1, 2, 4, 8…) finds upper bound, then binary search narrows to first gap
+    // Avoids O(n) scan when many numbered suffixes already exist
     let mut i = 1u64;
     let mut high: Option<u64> = None;
     while i <= 10000 {

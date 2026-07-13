@@ -5,7 +5,7 @@ import {
   saveEqSettings as dbSaveEqSettings,
 } from "$lib/services/database";
 import { loadEqSettings, saveEqSettings } from "$lib/services/storage";
-import { BAND_FREQUENCIES } from "./band-config";
+import { BAND_FREQUENCIES } from "./bandConfig";
 
 export interface EqState {
   bands: number[];

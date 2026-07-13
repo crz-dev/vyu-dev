@@ -152,7 +152,7 @@
     );
   }
 
-  /** Arrowhead size in CSS px — scales with thickness. */
+  // Arrowhead size in CSS px — scales with thickness.
   function arrowSize(thickness: number) {
     return Math.max(10, thickness * 4);
   }
@@ -484,7 +484,7 @@
     ctx.restore();
   }
 
-  /** Estimate text width in CSS px (capped by char count × font size). */
+  // Estimate text width in CSS px (capped by char count × font size).
   function estimateTextWidth(t: PlacedText, w: number, h: number): number {
     const fontSize = t.fontSize;
     const text = t.text || "";
@@ -494,7 +494,7 @@
     return Math.max(computed, fontSize * 1.5); // minimum width for empty hit area
   }
 
-  /** Get the bounding rect for a PlacedText in CSS px coords. Uses ctx for precision if available, falls back to estimate. */
+  // Get the bounding rect for a PlacedText in CSS px coords. Uses ctx for precision if available, falls back to estimate.
   function getTextBbox(
     t: PlacedText,
     w: number,
@@ -585,7 +585,7 @@
     ctx.restore();
   }
 
-  /** Compute text handle positions in CSS px. Requires a canvas context for measurement. */
+  // Compute text handle positions in CSS px. Requires a canvas context for measurement.
   function getTextHandlePositions(
     t: PlacedText,
     w: number,
@@ -613,7 +613,7 @@
     };
   }
 
-  /** Returns which text handle is within HIT_RADIUS CSS px of (px, py), or null. */
+  // Returns which text handle is within HIT_RADIUS CSS px of (px, py), or null.
   function hitTestTextHandle(
     t: PlacedText,
     w: number,
@@ -807,7 +807,7 @@
     ctx.globalAlpha = 1;
   }
 
-  /** Find the topmost shape under the given normalized point, or null. */
+  // Find the topmost shape under the given normalized point, or null.
   function findShapeAtPoint(nx: number, ny: number): number | null {
     const strokesArr = markup.strokes;
     for (let i = strokesArr.length - 1; i >= 0; i--) {
@@ -821,7 +821,7 @@
 
   // ── Transform handle helpers ─────────────────────────
 
-  /** Compute handle positions in local (unrotated) shape space. */
+  // Compute handle positions in local (unrotated) shape space.
   function getHandlePositions(s: PlacedShape, w: number, h: number) {
     const cx = s.cx * w;
     const cy = s.cy * h;
@@ -924,7 +924,7 @@
     ctx.restore();
   }
 
-  /** Returns which handle is within HIT_RADIUS CSS px of (px, py), or null. */
+  // Returns which handle is within HIT_RADIUS CSS px of (px, py), or null.
   const HIT_RADIUS = 10;
 
   function hitTestHandle(
@@ -1001,7 +1001,7 @@
     return null;
   }
 
-  /** Check if normalized point (nx, ny) is inside the shape's bounding box, accounting for rotation. */
+  // Check if normalized point (nx, ny) is inside the shape's bounding box, accounting for rotation.
   function isInsideShapeBounds(s: PlacedShape, nx: number, ny: number) {
     const halfW = s.width / 2;
     const halfH = s.height / 2;
@@ -1479,7 +1479,7 @@
     redrawAll();
   }
 
-  /** Find the topmost text box under the given normalized point, or null. */
+  // Find the topmost text box under the given normalized point, or null.
   function findTextAtPoint(nx: number, ny: number): number | null {
     const strokesArr = markup.strokes;
     // Get a temporary context for measurement

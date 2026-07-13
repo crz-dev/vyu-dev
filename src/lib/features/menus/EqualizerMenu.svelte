@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
-  import { formatFreq, formatDb } from "$lib/features/equalizer/band-config";
+  import { formatFreq, formatDb } from "$lib/features/equalizer/bandConfig";
 
   let {
     visible,

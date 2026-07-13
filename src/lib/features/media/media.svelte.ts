@@ -16,9 +16,9 @@ import {
   isPdf as pathIsPdf,
   isBrowserUnsupportedImage,
   needsRemux,
-} from "$lib/shared/media-kind";
+} from "$lib/shared/mediaKind";
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
-import { formatMetaDate, getMetaValue } from "$lib/shared/file-meta";
+import { formatMetaDate, getMetaValue } from "$lib/shared/fileMeta";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 import { fxEngine } from "$lib/features/effects/effects-engine";
 import { library } from "$lib/features/library/library.svelte";

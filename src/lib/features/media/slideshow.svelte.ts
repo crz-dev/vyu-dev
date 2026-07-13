@@ -1,5 +1,5 @@
 // Slideshow state
-import { isPdf, isTimedMedia } from "$lib/shared/media-kind";
+import { isPdf, isTimedMedia } from "$lib/shared/mediaKind";
 
 export type SlideshowOrder = "next" | "shuffle";
 export type SlideshowVideoMode = "skip" | "full";

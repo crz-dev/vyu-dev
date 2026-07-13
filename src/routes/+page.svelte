@@ -901,7 +901,7 @@
     handleGlobalMouseDown,
   });
 
-  // Load EQ settings on file change and connect video element
+  // EQ settings + video EQ on file change
   $effect(() => {
     const path = filePath;
     if (!path) return;
@@ -920,7 +920,7 @@
     }
   });
 
-  // Also connect video element when it becomes available after mount
+  // Video element EQ after mount
   $effect(() => {
     const el = videoEl;
     if (el && filePath && isVideo) {
@@ -932,7 +932,7 @@
     }
   });
 
-  // Bypass EQ during scrubbing to prevent AudioContext/decoder interaction
+  // Bypass EQ during scrubbing
   let scrubbingEqBypassed = $state(false);
   $effect(() => {
     if (isScrubbing) {

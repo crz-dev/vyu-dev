@@ -1,5 +1,5 @@
 // Playback helpers
-import { isAudio } from "$lib/shared/media-kind";
+import { isAudio } from "$lib/shared/mediaKind";
 import type { MediaState } from "./media.svelte";
 
 export function createOnMediaEnded(deps: {
