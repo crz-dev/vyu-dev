@@ -5,8 +5,8 @@
 **A media viewer actually built for this decade — and for you.**
 
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078d4)
-![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)
-![License: Vyu Alpha](https://img.shields.io/badge/license-Vyu%20Alpha-blueviolet)
+![Status: Dev](https://img.shields.io/badge/status-dev-blue)
+![License: Vyu Dev](https://img.shields.io/badge/license-Vyu%20Dev-blueviolet)
 
 </div>
 
@@ -153,4 +153,4 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Open an issue before sending a PR for 
 
 ## License
 
-Vyu is in alpha. The [Vyu Alpha License](./LICENSE) lets you read and learn from the source, but modifications, redistribution, and reuse in other projects aren't permitted yet. Moving to GPL-3.0 with the first stable release.
+Vyu is in development. The [Vyu Dev License](./LICENSE) lets you read and learn from the source, but modifications, redistribution, and reuse in other projects aren't permitted yet. Moving to GPL-3.0 with the first stable release.

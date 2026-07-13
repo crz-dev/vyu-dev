@@ -4,14 +4,14 @@ Thanks for your interest in Vyu! Here's how things work.
 
 ## License Status
 
-Vyu is currently in **alpha**. The repository is made public for transparency and
+Vyu is currently in **development**. The repository is made public for transparency and
 visibility, but it is **not yet open source**:
 
 - **Copyright:** © crz-dev. All rights reserved.
 - **Name, icon, and branding:** The name "Vyu" and the project's icons and visual
   identity are trademarks of crz-dev and may not be used without permission.
 - **Code:** You may read the source for personal reference, but copying,
-  modifying, redistributing, or building on it is **not** permitted during alpha.
+  modifying, redistributing, or building on it is **not** permitted during development.
 
 At the first stable release, this project will be relicensed under **GPL-3.0**.
 Until that release, the proprietary terms in `LICENSE` apply.

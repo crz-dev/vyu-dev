@@ -1,10 +1,10 @@
 Copyright (c) 2026 crz-dev. All rights reserved.
 
 ================================================================================
-                              VYU — ALPHA LICENSE
-================================================================================
+                               VYU — DEV LICENSE
+===============================================================================
 
-Vyu is currently in alpha. This license governs use of the project until the
+Vyu is currently in development. This license governs use of the project until the
 first stable release. At that point, this file will be replaced with the full
 text of the GNU General Public License, version 3 (GPL-3.0).
 
@@ -12,7 +12,7 @@ text of the GNU General Public License, version 3 (GPL-3.0).
 1. GRANT OF RIGHTS — VIEWING ONLY
 --------------------------------------------------------------------------------
 
-During the alpha period, the source code in this repository is made available
+During the development period, the source code in this repository is made available
 solely for the purpose of personal viewing and reference. You may:
 
   - Read, download, and clone the repository for personal inspection.
@@ -46,7 +46,7 @@ You may NOT, without prior written permission from crz-dev:
   - Imply endorsement, affiliation, sponsorship, or origin from crz-dev or
     the Vyu project.
 
-This restriction applies during the alpha period and survives any later
+This restriction applies during the development period and survives any later
 relicensing of the source code under GPL-3.0: the trademark and branding
 terms are independent of, and not granted by, any later open-source license.
 
@@ -72,7 +72,7 @@ At the first stable release of Vyu, the source code in this repository will
 be released under the GNU General Public License, version 3 (GPL-3.0). When
 that happens, this file will be replaced with the full GPL-3.0 license text.
 
-Sections 1 and 2 of this Alpha License continue to apply to:
+Sections 1 and 2 of this Dev License continue to apply to:
   - The name "Vyu" and all related marks (Section 2).
   - The icons, artwork, and other visual identity elements (Section 2).
   - Any version of the source code published prior to the first stable
