@@ -83,10 +83,15 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
       if (pendingTime !== null) {
         const elapsed = Date.now() - lastSeekTime;
         if (elapsed >= SEEK_THROTTLE_MS) {
-          const t = pendingTime;
-          pendingTime = null;
-          lastSeekTime = Date.now();
-          doSeek(t);
+          // Defer by one frame so the decoder gets idle time between seeks
+          requestAnimationFrame(() => {
+            if (pendingTime !== null && !seekInProgress) {
+              const t = pendingTime;
+              pendingTime = null;
+              lastSeekTime = Date.now();
+              doSeek(t);
+            }
+          });
         }
       }
     };
@@ -141,7 +146,19 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
         deps.setRawCurrentSecs(pendingTime);
         deps.setProgress((pendingTime / mediaEl!.duration) * 100);
       }
-      if (wasPlaying) mediaEl!.play().catch(() => {});
+      // Gate play() behind seeked completion — calling play() while a seek
+      // is in flight can crash the decoder (white frame, frozen progress)
+      if (wasPlaying) {
+        if (pendingTime !== null) {
+          const onSeekedOnce = () => {
+            mediaEl!.removeEventListener("seeked", onSeekedOnce);
+            mediaEl!.play().catch(() => {});
+          };
+          mediaEl!.addEventListener("seeked", onSeekedOnce);
+        } else {
+          mediaEl!.play().catch(() => {});
+        }
+      }
     }
 
     window.addEventListener("mousemove", onMouseMove);
@@ -180,10 +197,14 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
       if (pendingTime !== null) {
         const elapsed = Date.now() - lastSeekTime;
         if (elapsed >= SEEK_THROTTLE_MS) {
-          const t = pendingTime;
-          pendingTime = null;
-          lastSeekTime = Date.now();
-          doSeek(t);
+          requestAnimationFrame(() => {
+            if (pendingTime !== null && !seekInProgress) {
+              const t = pendingTime;
+              pendingTime = null;
+              lastSeekTime = Date.now();
+              doSeek(t);
+            }
+          });
         }
       }
     };
@@ -233,7 +254,17 @@ export function createScrubbingActions(deps: ScrubbingDeps) {
         deps.setRawCurrentSecs(pendingTime);
         deps.setProgress((pendingTime / audioEl!.duration) * 100);
       }
-      if (wasPlaying) audioEl!.play().catch(() => {});
+      if (wasPlaying) {
+        if (pendingTime !== null) {
+          const onSeekedOnce = () => {
+            audioEl!.removeEventListener("seeked", onSeekedOnce);
+            audioEl!.play().catch(() => {});
+          };
+          audioEl!.addEventListener("seeked", onSeekedOnce);
+        } else {
+          audioEl!.play().catch(() => {});
+        }
+      }
       discScrubStore.discScrubHandlers.onScrubMove = () => {};
       discScrubStore.discScrubHandlers.onScrubEnd = () => {};
     };

@@ -911,28 +911,21 @@
   });
 
   // EQ settings + video EQ on file change
+  let lastLoadedPath = "";
   $effect(() => {
     const path = filePath;
+    const el = videoEl;
     if (!path) return;
 
-    eqStore
-      .loadForFile(path)
-      .catch((e) => console.error("Failed to load EQ settings:", e));
-    effectsStore.loadForFile(path);
-
-    if (isVideo && videoEl) {
-      try {
-        eqEngine.connectMediaElement(videoEl);
-      } catch (e) {
-        console.error("Failed to connect EQ to video element:", e);
-      }
+    if (path !== lastLoadedPath) {
+      lastLoadedPath = path;
+      eqStore
+        .loadForFile(path)
+        .catch((e) => console.error("Failed to load EQ settings:", e));
+      effectsStore.loadForFile(path);
     }
-  });
 
-  // Video element EQ after mount
-  $effect(() => {
-    const el = videoEl;
-    if (el && filePath && isVideo) {
+    if (isVideo && el) {
       try {
         eqEngine.connectMediaElement(el);
       } catch (e) {

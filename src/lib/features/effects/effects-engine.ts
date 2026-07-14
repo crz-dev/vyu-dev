@@ -744,10 +744,7 @@ class EffectsEngine {
     this.activeFilter = null;
     this.initialized = false;
 
-    this.pendingCleanup = setTimeout(() => {
-      this.pendingCleanup = null;
-      this.cleanupOrphaned();
-    }, 50);
+    this.cleanupOrphaned();
   }
 
   async reconnect(ctx: AudioContext): Promise<void> {

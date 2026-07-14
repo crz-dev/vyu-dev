@@ -176,11 +176,9 @@ class EqualizerEngine {
     this.stageNodes = [];
     this.stageMode = null;
 
-    // Allow the 30ms gain ramp to complete before tearing down the filter chain.
-    this.pendingCleanup = setTimeout(() => {
-      this.pendingCleanup = null;
-      this.cleanupOrphaned();
-    }, 50);
+    this.source = null;
+    this.sourceElement = null;
+    this.cleanupOrphaned();
   }
 
   private cancelPendingCleanup(): void {

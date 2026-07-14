@@ -22,24 +22,28 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
     if (!mediaEl) return;
 
     let rafId: number;
+    let wasScrubbing = false;
 
     function poll() {
       const el = mediaEl;
       if (!el) return;
 
       try {
-        if (!deps.getIsScrubbing()) {
+        const isScrubbing = deps.getIsScrubbing();
+        if (!isScrubbing) {
           const t = el.currentTime;
           const d = el.duration || 0;
           deps.setRawCurrentSecs(t);
           deps.setProgress(d > 0 ? (t / d) * 100 : 0);
 
-          // AB loop enforcement
+          // Skip AB loop for one frame after scrubbing ends to avoid
+          // racing with the final seek dispatched on mouseUp
           const ab = markerStore.abLoopRegion;
-          if (ab && t >= ab.end) {
+          if (ab && !wasScrubbing && t >= ab.end) {
             el.currentTime = ab.start;
           }
         }
+        wasScrubbing = isScrubbing;
       } catch {
         // Decoder may be in a bad state — keep polling to maintain RAF chain
       }
