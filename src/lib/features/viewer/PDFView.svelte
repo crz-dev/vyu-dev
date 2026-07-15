@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import type { FindHighlight } from "./pdf.svelte";
 
   let {
@@ -90,7 +91,7 @@
   aria-label="PDF viewer"
 >
   {#if findOpen}
-    <div class="pdf-find-bar">
+    <div class="pdf-find-bar" transition:fly={{ y: -20, duration: 180, opacity: 0.08 }}>
       <input
         type="text"
         placeholder="Find in document\u2026"

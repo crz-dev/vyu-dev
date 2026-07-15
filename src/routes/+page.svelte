@@ -663,6 +663,18 @@
   function handleKeydown(e: KeyboardEvent) {
     configuredKeydown(e);
   }
+  // Intercept Ctrl+F in capture phase to prevent WebView2's built-in find
+  $effect(() => {
+    function captureCtrlF(e: KeyboardEvent) {
+      if (e.ctrlKey && (e.key === "f" || e.key === "F")) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isPdf) pdf.toggleFind();
+      }
+    }
+    window.addEventListener("keydown", captureCtrlF, { capture: true });
+    return () => window.removeEventListener("keydown", captureCtrlF, { capture: true });
+  });
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();

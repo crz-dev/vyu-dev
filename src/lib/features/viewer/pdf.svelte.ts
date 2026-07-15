@@ -424,9 +424,9 @@ export function createPdf() {
             const matchW = (lowerQuery.length / item.str.length) * item.w;
             pageRects.push({
               left: (item.x + ratio * item.w) * scale,
-              top: (pageH - item.y - item.h) * scale,
+              top: (pageH - item.y - item.h * 0.75) * scale,
               width: matchW * scale,
-              height: item.h * scale,
+              height: item.h * 1.15 * scale,
             });
             idx += lowerQuery.length;
           }
