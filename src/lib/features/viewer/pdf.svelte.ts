@@ -272,10 +272,10 @@ export function createPdf() {
         if (result.status === "fulfilled") {
           const pdfPage = result.value;
           const vp = pdfPage.getViewport({ scale: 1 });
-          pages[i].pageHeight = vp.height;
-          pages[i].width = vp.width;
-          pages[i].height = vp.height;
-          const canvas = pages[i].canvasRef;
+          state.pages[i].pageHeight = vp.height;
+          state.pages[i].width = vp.width;
+          state.pages[i].height = vp.height;
+          const canvas = state.pages[i].canvasRef;
           if (canvas) {
             const cssW = vp.width * state.scale;
             const cssH = vp.height * state.scale;
@@ -338,11 +338,14 @@ export function createPdf() {
 
   function scrollToPage(pageNum: number) {
     if (!pdfContainerEl) return;
-    const page = state.pages.find((p) => p.pageNum === pageNum);
-    if (!page?.canvasRef) return;
-    const wrapper = page.canvasRef.closest(".pdf-page-wrapper") as HTMLElement | null;
-    if (!wrapper) return;
-    wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+    const SEP = 25;
+    const FALLBACK = 800;
+    let top = 0;
+    for (const p of state.pages) {
+      if (p.pageNum >= pageNum) break;
+      top += (p.height > 0 ? p.height : FALLBACK) * state.scale + SEP;
+    }
+    pdfContainerEl.scrollTo({ top, behavior: "smooth" });
   }
 
   function prevPage() {
