@@ -123,6 +123,18 @@
     return findHighlights.find((h) => h.pageNum === pageNum);
   }
 
+  function onPdfKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+    if (e.key === 'ArrowUp') { e.preventDefault(); prevPage(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); nextPage(); }
+  }
+
+  $effect(() => {
+    document.addEventListener('keydown', onPdfKeydown);
+    return () => document.removeEventListener('keydown', onPdfKeydown);
+  });
+
   let pageThumbUrls: Record<number, string> = $state({});
 
   $effect(() => {

@@ -414,12 +414,12 @@ export function createPdf() {
 
   function prevPage() {
     const next = Math.max(1, state.currentPage - 1);
-    scrollToPage(next);
+    centerPage(next);
   }
 
   function nextPage() {
     const next = Math.min(state.pageCount, state.currentPage + 1);
-    scrollToPage(next);
+    centerPage(next);
   }
 
   let findItemsCache: Map<number, { str: string; x: number; y: number; w: number; h: number }[]> = new Map();
