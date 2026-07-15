@@ -1865,9 +1865,14 @@
                 {#each DRAW_COLORS as color, i}
                   <button
                     class="markup-color-swatch"
-                    class:active={markup.textColor === color}
+                    class:active={markup.textBgEnabled
+                      ? markup.textBgColor === color
+                      : markup.textColor === color}
                     style="background: {color}"
-                    onclick={() => markup.setTextColor(color)}
+                    onclick={() =>
+                      markup.textBgEnabled
+                        ? markup.setTextBgColor(color)
+                        : markup.setTextColor(color)}
                     aria-label={`Color ${i + 1}`}
                   ></button>
                 {/each}
@@ -1877,7 +1882,9 @@
                   <label
                     class="markup-color-swatch"
                     class:markup-color-swatch-empty={!color}
-                    class:active={markup.textColor === color && color !== ""}
+                    class:active={(markup.textBgEnabled
+                      ? markup.textBgColor
+                      : markup.textColor) === color && color !== ""}
                     style={color ? `background: ${color}` : ""}
                     aria-label={`Custom color ${i + 1}`}
                     oncontextmenu={(e) => {
@@ -1890,10 +1897,9 @@
                       type="color"
                       value={color || "#000000"}
                       oninput={(e) => {
-                        markup.setTextCustomColor(
-                          i,
-                          (e.target as HTMLInputElement).value,
-                        );
+                        const val = (e.target as HTMLInputElement).value;
+                        markup.setTextCustomColor(i, val);
+                        if (markup.textBgEnabled) markup.setTextBgColor(val);
                       }}
                       class="markup-color-native-input"
                     />
