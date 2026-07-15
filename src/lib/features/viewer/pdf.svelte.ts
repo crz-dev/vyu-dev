@@ -34,6 +34,8 @@ export interface PdfState {
   findMatchPages: number[];
   findHighlights: FindHighlight[];
   showPagePanel: boolean;
+  pdfVersion: string;
+  pdfPageSize: string;
 }
 
 const RENDER_DEBOUNCE_MS = 60;
@@ -56,6 +58,8 @@ export function createPdf() {
     findMatchPages: [],
     findHighlights: [],
     showPagePanel: false,
+    pdfVersion: "",
+    pdfPageSize: "",
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
@@ -290,6 +294,19 @@ export function createPdf() {
         }
       }
 
+      if (numPages > 0) {
+        const w = state.pages[0].width;
+        const h = state.pages[0].pageHeight;
+        state.pdfPageSize = `${Math.round(w)} × ${Math.round(h)} pt`;
+      }
+      try {
+        const meta = await pdfDoc.getMetadata();
+        const info = meta.info as Record<string, unknown> | undefined;
+        if (info?.PDFFormatVersion) {
+          state.pdfVersion = String(info.PDFFormatVersion);
+        }
+      } catch { /* ignore */ }
+
       setupObserver();
 
       if (observer) {
@@ -340,6 +357,8 @@ export function createPdf() {
     findItemsCache.clear();
     findPageHeights.clear();
     state.showPagePanel = false;
+    state.pdfVersion = "";
+    state.pdfPageSize = "";
     pageThumbnailCache.clear();
   }
 

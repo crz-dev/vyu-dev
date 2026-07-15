@@ -46,6 +46,9 @@
     isVideo,
     isAudio,
     isPdf,
+    pdfPageCount,
+    pdfVersion,
+    pdfPageSize,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -225,6 +228,9 @@
     isVideo: boolean;
     isAudio: boolean;
     isPdf: boolean;
+    pdfPageCount: number;
+    pdfVersion: string;
+    pdfPageSize: string;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -789,6 +795,9 @@
     {isVideo}
     {isAudio}
     {isPdf}
+    {pdfPageCount}
+    {pdfVersion}
+    {pdfPageSize}
     {timestamps}
     {clipBoundaries}
     {resumePoint}
