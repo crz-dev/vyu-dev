@@ -87,6 +87,9 @@ export function createPdf() {
         if (page.canvasRef) observer.observe(page.canvasRef);
       }
     }
+    if (state.findQuery) {
+      findText(state.findQuery);
+    }
   }
 
   function scheduleRender(pdfPage: PDFPageProxy, page: PdfPage) {
