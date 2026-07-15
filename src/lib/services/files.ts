@@ -93,12 +93,12 @@ async function sortFileList(
 }
 
 export function typeRank(ext: string): number {
+  if (DOCUMENT_EXTS.includes(ext)) return 0;
   if (ext === "gif") return 2;
   if (IMAGE_EXTS.includes(ext)) return 1;
   if (VIDEO_EXTS.includes(ext)) return 3;
   if (AUDIO_EXTS.includes(ext)) return 4;
-  if (DOCUMENT_EXTS.includes(ext)) return 5;
-  return 6;
+  return 5;
 }
 
 function getExt(filePath: string): string {

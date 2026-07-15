@@ -171,3 +171,11 @@ export function ctxShare(opts: {
   opts.closeContextMenu();
   opts.setShareOpen(true);
 }
+
+export function ctxSearchPdf(opts: {
+  toggleFindBar: () => void;
+  closeContextMenu: () => void;
+}) {
+  opts.closeContextMenu();
+  opts.toggleFindBar();
+}

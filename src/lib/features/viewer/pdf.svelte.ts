@@ -1,5 +1,6 @@
 // PDF rendering
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { setCached } from "$lib/services/thumbnailCache";
 import type {
   PDFDocumentProxy,
   PDFPageProxy,
@@ -11,6 +12,12 @@ export interface PdfPage {
   rendered: boolean;
   width: number;
   height: number;
+  pageHeight: number;
+}
+
+export interface FindHighlight {
+  pageNum: number;
+  rects: { left: number; top: number; width: number; height: number }[];
 }
 
 export interface PdfState {
@@ -20,6 +27,12 @@ export interface PdfState {
   currentPage: number;
   loading: boolean;
   error: string;
+  findOpen: boolean;
+  findQuery: string;
+  findResults: number;
+  findCurrentIdx: number;
+  findMatchPages: number[];
+  findHighlights: FindHighlight[];
 }
 
 const RENDER_DEBOUNCE_MS = 60;
@@ -35,6 +48,12 @@ export function createPdf() {
     currentPage: 1,
     loading: false,
     error: "",
+    findOpen: false,
+    findQuery: "",
+    findResults: 0,
+    findCurrentIdx: 0,
+    findMatchPages: [],
+    findHighlights: [],
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
@@ -42,6 +61,7 @@ export function createPdf() {
   let renderTimers: Map<number, ReturnType<typeof setTimeout>> = new Map();
   let pdfContainerEl: HTMLElement | null = null;
   let scrollHandler: ((e: Event) => void) | null = null;
+  let currentFilePath = "";
   let disposed = false;
 
   function setContainer(el: HTMLElement | null) {
@@ -104,6 +124,19 @@ export function createPdf() {
       await pdfPage.render({ canvasContext: ctx, viewport }).promise;
       page.rendered = true;
       updateCurrentPage();
+      if (page.pageNum === 1 && currentFilePath) {
+        try {
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          setCached(currentFilePath, 120, dataUrl);
+          window.dispatchEvent(
+            new CustomEvent("vyu-pdf-thumbnail-ready", {
+              detail: { path: currentFilePath, dataUrl },
+            }),
+          );
+        } catch {
+          // thumbnail caching is non-critical
+        }
+      }
     } catch (err) {
       console.error(`Failed to render PDF page ${page.pageNum}:`, err);
     }
@@ -116,7 +149,7 @@ export function createPdf() {
     let closest = state.currentPage;
     let closestDist = Infinity;
     for (const page of state.pages) {
-      if (!page.canvasRef || !page.rendered) continue;
+      if (!page.canvasRef) continue;
       const rect = page.canvasRef.getBoundingClientRect();
       const dist = Math.abs(rect.top - containerTop);
       if (dist < closestDist) {
@@ -164,6 +197,7 @@ export function createPdf() {
   async function loadFile(path: string): Promise<void> {
     cleanup();
     disposed = false;
+    currentFilePath = path;
     state.loading = true;
     state.error = "";
     state.pages = [];
@@ -217,19 +251,40 @@ export function createPdf() {
           rendered: false,
           width: 0,
           height: 0,
+          pageHeight: 0,
         });
       }
       state.pages = pages;
       state.loading = false;
       clearTimeout(timeoutId);
 
-      // Wait for page promises to resolve before setting up observer
-      await Promise.allSettled(pagePromises);
+      // Wait for page promises to resolve
+      const pageResults = await Promise.allSettled(pagePromises);
 
-      // Defer observer setup so DOM has a chance to bind canvas refs
+      // Store viewport heights and pre-set canvas dimensions so DOM layout is correct
+      // even for pages not yet rendered
       await new Promise((r) =>
         requestAnimationFrame(() => requestAnimationFrame(r)),
       );
+
+      for (let i = 0; i < numPages; i++) {
+        const result = pageResults[i];
+        if (result.status === "fulfilled") {
+          const pdfPage = result.value;
+          const vp = pdfPage.getViewport({ scale: 1 });
+          pages[i].pageHeight = vp.height;
+          pages[i].width = vp.width;
+          pages[i].height = vp.height;
+          const canvas = pages[i].canvasRef;
+          if (canvas) {
+            const cssW = vp.width * state.scale;
+            const cssH = vp.height * state.scale;
+            canvas.style.width = `${cssW}px`;
+            canvas.style.height = `${cssH}px`;
+          }
+        }
+      }
+
       setupObserver();
 
       if (observer) {
@@ -271,6 +326,14 @@ export function createPdf() {
     state.loading = false;
     state.error = "";
     state.scale = 1.0;
+    state.findOpen = false;
+    state.findQuery = "";
+    state.findResults = 0;
+    state.findCurrentIdx = 0;
+    state.findMatchPages = [];
+    state.findHighlights = [];
+    findItemsCache.clear();
+    findPageHeights.clear();
   }
 
   function scrollToPage(pageNum: number) {
@@ -279,12 +342,7 @@ export function createPdf() {
     if (!page?.canvasRef) return;
     const wrapper = page.canvasRef.closest(".pdf-page-wrapper") as HTMLElement | null;
     if (!wrapper) return;
-    const containerRect = pdfContainerEl.getBoundingClientRect();
-    const wrapperRect = wrapper.getBoundingClientRect();
-    pdfContainerEl.scrollBy({
-      top: wrapperRect.top - containerRect.top,
-      behavior: "smooth",
-    });
+    wrapper.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function prevPage() {
@@ -295,6 +353,117 @@ export function createPdf() {
   function nextPage() {
     const next = Math.min(state.pageCount, state.currentPage + 1);
     scrollToPage(next);
+  }
+
+  let findItemsCache: Map<number, { str: string; x: number; y: number; w: number; h: number }[]> = new Map();
+  let findPageHeights: Map<number, number> = new Map();
+
+  function toggleFind() {
+    state.findOpen = !state.findOpen;
+    if (!state.findOpen) {
+      state.findQuery = "";
+      state.findResults = 0;
+      state.findCurrentIdx = 0;
+      state.findMatchPages = [];
+      state.findHighlights = [];
+      findItemsCache.clear();
+      findPageHeights.clear();
+    }
+  }
+
+  async function findText(query: string) {
+    if (!query || !pdfDoc || disposed) {
+      state.findResults = 0;
+      state.findMatchPages = [];
+      state.findHighlights = [];
+      return;
+    }
+    state.findQuery = query;
+    state.findResults = 0;
+    state.findMatchPages = [];
+    state.findHighlights = [];
+    const lowerQuery = query.toLowerCase();
+    const scale = state.scale;
+
+    for (let i = 1; i <= state.pageCount; i++) {
+      try {
+        let items = findItemsCache.get(i);
+        let pageH = findPageHeights.get(i);
+        if (items === undefined || pageH === undefined) {
+          const page = await pdfDoc.getPage(i);
+          const vp = page.getViewport({ scale: 1 });
+          pageH = vp.height;
+          findPageHeights.set(i, pageH);
+          const content = await page.getTextContent();
+          items = [];
+          for (const item of content.items) {
+            if ("str" in item) {
+              const t = item as { str: string; transform: number[]; width: number; height: number };
+              items.push({
+                str: t.str,
+                x: t.transform[4],
+                y: t.transform[5],
+                w: t.width,
+                h: t.height || 12,
+              });
+            }
+          }
+          findItemsCache.set(i, items);
+        }
+        const pageRects: { left: number; top: number; width: number; height: number }[] = [];
+        let pageCount = 0;
+        for (const item of items) {
+          const lower = item.str.toLowerCase();
+          let idx = 0;
+          while ((idx = lower.indexOf(lowerQuery, idx)) !== -1) {
+            pageCount++;
+            const ratio = idx / item.str.length;
+            const matchW = (lowerQuery.length / item.str.length) * item.w;
+            pageRects.push({
+              left: (item.x + ratio * item.w) * scale,
+              top: (pageH - item.y - item.h) * scale,
+              width: matchW * scale,
+              height: item.h * scale,
+            });
+            idx += lowerQuery.length;
+          }
+        }
+        if (pageCount > 0) {
+          state.findMatchPages.push(i);
+          state.findResults += pageCount;
+          state.findHighlights.push({ pageNum: i, rects: pageRects });
+        }
+      } catch {
+        // skip failed pages
+      }
+    }
+    state.findCurrentIdx = state.findResults > 0 ? 1 : 0;
+    if (state.findMatchPages.length > 0) {
+      scrollToPage(state.findMatchPages[0]);
+    }
+  }
+
+  async function findNext() {
+    if (state.findResults === 0 || state.findMatchPages.length === 0) return;
+    const idx = state.findCurrentIdx;
+    const matchPageIdx = state.findMatchPages.findIndex(
+      (p) => p >= state.currentPage,
+    );
+    const targetIdx = matchPageIdx >= 0 ? matchPageIdx : 0;
+    const targetPageIdx = (targetIdx + 1) % state.findMatchPages.length;
+    state.findCurrentIdx = Math.min(state.findCurrentIdx + 1, state.findResults);
+    scrollToPage(state.findMatchPages[targetPageIdx]);
+  }
+
+  async function findPrev() {
+    if (state.findResults === 0 || state.findMatchPages.length === 0) return;
+    const matchPageIdx = state.findMatchPages.findIndex(
+      (p) => p >= state.currentPage,
+    );
+    const targetIdx =
+      matchPageIdx > 0 ? matchPageIdx - 1 : state.findMatchPages.length - 1;
+    state.findCurrentIdx = Math.max(state.findCurrentIdx - 1, 1);
+    scrollToPage(state.findMatchPages[targetIdx]);
   }
 
   return {
@@ -309,5 +478,9 @@ export function createPdf() {
     scrollToPage,
     prevPage,
     nextPage,
+    toggleFind,
+    findText,
+    findNext,
+    findPrev,
   };
 }

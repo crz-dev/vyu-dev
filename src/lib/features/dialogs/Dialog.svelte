@@ -54,6 +54,7 @@
     ctxShowInExplorer,
     ctxProperties,
     ctxShare,
+    ctxSearchPdf,
     ctxEdit,
     ctxMarkup,
     ctxEffects,
@@ -125,6 +126,7 @@
     ctxShowInExplorer: () => void;
     ctxProperties: () => void;
     ctxShare: () => void;
+    ctxSearchPdf: () => void;
     ctxEdit: () => void;
     ctxMarkup: () => void;
     ctxEffects: () => void;
@@ -650,7 +652,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Copy page as image
+          Copy page
         </button>
         <button
           class="ctx-item green"
@@ -700,68 +702,50 @@
         <div class="ctx-sep"></div>
         <button
           class="ctx-item blue"
-          onclick={openInDefaultApp}
+          onclick={ctxSearchPdf}
           role="menuitem"
           style="animation-delay: 110ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+            ><circle
+              cx="11"
+              cy="11"
+              r="8"
               stroke="currentColor"
               stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><polyline
-              points="15 3 21 3 21 9"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
             /><line
-              x1="10"
-              y1="14"
-              x2="21"
-              y2="3"
+              x1="21"
+              y1="21"
+              x2="16.65"
+              y2="16.65"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-              stroke-linejoin="round"
             /></svg
           >
-          Open in default viewer
+          Search
         </button>
         <button
           class="ctx-item blue"
-          onclick={printPdf}
+          onclick={ctxMarkup}
           role="menuitem"
           style="animation-delay: 165ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="6 9 6 2 18 2 18 9"
+            ><path
+              d="M12 20h9"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
-              stroke-linejoin="round"
             /><path
-              d="M6 12H4a2 2 0 00-2 2v4a2 2 0 002 2h16a2 2 0 002-2v-4a2 2 0 00-2-2h-2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /><rect
-              x="6"
-              y="14"
-              width="12"
-              height="8"
-              rx="1"
+              d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
             /></svg
           >
-          Print
+          Markup
         </button>
         <div class="ctx-sep"></div>
         <button

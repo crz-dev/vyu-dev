@@ -1446,7 +1446,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .thumbnail-video-icon,
 .thumbnail-gif-icon,
-.thumbnail-audio-icon {
+.thumbnail-audio-icon,
+.thumbnail-pdf-badge {
   position: absolute;
   bottom: 3px;
   right: 3px;

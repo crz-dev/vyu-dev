@@ -516,6 +516,97 @@
   }
 }
 
+/* ── PDF find bar ──────────────────────────────────────── */
+.pdf-find-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+.pdf-find-input {
+  width: 160px;
+  font-size: 12px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  outline: none;
+}
+.pdf-find-input:focus {
+  border-color: var(--accent);
+}
+.pdf-find-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+.pdf-find-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  padding: 0;
+}
+.pdf-find-btn:hover {
+  background: var(--bg-primary);
+}
+.pdf-find-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pdf-find-close {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+}
+.pdf-find-close:hover {
+  color: var(--text-primary);
+}
+.pdf-highlight-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.pdf-highlight-rect {
+  position: absolute;
+  background: rgba(255, 230, 0, 0.35);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
 /* ── PDF viewer ─────────────────────────────────────────── */
 .pdf-viewer {
   width: 100%;
@@ -537,6 +628,7 @@
   display: flex;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
 }
 .pdf-canvas {
   display: block;
@@ -616,17 +708,22 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
-.pdf-zoom-reset {
-  width: auto;
-  padding: 0 10px;
-  font-size: 11px;
-}
 .pdf-zoom-label {
   font-size: 12px;
   color: var(--text-muted);
   font-family: var(--font-family);
   min-width: 38px;
   text-align: center;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+.pdf-zoom-label:hover {
+  background: var(--bg-elevated);
+  border-color: var(--bg-border);
 }
 .pdf-page-nav {
   display: flex;
@@ -643,6 +740,28 @@
   white-space: nowrap;
   min-width: 36px;
   text-align: center;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: transparent;
+  transition: background 0.2s, border-color 0.2s;
+}
+.pdf-page-count:hover {
+  background: var(--bg-elevated);
+  border-color: var(--bg-border);
+}
+.pdf-page-input {
+  width: 48px;
+  font-size: 11px;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  text-align: center;
+  outline: none;
 }
 
 .props-dialog {

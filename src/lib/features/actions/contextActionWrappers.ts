@@ -5,6 +5,7 @@ import {
   ctxCopyFrame,
   ctxCopyPath,
   ctxCopyPdfPage,
+  ctxSearchPdf,
   ctxShowInExplorer,
   ctxRotate,
   ctxFlip,
@@ -21,6 +22,7 @@ import { loadMediaProperties } from "$lib/features/media/ffmpeg";
 export interface ContextActionDeps {
   filePath: () => string;
   videoEl: () => HTMLVideoElement | null;
+  togglePdfFindBar: () => void;
   pdfRightClickedCanvas: () => HTMLCanvasElement | null;
   closeContextMenu: () => void;
   editing: { pushUndo: () => void };
@@ -126,6 +128,12 @@ export function createContextActionFns(deps: ContextActionDeps) {
       setShareOpen: deps.setShareOpen,
     });
   }
+  function ctxSearchPdfFn() {
+    ctxSearchPdf({
+      toggleFindBar: deps.togglePdfFindBar,
+      closeContextMenu: deps.closeContextMenu,
+    });
+  }
   const ctxDelete = () => deps.deleteActions.ctxDelete(deps.closeContextMenu);
 
   return {
@@ -143,6 +151,7 @@ export function createContextActionFns(deps: ContextActionDeps) {
     ctxEqualizerFn,
     ctxPropertiesFn,
     ctxShareFn,
+    ctxSearchPdfFn,
     ctxDelete,
   };
 }

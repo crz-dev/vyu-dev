@@ -246,6 +246,8 @@ fn thumbnail_via_ffmpeg(
             // No waveform fallback — placeholder icon shown by frontend
             _ => Ok(None),
         }
+    } else if kind.is_document {
+        generate_ffmpeg_image_frame(path, thumb_path, size)
     } else {
         return Err("Unsupported media type for thumbnail".into());
     };
@@ -288,10 +290,6 @@ async fn thumbnail_for_path(
     let kind = MediaKind::from_ext(&ext);
 
     if !kind.is_image && !kind.is_video && !kind.is_audio && !kind.is_document {
-        return Ok(String::new());
-    }
-
-    if kind.is_document {
         return Ok(String::new());
     }
 

@@ -184,6 +184,7 @@
     ctxEqualizer,
     ctxShowInExplorer,
     ctxProperties,
+    ctxSearchPdf,
     ctxShare,
     ctxDelete,
     ctxClearMarkers,
@@ -362,6 +363,7 @@
     ctxEqualizer: () => void;
     ctxShowInExplorer: () => void;
     ctxProperties: () => void;
+    ctxSearchPdf: () => void;
     ctxShare: () => void;
     ctxDelete: () => void;
     ctxClearMarkers: () => void;
@@ -826,6 +828,7 @@
     {ctxEqualizer}
     {ctxShowInExplorer}
     {ctxProperties}
+    {ctxSearchPdf}
     {ctxShare}
     {ctxDelete}
     {ctxClearMarkers}

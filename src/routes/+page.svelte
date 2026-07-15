@@ -748,10 +748,12 @@
     ctxEqualizerFn,
     ctxPropertiesFn,
     ctxShareFn,
+    ctxSearchPdfFn,
     ctxDelete,
   } = createContextActionFns({
     filePath: () => filePath,
     videoEl: () => videoEl,
+    togglePdfFindBar: () => pdf.toggleFind(),
     pdfRightClickedCanvas: () => pdfRightClickedCanvas,
     closeContextMenu,
     editing,
@@ -1079,6 +1081,7 @@
   ctxShowInExplorer={ctxShowInExplorerFn}
   ctxProperties={ctxPropertiesFn}
   ctxShare={ctxShareFn}
+  ctxSearchPdf={ctxSearchPdfFn}
   ctxClearMarkers={ctxClearMarkersFn}
   clipDeleteConfirm={clips.clipDeleteConfirm}
   deleteConfirm={deleteStore.deleteConfirm}

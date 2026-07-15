@@ -302,6 +302,16 @@
         setScale={pdf.setScale}
         prevPage={pdf.prevPage}
         nextPage={pdf.nextPage}
+        scrollToPage={pdf.scrollToPage}
+        findOpen={pdf.state.findOpen}
+        findQuery={pdf.state.findQuery}
+        findResults={pdf.state.findResults}
+        findCurrentIdx={pdf.state.findCurrentIdx}
+        findHighlights={pdf.state.findHighlights}
+        toggleFind={pdf.toggleFind}
+        findText={pdf.findText}
+        findNext={pdf.findNext}
+        findPrev={pdf.findPrev}
       />
     {:else if fileSrc && isAudio}
       <AudioPlayer

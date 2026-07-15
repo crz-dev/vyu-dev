@@ -280,6 +280,19 @@
     }
   });
 
+  // Listen for PDF thumbnail readiness events from the PDF viewer
+  $effect(() => {
+    function onPdfThumbnail(e: Event) {
+      const { path, dataUrl } = (e as CustomEvent).detail;
+      if (!loaded.has(path)) {
+        loaded = new Map([...loaded, [path, dataUrl]]);
+      }
+    }
+    window.addEventListener("vyu-pdf-thumbnail-ready", onPdfThumbnail);
+    return () =>
+      window.removeEventListener("vyu-pdf-thumbnail-ready", onPdfThumbnail);
+  });
+
   function handleClick(index: number) {
     if (index === currentIndex) return;
     onSelect(index);
@@ -326,7 +339,17 @@
         onclick={() => handleClick(item.index)}
         aria-label="Open file"
       >
-        {#if item.isPdf}
+        {#if loaded.has(item.path)}
+          <img
+            src={loaded.get(item.path)}
+            alt=""
+            width={ITEM_W}
+            height={ITEM_W}
+            style="object-fit: cover;"
+            decoding="async"
+            draggable="false"
+          />
+        {:else if item.isPdf}
           <div class="thumbnail-pdf-icon">
             <svg
               width="18"
@@ -344,16 +367,6 @@
               <line x1="12" y1="13" x2="12" y2="18" />
             </svg>
           </div>
-        {:else if loaded.has(item.path)}
-          <img
-            src={loaded.get(item.path)}
-            alt=""
-            width={ITEM_W}
-            height={ITEM_W}
-            style="object-fit: cover;"
-            decoding="async"
-            draggable="false"
-          />
         {:else}
           <div
             class="thumb-placeholder"
@@ -396,6 +409,24 @@
               <path
                 d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
               />
+            </svg>
+          </div>
+        {/if}
+
+        {#if item.isPdf && loaded.has(item.path)}
+          <div class="thumbnail-pdf-badge">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
           </div>
         {/if}
