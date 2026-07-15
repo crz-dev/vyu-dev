@@ -664,7 +664,7 @@
 .pdf-page-panel {
   position: fixed;
   left: 0;
-  top: 42px;
+  top: 36px;
   bottom: 0;
   width: 200px;
   background: var(--bg-secondary);
@@ -704,7 +704,8 @@
   padding: 0;
 }
 .pdf-page-panel-close:hover {
-  color: var(--text-primary);
+  color: var(--red);
+  background: var(--red-bg-faint);
 }
 .pdf-page-panel-list {
   flex: 1;

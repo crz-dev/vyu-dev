@@ -189,7 +189,7 @@
   {#if showPagePanel}
     <div class="pdf-page-panel" transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}>
       <div class="pdf-page-panel-header">
-        <span class="pdf-page-panel-title">Pages</span>
+        <span class="pdf-page-panel-title">Pages index</span>
         <button class="pdf-page-panel-close" onclick={togglePagePanel}>✕</button>
       </div>
       <div class="pdf-page-panel-list">
