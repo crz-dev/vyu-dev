@@ -136,6 +136,7 @@
     {#each pages as page, i}
       <div class="pdf-page-wrapper">
         <canvas bind:this={page.canvasRef} class="pdf-canvas"></canvas>
+        <button class="pdf-page-label" onclick={() => scrollToPage(i + 1)} aria-label="Go to page {i + 1}">{i + 1}</button>
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(i + 1)}
           {#if hl}

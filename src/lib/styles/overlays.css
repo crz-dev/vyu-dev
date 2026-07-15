@@ -630,6 +630,29 @@
   flex-shrink: 0;
   position: relative;
 }
+.pdf-page-label {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  translate: 0 -50%;
+  margin-right: 8px;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--bg-border);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.3;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+.pdf-page-label:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
 .pdf-canvas {
   display: block;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
