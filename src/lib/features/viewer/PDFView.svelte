@@ -14,6 +14,7 @@
     prevPage,
     nextPage,
     scrollToPage,
+    centerPage,
     findOpen,
     findQuery,
     findResults,
@@ -27,6 +28,10 @@
     togglePagePanel,
     getPageThumbnail,
     preloadAllThumbnails,
+    toggleFullscreen,
+    isFullscreen,
+    fsControlsVisible,
+    resetFsTimer,
   }: {
     pdfContainerEl: HTMLElement | null;
     loading: boolean;
@@ -39,6 +44,7 @@
     prevPage: () => void;
     nextPage: () => void;
     scrollToPage: (page: number) => void;
+    centerPage: (page: number) => void;
     findOpen: boolean;
     findQuery: string;
     findResults: number;
@@ -52,6 +58,10 @@
     togglePagePanel: () => void;
     getPageThumbnail: (page: number) => Promise<string>;
     preloadAllThumbnails: () => Promise<void>;
+    toggleFullscreen: () => void;
+    isFullscreen: boolean;
+    fsControlsVisible: boolean;
+    resetFsTimer: () => void;
   } = $props();
 
   let editingPage = $state(false);
@@ -113,9 +123,11 @@
 
 <div
   class="pdf-viewer"
+  class:fullscreen={isFullscreen}
   bind:this={pdfContainerEl}
-  role="region"
-  aria-label="PDF viewer"
+  role="presentation"
+  onscroll={isFullscreen ? resetFsTimer : undefined}
+  onclick={isFullscreen ? resetFsTimer : undefined}
 >
   {#if findOpen}
     <div class="pdf-find-bar" transition:fly={{ y: -20, duration: 180, opacity: 0.08 }}>
@@ -187,7 +199,7 @@
   {:else}
     {#each pages as page, i}
       <div class="pdf-page-wrapper">
-        <canvas bind:this={page.canvasRef} class="pdf-canvas"></canvas>
+        <canvas bind:this={page.canvasRef} class="pdf-canvas" onclick={() => centerPage(i + 1)} ondblclick={toggleFullscreen}></canvas>
         <button class="pdf-page-label" onclick={togglePagePanel} aria-label="Open page panel">{i + 1}</button>
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(i + 1)}
@@ -209,7 +221,10 @@
     {/each}
   {/if}
 </div>
-<div class="pdf-zoom-controls">
+<div
+  class="pdf-zoom-controls"
+  style={isFullscreen && !fsControlsVisible ? 'opacity: 0; pointer-events: none;' : ''}
+>
   <button
     class="pdf-zoom-btn"
     onclick={() => setScale(scale - 0.25)}

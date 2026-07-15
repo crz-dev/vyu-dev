@@ -519,7 +519,7 @@
 /* ── PDF find bar ──────────────────────────────────────── */
 .pdf-find-bar {
   position: absolute;
-  top: 12px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -531,6 +531,9 @@
   padding: 6px 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   z-index: 10;
+}
+.pdf-viewer.fullscreen .pdf-find-bar {
+  top: 46px;
 }
 .pdf-find-input {
   width: 160px;
@@ -616,7 +619,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px 0;
   scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -799,7 +801,7 @@
 /* ── PDF zoom controls ──────────────────────────────────── */
 .pdf-zoom-controls {
   position: absolute;
-  bottom: 12px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -811,6 +813,10 @@
   padding: 6px 12px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   z-index: 10;
+  transition: opacity 0.25s ease;
+}
+.pdf-viewer.fullscreen + .pdf-zoom-controls {
+  bottom: 46px;
 }
 .pdf-zoom-btn {
   width: 28px;

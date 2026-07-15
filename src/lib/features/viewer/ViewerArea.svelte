@@ -303,6 +303,7 @@
         prevPage={pdf.prevPage}
         nextPage={pdf.nextPage}
         scrollToPage={pdf.scrollToPage}
+        centerPage={pdf.centerPage}
         findOpen={pdf.state.findOpen}
         findQuery={pdf.state.findQuery}
         findResults={pdf.state.findResults}
@@ -316,6 +317,10 @@
         togglePagePanel={pdf.togglePagePanel}
         getPageThumbnail={pdf.getPageThumbnail}
         preloadAllThumbnails={pdf.preloadAllThumbnails}
+        toggleFullscreen={toggleFullscreen}
+        isFullscreen={viewer.state.isFullscreen}
+        fsControlsVisible={viewer.state.fsControlsVisible}
+        resetFsTimer={viewer.resetFsTimer}
       />
     {:else if fileSrc && isAudio}
       <AudioPlayer
@@ -411,6 +416,7 @@
   fsControlsVisible={viewer.state.fsControlsVisible}
   tsEditMenuVisible={markerStore.tsEditMenu.visible}
   {isAudio}
+  {isPdf}
   {fileName}
   {handleViewerScroll}
   drawActive={markup.drawActive}

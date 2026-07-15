@@ -391,6 +391,24 @@ export function createPdf() {
     pdfContainerEl.scrollTo({ top, behavior: "smooth" });
   }
 
+  function centerPage(pageNum: number) {
+    if (!pdfContainerEl) return;
+    const SEP = 25;
+    const FALLBACK = 800;
+    let pageTop = 0;
+    let pageH = 0;
+    for (const p of state.pages) {
+      if (p.pageNum === pageNum) {
+        pageH = (p.height > 0 ? p.height : FALLBACK) * state.scale;
+        break;
+      }
+      pageTop += (p.height > 0 ? p.height : FALLBACK) * state.scale + SEP;
+    }
+    const viewH = pdfContainerEl.clientHeight;
+    const top = pageTop - (viewH - pageH) / 2;
+    pdfContainerEl.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
   function prevPage() {
     const next = Math.max(1, state.currentPage - 1);
     scrollToPage(next);
@@ -522,6 +540,7 @@ export function createPdf() {
     setScale,
     clampScale,
     scrollToPage,
+    centerPage,
     prevPage,
     nextPage,
     toggleFind,

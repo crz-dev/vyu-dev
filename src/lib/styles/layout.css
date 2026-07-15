@@ -213,6 +213,9 @@ main {
   box-sizing: border-box;
   position: relative;
 }
+.viewer:has(.pdf-viewer) {
+  padding: 0;
+}
 
 main:not(.fullscreen).thumbnail-bar-open .viewer {
   padding-bottom: 98px;
