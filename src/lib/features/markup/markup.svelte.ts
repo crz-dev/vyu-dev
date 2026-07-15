@@ -713,7 +713,7 @@ function createMarkupStore() {
     ) {
       selectedIndex = null;
     }
-    showToast({ message: "Stroke undone", color: "blue" });
+    showToast({ message: "Markup undone", color: "blue" });
   }
 
   function deleteSelectedShape() {

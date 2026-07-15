@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { showToast } from "$lib/components/toast.svelte";
   import {
     markup,
     DRAW_COLORS,
@@ -488,6 +489,7 @@
             }
             resetConfirming = false;
             markup.clearAllStrokes();
+            showToast({ message: "Markups reset", color: "red" });
           } else {
             resetConfirming = true;
             resetConfirmTimeout = setTimeout(() => {
@@ -859,6 +861,7 @@
                   }
                   clearAllConfirming = false;
                   markup.clearAllStrokes();
+                  showToast({ message: "Markups reset", color: "red" });
                 } else {
                   clearAllConfirming = true;
                   clearAllConfirmTimeout = setTimeout(() => {
