@@ -312,6 +312,10 @@
         findText={pdf.findText}
         findNext={pdf.findNext}
         findPrev={pdf.findPrev}
+        showPagePanel={pdf.state.showPagePanel}
+        togglePagePanel={pdf.togglePagePanel}
+        getPageThumbnail={pdf.getPageThumbnail}
+        preloadAllThumbnails={pdf.preloadAllThumbnails}
       />
     {:else if fileSrc && isAudio}
       <AudioPlayer

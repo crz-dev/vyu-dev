@@ -23,6 +23,10 @@
     findText,
     findNext,
     findPrev,
+    showPagePanel,
+    togglePagePanel,
+    getPageThumbnail,
+    preloadAllThumbnails,
   }: {
     pdfContainerEl: HTMLElement | null;
     loading: boolean;
@@ -44,6 +48,10 @@
     findText: (q: string) => void;
     findNext: () => void;
     findPrev: () => void;
+    showPagePanel: boolean;
+    togglePagePanel: () => void;
+    getPageThumbnail: (page: number) => Promise<string>;
+    preloadAllThumbnails: () => Promise<void>;
   } = $props();
 
   let editingPage = $state(false);
@@ -82,6 +90,25 @@
   function getHighlightsForPage(pageNum: number): FindHighlight | undefined {
     return findHighlights.find((h) => h.pageNum === pageNum);
   }
+
+  let pageThumbUrls: Record<number, string> = $state({});
+
+  $effect(() => {
+    if (!showPagePanel) {
+      pageThumbUrls = {};
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      for (let i = 1; i <= pageCount && !cancelled; i++) {
+        const url = await getPageThumbnail(i);
+        if (url && !cancelled) {
+          pageThumbUrls = { ...pageThumbUrls, [i]: url };
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  });
 </script>
 
 <div
@@ -125,6 +152,31 @@
     </div>
   {/if}
 
+  {#if showPagePanel}
+    <div class="pdf-page-panel" transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}>
+      <div class="pdf-page-panel-header">
+        <span class="pdf-page-panel-title">Pages</span>
+        <button class="pdf-page-panel-close" onclick={togglePagePanel}>✕</button>
+      </div>
+      <div class="pdf-page-panel-list">
+        {#each pages as page, i}
+          <button
+            class="pdf-page-panel-item"
+            class:active={currentPage === i + 1}
+            onclick={() => { scrollToPage(i + 1); }}
+          >
+            {#if pageThumbUrls[i + 1]}
+              <img src={pageThumbUrls[i + 1]} alt="" class="pdf-page-panel-thumb" />
+            {:else}
+              <div class="pdf-page-panel-placeholder"></div>
+            {/if}
+            <span class="pdf-page-panel-num">{i + 1}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   {#if loading}
     <div class="pdf-loading">
       <div class="pdf-spinner"></div>
@@ -136,7 +188,7 @@
     {#each pages as page, i}
       <div class="pdf-page-wrapper">
         <canvas bind:this={page.canvasRef} class="pdf-canvas"></canvas>
-        <button class="pdf-page-label" onclick={() => scrollToPage(i + 1)} aria-label="Go to page {i + 1}">{i + 1}</button>
+        <button class="pdf-page-label" onclick={togglePagePanel} aria-label="Open page panel">{i + 1}</button>
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(i + 1)}
           {#if hl}

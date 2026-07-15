@@ -33,6 +33,7 @@ export interface PdfState {
   findCurrentIdx: number;
   findMatchPages: number[];
   findHighlights: FindHighlight[];
+  showPagePanel: boolean;
 }
 
 const RENDER_DEBOUNCE_MS = 60;
@@ -54,6 +55,7 @@ export function createPdf() {
     findCurrentIdx: 0,
     findMatchPages: [],
     findHighlights: [],
+    showPagePanel: false,
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
@@ -334,6 +336,47 @@ export function createPdf() {
     state.findHighlights = [];
     findItemsCache.clear();
     findPageHeights.clear();
+    state.showPagePanel = false;
+    pageThumbnailCache.clear();
+  }
+
+  let pageThumbnailCache: Map<number, string> = new Map();
+
+  function togglePagePanel() {
+    state.showPagePanel = !state.showPagePanel;
+    if (!state.showPagePanel) pageThumbnailCache.clear();
+  }
+
+  async function getPageThumbnail(pageNum: number): Promise<string> {
+    const cached = pageThumbnailCache.get(pageNum);
+    if (cached) return cached;
+    if (!pdfDoc || disposed) return "";
+    try {
+      const pdfPage = await pdfDoc.getPage(pageNum);
+      const vp = pdfPage.getViewport({ scale: 0.25 });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.floor(vp.width);
+      canvas.height = Math.floor(vp.height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return "";
+      await pdfPage.render({ canvasContext: ctx, viewport: vp }).promise;
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      pageThumbnailCache.set(pageNum, dataUrl);
+      return dataUrl;
+    } catch {
+      return "";
+    }
+  }
+
+  async function preloadAllThumbnails(): Promise<void> {
+    const batchSize = 4;
+    for (let i = 1; i <= state.pageCount; i += batchSize) {
+      const batch = [];
+      for (let j = i; j < i + batchSize && j <= state.pageCount; j++) {
+        batch.push(getPageThumbnail(j));
+      }
+      await Promise.all(batch);
+    }
   }
 
   function scrollToPage(pageNum: number) {
@@ -485,5 +528,8 @@ export function createPdf() {
     findText,
     findNext,
     findPrev,
+    togglePagePanel,
+    getPageThumbnail,
+    preloadAllThumbnails,
   };
 }
