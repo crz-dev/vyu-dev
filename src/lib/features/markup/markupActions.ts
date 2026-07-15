@@ -1,6 +1,6 @@
 // Markup actions
 import { save } from "@tauri-apps/plugin-dialog";
-import { renderMarkupOnImage } from "$lib/features/media/api";
+import { renderMarkupOnImage, renderMarkupOnCanvas } from "$lib/features/media/api";
 import { getFileExt, getParentFolder } from "$lib/services/files";
 import { markup } from "./markup.svelte";
 import { showToast } from "$lib/components/toast.svelte";
@@ -13,11 +13,16 @@ export interface MarkupActionsDeps {
     stopWatching: () => void;
     startWatching: (path: string) => void;
   };
+  getPdfPageCanvas?: () => HTMLCanvasElement | null;
 }
 
 export function createMarkupActions(deps: MarkupActionsDeps) {
   async function handleMarkupApply() {
     if (markup.strokes.length === 0) return;
+    if (markup.currentPage > 0) {
+      showToast({ message: "Apply not supported for PDFs", color: "yellow" });
+      return;
+    }
     try {
       deps.folderWatcher.stopWatching();
       await renderMarkupOnImage(
@@ -45,6 +50,10 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
 
   async function handleMarkupExport() {
     if (markup.strokes.length === 0) return;
+    if (markup.currentPage > 0) {
+      await exportPdfPageMarkup();
+      return;
+    }
     try {
       const ext = getFileExt(deps.getFilePath()) || "png";
       const defaultName =
@@ -56,6 +65,36 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
       if (!outputPath) return;
       await renderMarkupOnImage(
         deps.getFilePath(),
+        markup.strokes,
+        outputPath,
+        markup.displayWidth,
+        markup.displayHeight,
+      );
+      showToast({ message: "Markup exported", color: "green" });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to export markup";
+      showToast({ message, color: "red" });
+    }
+  }
+
+  async function exportPdfPageMarkup() {
+    const pageCanvas = deps.getPdfPageCanvas?.();
+    if (!pageCanvas) {
+      showToast({ message: "No PDF page to export", color: "red" });
+      return;
+    }
+    const outputPath = await save({
+      defaultPath:
+        deps.getFileName().replace(/\.[^.]+$/, "") +
+        `_p${markup.currentPage}.png`,
+      filters: [{ name: "Image", extensions: ["png"] }],
+    });
+    if (!outputPath) return;
+
+    try {
+      await renderMarkupOnCanvas(
+        pageCanvas,
         markup.strokes,
         outputPath,
         markup.displayWidth,

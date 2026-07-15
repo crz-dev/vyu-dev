@@ -235,11 +235,10 @@
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
     onwheel={isPdf ? undefined : handleViewerScroll}
-    onmousedown={!isPdf &&
-    !markup.drawActive &&
+    onmousedown={!markup.drawActive &&
     !markup.selectActive &&
     !markup.removeActive
-      ? startPan
+      ? isPdf ? undefined : startPan
       : undefined}
     ontouchstart={(e) => {
       if (e.touches.length === 2) e.preventDefault();
@@ -250,7 +249,7 @@
     markup.selectActive ||
     markup.removeActive
       ? markup.cursorStyle
-      : !isVideo && !isPdf
+      : !isVideo
         ? style.panCursor
         : 'default'}"
     role="presentation"

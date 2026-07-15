@@ -145,6 +145,10 @@ function createMarkupStore() {
   let displayWidth = $state(0);
   let displayHeight = $state(0);
 
+  // Page-aware mode (PDFs)
+  let currentPage = $state(0);
+  let pageMax = $state(0);
+
   // Precomputed AABBs
   interface BBox {
     minX: number;
@@ -732,6 +736,10 @@ function createMarkupStore() {
     currentStroke = null;
     selectedIndex = null;
     selectedIndices = [];
+    if (currentPage > 0) {
+      const key = sessionKey(filePath, currentPage);
+      sessionStrokes.delete(key);
+    }
   }
 
   function distToSegment(
@@ -1141,10 +1149,15 @@ function createMarkupStore() {
     return hits;
   }
 
+  function sessionKey(path: string, page: number): string {
+    return page > 0 ? `${path}#page=${page}` : path;
+  }
+
   function saveToSession() {
     if (filePath) {
-      sessionStrokes.set(filePath, [...strokes]);
-      sessionStrokesOrder.push(filePath);
+      const key = sessionKey(filePath, currentPage);
+      sessionStrokes.set(key, [...strokes]);
+      sessionStrokesOrder.push(key);
       if (sessionStrokesOrder.length > SESSION_STROKES_MAX) {
         const oldest = sessionStrokesOrder.shift();
         if (oldest !== undefined) sessionStrokes.delete(oldest);
@@ -1155,7 +1168,33 @@ function createMarkupStore() {
   function switchFile(newPath: string) {
     saveToSession();
     filePath = newPath;
+    currentPage = 0;
+    pageMax = 0;
     const saved = sessionStrokes.get(newPath);
+    strokes = saved ? [...saved] : [];
+    selectedIndex = null;
+    selectedIndices = [];
+  }
+
+  function initPages(pageCount: number) {
+    pageMax = pageCount;
+    currentPage = pageCount > 0 ? 1 : 0;
+    strokes = [];
+    if (currentPage > 0) {
+      const key = sessionKey(filePath, currentPage);
+      const saved = sessionStrokes.get(key);
+      if (saved) strokes = [...saved];
+    }
+    selectedIndex = null;
+    selectedIndices = [];
+  }
+
+  function switchPage(pageNum: number) {
+    if (pageNum === currentPage || pageNum < 1 || pageNum > pageMax) return;
+    saveToSession();
+    currentPage = pageNum;
+    const key = sessionKey(filePath, currentPage);
+    const saved = sessionStrokes.get(key);
     strokes = saved ? [...saved] : [];
     selectedIndex = null;
     selectedIndices = [];
@@ -1195,6 +1234,8 @@ function createMarkupStore() {
     strokesHidden = false;
     shapesPickerActive = false;
     filePath = "";
+    currentPage = 0;
+    pageMax = 0;
     sessionStrokes.clear();
   }
 
@@ -1369,10 +1410,18 @@ function createMarkupStore() {
     set displayHeight(v: number) {
       displayHeight = v;
     },
+    get currentPage() {
+      return currentPage;
+    },
+    get pageMax() {
+      return pageMax;
+    },
     get hasUnapplied() {
       return strokes.length > 0;
     },
     toggleDraw,
+    initPages,
+    switchPage,
     setDrawColor,
     setCustomColor,
     setDrawThickness,

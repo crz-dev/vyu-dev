@@ -602,6 +602,7 @@
   let prevPdfLoading = false;
   $effect(() => {
     if (prevPdfLoading && !pdf.state.loading && pdf.state.pageCount > 0) {
+      markup.initPages(pdf.state.pageCount);
       media.finishLoading(setMediaState);
     }
     prevPdfLoading = pdf.state.loading;
@@ -725,6 +726,12 @@
         getFileName: () => fileName,
         loadFile,
         folderWatcher,
+        getPdfPageCanvas: () => {
+          const idx = pdf.state.currentPage - 1;
+          return idx >= 0 && idx < pdf.state.pages.length
+            ? pdf.state.pages[idx].canvasRef
+            : null;
+        },
       });
     }
     return _markupActions;

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import type { FindHighlight } from "./pdf.svelte";
+  import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
+  import { markup } from "$lib/features/markup/markup.svelte";
 
   let {
     pdfContainerEl = $bindable(null),
@@ -68,6 +70,26 @@
   let pageInput = $state("");
   let inputEl: HTMLInputElement | null = $state(null);
   let findInputEl: HTMLInputElement | null = $state(null);
+
+  let pageWrapperRefs: (HTMLElement | null)[] = $state([]);
+
+  let currentPageWrapper = $derived(
+    currentPage > 0 && currentPage <= pageWrapperRefs.length
+      ? pageWrapperRefs[currentPage - 1]
+      : null,
+  );
+  let currentPageCanvas = $derived(
+    currentPage > 0 && currentPage <= pages.length
+      ? pages[currentPage - 1].canvasRef
+      : null,
+  );
+
+  // Sync markup page when current page changes
+  $effect(() => {
+    if (currentPage > 0 && pageCount > 0) {
+      markup.switchPage(currentPage);
+    }
+  });
 
   function startPageEdit() {
     pageInput = String(currentPage);
@@ -198,7 +220,7 @@
     <div class="pdf-error">{error}</div>
   {:else}
     {#each pages as page, i}
-      <div class="pdf-page-wrapper">
+      <div class="pdf-page-wrapper" bind:this={pageWrapperRefs[i]}>
         <canvas bind:this={page.canvasRef} class="pdf-canvas" onclick={() => centerPage(i + 1)} ondblclick={toggleFullscreen}></canvas>
         <button class="pdf-page-label" onclick={togglePagePanel} aria-label="Open page panel">{i + 1}</button>
         {#if findQuery && findResults > 0}
@@ -213,6 +235,9 @@
               {/each}
             </div>
           {/if}
+        {/if}
+        {#if i + 1 === currentPage}
+          <DrawOverlay containerEl={currentPageWrapper} mediaEl={currentPageCanvas} />
         {/if}
       </div>
       {#if i < pages.length - 1}

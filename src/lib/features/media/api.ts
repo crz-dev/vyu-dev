@@ -445,6 +445,62 @@ export async function renderMarkupOnImage(
   await saveCanvasToFile(canvas, outputPath);
 }
 
+export async function renderMarkupOnCanvas(
+  sourceCanvas: HTMLCanvasElement,
+  strokes: MarkupStroke[],
+  outputPath: string,
+  displayWidth: number,
+  displayHeight: number,
+) {
+  const w = sourceCanvas.width;
+  const h = sourceCanvas.height;
+  const scale =
+    displayWidth > 0 && displayHeight > 0
+      ? Math.min(w / displayWidth, h / displayHeight)
+      : 1;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not create canvas context");
+
+  ctx.drawImage(sourceCanvas, 0, 0, w, h);
+
+  for (const stroke of strokes) {
+    if (stroke.type === "freehand") {
+      renderFreehand(ctx, stroke, w, h, scale);
+    } else if (stroke.type === "shape") {
+      renderShape(ctx, stroke, w, h, scale);
+    } else if (stroke.type === "line") {
+      renderLine(ctx, stroke, w, h, scale);
+    } else if (stroke.type === "highlight") {
+      if (stroke.mode === "free") {
+        renderHighlightFreehand(ctx, stroke, w, h, scale);
+      } else {
+        renderHighlightStraightBar(
+          ctx,
+          stroke.x1,
+          stroke.y1,
+          stroke.x2,
+          stroke.y2,
+          w,
+          h,
+          stroke.color,
+          stroke.thickness,
+          stroke.opacity,
+          scale,
+        );
+      }
+    } else if (stroke.type === "text") {
+      renderText(ctx, stroke, w, h, scale);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  await saveCanvasToFile(canvas, outputPath);
+}
+
 function arrowSize(thickness: number) {
   return Math.max(10, thickness * 4);
 }
