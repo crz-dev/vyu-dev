@@ -260,6 +260,8 @@ function createMarkupStore() {
   let removeActive = $state(false);
   let strokesHidden = $state(false);
 
+  let shapesPickerActive = $state(false);
+
   function setActiveTool(tool: MarkupTool) {
     activeTool = activeTool === tool ? "freehand" : tool;
   }
@@ -1191,6 +1193,7 @@ function createMarkupStore() {
     selectActive = false;
     removeActive = false;
     strokesHidden = false;
+    shapesPickerActive = false;
     filePath = "";
     sessionStrokes.clear();
   }
@@ -1310,6 +1313,7 @@ function createMarkupStore() {
       if (removeActive) return "crosshair";
       if (!drawActive && !highlightActive) return "default";
       if (highlightActive) return "crosshair";
+      if (shapesPickerActive) return "default";
       if (activeTool === "freehand") return "crosshair";
 
       const svgs: Record<string, string> = {
@@ -1346,6 +1350,12 @@ function createMarkupStore() {
     },
     set strokesHidden(v: boolean) {
       strokesHidden = v;
+    },
+    get shapesPickerActive() {
+      return shapesPickerActive;
+    },
+    set shapesPickerActive(v: boolean) {
+      shapesPickerActive = v;
     },
     get displayWidth() {
       return displayWidth;

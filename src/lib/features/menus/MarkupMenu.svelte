@@ -92,6 +92,7 @@
       drawRowOpen = false;
       textRowOpen = false;
       shapesRowOpen = false;
+      markup.shapesPickerActive = false;
       highlightModeRowOpen = false;
       pinned = false;
       activeDrawTool = null;
@@ -241,6 +242,8 @@
   function toggleShapes() {
     if (shapesRowOpen) {
       shapesRowOpen = false;
+      markup.shapesPickerActive = false;
+      markup.setActiveTool("freehand");
     } else {
       if (openTimeout) clearTimeout(openTimeout);
       closeTextSubTools();
@@ -250,6 +253,7 @@
       shapesRowOpen = false;
       openTimeout = setTimeout(() => {
         shapesRowOpen = true;
+        markup.shapesPickerActive = true;
         openTimeout = null;
       }, 100);
     }

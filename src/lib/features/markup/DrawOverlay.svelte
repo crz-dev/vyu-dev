@@ -1907,6 +1907,10 @@
       lineStart = p;
       previewEnd = p;
       canvasEl?.setPointerCapture(e.pointerId);
+    } else if (markup.shapesPickerActive) {
+      const hitIdx = findShapeAtPoint(p.x, p.y);
+      markup.selectShape(hitIdx);
+      redrawAll();
     } else {
       // freehand stroke
       markup.startStroke(p.x, p.y);
