@@ -199,6 +199,118 @@ impl MediaKind {
     }
 }
 
+// ── PDF Annotation types ──
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DrawPoint {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FreehandStrokeData {
+    pub points: Vec<DrawPoint>,
+    pub color: String,
+    pub thickness: f64,
+    pub opacity: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShapeStrokeData {
+    pub shape: String,
+    pub cx: f64,
+    pub cy: f64,
+    pub width: f64,
+    pub height: f64,
+    pub rotation: f64,
+    pub fill: bool,
+    pub color: String,
+    pub thickness: f64,
+    pub opacity: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LineStrokeData {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub is_path: bool,
+    pub points: Vec<DrawPoint>,
+    pub line_type: String,
+    pub color: String,
+    pub thickness: f64,
+    pub opacity: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HighlightStrokeData {
+    pub mode: String,
+    pub points: Vec<DrawPoint>,
+    pub x1: Option<f64>,
+    pub y1: Option<f64>,
+    pub x2: Option<f64>,
+    pub y2: Option<f64>,
+    pub color: String,
+    pub thickness: f64,
+    pub opacity: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextStrokeData {
+    pub x: f64,
+    pub y: f64,
+    pub text: String,
+    pub color: String,
+    pub font_family: String,
+    pub font_size: f64,
+    pub rotation: f64,
+    pub box_extra_width: f64,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
+    pub strikethrough: bool,
+    pub align: String,
+    pub bg_color: String,
+    pub bg_enabled: bool,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type")]
+pub enum MarkupStrokeData {
+    #[serde(rename = "freehand")]
+    Freehand(FreehandStrokeData),
+    #[serde(rename = "shape")]
+    Shape(ShapeStrokeData),
+    #[serde(rename = "line")]
+    Line(LineStrokeData),
+    #[serde(rename = "highlight")]
+    Highlight(HighlightStrokeData),
+    #[serde(rename = "text")]
+    Text(TextStrokeData),
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PdfPageAnnotations {
+    pub page_num: u32,
+    pub width: f64,
+    pub height: f64,
+    pub strokes: Vec<MarkupStrokeData>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplyMarkupRequest {
+    pub file_path: String,
+    pub pages: Vec<PdfPageAnnotations>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

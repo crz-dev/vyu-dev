@@ -1,6 +1,10 @@
 // Markup actions
 import { save } from "@tauri-apps/plugin-dialog";
-import { renderMarkupOnImage, renderMarkupOnCanvas } from "$lib/features/media/api";
+import {
+  renderMarkupOnImage,
+  renderMarkupOnCanvas,
+  invokeApplyMarkupToPdf,
+} from "$lib/features/media/api";
 import { getFileExt, getParentFolder } from "$lib/services/files";
 import { markup } from "./markup.svelte";
 import { showToast } from "$lib/components/toast.svelte";
@@ -20,7 +24,7 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
   async function handleMarkupApply() {
     if (markup.strokes.length === 0) return;
     if (markup.currentPage > 0) {
-      showToast({ message: "Apply not supported for PDFs", color: "yellow" });
+      await applyPdfMarkup();
       return;
     }
     try {
@@ -32,6 +36,31 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
         markup.displayWidth,
         markup.displayHeight,
       );
+      markup.clearAllStrokes();
+      await deps.loadFile(deps.getFilePath());
+      deps.folderWatcher.startWatching(
+        getParentFolder(deps.getFilePath()) || "",
+      );
+      showToast({ message: "Markup applied", color: "green" });
+    } catch (err) {
+      deps.folderWatcher.startWatching(
+        getParentFolder(deps.getFilePath()) || "",
+      );
+      const message =
+        err instanceof Error ? err.message : "Failed to apply markup";
+      showToast({ message, color: "red" });
+    }
+  }
+
+  async function applyPdfMarkup() {
+    const pages = markup.collectAllPageStrokes();
+    if (pages.every((p) => p.strokes.length === 0)) return;
+    try {
+      deps.folderWatcher.stopWatching();
+      await invokeApplyMarkupToPdf({
+        filePath: deps.getFilePath(),
+        pages,
+      });
       markup.clearAllStrokes();
       await deps.loadFile(deps.getFilePath());
       deps.folderWatcher.startWatching(

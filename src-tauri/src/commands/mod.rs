@@ -7,10 +7,12 @@ pub mod file_ops;
 pub mod clipboard;
 pub mod integrity;
 pub mod external_apps;
+pub mod annotations;
 pub mod collections;
 pub mod database;
 pub use database::*;
 
+pub use annotations::*;
 pub use thumbnail::*;
 pub use display::*;
 pub use editing::*;

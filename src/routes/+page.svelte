@@ -607,6 +607,27 @@
     }
     prevPdfLoading = pdf.state.loading;
   });
+
+  // Page dimensions are set after state.loading = false (in pdf.svelte.ts loadFile),
+  // so we update the markup store reactively when they become available
+  let prevPageDims = "";
+  $effect(() => {
+    if (
+      pdf.state.pageCount > 0 &&
+      pdf.state.pages.length > 0 &&
+      pdf.state.pages[0].width > 0
+    ) {
+      const dims = pdf.state.pages.map((p) => ({
+        width: p.width,
+        height: p.height,
+      }));
+      const key = dims.map((d) => `${d.width}x${d.height}`).join(",");
+      if (key !== prevPageDims) {
+        prevPageDims = key;
+        markup.updatePageDimensions(dims);
+      }
+    }
+  });
   const { openFileDialog, pickAudioFile, openConvertedFile } =
     createFileOpenActions({ loadFile });
   const { startPan, startDrag } = createPanDrag({

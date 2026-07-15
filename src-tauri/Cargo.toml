@@ -34,6 +34,7 @@ windows = { version = "0.61", features = [
     "Win32_System_Registry",
 ] }
 futures = "0.3.32"
+lopdf = "0.34"
 
 [profile.release]
 lto = "thin"

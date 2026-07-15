@@ -501,6 +501,25 @@ export async function renderMarkupOnCanvas(
   await saveCanvasToFile(canvas, outputPath);
 }
 
+// PDF annotation apply
+export interface ApplyMarkupPageData {
+  pageNum: number;
+  width: number;
+  height: number;
+  strokes: MarkupStroke[];
+}
+
+export interface ApplyMarkupRequest {
+  filePath: string;
+  pages: ApplyMarkupPageData[];
+}
+
+export async function invokeApplyMarkupToPdf(
+  request: ApplyMarkupRequest,
+): Promise<void> {
+  return invoke("apply_markup_to_pdf", { request });
+}
+
 function arrowSize(thickness: number) {
   return Math.max(10, thickness * 4);
 }

@@ -71,6 +71,7 @@ pub fn run() {
             open_with_dialog,
             convert_audio_to_waveform_video,
             convert_image_to_pdf,
+            apply_markup_to_pdf,
             identify_song,
             get_files_total_size,
             db_get_file_metadata,
