@@ -45,6 +45,7 @@
     clipOutputDir,
     parentFolder,
     invokeOpenDirectory,
+    ctxCopyPdfPage,
     ctxCopyImage,
     ctxCopyFrame,
     ctxCopyPath,
@@ -115,6 +116,7 @@
     clipOutputDir: string;
     parentFolder: () => string;
     invokeOpenDirectory: (path: string) => Promise<void>;
+    ctxCopyPdfPage: () => void;
     ctxCopyImage: () => void;
     ctxCopyFrame: () => void;
     ctxCopyPath: () => void;
@@ -628,9 +630,33 @@
       {#if isPdf}
         <button
           class="ctx-item green"
-          onclick={ctxShare}
+          onclick={ctxCopyPdfPage}
           role="menuitem"
           style="animation-delay: 0ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><rect
+              x="8"
+              y="8"
+              width="13"
+              height="13"
+              rx="2"
+              stroke="currentColor"
+              stroke-width="2"
+            /><path
+              d="M4 16V5a1 1 0 011-1h11"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
+          >
+          Copy page as image
+        </button>
+        <button
+          class="ctx-item green"
+          onclick={ctxShare}
+          role="menuitem"
+          style="animation-delay: 55ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><circle
@@ -676,7 +702,7 @@
           class="ctx-item blue"
           onclick={openInDefaultApp}
           role="menuitem"
-          style="animation-delay: 55ms"
+          style="animation-delay: 110ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><path
@@ -708,7 +734,7 @@
           class="ctx-item blue"
           onclick={printPdf}
           role="menuitem"
-          style="animation-delay: 110ms"
+          style="animation-delay: 165ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><polyline
@@ -742,7 +768,7 @@
           class="ctx-item yellow"
           onclick={ctxShowInExplorer}
           role="menuitem"
-          style="animation-delay: 165ms"
+          style="animation-delay: 220ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><path
@@ -757,7 +783,7 @@
           class="ctx-item yellow"
           onclick={ctxProperties}
           role="menuitem"
-          style="animation-delay: 220ms"
+          style="animation-delay: 275ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><circle
@@ -780,7 +806,7 @@
           class="ctx-item red"
           onclick={ctxDelete}
           role="menuitem"
-          style="animation-delay: 275ms"
+          style="animation-delay: 330ms"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
             ><polyline

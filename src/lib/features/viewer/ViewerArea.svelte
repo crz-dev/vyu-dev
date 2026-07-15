@@ -234,7 +234,7 @@
     bind:this={viewerEl}
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
-    onwheel={handleViewerScroll}
+    onwheel={isPdf ? undefined : handleViewerScroll}
     onmousedown={!isPdf &&
     !markup.drawActive &&
     !markup.selectActive &&
@@ -297,7 +297,11 @@
         error={pdf.state.error}
         pages={pdf.state.pages}
         scale={pdf.state.scale}
+        currentPage={pdf.state.currentPage}
+        pageCount={pdf.state.pageCount}
         setScale={pdf.setScale}
+        prevPage={pdf.prevPage}
+        nextPage={pdf.nextPage}
       />
     {:else if fileSrc && isAudio}
       <AudioPlayer

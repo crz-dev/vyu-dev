@@ -4,6 +4,7 @@ import {
   ctxCopyImage,
   ctxCopyFrame,
   ctxCopyPath,
+  ctxCopyPdfPage,
   ctxShowInExplorer,
   ctxRotate,
   ctxFlip,
@@ -20,6 +21,7 @@ import { loadMediaProperties } from "$lib/features/media/ffmpeg";
 export interface ContextActionDeps {
   filePath: () => string;
   videoEl: () => HTMLVideoElement | null;
+  pdfRightClickedCanvas: () => HTMLCanvasElement | null;
   closeContextMenu: () => void;
   editing: { pushUndo: () => void };
   viewer: { rotate: () => void; flip: () => void };
@@ -39,6 +41,12 @@ export interface ContextActionDeps {
 }
 
 export function createContextActionFns(deps: ContextActionDeps) {
+  async function ctxCopyPdfPageFn() {
+    await ctxCopyPdfPage({
+      canvas: deps.pdfRightClickedCanvas(),
+      closeContextMenu: deps.closeContextMenu,
+    });
+  }
   async function ctxCopyImageFn() {
     await ctxCopyImage({
       filePath: deps.filePath(),
@@ -121,6 +129,7 @@ export function createContextActionFns(deps: ContextActionDeps) {
   const ctxDelete = () => deps.deleteActions.ctxDelete(deps.closeContextMenu);
 
   return {
+    ctxCopyPdfPageFn,
     ctxCopyImageFn,
     ctxCopyFrameFn,
     ctxCopyPathFn,

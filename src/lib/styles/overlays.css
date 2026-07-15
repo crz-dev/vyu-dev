@@ -527,6 +527,11 @@
   align-items: center;
   padding: 16px 0;
   scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pdf-viewer::-webkit-scrollbar {
+  display: none;
 }
 .pdf-page-wrapper {
   display: flex;
@@ -621,6 +626,22 @@
   color: var(--text-muted);
   font-family: var(--font-family);
   min-width: 38px;
+  text-align: center;
+}
+.pdf-page-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid var(--bg-border);
+}
+.pdf-page-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  white-space: nowrap;
+  min-width: 36px;
   text-align: center;
 }
 

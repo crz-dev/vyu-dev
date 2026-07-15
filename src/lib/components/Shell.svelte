@@ -172,6 +172,7 @@
     clipOutputDir,
     parentFolder,
     invokeOpenDirectory,
+    ctxCopyPdfPage,
     ctxCopyImage,
     ctxCopyFrame,
     ctxCopyPath,
@@ -349,6 +350,7 @@
     clipOutputDir: string;
     parentFolder: () => string;
     invokeOpenDirectory: (path: string) => Promise<void>;
+    ctxCopyPdfPage: () => void;
     ctxCopyImage: () => void;
     ctxCopyFrame: () => void;
     ctxCopyPath: () => void;
@@ -812,6 +814,7 @@
     {performDelete}
     {parentFolder}
     {invokeOpenDirectory}
+    {ctxCopyPdfPage}
     {ctxCopyImage}
     {ctxCopyFrame}
     {ctxCopyPath}

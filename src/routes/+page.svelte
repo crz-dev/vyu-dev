@@ -122,6 +122,7 @@
   let imageEl = $state<HTMLImageElement | null>(null);
   let viewerEl = $state<HTMLElement | null>(null);
   let pdfContainerEl = $state<HTMLElement | null>(null);
+  let pdfRightClickedCanvas = $state<HTMLCanvasElement | null>(null);
   let playing = $state(false);
   let muted = $state(false);
   let progress = $state(0);
@@ -598,6 +599,13 @@
       console.error("PDF effect failed:", e);
     }
   });
+  let prevPdfLoading = false;
+  $effect(() => {
+    if (prevPdfLoading && !pdf.state.loading && pdf.state.pageCount > 0) {
+      media.finishLoading(setMediaState);
+    }
+    prevPdfLoading = pdf.state.loading;
+  });
   const { openFileDialog, pickAudioFile, openConvertedFile } =
     createFileOpenActions({ loadFile });
   const { startPan, startDrag } = createPanDrag({
@@ -661,6 +669,7 @@
     const target = e.target as HTMLElement;
     if (target.closest("button, .progress-bar, .fs-progress")) return;
     if (!fileSrc) return;
+    pdfRightClickedCanvas = target.closest(".pdf-canvas") as HTMLCanvasElement | null;
     const menuW = 200;
     const menuH = isVideo || isAudio ? 300 : 260;
     contextMenuStore.open(e, menuW, menuH);
@@ -725,6 +734,7 @@
   });
   const { performDelete } = deleteActions;
   const {
+    ctxCopyPdfPageFn,
     ctxCopyImageFn,
     ctxCopyFrameFn,
     ctxCopyPathFn,
@@ -742,6 +752,7 @@
   } = createContextActionFns({
     filePath: () => filePath,
     videoEl: () => videoEl,
+    pdfRightClickedCanvas: () => pdfRightClickedCanvas,
     closeContextMenu,
     editing,
     viewer,
@@ -1055,6 +1066,7 @@
   clipOutputDir={clips.clipOutputDir}
   parentFolder={() => getParentFolder(filePath)}
   {invokeOpenDirectory}
+  ctxCopyPdfPage={ctxCopyPdfPageFn}
   ctxCopyImage={ctxCopyImageFn}
   ctxCopyFrame={ctxCopyFrameFn}
   ctxCopyPath={ctxCopyPathFn}

@@ -17,6 +17,7 @@ export interface PdfState {
   pages: PdfPage[];
   scale: number;
   pageCount: number;
+  currentPage: number;
   loading: boolean;
   error: string;
 }
@@ -31,6 +32,7 @@ export function createPdf() {
     pages: [],
     scale: 1.0,
     pageCount: 0,
+    currentPage: 1,
     loading: false,
     error: "",
   });
@@ -39,6 +41,7 @@ export function createPdf() {
   let observer: IntersectionObserver | null = null;
   let renderTimers: Map<number, ReturnType<typeof setTimeout>> = new Map();
   let pdfContainerEl: HTMLElement | null = null;
+  let scrollHandler: ((e: Event) => void) | null = null;
   let disposed = false;
 
   function setContainer(el: HTMLElement | null) {
@@ -100,14 +103,37 @@ export function createPdf() {
     try {
       await pdfPage.render({ canvasContext: ctx, viewport }).promise;
       page.rendered = true;
+      updateCurrentPage();
     } catch (err) {
       console.error(`Failed to render PDF page ${page.pageNum}:`, err);
     }
   }
 
+  function updateCurrentPage() {
+    if (!pdfContainerEl || state.pages.length === 0) return;
+    const containerRect = pdfContainerEl.getBoundingClientRect();
+    const containerTop = containerRect.top;
+    let closest = state.currentPage;
+    let closestDist = Infinity;
+    for (const page of state.pages) {
+      if (!page.canvasRef || !page.rendered) continue;
+      const rect = page.canvasRef.getBoundingClientRect();
+      const dist = Math.abs(rect.top - containerTop);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = page.pageNum;
+      }
+    }
+    state.currentPage = closest;
+  }
+
   function setupObserver() {
     if (disposed) return;
     if (observer) observer.disconnect();
+    if (scrollHandler && pdfContainerEl) {
+      pdfContainerEl.removeEventListener("scroll", scrollHandler);
+      scrollHandler = null;
+    }
 
     observer = new IntersectionObserver(
       (entries) => {
@@ -130,6 +156,9 @@ export function createPdf() {
         threshold: 0.01,
       },
     );
+
+    scrollHandler = () => updateCurrentPage();
+    pdfContainerEl?.addEventListener("scroll", scrollHandler, { passive: true });
   }
 
   async function loadFile(path: string): Promise<void> {
@@ -139,6 +168,7 @@ export function createPdf() {
     state.error = "";
     state.pages = [];
     state.pageCount = 0;
+    state.currentPage = 1;
 
     const timeoutId = setTimeout(() => {
       if (state.loading) {
@@ -223,6 +253,10 @@ export function createPdf() {
       observer.disconnect();
       observer = null;
     }
+    if (scrollHandler && pdfContainerEl) {
+      pdfContainerEl.removeEventListener("scroll", scrollHandler);
+      scrollHandler = null;
+    }
     if (pdfDoc) {
       try {
         pdfDoc.destroy();
@@ -233,9 +267,34 @@ export function createPdf() {
     }
     state.pages = [];
     state.pageCount = 0;
+    state.currentPage = 1;
     state.loading = false;
     state.error = "";
     state.scale = 1.0;
+  }
+
+  function scrollToPage(pageNum: number) {
+    if (!pdfContainerEl) return;
+    const page = state.pages.find((p) => p.pageNum === pageNum);
+    if (!page?.canvasRef) return;
+    const wrapper = page.canvasRef.closest(".pdf-page-wrapper") as HTMLElement | null;
+    if (!wrapper) return;
+    const containerRect = pdfContainerEl.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    pdfContainerEl.scrollBy({
+      top: wrapperRect.top - containerRect.top,
+      behavior: "smooth",
+    });
+  }
+
+  function prevPage() {
+    const next = Math.max(1, state.currentPage - 1);
+    scrollToPage(next);
+  }
+
+  function nextPage() {
+    const next = Math.min(state.pageCount, state.currentPage + 1);
+    scrollToPage(next);
   }
 
   return {
@@ -247,5 +306,8 @@ export function createPdf() {
     cleanup,
     setScale,
     clampScale,
+    scrollToPage,
+    prevPage,
+    nextPage,
   };
 }

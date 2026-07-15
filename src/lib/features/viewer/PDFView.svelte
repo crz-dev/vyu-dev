@@ -6,6 +6,10 @@
     pages,
     scale,
     setScale,
+    currentPage,
+    pageCount,
+    prevPage,
+    nextPage,
   }: {
     pdfContainerEl: HTMLElement | null;
     loading: boolean;
@@ -13,6 +17,10 @@
     pages: { canvasRef: HTMLCanvasElement | null }[];
     scale: number;
     setScale: (s: number) => void;
+    currentPage: number;
+    pageCount: number;
+    prevPage: () => void;
+    nextPage: () => void;
   } = $props();
 </script>
 
@@ -59,4 +67,19 @@
     onclick={() => setScale(1)}
     aria-label="Reset zoom">Reset</button
   >
+  <div class="pdf-page-nav">
+    <button
+      class="pdf-zoom-btn"
+      onclick={prevPage}
+      disabled={currentPage <= 1}
+      aria-label="Previous page">◀</button
+    >
+    <span class="pdf-page-count">{currentPage}/{pageCount}</span>
+    <button
+      class="pdf-zoom-btn"
+      onclick={nextPage}
+      disabled={currentPage >= pageCount}
+      aria-label="Next page">▶</button
+    >
+  </div>
 </div>
