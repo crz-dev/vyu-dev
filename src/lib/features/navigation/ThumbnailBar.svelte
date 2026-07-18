@@ -7,6 +7,7 @@
   } from "$lib/features/media/api";
   import { getCached, setCached } from "$lib/services/thumbnailCache";
   import { library } from "$lib/features/library/library.svelte";
+  import { generatePdfThumbnail, isPdfPath } from "$lib/features/viewer/pdf.svelte";
   import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
@@ -53,6 +54,7 @@
   // Thumbnails
   let loaded = $state(new Map<string, string>());
   let fetching = $state(new Set<string>());
+  let failed = $state(new Set<string>());
 
   // Delay the toast so it doesn't flash when thumbnails are already cached.
   const generating = $derived(afterOpen && loaded.size < fileList.length);
@@ -171,7 +173,7 @@
     const batch: string[] = [];
     const cacheHits: [string, string][] = [];
     for (const path of loadQueue) {
-      if (loaded.has(path) || fetching.has(path)) continue;
+      if (loaded.has(path) || fetching.has(path) || failed.has(path)) continue;
       const cached = getCached(path);
       if (cached) {
         cacheHits.push([path, cached]);
@@ -218,6 +220,23 @@
         }
       }
       if (changed) loaded = updated;
+
+      // PDFs: generate thumbnails on frontend (backend FFmpeg can't decode PDFs)
+      for (const p of paths) {
+        if (isPdfPath(p) && !loaded.has(p)) {
+          generatePdfThumbnail(p, 120).then((dataUrl) => {
+            if (localGen !== _fetchGen) return;
+            if (dataUrl) {
+              setCached(p, 120, dataUrl);
+              loaded = new Map([...loaded, [p, dataUrl]]);
+            } else {
+              failed = new Set([...failed, p]);
+            }
+          });
+        } else if (!loaded.has(p) && !isPdfPath(p)) {
+          failed = new Set([...failed, p]);
+        }
+      }
     } catch {
       // Silently fail — thumbnail stays as placeholder
     } finally {
@@ -238,6 +257,7 @@
       observed = new Set();
       loadQueue = [];
       fetching = new Set();
+      failed = new Set();
     }
   });
 

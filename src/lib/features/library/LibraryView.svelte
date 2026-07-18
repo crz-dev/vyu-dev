@@ -1961,6 +1961,13 @@
                             alt=""
                             draggable="false"
                           />
+                        {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
+                          <div class="library-placeholder pdf-placeholder">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                          </div>
                         {:else}
                           <div class="library-placeholder"></div>
                         {/if}
@@ -2449,6 +2456,13 @@
                             draggable="false"
                             onload={(e) => onImageLoad(path, e)}
                           />
+                        {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
+                          <div class="river-placeholder pdf-placeholder">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                          </div>
                         {:else}
                           <div class="river-placeholder"></div>
                         {/if}
@@ -2661,6 +2675,13 @@
                           draggable="false"
                           onload={(e) => onImageLoad(path, e)}
                         />
+                      {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
+                        <div class="filmstrip-placeholder pdf-placeholder">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                        </div>
                       {:else}
                         <div class="filmstrip-placeholder"></div>
                       {/if}
@@ -3083,6 +3104,13 @@
                               alt=""
                               draggable="false"
                             />
+                          {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
+                            <div class="list-placeholder pdf-placeholder">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                              </svg>
+                            </div>
                           {:else}
                             <div class="list-placeholder"></div>
                           {/if}

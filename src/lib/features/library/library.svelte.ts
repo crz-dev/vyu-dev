@@ -11,6 +11,7 @@ import {
   invokeDeleteFile,
   invokeMigrateThumbnailCache,
 } from "$lib/features/media/api";
+import { generatePdfThumbnail, isPdfPath } from "$lib/features/viewer/pdf.svelte";
 import {
   loadViewDensity,
   saveViewDensity,
@@ -197,6 +198,18 @@ function createLibrary() {
       for (const [p, dataUrl] of Object.entries(results)) {
         if (dataUrl && !(p in cache)) {
           setCacheEntry(p, dataUrl);
+        }
+      }
+
+      // PDFs: generate thumbnails on frontend (backend FFmpeg can't decode PDFs)
+      for (const p of batchPaths) {
+        if (isPdfPath(p) && !(p in cache)) {
+          generatePdfThumbnail(p, THUMB_SIZE).then((dataUrl) => {
+            if (localGen !== _fetchGen) return;
+            if (dataUrl && !(p in cache)) {
+              setCacheEntry(p, dataUrl);
+            }
+          });
         }
       }
     } catch {

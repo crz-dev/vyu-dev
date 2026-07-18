@@ -1,10 +1,81 @@
 // PDF rendering
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { setCached } from "$lib/services/thumbnailCache";
+import { getFileExt } from "$lib/services/files";
+import { DOCUMENT_EXTS } from "$lib/shared/constants";
 import type {
   PDFDocumentProxy,
   PDFPageProxy,
 } from "pdfjs-dist/types/src/display/api";
+
+// Standalone PDF page 1 thumbnail generator.
+// Used by library and thumbnail bar when the backend (FFmpeg) can't handle PDFs.
+const PDF_THUMB_CONCURRENT = 2;
+let pdfThumbInflight = 0;
+let pdfThumbQueue: Array<() => void> = [];
+
+async function acquirePdfSlot(): Promise<void> {
+  if (pdfThumbInflight < PDF_THUMB_CONCURRENT) {
+    pdfThumbInflight++;
+    return;
+  }
+  await new Promise<void>((resolve) => pdfThumbQueue.push(resolve));
+  pdfThumbInflight++;
+}
+
+function releasePdfSlot(): void {
+  pdfThumbInflight--;
+  const next = pdfThumbQueue.shift();
+  if (next) {
+    pdfThumbInflight++;
+    next();
+  }
+}
+
+export async function generatePdfThumbnail(
+  path: string,
+  size: number,
+): Promise<string> {
+  await acquirePdfSlot();
+  try {
+    const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
+    const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs");
+    globalThis.pdfjsWorker = pdfjsWorker;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = ".";
+
+    const url = convertFileSrc(path);
+    const loadingTask = pdfjsLib.getDocument({
+      url,
+      enableXfa: true,
+      disableAutoFetch: false,
+    });
+    const pdfDoc = await loadingTask.promise;
+
+    const page = await pdfDoc.getPage(1);
+    const vp = page.getViewport({ scale: 1 });
+    const scale = size / Math.max(vp.width, vp.height);
+    const renderVp = page.getViewport({ scale });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(renderVp.width);
+    canvas.height = Math.floor(renderVp.height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    await page.render({ canvasContext: ctx, viewport: renderVp }).promise;
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    pdfDoc.destroy();
+    return dataUrl;
+  } catch {
+    return "";
+  } finally {
+    releasePdfSlot();
+  }
+}
+
+export function isPdfPath(path: string): boolean {
+  return DOCUMENT_EXTS.includes(getFileExt(path));
+}
 
 export interface PdfPage {
   pageNum: number;
@@ -137,6 +208,8 @@ export function createPdf() {
         try {
           const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
           setCached(currentFilePath, 120, dataUrl);
+          // Also cache at library size so the library finds it without re-rendering
+          setCached(currentFilePath, 256, dataUrl);
           window.dispatchEvent(
             new CustomEvent("vyu-pdf-thumbnail-ready", {
               detail: { path: currentFilePath, dataUrl },
