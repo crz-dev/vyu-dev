@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.vyu.desktop",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "pnpm ffmpeg:ensure && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "pnpm ffmpeg:ensure && pnpm build",
     "frontendDist": "../build"
   },
   "app": {

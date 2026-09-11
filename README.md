@@ -72,7 +72,7 @@ A few choices shaped Vyu's architecture. Worth knowing before you start changing
 
 **localStorage for persistence.** All user state — volume, theme, timestamps, clip boundaries, loop mode, resume points — lives in localStorage with a `vyu-` prefix. No backend, no database. Tied to the browser profile, so wiping browser data wipes Vyu's state too. For a single-user desktop app, that's a fair trade.
 
-**FFmpeg on PATH.** Vyu shells out to `ffmpeg` and `ffprobe` for thumbnails, remuxing, waveforms, integrity checks, conversion, and clip export. Bundling FFmpeg would bloat the installer; PATH keeps it lean. Vyu checks on startup and offers a winget install if it's missing.
+**Bundled FFmpeg.** Vyu shells out to bundled `ffmpeg` and `ffprobe` for thumbnails, remuxing, waveforms, integrity checks, conversion, and clip export. Development and release builds automatically provision the pinned FFmpeg Essentials build when it is missing.
 
 **No router.** Intentionally no SvelteKit routes. All UI lives in `src/routes/+page.svelte` and `src/lib/`. Routes would add complexity with no real benefit at this scale.
 
@@ -89,7 +89,7 @@ A few choices shaped Vyu's architecture. Worth knowing before you start changing
 | Meta-framework           | SvelteKit (static SPA, no SSR)          |
 | Language                 | TypeScript (strict)                     |
 | Package manager          | pnpm                                    |
-| Video / image processing | FFmpeg (system PATH, not bundled)       |
+| Video / image processing | FFmpeg 9.0.1 Essentials (bundled)       |
 | PDF rendering            | pdfjs-dist (code-split, dynamic import) |
 | State persistence        | localStorage                            |
 
@@ -97,7 +97,7 @@ A few choices shaped Vyu's architecture. Worth knowing before you start changing
 
 - **Rust toolchain** — [rustup.rs](https://rustup.rs)
 - **Node.js + pnpm** — `npm install -g pnpm` or [corepack](https://nodejs.org/api/corepack.html)
-- **FFmpeg** — not bundled; Vyu will offer to install via winget on first launch if missing
+- **FFmpeg** — provisioned automatically before `pnpm tauri dev` or `pnpm tauri build` (internet is required only for the initial download)
 
 ## Commands
 
