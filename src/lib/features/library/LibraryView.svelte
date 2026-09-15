@@ -1853,10 +1853,12 @@
                   class="library-grid"
                   style="grid-template-columns: repeat({gridColCount}, 1fr); position: relative;"
                 >
-                  <div
-                    style="height: {gridVirtualRange.topSpacer}px; grid-column: 1 / -1;"
-                    aria-hidden="true"
-                  ></div>
+                  {#if gridVirtualRange.topSpacer > 0}
+                    <div
+                      style="height: {gridVirtualRange.topSpacer}px; grid-column: 1 / -1;"
+                      aria-hidden="true"
+                    ></div>
+                  {/if}
                   {#each flatGridItems!.slice(gridVirtualRange.firstIdx, gridVirtualRange.lastIdx + 1) as item, i (item.path)}
                     {#if item.type === "folder"}
                       {@render folderCard(item.path, "library-subfolder-card")}
@@ -1864,6 +1866,7 @@
                       <!-- svelte-ignore a11y_no_static_element_interactions -->
                       <div
                         class="library-placeholder-card"
+                        style="width: {gridMinCol}px; height: {gridMinCol}px; box-sizing: border-box; justify-self: start;"
                         role="button"
                         tabindex="0"
                         onclick={addFavoriteFromFile}
