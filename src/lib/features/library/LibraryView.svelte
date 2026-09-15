@@ -4444,6 +4444,7 @@
   }
 
   .library-scroll {
+    position: relative;
     flex: 1;
     overflow-x: hidden;
     overflow-y: auto;
@@ -5049,13 +5050,14 @@
 
   /* Empty state */
   .library-empty {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    height: 100%;
-    min-height: 200px;
+    pointer-events: none;
     color: var(--text-muted, #888);
     font-size: 14px;
     font-family: var(--font-family);
