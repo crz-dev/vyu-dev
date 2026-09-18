@@ -158,7 +158,7 @@
 {#if visible}
   <div class="equalizer-wrapper" style={styleOverride}>
     <div
-      class="edit-menu"
+      class="edit-menu edit-menu-equalizer"
       class:pinned
       transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     >

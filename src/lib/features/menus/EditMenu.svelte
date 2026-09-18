@@ -395,7 +395,7 @@
 </script>
 
 {#if visible}
-  <div class="edit-menu-wrapper" style={styleOverride}>
+  <div class="edit-menu-wrapper edit-menu-wrapper-edit" style={styleOverride}>
     <div
       class="edit-actions-bar edit-actions-left"
       class:has-edits={hasEdits}
@@ -487,7 +487,7 @@
     </div>
 
     <div
-      class="edit-menu"
+      class="edit-menu edit-menu-edit"
       class:pinned
       transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     >

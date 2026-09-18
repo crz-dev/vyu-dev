@@ -128,6 +128,7 @@
     onReset,
     onMarkupApply,
     onMarkupExport,
+    markupMenuHasEdits,
     closeEditMenu,
     markupMenuVisible,
     closeMarkupMenu,
@@ -310,6 +311,7 @@
     onReset: () => void;
     onMarkupApply: () => void;
     onMarkupExport: () => void;
+    markupMenuHasEdits: boolean;
     closeEditMenu: () => void;
     markupMenuVisible: boolean;
     closeMarkupMenu: () => void;
@@ -482,7 +484,16 @@
   });
 
   const MENU_WIDTH = $derived(Math.min(398, window.innerWidth - 30));
-  const GAP = 8;
+  const MENU_GAP = 8;
+  const MENU_OUTER_EXTRA = 13;
+  const ACTION_BAR_WIDTH = 60;
+  const WRAPPER_GAP = 6;
+  const PEER_SPACING = $derived(
+    MENU_WIDTH +
+      MENU_OUTER_EXTRA +
+      MENU_GAP +
+      (markupMenuHasEdits ? ACTION_BAR_WIDTH + WRAPPER_GAP : 0),
+  );
 
   const clipMenuActive = $derived(clipCount > 0 && !clipMenuDismissed);
 
@@ -506,7 +517,6 @@
     let eqOffset = 0;
 
     if (peerCount >= 2) {
-      const fullGap = MENU_WIDTH + GAP;
       const ordered = [
         editOpen ? "edit" : null,
         markupOpen ? "markup" : null,
@@ -516,7 +526,7 @@
       const center = (ordered.length - 1) / 2;
       const offsets: Record<string, number> = {};
       for (let i = 0; i < ordered.length; i++) {
-        offsets[ordered[i]] = (i - center) * fullGap;
+        offsets[ordered[i]] = (i - center) * PEER_SPACING;
       }
       editOffset = offsets["edit"] ?? 0;
       markupOffset = offsets["markup"] ?? 0;
@@ -528,7 +538,7 @@
     let clipOffset = 0;
     if (clipOpen && peerCount >= 1) {
       if (peerCount === 1) {
-        const halfGap = (MENU_WIDTH + GAP) / 2;
+        const halfGap = PEER_SPACING / 2;
         if (editOpen) {
           editOffset = -halfGap;
           clipOffset = halfGap;
@@ -544,8 +554,7 @@
         }
       } else {
         // clip + 2+ peers: shift clip left
-        const fullGap = MENU_WIDTH + GAP;
-        clipOffset = -fullGap;
+        clipOffset = -PEER_SPACING;
       }
     }
 
@@ -882,6 +891,7 @@
 
   <MarkupMenu
     visible={markupMenuVisible}
+    peerMenuOpen={editMenuVisible && !editMenuMoved && markupMenuHasEdits}
     onClose={closeMarkupMenu}
     onMoved={() => (markupMenuMoved = true)}
     styleOverride={markupMenuStyle}

@@ -906,6 +906,7 @@
     closeEditMenu,
     closeMarkupMenu,
     closeEffectsMenu,
+    markupMenuHasEdits: markup.strokes.length > 0,
     openConvertedFile,
     showValue,
     muted,

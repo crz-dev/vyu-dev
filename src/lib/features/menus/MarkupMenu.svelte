@@ -15,6 +15,7 @@
     onReset,
     onApply,
     onExport,
+    peerMenuOpen = false,
     styleOverride = "",
   }: {
     visible: boolean;
@@ -24,6 +25,7 @@
     onReset: () => void;
     onApply: () => void;
     onExport: () => void;
+    peerMenuOpen?: boolean;
     styleOverride?: string;
   } = $props();
 
@@ -474,7 +476,11 @@
 </script>
 
 {#if visible}
-  <div class="markup-menu-wrapper" style={styleOverride}>
+  <div
+    class="markup-menu-wrapper markup-menu-wrapper-markup"
+    class:peer-open={peerMenuOpen}
+    style={styleOverride}
+  >
     <div
       class="edit-actions-bar edit-actions-left"
       class:has-edits={hasEdits}
@@ -567,7 +573,7 @@
     </div>
 
     <div
-      class="edit-menu"
+      class="edit-menu edit-menu-markup"
       class:pinned
       transition:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     >

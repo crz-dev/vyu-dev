@@ -1945,6 +1945,9 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   gap: 6px;
   transition: left 0.25s cubic-bezier(0.22, 0.9, 0.3, 1);
 }
+.markup-menu-wrapper.peer-open {
+  flex-direction: row-reverse;
+}
 .edit-menu {
   width: min(398px, calc(100vw - 30px));
   background: var(--bg-secondary);

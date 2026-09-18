@@ -30,30 +30,29 @@ export function createGlobalMouseHandler(deps: {
     if (
       deps.menuStore.editMenuVisible &&
       e.button === 2 &&
-      !target.closest(".edit-menu") &&
-      !target.closest(".edit-menu-wrapper") &&
-      !document.querySelector(".edit-menu.pinned")
+      !target.closest(".edit-menu-wrapper-edit") &&
+      !document.querySelector(".edit-menu-edit.pinned")
     )
       deps.closeEditMenu();
     if (
       deps.menuStore.markupMenuVisible &&
       e.button === 2 &&
-      !target.closest(".markup-menu-wrapper") &&
-      !document.querySelector(".edit-menu.pinned")
+      !target.closest(".markup-menu-wrapper-markup") &&
+      !document.querySelector(".edit-menu-markup.pinned")
     )
       deps.closeMarkupMenu();
     if (
       deps.menuStore.effectsMenuVisible &&
       e.button === 2 &&
-      !target.closest(".edit-menu-wrapper") &&
-      !document.querySelector(".edit-menu.pinned")
+      !target.closest(".edit-menu-wrapper-effects") &&
+      !document.querySelector(".edit-menu-effects.pinned")
     )
       deps.closeEffectsMenu();
     if (
       deps.menuStore.equalizerMenuVisible &&
       e.button === 2 &&
       !target.closest(".equalizer-wrapper") &&
-      !document.querySelector(".edit-menu.pinned")
+      !document.querySelector(".edit-menu-equalizer.pinned")
     )
       deps.closeEqualizerMenu();
     if (
