@@ -11,7 +11,7 @@
     getParentFolder,
     typeRank,
   } from "$lib/services/files";
-  import { fade } from "svelte/transition";
+  import { cubicInOut } from "svelte/easing";
   import { library } from "$lib/features/library/library.svelte";
   import { getSections, type Section } from "$lib/features/library/sections";
   import type { BatchStatItem } from "$lib/shared/types";
@@ -47,6 +47,39 @@
     onClose: () => void;
     selectMode?: boolean;
   } = $props();
+
+  let tabsEl: HTMLDivElement | null = $state(null);
+  let tabHighlight = $state({
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+  });
+  let tabHighlightReady = $state(false);
+
+  function swipe(
+    node: Element,
+    {
+      direction,
+      duration,
+      easing,
+    }: {
+      direction: number;
+      duration: number;
+      easing: (value: number) => number;
+    },
+  ) {
+    const width = node.getBoundingClientRect().width;
+
+    return {
+      duration,
+      easing,
+      css: (t: number) => {
+        const offset = (1 - t) * direction * width;
+        return `transform: translate3d(${offset}px, 0, 0); opacity: ${t};`;
+      },
+    };
+  }
 
   let scrollEl: HTMLDivElement | null = $state(null);
   let viewEl: HTMLDivElement | null = $state(null);
@@ -145,19 +178,27 @@
   let containerHeight = $state(0);
   let containerWidth = $state(0);
   const GRID_GAP = 6;
+  const GRID_HORIZONTAL_PADDING = 48;
   const GRID_OVERSCAN = 3;
+  const gridContentWidth = $derived(
+    containerWidth > 0
+      ? Math.max(0, containerWidth - GRID_HORIZONTAL_PADDING)
+      : 0,
+  );
 
   const gridColCount = $derived(
-    containerWidth > 0
+    gridContentWidth > 0
       ? Math.max(
           1,
-          Math.floor((containerWidth + GRID_GAP) / (gridMinCol + GRID_GAP)),
+          Math.floor(
+            (gridContentWidth + GRID_GAP) / (gridMinCol + GRID_GAP),
+          ),
         )
       : 1,
   );
   const gridRowHeight = $derived(
-    containerWidth > 0 && gridColCount > 0
-      ? (containerWidth - (gridColCount - 1) * GRID_GAP) / gridColCount
+    gridContentWidth > 0 && gridColCount > 0
+      ? (gridContentWidth - (gridColCount - 1) * GRID_GAP) / gridColCount
       : gridMinCol,
   );
   const gridRowStep = $derived(gridRowHeight + GRID_GAP);
@@ -1142,9 +1183,42 @@
   });
 
   $effect(() => {
+    const tabs = tabsEl;
+    const activeTab = library.activeTab;
+    if (!tabs) return;
+
+    const updateHighlight = () => {
+      const button = tabs.querySelector<HTMLButtonElement>(
+        `[data-tab="${activeTab}"]`,
+      );
+      if (!button) return;
+
+      const tabsRect = tabs.getBoundingClientRect();
+      const buttonRect = button.getBoundingClientRect();
+      tabHighlight = {
+        left: buttonRect.left - tabsRect.left,
+        top: buttonRect.top - tabsRect.top,
+        width: buttonRect.width,
+        height: buttonRect.height,
+      };
+      tabHighlightReady = true;
+    };
+
+    const frame = requestAnimationFrame(updateHighlight);
+    const observer = new ResizeObserver(updateHighlight);
+    observer.observe(tabs);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  });
+
+  $effect(() => {
     library.activeTab;
+    scrollTop = 0;
     if (scrollEl) {
-      scrollEl.scrollTop = 0;
+      scrollEl.scrollTo({ top: 0, behavior: "instant" });
     }
   });
 
@@ -1577,19 +1651,29 @@
   role="region"
   aria-label="File library"
 >
-  <div class="library-tabs">
+  <div class="library-tabs" bind:this={tabsEl}>
+    <span
+      class="library-tab-highlight"
+      class:ready={tabHighlightReady}
+      class:collect-mode={library.collectMode}
+      aria-hidden="true"
+      style={`top: ${tabHighlight.top}px; height: ${tabHighlight.height}px; width: ${tabHighlight.width}px; transform: translateX(${tabHighlight.left}px);`}
+    ></span>
     <button
       class="library-tab"
+      data-tab="library"
       class:active={library.activeTab === "library"}
       onclick={() => library.setActiveTab("library")}>Library</button
     >
     <button
       class="library-tab"
+      data-tab="recents"
       class:active={library.activeTab === "recents"}
       onclick={() => library.setActiveTab("recents")}>Recents</button
     >
     <button
       class="library-tab"
+      data-tab="collections"
       class:active={library.activeTab === "collections"}
       class:collect-mode={library.collectMode}
       onclick={() => {
@@ -1599,6 +1683,7 @@
     >
     <button
       class="library-tab"
+      data-tab="favorites"
       class:active={library.activeTab === "favorites"}
       onclick={() => library.setActiveTab("favorites")}>Favorites</button
     >
@@ -1829,7 +1914,7 @@
     class:filmstrip={library.viewMode === "filmstrip"}
     bind:this={scrollEl}
     bind:clientHeight={containerHeight}
-    bind:clientWidth={containerWidth}
+    bind:offsetWidth={containerWidth}
     onscroll={onScroll}
     onmousedown={handleDragStart}
   >
@@ -1842,7 +1927,16 @@
         <div
           class="tab-content"
           class:filmstrip-mode={library.viewMode === "filmstrip"}
-          transition:fade={{ duration: 150 }}
+          in:swipe={{
+            direction: library.tabDirection,
+            duration: 240,
+          easing: cubicInOut,
+          }}
+          out:swipe={{
+            direction: -library.tabDirection,
+            duration: 240,
+          easing: cubicInOut,
+          }}
           style="grid-area: 1 / 1;"
         >
           {#if showFileGrid}
@@ -4182,6 +4276,7 @@
     width: 100%;
     min-height: 100%;
     min-width: 0;
+    will-change: transform, opacity;
   }
 
   .tab-content.filmstrip-mode {
@@ -4190,13 +4285,38 @@
   }
 
   .library-tabs {
+    position: relative;
     display: flex;
     justify-content: center;
     gap: 2px;
     padding: 12px 24px 8px;
   }
 
+  .library-tab-highlight {
+    position: absolute;
+    left: 0;
+    z-index: 0;
+    border-radius: 8px;
+    background: var(--bg-elevated, #1a1a1a);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 300ms cubic-bezier(0.65, 0, 0.35, 1),
+      width 300ms cubic-bezier(0.65, 0, 0.35, 1),
+      opacity 120ms ease;
+  }
+
+  .library-tab-highlight.ready {
+    opacity: 1;
+  }
+
+  .library-tab-highlight.collect-mode {
+    background: var(--accent-blue, #3b82f6);
+  }
+
   .library-tab {
+    position: relative;
+    z-index: 1;
     background: transparent;
     border: none;
     color: var(--text-muted, #888);
@@ -4216,12 +4336,14 @@
   }
 
   .library-tab.active {
-    background: var(--bg-elevated, #1a1a1a);
     color: var(--text-primary, #fff);
   }
 
+  .library-tab.active:hover {
+    background: transparent;
+  }
+
   .library-tab.collect-mode {
-    background: var(--accent-blue, #3b82f6);
     color: #fff;
   }
 
@@ -4452,6 +4574,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     scroll-behavior: smooth;
+    overflow-anchor: none;
     padding: 16px 24px;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -4610,7 +4733,8 @@
     border: 2px solid transparent;
     transition:
       border-color 0.1s,
-      transform 0.15s;
+      transform 0.15s,
+      flex-grow 0.3s cubic-bezier(0.65, 0, 0.35, 1);
     background: var(--bg-secondary, #111);
   }
 

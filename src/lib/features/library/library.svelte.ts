@@ -60,6 +60,12 @@ const MAX_CONCURRENT = 2;
 const THUMB_SIZE = 256;
 
 type LibraryTab = "library" | "recents" | "collections" | "favorites";
+const TAB_ORDER: LibraryTab[] = [
+  "library",
+  "recents",
+  "collections",
+  "favorites",
+];
 
 const CACHE_MAX = 500;
 
@@ -74,6 +80,7 @@ function createLibrary() {
   let _generating = $state(false);
 
   let activeTab = $state<LibraryTab>("library");
+  let tabDirection = $state(1);
 
   let recentFilesLimit = $state(loadRecentFilesLimit());
   let recentsDisabled = $state(loadRecentsDisabled());
@@ -288,6 +295,11 @@ function createLibrary() {
   }
 
   function setActiveTab(tab: LibraryTab) {
+    if (tab !== activeTab) {
+      tabDirection =
+        TAB_ORDER.indexOf(tab) >= TAB_ORDER.indexOf(activeTab) ? 1 : -1;
+    }
+
     if (tab !== "collections" && collectMode) {
       collectMode = false;
     }
@@ -632,6 +644,9 @@ function createLibrary() {
     rebuildQueue,
     get activeTab() {
       return activeTab;
+    },
+    get tabDirection() {
+      return tabDirection;
     },
     setActiveTab,
     get recentFiles() {
