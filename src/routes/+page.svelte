@@ -176,6 +176,7 @@
   });
 
   const style = createViewerStyle();
+  const pdf = createPdf();
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
   const clips = createClips({
     getFilePath: () => filePath,
@@ -206,8 +207,16 @@
     getViewerEl: () => viewerEl,
     getFileSrc: () => fileSrc,
     getIsVideo: () => isVideo,
+    getIsPdf: () => isPdf,
     getImageNaturalWidth: () => imageNaturalWidth,
     getImageNaturalHeight: () => imageNaturalHeight,
+    getPdfPageDimensions: () =>
+      pdf.state.pages.map((page) => ({
+        width: page.width,
+        height: page.height,
+      })),
+    getPdfAutoFit: () => pdf.state.autoFit,
+    fitPdfToScreen: (width, height) => pdf.fitToScreen(width, height),
     getThumbnailBarVisible: () => thumbnailBarVisible,
     getIsFullscreen: () => viewer.state.isFullscreen,
   });
@@ -237,6 +246,7 @@
     handleToggleZoomLock,
     handleViewerScroll,
     toggleFullscreen,
+    fitPdfToViewer,
   } = viewerFx;
 
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
@@ -494,7 +504,6 @@
     }),
   );
 
-  const pdf = createPdf();
   const navigation = createNavigation({
     setFilePath: (v) => (filePath = v),
     setFileSrc: (v) => (fileSrc = v),
@@ -878,6 +887,10 @@
     pdfPageCount: pdf.state.pageCount,
     pdfVersion: pdf.state.pdfVersion,
     pdfPageSize: pdf.state.pdfPageSize,
+    pdfScale: pdf.state.scale,
+    pdfAutoFit: pdf.state.autoFit,
+    resetPdfScale: pdf.resetScale,
+    fitPdfToScreen: fitPdfToViewer,
     fileDimensions,
     fileSize,
     fileInfoLoading,

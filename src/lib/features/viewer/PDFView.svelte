@@ -10,7 +10,9 @@
     error,
     pages,
     scale,
+    autoFit,
     setScale,
+    resetScale,
     currentPage,
     pageCount,
     prevPage,
@@ -40,7 +42,9 @@
     error: string;
     pages: { canvasRef: HTMLCanvasElement | null }[];
     scale: number;
+    autoFit: boolean;
     setScale: (s: number) => void;
+    resetScale: () => void;
     currentPage: number;
     pageCount: number;
     prevPage: () => void;
@@ -126,8 +130,8 @@
   function onPdfKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
     if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-    if (e.key === 'ArrowUp') { e.preventDefault(); prevPage(); }
-    if (e.key === 'ArrowDown') { e.preventDefault(); nextPage(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); prevPage(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); nextPage(); }
   }
 
   $effect(() => {
@@ -270,9 +274,9 @@
   >
   <button
     class="pdf-zoom-label"
-    onclick={() => setScale(1)}
+    onclick={resetScale}
     aria-label="Reset zoom"
-  >{Math.round(scale * 100)}%</button
+  >{Math.round(autoFit ? 100 : scale * 100)}%</button
   >
   <button
     class="pdf-zoom-btn"

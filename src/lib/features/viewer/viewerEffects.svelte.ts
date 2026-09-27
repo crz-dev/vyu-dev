@@ -7,8 +7,12 @@ export interface ViewerEffectsDeps {
   getViewerEl: () => HTMLElement | null;
   getFileSrc: () => string;
   getIsVideo: () => boolean;
+  getIsPdf: () => boolean;
   getImageNaturalWidth: () => number;
   getImageNaturalHeight: () => number;
+  getPdfPageDimensions: () => { width: number; height: number }[];
+  getPdfAutoFit: () => boolean;
+  fitPdfToScreen: (width: number, height: number) => void;
   getThumbnailBarVisible: () => boolean;
   getIsFullscreen: () => boolean;
 }
@@ -33,6 +37,26 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       width: viewerEl.clientWidth - cachedPadH,
       height: viewerEl.clientHeight - cachedPadV,
     };
+  }
+
+  function hasPdfDimensions(): boolean {
+    let hasPage = false;
+    for (const page of deps.getPdfPageDimensions()) {
+      hasPage = true;
+      if (page.width <= 0 || page.height <= 0) return false;
+    }
+    return hasPage;
+  }
+
+  function fitPdfToViewer() {
+    if (!deps.getIsPdf() || !hasPdfDimensions()) return;
+    const { width, height } = getViewerContentSize();
+    deps.fitPdfToScreen(width, height);
+  }
+
+  function refitPdfIfNeeded() {
+    if (!deps.getPdfAutoFit()) return;
+    fitPdfToViewer();
   }
 
   function resetZoom() {
@@ -96,7 +120,10 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       rafId = requestAnimationFrame(() => {
         rafId = null;
         try {
-          if (
+          cachedViewerEl = null;
+          if (deps.getFileSrc() && deps.getIsPdf()) {
+            refitPdfIfNeeded();
+          } else if (
             deps.getFileSrc() &&
             !deps.getIsVideo() &&
             deps.getImageNaturalWidth() > 0 &&
@@ -126,8 +153,11 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
   function refitOnChangeEffect() {
     cachedViewerEl = null;
     void deps.getThumbnailBarVisible();
+    void deps.getIsFullscreen();
     void editing.snapshot.rotation;
-    if (
+    if (deps.getViewerEl() && deps.getFileSrc() && deps.getIsPdf()) {
+      refitPdfIfNeeded();
+    } else if (
       deps.getViewerEl() &&
       deps.getFileSrc() &&
       !deps.getIsVideo() &&
@@ -150,6 +180,7 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
     handleToggleZoomLock,
     handleViewerScroll,
     toggleFullscreen,
+    fitPdfToViewer,
     setVideoElEffect,
     resizeObserverEffect,
     refitOnChangeEffect,

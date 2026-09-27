@@ -49,6 +49,10 @@
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
+    pdfScale,
+    pdfAutoFit,
+    resetPdfScale,
+    fitPdfToScreen,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -232,6 +236,10 @@
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
+    pdfScale: number;
+    pdfAutoFit: boolean;
+    resetPdfScale: () => void;
+    fitPdfToScreen: () => void;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -741,6 +749,10 @@
     {isVideo}
     {isAudio}
     {isPdf}
+    {pdfScale}
+    {pdfAutoFit}
+    {resetPdfScale}
+    {fitPdfToScreen}
     {durationDisplay}
     {audioBitrateDisplay}
     {clipCount}

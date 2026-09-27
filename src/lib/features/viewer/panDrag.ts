@@ -23,6 +23,7 @@ export function createPanDrag(deps: PanDragDeps) {
       return;
     e.preventDefault();
     let hasMoved = false;
+    let nativeDragStarted = false;
     viewer.setDragging(true);
     dragStart = {
       x: e.clientX,
@@ -35,6 +36,13 @@ export function createPanDrag(deps: PanDragDeps) {
       const dy = ev.clientY - dragStart.y;
       if (!hasMoved && Math.sqrt(dx * dx + dy * dy) < 8) return;
       hasMoved = true;
+      if (viewer.state.isFullscreen) {
+        if (!nativeDragStarted) {
+          nativeDragStarted = true;
+          void getCurrentWindow().startDragging();
+        }
+        return;
+      }
       if (viewer.state.zoomLevel > viewer.state.baseZoomLevel)
         viewer.setTranslation(dragStart.tx + dx, dragStart.ty + dy);
     }

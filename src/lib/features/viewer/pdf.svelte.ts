@@ -94,6 +94,8 @@ export interface FindHighlight {
 export interface PdfState {
   pages: PdfPage[];
   scale: number;
+  fitScale: number;
+  autoFit: boolean;
   pageCount: number;
   currentPage: number;
   loading: boolean;
@@ -118,6 +120,8 @@ export function createPdf() {
   const state = $state<PdfState>({
     pages: [],
     scale: 1.0,
+    fitScale: 1.0,
+    autoFit: true,
     pageCount: 0,
     currentPage: 1,
     loading: false,
@@ -149,11 +153,23 @@ export function createPdf() {
     return Math.max(0.25, Math.min(5, value));
   }
 
-  function setScale(val: number) {
-    const newScale = clampScale(val);
-    if (state.scale === newScale) return;
+  function updateCanvasStyles() {
+    for (const page of state.pages) {
+      const canvas = page.canvasRef;
+      if (!canvas || page.width <= 0 || page.height <= 0) continue;
+      canvas.style.width = `${page.width * state.scale}px`;
+      canvas.style.height = `${page.height * state.scale}px`;
+    }
+  }
+
+  function applyScale(value: number, autoFit: boolean) {
+    const newScale = autoFit ? value : clampScale(value);
+    if (state.scale === newScale && state.autoFit === autoFit) return;
+
     state.scale = newScale;
-    // Mark all pages for re-render at new scale
+    state.autoFit = autoFit;
+    updateCanvasStyles();
+
     for (const page of state.pages) {
       page.rendered = false;
     }
@@ -165,6 +181,36 @@ export function createPdf() {
     if (state.findQuery) {
       findText(state.findQuery);
     }
+  }
+
+  function setScale(val: number) {
+    applyScale(val, false);
+  }
+
+  function fitToScreen(containerWidth: number, containerHeight: number) {
+    if (containerWidth <= 0 || containerHeight <= 0) return;
+
+    let maxWidth = 0;
+    let maxHeight = 0;
+    for (const page of state.pages) {
+      maxWidth = Math.max(maxWidth, page.width);
+      maxHeight = Math.max(maxHeight, page.height);
+    }
+    if (maxWidth <= 0 || maxHeight <= 0) return;
+
+    const fitScale = Math.min(
+      10,
+      containerWidth / maxWidth,
+      containerHeight / maxHeight,
+    );
+    if (!Number.isFinite(fitScale) || fitScale <= 0) return;
+
+    state.fitScale = fitScale;
+    applyScale(fitScale, true);
+  }
+
+  function resetScale() {
+    applyScale(1, false);
   }
 
   function scheduleRender(pdfPage: PDFPageProxy, page: PdfPage) {
@@ -187,8 +233,6 @@ export function createPdf() {
     if (page.rendered) return;
 
     const viewport = pdfPage.getViewport({ scale: state.scale });
-    page.width = viewport.width;
-    page.height = viewport.height;
 
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.floor(viewport.width * dpr);
@@ -421,6 +465,8 @@ export function createPdf() {
     state.loading = false;
     state.error = "";
     state.scale = 1.0;
+    state.fitScale = 1.0;
+    state.autoFit = true;
     state.findOpen = false;
     state.findQuery = "";
     state.findResults = 0;
@@ -481,7 +527,7 @@ export function createPdf() {
     let top = 0;
     for (const p of state.pages) {
       if (p.pageNum >= pageNum) break;
-      top += (p.height > 0 ? p.height : FALLBACK) * state.scale + SEP;
+      top += (p.height > 0 ? p.height * state.scale : FALLBACK) + SEP;
     }
     pdfContainerEl.scrollTo({ top, behavior: "smooth" });
   }
@@ -494,10 +540,10 @@ export function createPdf() {
     let pageH = 0;
     for (const p of state.pages) {
       if (p.pageNum === pageNum) {
-        pageH = (p.height > 0 ? p.height : FALLBACK) * state.scale;
+        pageH = p.height > 0 ? p.height * state.scale : FALLBACK;
         break;
       }
-      pageTop += (p.height > 0 ? p.height : FALLBACK) * state.scale + SEP;
+      pageTop += (p.height > 0 ? p.height * state.scale : FALLBACK) + SEP;
     }
     const viewH = pdfContainerEl.clientHeight;
     const top = pageTop - (viewH - pageH) / 2;
@@ -633,6 +679,8 @@ export function createPdf() {
     loadFile,
     cleanup,
     setScale,
+    fitToScreen,
+    resetScale,
     clampScale,
     scrollToPage,
     centerPage,

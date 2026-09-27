@@ -296,9 +296,11 @@
         error={pdf.state.error}
         pages={pdf.state.pages}
         scale={pdf.state.scale}
+        autoFit={pdf.state.autoFit}
         currentPage={pdf.state.currentPage}
         pageCount={pdf.state.pageCount}
         setScale={pdf.setScale}
+        resetScale={pdf.resetScale}
         prevPage={pdf.prevPage}
         nextPage={pdf.nextPage}
         scrollToPage={pdf.scrollToPage}

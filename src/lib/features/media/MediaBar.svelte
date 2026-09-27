@@ -86,6 +86,10 @@
     isVideo,
     isAudio,
     isPdf = false,
+    pdfScale = 1,
+    pdfAutoFit = false,
+    resetPdfScale,
+    fitPdfToScreen,
     durationDisplay,
     audioBitrateDisplay,
     fullscreen = false,
@@ -147,6 +151,10 @@
     isVideo: boolean;
     isAudio: boolean;
     isPdf?: boolean;
+    pdfScale?: number;
+    pdfAutoFit?: boolean;
+    resetPdfScale?: () => void;
+    fitPdfToScreen?: () => void;
     durationDisplay: string;
     audioBitrateDisplay: string;
     fullscreen?: boolean;
@@ -205,6 +213,11 @@
   });
 
   function handleZoomClick() {
+    if (isPdf) {
+      if (pdfAutoFit) resetPdfScale?.();
+      else fitPdfToScreen?.();
+      return;
+    }
     if (zoomLocked || zoomLevel === baseZoomLevel) {
       toggleZoomLock?.();
     } else {
@@ -372,13 +385,16 @@
     <div class="icon-slot viewer-right" class:hidden={libraryOpen}>
       <button
         class="zoom tooltip-above"
-        class:active={zoomLocked}
+        class:active={zoomLocked && !isPdf}
         data-tooltip="Zoom"
         onclick={handleZoomClick}
         oncontextmenu={(e) => {
           e.preventDefault();
-          toggleZoomLock?.();
-        }}>{Math.round(zoomLevel)}%{zoomLocked ? "+" : ""}</button
+          if (!isPdf) toggleZoomLock?.();
+        }}
+        >{Math.round(isPdf && pdfAutoFit ? 100 : isPdf ? pdfScale * 100 : zoomLevel)}%{!isPdf && zoomLocked
+          ? "+"
+          : ""}</button
       >
       <button
         class="fs-btn tooltip-above-shift-left"
