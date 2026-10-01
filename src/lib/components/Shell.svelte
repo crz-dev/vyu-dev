@@ -51,8 +51,7 @@
     pdfPageSize,
     pdfScale,
     pdfAutoFit,
-    resetPdfScale,
-    fitPdfToScreen,
+    pdfSetScale,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -66,8 +65,7 @@
     thumbnailBarVisible,
     zoomLevel,
     zoomLocked,
-    baseZoomLevel,
-    resetZoom,
+    adjustZoom,
     toggleZoomLock,
     clipCount,
     clipMenuResetKey,
@@ -238,8 +236,7 @@
     pdfPageSize: string;
     pdfScale: number;
     pdfAutoFit: boolean;
-    resetPdfScale: () => void;
-    fitPdfToScreen: () => void;
+    pdfSetScale: (scale: number) => void;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -253,8 +250,7 @@
     thumbnailBarVisible: boolean;
     zoomLevel: number;
     zoomLocked: boolean;
-    baseZoomLevel: number;
-    resetZoom: () => void;
+    adjustZoom: (delta: number) => void;
     toggleZoomLock: () => void;
     clipCount: number;
     clipMenuResetKey: number;
@@ -742,8 +738,7 @@
     {fileSrc}
     {zoomLevel}
     {zoomLocked}
-    {baseZoomLevel}
-    {resetZoom}
+    {adjustZoom}
     {toggleZoomLock}
     toggleFullscreen={viewerToggleFullscreen}
     {isVideo}
@@ -751,8 +746,7 @@
     {isPdf}
     {pdfScale}
     {pdfAutoFit}
-    {resetPdfScale}
-    {fitPdfToScreen}
+    {pdfSetScale}
     {durationDisplay}
     {audioBitrateDisplay}
     {clipCount}

@@ -79,8 +79,6 @@
     fileSrc,
     zoomLevel,
     zoomLocked,
-    baseZoomLevel,
-    resetZoom,
     toggleZoomLock,
     toggleFullscreen,
     isVideo,
@@ -88,8 +86,8 @@
     isPdf = false,
     pdfScale = 1,
     pdfAutoFit = false,
-    resetPdfScale,
-    fitPdfToScreen,
+    pdfSetScale,
+    adjustZoom,
     durationDisplay,
     audioBitrateDisplay,
     fullscreen = false,
@@ -144,8 +142,6 @@
     fileSrc: string;
     zoomLevel: number;
     zoomLocked: boolean;
-    baseZoomLevel: number;
-    resetZoom: () => void;
     toggleZoomLock?: () => void;
     toggleFullscreen: () => void;
     isVideo: boolean;
@@ -153,8 +149,8 @@
     isPdf?: boolean;
     pdfScale?: number;
     pdfAutoFit?: boolean;
-    resetPdfScale?: () => void;
-    fitPdfToScreen?: () => void;
+    pdfSetScale: (scale: number) => void;
+    adjustZoom: (delta: number) => void;
     durationDisplay: string;
     audioBitrateDisplay: string;
     fullscreen?: boolean;
@@ -212,18 +208,49 @@
     }
   });
 
-  function handleZoomClick() {
+  let zoomMenuVisible = $state(false);
+  let zoomRepeatDelay: ReturnType<typeof setTimeout> | null = null;
+  let zoomRepeatInterval: ReturnType<typeof setInterval> | null = null;
+
+  function adjustZoomBy(delta: number) {
     if (isPdf) {
-      if (pdfAutoFit) resetPdfScale?.();
-      else fitPdfToScreen?.();
+      const currentScale = pdfAutoFit ? 1 : pdfScale;
+      pdfSetScale(currentScale + delta / 100);
       return;
     }
-    if (zoomLocked || zoomLevel === baseZoomLevel) {
-      toggleZoomLock?.();
-    } else {
-      resetZoom();
-    }
+
+    adjustZoom(delta);
   }
+
+  function stopZoomRepeat() {
+    if (zoomRepeatDelay) clearTimeout(zoomRepeatDelay);
+    if (zoomRepeatInterval) clearInterval(zoomRepeatInterval);
+    zoomRepeatDelay = null;
+    zoomRepeatInterval = null;
+    window.removeEventListener("pointerup", stopZoomRepeat);
+    window.removeEventListener("pointercancel", stopZoomRepeat);
+    window.removeEventListener("blur", stopZoomRepeat);
+  }
+
+  function startZoomRepeat(delta: number) {
+    stopZoomRepeat();
+    adjustZoomBy(delta);
+    zoomRepeatDelay = setTimeout(() => {
+      zoomRepeatDelay = null;
+      zoomRepeatInterval = setInterval(() => adjustZoomBy(delta), 40);
+    }, 250);
+    window.addEventListener("pointerup", stopZoomRepeat);
+    window.addEventListener("pointercancel", stopZoomRepeat);
+    window.addEventListener("blur", stopZoomRepeat);
+  }
+
+  function handleZoomClick(delta: number, e: MouseEvent) {
+    if (e.detail === 0) adjustZoomBy(delta);
+  }
+
+  $effect(() => {
+    return () => stopZoomRepeat();
+  });
 
   function handleFileCountContext(e: MouseEvent) {
     e.preventDefault();
@@ -383,19 +410,42 @@
   </div>
   <div class="bottombar-right">
     <div class="icon-slot viewer-right" class:hidden={libraryOpen}>
-      <button
-        class="zoom tooltip-above"
-        class:active={zoomLocked && !isPdf}
-        data-tooltip="Zoom"
-        onclick={handleZoomClick}
-        oncontextmenu={(e) => {
-          e.preventDefault();
-          if (!isPdf) toggleZoomLock?.();
-        }}
-        >{Math.round(isPdf && pdfAutoFit ? 100 : isPdf ? pdfScale * 100 : zoomLevel)}%{!isPdf && zoomLocked
-          ? "+"
-          : ""}</button
-      >
+      <div class="zoom-control">
+        <button
+          class="zoom tooltip-above"
+          class:active={zoomLocked && !isPdf}
+          class:menu-active={zoomMenuVisible}
+          data-tooltip="Zoom level"
+          onclick={() => (zoomMenuVisible = !zoomMenuVisible)}
+          oncontextmenu={(e) => {
+            e.preventDefault();
+            if (!isPdf) toggleZoomLock?.();
+          }}
+          aria-expanded={zoomMenuVisible}
+          aria-label="Zoom controls"
+          >{Math.round(isPdf && pdfAutoFit ? 100 : isPdf ? pdfScale * 100 : zoomLevel)}%</button
+        >
+        {#if zoomMenuVisible}
+          <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
+            <button
+              class="zoom-menu-btn"
+              onpointerdown={() => startZoomRepeat(-1)}
+              onpointerup={stopZoomRepeat}
+              onpointercancel={stopZoomRepeat}
+              onclick={(e) => handleZoomClick(-1, e)}
+              aria-label="Decrease zoom by 1 percent"
+            >−</button>
+            <button
+              class="zoom-menu-btn"
+              onpointerdown={() => startZoomRepeat(1)}
+              onpointerup={stopZoomRepeat}
+              onpointercancel={stopZoomRepeat}
+              onclick={(e) => handleZoomClick(1, e)}
+              aria-label="Increase zoom by 1 percent"
+            >+</button>
+          </div>
+        {/if}
+      </div>
       <button
         class="fs-btn tooltip-above-shift-left"
         data-tooltip={fullscreen ? "Unfullscreen" : "Fullscreen"}

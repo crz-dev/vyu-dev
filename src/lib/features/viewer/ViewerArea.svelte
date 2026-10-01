@@ -300,7 +300,6 @@
         currentPage={pdf.state.currentPage}
         pageCount={pdf.state.pageCount}
         setScale={pdf.setScale}
-        resetScale={pdf.resetScale}
         prevPage={pdf.prevPage}
         nextPage={pdf.nextPage}
         scrollToPage={pdf.scrollToPage}
@@ -320,7 +319,6 @@
         preloadAllThumbnails={pdf.preloadAllThumbnails}
         toggleFullscreen={toggleFullscreen}
         isFullscreen={viewer.state.isFullscreen}
-        fsControlsVisible={viewer.state.fsControlsVisible}
         resetFsTimer={viewer.resetFsTimer}
       />
     {:else if fileSrc && isAudio}

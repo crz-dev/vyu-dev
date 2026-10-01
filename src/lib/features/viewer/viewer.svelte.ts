@@ -104,6 +104,15 @@ function createViewer() {
     state.translateY = 0;
   }
 
+  function adjustZoom(delta: number) {
+    const newZoom = clampZoom(state.zoomLevel + delta, state.baseZoomLevel);
+    if (newZoom <= state.baseZoomLevel) {
+      state.translateX = 0;
+      state.translateY = 0;
+    }
+    state.zoomLevel = newZoom;
+  }
+
   function toggleZoomLock() {
     state.zoomLocked = !state.zoomLocked;
     if (state.zoomLocked) {
@@ -220,6 +229,7 @@ function createViewer() {
     resetFsTimer,
     fitToScreen,
     resetZoom,
+    adjustZoom,
     toggleZoomLock,
     rotate,
     flip,

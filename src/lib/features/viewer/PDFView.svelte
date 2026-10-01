@@ -12,7 +12,6 @@
     scale,
     autoFit,
     setScale,
-    resetScale,
     currentPage,
     pageCount,
     prevPage,
@@ -34,7 +33,6 @@
     preloadAllThumbnails,
     toggleFullscreen,
     isFullscreen,
-    fsControlsVisible,
     resetFsTimer,
   }: {
     pdfContainerEl: HTMLElement | null;
@@ -44,7 +42,6 @@
     scale: number;
     autoFit: boolean;
     setScale: (s: number) => void;
-    resetScale: () => void;
     currentPage: number;
     pageCount: number;
     prevPage: () => void;
@@ -66,16 +63,13 @@
     preloadAllThumbnails: () => Promise<void>;
     toggleFullscreen: () => void;
     isFullscreen: boolean;
-    fsControlsVisible: boolean;
     resetFsTimer: () => void;
   } = $props();
 
-  let editingPage = $state(false);
-  let pageInput = $state("");
-  let inputEl: HTMLInputElement | null = $state(null);
   let findInputEl: HTMLInputElement | null = $state(null);
 
   let pageWrapperRefs: (HTMLElement | null)[] = $state([]);
+  let zoomScale = $derived(autoFit ? 1 : scale);
 
   let currentPageWrapper = $derived(
     currentPage > 0 && currentPage <= pageWrapperRefs.length
@@ -95,32 +89,16 @@
     }
   });
 
-  function startPageEdit() {
-    pageInput = String(currentPage);
-    editingPage = true;
-    requestAnimationFrame(() => inputEl?.select());
-  }
-
-  function commitPage() {
-    editingPage = false;
-    const num = parseInt(pageInput, 10);
-    if (!isNaN(num) && num >= 1 && num <= pageCount) {
-      scrollToPage(num);
-    }
-  }
-
-  function onPageKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      (e.target as HTMLInputElement).blur();
-    }
-    if (e.key === "Escape") {
-      editingPage = false;
-    }
-  }
-
   function focusFindInput(node: HTMLInputElement) {
     node.focus();
+  }
+
+  function handlePdfWheel(e: WheelEvent) {
+    if (!e.ctrlKey) return;
+
+    e.preventDefault();
+    if (e.deltaY === 0) return;
+    setScale(zoomScale + (e.deltaY > 0 ? -0.05 : 0.05));
   }
 
   function getHighlightsForPage(pageNum: number): FindHighlight | undefined {
@@ -164,6 +142,7 @@
   class:fullscreen={isFullscreen}
   bind:this={pdfContainerEl}
   role="presentation"
+  onwheel={handlePdfWheel}
   onscroll={isFullscreen ? resetFsTimer : undefined}
   onclick={isFullscreen ? resetFsTimer : undefined}
 >
@@ -261,58 +240,4 @@
       {/if}
     {/each}
   {/if}
-</div>
-<div
-  class="pdf-zoom-controls"
-  style={isFullscreen && !fsControlsVisible ? 'opacity: 0; pointer-events: none;' : ''}
->
-  <button
-    class="pdf-zoom-btn"
-    onclick={() => setScale(scale - 0.25)}
-    disabled={scale <= 0.25}
-    aria-label="Zoom out">−</button
-  >
-  <button
-    class="pdf-zoom-label"
-    onclick={resetScale}
-    aria-label="Reset zoom"
-  >{Math.round(autoFit ? 100 : scale * 100)}%</button
-  >
-  <button
-    class="pdf-zoom-btn"
-    onclick={() => setScale(scale + 0.25)}
-    disabled={scale >= 5}
-    aria-label="Zoom in">+</button
-  >
-  <div class="pdf-page-nav">
-    <button
-      class="pdf-zoom-btn"
-      onclick={prevPage}
-      disabled={currentPage <= 1}
-      aria-label="Previous page">◀</button
-    >
-    {#if editingPage}
-      <input
-        bind:this={inputEl}
-        type="text"
-        bind:value={pageInput}
-        class="pdf-page-input"
-        onblur={commitPage}
-        onkeydown={onPageKeydown}
-      />
-    {:else}
-      <button
-        class="pdf-page-count"
-        onclick={startPageEdit}
-        aria-label="Go to page"
-      >{currentPage}/{pageCount}</button
-      >
-    {/if}
-    <button
-      class="pdf-zoom-btn"
-      onclick={nextPage}
-      disabled={currentPage >= pageCount}
-      aria-label="Next page">▶</button
-    >
-  </div>
 </div>

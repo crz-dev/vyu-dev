@@ -246,7 +246,6 @@
     handleToggleZoomLock,
     handleViewerScroll,
     toggleFullscreen,
-    fitPdfToViewer,
   } = viewerFx;
 
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
@@ -889,8 +888,7 @@
     pdfPageSize: pdf.state.pdfPageSize,
     pdfScale: pdf.state.scale,
     pdfAutoFit: pdf.state.autoFit,
-    resetPdfScale: pdf.resetScale,
-    fitPdfToScreen: fitPdfToViewer,
+    pdfSetScale: pdf.setScale,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -898,7 +896,7 @@
     loadingFadingOut,
     anyMenuOpen,
     thumbnailBarVisible,
-    resetZoom,
+    adjustZoom: viewer.adjustZoom,
     toggleSlideshowMenu,
     closeSlideshowMenu,
     toggleThumbnailBar,
@@ -1045,7 +1043,6 @@
   viewerToggleFullscreen={toggleFullscreen}
   zoomLevel={viewer.state.zoomLevel}
   zoomLocked={viewer.state.zoomLocked}
-  baseZoomLevel={viewer.state.baseZoomLevel}
   toggleZoomLock={handleToggleZoomLock}
   clipCount={clips.clipCount}
   clipMenuResetKey={clips.clipMenuResetKey}
