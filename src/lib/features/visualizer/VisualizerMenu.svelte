@@ -58,7 +58,6 @@
   let particles: Particle[] = [];
   let barsState: BarsState | null = null;
   let scopeState: ScopeState | null = null;
-  let mounted = $state(false);
   let menuWrapper = $state<HTMLElement | null>(null);
   let metrics = $state<AudioMetrics>(createEmptyAudioMetrics());
 
@@ -107,8 +106,6 @@
   });
 
   onMount(() => {
-    mounted = true;
-
     if (type === "diamonds") {
       particles = createParticles(60, 512);
     }
@@ -118,34 +115,52 @@
     if (type === "heartbeat") {
       scopeState = createScopeState();
     }
+  });
+
+  $effect(() => {
+    if (!visible || !canvasEl) return;
 
     let freqData: Uint8Array<ArrayBuffer> | null = null;
     let timeData: Uint8Array<ArrayBuffer> | null = null;
-    let ctx: CanvasRenderingContext2D | null = null;
+    let ctx = canvasEl.getContext("2d");
+    let cancelled = false;
+    let lastPublishedMetricKey = "";
+    let lastMetricSample = -Infinity;
+    let liveMetrics = createEmptyAudioMetrics();
+
+    const publishMetrics = (next: AudioMetrics) => {
+      const key = [
+        formatLevelDb(next.levelDb),
+        formatFrequency(next.peakFrequencyHz),
+        formatBandDb(next.lowDb),
+        formatBandDb(next.midDb),
+        formatBandDb(next.highDb),
+      ].join("|");
+      if (key === lastPublishedMetricKey) return;
+      lastPublishedMetricKey = key;
+      metrics = next;
+    };
 
     function tick(timestamp: number) {
-      // Self-cancel when unmounted or canvas gone
-      if (!mounted) {
-        rafId = 0;
+      if (cancelled || !visible) {
         return;
       }
 
-      // Lazily grab context when canvas becomes available
       if (!ctx && canvasEl) {
         ctx = canvasEl.getContext("2d");
       }
-      // Drop context when canvas is removed
-      if (!canvasEl) {
-        ctx = null;
-      }
 
-      if (ctx && canvasEl) {
-        if (timestamp - lastFrame >= 16.67) {
-          const dt = (timestamp - lastFrame) / 1000;
-          lastFrame = timestamp;
+      if (ctx && canvasEl && timestamp - lastFrame >= 16.67) {
+        const dt = lastFrame === 0 ? 0 : (timestamp - lastFrame) / 1000;
+        lastFrame = timestamp;
 
-          const analyser = eqEngine.getAnalyser();
-          if (analyser) {
+        const analyser = eqEngine.getAnalyser();
+        if (!analyser) {
+          liveMetrics = createEmptyAudioMetrics();
+          lastMetricSample = timestamp;
+          publishMetrics(liveMetrics);
+        } else {
+          try {
             if (!freqData || freqData.length !== analyser.frequencyBinCount) {
               freqData = new Uint8Array(analyser.frequencyBinCount);
             }
@@ -153,55 +168,79 @@
               timeData = new Uint8Array(analyser.fftSize);
             }
 
-            analyser.getByteTimeDomainData(timeData);
-            analyser.getByteFrequencyData(freqData);
-            const nextMetrics = calculateAudioMetrics(
-              timeData,
-              freqData,
-              eqEngine.getContext()?.sampleRate ?? 0,
-              analyser.fftSize,
-              analyser.minDecibels,
-              analyser.maxDecibels,
-            );
-            metrics = smoothAudioMetrics(metrics, nextMetrics, dt);
+            const sampleMetrics = timestamp - lastMetricSample >= 100;
+            if (type === "heartbeat" || sampleMetrics) {
+              analyser.getByteTimeDomainData(timeData);
+            }
+            if (type !== "heartbeat" || sampleMetrics) {
+              analyser.getByteFrequencyData(freqData);
+            }
+            if (sampleMetrics) {
+              const metricDt =
+                lastMetricSample === -Infinity
+                  ? 0
+                  : (timestamp - lastMetricSample) / 1000;
+              const nextMetrics = calculateAudioMetrics(
+                timeData,
+                freqData,
+                eqEngine.getContext()?.sampleRate ?? 0,
+                analyser.fftSize,
+                analyser.minDecibels,
+                analyser.maxDecibels,
+              );
+              liveMetrics = smoothAudioMetrics(
+                liveMetrics,
+                nextMetrics,
+                metricDt,
+              );
+              lastMetricSample = timestamp;
+              publishMetrics(liveMetrics);
+            }
 
             ctx.imageSmoothingEnabled = true;
             drawBackground(ctx, CANVAS_W, CANVAS_H);
 
             if (type === "heartbeat") {
               drawScope(ctx, timeData, CANVAS_W, CANVAS_H, scopeState!, dt);
-            } else {
-              if (type === "pulse") {
-                drawBars(ctx, freqData, CANVAS_W, CANVAS_H, barsState!);
-              } else if (type === "spectrum") {
-                drawSpectrum(ctx, freqData, CANVAS_W, CANVAS_H);
-              } else if (type === "diamonds") {
-                drawParticles(
-                  ctx,
-                  freqData,
-                  CANVAS_W,
-                  CANVAS_H,
-                  particles,
-                  timestamp / 1000,
-                );
-              }
+            } else if (type === "pulse") {
+              drawBars(ctx, freqData, CANVAS_W, CANVAS_H, barsState!);
+            } else if (type === "spectrum") {
+              drawSpectrum(ctx, freqData, CANVAS_W, CANVAS_H);
+            } else if (type === "diamonds") {
+              drawParticles(
+                ctx,
+                freqData,
+                CANVAS_W,
+                CANVAS_H,
+                particles,
+                timestamp / 1000,
+              );
             }
-
             drawVignette(ctx, CANVAS_W, CANVAS_H);
-          } else {
-            metrics = createEmptyAudioMetrics();
+          } catch {
+            // The analyser can be invalid briefly while media resources change.
+            liveMetrics = createEmptyAudioMetrics();
+            lastMetricSample = timestamp;
+            publishMetrics(liveMetrics);
           }
         }
       }
 
-      rafId = requestAnimationFrame(tick);
+      if (!cancelled && visible) rafId = requestAnimationFrame(tick);
     }
 
+    lastFrame = 0;
     rafId = requestAnimationFrame(tick);
 
     return () => {
-      mounted = false;
+      cancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
+      rafId = 0;
+      lastFrame = 0;
+      ctx = null;
+      freqData = null;
+      timeData = null;
+      metrics = createEmptyAudioMetrics();
     };
   });
 </script>

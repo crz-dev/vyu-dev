@@ -51,9 +51,17 @@ function createVisualizerStore(): VisualizerStore {
     if (active.length === 0) return;
     if (pinned.size === 0) {
       active = [];
-    } else {
-      active = active.filter((t) => pinned.has(t));
+      return;
     }
+
+    const next = active.filter((t) => pinned.has(t));
+    if (
+      next.length === active.length &&
+      next.every((type, index) => type === active[index])
+    ) {
+      return;
+    }
+    active = next;
   }
 
   function setPinned(name: VisualizerType, value: boolean) {
