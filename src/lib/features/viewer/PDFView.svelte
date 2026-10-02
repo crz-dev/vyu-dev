@@ -10,7 +10,8 @@
     error,
     pages,
     scale,
-    autoFit,
+    fitScale,
+    zoomLocked,
     setScale,
     currentPage,
     pageCount,
@@ -40,7 +41,8 @@
     error: string;
     pages: { canvasRef: HTMLCanvasElement | null }[];
     scale: number;
-    autoFit: boolean;
+    fitScale: number;
+    zoomLocked: boolean;
     setScale: (s: number) => void;
     currentPage: number;
     pageCount: number;
@@ -69,7 +71,13 @@
   let findInputEl: HTMLInputElement | null = $state(null);
 
   let pageWrapperRefs: (HTMLElement | null)[] = $state([]);
-  let zoomScale = $derived(autoFit ? 1 : scale);
+  let wheelRafId = 0;
+  let pendingWheel: {
+    clientX: number;
+    clientY: number;
+    deltaY: number;
+    currentTarget: HTMLElement;
+  } | null = null;
 
   let currentPageWrapper = $derived(
     currentPage > 0 && currentPage <= pageWrapperRefs.length
@@ -98,7 +106,43 @@
 
     e.preventDefault();
     if (e.deltaY === 0) return;
-    setScale(zoomScale + (e.deltaY > 0 ? -0.05 : 0.05));
+
+    pendingWheel = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      deltaY: e.deltaY,
+      currentTarget: e.currentTarget as HTMLElement,
+    };
+
+    if (wheelRafId) return;
+
+    wheelRafId = requestAnimationFrame(() => {
+      wheelRafId = 0;
+      if (!pendingWheel) return;
+
+      const { clientX, clientY, deltaY, currentTarget } = pendingWheel;
+      pendingWheel = null;
+
+      const oldScale = scale;
+      const minScale = zoomLocked ? 0.25 : Math.max(0.25, fitScale);
+      const rawScale = oldScale * (deltaY > 0 ? 1 / 1.1 : 1.1);
+      const newScale = Math.max(minScale, Math.min(5, rawScale));
+      if (newScale === oldScale) return;
+
+      const rect = currentTarget.getBoundingClientRect();
+      const mouseX = clientX - rect.left;
+      const mouseY = clientY - rect.top;
+      const oldScrollLeft = currentTarget.scrollLeft;
+      const oldScrollTop = currentTarget.scrollTop;
+
+      setScale(newScale);
+      requestAnimationFrame(() => {
+        const ratio = newScale / oldScale;
+        currentTarget.scrollLeft =
+          (oldScrollLeft + mouseX) * ratio - mouseX;
+        currentTarget.scrollTop = (oldScrollTop + mouseY) * ratio - mouseY;
+      });
+    });
   }
 
   function getHighlightsForPage(pageNum: number): FindHighlight | undefined {

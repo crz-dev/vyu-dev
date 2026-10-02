@@ -296,7 +296,8 @@
         error={pdf.state.error}
         pages={pdf.state.pages}
         scale={pdf.state.scale}
-        autoFit={pdf.state.autoFit}
+        fitScale={pdf.state.fitScale}
+        zoomLocked={viewer.state.zoomLocked}
         currentPage={pdf.state.currentPage}
         pageCount={pdf.state.pageCount}
         setScale={pdf.setScale}

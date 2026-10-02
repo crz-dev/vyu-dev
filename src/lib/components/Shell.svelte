@@ -50,6 +50,7 @@
     pdfVersion,
     pdfPageSize,
     pdfScale,
+    pdfFitScale,
     pdfAutoFit,
     pdfSetScale,
     fileDimensions,
@@ -235,6 +236,7 @@
     pdfVersion: string;
     pdfPageSize: string;
     pdfScale: number;
+    pdfFitScale: number;
     pdfAutoFit: boolean;
     pdfSetScale: (scale: number) => void;
     fileDimensions: string;
@@ -745,6 +747,7 @@
     {isAudio}
     {isPdf}
     {pdfScale}
+    {pdfFitScale}
     {pdfAutoFit}
     {pdfSetScale}
     {durationDisplay}

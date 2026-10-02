@@ -12,6 +12,7 @@ export interface ViewerEffectsDeps {
   getImageNaturalHeight: () => number;
   getPdfPageDimensions: () => { width: number; height: number }[];
   getPdfAutoFit: () => boolean;
+  setPdfScale: (scale: number) => void;
   fitPdfToScreen: (width: number, height: number) => void;
   getThumbnailBarVisible: () => boolean;
   getIsFullscreen: () => boolean;
@@ -55,11 +56,21 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
   }
 
   function refitPdfIfNeeded() {
+    if (viewer.state.zoomLocked) return;
     if (!deps.getPdfAutoFit()) return;
     fitPdfToViewer();
   }
 
   function resetZoom() {
+    if (deps.getIsPdf()) {
+      if (viewer.state.zoomLocked) {
+        deps.setPdfScale(1);
+      } else {
+        fitPdfToViewer();
+      }
+      return;
+    }
+
     if (
       viewer.state.zoomLocked ||
       !deps.getViewerEl() ||
@@ -81,6 +92,15 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
   function handleToggleZoomLock() {
     const wasLocked = viewer.state.zoomLocked;
     viewer.toggleZoomLock();
+    if (deps.getIsPdf()) {
+      if (viewer.state.zoomLocked) {
+        deps.setPdfScale(1);
+      } else {
+        fitPdfToViewer();
+      }
+      return;
+    }
+
     if (wasLocked && !viewer.state.zoomLocked) {
       if (
         deps.getViewerEl() &&

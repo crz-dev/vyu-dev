@@ -102,6 +102,7 @@
     isAudio,
     isPdf = false,
     pdfScale = 1,
+    pdfFitScale = 1,
     pdfAutoFit = false,
     pdfSetScale,
     adjustZoom,
@@ -165,6 +166,7 @@
     isAudio: boolean;
     isPdf?: boolean;
     pdfScale?: number;
+    pdfFitScale?: number;
     pdfAutoFit?: boolean;
     pdfSetScale: (scale: number) => void;
     adjustZoom: (delta: number) => void;
@@ -245,8 +247,14 @@
 
   function adjustZoomBy(delta: number) {
     if (isPdf) {
-      const currentScale = pdfAutoFit ? 1 : pdfScale;
-      pdfSetScale(currentScale + delta / 100);
+      if (zoomLocked) {
+        pdfSetScale(pdfScale + delta / 100);
+        return;
+      }
+
+      const currentZoom = pdfAutoFit ? 100 : (pdfScale / pdfFitScale) * 100;
+      const nextZoom = Math.max(100, currentZoom + delta);
+      pdfSetScale((pdfFitScale * nextZoom) / 100);
       return;
     }
 
@@ -472,12 +480,12 @@
           onmouseenter={handleZoomMouseEnter}
           oncontextmenu={(e) => {
             e.preventDefault();
-            if (!isPdf) toggleZoomLock?.();
+            toggleZoomLock?.();
           }}
           aria-expanded={zoomMenuVisible}
           aria-label="Zoom controls"
           >
-          {#if zoomLocked && !isPdf}
+          {#if zoomLocked}
             <svg class="zoom-lock-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="5" y="10" width="14" height="11" rx="2" />
               <path d="M8 10V7a4 4 0 0 1 8 0v3" />
@@ -485,7 +493,15 @@
               <path d="M12 16v2" />
             </svg>
           {/if}
-          {Math.round(isPdf && pdfAutoFit ? 100 : isPdf ? pdfScale * 100 : zoomLevel)}%</button
+          {Math.round(
+            isPdf
+              ? zoomLocked
+                ? pdfScale * 100
+                : pdfAutoFit
+                  ? 100
+                  : (pdfScale / pdfFitScale) * 100
+              : zoomLevel,
+          )}%</button
         >
         {#if zoomMenuVisible}
           <div class="zoom-menu-clip">
