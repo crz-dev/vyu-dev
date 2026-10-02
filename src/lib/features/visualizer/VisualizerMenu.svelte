@@ -50,8 +50,33 @@
   let barsState: BarsState | null = null;
   let scopeState: ScopeState | null = null;
   let mounted = $state(false);
+  let menuWrapper = $state<HTMLElement | null>(null);
 
   const visible = $derived(visualizerStore.isActive(type));
+
+  function clampMenuPosition() {
+    const menu = menuWrapper;
+    if (!menu) return;
+    const rect = menu.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const left = Math.max(0, Math.min(rect.left, maxLeft));
+    const top = Math.max(0, Math.min(rect.top, maxTop));
+    if (left !== rect.left) {
+      menu.style.left = `${left}px`;
+      menu.style.transform = "none";
+    }
+    if (top !== rect.top) menu.style.top = `${top}px`;
+  }
+
+  $effect(() => {
+    if (!visible || !menuWrapper) return;
+    void menuTop;
+    void layoutX;
+    void layoutY;
+    const frame = requestAnimationFrame(clampMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   function close() {
     visualizerStore.close(type);
@@ -162,6 +187,7 @@
 {#if visible}
   <div
     class="visualizer-wrapper"
+    bind:this={menuWrapper}
     style:top="{menuTop + layoutY}px"
     style:left="calc(50% + {layoutX}px)"
   >
@@ -188,18 +214,21 @@
           const rect = wrapper.getBoundingClientRect();
           const startLeft = rect.left;
           const startTop = rect.top;
+          const maxLeft = Math.max(0, window.innerWidth - rect.width);
+          const maxTop = Math.max(0, window.innerHeight - rect.height);
           const savedTransition = wrapper.style.transition;
           wrapper.style.transition = "none";
 
           function onPointerMove(ev: PointerEvent) {
-            wrapper.style.left = `${startLeft + ev.clientX - startX}px`;
-            wrapper.style.top = `${startTop + ev.clientY - startY}px`;
+            wrapper.style.left = `${Math.max(0, Math.min(startLeft + ev.clientX - startX, maxLeft))}px`;
+            wrapper.style.top = `${Math.max(0, Math.min(startTop + ev.clientY - startY, maxTop))}px`;
             wrapper.style.transform = "none";
           }
 
           function onPointerUp() {
             wrapper.style.transition = savedTransition;
             wrapper.style.transform = "";
+            clampMenuPosition();
             window.removeEventListener("pointermove", onPointerMove);
             window.removeEventListener("pointerup", onPointerUp);
           }

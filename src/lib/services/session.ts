@@ -7,11 +7,10 @@ export function computeContextMenuPosition(
   menuWidth: number,
   menuHeight: number,
 ): Pick<ContextMenu, "x" | "y"> {
-  let x = clientX;
-  let y = clientY;
-  if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 8;
-  if (y + menuHeight > window.innerHeight)
-    y = window.innerHeight - menuHeight - 8;
+  const maxX = Math.max(0, window.innerWidth - menuWidth - 8);
+  const maxY = Math.max(0, window.innerHeight - menuHeight - 8);
+  const x = Math.max(0, Math.min(clientX, maxX));
+  const y = Math.max(0, Math.min(clientY, maxY));
   return { x, y };
 }
 

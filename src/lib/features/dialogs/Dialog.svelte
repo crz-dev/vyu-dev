@@ -194,6 +194,22 @@
   let shareConverting = $state(false);
   let convertingFormat = $state<string | undefined>(undefined);
   let convertProgress = $state<number>(0);
+  let contextMenuElement = $state<HTMLDivElement | null>(null);
+
+  function clampContextMenuPosition() {
+    const menu = contextMenuElement;
+    if (!menu) return;
+    const maxX = Math.max(0, window.innerWidth - menu.offsetWidth);
+    const maxY = Math.max(0, window.innerHeight - menu.offsetHeight);
+    contextMenu.x = Math.max(0, Math.min(contextMenu.x, maxX));
+    contextMenu.y = Math.max(0, Math.min(contextMenu.y, maxY));
+  }
+
+  $effect(() => {
+    if (!contextMenu.visible || !contextMenuElement) return;
+    const frame = requestAnimationFrame(clampContextMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   $effect(() => {
     if (!shareOpen) {
@@ -551,6 +567,7 @@
   <div
     class="context-menu"
     class:pinned
+    bind:this={contextMenuElement}
     style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
     role="menu"
   >
@@ -565,10 +582,20 @@
         const startY = e.clientY;
         const startMenuX = contextMenu.x;
         const startMenuY = contextMenu.y;
+        const menu = contextMenuElement;
+        if (!menu) return;
+        const maxX = Math.max(0, window.innerWidth - menu.offsetWidth);
+        const maxY = Math.max(0, window.innerHeight - menu.offsetHeight);
 
         function onMouseMove(ev: MouseEvent) {
-          contextMenu.x = startMenuX + ev.clientX - startX;
-          contextMenu.y = startMenuY + ev.clientY - startY;
+          contextMenu.x = Math.max(
+            0,
+            Math.min(startMenuX + ev.clientX - startX, maxX),
+          );
+          contextMenu.y = Math.max(
+            0,
+            Math.min(startMenuY + ev.clientY - startY, maxY),
+          );
         }
 
         function onMouseUp() {

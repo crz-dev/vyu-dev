@@ -14,6 +14,31 @@
   let sliderHovered = $state(false);
   let trackEl: HTMLDivElement | null = $state(null);
   let isDragging = $state(false);
+  let menuElement = $state<HTMLElement | null>(null);
+
+  function clampMenuPosition() {
+    const menu = menuElement;
+    if (!menu) return;
+    const rect = menu.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const left = Math.max(0, Math.min(rect.left, maxLeft));
+    const top = Math.max(0, Math.min(rect.top, maxTop));
+    if (left !== rect.left) {
+      menu.style.left = `${left}px`;
+      menu.style.transform = "none";
+    }
+    if (top !== rect.top) {
+      menu.style.top = `${top}px`;
+      menu.style.bottom = "auto";
+    }
+  }
+
+  $effect(() => {
+    if (!visible || !menuElement) return;
+    const frame = requestAnimationFrame(clampMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   const minInterval = 1;
   const maxInterval = 10;
@@ -83,6 +108,7 @@
   <div
     class="slideshow-menu"
     class:pinned
+    bind:this={menuElement}
     transition:fly={{ y: 10, duration: 150, opacity: 0.08 }}
   >
     <div
@@ -102,10 +128,12 @@
         const rect = menu.getBoundingClientRect();
         const startLeft = rect.left;
         const startTop = rect.top;
+        const maxLeft = Math.max(0, window.innerWidth - rect.width);
+        const maxTop = Math.max(0, window.innerHeight - rect.height);
 
         function onMouseMove(ev: MouseEvent) {
-          menu.style.left = `${startLeft + ev.clientX - startX}px`;
-          menu.style.top = `${startTop + ev.clientY - startY}px`;
+          menu.style.left = `${Math.max(0, Math.min(startLeft + ev.clientX - startX, maxLeft))}px`;
+          menu.style.top = `${Math.max(0, Math.min(startTop + ev.clientY - startY, maxTop))}px`;
           menu.style.bottom = "auto";
           menu.style.transform = "none";
         }

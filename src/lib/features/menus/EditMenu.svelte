@@ -47,6 +47,36 @@
   let flashTimeout: ReturnType<typeof setTimeout> | null = $state(null);
   let resetConfirming = $state(false);
   let resetConfirmTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+  let menuWrapper = $state<HTMLElement | null>(null);
+
+  function clampMenuPosition() {
+    const menu = menuWrapper;
+    if (!menu) return;
+    const content = menu.querySelector(".edit-menu");
+    if (!content) return;
+    const wrapperRect = menu.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+    const targetRect = hasEdits ? wrapperRect : contentRect;
+    const maxLeft = Math.max(0, window.innerWidth - targetRect.width);
+    const maxTop = Math.max(0, window.innerHeight - targetRect.height);
+    const left = Math.max(0, Math.min(targetRect.left, maxLeft));
+    const top = Math.max(0, Math.min(targetRect.top, maxTop));
+    if (left !== targetRect.left) {
+      menu.style.left = `${wrapperRect.left + left - targetRect.left}px`;
+      menu.style.transform = "none";
+    }
+    if (top !== targetRect.top)
+      menu.style.top = `${wrapperRect.top + top - targetRect.top}px`;
+  }
+
+  $effect(() => {
+    if (!visible || !menuWrapper) return;
+    void hasEdits;
+    void styleOverride;
+    if (menuWrapper.classList.contains("dragging")) return;
+    const frame = requestAnimationFrame(clampMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   function flashButton(id: string) {
     if (flashTimeout) clearTimeout(flashTimeout);
@@ -395,7 +425,11 @@
 </script>
 
 {#if visible}
-  <div class="edit-menu-wrapper edit-menu-wrapper-edit" style={styleOverride}>
+  <div
+    class="edit-menu-wrapper edit-menu-wrapper-edit"
+    bind:this={menuWrapper}
+    style={styleOverride}
+  >
     <div
       class="edit-actions-bar edit-actions-left"
       class:has-edits={hasEdits}
@@ -498,27 +532,41 @@
         aria-label="Drag to move"
         onmousedown={(e) => {
           e.preventDefault();
-          onMoved?.();
+          queueMicrotask(() => onMoved?.());
           const menu = (e.currentTarget as HTMLElement).closest(
             ".edit-menu-wrapper",
           ) as HTMLElement;
           if (!menu) return;
+          menu.classList.add("dragging");
           const startX = e.clientX;
           const startY = e.clientY;
-          const rect = menu.getBoundingClientRect();
-          const startLeft = rect.left;
-          const startTop = rect.top;
+          const wrapperRect = menu.getBoundingClientRect();
+          const content = menu.querySelector(".edit-menu");
+          if (!content) return;
+          const contentRect = content.getBoundingClientRect();
+          const targetRect = hasEdits ? wrapperRect : contentRect;
+          const maxLeft = Math.max(0, window.innerWidth - targetRect.width);
+          const maxTop = Math.max(0, window.innerHeight - targetRect.height);
           const savedTransition = menu.style.transition;
           menu.style.transition = "none";
 
           function onMouseMove(ev: MouseEvent) {
-            menu.style.left = `${startLeft + ev.clientX - startX}px`;
-            menu.style.top = `${startTop + ev.clientY - startY}px`;
+            const targetLeft = Math.max(
+              0,
+              Math.min(targetRect.left + ev.clientX - startX, maxLeft),
+            );
+            const targetTop = Math.max(
+              0,
+              Math.min(targetRect.top + ev.clientY - startY, maxTop),
+            );
+            menu.style.left = `${wrapperRect.left + targetLeft - targetRect.left}px`;
+            menu.style.top = `${wrapperRect.top + targetTop - targetRect.top}px`;
             menu.style.transform = "none";
           }
 
           function onMouseUp() {
             menu.style.transition = savedTransition;
+            menu.classList.remove("dragging");
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
           }

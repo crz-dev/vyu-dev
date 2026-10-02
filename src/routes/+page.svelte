@@ -152,7 +152,7 @@
   let mediaPropsLoading = $state(false);
 
   const menuActions = createMenuActions({
-    closeContextMenu: () => contextMenuStore.close(),
+    closeContextMenu,
     getFilePath: () => filePath,
     setEditingFilePath: (path) => editing.setFilePath(path),
   });
@@ -717,6 +717,11 @@
     contextMenuStore.open(e, menuW, menuH);
   }
   function closeContextMenu() {
+    if (document.querySelector(".context-menu.pinned")) return;
+    contextMenuStore.close();
+  }
+
+  function forceCloseContextMenu() {
     contextMenuStore.close();
   }
 
@@ -1100,7 +1105,7 @@
   onUpdateDeleteNoAsk={(v: boolean) => (deleteStore.deleteNoAsk = v)}
   onUpdateDeletePermanently={(v: boolean) =>
     (deleteStore.deletePermanently = v)}
-  onCloseContextMenu={closeContextMenu}
+  onCloseContextMenu={forceCloseContextMenu}
   tsTooltip={markerStore.tsTooltip}
   tsEditMenuVisible={markerStore.tsEditMenu.visible}
   tsEditMenu={markerStore.tsEditMenu}

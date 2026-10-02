@@ -31,6 +31,29 @@
   let activeStage: "mono" | "stereo" | "surround" | "eightD" | null =
     $state(null);
   let openTimeout: ReturnType<typeof setTimeout> | null = $state(null);
+  let menuWrapper = $state<HTMLElement | null>(null);
+
+  function clampMenuPosition() {
+    const menu = menuWrapper;
+    if (!menu) return;
+    const rect = menu.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const left = Math.max(0, Math.min(rect.left, maxLeft));
+    const top = Math.max(0, Math.min(rect.top, maxTop));
+    if (left !== rect.left) {
+      menu.style.left = `${left}px`;
+      menu.style.transform = "none";
+    }
+    if (top !== rect.top) menu.style.top = `${top}px`;
+  }
+
+  $effect(() => {
+    if (!visible || !menuWrapper) return;
+    void styleOverride;
+    const frame = requestAnimationFrame(clampMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   // Tune slider (markup-style)
   let tuneTrackEl: HTMLDivElement | null = $state(null);
@@ -262,6 +285,7 @@
 {#if visible}
   <div
     class="edit-menu-wrapper edit-menu-wrapper-effects"
+    bind:this={menuWrapper}
     style={styleOverride}
   >
     <div
@@ -286,12 +310,14 @@
           const rect = menu.getBoundingClientRect();
           const startLeft = rect.left;
           const startTop = rect.top;
+          const maxLeft = Math.max(0, window.innerWidth - rect.width);
+          const maxTop = Math.max(0, window.innerHeight - rect.height);
           const savedTransition = menu.style.transition;
           menu.style.transition = "none";
 
           function onMouseMove(ev: MouseEvent) {
-            menu.style.left = `${startLeft + ev.clientX - startX}px`;
-            menu.style.top = `${startTop + ev.clientY - startY}px`;
+            menu.style.left = `${Math.max(0, Math.min(startLeft + ev.clientX - startX, maxLeft))}px`;
+            menu.style.top = `${Math.max(0, Math.min(startTop + ev.clientY - startY, maxTop))}px`;
             menu.style.transform = "none";
           }
 

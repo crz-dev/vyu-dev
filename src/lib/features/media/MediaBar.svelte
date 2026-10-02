@@ -51,6 +51,7 @@
 
   let dismissed = $state(false);
   let pinned = $state(false);
+  let clipMenuElement = $state<HTMLElement | null>(null);
   let fileCountEl: HTMLButtonElement | null = $state(null);
   let filePositionTooltipVisible = $state(true);
   let sortMenuX = $state(0);
@@ -63,6 +64,21 @@
   let viewMenuVisible = $state(false);
   let viewMenuX = $state(0);
   let viewMenuY = $state(0);
+
+  function clampClipMenuPosition() {
+    const menu = clipMenuElement;
+    if (!menu) return;
+    const rect = menu.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const left = Math.max(0, Math.min(rect.left, maxLeft));
+    const top = Math.max(0, Math.min(rect.top, maxTop));
+    if (left !== rect.left) {
+      menu.style.left = `${left}px`;
+      menu.style.transform = "none";
+    }
+    if (top !== rect.top) menu.style.top = `${top}px`;
+  }
 
   $effect(() => {
     if (dismissed) {
@@ -197,6 +213,19 @@
     onCloseSelectMenu?: () => void;
     onSelectMenuMoved?: () => void;
   } = $props();
+
+  $effect(() => {
+    if (
+      !(isVideo || isAudio) ||
+      clipCount <= 0 ||
+      dismissed ||
+      !clipMenuElement
+    )
+      return;
+    void clipMenuStyleOverride;
+    const frame = requestAnimationFrame(clampClipMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   $effect(() => {
     if (clipCount > 0) dismissed = false;
@@ -604,6 +633,7 @@
   <div
     class="clip-actions"
     class:pinned
+    bind:this={clipMenuElement}
     style={clipMenuStyleOverride}
     transition:fly={{ y: 26, duration: 190, opacity: 0.08 }}
   >
@@ -624,12 +654,14 @@
         const rect = menu.getBoundingClientRect();
         const startLeft = rect.left;
         const startTop = rect.top;
+        const maxLeft = Math.max(0, window.innerWidth - rect.width);
+        const maxTop = Math.max(0, window.innerHeight - rect.height);
         const savedTransition = menu.style.transition;
         menu.style.transition = "none";
 
         function onMouseMove(ev: MouseEvent) {
-          menu.style.left = `${startLeft + ev.clientX - startX}px`;
-          menu.style.top = `${startTop + ev.clientY - startY}px`;
+          menu.style.left = `${Math.max(0, Math.min(startLeft + ev.clientX - startX, maxLeft))}px`;
+          menu.style.top = `${Math.max(0, Math.min(startTop + ev.clientY - startY, maxTop))}px`;
           menu.style.bottom = "auto";
           menu.style.height = "fit-content";
           menu.style.transform = "none";
