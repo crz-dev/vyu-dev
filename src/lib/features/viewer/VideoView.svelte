@@ -17,6 +17,7 @@
     panCursor,
     isGifVideo,
     hoverZone = $bindable("none"),
+    videoControlsStyle,
     tsEditMenuVisible,
     timelineProps,
     playbackProps,
@@ -37,6 +38,7 @@
     panCursor: string;
     isGifVideo: boolean;
     hoverZone: string;
+    videoControlsStyle: string;
     tsEditMenuVisible: boolean;
     timelineProps: Record<string, unknown>;
     playbackProps: Record<string, unknown>;
@@ -86,6 +88,7 @@
     class="video-controls"
     class:gif-only={isGifVideo}
     class:editor-open={tsEditMenuVisible}
+    style={videoControlsStyle}
   >
     <Controls fullscreen={false} {timelineProps} {playbackProps} />
   </div>

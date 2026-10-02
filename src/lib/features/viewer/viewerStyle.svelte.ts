@@ -28,6 +28,10 @@ export function createViewerStyle() {
   });
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());
   const videoInnerTransform = $derived(viewer.getVideoInnerTransform());
+  const videoControlsStyle = $derived.by(() => {
+    const scale = Math.max(viewer.state.zoomLevel / 100, 0.01);
+    return `--video-controls-width: ${scale * 100}%; --video-controls-inverse-scale: ${1 / scale};`;
+  });
   const videoInnerStyle = $derived(
     `${videoInnerTransform}${colorFilter}${cropClipPath ? `; clip-path: ${cropClipPath}` : ""}`,
   );
@@ -46,6 +50,9 @@ export function createViewerStyle() {
     },
     get videoWrapperTransform() {
       return videoWrapperTransform;
+    },
+    get videoControlsStyle() {
+      return videoControlsStyle;
     },
     get videoInnerStyle() {
       return videoInnerStyle;

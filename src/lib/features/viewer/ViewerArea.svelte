@@ -279,6 +279,7 @@
         markupCursor={markup.cursorStyle}
         videoWrapperTransform={style.videoWrapperTransform}
         videoInnerStyle={style.videoInnerStyle}
+        videoControlsStyle={style.videoControlsStyle}
         panCursor={style.panCursor}
         {isGifVideo}
         bind:hoverZone
