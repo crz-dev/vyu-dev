@@ -2982,8 +2982,57 @@
 }
 
 .about-title-underline {
+  position: relative;
+  display: inline-block;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.about-title-underline::after {
+  content: "Your";
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  background-image: linear-gradient(
+    90deg,
+    #ff3b30,
+    #ffcc00,
+    #34c759,
+    #007aff
+  );
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  opacity: 0;
+  pointer-events: none;
+  text-decoration: none;
+}
+
+.about-title-underline::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  background-image: linear-gradient(
+    90deg,
+    #ff3b30,
+    #ffcc00,
+    #34c759,
+    #007aff
+  );
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.about-title-underline:hover::before,
+.about-title-underline:hover::after {
+  animation: aboutTitleRainbow 1.2s ease-in-out forwards;
 }
 
 .about-desc {
@@ -3078,9 +3127,9 @@
 .about-format-badge {
   padding: 2px 7px;
   border-radius: 5px;
-  background: var(--blue-bg-faint);
-  border: 0.5px solid var(--blue-bg-default);
-  color: var(--blue-lighter);
+  background: var(--yellow-bg-faint);
+  border: 0.5px solid var(--yellow-bg-default);
+  color: var(--yellow-soft);
   font-size: 9px;
   font-weight: 600;
   font-family: var(--font-family);

@@ -68,7 +68,7 @@
         </p>
 
         <div class="about-panel">
-          <div class="about-panel-header">
+          <div class="about-panel-header about-panel-header-yellow">
             <svg
               width="14"
               height="14"
@@ -116,7 +116,7 @@
         </div>
 
         <div class="about-panel">
-          <div class="about-panel-header about-panel-header-yellow">
+          <div class="about-panel-header">
             <svg
               width="14"
               height="14"

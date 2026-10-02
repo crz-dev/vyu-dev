@@ -109,3 +109,22 @@
     transform: translateX(-50%);
   }
 }
+
+@keyframes aboutTitleRainbow {
+  0% {
+    opacity: 0;
+    background-position: 100% 0;
+  }
+  18% {
+    opacity: 1;
+    background-position: 85% 0;
+  }
+  68% {
+    opacity: 1;
+    background-position: 25% 0;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0 0;
+  }
+}
