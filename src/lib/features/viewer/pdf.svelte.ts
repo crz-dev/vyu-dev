@@ -80,6 +80,7 @@ export function isPdfPath(path: string): boolean {
 export interface PdfPage {
   pageNum: number;
   canvasRef: HTMLCanvasElement | null;
+  textLayerRef: HTMLDivElement | null;
   rendered: boolean;
   width: number;
   height: number;
@@ -113,6 +114,12 @@ export interface PdfState {
 
 const RENDER_DEBOUNCE_MS = 60;
 const LOAD_TIMEOUT_MS = 45_000;
+type PdfJsModule = typeof import("pdfjs-dist/build/pdf.mjs");
+type PdfTextContent = Awaited<ReturnType<PDFPageProxy["getTextContent"]>>;
+type TextLayerTask = {
+  cancel: () => void;
+  render: () => Promise<void>;
+};
 
 export type PdfStore = ReturnType<typeof createPdf>;
 
@@ -138,8 +145,12 @@ export function createPdf() {
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
+  let pdfjsLib: PdfJsModule | null = null;
   let observer: IntersectionObserver | null = null;
   let renderTimers: Map<number, ReturnType<typeof setTimeout>> = new Map();
+  let textContentCache: Map<number, PdfTextContent> = new Map();
+  let textLayerTasks: Map<number, TextLayerTask> = new Map();
+  let textLayerVersions: Map<number, number> = new Map();
   let pdfContainerEl: HTMLElement | null = null;
   let scrollHandler: ((e: Event) => void) | null = null;
   let currentFilePath = "";
@@ -162,6 +173,14 @@ export function createPdf() {
     }
   }
 
+  function clearTextLayer(pageNum: number): void {
+    textLayerVersions.set(pageNum, (textLayerVersions.get(pageNum) ?? 0) + 1);
+    textLayerTasks.get(pageNum)?.cancel();
+    textLayerTasks.delete(pageNum);
+    const page = state.pages.find((item) => item.pageNum === pageNum);
+    page?.textLayerRef?.replaceChildren();
+  }
+
   function applyScale(value: number, autoFit: boolean) {
     const newScale = autoFit ? value : clampScale(value);
     if (state.scale === newScale && state.autoFit === autoFit) return;
@@ -171,6 +190,7 @@ export function createPdf() {
     updateCanvasStyles();
 
     for (const page of state.pages) {
+      clearTextLayer(page.pageNum);
       page.rendered = false;
     }
     if (observer && pdfContainerEl) {
@@ -247,6 +267,7 @@ export function createPdf() {
     try {
       await pdfPage.render({ canvasContext: ctx, viewport }).promise;
       page.rendered = true;
+      void renderTextLayer(pdfPage, page);
       updateCurrentPage();
       if (page.pageNum === 1 && currentFilePath) {
         try {
@@ -265,6 +286,71 @@ export function createPdf() {
       }
     } catch (err) {
       console.error(`Failed to render PDF page ${page.pageNum}:`, err);
+    }
+  }
+
+  async function getTextContent(
+    pageNum: number,
+    pdfPage?: PDFPageProxy,
+  ): Promise<PdfTextContent | null> {
+    const cached = textContentCache.get(pageNum);
+    if (cached) return cached;
+    if (!pdfDoc || disposed) return null;
+    const documentRef = pdfDoc;
+
+    try {
+      const content = await (
+        pdfPage ?? (await pdfDoc.getPage(pageNum))
+      ).getTextContent();
+      if (disposed || pdfDoc !== documentRef) return null;
+      textContentCache.set(pageNum, content);
+      return content;
+    } catch {
+      return null;
+    }
+  }
+
+  async function renderTextLayer(
+    pdfPage: PDFPageProxy,
+    page: PdfPage,
+  ): Promise<void> {
+    const container = page.textLayerRef;
+    const lib = pdfjsLib;
+    const documentRef = pdfDoc;
+    if (!container || !lib || !documentRef || disposed) return;
+
+    clearTextLayer(page.pageNum);
+    const version = textLayerVersions.get(page.pageNum) ?? 0;
+    const textContent = await getTextContent(page.pageNum, pdfPage);
+    if (
+      !textContent ||
+      disposed ||
+      pdfDoc !== documentRef ||
+      textLayerVersions.get(page.pageNum) !== version ||
+      page.textLayerRef !== container
+    ) {
+      return;
+    }
+
+    container.style.setProperty("--scale-factor", String(state.scale));
+    const viewport = pdfPage.getViewport({ scale: state.scale });
+    const task = new lib.TextLayer({
+      textContentSource: textContent,
+      container,
+      viewport: viewport.clone({ dontFlip: true }),
+    }) as TextLayerTask;
+    textLayerTasks.set(page.pageNum, task);
+
+    try {
+      await task.render();
+    } catch (err) {
+      if (textLayerTasks.get(page.pageNum) === task && !disposed) {
+        console.error(`Failed to render PDF text layer ${page.pageNum}:`, err);
+      }
+    } finally {
+      if (textLayerTasks.get(page.pageNum) === task) {
+        textLayerTasks.delete(page.pageNum);
+      }
     }
   }
 
@@ -317,7 +403,9 @@ export function createPdf() {
     );
 
     scrollHandler = () => updateCurrentPage();
-    pdfContainerEl?.addEventListener("scroll", scrollHandler, { passive: true });
+    pdfContainerEl?.addEventListener("scroll", scrollHandler, {
+      passive: true,
+    });
   }
 
   async function loadFile(path: string): Promise<void> {
@@ -341,7 +429,8 @@ export function createPdf() {
 
     try {
       // Dynamic import so pdfjs-dist only loads when a PDF is opened (code-split)
-      const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
+      const loadedPdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
+      pdfjsLib = loadedPdfjsLib;
 
       // Preload the worker module on the main thread — this triggers PDF.js's
       // built-in "fake worker" mode, which runs worker logic on the main thread
@@ -351,10 +440,10 @@ export function createPdf() {
       globalThis.pdfjsWorker = pdfjsWorker;
 
       // Must be a truthy non-empty string — PDF.js 4.x checks for falsy
-      pdfjsLib.GlobalWorkerOptions.workerSrc = ".";
+      loadedPdfjsLib.GlobalWorkerOptions.workerSrc = ".";
 
       const url = convertFileSrc(path);
-      const loadingTask = pdfjsLib.getDocument({
+      const loadingTask = loadedPdfjsLib.getDocument({
         url,
         enableXfa: true,
         disableAutoFetch: false,
@@ -374,6 +463,7 @@ export function createPdf() {
         pages.push({
           pageNum: i,
           canvasRef: null,
+          textLayerRef: null,
           rendered: false,
           width: 0,
           height: 0,
@@ -422,7 +512,9 @@ export function createPdf() {
         if (info?.PDFFormatVersion) {
           state.pdfVersion = String(info.PDFFormatVersion);
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       setupObserver();
 
@@ -443,6 +535,9 @@ export function createPdf() {
     disposed = true;
     for (const [, timer] of renderTimers) clearTimeout(timer);
     renderTimers.clear();
+    for (const task of textLayerTasks.values()) task.cancel();
+    textLayerTasks.clear();
+    textLayerVersions.clear();
     if (observer) {
       observer.disconnect();
       observer = null;
@@ -479,6 +574,7 @@ export function createPdf() {
     state.pdfVersion = "";
     state.pdfPageSize = "";
     pageThumbnailCache.clear();
+    textContentCache.clear();
   }
 
   let pageThumbnailCache: Map<number, string> = new Map();
@@ -560,7 +656,10 @@ export function createPdf() {
     centerPage(next);
   }
 
-  let findItemsCache: Map<number, { str: string; x: number; y: number; w: number; h: number }[]> = new Map();
+  let findItemsCache: Map<
+    number,
+    { str: string; x: number; y: number; w: number; h: number }[]
+  > = new Map();
   let findPageHeights: Map<number, number> = new Map();
 
   function toggleFind() {
@@ -599,11 +698,17 @@ export function createPdf() {
           const vp = page.getViewport({ scale: 1 });
           pageH = vp.height;
           findPageHeights.set(i, pageH);
-          const content = await page.getTextContent();
+          const content = await getTextContent(i, page);
+          if (!content) continue;
           items = [];
           for (const item of content.items) {
             if ("str" in item) {
-              const t = item as { str: string; transform: number[]; width: number; height: number };
+              const t = item as {
+                str: string;
+                transform: number[];
+                width: number;
+                height: number;
+              };
               items.push({
                 str: t.str,
                 x: t.transform[4],
@@ -615,7 +720,12 @@ export function createPdf() {
           }
           findItemsCache.set(i, items);
         }
-        const pageRects: { left: number; top: number; width: number; height: number }[] = [];
+        const pageRects: {
+          left: number;
+          top: number;
+          width: number;
+          height: number;
+        }[] = [];
         let pageCount = 0;
         for (const item of items) {
           const lower = item.str.toLowerCase();
@@ -656,7 +766,10 @@ export function createPdf() {
     );
     const targetIdx = matchPageIdx >= 0 ? matchPageIdx : 0;
     const targetPageIdx = (targetIdx + 1) % state.findMatchPages.length;
-    state.findCurrentIdx = Math.min(state.findCurrentIdx + 1, state.findResults);
+    state.findCurrentIdx = Math.min(
+      state.findCurrentIdx + 1,
+      state.findResults,
+    );
     scrollToPage(state.findMatchPages[targetPageIdx]);
   }
 

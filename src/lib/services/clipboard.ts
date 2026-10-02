@@ -41,7 +41,14 @@ export async function copyFrameToClipboard(
 }
 
 export async function copyPathToClipboard(filePath: string): Promise<void> {
-  await navigator.clipboard.writeText(filePath);
+  await copyTextToClipboard(filePath);
+}
+
+export async function copyTextToClipboard(text: string): Promise<void> {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Text clipboard API is unavailable in this runtime.");
+  }
+  await navigator.clipboard.writeText(text);
 }
 
 export async function copyAllPropertiesToClipboard(

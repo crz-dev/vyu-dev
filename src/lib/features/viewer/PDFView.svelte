@@ -1,6 +1,8 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import type { FindHighlight } from "./pdf.svelte";
+  import { copyTextToClipboard } from "$lib/services/clipboard";
+  import { showToast } from "$lib/components/toast.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
 
@@ -39,7 +41,10 @@
     pdfContainerEl: HTMLElement | null;
     loading: boolean;
     error: string;
-    pages: { canvasRef: HTMLCanvasElement | null }[];
+    pages: {
+      canvasRef: HTMLCanvasElement | null;
+      textLayerRef: HTMLDivElement | null;
+    }[];
     scale: number;
     fitScale: number;
     zoomLocked: boolean;
@@ -69,6 +74,13 @@
   } = $props();
 
   let findInputEl: HTMLInputElement | null = $state(null);
+  let textSelection = $state<{
+    text: string;
+    left: number;
+    top: number;
+    copied: boolean;
+  } | null>(null);
+  let copiedResetTimer: ReturnType<typeof setTimeout> | null = null;
 
   let pageWrapperRefs: (HTMLElement | null)[] = $state([]);
   let wheelRafId = 0;
@@ -138,8 +150,7 @@
       setScale(newScale);
       requestAnimationFrame(() => {
         const ratio = newScale / oldScale;
-        currentTarget.scrollLeft =
-          (oldScrollLeft + mouseX) * ratio - mouseX;
+        currentTarget.scrollLeft = (oldScrollLeft + mouseX) * ratio - mouseX;
         currentTarget.scrollTop = (oldScrollTop + mouseY) * ratio - mouseY;
       });
     });
@@ -149,16 +160,149 @@
     return findHighlights.find((h) => h.pageNum === pageNum);
   }
 
-  function onPdfKeydown(e: KeyboardEvent) {
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-    if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); prevPage(); }
-    if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); nextPage(); }
+  function getSelectionElement(node: Node | null): Element | null {
+    if (!node) return null;
+    return node instanceof Element ? node : node.parentElement;
+  }
+
+  function isPdfTextNode(node: Node | null): boolean {
+    const element = getSelectionElement(node);
+    return (
+      !!element?.closest(".pdf-text-layer") &&
+      !!pdfContainerEl?.contains(element)
+    );
+  }
+
+  function clearCopiedResetTimer(): void {
+    if (!copiedResetTimer) return;
+    clearTimeout(copiedResetTimer);
+    copiedResetTimer = null;
+  }
+
+  function clearTextSelection(): void {
+    clearCopiedResetTimer();
+    textSelection = null;
+  }
+
+  function updateTextSelection(): void {
+    const selection = window.getSelection();
+    if (
+      !pdfContainerEl ||
+      !selection ||
+      selection.isCollapsed ||
+      selection.rangeCount === 0 ||
+      !isPdfTextNode(selection.anchorNode) ||
+      !isPdfTextNode(selection.focusNode)
+    ) {
+      clearTextSelection();
+      return;
+    }
+
+    const text = selection.toString();
+    if (!text.trim()) {
+      clearTextSelection();
+      return;
+    }
+
+    const rangeRect = selection.getRangeAt(0).getBoundingClientRect();
+    if (rangeRect.width <= 0 || rangeRect.height <= 0) {
+      clearTextSelection();
+      return;
+    }
+
+    const viewerRect = pdfContainerEl.getBoundingClientRect();
+    const pillWidth = 28;
+    const pillHeight = 28;
+    const edgePadding = 8;
+    const gap = 2;
+    const left = Math.max(
+      viewerRect.left + pillWidth + edgePadding,
+      Math.min(viewerRect.right - edgePadding, rangeRect.right),
+    );
+    const belowTop = rangeRect.bottom + gap;
+    const top =
+      belowTop + pillHeight <= viewerRect.bottom - edgePadding
+        ? belowTop
+        : Math.min(
+            viewerRect.bottom - pillHeight - edgePadding,
+            Math.max(
+              viewerRect.top + edgePadding,
+              rangeRect.top - pillHeight - gap,
+            ),
+          );
+
+    const sameText = textSelection?.text === text;
+    if (!sameText) clearCopiedResetTimer();
+
+    textSelection = {
+      text,
+      left,
+      top,
+      copied: sameText ? (textSelection?.copied ?? false) : false,
+    };
+  }
+
+  async function copySelection(): Promise<void> {
+    const text = textSelection?.text;
+    if (!text) return;
+
+    try {
+      await copyTextToClipboard(text);
+      if (textSelection?.text === text) {
+        textSelection = { ...textSelection, copied: true };
+        clearCopiedResetTimer();
+        copiedResetTimer = setTimeout(() => {
+          if (textSelection?.text === text) {
+            textSelection = { ...textSelection, copied: false };
+          }
+          copiedResetTimer = null;
+        }, 2000);
+      }
+    } catch {
+      showToast({ message: "Failed to copy selected text", color: "red" });
+    }
   }
 
   $effect(() => {
-    document.addEventListener('keydown', onPdfKeydown);
-    return () => document.removeEventListener('keydown', onPdfKeydown);
+    const container = pdfContainerEl;
+    if (!container) return;
+
+    const refreshSelection = () => updateTextSelection();
+    document.addEventListener("selectionchange", refreshSelection);
+    window.addEventListener("resize", refreshSelection);
+    container.addEventListener("scroll", refreshSelection, { passive: true });
+
+    return () => {
+      document.removeEventListener("selectionchange", refreshSelection);
+      window.removeEventListener("resize", refreshSelection);
+      container.removeEventListener("scroll", refreshSelection);
+      clearCopiedResetTimer();
+    };
+  });
+
+  function onPdfKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    )
+      return;
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      prevPage();
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      nextPage();
+    }
+  }
+
+  $effect(() => {
+    document.addEventListener("keydown", onPdfKeydown);
+    return () => document.removeEventListener("keydown", onPdfKeydown);
   });
 
   let pageThumbUrls: Record<number, string> = $state({});
@@ -177,7 +321,9 @@
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
@@ -191,7 +337,10 @@
   onclick={isFullscreen ? resetFsTimer : undefined}
 >
   {#if findOpen}
-    <div class="pdf-find-bar" transition:fly={{ y: -20, duration: 180, opacity: 0.08 }}>
+    <div
+      class="pdf-find-bar"
+      transition:fly={{ y: -20, duration: 180, opacity: 0.08 }}
+    >
       <input
         type="text"
         placeholder="Find in document\u2026"
@@ -210,36 +359,56 @@
       />
       {#if findQuery}
         <span class="pdf-find-count"
-          >{findResults > 0 ? `${findCurrentIdx}/${findResults}` : "No results"}</span
+          >{findResults > 0
+            ? `${findCurrentIdx}/${findResults}`
+            : "No results"}</span
         >
       {/if}
-      <button class="pdf-find-btn" onclick={findPrev} disabled={findResults === 0} aria-label="Previous match"
-        >▲</button
+      <button
+        class="pdf-find-btn"
+        onclick={findPrev}
+        disabled={findResults === 0}
+        aria-label="Previous match">▲</button
       >
-      <button class="pdf-find-btn" onclick={findNext} disabled={findResults === 0} aria-label="Next match"
-        >▼</button
+      <button
+        class="pdf-find-btn"
+        onclick={findNext}
+        disabled={findResults === 0}
+        aria-label="Next match">▼</button
       >
-      <button class="pdf-find-close" onclick={toggleFind} aria-label="Close find bar"
-        >✕</button
+      <button
+        class="pdf-find-close"
+        onclick={toggleFind}
+        aria-label="Close find bar">✕</button
       >
     </div>
   {/if}
 
   {#if showPagePanel}
-    <div class="pdf-page-panel" transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}>
+    <div
+      class="pdf-page-panel"
+      transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}
+    >
       <div class="pdf-page-panel-header">
         <span class="pdf-page-panel-title">Index</span>
-        <button class="pdf-page-panel-close" onclick={togglePagePanel}>✕</button>
+        <button class="pdf-page-panel-close" onclick={togglePagePanel}>✕</button
+        >
       </div>
       <div class="pdf-page-panel-list">
         {#each pages as page, i}
           <button
             class="pdf-page-panel-item"
             class:active={currentPage === i + 1}
-            onclick={() => { scrollToPage(i + 1); }}
+            onclick={() => {
+              scrollToPage(i + 1);
+            }}
           >
             {#if pageThumbUrls[i + 1]}
-              <img src={pageThumbUrls[i + 1]} alt="" class="pdf-page-panel-thumb" />
+              <img
+                src={pageThumbUrls[i + 1]}
+                alt=""
+                class="pdf-page-panel-thumb"
+              />
             {:else}
               <div class="pdf-page-panel-placeholder"></div>
             {/if}
@@ -260,8 +429,17 @@
   {:else}
     {#each pages as page, i}
       <div class="pdf-page-wrapper" bind:this={pageWrapperRefs[i]}>
-        <canvas bind:this={page.canvasRef} class="pdf-canvas" onclick={() => centerPage(i + 1)} ondblclick={toggleFullscreen}></canvas>
-        <button class="pdf-page-label" onclick={togglePagePanel} aria-label="Open page panel">{i + 1}</button>
+        <canvas
+          bind:this={page.canvasRef}
+          class="pdf-canvas"
+          onclick={() => centerPage(i + 1)}
+          ondblclick={toggleFullscreen}
+        ></canvas>
+        <button
+          class="pdf-page-label"
+          onclick={togglePagePanel}
+          aria-label="Open page panel">{i + 1}</button
+        >
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(i + 1)}
           {#if hl}
@@ -275,13 +453,82 @@
             </div>
           {/if}
         {/if}
+        <div
+          bind:this={page.textLayerRef}
+          class="pdf-text-layer"
+          aria-hidden="true"
+          onclick={() => centerPage(i + 1)}
+          ondblclick={toggleFullscreen}
+        ></div>
         {#if i + 1 === currentPage}
-          <DrawOverlay containerEl={currentPageWrapper} mediaEl={currentPageCanvas} />
+          <DrawOverlay
+            containerEl={currentPageWrapper}
+            mediaEl={currentPageCanvas}
+          />
         {/if}
       </div>
       {#if i < pages.length - 1}
         <div class="pdf-page-separator"></div>
       {/if}
     {/each}
+  {/if}
+
+  {#if textSelection}
+    <div
+      class="pdf-selection-pill"
+      transition:fly={{ y: -6, duration: 150, opacity: 0.08 }}
+      style="left: {textSelection.left}px; top: {textSelection.top}px;"
+    >
+      <button
+        class="pdf-selection-copy tooltip-below"
+        onclick={copySelection}
+        onpointerdown={(e) => e.preventDefault()}
+        data-tooltip={textSelection.copied ? "Text copied" : "Copy text"}
+        aria-label={textSelection.copied ? "Text copied" : "Copy selected text"}
+        class:copied={textSelection.copied}
+      >
+        {#if textSelection.copied}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="m2.75 7.25 2.5 2.5 6-6"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        {:else}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect
+              x="4.25"
+              y="3.25"
+              width="7"
+              height="8"
+              rx="1"
+              stroke="currentColor"
+              stroke-width="1.2"
+            />
+            <path
+              d="M9.25 3.25V2.75A1.25 1.25 0 0 0 8 1.5H4A1.25 1.25 0 0 0 2.75 2.75v6A1.25 1.25 0 0 0 4 10h.25"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        {/if}
+      </button>
+    </div>
   {/if}
 </div>
