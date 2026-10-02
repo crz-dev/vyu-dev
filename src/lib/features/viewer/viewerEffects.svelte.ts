@@ -55,6 +55,30 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
     deps.fitPdfToScreen(width, height);
   }
 
+  function getMediaDimensions(): { width: number; height: number } | null {
+    if (deps.getIsVideo()) {
+      const video = deps.getVideoEl();
+      if (!video || video.videoWidth <= 0 || video.videoHeight <= 0)
+        return null;
+      return { width: video.videoWidth, height: video.videoHeight };
+    }
+
+    const width = deps.getImageNaturalWidth();
+    const height = deps.getImageNaturalHeight();
+    if (width <= 0 || height <= 0) return null;
+    return { width, height };
+  }
+
+  function fitMediaToViewer(): boolean {
+    const viewerEl = deps.getViewerEl();
+    const dimensions = getMediaDimensions();
+    if (!viewerEl || !dimensions) return false;
+
+    const { width, height } = getViewerContentSize();
+    viewer.fitToScreen(width, height, dimensions.width, dimensions.height);
+    return true;
+  }
+
   function refitPdfIfNeeded() {
     if (viewer.state.zoomLocked) return;
     if (!deps.getPdfAutoFit()) return;
@@ -71,21 +95,8 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       return;
     }
 
-    if (
-      viewer.state.zoomLocked ||
-      !deps.getViewerEl() ||
-      deps.getImageNaturalWidth() <= 0 ||
-      deps.getImageNaturalHeight() <= 0
-    ) {
+    if (viewer.state.zoomLocked || !fitMediaToViewer()) {
       viewer.resetZoom();
-    } else {
-      const { width, height } = getViewerContentSize();
-      viewer.fitToScreen(
-        width,
-        height,
-        deps.getImageNaturalWidth(),
-        deps.getImageNaturalHeight(),
-      );
     }
   }
 
@@ -101,21 +112,7 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       return;
     }
 
-    if (wasLocked && !viewer.state.zoomLocked) {
-      if (
-        deps.getViewerEl() &&
-        deps.getImageNaturalWidth() > 0 &&
-        deps.getImageNaturalHeight() > 0
-      ) {
-        const { width, height } = getViewerContentSize();
-        viewer.fitToScreen(
-          width,
-          height,
-          deps.getImageNaturalWidth(),
-          deps.getImageNaturalHeight(),
-        );
-      }
-    }
+    if (wasLocked && !viewer.state.zoomLocked) fitMediaToViewer();
   }
 
   function handleViewerScroll(e: WheelEvent) {
@@ -145,18 +142,11 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
             refitPdfIfNeeded();
           } else if (
             deps.getFileSrc() &&
-            !deps.getIsVideo() &&
-            deps.getImageNaturalWidth() > 0 &&
-            deps.getImageNaturalHeight() > 0 &&
+            !deps.getIsPdf() &&
+            !viewer.state.zoomLocked &&
             Math.abs(viewer.state.zoomLevel - viewer.state.baseZoomLevel) < 0.5
           ) {
-            const { width, height } = getViewerContentSize();
-            viewer.fitToScreen(
-              width,
-              height,
-              deps.getImageNaturalWidth(),
-              deps.getImageNaturalHeight(),
-            );
+            fitMediaToViewer();
           }
         } catch (e) {
           console.error("resizeObserverEffect fitToScreen failed:", e);
@@ -177,20 +167,8 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
     void editing.snapshot.rotation;
     if (deps.getViewerEl() && deps.getFileSrc() && deps.getIsPdf()) {
       refitPdfIfNeeded();
-    } else if (
-      deps.getViewerEl() &&
-      deps.getFileSrc() &&
-      !deps.getIsVideo() &&
-      deps.getImageNaturalWidth() > 0 &&
-      deps.getImageNaturalHeight() > 0
-    ) {
-      const { width, height } = getViewerContentSize();
-      viewer.fitToScreen(
-        width,
-        height,
-        deps.getImageNaturalWidth(),
-        deps.getImageNaturalHeight(),
-      );
+    } else if (deps.getViewerEl() && deps.getFileSrc() && !deps.getIsPdf()) {
+      fitMediaToViewer();
     }
   }
 

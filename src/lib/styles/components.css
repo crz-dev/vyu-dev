@@ -3,8 +3,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  max-width: 100%;
-  max-height: 100%;
   line-height: 0;
   border-radius: 2px;
   outline: 4px solid transparent;
@@ -21,16 +19,9 @@
 }
 .video-inner video {
   display: block;
-  max-width: calc(100vw - 96px - 32px);
-  max-height: calc(100vh - 36px - 36px - 32px);
   width: auto;
   height: auto;
-  object-fit: contain;
   cursor: pointer;
-}
-
-main:not(.fullscreen).thumbnail-bar-open .video-inner video {
-  max-height: calc(100vh - 36px - 36px - 32px - 82px);
 }
 
 .video-controls {

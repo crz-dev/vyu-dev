@@ -7,7 +7,7 @@ import { markup } from "$lib/features/markup/markup.svelte";
 import { markerStore } from "$lib/features/markers/markers.svelte";
 import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
-  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 
 import { corruption } from "$lib/features/media/corruption.svelte";
 import {
@@ -87,7 +87,7 @@ export function createNavigation(deps: NavigationDeps) {
       markerStore.loopStart = null;
       markerStore.loopEnd = null;
       deps.getResetZoom()();
-      viewer.state.baseZoomLevel = 100;
+      if (!viewer.state.zoomLocked) viewer.state.baseZoomLevel = 100;
       if (newPath) {
         editing.switchFile(newPath);
         markup.switchFile(newPath);
@@ -290,8 +290,20 @@ export function createNavigation(deps: NavigationDeps) {
     media.onVideoLoad(deps.getIsLoadingFile(), setMediaState, () =>
       media.finishLoading(setMediaState),
     );
-    viewer.resetZoom();
-    viewer.state.baseZoomLevel = 100;
+    const video = deps.getVideoEl();
+    if (
+      viewer.state.zoomLocked ||
+      !video ||
+      video.videoWidth <= 0 ||
+      video.videoHeight <= 0 ||
+      !deps.getViewerEl()
+    ) {
+      viewer.resetZoom();
+      if (!viewer.state.zoomLocked) viewer.state.baseZoomLevel = 100;
+    } else {
+      const { width, height } = deps.getViewerContentSize();
+      viewer.fitToScreen(width, height, video.videoWidth, video.videoHeight);
+    }
     if (slideshow.active) slideshow.onMediaLoaded();
     // Reset hover state after metadata load if mouse moved off video
     const cropContainerEl = deps.getCropContainerEl();
