@@ -120,7 +120,7 @@
         aria-label="next file">›</button
       >
     </div>
-    <div class="fs-controls image-only" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible ? '' : 'opacity: 0; pointer-events: none;'}">
+    <div class="fs-controls image-only" style="position: fixed; left: 0; right: 0; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible ? '' : 'opacity: 0; pointer-events: none;'}">
       <div class="fs-controls-row">
         <div class="fs-right">
           <button
