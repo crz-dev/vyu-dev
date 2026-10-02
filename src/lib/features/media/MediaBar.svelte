@@ -52,6 +52,7 @@
   let dismissed = $state(false);
   let pinned = $state(false);
   let fileCountEl: HTMLButtonElement | null = $state(null);
+  let filePositionTooltipVisible = $state(true);
   let sortMenuX = $state(0);
   let sortMenuY = $state(0);
 
@@ -209,6 +210,7 @@
   });
 
   let zoomMenuVisible = $state(false);
+  let zoomTooltipVisible = $state(true);
   let zoomRepeatDelay: ReturnType<typeof setTimeout> | null = null;
   let zoomRepeatInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -220,6 +222,25 @@
     }
 
     adjustZoom(delta);
+  }
+
+  function toggleZoomMenu() {
+    zoomMenuVisible = !zoomMenuVisible;
+    if (zoomMenuVisible) zoomTooltipVisible = false;
+  }
+
+  function handleZoomMouseEnter() {
+    zoomTooltipVisible = true;
+  }
+
+  function toggleFilePositionBar() {
+    const opening = !thumbnailBarVisible;
+    toggleThumbnailBar();
+    if (opening) filePositionTooltipVisible = false;
+  }
+
+  function handleFilePositionMouseEnter() {
+    filePositionTooltipVisible = true;
   }
 
   function stopZoomRepeat() {
@@ -337,8 +358,10 @@
         class="file-count tooltip-above"
         class:active={thumbnailBarVisible}
         class:menu-active={thumbnailBarVisible || sortMenuVisible}
+        class:tooltip-hidden={!filePositionTooltipVisible}
         data-tooltip="File position"
-        onclick={toggleThumbnailBar}
+        onclick={toggleFilePositionBar}
+        onmouseenter={handleFilePositionMouseEnter}
         oncontextmenu={handleFileCountContext}
       >
         {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
@@ -413,36 +436,48 @@
       <div class="zoom-control">
         <button
           class="zoom tooltip-above"
-          class:active={zoomLocked && !isPdf}
           class:menu-active={zoomMenuVisible}
+          class:tooltip-hidden={!zoomTooltipVisible}
           data-tooltip="Zoom level"
-          onclick={() => (zoomMenuVisible = !zoomMenuVisible)}
+          onclick={toggleZoomMenu}
+          onmouseenter={handleZoomMouseEnter}
           oncontextmenu={(e) => {
             e.preventDefault();
             if (!isPdf) toggleZoomLock?.();
           }}
           aria-expanded={zoomMenuVisible}
           aria-label="Zoom controls"
-          >{Math.round(isPdf && pdfAutoFit ? 100 : isPdf ? pdfScale * 100 : zoomLevel)}%</button
+          >
+          {#if zoomLocked && !isPdf}
+            <svg class="zoom-lock-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="5" y="10" width="14" height="11" rx="2" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+              <circle cx="12" cy="15" r="1" fill="currentColor" stroke="none" />
+              <path d="M12 16v2" />
+            </svg>
+          {/if}
+          {Math.round(isPdf && pdfAutoFit ? 100 : isPdf ? pdfScale * 100 : zoomLevel)}%</button
         >
         {#if zoomMenuVisible}
-          <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
-            <button
-              class="zoom-menu-btn"
-              onpointerdown={() => startZoomRepeat(-1)}
-              onpointerup={stopZoomRepeat}
-              onpointercancel={stopZoomRepeat}
-              onclick={(e) => handleZoomClick(-1, e)}
-              aria-label="Decrease zoom by 1 percent"
-            >−</button>
-            <button
-              class="zoom-menu-btn"
-              onpointerdown={() => startZoomRepeat(1)}
-              onpointerup={stopZoomRepeat}
-              onpointercancel={stopZoomRepeat}
-              onclick={(e) => handleZoomClick(1, e)}
-              aria-label="Increase zoom by 1 percent"
-            >+</button>
+          <div class="zoom-menu-clip">
+            <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
+              <button
+                class="zoom-menu-btn"
+                onpointerdown={() => startZoomRepeat(-1)}
+                onpointerup={stopZoomRepeat}
+                onpointercancel={stopZoomRepeat}
+                onclick={(e) => handleZoomClick(-1, e)}
+                aria-label="Decrease zoom by 1 percent"
+              >−</button>
+              <button
+                class="zoom-menu-btn"
+                onpointerdown={() => startZoomRepeat(1)}
+                onpointerup={stopZoomRepeat}
+                onpointercancel={stopZoomRepeat}
+                onclick={(e) => handleZoomClick(1, e)}
+                aria-label="Increase zoom by 1 percent"
+              >+</button>
+            </div>
           </div>
         {/if}
       </div>

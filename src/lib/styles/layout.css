@@ -362,15 +362,31 @@ main:not(.fullscreen).thumbnail-bar-open {
   width: 48px;
   flex: 0 0 48px;
 }
-.zoom.active,
 .zoom.menu-active {
   color: var(--text-primary);
 }
-.zoom-menu {
+.zoom-lock-icon {
+  flex-shrink: 0;
+  margin-right: 2px;
+  transform: translateY(-1px);
+}
+.zoom-menu-clip {
   position: absolute;
   left: 50%;
   bottom: 36px;
   translate: -50% 0;
+  display: flex;
+  align-items: flex-end;
+  width: max-content;
+  height: 35px;
+  overflow: hidden;
+  z-index: 100;
+}
+.zoom-menu {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  translate: none;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -380,17 +396,6 @@ main:not(.fullscreen).thumbnail-bar-open {
   border-bottom: 0;
   border-radius: 7px 7px 0 0;
   box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.35);
-  z-index: 100;
-}
-.zoom-menu::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  background: var(--bg-secondary);
-  pointer-events: none;
 }
 .zoom-menu-btn {
   width: 25px;
