@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
   import type {
     ClipBoundary,
     ContextMenu,
@@ -1768,8 +1769,11 @@
 {#if propertiesOpen}
   <div
     class="delete-overlay"
+    out:fade={{ duration: 120 }}
     role="presentation"
-    onmousedown={(e) => e.stopPropagation()}
+    onmousedown={(e) => {
+      if (e.target === e.currentTarget) closeProperties();
+    }}
   >
     <div class="delete-dialog props-dialog" role="dialog" aria-modal="true">
       <div class="props-header-bar">
@@ -2460,8 +2464,11 @@
 {#if shareOpen}
   <div
     class="delete-overlay"
+    out:fade={{ duration: 120 }}
     role="presentation"
-    onmousedown={(e) => e.stopPropagation()}
+    onmousedown={(e) => {
+      if (e.target === e.currentTarget) closeShare();
+    }}
   >
     <div class="delete-dialog share-dialog" role="dialog" aria-modal="true">
       <div class="share-header-bar">
