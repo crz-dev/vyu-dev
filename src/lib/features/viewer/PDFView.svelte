@@ -34,7 +34,6 @@
     togglePagePanel,
     getPageThumbnail,
     preloadAllThumbnails,
-    toggleFullscreen,
     isFullscreen,
     resetFsTimer,
   }: {
@@ -68,7 +67,6 @@
     togglePagePanel: () => void;
     getPageThumbnail: (page: number) => Promise<string>;
     preloadAllThumbnails: () => Promise<void>;
-    toggleFullscreen: () => void;
     isFullscreen: boolean;
     resetFsTimer: () => void;
   } = $props();
@@ -433,7 +431,6 @@
           bind:this={page.canvasRef}
           class="pdf-canvas"
           onclick={() => centerPage(i + 1)}
-          ondblclick={toggleFullscreen}
         ></canvas>
         <button
           class="pdf-page-label"
@@ -458,7 +455,6 @@
           class="pdf-text-layer"
           aria-hidden="true"
           onclick={() => centerPage(i + 1)}
-          ondblclick={toggleFullscreen}
         ></div>
         {#if i + 1 === currentPage}
           <DrawOverlay

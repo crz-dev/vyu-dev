@@ -10,6 +10,7 @@
     tsEditMenuVisible: boolean;
     isAudio: boolean;
     isPdf: boolean;
+    showPagePanel: boolean;
     fileName: string;
     handleViewerScroll: (e: WheelEvent) => void;
     drawActive: boolean;
@@ -48,6 +49,7 @@
     tsEditMenuVisible,
     isAudio,
     isPdf,
+    showPagePanel,
     fileName,
     handleViewerScroll,
     drawActive,
@@ -102,13 +104,15 @@
         >
       </div>
     </div>
-    <div class="fs-nav-left" style="position: fixed; z-index: 200;">
-      <button
-        class="fs-nav-btn"
-        onclick={() => navigate(-1)}
-        aria-label="previous file">‹</button
-      >
-    </div>
+    {#if !showPagePanel}
+      <div class="fs-nav-left" style="position: fixed; z-index: 200;">
+        <button
+          class="fs-nav-btn"
+          onclick={() => navigate(-1)}
+          aria-label="previous file">‹</button
+        >
+      </div>
+    {/if}
     <div class="fs-nav-right" style="position: fixed; z-index: 200;">
       <button
         class="fs-nav-btn"

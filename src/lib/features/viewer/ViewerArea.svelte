@@ -318,7 +318,6 @@
         togglePagePanel={pdf.togglePagePanel}
         getPageThumbnail={pdf.getPageThumbnail}
         preloadAllThumbnails={pdf.preloadAllThumbnails}
-        toggleFullscreen={toggleFullscreen}
         isFullscreen={viewer.state.isFullscreen}
         resetFsTimer={viewer.resetFsTimer}
       />
@@ -417,6 +416,7 @@
   tsEditMenuVisible={markerStore.tsEditMenu.visible}
   {isAudio}
   {isPdf}
+  showPagePanel={pdf.state.showPagePanel}
   {fileName}
   {handleViewerScroll}
   drawActive={markup.drawActive}
