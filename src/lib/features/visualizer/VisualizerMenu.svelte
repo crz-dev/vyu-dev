@@ -3,6 +3,15 @@
   import { onMount } from "svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import {
+    calculateAudioMetrics,
+    createEmptyAudioMetrics,
+    formatBandDb,
+    formatFrequency,
+    formatLevelDb,
+    smoothAudioMetrics,
+    type AudioMetrics,
+  } from "./audioMetrics";
+  import {
     visualizerStore,
     type VisualizerType,
   } from "./visualizer-store.svelte";
@@ -51,6 +60,7 @@
   let scopeState: ScopeState | null = null;
   let mounted = $state(false);
   let menuWrapper = $state<HTMLElement | null>(null);
+  let metrics = $state<AudioMetrics>(createEmptyAudioMetrics());
 
   const visible = $derived(visualizerStore.isActive(type));
 
@@ -143,14 +153,24 @@
               timeData = new Uint8Array(analyser.fftSize);
             }
 
+            analyser.getByteTimeDomainData(timeData);
+            analyser.getByteFrequencyData(freqData);
+            const nextMetrics = calculateAudioMetrics(
+              timeData,
+              freqData,
+              eqEngine.getContext()?.sampleRate ?? 0,
+              analyser.fftSize,
+              analyser.minDecibels,
+              analyser.maxDecibels,
+            );
+            metrics = smoothAudioMetrics(metrics, nextMetrics, dt);
+
             ctx.imageSmoothingEnabled = true;
             drawBackground(ctx, CANVAS_W, CANVAS_H);
 
             if (type === "heartbeat") {
-              analyser.getByteTimeDomainData(timeData);
               drawScope(ctx, timeData, CANVAS_W, CANVAS_H, scopeState!, dt);
             } else {
-              analyser.getByteFrequencyData(freqData);
               if (type === "pulse") {
                 drawBars(ctx, freqData, CANVAS_W, CANVAS_H, barsState!);
               } else if (type === "spectrum") {
@@ -168,6 +188,8 @@
             }
 
             drawVignette(ctx, CANVAS_W, CANVAS_H);
+          } else {
+            metrics = createEmptyAudioMetrics();
           }
         }
       }
@@ -300,6 +322,59 @@
       </div>
 
       <canvas bind:this={canvasEl} width={CANVAS_W} height={CANVAS_H}></canvas>
+
+      <div class="visualizer-metrics" aria-label="Audio metrics">
+        <div
+          class="visualizer-metric-pill tooltip-below"
+          data-tooltip="Current signal level in digital dBFS"
+          aria-label={`Level ${formatLevelDb(metrics.levelDb)}`}
+        >
+          <span class="visualizer-metric-label">Level</span>
+          <span class="visualizer-metric-value"
+            >{formatLevelDb(metrics.levelDb)}</span
+          >
+        </div>
+        <div
+          class="visualizer-metric-pill tooltip-below"
+          data-tooltip="Strongest frequency in the current signal"
+          aria-label={`Peak frequency ${formatFrequency(metrics.peakFrequencyHz)}`}
+        >
+          <span class="visualizer-metric-label">Freq</span>
+          <span class="visualizer-metric-value"
+            >{formatFrequency(metrics.peakFrequencyHz)}</span
+          >
+        </div>
+        <div
+          class="visualizer-metric-pill tooltip-below"
+          data-tooltip="Low-frequency energy from 20 to 250 Hz"
+          aria-label={`Low frequency energy ${formatBandDb(metrics.lowDb)}`}
+        >
+          <span class="visualizer-metric-label">Low</span>
+          <span class="visualizer-metric-value"
+            >{formatBandDb(metrics.lowDb)}</span
+          >
+        </div>
+        <div
+          class="visualizer-metric-pill tooltip-below"
+          data-tooltip="Mid-frequency energy from 250 Hz to 2 kHz"
+          aria-label={`Mid frequency energy ${formatBandDb(metrics.midDb)}`}
+        >
+          <span class="visualizer-metric-label">Mid</span>
+          <span class="visualizer-metric-value"
+            >{formatBandDb(metrics.midDb)}</span
+          >
+        </div>
+        <div
+          class="visualizer-metric-pill tooltip-below"
+          data-tooltip="High-frequency energy from 2 to 20 kHz"
+          aria-label={`High frequency energy ${formatBandDb(metrics.highDb)}`}
+        >
+          <span class="visualizer-metric-label">High</span>
+          <span class="visualizer-metric-value"
+            >{formatBandDb(metrics.highDb)}</span
+          >
+        </div>
+      </div>
     </div>
   </div>
 {/if}
@@ -308,6 +383,7 @@
   .visualizer-wrapper {
     position: fixed;
     z-index: 1099;
+    overflow: visible;
     transform: translateX(-1.5%);
     transition:
       left 0.25s cubic-bezier(0.22, 0.9, 0.3, 1),
@@ -316,12 +392,69 @@
 
   .visualizer-menu {
     padding: 0;
+    overflow: visible;
+  }
+
+  .visualizer-metrics {
+    width: 100%;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 4px 5px;
+    overflow: visible;
+    border-top: 0.5px solid var(--bg-elevated);
+    border-radius: 0 0 12px 12px;
+    background: var(--bg-primary);
+  }
+
+  .visualizer-metric-pill {
+    min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 27px;
+    padding: 3px 2px;
+    overflow: visible;
+    border: 0.5px solid var(--bg-elevated);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--text-muted);
+    font-family: var(--font-family);
+    line-height: 1;
+    text-align: center;
+  }
+
+  .visualizer-metric-pill[data-tooltip] {
+    position: relative;
+    display: flex;
+  }
+
+  .visualizer-metric-label {
+    color: var(--text-hint);
+    font-size: 7px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .visualizer-metric-value {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 9px;
+    letter-spacing: -0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   canvas {
     display: block;
     width: 100%;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0;
     background: var(--bg-primary);
   }
 </style>

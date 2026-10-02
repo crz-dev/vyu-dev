@@ -4,7 +4,7 @@ export type VisualizerType = "pulse" | "spectrum" | "heartbeat" | "diamonds";
 const COL_W = 386;
 const COL_GAP = 16;
 const ROW_GAP = 16;
-const ROW_H = 165;
+const ROW_H = 200;
 
 export interface LayoutPos {
   left: number;
