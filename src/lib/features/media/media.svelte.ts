@@ -64,6 +64,8 @@ interface PrefetchEntry {
 
 const prefetchCache = new Map<string, PrefetchEntry>();
 const MAX_PREFETCH = 10;
+// Unique URL per load so WebView media caches can't serve a previous version of the file.
+let srcNonce = Date.now();
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -250,12 +252,14 @@ export function createMedia(
   async function displayFile(
     path: string,
     set: (data: Partial<MediaState>) => void,
+    refresh = false,
   ): Promise<void> {
     const gen = ++loadGen;
 
     // Consume prefetch cache if available
     const cached = prefetchCache.get(path);
     if (cached) prefetchCache.delete(path);
+    if (refresh) statCache.delete(path);
 
     releaseMediaResources();
 
@@ -329,8 +333,11 @@ export function createMedia(
     await new Promise((resolve) => requestAnimationFrame(resolve));
     if (gen !== loadGen) return;
 
-    const baseSrc =
-      cached?.baseSrc ?? convertFileSrc(await prepareDisplayPath(path));
+    const src =
+      !refresh && cached?.baseSrc
+        ? cached.baseSrc
+        : convertFileSrc(await prepareDisplayPath(path));
+    const baseSrc = `${src}?v=${++srcNonce}`;
     if (gen !== loadGen) return;
     set({
       fileSrc: baseSrc,
@@ -369,11 +376,12 @@ export function createMedia(
     setFileList: (list: string[], index: number) => void,
     sortMode: "name" | "date-modified" | "size" | "type" = "name",
     sortDesc = false,
+    refresh = false,
   ): Promise<void> {
     clearTimeout(loadingTimer);
     finishLoadingCalled = false;
     set({ isLoadingFile: true, loadingFadingOut: false });
-    await displayFile(path, set);
+    await displayFile(path, set, refresh);
     library.addRecent(path);
     try {
       const { readMediaFilesInFolder } = await import("$lib/services/files");

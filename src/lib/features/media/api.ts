@@ -865,6 +865,14 @@ export async function invokeExportEditedMedia(
   });
 }
 
+export function onEditApplyProgress(
+  callback: (pct: number) => void,
+): Promise<() => void> {
+  return listen<number>("edit-apply-progress", (event) => {
+    callback(event.payload);
+  });
+}
+
 export async function invokePrintFile(path: string): Promise<void> {
   return invoke("print_file", { path });
 }

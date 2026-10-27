@@ -8,6 +8,7 @@
       <div
         class="toast toast-{toast.color}"
         class:toast-exiting={toast.exiting}
+        class:toast-has-progress={toast.progress !== null}
         style="--toast-duration: {toast.duration}ms"
       >
         <div class="toast-body">
@@ -32,7 +33,17 @@
             </div>
           {/if}
         </div>
-        {#if toast.duration > 0}
+        {#if toast.progress !== null}
+          <div class="toast-progress">
+            <div
+              class="toast-progress-bar determinate"
+              style="transform: scaleX({Math.min(
+                100,
+                Math.max(0, toast.progress),
+              ) / 100})"
+            ></div>
+          </div>
+        {:else if toast.duration > 0}
           <div class="toast-progress">
             <div class="toast-progress-bar"></div>
           </div>

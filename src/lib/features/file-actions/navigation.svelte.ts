@@ -111,7 +111,7 @@ export function createNavigation(deps: NavigationDeps) {
     closeFile: () => closeFile(),
   });
 
-  async function loadFile(path: string) {
+  async function loadFile(path: string, refresh = false) {
     slideshow.stop();
     editing.exitCropMode();
     let loadedIndex = -1;
@@ -127,6 +127,7 @@ export function createNavigation(deps: NavigationDeps) {
         ? "date-modified"
         : deps.getSortMode()) as "name" | "date-modified" | "size" | "type",
       deps.getSortDesc(),
+      refresh,
     );
     const folder = getParentFolder(path);
     if (folder) folderWatcher.startWatching(folder);

@@ -6,8 +6,9 @@ import { markup } from "$lib/features/markup/markup.svelte";
 import {
   exportEditedImage,
   invokeExportEditedMedia,
+  onEditApplyProgress,
 } from "$lib/features/media/api";
-  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 import {
   showToast,
   updateToast,
@@ -20,6 +21,18 @@ import {
 
 export type PendingEditAction = "apply" | "export" | null;
 export type ExportFormatOverride = "png" | null;
+
+function errorText(err: unknown, fallback: string): string {
+  const raw =
+    err instanceof Error ? err.message : typeof err === "string" ? err : "";
+  const lastLine = raw
+    .trim()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .pop();
+  return lastLine ? lastLine.slice(0, 240) : fallback;
+}
 
 function createEditDialogStore() {
   let editApplyConfirm = $state(false);
@@ -68,7 +81,7 @@ export interface EditActionsDeps {
   getFileName: () => string;
   getIsVideo: () => boolean;
   getVideoEl: () => HTMLVideoElement | null;
-  loadFile: (path: string) => Promise<void>;
+  loadFile: (path: string, refresh?: boolean) => Promise<void>;
   handleMarkupApply?: () => Promise<void>;
   handleMarkupExport?: () => Promise<void>;
   handleClearMarkup?: () => void;
@@ -231,13 +244,33 @@ export function createEditActions(deps: EditActionsDeps) {
   }
 
   async function performApply() {
+    const isVideo = deps.getIsVideo();
+    let progressToastId: number | null = null;
+    let unlisten: (() => void) | null = null;
+
+    if (isVideo) {
+      progressToastId = showToast({
+        message: "Applying edits...",
+        color: "grey",
+        duration: 0,
+        progress: 0,
+      });
+      try {
+        const toastId = progressToastId;
+        unlisten = await onEditApplyProgress((pct) => {
+          updateToast(toastId, { progress: pct });
+        });
+      } catch {
+        // progress is best-effort
+      }
+    }
+
     try {
       editing.isApplying = true;
       await editing.backupOriginal(deps.getFilePath());
 
       const s = editing.snapshot;
       const filePath = deps.getFilePath();
-      const isVideo = deps.getIsVideo();
       const videoEl = deps.getVideoEl();
 
       if (isVideo) {
@@ -265,15 +298,35 @@ export function createEditActions(deps: EditActionsDeps) {
       const exportOverride = editDialogStore.exportFormatOverride;
       editDialogStore.exportFormatOverride = null;
       if (!exportOverride) {
-        await deps.loadFile(filePath);
+        await deps.loadFile(filePath, true);
       }
-      showToast({ message: "Edits applied", color: "green" });
+
+      if (progressToastId !== null) {
+        updateToast(progressToastId, {
+          message: "Edits applied",
+          color: "green",
+          duration: 3000,
+          progress: 100,
+        });
+      } else {
+        showToast({ message: "Edits applied", color: "green" });
+      }
     } catch (err) {
       editing.isApplying = false;
       editDialogStore.exportFormatOverride = null;
-      const message =
-        err instanceof Error ? err.message : "Failed to apply edits";
-      showToast({ message, color: "red" });
+      const message = errorText(err, "Failed to apply edits");
+      if (progressToastId !== null) {
+        updateToast(progressToastId, {
+          message,
+          color: "red",
+          duration: 5000,
+          progress: null,
+        });
+      } else {
+        showToast({ message, color: "red" });
+      }
+    } finally {
+      unlisten?.();
     }
   }
 
@@ -340,9 +393,10 @@ export function createEditActions(deps: EditActionsDeps) {
       });
     } catch (err) {
       editing.isExporting = false;
-      const message =
-        err instanceof Error ? err.message : "Failed to export file";
-      showToast({ message, color: "red" });
+      showToast({
+        message: errorText(err, "Failed to export file"),
+        color: "red",
+      });
     }
   }
 

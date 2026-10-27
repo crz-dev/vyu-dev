@@ -16,15 +16,17 @@ export interface ToastOptions {
   icon?: string;
   actions?: ToastAction[];
   prepend?: boolean;
+  progress?: number | null;
 }
 
 interface ToastItem extends Required<
-  Omit<ToastOptions, "actions" | "prepend" | "icon">
+  Omit<ToastOptions, "actions" | "prepend" | "icon" | "progress">
 > {
   id: number;
   actions: ToastAction[];
   exiting: boolean;
   icon: string;
+  progress: number | null;
 }
 
 const EXIT_MS = 200;
@@ -60,6 +62,7 @@ function createToastStore() {
       icon: opts.icon ?? "",
       actions: opts.actions ?? [],
       exiting: false,
+      progress: opts.progress ?? null,
     };
     if (opts.prepend) {
       toasts.unshift(item);
@@ -83,6 +86,7 @@ function createToastStore() {
     if (changes.message !== undefined) toast.message = changes.message;
     if (changes.color !== undefined) toast.color = changes.color;
     if (changes.actions !== undefined) toast.actions = changes.actions;
+    if (changes.progress !== undefined) toast.progress = changes.progress;
     if (changes.duration !== undefined) {
       toast.duration = changes.duration;
       toast.exiting = false;

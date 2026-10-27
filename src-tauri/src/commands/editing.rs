@@ -1,7 +1,100 @@
 // Image editing
-use std::path::PathBuf;
+use std::io::BufRead;
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::util::{canonicalize_path, ffmpeg_command, hash_path_xxh3};
+use tauri::Emitter;
+
+use crate::util::{
+    canonicalize_path, ffmpeg_command, ffprobe_command, hash_path_xxh3,
+};
+
+// Same-file applies must never hand ffmpeg its own input as output.
+fn same_file(input: &Path, output: &Path) -> bool {
+    match (std::fs::canonicalize(input), std::fs::canonicalize(output)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => input == output,
+    }
+}
+
+// Explicit muxer lets the staging file live next to the source without a media extension.
+fn muxer_for_ext(ext: &str) -> Option<&'static str> {
+    match ext {
+        "mp4" | "m4v" => Some("mp4"),
+        "mov" => Some("mov"),
+        "mkv" => Some("matroska"),
+        "webm" => Some("webm"),
+        "avi" => Some("avi"),
+        "wmv" => Some("asf"),
+        "mpg" | "mpeg" => Some("mpeg"),
+        "ts" | "m2ts" => Some("mpegts"),
+        _ => None,
+    }
+}
+
+fn in_place_temp(input: &Path) -> (PathBuf, Option<&'static str>) {
+    let parent = input
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    let stem = input
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("output");
+    let ext = input
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let unique = hash_path_xxh3(&format!("{}:{nanos}", input.display()));
+    let muxer = muxer_for_ext(&ext);
+    let name = if muxer.is_some() {
+        format!("{stem}.vyu-tmp-{unique}")
+    } else {
+        format!("{stem}.vyu-tmp-{unique}.{ext}")
+    };
+    (parent.join(name), muxer)
+}
+
+// Windows can briefly hold the source open; retry before giving up.
+fn replace_with_temp(temp: &Path, target: &Path) -> Result<(), String> {
+    let mut last_error = String::new();
+    for _ in 0..10 {
+        match std::fs::rename(temp, target) {
+            Ok(()) => return Ok(()),
+            Err(e) => {
+                last_error = e.to_string();
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        }
+    }
+    Err(format!("Failed to replace original file: {last_error}"))
+}
+
+fn probe_duration_us(path: &str) -> f64 {
+    ffprobe_command()
+        .args([
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "csv=p=0",
+            path,
+        ])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .and_then(|s| s.trim().parse::<f64>().ok())
+        .map(|secs| secs * 1_000_000.0)
+        .unwrap_or(0.0)
+}
 
 /// Crop export
 #[tauri::command]
@@ -93,6 +186,7 @@ pub async fn export_cropped_media(
 /// Edit export
 #[tauri::command]
 pub async fn export_edited_media(
+    app: tauri::AppHandle,
     path: String,
     output_path: String,
     brightness: f64,
@@ -162,72 +256,155 @@ pub async fn export_edited_media(
             filters.push("vflip".into());
         }
 
-        let mut eq_parts: Vec<String> = Vec::new();
-        if (brightness - 1.0).abs() > 0.01 {
-            eq_parts.push(format!("brightness={:.2}", brightness - 1.0));
+        // CSS applies brightness(), contrast(), saturate(), then hue-rotate(),
+        // clamping between each. Reproduce that sequence in sRGB.
+        let bright = brightness.max(0.0);
+        if (bright - 1.0).abs() > 0.01 {
+            let expr = format!("clip(val*{bright:.4},0,255)");
+            filters.push(format!("lutrgb=r='{expr}':g='{expr}':b='{expr}'"));
         }
+
+        let contrast = contrast.max(0.0);
         if (contrast - 1.0).abs() > 0.01 {
-            eq_parts.push(format!("contrast={:.2}", contrast));
-        }
-        if (saturation - 1.0).abs() > 0.01 {
-            eq_parts.push(format!("saturation={:.2}", saturation));
+            let expr = format!("clip((val-127.5)*{contrast:.4}+127.5,0,255)");
+            filters.push(format!("lutrgb=r='{expr}':g='{expr}':b='{expr}'"));
         }
 
-        if !eq_parts.is_empty() {
-            filters.push(format!("eq={}", eq_parts.join(":")));
+        let sat = saturation.max(0.0);
+        if (sat - 1.0).abs() > 0.01 {
+            let s = sat;
+            let m = [
+                [0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s],
+                [0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s],
+                [0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s],
+            ];
+            filters.push(format!(
+                "colorchannelmixer=rr={:.6}:rg={:.6}:rb={:.6}:gr={:.6}:gg={:.6}:gb={:.6}:br={:.6}:bg={:.6}:bb={:.6}",
+                m[0][0], m[0][1], m[0][2],
+                m[1][0], m[1][1], m[1][2],
+                m[2][0], m[2][1], m[2][2],
+            ));
         }
 
-        if hue.abs() > 1.0 {
-            filters.push(format!("hue=h={}", hue));
+        if hue.abs() > 0.01 {
+            let (sin, cos) = hue.to_radians().sin_cos();
+            let m = [
+                [
+                    0.213 + cos * 0.787 - sin * 0.213,
+                    0.715 - cos * 0.715 - sin * 0.715,
+                    0.072 - cos * 0.072 + sin * 0.928,
+                ],
+                [
+                    0.213 - cos * 0.213 + sin * 0.143,
+                    0.715 + cos * 0.285 + sin * 0.140,
+                    0.072 - cos * 0.072 - sin * 0.283,
+                ],
+                [
+                    0.213 - cos * 0.213 - sin * 0.787,
+                    0.715 - cos * 0.715 + sin * 0.715,
+                    0.072 + cos * 0.928 + sin * 0.072,
+                ],
+            ];
+            filters.push(format!(
+                "colorchannelmixer=rr={:.6}:rg={:.6}:rb={:.6}:gr={:.6}:gg={:.6}:gb={:.6}:br={:.6}:bg={:.6}:bb={:.6}",
+                m[0][0], m[0][1], m[0][2],
+                m[1][0], m[1][1], m[1][2],
+                m[2][0], m[2][1], m[2][2],
+            ));
         }
 
-        let filter_arg = if filters.is_empty() {
-            "copy".to_string()
+        let filter_arg = filters.join(",");
+        let output = PathBuf::from(&output_path);
+        let in_place = same_file(&input, &output);
+        let (write_path, muxer) = if in_place {
+            in_place_temp(&input)
         } else {
-            filters.join(",")
+            (output, None)
         };
 
-        let output = ffmpeg_command()
-            .args([
+        let input_str = input.to_string_lossy().to_string();
+        let write_str = write_path.to_string_lossy().to_string();
+        let duration_us = probe_duration_us(&input_str);
+
+        let run = |copy_audio: bool| -> Result<(bool, String), String> {
+            let mut cmd = ffmpeg_command();
+            cmd.args([
                 "-y",
                 "-hide_banner",
                 "-loglevel",
                 "error",
                 "-i",
-                &input.to_string_lossy(),
-                "-vf",
-                &filter_arg,
-                "-c:a",
-                "copy",
-                &output_path,
-            ])
-            .output()
-            .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+                &input_str,
+            ]);
+            if filters.is_empty() {
+                cmd.args(["-c:v", "copy"]);
+            } else {
+                cmd.args(["-vf", &filter_arg]);
+            }
+            if copy_audio {
+                cmd.args(["-c:a", "copy"]);
+            }
+            if let Some(muxer) = muxer {
+                cmd.args(["-f", muxer]);
+            }
+            cmd.args(["-progress", "pipe:1", "-nostats"])
+                .arg(&write_str)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
 
-        if output.status.success() {
-            return Ok(());
+            let mut child = cmd
+                .spawn()
+                .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+
+            let stderr = child.stderr.take();
+            let stderr_thread = std::thread::spawn(move || {
+                let mut buf = String::new();
+                if let Some(mut pipe) = stderr {
+                    let _ = std::io::Read::read_to_string(&mut pipe, &mut buf);
+                }
+                buf
+            });
+
+            if let Some(stdout) = child.stdout.take() {
+                let reader = std::io::BufReader::new(stdout);
+                for line in reader.lines().flatten() {
+                    if let Some(value) = line.strip_prefix("out_time_us=") {
+                        if let Ok(us) = value.trim().parse::<f64>() {
+                            if duration_us > 0.0 {
+                                let pct =
+                                    ((us / duration_us) * 100.0).clamp(0.0, 99.0) as u32;
+                                let _ = app.emit("edit-apply-progress", pct);
+                            }
+                        }
+                    }
+                }
+            }
+
+            let status = child
+                .wait()
+                .map_err(|e| format!("Failed to wait for ffmpeg: {e}"))?;
+            let stderr = stderr_thread.join().ok().unwrap_or_default();
+            Ok((status.success(), stderr))
+        };
+
+        let (first_ok, _) = run(true)?;
+
+        if !first_ok {
+            let _ = app.emit("edit-apply-progress", 0u32);
+            let (fallback_ok, stderr) = run(false)?;
+            if !fallback_ok {
+                let _ = std::fs::remove_file(&write_path);
+                return Err(stderr.trim().to_string());
+            }
         }
 
-        let fallback = ffmpeg_command()
-            .args([
-                "-y",
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-i",
-                &input.to_string_lossy(),
-                "-vf",
-                &filter_arg,
-                &output_path,
-            ])
-            .output()
-            .map_err(|e| format!("Failed to run ffmpeg fallback: {e}"))?;
-
-        if fallback.status.success() {
-            Ok(())
-        } else {
-            Err(String::from_utf8_lossy(&fallback.stderr).trim().to_string())
+        if in_place {
+            if let Err(e) = replace_with_temp(&write_path, &input) {
+                let _ = std::fs::remove_file(&write_path);
+                return Err(e);
+            }
         }
+        Ok(())
     })
     .await
     .map_err(|e| format!("Thread join error: {e}"))?
@@ -255,4 +432,30 @@ pub async fn backup_file(source: String) -> Result<String, String> {
     })
     .await
     .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn same_file_matches_identical_paths() {
+        assert!(same_file(Path::new("clip.mp4"), Path::new("clip.mp4")));
+        assert!(!same_file(Path::new("clip.mp4"), Path::new("other.mp4")));
+    }
+
+    #[test]
+    fn staging_path_avoids_media_extension() {
+        let (path, muxer) = in_place_temp(Path::new("clip.mp4"));
+        assert_eq!(muxer, Some("mp4"));
+        assert!(path.to_string_lossy().contains(".vyu-tmp-"));
+        assert_ne!(path.extension().and_then(|e| e.to_str()), Some("mp4"));
+    }
+
+    #[test]
+    fn unknown_extension_keeps_muxer_guess_from_extension() {
+        let (path, muxer) = in_place_temp(Path::new("clip.xyz"));
+        assert_eq!(muxer, None);
+        assert_eq!(path.extension().and_then(|e| e.to_str()), Some("xyz"));
+    }
 }
