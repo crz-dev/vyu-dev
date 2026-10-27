@@ -1,7 +1,10 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
-  import { invokeCleanupTempFolder } from "$lib/features/media/api";
+  import {
+    invokeCleanupTempFolder,
+    invokeClearBackups,
+  } from "$lib/features/media/api";
   import { showToast } from "$lib/components/toast.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import {
@@ -137,6 +140,7 @@
       rememberVolume,
       autoplayNext,
       autoSaveMarkers,
+      keepBackups: editing.keepBackups,
       defaultQuality,
       defaultFormat,
       confirmDelete,
@@ -163,6 +167,7 @@
   import { theme as themeStore } from "$lib/features/theme/theme.svelte";
   import { font as fontStore } from "$lib/features/theme/font.svelte";
   import { library } from "$lib/features/library/library.svelte";
+  import { editing } from "$lib/features/editing/editing.svelte";
   let uiMode = $state<"simple" | "advanced">("advanced");
   let transition = $state<"none" | "fade" | "slide">("fade");
   let allowZoomOut = $state(false);
@@ -268,6 +273,30 @@
       if (key?.startsWith("vyu-")) localStorage.removeItem(key);
     }
     window.location.reload();
+  }
+
+  let clearingBackups = $state(false);
+  let clearBackupsConfirming = $state(false);
+
+  async function handleClearBackups() {
+    if (!clearBackupsConfirming) {
+      clearBackupsConfirming = true;
+      return;
+    }
+    clearBackupsConfirming = false;
+    clearingBackups = true;
+    try {
+      const freed = await invokeClearBackups();
+      editing.clearBackupState();
+      showToast({
+        message:
+          freed > 0 ? "File backups cleared" : "No file backups to clear",
+        color: freed > 0 ? "green" : "yellow",
+      });
+    } catch {
+      showToast({ message: "Failed to clear file backups", color: "red" });
+    }
+    clearingBackups = false;
   }
 
   let editorOutputFolder = $state("~/Videos/Editor");
@@ -1273,6 +1302,50 @@
                       (autoSaveMarkers = e.currentTarget.checked)}
                   />
                   <span class="toggle-track" class:on={autoSaveMarkers}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect
+                    x="9"
+                    y="9"
+                    width="13"
+                    height="13"
+                    rx="2"
+                    ry="2"
+                  /><path
+                    d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">File Backups</span>
+                  <span class="settings-hint"
+                    >Keep one original copy per edited file</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={editing.keepBackups}
+                    onchange={(e) =>
+                      editing.setKeepBackups(e.currentTarget.checked)}
+                  />
+                  <span class="toggle-track" class:on={editing.keepBackups}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
@@ -2829,19 +2902,24 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><polyline points="9 14 4 9 9 4" /><path
-                    d="M4 9h10a6 6 0 016 6v0"
+                  ><polyline points="3 6 5 6 21 6" /><path
+                    d="M19 6l-1 14H6L5 6"
+                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
+                    d="M9 6V4h6v2"
                   /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Undo All Edits</span>
-                  <span class="settings-hint"
-                    >Revert every adjustment to defaults</span
+                  <span class="settings-label">Clear File Backups</span>
+                  <span class="settings-hint">Delete saved original copies</span
                   >
                 </div>
               </div>
               <div class="settings-control">
-                <button class="settings-action-btn red">
+                <button
+                  class="settings-action-btn red"
+                  onclick={handleClearBackups}
+                  disabled={clearingBackups}
+                >
                   <svg
                     width="12"
                     height="12"
@@ -2851,11 +2929,17 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><polyline points="9 14 4 9 9 4" /><path
-                      d="M4 9h10a6 6 0 016 6v0"
+                    ><polyline points="3 6 5 6 21 6" /><path
+                      d="M19 6l-1 14H6L5 6"
+                    /><path d="M10 11v6" /><path d="M14 11v6" /><path
+                      d="M9 6V4h6v2"
                     /></svg
                   >
-                  Undo
+                  {clearingBackups
+                    ? "Clearing..."
+                    : clearBackupsConfirming
+                      ? "Confirm?"
+                      : "Clear"}
                 </button>
               </div>
             </div>

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 
 use crate::util::{
     canonicalize_path, ffmpeg_command, ffprobe_command, hash_path_xxh3,
@@ -74,6 +74,42 @@ fn replace_with_temp(temp: &Path, target: &Path) -> Result<(), String> {
         }
     }
     Err(format!("Failed to replace original file: {last_error}"))
+}
+
+fn backup_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    Ok(app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data dir: {e}"))?
+        .join("backups"))
+}
+
+fn backup_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = backup_root(app)?;
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| format!("Failed to create backups dir: {e}"))?;
+    Ok(dir)
+}
+
+fn backup_file_name(source: &Path) -> String {
+    let hash = hash_path_xxh3(&source.to_string_lossy());
+    let ext = source
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("bak");
+    format!("{hash}.{ext}")
+}
+
+fn backup_path_for(app: &tauri::AppHandle, source: &Path) -> Result<PathBuf, String> {
+    Ok(backup_root(app)?.join(backup_file_name(source)))
+}
+
+fn unique_temp(dir: &Path, tag: &str) -> PathBuf {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    dir.join(format!(".{tag}-{nanos}"))
 }
 
 fn probe_duration_us(path: &str) -> f64 {
@@ -412,23 +448,93 @@ pub async fn export_edited_media(
 
 /// Backup source
 #[tauri::command]
-pub async fn backup_file(source: String) -> Result<String, String> {
+pub async fn backup_file(app: tauri::AppHandle, source: String) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let source_path = canonicalize_path(&source)?;
-        let temp_dir = std::env::temp_dir().join("Vyu-temp").join("originals");
-        std::fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create backup dir: {e}"))?;
-
-        let ext = source_path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("bak");
-        let hash = hash_path_xxh3(&source);
-        let backup_path = temp_dir.join(format!("{}.{}", hash, ext));
+        let dir = backup_dir(&app)?;
+        let backup_path = dir.join(backup_file_name(&source_path));
         if backup_path.exists() {
-            let _ = std::fs::remove_file(&backup_path);
+            return Ok(backup_path.to_string_lossy().to_string());
         }
-        std::fs::copy(&source_path, &backup_path).map_err(|e| format!("Failed to backup file: {e}"))?;
+
+        let temp = unique_temp(&dir, "vyu-backup");
+        std::fs::copy(&source_path, &temp)
+            .map_err(|e| format!("Failed to backup file: {e}"))?;
+        if let Err(e) = std::fs::rename(&temp, &backup_path) {
+            let _ = std::fs::remove_file(&temp);
+            return Err(format!("Failed to store backup: {e}"));
+        }
         Ok(backup_path.to_string_lossy().to_string())
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+#[tauri::command]
+pub async fn get_backup_path(
+    app: tauri::AppHandle,
+    source: String,
+) -> Result<Option<String>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let source_path = canonicalize_path(&source)?;
+        let backup_path = backup_path_for(&app, &source_path)?;
+        Ok(backup_path
+            .exists()
+            .then(|| backup_path.to_string_lossy().to_string()))
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+#[tauri::command]
+pub async fn clear_backups(app: tauri::AppHandle) -> Result<u64, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let dir = backup_root(&app)?;
+        if !dir.exists() {
+            return Ok(0);
+        }
+
+        let entries =
+            std::fs::read_dir(&dir).map_err(|e| format!("Failed to read backups: {e}"))?;
+        let mut freed = 0u64;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            if let Ok(meta) = entry.metadata() {
+                freed = freed.saturating_add(meta.len());
+            }
+            let _ = std::fs::remove_file(&path);
+        }
+        Ok(freed)
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+#[tauri::command]
+pub async fn restore_backup(app: tauri::AppHandle, path: String) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let target = canonicalize_path(&path)?;
+        let backup_path = backup_path_for(&app, &target)?;
+        if !backup_path.exists() {
+            return Ok(false);
+        }
+
+        let parent = target
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."));
+        let temp = unique_temp(parent, "vyu-restore");
+        std::fs::copy(&backup_path, &temp)
+            .map_err(|e| format!("Failed to stage restored file: {e}"))?;
+        if let Err(e) = replace_with_temp(&temp, &target) {
+            let _ = std::fs::remove_file(&temp);
+            return Err(e);
+        }
+        let _ = std::fs::remove_file(&backup_path);
+        Ok(true)
     })
     .await
     .map_err(|e| format!("Thread join error: {e}"))?
@@ -457,5 +563,15 @@ mod tests {
         let (path, muxer) = in_place_temp(Path::new("clip.xyz"));
         assert_eq!(muxer, None);
         assert_eq!(path.extension().and_then(|e| e.to_str()), Some("xyz"));
+    }
+
+    #[test]
+    fn backup_name_is_stable_and_path_specific() {
+        let a = backup_file_name(Path::new("C:\\media\\clip.mp4"));
+        let b = backup_file_name(Path::new("C:\\media\\clip.mp4"));
+        let c = backup_file_name(Path::new("C:\\media\\other.mp4"));
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+        assert!(a.ends_with(".mp4"));
     }
 }

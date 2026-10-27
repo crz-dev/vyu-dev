@@ -6,6 +6,7 @@ import {
   invokeApplyMarkupToPdf,
 } from "$lib/features/media/api";
 import { getFileExt, getParentFolder } from "$lib/services/files";
+import { editing } from "$lib/features/editing/editing.svelte";
 import { markup } from "./markup.svelte";
 import { showToast } from "$lib/components/toast.svelte";
 
@@ -29,6 +30,7 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
     }
     try {
       deps.folderWatcher.stopWatching();
+      await editing.backupOriginal(deps.getFilePath());
       await renderMarkupOnImage(
         deps.getFilePath(),
         markup.strokes,
@@ -57,6 +59,7 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
     if (pages.every((p) => p.strokes.length === 0)) return;
     try {
       deps.folderWatcher.stopWatching();
+      await editing.backupOriginal(deps.getFilePath());
       await invokeApplyMarkupToPdf({
         filePath: deps.getFilePath(),
         pages,

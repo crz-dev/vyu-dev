@@ -1,6 +1,11 @@
 // Editing state
-import { invoke } from "@tauri-apps/api/core";
 import type { CropBounds } from "$lib/shared/types";
+import {
+  invokeBackupFile,
+  invokeGetBackupPath,
+  invokeRestoreBackup,
+} from "$lib/features/media/api";
+import { loadEditBackups, saveEditBackups } from "$lib/services/storage";
 
 export interface EditSnapshot {
   rotation: number;
@@ -63,8 +68,10 @@ function createEditingStore() {
   let filePath = $state("");
   let snapshot = $state<EditSnapshot>(defaultSnapshot());
   let undoStack = $state<EditSnapshot[]>([]);
-  let originalBackupPath = $state<string | null>(null);
   let isApplied = $state(false);
+  let keepBackups = $state(loadEditBackups());
+  let hasBackup = $state(false);
+  let backupCheckGen = 0;
   let isExporting = $state(false);
   let isApplying = $state(false);
   let cropMode = $state(false);
@@ -184,24 +191,24 @@ function createEditingStore() {
   }
 
   async function backupOriginal(path: string) {
-    if (originalBackupPath) return;
+    if (!keepBackups || !path) return;
     try {
-      const backupPath: string = await invoke("backup_file", { source: path });
-      originalBackupPath = backupPath;
+      await invokeBackupFile(path);
+      hasBackup = true;
     } catch (e) {
       console.error("backup_file failed (non-fatal):", e);
     }
   }
 
-  async function restoreOriginal() {
-    if (!originalBackupPath) return;
+  async function restoreOriginal(): Promise<boolean> {
+    if (!filePath) return false;
     try {
-      await invoke("copy_file", {
-        source: originalBackupPath,
-        destination: filePath,
-      });
+      const restored = await invokeRestoreBackup(filePath);
+      hasBackup = restored;
+      return restored;
     } catch (e) {
-      console.error("restoreOriginal failed (non-fatal):", e);
+      console.error("restore_backup failed:", e);
+      return false;
     }
   }
 
@@ -213,12 +220,23 @@ function createEditingStore() {
     if (filePath) sessionEdits.delete(filePath);
   }
 
-  async function reset() {
-    if (isApplied) {
-      await restoreOriginal();
-      isApplied = false;
-    }
+  async function reset(): Promise<boolean> {
+    const restored = await restoreOriginal();
+    isApplied = false;
     clearEdits();
+    return restored;
+  }
+
+  async function checkBackup(path: string) {
+    const gen = ++backupCheckGen;
+    try {
+      const backup = await invokeGetBackupPath(path);
+      if (gen === backupCheckGen && filePath === path) {
+        hasBackup = !!backup;
+      }
+    } catch {
+      if (gen === backupCheckGen && filePath === path) hasBackup = false;
+    }
   }
 
   function switchFile(newPath: string) {
@@ -234,7 +252,8 @@ function createEditingStore() {
     cropMode = false;
     _cropShouldCenter = false;
     isApplied = false;
-    originalBackupPath = null;
+    hasBackup = false;
+    void checkBackup(newPath);
   }
 
   function cleanup() {
@@ -245,9 +264,20 @@ function createEditingStore() {
     _cropShouldCenter = false;
     isApplied = false;
     filePath = "";
-    originalBackupPath = null;
+    hasBackup = false;
+    backupCheckGen++;
     isExporting = false;
     isApplying = false;
+  }
+
+  function setKeepBackups(value: boolean) {
+    keepBackups = value;
+    saveEditBackups(value);
+  }
+
+  function clearBackupState() {
+    backupCheckGen++;
+    hasBackup = false;
   }
 
   function setFilePath(path: string) {
@@ -264,6 +294,14 @@ function createEditingStore() {
     set isApplied(v: boolean) {
       isApplied = v;
     },
+    get keepBackups() {
+      return keepBackups;
+    },
+    get hasBackup() {
+      return hasBackup;
+    },
+    setKeepBackups,
+    clearBackupState,
     get isExporting() {
       return isExporting;
     },

@@ -422,6 +422,7 @@
   const hasEdits = $derived(
     editing.getHasEdits() || editing.getCropBounds() !== null,
   );
+  const canReset = $derived(hasEdits || editing.hasBackup);
 </script>
 
 {#if visible}
@@ -432,14 +433,14 @@
   >
     <div
       class="edit-actions-bar edit-actions-left"
-      class:has-edits={hasEdits}
+      class:has-edits={canReset}
       in:fly={{ x: 60, duration: 180, opacity: 0.08 }}
       out:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     >
       <button
         class="edit-action-btn red tooltip-ctrl"
         class:confirming={resetConfirming}
-        disabled={!hasEdits}
+        disabled={!canReset}
         onclick={() => {
           if (resetConfirming) {
             if (resetConfirmTimeout) {
@@ -456,8 +457,16 @@
             }, 3000);
           }
         }}
-        data-tooltip={resetConfirming ? "Confirm reset" : "Reset"}
-        aria-label={resetConfirming ? "Confirm reset" : "Reset"}
+        data-tooltip={resetConfirming
+          ? "Confirm restore"
+          : hasEdits
+            ? "Reset"
+            : "Restore original"}
+        aria-label={resetConfirming
+          ? "Confirm restore"
+          : hasEdits
+            ? "Reset"
+            : "Restore original"}
       >
         {#if resetConfirming}
           <svg
@@ -492,7 +501,8 @@
             <line x1="10" y1="11" x2="10" y2="17" />
             <line x1="14" y1="11" x2="14" y2="17" />
           </svg>
-          <span class="edit-action-label">Reset</span>
+          <span class="edit-action-label">{hasEdits ? "Reset" : "Restore"}</span
+          >
         {/if}
       </button>
       <button

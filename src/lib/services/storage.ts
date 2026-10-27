@@ -68,6 +68,14 @@ export function saveSkipApplyConfirm(): void {
   localStorage.setItem("vyu-edit-apply-no-warn", "true");
 }
 
+export function loadEditBackups(): boolean {
+  return localStorage.getItem("vyu-edit-backups") === "true";
+}
+
+export function saveEditBackups(enabled: boolean): void {
+  localStorage.setItem("vyu-edit-backups", String(enabled));
+}
+
 export function loadClipPreferences(): {
   deleteOriginal: boolean;
   useCustomPath: boolean;

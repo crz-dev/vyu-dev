@@ -111,12 +111,15 @@ Two persistence layers:
 
 **SQLite** (`database/` + `services/database.ts`) — primary store for per-file metadata
 (timestamps, clip boundaries, resume positions, EQ settings, CD color).
-DB at `%APPDATA%/com.vyu.app/vyu.db`, WAL mode, single `Mutex<Connection>`.
+DB at `%APPDATA%/com.vyu.desktop/vyu.db`, WAL mode, single `Mutex<Connection>`.
 
 **localStorage** (`services/storage.ts`) — app-wide settings, UI preferences,
 collections, favorites, recent files. Keys use the `vyu-` prefix.
 Per-file keys: `vyu-{kind}-{path}`. App-wide keys: `vyu-{name}`.
 Storage cleanup is centralized.
+
+**Edit backups** (opt-in, `File Backups` setting) — one original copy per
+edited file at `%APPDATA%/com.vyu.desktop/backups`.
 
 ## File watching
 

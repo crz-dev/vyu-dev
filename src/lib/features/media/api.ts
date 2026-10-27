@@ -865,6 +865,24 @@ export async function invokeExportEditedMedia(
   });
 }
 
+export async function invokeBackupFile(source: string): Promise<string> {
+  return invoke("backup_file", { source });
+}
+
+export async function invokeGetBackupPath(
+  source: string,
+): Promise<string | null> {
+  return invoke("get_backup_path", { source });
+}
+
+export async function invokeRestoreBackup(path: string): Promise<boolean> {
+  return invoke("restore_backup", { path });
+}
+
+export async function invokeClearBackups(): Promise<number> {
+  return invoke("clear_backups");
+}
+
 export function onEditApplyProgress(
   callback: (pct: number) => void,
 ): Promise<() => void> {

@@ -267,11 +267,15 @@ export function createEditActions(deps: EditActionsDeps) {
 
     try {
       editing.isApplying = true;
-      await editing.backupOriginal(deps.getFilePath());
 
       const s = editing.snapshot;
       const filePath = deps.getFilePath();
       const videoEl = deps.getVideoEl();
+      const pngOverride =
+        !isVideo && editDialogStore.exportFormatOverride === "png";
+      if (!pngOverride) {
+        await editing.backupOriginal(filePath);
+      }
 
       if (isVideo) {
         if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
@@ -284,7 +288,7 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoWidth,
           videoEl.videoHeight,
         );
-      } else if (editDialogStore.exportFormatOverride === "png") {
+      } else if (pngOverride) {
         const pngPath = filePath.replace(/\.\w+$/, ".png");
         await exportEditedImage(filePath, s, pngPath);
         await deps.loadFile(pngPath);
@@ -513,11 +517,20 @@ export function createEditActions(deps: EditActionsDeps) {
   }
 
   async function handleReset() {
-    await editing.reset();
+    const path = deps.getFilePath();
+    const wasApplied = editing.isApplied;
+    const restored = await editing.reset();
     if (markup.hasUnapplied && deps.handleClearMarkup) {
       deps.handleClearMarkup();
     }
-    showToast({ message: "Edits reset", color: "red" });
+    if (restored) {
+      if (path) await deps.loadFile(path, true);
+      showToast({ message: "Original restored", color: "green" });
+    } else if (wasApplied) {
+      showToast({ message: "Edits cleared - no backup", color: "yellow" });
+    } else {
+      showToast({ message: "Edits reset", color: "red" });
+    }
   }
 
   return {

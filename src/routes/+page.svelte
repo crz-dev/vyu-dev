@@ -704,7 +704,8 @@
       }
     }
     window.addEventListener("keydown", captureCtrlF, { capture: true });
-    return () => window.removeEventListener("keydown", captureCtrlF, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", captureCtrlF, { capture: true });
   });
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -712,7 +713,9 @@
     const target = e.target as HTMLElement;
     if (target.closest("button, .progress-bar, .fs-progress")) return;
     if (!fileSrc) return;
-    pdfRightClickedCanvas = target.closest(".pdf-canvas") as HTMLCanvasElement | null;
+    pdfRightClickedCanvas = target.closest(
+      ".pdf-canvas",
+    ) as HTMLCanvasElement | null;
     const menuW = 200;
     const menuH = isVideo || isAudio ? 300 : 260;
     contextMenuStore.open(e, menuW, menuH);
@@ -1276,6 +1279,7 @@
   open={editDialogStore.editApplyConfirm}
   {fileName}
   applyNoAsk={editActions.applyNoAsk}
+  keepBackups={editing.keepBackups}
   onClose={closeEditApplyConfirm}
   onConfirm={handleApplyConfirm}
   onExportInstead={handleApplyExportInstead}

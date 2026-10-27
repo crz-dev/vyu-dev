@@ -3,6 +3,7 @@
     open,
     fileName,
     applyNoAsk,
+    keepBackups,
     onClose,
     onConfirm,
     onExportInstead,
@@ -11,6 +12,7 @@
     open: boolean;
     fileName: string;
     applyNoAsk: boolean;
+    keepBackups: boolean;
     onClose: () => void;
     onConfirm: () => void;
     onExportInstead: () => void;
@@ -74,8 +76,13 @@
         </button>
       </div>
       <div class="edit-confirm-body-box">
-        Applying edits will overwrite the current image. A temporary backup is
-        created, but you cannot undo after closing the file or app.
+        Applying edits will overwrite the current file.
+        {#if keepBackups}
+          A backup of the original is kept so you can restore it from the Edit
+          menu later.
+        {:else}
+          No backup will be kept. This cannot be undone.
+        {/if}
       </div>
       <div class="delete-toggles">
         <label class="toggle-row">
