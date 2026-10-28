@@ -129,10 +129,12 @@
   function exportSettings() {
     const data = {
       theme: themeStore.mode,
-      uiMode,
-      transition,
-      allowZoomOut,
-      alwaysShowControls,
+      darkVariant: themeStore.darkVariant,
+      font: fontStore.family,
+      uiScale: appearance.uiScale,
+      density: appearance.density,
+      reducedMotion: appearance.reducedMotion,
+      checkerboard: appearance.checkerboard,
       volumeBoost,
       resumePlayback,
       defaultLoop,
@@ -166,12 +168,15 @@
 
   import { theme as themeStore } from "$lib/features/theme/theme.svelte";
   import { font as fontStore } from "$lib/features/theme/font.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
-  let uiMode = $state<"simple" | "advanced">("advanced");
-  let transition = $state<"none" | "fade" | "slide">("fade");
-  let allowZoomOut = $state(false);
-  let alwaysShowControls = $state(false);
+
+  let scalePreview = $state(Math.round(appearance.uiScale * 100));
+
+  $effect(() => {
+    scalePreview = Math.round(appearance.uiScale * 100);
+  });
 
   let volumeBoost = $state(false);
   let resumePlayback = $state(true);
@@ -719,8 +724,8 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 ><circle cx="12" cy="12" r="5" /><path
-                  d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                /></svg
+                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                  /></svg
               >
               Appearance
             </p>
@@ -783,7 +788,6 @@
                 </div>
               </div>
             </div>
-
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -796,154 +800,30 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><rect
-                    x="3"
-                    y="3"
-                    width="18"
-                    height="18"
-                    rx="2"
-                    ry="2"
-                  /><line x1="3" y1="9" x2="21" y2="9" /><line
-                    x1="9"
-                    y1="21"
-                    x2="9"
-                    y2="9"
+                  ><circle cx="12" cy="12" r="9" /><path
+                    d="M12 3a9 9 0 000 18z"
+                    fill="currentColor"
+                    stroke="none"
                   /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">UI Mode</span>
-                  <span class="settings-hint"
-                    >Simple hides advanced controls</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-2">
-                  <button
-                    class="pill-btn"
-                    class:active={uiMode === "simple"}
-                    onclick={() => (uiMode = "simple")}>Simple</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={uiMode === "advanced"}
-                    onclick={() => (uiMode = "advanced")}>Advanced</button
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline
-                    points="2 17 12 22 22 17"
-                  /><polyline points="2 12 12 17 22 12" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Transition</span>
-                  <span class="settings-hint"
-                    >Animation style when switching media</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-3">
-                  <button
-                    class="pill-btn"
-                    class:active={transition === "none"}
-                    onclick={() => (transition = "none")}>None</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={transition === "fade"}
-                    onclick={() => (transition = "fade")}>Fade</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={transition === "slide"}
-                    onclick={() => (transition = "slide")}>Slide</button
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="11" cy="11" r="8" /><line
-                    x1="21"
-                    y1="21"
-                    x2="16.65"
-                    y2="16.65"
-                  /><line x1="8" y1="11" x2="14" y2="11" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Zoom Out</span>
-                  <span class="settings-hint">Allow zooming below 100%</span>
+                  <span class="settings-label">OLED True Black</span>
+                  <span class="settings-hint">Pure black surfaces in dark mode</span>
                 </div>
               </div>
               <div class="settings-control">
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={allowZoomOut}
-                    onchange={(e) => (allowZoomOut = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={allowZoomOut}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                  /><circle cx="12" cy="12" r="3" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Always Show Controls</span>
-                  <span class="settings-hint"
-                    >Keep overlays visible in fullscreen</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={alwaysShowControls}
+                    checked={themeStore.darkVariant === "oled"}
                     onchange={(e) =>
-                      (alwaysShowControls = e.currentTarget.checked)}
+                      themeStore.setDarkVariant(
+                        e.currentTarget.checked ? "oled" : "standard",
+                      )}
                   />
-                  <span class="toggle-track" class:on={alwaysShowControls}
+                  <span
+                    class="toggle-track"
+                    class:on={themeStore.darkVariant === "oled"}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
@@ -970,8 +850,7 @@
                 >
                 <div class="settings-label-text">
                   <span class="settings-label">Font</span>
-                  <span class="settings-hint">Typeface used across the app</span
-                  >
+                  <span class="settings-hint">Typeface used across the app</span>
                 </div>
               </div>
               <div class="settings-control">
@@ -992,6 +871,177 @@
                     onclick={() => fontStore.setFont("system")}>System</button
                   >
                 </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path d="M15 3h6v6" /><path d="M9 21H3v-6" /><path
+                    d="M21 3l-7 7"
+                  /><path d="M3 21l7-7" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Interface Scale</span>
+                  <span class="settings-hint">Size of text and controls</span>
+                </div>
+              </div>
+              <div class="settings-control settings-slider-control">
+                <input
+                  type="range"
+                  min="80"
+                  max="150"
+                  step="5"
+                  aria-label="Interface scale"
+                  value={scalePreview}
+                  oninput={(e) =>
+                    (scalePreview = Number(e.currentTarget.value))}
+                  onchange={(e) =>
+                    appearance.setUiScale(
+                      Number(e.currentTarget.value) / 100,
+                    )}
+                />
+                <span class="settings-slider-value">{scalePreview}%</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><line x1="3" y1="6" x2="21" y2="6" /><line
+                    x1="3"
+                    y1="12"
+                    x2="21"
+                    y2="12"
+                  /><line x1="3" y1="18" x2="21" y2="18" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Density</span>
+                  <span class="settings-hint"
+                    >Spacing in settings, menus and lists</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <div class="pill-group pill-group-2 pill-group-wide">
+                  <button
+                    class="pill-btn"
+                    class:active={appearance.density === "comfortable"}
+                    onclick={() => appearance.setDensity("comfortable")}
+                    >Comfortable</button
+                  >
+                  <button
+                    class="pill-btn"
+                    class:active={appearance.density === "compact"}
+                    onclick={() => appearance.setDensity("compact")}
+                    >Compact</button
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect x="3" y="3" width="8" height="8" rx="1" /><rect
+                    x="13"
+                    y="13"
+                    width="8"
+                    height="8"
+                    rx="1"
+                  /><rect x="13" y="3" width="8" height="8" rx="1" /><rect
+                    x="3"
+                    y="13"
+                    width="8"
+                    height="8"
+                    rx="1"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Transparency Background</span>
+                  <span class="settings-hint"
+                    >Show a checkerboard behind transparent images</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={appearance.checkerboard}
+                    onchange={(e) =>
+                      appearance.setCheckerboard(e.currentTarget.checked)}
+                  />
+                  <span class="toggle-track" class:on={appearance.checkerboard}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><circle cx="12" cy="12" r="9" /><line
+                    x1="10"
+                    y1="9"
+                    x2="10"
+                    y2="15"
+                  /><line x1="14" y1="9" x2="14" y2="15" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Reduced Motion</span>
+                  <span class="settings-hint"
+                    >Minimize animations and transitions</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={appearance.reducedMotion}
+                    onchange={(e) =>
+                      appearance.setReducedMotion(e.currentTarget.checked)}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={appearance.reducedMotion}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
               </div>
             </div>
           </div>

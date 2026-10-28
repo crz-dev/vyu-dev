@@ -217,6 +217,14 @@ main {
   padding: 0;
 }
 
+.viewer.checkerboard {
+  background-image: repeating-conic-gradient(
+    var(--checker-a) 0% 25%,
+    transparent 0% 50%
+  );
+  background-size: 20px 20px;
+}
+
 main:not(.fullscreen).thumbnail-bar-open .viewer {
   padding-bottom: 98px;
 }

@@ -294,8 +294,8 @@
               </p>
               <p>
                 <strong>How do I change the UI?</strong> — Visit Settings
-                <span class="help-kbd-inline">Accessibility</span> to adjust contrast,
-                font size, motion reduction, and more.
+                <span class="help-kbd-inline">Appearance</span> to change the theme,
+                font, interface scale, density, and reduced motion.
               </p>
               <p>
                 <strong>Can I edit files?</strong> — Yes, use the Edit menu to crop,

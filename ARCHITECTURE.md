@@ -44,6 +44,7 @@ Before creating code, find the existing owner.
 | Drawing / markup                          | `features/markup/markup.svelte.ts`                    |
 | Markup actions                            | `features/markup/markupActions.ts`                    |
 | Theme / typography                        | `features/theme/theme.svelte.ts`                      |
+| Interface scale, density, reduced motion, transparency | `features/theme/appearance.svelte.ts`             |
 | Accessibility                             | `features/menus/accessibility.svelte.ts`              |
 | Audio effects engine                      | `features/effects/effects-engine.ts`                  |
 | Equalizer                                 | `features/equalizer/*`                                |

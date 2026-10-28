@@ -4301,3 +4301,39 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   text-align: right;
   user-select: none;
 }
+
+/* Compact density */
+:root[data-density="compact"] .settings-content {
+  gap: 12px;
+  padding: 12px 18px 16px;
+}
+
+:root[data-density="compact"] .settings-section {
+  padding: 10px;
+}
+
+:root[data-density="compact"] .settings-row {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+:root[data-density="compact"] .app-dropdown-menu {
+  gap: 1px;
+  padding: 4px;
+}
+
+:root[data-density="compact"] .app-dropdown-item,
+:root[data-density="compact"] .sort-menu-item,
+:root[data-density="compact"] .ctx-item {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+:root[data-density="compact"] .sort-menu {
+  padding: 3px;
+  gap: 1px;
+}
+
+:root[data-density="compact"] .list-row {
+  height: 26px;
+}

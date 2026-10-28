@@ -4,6 +4,7 @@
     saveLastDialogSection,
   } from "$lib/services/storage";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
 
   let {
     accessibilityOpen,
@@ -102,7 +103,7 @@
     const data = {
       highContrast,
       largeText,
-      reduceMotion,
+      reduceMotion: appearance.reducedMotion,
       colorBlindMode: accessibility.colorBlindMode,
       screenReaderHints,
       focusIndicators,
@@ -141,7 +142,6 @@
 
   let highContrast = $state(false);
   let largeText = $state(false);
-  let reduceMotion = $state(false);
   let screenReaderHints = $state(false);
   let focusIndicators = $state(true);
   let appBrightness = $state(1.0);
@@ -580,10 +580,11 @@
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={reduceMotion}
-                    onchange={(e) => (reduceMotion = e.currentTarget.checked)}
+                    checked={appearance.reducedMotion}
+                    onchange={(e) =>
+                      appearance.setReducedMotion(e.currentTarget.checked)}
                   />
-                  <span class="toggle-track" class:on={reduceMotion}
+                  <span class="toggle-track" class:on={appearance.reducedMotion}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>

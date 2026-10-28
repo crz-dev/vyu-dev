@@ -23,6 +23,7 @@
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
   import ToastStack from "$lib/components/ToastStack.svelte";
   import { fade } from "svelte/transition";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import type { SortMode } from "$lib/shared/constants";
   import type {
     ContextMenu,
@@ -410,6 +411,8 @@
     fixReplace: () => void;
   } = $props();
 
+  let viewFadeMs = $derived(appearance.reducedMotion ? 0 : 200);
+
   let editMenuMoved = $state(false);
   let markupMenuMoved = $state(false);
   let effectsMenuMoved = $state(false);
@@ -700,7 +703,7 @@
     >
       {#if libraryOpen}
         <div
-          transition:fade={{ duration: 200 }}
+          transition:fade={{ duration: viewFadeMs }}
           style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
         >
           <LibraryView
@@ -721,7 +724,7 @@
         </div>
       {:else}
         <div
-          transition:fade={{ duration: 200 }}
+          transition:fade={{ duration: viewFadeMs }}
           style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
         >
           {@render children?.()}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import type {
     ClipBoundary,
     ContextMenu,
@@ -186,6 +187,8 @@
     fixCopy: () => void;
     fixReplace: () => void;
   } = $props();
+
+  let overlayFadeMs = $derived(appearance.reducedMotion ? 0 : 120);
 
   let pinned = $state(false);
   let deleteMarkersConfirm = $state(false);
@@ -1769,7 +1772,7 @@
 {#if propertiesOpen}
   <div
     class="delete-overlay"
-    out:fade={{ duration: 120 }}
+    out:fade={{ duration: overlayFadeMs }}
     role="presentation"
     onmousedown={(e) => {
       if (e.target === e.currentTarget) closeProperties();
@@ -1932,7 +1935,7 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="9" /><path d="M12 10.5V16" stroke-linecap="round" /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+                  ><circle cx="12" cy="12" r="9" /><path d="M12 10.5V16" stroke-linecap="round" /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg>
                 >
                 Version
               </span>
@@ -2464,7 +2467,7 @@
 {#if shareOpen}
   <div
     class="delete-overlay"
-    out:fade={{ duration: 120 }}
+    out:fade={{ duration: overlayFadeMs }}
     role="presentation"
     onmousedown={(e) => {
       if (e.target === e.currentTarget) closeShare();

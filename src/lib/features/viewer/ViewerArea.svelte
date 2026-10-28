@@ -22,6 +22,7 @@
   import type { PlaybackUIStore } from "$lib/features/media/playback.svelte";
   import type { ClipsStore } from "$lib/features/media/clips.svelte";
   import type { PdfStore } from "$lib/features/viewer/pdf.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
 
   let {
     fileSrc,
@@ -214,6 +215,10 @@
     resetZoom: () => void;
     audioMarkerProps: Record<string, unknown>;
   } = $props();
+
+  let slideshowTransition = $derived(
+    appearance.reducedMotion ? "none" : slideshow.transition,
+  );
 </script>
 
 <div class="content">
@@ -231,6 +236,10 @@
   </div>
   <div
     class="viewer"
+    class:checkerboard={appearance.checkerboard &&
+      !isVideo &&
+      !isAudio &&
+      !isPdf}
     bind:this={viewerEl}
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
@@ -264,7 +273,7 @@
         imageStyle={style.imageStyle}
         bind:cropContainerEl
         slideshowActive={slideshow.active}
-        slideshowTransition={slideshow.transition}
+        {slideshowTransition}
         {currentIndex}
       />
     {:else if fileSrc && isVideo}
@@ -287,7 +296,7 @@
         {timelineProps}
         {playbackProps}
         slideshowActive={slideshow.active}
-        slideshowTransition={slideshow.transition}
+        {slideshowTransition}
         {currentIndex}
       />
     {:else if fileSrc && isPdf}

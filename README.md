@@ -40,7 +40,7 @@ Page-by-page rendering via pdfjs-dist, only loads when you open a PDF. Zoom and 
 
 ### Across the app
 
-- **Themes:** select dark/light themes, fonts, layouts, and animations.
+- **Themes:** dark, light, system, or OLED true black; fonts, interface scale, density, reduced motion, and transparency background.
 - **Library:** grid, list, river, or filmstrip view. Tabs for current folder, recents, collections, and favorites. Multi-select, sort, section grouping.
 - **Edit anywhere:** crop, markup, effects, and format conversion on any media type.
 - **Sharing:** copy to clipboard, show in Explorer, open in external apps (Photos, Paint, VLC, Spotify, browser), print, send via Bluetooth, set as wallpaper or lock screen.

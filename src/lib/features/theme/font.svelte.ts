@@ -8,16 +8,18 @@ const FONT_MAP: Record<Exclude<FontFamily, "system">, string> = {
   satoshi: "'Satoshi', sans-serif",
 };
 
+const SYSTEM_FONT =
+  "'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif";
+
 function createFont() {
   const saved = loadFont();
   let family = $state<FontFamily>(saved);
 
   function applyFont(f: FontFamily) {
-    if (f === "system") {
-      document.documentElement.style.removeProperty("--font-family");
-    } else {
-      document.documentElement.style.setProperty("--font-family", FONT_MAP[f]);
-    }
+    document.documentElement.style.setProperty(
+      "--font-family",
+      f === "system" ? SYSTEM_FONT : FONT_MAP[f],
+    );
   }
 
   if (typeof document !== "undefined") {

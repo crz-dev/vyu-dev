@@ -245,6 +245,62 @@ export function saveFont(f: "geist" | "satoshi" | "system"): void {
   localStorage.setItem("vyu-font", f);
 }
 
+// ── Appearance ──
+export type DisplayDensity = "comfortable" | "compact";
+export type DarkVariant = "standard" | "oled";
+
+const UI_SCALE_MIN = 0.8;
+const UI_SCALE_MAX = 1.5;
+
+export function loadUiScale(): number {
+  const v = Number(localStorage.getItem("vyu-ui-scale"));
+  if (!Number.isFinite(v)) return 1;
+  return Math.min(
+    UI_SCALE_MAX,
+    Math.max(UI_SCALE_MIN, Math.round(v * 100) / 100),
+  );
+}
+
+export function saveUiScale(scale: number): void {
+  localStorage.setItem("vyu-ui-scale", String(scale));
+}
+
+export function loadDensity(): DisplayDensity {
+  return localStorage.getItem("vyu-density") === "compact"
+    ? "compact"
+    : "comfortable";
+}
+
+export function saveDensity(density: DisplayDensity): void {
+  localStorage.setItem("vyu-density", density);
+}
+
+export function loadReducedMotion(): boolean {
+  return localStorage.getItem("vyu-reduced-motion") === "true";
+}
+
+export function saveReducedMotion(enabled: boolean): void {
+  localStorage.setItem("vyu-reduced-motion", enabled ? "true" : "false");
+}
+
+export function loadCheckerboard(): boolean {
+  return localStorage.getItem("vyu-checkerboard") === "true";
+}
+
+export function saveCheckerboard(enabled: boolean): void {
+  localStorage.setItem("vyu-checkerboard", enabled ? "true" : "false");
+}
+
+export function loadDarkVariant(): DarkVariant {
+  return localStorage.getItem("vyu-dark-variant") === "oled"
+    ? "oled"
+    : "standard";
+}
+
+export function saveDarkVariant(variant: DarkVariant): void {
+  localStorage.setItem("vyu-dark-variant", variant);
+}
+
 export function loadCdColor(filePath: string): number {
   if (!filePath) return -1;
   const raw = localStorage.getItem(`vyu-cd-color-${filePath}`);

@@ -128,3 +128,24 @@
     background-position: 0 0;
   }
 }
+
+/* Reduced motion — stop decorative animation without hiding state */
+[data-reduce-motion="true"] *,
+[data-reduce-motion="true"] *::before,
+[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+[data-reduce-motion="true"] .border-sweep::before {
+  animation: none !important;
+  background: var(--green);
+}
+
+[data-reduce-motion="true"] .marquee-track {
+  animation: none !important;
+  transform: none !important;
+}

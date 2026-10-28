@@ -400,6 +400,26 @@
   color-scheme: light;
 }
 
+/* OLED dark variant — pure black surfaces */
+[data-theme="dark"][data-dark-variant="oled"] {
+  --bg-base: #000000;
+  --bg-primary: #000000;
+  --bg-secondary: #050505;
+  --bg-elevated: #0a0a0a;
+  --bg-border: #1c1c1c;
+  --bg-shimmer: #151515;
+  --border-subtle: #242424;
+}
+
+/* Transparency checkerboard */
+:root {
+  --checker-a: rgba(255, 255, 255, 0.055);
+}
+
+[data-theme="light"] {
+  --checker-a: rgba(0, 0, 0, 0.075);
+}
+
 /* Video overlay elements must stay light regardless of theme */
 [data-theme="light"] .video-controls,
 [data-theme="light"] .fs-overlay {
