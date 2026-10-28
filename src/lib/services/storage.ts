@@ -301,6 +301,100 @@ export function saveDarkVariant(variant: DarkVariant): void {
   localStorage.setItem("vyu-dark-variant", variant);
 }
 
+// ── Playback ──
+export type ResumeMode = "off" | "ask" | "always";
+
+export function loadResumeMode(): ResumeMode {
+  const v = localStorage.getItem("vyu-resume-mode");
+  if (v === "off" || v === "always") return v;
+  return "ask";
+}
+
+export function saveResumeMode(mode: ResumeMode): void {
+  localStorage.setItem("vyu-resume-mode", mode);
+}
+
+export function loadResumeThreshold(): number {
+  const v = Number(localStorage.getItem("vyu-resume-threshold"));
+  if (!Number.isFinite(v)) return 30;
+  const snapped = Math.round(v / 30) * 30;
+  return Math.min(900, Math.max(0, snapped));
+}
+
+export function saveResumeThreshold(seconds: number): void {
+  localStorage.setItem("vyu-resume-threshold", String(seconds));
+}
+
+export function loadAutoplay(): boolean {
+  return localStorage.getItem("vyu-autoplay") !== "false";
+}
+
+export function saveAutoplay(enabled: boolean): void {
+  localStorage.setItem("vyu-autoplay", enabled ? "true" : "false");
+}
+
+export function loadRememberSpeed(): boolean {
+  return localStorage.getItem("vyu-remember-speed") !== "false";
+}
+
+export function saveRememberSpeed(enabled: boolean): void {
+  localStorage.setItem("vyu-remember-speed", enabled ? "true" : "false");
+}
+
+export function loadRememberVolume(): boolean {
+  return localStorage.getItem("vyu-remember-volume") !== "false";
+}
+
+export function saveRememberVolume(enabled: boolean): void {
+  localStorage.setItem("vyu-remember-volume", enabled ? "true" : "false");
+}
+
+export function loadDefaultSpeed(): number {
+  const v = Number(localStorage.getItem("vyu-default-speed"));
+  if (!Number.isFinite(v)) return 1;
+  return Math.min(3, Math.max(0.1, Math.round(v / 0.05) * 0.05));
+}
+
+export function saveDefaultSpeed(speed: number): void {
+  localStorage.setItem("vyu-default-speed", String(speed));
+}
+
+export function loadDefaultVolume(): number {
+  const v = Number(localStorage.getItem("vyu-default-volume"));
+  if (!Number.isFinite(v)) return 0.5;
+  return Math.min(1, Math.max(0, Math.round(v * 100) / 100));
+}
+
+export function saveDefaultVolume(volume: number): void {
+  localStorage.setItem("vyu-default-volume", String(volume));
+}
+
+export function loadVolumeBoost(): boolean {
+  return localStorage.getItem("vyu-volume-boost") === "true";
+}
+
+export function saveVolumeBoost(enabled: boolean): void {
+  localStorage.setItem("vyu-volume-boost", enabled ? "true" : "false");
+}
+
+export function loadSeekStep(): number {
+  const v = Number(localStorage.getItem("vyu-seek-step"));
+  if (!Number.isFinite(v)) return 5;
+  return Math.min(60, Math.max(1, Math.round(v)));
+}
+
+export function saveSeekStep(seconds: number): void {
+  localStorage.setItem("vyu-seek-step", String(seconds));
+}
+
+export function loadKeepAudio(): boolean {
+  return localStorage.getItem("vyu-keep-audio") === "true";
+}
+
+export function saveKeepAudio(enabled: boolean): void {
+  localStorage.setItem("vyu-keep-audio", enabled ? "true" : "false");
+}
+
 export function loadCdColor(filePath: string): number {
   if (!filePath) return -1;
   const raw = localStorage.getItem(`vyu-cd-color-${filePath}`);

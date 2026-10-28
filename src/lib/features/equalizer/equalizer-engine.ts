@@ -11,6 +11,9 @@ class EqualizerEngine {
   private filters: BiquadFilterNode[] = [];
   private outputGain: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
+  private boostGain: GainNode | null = null;
+  private boostSource: AudioNode | null = null;
+  private boostEnabled = false;
   private connectedElement: HTMLMediaElement | null = null;
   private bandValues: number[] = new Array(NUM_BANDS).fill(0);
   private outputGainDb = 0;
@@ -36,6 +39,13 @@ class EqualizerEngine {
 
   getConnectedElement(): HTMLMediaElement | null {
     return this.connectedElement;
+  }
+
+  setVolumeBoost(enabled: boolean): void {
+    this.boostEnabled = enabled;
+    if (this.boostGain) {
+      this.boostGain.gain.value = enabled ? 2 : 1;
+    }
   }
 
   setEffectsOutput(node: AudioNode): void {
@@ -168,11 +178,14 @@ class EqualizerEngine {
       ...this.filters,
       ...(this.outputGain ? [this.outputGain] : []),
       ...(this.analyser ? [this.analyser] : []),
+      ...(this.boostGain ? [this.boostGain] : []),
       ...this.stageNodes,
     ];
     this.filters = [];
     this.outputGain = null;
     this.analyser = null;
+    this.boostGain = null;
+    this.boostSource = null;
     this.stageNodes = [];
     this.stageMode = null;
 
@@ -228,6 +241,15 @@ class EqualizerEngine {
       }
       this.analyser = null;
     }
+    if (this.boostGain) {
+      try {
+        this.boostGain.disconnect();
+      } catch {
+        /* disconnected */
+      }
+      this.boostGain = null;
+    }
+    this.boostSource = null;
   }
 
   setBand(index: number, gainDb: number): void {
@@ -321,6 +343,30 @@ class EqualizerEngine {
     this.stageNodes = [];
   }
 
+  private ensureBoost(source: AudioNode): AudioNode {
+    if (!this.ctx) return source;
+    if (!this.boostGain) {
+      this.boostGain = this.ctx.createGain();
+      this.boostGain.gain.value = this.boostEnabled ? 2 : 1;
+    }
+    if (this.boostSource && this.boostSource !== source) {
+      try {
+        this.boostSource.disconnect(this.boostGain);
+      } catch {
+        /* disconnected */
+      }
+    }
+    if (this.boostSource !== source) {
+      try {
+        source.connect(this.boostGain);
+      } catch {
+        /* already connected */
+      }
+      this.boostSource = source;
+    }
+    return this.boostGain;
+  }
+
   private applyStage(): void {
     if (!this.analyser || !this.ctx) return;
 
@@ -333,10 +379,18 @@ class EqualizerEngine {
       /* not connected */
     }
 
+    // Rebuild the boost output connections; the source → boost edge is kept.
+    try {
+      this.boostGain?.disconnect();
+    } catch {
+      /* not connected */
+    }
+
     const source = this.effectsOutput ?? this.analyser;
+    const output = this.ensureBoost(source);
     const mode = this.stageMode;
     if (!mode || mode === "stereo") {
-      source.connect(this.ctx.destination);
+      output.connect(this.ctx.destination);
       return;
     }
 
@@ -348,7 +402,7 @@ class EqualizerEngine {
       gainL.gain.value = 0.5;
       gainR.gain.value = 0.5;
 
-      source.connect(splitter);
+      output.connect(splitter);
       splitter.connect(gainL, 0);
       splitter.connect(gainR, 1);
       gainL.connect(merger, 0, 0);
@@ -366,7 +420,7 @@ class EqualizerEngine {
       const merger = this.ctx.createChannelMerger(2);
 
       // Direct path L→L, R→R
-      source.connect(splitter);
+      output.connect(splitter);
       splitter.connect(merger, 0, 0);
       splitter.connect(merger, 1, 1);
 
@@ -416,7 +470,7 @@ class EqualizerEngine {
     if (mode === "eightD") {
       const panner = this.ctx.createStereoPanner();
 
-      source.connect(panner);
+      output.connect(panner);
       panner.connect(this.ctx.destination);
 
       this.stagePanner = panner as unknown as PannerNode;
@@ -476,11 +530,14 @@ class EqualizerEngine {
       ...this.filters,
       ...(this.outputGain ? [this.outputGain] : []),
       ...(this.analyser ? [this.analyser] : []),
+      ...(this.boostGain ? [this.boostGain] : []),
       ...this.stageNodes,
     ];
     this.filters = [];
     this.outputGain = null;
     this.analyser = null;
+    this.boostGain = null;
+    this.boostSource = null;
     this.stageNodes = [];
     this.stageMode = null;
 

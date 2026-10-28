@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import {
     createPlaybackUI,
     formatTime,
@@ -9,6 +10,9 @@
     discScrubStore,
   } from "$lib/features/media/scrubbing.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
+  import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+  import { sleepTimer } from "$lib/features/media/sleepTimer.svelte";
+  import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
   import {
     createOnMediaEnded,
     createFrameStep,
@@ -51,6 +55,7 @@
 
   import { showToast } from "$lib/components/toast.svelte";
   import Shell from "$lib/components/Shell.svelte";
+  import NowPlayingPill from "$lib/components/NowPlayingPill.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
   import { createPropertiesActions } from "$lib/features/actions/propertiesActions";
   import { contextMenuStore } from "$lib/features/menus/contextMenu.svelte";
@@ -144,6 +149,7 @@
   let lastPrevClickTime = $state(0);
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
+  let bgAudioEl: HTMLAudioElement | null = $state(null);
   let thumbnailBarVisible = $state(false);
   let fsPillEl: HTMLButtonElement | null = $state(null);
   let volumeSliderMode = $state(false);
@@ -255,10 +261,14 @@
     () => volume,
     (v) => {
       volume = v;
-      saveVolume(v);
+      if (playbackPrefs.rememberVolume) saveVolume(v);
     },
-    savePlaybackSpeed,
-    loadPlaybackSpeed(),
+    (speed) => {
+      if (playbackPrefs.rememberSpeed) savePlaybackSpeed(speed);
+    },
+    playbackPrefs.rememberSpeed
+      ? loadPlaybackSpeed()
+      : playbackPrefs.defaultSpeed,
   );
   effectsStore.setPlaybackSpeedFn((speed) =>
     playbackUI.setPlaybackSpeed(speed),
@@ -576,6 +586,7 @@
     onSortChange,
     handleFsPillContext,
     advanceSlide,
+    saveCurrentPosition,
     setMediaState,
     folderWatcher,
     media,
@@ -683,6 +694,7 @@
     isTimedMedia: () => (isVideo || isAudio) && !isGifVideo,
     isVideo: () => isVideo,
     getMediaEl: () => (isVideo ? videoEl : isAudio ? audioEl : null),
+    getSeekStep: () => playbackPrefs.seekStep,
     getHoverZone: () => hoverZone,
     isFullscreen: () => viewer.state.isFullscreen,
     togglePlay,
@@ -984,8 +996,127 @@
     rawDurationSecs: { get: () => rawDurationSecs },
     playbackUI,
     loadFile,
+    saveResumePosition: saveCurrentPosition,
     handleKeydown,
     handleGlobalMouseDown,
+  });
+
+  $effect(() => {
+    if (playbackPrefs.rememberSpeed) return;
+    playbackUI.setPlaybackSpeed(playbackPrefs.defaultSpeed);
+  });
+
+  $effect(() => {
+    if (playbackPrefs.rememberVolume) return;
+    setVolume(playbackPrefs.defaultVolume);
+  });
+
+  let prevRememberSpeed = playbackPrefs.rememberSpeed;
+  $effect(() => {
+    const enabled = playbackPrefs.rememberSpeed;
+    if (enabled && !prevRememberSpeed) {
+      savePlaybackSpeed(playbackUI.playbackSpeed);
+    }
+    prevRememberSpeed = enabled;
+  });
+
+  let prevRememberVolume = playbackPrefs.rememberVolume;
+  $effect(() => {
+    const enabled = playbackPrefs.rememberVolume;
+    if (enabled && !prevRememberVolume) {
+      saveVolume(volume);
+    }
+    prevRememberVolume = enabled;
+  });
+
+  $effect(() => {
+    const mode = loopModeStore.loopMode;
+    if (videoEl) videoEl.loop = mode === "loop";
+    if (audioEl) audioEl.loop = mode === "loop";
+  });
+
+  $effect(() => {
+    const boost = playbackPrefs.volumeBoost;
+    eqEngine.setVolumeBoost(boost);
+    untrack(() => backgroundAudio.setBoost(boost));
+  });
+
+  $effect(() => {
+    const el = isVideo ? videoEl : isAudio ? audioEl : null;
+    if (!el) return;
+    let seekTimer: ReturnType<typeof setTimeout> | undefined;
+    const save = () => saveCurrentPosition();
+    const saveSeek = () => {
+      if (seekTimer) clearTimeout(seekTimer);
+      seekTimer = setTimeout(save, 300);
+    };
+    el.addEventListener("pause", save);
+    el.addEventListener("seeked", saveSeek);
+    return () => {
+      if (seekTimer) clearTimeout(seekTimer);
+      el.removeEventListener("pause", save);
+      el.removeEventListener("seeked", saveSeek);
+    };
+  });
+
+  $effect(() => {
+    if (playbackPrefs.resumeMode === "off") markerStore.resumePoint = null;
+  });
+
+  $effect(() => {
+    const el = bgAudioEl;
+    untrack(() => backgroundAudio.attach(el));
+  });
+
+  let wasLibraryOpen = false;
+  $effect.pre(() => {
+    const open = menuStore.libraryOpen;
+    if (open === wasLibraryOpen) return;
+    wasLibraryOpen = open;
+
+    if (open) {
+      if (!playbackPrefs.keepAudio || !isAudio || !filePath || !audioEl) return;
+      if (audioEl.paused && audioEl.currentTime <= 0) return;
+      const audioSrc = audioEl.currentSrc || audioEl.src;
+      if (!audioSrc) return;
+      backgroundAudio.start({
+        path: filePath,
+        name: fileName,
+        src: audioSrc,
+        currentTime: audioEl.currentTime,
+        volume,
+        muted,
+        rate: audioEl.playbackRate,
+        loop: audioEl.loop,
+        playing: !audioEl.paused,
+      });
+      return;
+    }
+
+    if (!backgroundAudio.active) return;
+    const bgPath = backgroundAudio.path;
+    const pos = backgroundAudio.currentTime;
+    backgroundAudio.stop();
+    if (isAudio && filePath === bgPath && pos > 0) {
+      backgroundAudio.queueSeek(bgPath, pos);
+    }
+  });
+
+  $effect(() => {
+    if (playbackPrefs.keepAudio) return;
+    untrack(() => backgroundAudio.stop());
+  });
+
+  sleepTimer.configure(() => {
+    getMediaEl()?.pause();
+    backgroundAudio.stop();
+    slideshow.stop();
+    playing = false;
+    showToast({
+      message: "Sleep timer stopped playback",
+      color: "grey",
+      duration: 4000,
+    });
   });
 
   // EQ settings + video EQ on file change
@@ -1285,3 +1416,15 @@
   onExportInstead={handleApplyExportInstead}
   onUpdateApplyNoAsk={handleUpdateApplyNoAsk}
 />
+
+<audio
+  bind:this={bgAudioEl}
+  hidden
+  onplay={() => backgroundAudio.setPlaying(true)}
+  onpause={() => backgroundAudio.setPlaying(false)}
+  onended={backgroundAudio.handleEnded}
+></audio>
+
+{#if backgroundAudio.active}
+  <NowPlayingPill />
+{/if}

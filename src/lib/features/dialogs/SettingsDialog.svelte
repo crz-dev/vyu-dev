@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import { invoke } from "@tauri-apps/api/core";
   import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
   import {
@@ -6,7 +7,6 @@
     invokeClearBackups,
   } from "$lib/features/media/api";
   import { showToast } from "$lib/components/toast.svelte";
-  import type { LoopMode } from "$lib/shared/constants";
   import {
     loadLastDialogSection,
     saveLastDialogSection,
@@ -135,12 +135,17 @@
       density: appearance.density,
       reducedMotion: appearance.reducedMotion,
       checkerboard: appearance.checkerboard,
-      volumeBoost,
-      resumePlayback,
-      defaultLoop,
-      showTimeRemaining,
-      rememberVolume,
-      autoplayNext,
+      resumeMode: playbackPrefs.resumeMode,
+      resumeThreshold: playbackPrefs.resumeThreshold,
+      endAction: loopModeStore.loopMode,
+      autoplay: playbackPrefs.autoplay,
+      rememberSpeed: playbackPrefs.rememberSpeed,
+      rememberVolume: playbackPrefs.rememberVolume,
+      defaultSpeed: playbackPrefs.defaultSpeed,
+      defaultVolume: playbackPrefs.defaultVolume,
+      volumeBoost: playbackPrefs.volumeBoost,
+      seekStep: playbackPrefs.seekStep,
+      keepAudio: playbackPrefs.keepAudio,
       autoSaveMarkers,
       keepBackups: editing.keepBackups,
       defaultQuality,
@@ -171,19 +176,56 @@
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
+  import { loopModeStore } from "$lib/features/media/loopMode.svelte";
+  import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+  import { sleepTimer } from "$lib/features/media/sleepTimer.svelte";
 
   let scalePreview = $state(Math.round(appearance.uiScale * 100));
+  let thresholdPreview = $state(playbackPrefs.resumeThreshold);
+  let seekPreview = $state(playbackPrefs.seekStep);
+  let defaultSpeedPreview = $state(playbackPrefs.defaultSpeed);
+  let defaultVolumePreview = $state(playbackPrefs.defaultVolume);
+  let sleepPreview = $state(sleepTimer.minutes);
 
   $effect(() => {
     scalePreview = Math.round(appearance.uiScale * 100);
   });
 
-  let volumeBoost = $state(false);
-  let resumePlayback = $state(true);
-  let defaultLoop = $state<LoopMode>("loop");
-  let showTimeRemaining = $state(false);
-  let rememberVolume = $state(true);
-  let autoplayNext = $state(false);
+  $effect(() => {
+    thresholdPreview = playbackPrefs.resumeThreshold;
+  });
+
+  $effect(() => {
+    seekPreview = playbackPrefs.seekStep;
+  });
+
+  $effect(() => {
+    defaultSpeedPreview = playbackPrefs.defaultSpeed;
+  });
+
+  $effect(() => {
+    defaultVolumePreview = playbackPrefs.defaultVolume;
+  });
+
+  $effect(() => {
+    sleepPreview = sleepTimer.minutes;
+  });
+
+  function formatResumeThreshold(seconds: number): string {
+    if (seconds <= 0) return "Any";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins === 0) return `${secs}s`;
+    return secs === 0 ? `${mins}m` : `${mins}m ${secs}s`;
+  }
+
+  function formatSpeed(speed: number): string {
+    return `${Number(speed.toFixed(2))}x`;
+  }
+
+  function formatVolume(value: number): string {
+    return `${Math.round(value * 100)}%`;
+  }
 
   let autoSaveMarkers = $state(true);
   let defaultQuality = $state<"fast" | "balanced" | "quality" | "lossless">(
@@ -724,110 +766,123 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 ><circle cx="12" cy="12" r="5" /><path
-                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                  /></svg
+                  d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                /></svg
               >
               Appearance
             </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="5" /><path
-                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                  /></svg
+            <div class="settings-card">
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><circle cx="12" cy="12" r="5" /><path
+                      d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Theme</span>
+                    <span class="settings-hint"
+                      >Choose the app's appearance</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-3">
+                    <button
+                      class="pill-btn"
+                      class:active={themeStore.mode === "dark"}
+                      onclick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        themeStore.setTheme("dark", {
+                          x: r.left + r.width / 2,
+                          y: r.top + r.height / 2,
+                        });
+                      }}>Dark</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={themeStore.mode === "light"}
+                      onclick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        themeStore.setTheme("light", {
+                          x: r.left + r.width / 2,
+                          y: r.top + r.height / 2,
+                        });
+                      }}>Light</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={themeStore.mode === "system"}
+                      onclick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        themeStore.setTheme("system", {
+                          x: r.left + r.width / 2,
+                          y: r.top + r.height / 2,
+                        });
+                      }}>System</button
+                    >
+                  </div>
+                </div>
+              </div>
+              {#if themeStore.resolved === "dark"}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
                 >
-                <div class="settings-label-text">
-                  <span class="settings-label">Theme</span>
-                  <span class="settings-hint">Choose the app's appearance</span>
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><circle cx="12" cy="12" r="9" /><path
+                        d="M12 3a9 9 0 000 18z"
+                        fill="currentColor"
+                        stroke="none"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">OLED True Black</span>
+                      <span class="settings-hint"
+                        >Pure black surfaces on OLED displays</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control">
+                    <label class="toggle-row">
+                      <input
+                        type="checkbox"
+                        checked={themeStore.darkVariant === "oled"}
+                        onchange={(e) =>
+                          themeStore.setDarkVariant(
+                            e.currentTarget.checked ? "oled" : "standard",
+                          )}
+                      />
+                      <span
+                        class="toggle-track"
+                        class:on={themeStore.darkVariant === "oled"}
+                        ><span class="toggle-thumb"></span></span
+                      >
+                    </label>
+                  </div>
                 </div>
-              </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-3">
-                  <button
-                    class="pill-btn"
-                    class:active={themeStore.mode === "dark"}
-                    onclick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      themeStore.setTheme("dark", {
-                        x: r.left + r.width / 2,
-                        y: r.top + r.height / 2,
-                      });
-                    }}>Dark</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={themeStore.mode === "light"}
-                    onclick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      themeStore.setTheme("light", {
-                        x: r.left + r.width / 2,
-                        y: r.top + r.height / 2,
-                      });
-                    }}>Light</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={themeStore.mode === "system"}
-                    onclick={(e) => {
-                      const r = e.currentTarget.getBoundingClientRect();
-                      themeStore.setTheme("system", {
-                        x: r.left + r.width / 2,
-                        y: r.top + r.height / 2,
-                      });
-                    }}>System</button
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="9" /><path
-                    d="M12 3a9 9 0 000 18z"
-                    fill="currentColor"
-                    stroke="none"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">OLED True Black</span>
-                  <span class="settings-hint">Pure black surfaces in dark mode</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={themeStore.darkVariant === "oled"}
-                    onchange={(e) =>
-                      themeStore.setDarkVariant(
-                        e.currentTarget.checked ? "oled" : "standard",
-                      )}
-                  />
-                  <span
-                    class="toggle-track"
-                    class:on={themeStore.darkVariant === "oled"}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
+              {/if}
             </div>
             <div class="settings-row">
               <div class="settings-label-col">
@@ -850,7 +905,8 @@
                 >
                 <div class="settings-label-text">
                   <span class="settings-label">Font</span>
-                  <span class="settings-hint">Typeface used across the app</span>
+                  <span class="settings-hint">Typeface used across the app</span
+                  >
                 </div>
               </div>
               <div class="settings-control">
@@ -905,9 +961,7 @@
                   oninput={(e) =>
                     (scalePreview = Number(e.currentTarget.value))}
                   onchange={(e) =>
-                    appearance.setUiScale(
-                      Number(e.currentTarget.value) / 100,
-                    )}
+                    appearance.setUiScale(Number(e.currentTarget.value) / 100)}
                 />
                 <span class="settings-slider-value">{scalePreview}%</span>
               </div>
@@ -1036,9 +1090,7 @@
                     onchange={(e) =>
                       appearance.setReducedMotion(e.currentTarget.checked)}
                   />
-                  <span
-                    class="toggle-track"
-                    class:on={appearance.reducedMotion}
+                  <span class="toggle-track" class:on={appearance.reducedMotion}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
@@ -1066,6 +1118,105 @@
               >
               Playback
             </p>
+            <div class="settings-card">
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Resume Playback</span>
+                    <span class="settings-hint"
+                      >Remember where each file stopped</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-3">
+                    <button
+                      class="pill-btn"
+                      class:active={playbackPrefs.resumeMode === "off"}
+                      onclick={() => playbackPrefs.setResumeMode("off")}
+                      >Off</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={playbackPrefs.resumeMode === "ask"}
+                      onclick={() => playbackPrefs.setResumeMode("ask")}
+                      >Ask</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={playbackPrefs.resumeMode === "always"}
+                      onclick={() => playbackPrefs.setResumeMode("always")}
+                      >Always</button
+                    >
+                  </div>
+                </div>
+              </div>
+              {#if playbackPrefs.resumeMode !== "off"}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
+                >
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><circle cx="12" cy="12" r="9" /><polyline
+                        points="12 7 12 12 15 14"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Resume Threshold</span>
+                      <span class="settings-hint"
+                        >Only resume after this much playback</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control settings-slider-control">
+                    <input
+                      type="range"
+                      min="0"
+                      max="900"
+                      step="30"
+                      aria-label="Resume threshold"
+                      value={900 - thresholdPreview}
+                      oninput={(e) =>
+                        (thresholdPreview =
+                          900 - Number(e.currentTarget.value))}
+                      onchange={(e) =>
+                        playbackPrefs.setResumeThreshold(
+                          900 - Number(e.currentTarget.value),
+                        )}
+                    />
+                    <span class="settings-slider-value" style="min-width: 54px"
+                      >{formatResumeThreshold(thresholdPreview)}</span
+                    >
+                  </div>
+                </div>
+              {/if}
+            </div>
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -1078,23 +1229,28 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path
-                    d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"
+                  ><circle cx="12" cy="12" r="9" /><polygon
+                    points="10 8 16 12 10 16 10 8"
+                    fill="currentColor"
+                    stroke="none"
                   /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Volume Boost</span>
-                  <span class="settings-hint">Allow volume up to 200%</span>
+                  <span class="settings-label">Autoplay Media</span>
+                  <span class="settings-hint"
+                    >Start playing when a file opens</span
+                  >
                 </div>
               </div>
               <div class="settings-control">
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={volumeBoost}
-                    onchange={(e) => (volumeBoost = e.currentTarget.checked)}
+                    checked={playbackPrefs.autoplay}
+                    onchange={(e) =>
+                      playbackPrefs.setAutoplay(e.currentTarget.checked)}
                   />
-                  <span class="toggle-track" class:on={volumeBoost}
+                  <span class="toggle-track" class:on={playbackPrefs.autoplay}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
@@ -1112,14 +1268,17 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><path
-                    d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"
-                  /></svg
+                  ><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line
+                    x1="18"
+                    y1="9"
+                    x2="18"
+                    y2="15"
+                  /><line x1="15" y1="12" x2="21" y2="12" /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Resume Playback</span>
+                  <span class="settings-label">Volume Boost</span>
                   <span class="settings-hint"
-                    >Remember position for each file</span
+                    >Raise output up to 200%; may clip loud audio</span
                   >
                 </div>
               </div>
@@ -1127,13 +1286,250 @@
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={resumePlayback}
-                    onchange={(e) => (resumePlayback = e.currentTarget.checked)}
+                    checked={playbackPrefs.volumeBoost}
+                    onchange={(e) =>
+                      playbackPrefs.setVolumeBoost(e.currentTarget.checked)}
                   />
-                  <span class="toggle-track" class:on={resumePlayback}
+                  <span
+                    class="toggle-track"
+                    class:on={playbackPrefs.volumeBoost}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path
+                      d="M15.54 8.46a5 5 0 010 7.07"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Remember Volume</span>
+                    <span class="settings-hint"
+                      >Restore the last volume on launch</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={playbackPrefs.rememberVolume}
+                      onchange={(e) =>
+                        playbackPrefs.setRememberVolume(
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={playbackPrefs.rememberVolume}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+              {#if !playbackPrefs.rememberVolume}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
+                >
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><polygon
+                        points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"
+                      /><path d="M15.54 8.46a5 5 0 010 7.07" /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Default Volume</span>
+                      <span class="settings-hint">Volume applied at launch</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control settings-slider-control">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      aria-label="Default volume"
+                      value={defaultVolumePreview}
+                      oninput={(e) =>
+                        (defaultVolumePreview = Number(e.currentTarget.value))}
+                      onchange={(e) =>
+                        playbackPrefs.setDefaultVolume(
+                          Number(e.currentTarget.value),
+                        )}
+                    />
+                    <span class="settings-slider-value"
+                      >{formatVolume(defaultVolumePreview)}</span
+                    >
+                  </div>
+                </div>
+              {/if}
+            </div>
+            <div class="settings-card">
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path d="M20.2 15a8 8 0 10-16.4 0" /><path
+                      d="M12 13l3.2-3.2"
+                    /><circle
+                      cx="12"
+                      cy="13"
+                      r="1"
+                      fill="currentColor"
+                      stroke="none"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Remember Speed</span>
+                    <span class="settings-hint"
+                      >Keep the chosen speed across files</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={playbackPrefs.rememberSpeed}
+                      onchange={(e) =>
+                        playbackPrefs.setRememberSpeed(e.currentTarget.checked)}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={playbackPrefs.rememberSpeed}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+              {#if !playbackPrefs.rememberSpeed}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
+                >
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path d="M4 21v-7" /><path d="M4 10V3" /><path
+                        d="M12 21v-9"
+                      /><path d="M12 8V3" /><path d="M20 21v-5" /><path
+                        d="M20 12V3"
+                      /><line x1="1" y1="14" x2="7" y2="14" /><line
+                        x1="9"
+                        y1="8"
+                        x2="15"
+                        y2="8"
+                      /><line x1="17" y1="16" x2="23" y2="16" /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Default Speed</span>
+                      <span class="settings-hint"
+                        >Speed applied when a file opens</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control settings-slider-control">
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="3"
+                      step="0.05"
+                      aria-label="Default speed"
+                      value={defaultSpeedPreview}
+                      oninput={(e) =>
+                        (defaultSpeedPreview = Number(e.currentTarget.value))}
+                      onchange={(e) =>
+                        playbackPrefs.setDefaultSpeed(
+                          Number(e.currentTarget.value),
+                        )}
+                    />
+                    <span class="settings-slider-value"
+                      >{formatSpeed(defaultSpeedPreview)}</span
+                    >
+                  </div>
+                </div>
+              {/if}
+            </div>
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><polygon points="13 19 22 12 13 5 13 19" /><polygon
+                    points="2 19 11 12 2 5 2 19"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Seek Step</span>
+                  <span class="settings-hint"
+                    >Arrow-key seek step over video</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control settings-slider-control">
+                <input
+                  type="range"
+                  min="1"
+                  max="60"
+                  step="1"
+                  aria-label="Seek step"
+                  value={seekPreview}
+                  oninput={(e) => (seekPreview = Number(e.currentTarget.value))}
+                  onchange={(e) =>
+                    playbackPrefs.setSeekStep(Number(e.currentTarget.value))}
+                />
+                <span class="settings-slider-value">{seekPreview}s</span>
               </div>
             </div>
             <div class="settings-row">
@@ -1155,33 +1551,129 @@
                   /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Default Loop</span>
+                  <span class="settings-label">End of Playback</span>
+                  <span class="settings-hint"
+                    >What happens when a file ends</span
+                  >
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group pill-group-4">
+                <div class="pill-group pill-group-4 pill-group-end">
                   <button
                     class="pill-btn"
-                    class:active={defaultLoop === "loop"}
-                    onclick={() => (defaultLoop = "loop")}>Loop</button
+                    class:active={loopModeStore.loopMode === "stop"}
+                    onclick={() => loopModeStore.setMode("stop")}>Stop</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={defaultLoop === "stop"}
-                    onclick={() => (defaultLoop = "stop")}>Stop</button
+                    class:active={loopModeStore.loopMode === "loop"}
+                    onclick={() => loopModeStore.setMode("loop")}>Loop</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={defaultLoop === "next"}
-                    onclick={() => (defaultLoop = "next")}>Next</button
+                    class:active={loopModeStore.loopMode === "next"}
+                    onclick={() => loopModeStore.setMode("next")}>Next</button
                   >
                   <button
                     class="pill-btn"
-                    class:active={defaultLoop === "shuffle"}
-                    onclick={() => (defaultLoop = "shuffle")}>Shuffle</button
+                    class:active={loopModeStore.loopMode === "shuffle"}
+                    onclick={() => loopModeStore.setMode("shuffle")}
+                    >Shuffle</button
                   >
                 </div>
               </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Sleep Timer</span>
+                    <span class="settings-hint"
+                      >{sleepTimer.active
+                        ? `Stops in ${sleepTimer.label}`
+                        : "Stop playback after a set time"}</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={sleepTimer.active}
+                      onchange={(e) => {
+                        if (e.currentTarget.checked) {
+                          sleepTimer.start(sleepPreview);
+                        } else {
+                          sleepTimer.clear();
+                        }
+                      }}
+                    />
+                    <span class="toggle-track" class:on={sleepTimer.active}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+              {#if sleepTimer.active}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
+                >
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><circle cx="12" cy="12" r="9" /><polyline
+                        points="12 7 12 12 15 14"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Timer Length</span>
+                      <span class="settings-hint"
+                        >Stop after this many minutes</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control settings-slider-control">
+                    <input
+                      type="range"
+                      min="1"
+                      max="120"
+                      step="1"
+                      aria-label="Sleep timer length"
+                      value={sleepPreview}
+                      oninput={(e) =>
+                        (sleepPreview = Number(e.currentTarget.value))}
+                      onchange={(e) =>
+                        sleepTimer.start(Number(e.currentTarget.value))}
+                    />
+                    <span class="settings-slider-value">{sleepPreview}m</span>
+                  </div>
+                </div>
+              {/if}
             </div>
             <div class="settings-row">
               <div class="settings-label-col">
@@ -1195,14 +1687,15 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><polyline
-                    points="12 6 12 12 16 14"
-                  /></svg
+                  ><path d="M3 18v-6a9 9 0 0118 0v6" /><path
+                    d="M21 19a2 2 0 01-2 2h-1v-6h3z"
+                  /><path d="M3 19a2 2 0 002 2h1v-6H3z" /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Show Time Remaining</span>
+                  <span class="settings-label">Background Audio in Library</span
+                  >
                   <span class="settings-hint"
-                    >Display countdown instead of elapsed</span
+                    >Continue audio while the Library is open</span
                   >
                 </div>
               </div>
@@ -1210,87 +1703,11 @@
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={showTimeRemaining}
+                    checked={playbackPrefs.keepAudio}
                     onchange={(e) =>
-                      (showTimeRemaining = e.currentTarget.checked)}
+                      playbackPrefs.setKeepAudio(e.currentTarget.checked)}
                   />
-                  <span class="toggle-track" class:on={showTimeRemaining}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-                  /><polyline points="17 21 17 13 7 13 7 21" /><polyline
-                    points="7 3 7 8 15 8"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Remember Volume</span>
-                  <span class="settings-hint"
-                    >Restore last used volume on launch</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={rememberVolume}
-                    onchange={(e) => (rememberVolume = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={rememberVolume}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polygon points="5 4 15 12 5 20 5 4" /><line
-                    x1="19"
-                    y1="5"
-                    x2="19"
-                    y2="19"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Auto-play Next</span>
-                  <span class="settings-hint">Load next file automatically</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={autoplayNext}
-                    onchange={(e) => (autoplayNext = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={autoplayNext}
+                  <span class="toggle-track" class:on={playbackPrefs.keepAudio}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>

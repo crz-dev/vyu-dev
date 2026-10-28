@@ -27,6 +27,9 @@ Before creating code, find the existing owner.
 | Viewer CSS styling                        | `features/viewer/viewerStyle.svelte.ts`               |
 | Rotation, flip, brightness, crop, export  | `features/editing/editing.svelte.ts`                  |
 | Playback                                  | `features/media/playback.svelte.ts`                   |
+| Playback preferences                      | `features/media/playbackPrefs.svelte.ts`              |
+| Sleep timer                               | `features/media/sleepTimer.svelte.ts`                 |
+| Background audio in Library                | `features/media/backgroundAudio.svelte.ts`, `components/NowPlayingPill.svelte` |
 | Playback bridge (toggle, volume, speed)   | `features/media/playbackBridge.ts`                    |
 | Playback position polling                 | `features/media/playbackPoller.svelte.ts`             |
 | Playback helpers (on-ended, frame-step)   | `features/media/playbackHelpers.ts`                   |

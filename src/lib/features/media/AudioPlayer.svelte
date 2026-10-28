@@ -7,6 +7,7 @@
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
   import { saveAudioLayoutMode, saveCdColor } from "$lib/services/storage";
   import { saveCdColor as dbSaveCdColor } from "$lib/services/database";
+  import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
 
   let {
     fileSrc,
@@ -240,7 +241,7 @@
     src={fileSrc}
     crossorigin="anonymous"
     preload="metadata"
-    autoplay
+    autoplay={playbackPrefs.autoplay}
     onloadedmetadata={onAudioLoad}
     onerror={onAudioError}
     onended={onAudioEnded}

@@ -12,6 +12,7 @@ type KeybindActions = {
   isTimedMedia: () => boolean;
   isVideo: () => boolean;
   getMediaEl: () => HTMLMediaElement | null;
+  getSeekStep: () => number;
   getHoverZone: () => string;
   isFullscreen: () => boolean;
   togglePlay: () => void;
@@ -116,7 +117,7 @@ export function createKeybindHandler(actions: KeybindActions) {
     } else if (e.key === "ArrowRight") {
       if (isVideoHover) {
         mediaEl!.currentTime = Math.min(
-          mediaEl!.currentTime + 5,
+          mediaEl!.currentTime + actions.getSeekStep(),
           mediaEl!.duration,
         );
       } else {
@@ -124,7 +125,10 @@ export function createKeybindHandler(actions: KeybindActions) {
       }
     } else if (e.key === "ArrowLeft") {
       if (isVideoHover) {
-        mediaEl!.currentTime = Math.max(mediaEl!.currentTime - 5, 0);
+        mediaEl!.currentTime = Math.max(
+          mediaEl!.currentTime - actions.getSeekStep(),
+          0,
+        );
       } else {
         actions.navigate(-1);
       }

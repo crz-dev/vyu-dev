@@ -3,16 +3,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   cleanupStaleStorageEntries,
   loadVolume,
+  loadDefaultVolume,
   loadLoopMode,
   loadSliderMode,
-  saveResumePoint,
-  deleteResumePoint,
+  loadRememberVolume,
 } from "$lib/services/storage";
-import {
-  saveResumePoint as dbSaveResumePoint,
-  deleteResumePoint as dbDeleteResumePoint,
-  migrateFromLocalStorage,
-} from "$lib/services/database";
+import { migrateFromLocalStorage } from "$lib/services/database";
 import type { LoopMode } from "$lib/shared/constants";
 import { createPasteHandler } from "$lib/features/file-actions/paste";
 
@@ -37,12 +33,25 @@ export interface InitState {
     setPlaybackSpeed: (v: number) => void;
   };
   loadFile: (path: string) => Promise<void>;
+  saveResumePosition: () => void;
   handleKeydown: (e: KeyboardEvent) => void;
   handleGlobalMouseDown: (e: MouseEvent) => void;
 }
 
 export function setupInit(s: InitState) {
   onMount(() => {
+    const rememberVolume = loadRememberVolume();
+    s.volume.set(rememberVolume ? loadVolume() : loadDefaultVolume());
+    s.loopMode.set(loadLoopMode());
+    const sliderPrefs = loadSliderMode();
+    s.volumeSliderMode.set(sliderPrefs.volume ?? false);
+    s.speedSliderMode.set(sliderPrefs.speed ?? false);
+    s.playbackUI.initSliderMode(
+      s.volumeSliderMode.get(),
+      s.speedSliderMode.get(),
+    );
+    s.clips.loadPrefs();
+
     (async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
@@ -67,38 +76,16 @@ export function setupInit(s: InitState) {
         cleanupStaleStorageEntries();
       }, 1500);
     }
-    s.volume.set(loadVolume());
-    s.loopMode.set(loadLoopMode());
-    const sliderPrefs = loadSliderMode();
-    s.volumeSliderMode.set(sliderPrefs.volume ?? false);
-    s.speedSliderMode.set(sliderPrefs.speed ?? false);
-    s.playbackUI.initSliderMode(
-      s.volumeSliderMode.get(),
-      s.speedSliderMode.get(),
-    );
-    const prefs = s.clips.loadPrefs();
 
     function saveResumeBeforeUnload() {
-      if (
-        (s.isVideo.get() || s.isAudio.get()) &&
-        s.filePath.get() &&
-        s.rawCurrentSecs.get() > 0 &&
-        s.rawDurationSecs.get() > 0
-      ) {
-        const path = s.filePath.get();
-        const cur = s.rawCurrentSecs.get();
-        const nearEnd = cur >= s.rawDurationSecs.get() - 1.5;
-        if (!nearEnd) {
-          saveResumePoint(path, cur);
-          dbSaveResumePoint(path, cur);
-        } else {
-          deleteResumePoint(path);
-          dbDeleteResumePoint(path);
-        }
-      }
+      s.saveResumePosition();
     }
 
     window.addEventListener("beforeunload", saveResumeBeforeUnload);
+
+    const resumeInterval = setInterval(() => {
+      if (s.isVideo.get() || s.isAudio.get()) s.saveResumePosition();
+    }, 10_000);
 
     let unlistenDragDrop: () => void = () => {};
     getCurrentWindow()
@@ -125,6 +112,7 @@ export function setupInit(s: InitState) {
       window.removeEventListener("mousedown", s.handleGlobalMouseDown);
       window.removeEventListener("paste", handlePaste);
       window.removeEventListener("beforeunload", saveResumeBeforeUnload);
+      clearInterval(resumeInterval);
       unlistenDragDrop();
     };
   });

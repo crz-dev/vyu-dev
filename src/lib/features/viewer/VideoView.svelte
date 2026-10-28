@@ -2,6 +2,7 @@
   import CropOverlay from "$lib/features/editing/CropOverlay.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
   import Controls from "$lib/components/Controls.svelte";
+  import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
 
   let {
     fileSrc,
@@ -72,7 +73,7 @@
           src={fileSrc}
           crossorigin="anonymous"
           preload="metadata"
-          autoplay
+          autoplay={playbackPrefs.autoplay || slideshowActive}
           onloadedmetadata={onVideoLoad}
           onerror={onVideoError}
           onended={onMediaEnded}

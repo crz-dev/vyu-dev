@@ -4,6 +4,8 @@ import {
   createPlaybackUI,
 } from "$lib/features/media/playback.svelte";
 import { saveVolume, saveSliderMode } from "$lib/services/storage";
+import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
 
 export interface PlaybackBridgeDeps {
   getMediaEl: () => HTMLMediaElement | null;
@@ -28,7 +30,9 @@ export function createPlaybackBridge(deps: PlaybackBridgeDeps) {
   }
 
   function toggleMute() {
+    const next = !deps.getMuted();
     playback.toggleMute(deps.setMuted, deps.getMuted());
+    backgroundAudio.setMuted(next);
   }
 
   function setVolume(val: number) {
@@ -36,7 +40,8 @@ export function createPlaybackBridge(deps: PlaybackBridgeDeps) {
       deps.setVolume(volume);
       deps.setMuted(muted);
     });
-    saveVolume(val);
+    if (playbackPrefs.rememberVolume) saveVolume(val);
+    backgroundAudio.setVolume(val);
   }
 
   function toggleVolumeSliderMode() {

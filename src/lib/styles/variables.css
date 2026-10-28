@@ -90,6 +90,8 @@
   --bg-shimmer: #222222;
   --border-subtle: #323232;
 
+  --settings-card-divider: rgba(255, 255, 255, 0.08);
+
   --yellow: #f5c518;
   --yellow-soft: #facc15;
 
@@ -254,6 +256,8 @@
 
   --bg-shimmer: #b8b8b8;
   --border-subtle: #9e9e9e;
+
+  --settings-card-divider: rgba(0, 0, 0, 0.09);
 
   --yellow: #92400e;
   --yellow-soft: #a16207;

@@ -14,13 +14,17 @@ function createLoopModeStore() {
     if (audioEl) audioEl.loop = mode === "loop";
   }
 
+  function setMode(mode: LoopMode) {
+    loopMode = mode;
+    saveLoopMode(loopMode);
+  }
+
   function setLoopMode(
     mode: LoopMode,
     getVideoEl: () => HTMLVideoElement | null,
     getAudioEl: () => HTMLAudioElement | null,
   ) {
-    loopMode = mode;
-    saveLoopMode(loopMode);
+    setMode(mode);
     applyToMedia(loopMode, getVideoEl(), getAudioEl());
   }
 
@@ -37,6 +41,7 @@ function createLoopModeStore() {
     get loopMode() {
       return loopMode;
     },
+    setMode,
     setLoopMode,
     cycleLoopMode,
   };

@@ -22,6 +22,7 @@ import { formatMetaDate, getMetaValue } from "$lib/shared/fileMeta";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 import { fxEngine } from "$lib/features/effects/effects-engine";
 import { library } from "$lib/features/library/library.svelte";
+import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
 
 export interface MediaState {
   filePath: string;
@@ -79,6 +80,7 @@ export function createMedia(
   getMuted: () => boolean,
   getLooping: () => boolean,
   onReset: (newPath?: string) => void,
+  onBeforeSwitch: (nextPath: string) => void = () => {},
 ) {
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
   let finishLoadingCalled = false;
@@ -261,6 +263,7 @@ export function createMedia(
     if (cached) prefetchCache.delete(path);
     if (refresh) statCache.delete(path);
 
+    onBeforeSwitch(path);
     releaseMediaResources();
 
     const isVideo = pathIsVideo(path);
@@ -287,8 +290,11 @@ export function createMedia(
           if (isVideo && meta.clips_data) {
             clipBoundaries = parseClipBoundaries(meta.clips_data);
           }
+          const lsPosition = lsLoadResumePoint(path);
           if (meta.last_position != null && isFinite(meta.last_position)) {
             resumePoint = meta.last_position;
+          } else {
+            resumePoint = lsPosition;
           }
         } else {
           timestamps = lsReadTimestamps(path);
@@ -325,7 +331,11 @@ export function createMedia(
       playing: false,
       timestamps,
       clipBoundaries,
-      resumePoint,
+      resumePoint:
+        playbackPrefs.resumeMode === "off" ||
+        (resumePoint !== null && resumePoint < playbackPrefs.resumeThreshold)
+          ? null
+          : resumePoint,
     });
 
     onReset(path);
@@ -416,6 +426,7 @@ export function createMedia(
   }
 
   function closeFile(set: (data: Partial<MediaState>) => void): void {
+    onBeforeSwitch("");
     clearTimeout(loadingTimer);
     finishLoadingCalled = false;
     releaseMediaResources();

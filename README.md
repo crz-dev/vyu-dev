@@ -26,7 +26,7 @@ Zoom to pixel level, pan, rotate, flip. Adjust brightness, contrast, saturation,
 
 <kbd>MP4</kbd> <kbd>WebM</kbd> <kbd>MKV</kbd> <kbd>AVI</kbd> <kbd>MOV</kbd> <kbd>WMV</kbd> <kbd>MPEG</kbd> <kbd>M4V</kbd> <kbd>TS</kbd> <kbd>M2TS</kbd>
 
-Frame-accurate timeline with labelled markers, A-B loop, and clip boundaries. Extract segments individually or merged. Adjust playback speed (0.1x–3x), step frame by frame, or grab the current frame as PNG. Apply edits (rotation, flip, brightness, contrast, saturation, hue), then crop and export.
+Frame-accurate timeline with labelled markers, A-B loop, and clip boundaries. Extract segments individually or merged. Adjust playback speed (0.1x–3x), step frame by frame, or grab the current frame as PNG. Resume where you left off, with optional prompt and threshold; configurable seek steps and a sleep timer. Apply edits (rotation, flip, brightness, contrast, saturation, hue), then crop and export.
 
 ### Audio
 
@@ -50,6 +50,7 @@ Page-by-page rendering via pdfjs-dist, only loads when you open a PDF. Zoom and 
 - **Keyboard-driven:** keybind coverage. F for fullscreen, arrows to browse, space to play, etc.
 - **Song identification:** identify tracks via Shazam (SongRec sidecar).
 - **Privacy mode:** obscures thumbnails and file paths for streaming, disables recents.
+- **Background audio:** keep a track playing while you browse the Library, with a compact now-playing control.
 - **Session persistence:** window position, playback resume points, last-used settings, all remembered across restarts.
 
 ---

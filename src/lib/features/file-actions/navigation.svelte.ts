@@ -15,6 +15,11 @@ import {
   getParentFolder,
   getFileExt,
 } from "$lib/services/files";
+import {
+  isAudio as pathIsAudio,
+  isVideo as pathIsVideo,
+} from "$lib/shared/mediaKind";
+import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
 import { requestThumbnail } from "$lib/services/thumbnailCache";
 import {
   AUDIO_EXTS,
@@ -24,8 +29,16 @@ import {
 import { sort } from "$lib/features/navigation/sort.svelte";
 import {
   createPlaybackUI,
+  formatTime,
   volumeToActual,
 } from "$lib/features/media/playback.svelte";
+import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+import { showToast, dismissToast } from "$lib/components/toast.svelte";
+import { saveResumePoint, deleteResumePoint } from "$lib/services/storage";
+import {
+  saveResumePoint as dbSaveResumePoint,
+  deleteResumePoint as dbDeleteResumePoint,
+} from "$lib/services/database";
 import {
   createSetMediaState,
   type SetMediaState,
@@ -97,7 +110,114 @@ export function createNavigation(deps: NavigationDeps) {
       }
       menuStore.editMenuVisible = false;
     },
+    handleBeforeSwitch,
   );
+
+  function handleBeforeSwitch(_nextPath: string) {
+    saveCurrentPosition();
+    switching = true;
+    if (switchTimer) clearTimeout(switchTimer);
+    switchTimer = setTimeout(() => {
+      switching = false;
+      switchTimer = undefined;
+    }, 400);
+    backgroundAudio.stop();
+    backgroundAudio.clearPendingSeek();
+  }
+
+  let resumeAppliedPath = "";
+  let switching = false;
+  let switchTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function clearSavedResume(path: string) {
+    deleteResumePoint(path);
+    void dbDeleteResumePoint(path);
+    markerStore.resumePoint = null;
+  }
+
+  function saveCurrentPosition() {
+    resumeAppliedPath = "";
+    if (switching) return;
+    if (playbackPrefs.resumeMode === "off") return;
+    const path = deps.getFilePath();
+    if (!path) return;
+    if (!pathIsAudio(path) && !pathIsVideo(path)) return;
+    const el = pathIsVideo(path) ? deps.getVideoEl() : deps.getAudioEl();
+    if (!el) return;
+    const cur = el.currentTime;
+    const dur = Number.isFinite(el.duration) ? el.duration : 0;
+    if (!Number.isFinite(cur) || cur <= 0) return;
+    if (dur > 0 && cur >= dur - 1.5) {
+      clearSavedResume(path);
+      return;
+    }
+    saveResumePoint(path, cur);
+    void dbSaveResumePoint(path, cur);
+  }
+
+  function maybeResume(el: HTMLMediaElement) {
+    const path = deps.getFilePath();
+    const point = markerStore.resumePoint;
+    if (!path || point === null || point <= 0) return;
+    if (resumeAppliedPath === path) return;
+    if (slideshow.active) return;
+    const dur = Number.isFinite(el.duration) ? el.duration : 0;
+    if (dur > 0 && point >= dur - 10) {
+      clearSavedResume(path);
+      return;
+    }
+    if (point < playbackPrefs.resumeThreshold) return;
+    resumeAppliedPath = path;
+
+    if (playbackPrefs.resumeMode === "always") {
+      el.currentTime = point;
+      showToast({
+        message: `Resumed from ${formatTime(point)}`,
+        color: "blue",
+        duration: 4500,
+        actions: [
+          {
+            label: "Start over",
+            variant: "default",
+            onClick: () => {
+              if (deps.getFilePath() !== path) return;
+              clearSavedResume(path);
+              el.currentTime = 0;
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    const id = showToast({
+      message: `Resume from ${formatTime(point)}?`,
+      color: "blue",
+      duration: 12000,
+      actions: [
+        {
+          label: "Resume",
+          variant: "green",
+          onClick: () => {
+            if (deps.getFilePath() !== path) return;
+            el.currentTime = point;
+            el.play().catch(() => {});
+            dismissToast(id);
+          },
+        },
+        {
+          label: "Start over",
+          variant: "default",
+          onClick: () => {
+            if (deps.getFilePath() !== path) return;
+            clearSavedResume(path);
+            el.currentTime = 0;
+            dismissToast(id);
+          },
+        },
+      ],
+    });
+  }
 
   const folderWatcher = createFolderWatcher({
     getFilePath: deps.getFilePath,
@@ -292,6 +412,16 @@ export function createNavigation(deps: NavigationDeps) {
       media.finishLoading(setMediaState),
     );
     const video = deps.getVideoEl();
+    if (video) {
+      const speed = playbackPrefs.rememberSpeed
+        ? deps.getPlaybackUI().playbackSpeed
+        : playbackPrefs.defaultSpeed;
+      if (!playbackPrefs.rememberSpeed) {
+        deps.getPlaybackUI().setPlaybackSpeed(speed);
+      }
+      video.playbackRate = speed;
+      maybeResume(video);
+    }
     if (
       viewer.state.zoomLocked ||
       !video ||
@@ -316,20 +446,30 @@ export function createNavigation(deps: NavigationDeps) {
   function onAudioLoad() {
     const audioEl = deps.getAudioEl();
     if (!audioEl) return;
+    if (!playbackPrefs.rememberSpeed) {
+      deps.getPlaybackUI().setPlaybackSpeed(playbackPrefs.defaultSpeed);
+    }
     audioEl.volume = volumeToActual(deps.getVolume());
     audioEl.playbackRate = deps.getPlaybackUI().playbackSpeed;
     audioEl.muted = deps.getMuted();
     audioEl.loop = deps.getLoopMode() === "loop";
     deps.getPlaybackUI().initSliderMode(true, true);
-    // Force playback after file switch (bypasses autoplay policy)
-    audioEl.play().catch(() => {});
+    const pendingSeek = backgroundAudio.consumePendingSeek(deps.getFilePath());
+    if (pendingSeek !== null) {
+      audioEl.currentTime = pendingSeek;
+    } else {
+      maybeResume(audioEl);
+    }
+    if (playbackPrefs.autoplay) {
+      audioEl.play().catch(() => {});
+    }
     setMediaState({
       fileDimensions: "",
       fileInfoLoading: false,
       rawCurrentSecs: 0,
       rawDurationSecs: audioEl.duration || 0,
       progress: 0,
-      playing: !audioEl.paused,
+      playing: playbackPrefs.autoplay && !audioEl.paused,
     });
     if (deps.getIsLoadingFile()) media.finishLoading(setMediaState);
     if (slideshow.active) slideshow.onMediaLoaded();
@@ -385,6 +525,7 @@ export function createNavigation(deps: NavigationDeps) {
     onSortChange,
     handleFsPillContext,
     advanceSlide,
+    saveCurrentPosition,
     setMediaState,
     folderWatcher,
     media,
