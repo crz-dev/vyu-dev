@@ -193,6 +193,61 @@ pub fn ffprobe_command() -> Command {
     cmd
 }
 
+pub fn ffmpeg_binary_path() -> &'static str {
+    ffmpeg_path()
+}
+
+pub fn ffprobe_binary_path() -> &'static str {
+    ffprobe_path()
+}
+
+pub fn ffmpeg_version() -> String {
+    ffmpeg_command()
+        .args(["-hide_banner", "-version"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| {
+            String::from_utf8(output.stdout)
+                .ok()
+                .and_then(|text| text.lines().next().map(str::to_string))
+        })
+        .unwrap_or_else(|| "Unavailable".to_string())
+}
+
+pub fn ffprobe_version() -> String {
+    ffprobe_command()
+        .args(["-hide_banner", "-version"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| {
+            String::from_utf8(output.stdout)
+                .ok()
+                .and_then(|text| text.lines().next().map(str::to_string))
+        })
+        .unwrap_or_else(|| "Unavailable".to_string())
+}
+
+static HARDWARE_H264_ENCODERS: OnceLock<Vec<&'static str>> = OnceLock::new();
+
+pub fn hardware_h264_encoders() -> &'static [&'static str] {
+    HARDWARE_H264_ENCODERS.get_or_init(|| {
+        let Ok(output) = ffmpeg_command().args(["-hide_banner", "-encoders"]).output() else {
+            return Vec::new();
+        };
+        let text = String::from_utf8_lossy(&output.stdout);
+        ["h264_nvenc", "h264_qsv", "h264_amf"]
+            .into_iter()
+            .filter(|encoder| text.lines().any(|line| line.contains(encoder)))
+            .collect()
+    })
+}
+
+pub fn preferred_hardware_h264_encoder() -> Option<&'static str> {
+    hardware_h264_encoders().first().copied()
+}
+
 /// Run ffmpeg with timeout
 pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Result<Option<String>, String> {
     let mut child = ffmpeg_command()

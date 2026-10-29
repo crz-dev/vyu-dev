@@ -28,6 +28,7 @@ Before creating code, find the existing owner.
 | Rotation, flip, brightness, crop, export  | `features/editing/editing.svelte.ts`                  |
 | Playback                                  | `features/media/playback.svelte.ts`                   |
 | Playback preferences                      | `features/media/playbackPrefs.svelte.ts`              |
+| Process / conversion preferences          | `features/media/conversionPrefs.svelte.ts`            |
 | Sleep timer                               | `features/media/sleepTimer.svelte.ts`                 |
 | Background audio in Library                | `features/media/backgroundAudio.svelte.ts`, `components/NowPlayingPill.svelte` |
 | Playback bridge (toggle, volume, speed)   | `features/media/playbackBridge.ts`                    |

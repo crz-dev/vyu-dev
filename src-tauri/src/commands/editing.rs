@@ -8,6 +8,7 @@ use tauri::{Emitter, Manager};
 
 use crate::util::{
     canonicalize_path, ffmpeg_command, ffprobe_command, hash_path_xxh3,
+    preferred_hardware_h264_encoder,
 };
 
 // Same-file applies must never hand ffmpeg its own input as output.
@@ -253,6 +254,7 @@ pub async fn export_edited_media(
     width: u32,
     height: u32,
     quality: String,
+    gpu_encoding: bool,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let input = PathBuf::from(&path);
@@ -393,8 +395,15 @@ pub async fn export_edited_media(
             write_path.extension().and_then(|ext| ext.to_str()).unwrap_or("")
         }
         .to_ascii_lowercase();
+        let hardware_encoder = if gpu_encoding && target_ext != "webm" {
+            preferred_hardware_h264_encoder()
+        } else {
+            None
+        };
 
-        let run = |copy_audio: bool| -> Result<(bool, String), String> {
+        let run = |copy_audio: bool,
+                   hardware: Option<&'static str>|
+         -> Result<(bool, String), String> {
             let mut cmd = ffmpeg_command();
             cmd.args([
                 "-y",
@@ -411,6 +420,20 @@ pub async fn export_edited_media(
                 }
                 if target_ext == "webm" {
                     cmd.args(["-c:v", "libvpx-vp9", "-crf", encoder_crf, "-b:v", "0"]);
+                } else if let Some(encoder) = hardware {
+                    cmd.args(["-c:v", encoder]);
+                    match encoder {
+                        "h264_nvenc" => {
+                            cmd.args(["-preset", "p5", "-rc", "vbr", "-cq", encoder_crf]);
+                        }
+                        "h264_qsv" => {
+                            cmd.args(["-global_quality", encoder_crf]);
+                        }
+                        "h264_amf" => {
+                            cmd.args(["-qp_i", encoder_crf, "-qp_p", encoder_crf]);
+                        }
+                        _ => {}
+                    }
                 } else {
                     cmd.args(["-c:v", "libx264", "-preset", encoder_preset]);
                     cmd.args(["-crf", encoder_crf]);
@@ -466,14 +489,22 @@ pub async fn export_edited_media(
             Ok((status.success(), stderr))
         };
 
-        let (first_ok, _) = run(true)?;
+        let (first_ok, _) = run(true, hardware_encoder)?;
 
         if !first_ok {
             let _ = app.emit("edit-apply-progress", 0u32);
-            let (fallback_ok, stderr) = run(false)?;
+            let (fallback_ok, fallback_err) = run(false, hardware_encoder)?;
             if !fallback_ok {
-                let _ = std::fs::remove_file(&write_path);
-                return Err(stderr.trim().to_string());
+                if hardware_encoder.is_some() {
+                    let (software_ok, software_err) = run(false, None)?;
+                    if !software_ok {
+                        let _ = std::fs::remove_file(&write_path);
+                        return Err(software_err.trim().to_string());
+                    }
+                } else {
+                    let _ = std::fs::remove_file(&write_path);
+                    return Err(fallback_err.trim().to_string());
+                }
             }
         }
 

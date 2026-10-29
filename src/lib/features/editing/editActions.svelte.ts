@@ -3,6 +3,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { exists, stat } from "@tauri-apps/plugin-fs";
 import { getFileExt, joinPath } from "$lib/services/files";
 import { editing } from "$lib/features/editing/editing.svelte";
+import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
 import { markup } from "$lib/features/markup/markup.svelte";
 import {
   exportEditedImage,
@@ -321,6 +322,7 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoWidth,
           videoEl.videoHeight,
           editing.exportQuality,
+          conversionPrefs.gpuEncoding,
         );
       } else if (pngOverride) {
         const pngPath = filePath.replace(/\.\w+$/, ".png");
@@ -443,6 +445,7 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoWidth,
           videoEl.videoHeight,
           editing.exportQuality,
+          conversionPrefs.gpuEncoding,
         );
       } else {
         await exportEditedImage(filePath, s, outputPath, quality);

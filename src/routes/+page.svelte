@@ -1249,6 +1249,7 @@
   onCloseDeleteConfirm={() => (deleteStore.deleteConfirm = false)}
   onCloseProperties={() => (propertiesOpen = false)}
   onCloseShare={() => (shareOpen = false)}
+  onOpenConverted={(path) => loadFile(path)}
   onUpdateDeleteNoAsk={(v: boolean) => (deleteStore.deleteNoAsk = v)}
   onUpdateDeletePermanently={(v: boolean) =>
     (deleteStore.deletePermanently = v)}

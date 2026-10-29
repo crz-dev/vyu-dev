@@ -231,6 +231,7 @@ export function createClips(deps: ClipsDeps) {
   async function triggerSegments() {
     const ready = deps.ensureFfprobe ? await deps.ensureFfprobe() : true;
     if (!ready) return;
+    loadPrefs();
 
     const segments = sanitizeClipPairs();
     if (segments.length === 0) {

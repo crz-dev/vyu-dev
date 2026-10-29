@@ -15,6 +15,8 @@ export type EditExportQuality = "fast" | "balanced" | "quality" | "lossless";
 export type EditImageFormat = "original" | "png" | "jpg" | "webp";
 export type EditImageQualityKey = "original" | "jpg" | "webp";
 export type EditVideoFormat = "original" | "mp4" | "webm" | "mkv";
+export type ProcessQuality = "fast" | "balanced" | "quality" | "lossless";
+export type CoverArtMode = "auto" | "cover" | "waveform";
 export type EditBackupMode = "off" | "ask" | "always";
 export type EditMediaKind = "image" | "video";
 
@@ -663,6 +665,84 @@ export function loadShareOutputDir(): string {
 
 export function saveShareOutputDir(dir: string): void {
   localStorage.setItem("vyu-share-output-dir", dir);
+}
+
+// ── Process / conversion ──
+export function loadProcessQuality(): ProcessQuality {
+  const value = localStorage.getItem("vyu-process-quality");
+  if (
+    value === "fast" ||
+    value === "balanced" ||
+    value === "quality" ||
+    value === "lossless"
+  ) {
+    return value;
+  }
+  return "balanced";
+}
+
+export function saveProcessQuality(quality: ProcessQuality): void {
+  localStorage.setItem("vyu-process-quality", quality);
+}
+
+export function loadProcessDeleteOriginal(): boolean {
+  return localStorage.getItem("vyu-process-delete-original") === "true";
+}
+
+export function saveProcessDeleteOriginal(enabled: boolean): void {
+  localStorage.setItem("vyu-process-delete-original", String(enabled));
+}
+
+export function loadProcessAudioBitrate(): number {
+  const value = Number(localStorage.getItem("vyu-process-audio-bitrate"));
+  return [128, 192, 256, 320].includes(value) ? value : 192;
+}
+
+export function saveProcessAudioBitrate(bitrate: number): void {
+  const value = [128, 192, 256, 320].includes(bitrate) ? bitrate : 192;
+  localStorage.setItem("vyu-process-audio-bitrate", String(value));
+}
+
+export function loadProcessOverwrite(): boolean {
+  return localStorage.getItem("vyu-process-overwrite") === "true";
+}
+
+export function saveProcessOverwrite(enabled: boolean): void {
+  localStorage.setItem("vyu-process-overwrite", String(enabled));
+}
+
+export function loadProcessGpuEncoding(): boolean {
+  return localStorage.getItem("vyu-process-gpu") === "true";
+}
+
+export function saveProcessGpuEncoding(enabled: boolean): void {
+  localStorage.setItem("vyu-process-gpu", String(enabled));
+}
+
+export function loadProcessAutoOpen(): boolean {
+  return localStorage.getItem("vyu-process-auto-open") === "true";
+}
+
+export function saveProcessAutoOpen(enabled: boolean): void {
+  localStorage.setItem("vyu-process-auto-open", String(enabled));
+}
+
+export function loadProcessPreserveMetadata(): boolean {
+  return localStorage.getItem("vyu-process-preserve-metadata") !== "false";
+}
+
+export function saveProcessPreserveMetadata(enabled: boolean): void {
+  localStorage.setItem("vyu-process-preserve-metadata", String(enabled));
+}
+
+export function loadProcessCoverArtMode(): CoverArtMode {
+  const value = localStorage.getItem("vyu-process-cover-art");
+  if (value === "cover" || value === "waveform") return value;
+  return "auto";
+}
+
+export function saveProcessCoverArtMode(mode: CoverArtMode): void {
+  localStorage.setItem("vyu-process-cover-art", mode);
 }
 
 // ── Markup custom colors ──

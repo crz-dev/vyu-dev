@@ -8,7 +8,11 @@ use std::process::Command;
 use crate::constants::{
     BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST,
 };
-use crate::util::{ffmpeg_command, ffprobe_command, hash_path_xxh3, resolve_output_path, unique_path};
+use crate::util::{
+    ffmpeg_binary_path, ffmpeg_command, ffmpeg_version, ffprobe_binary_path,
+    ffprobe_command, ffprobe_version, hardware_h264_encoders, hash_path_xxh3,
+    preferred_hardware_h264_encoder, resolve_output_path, unique_path,
+};
 
 // Write PSD file — binary header follows the PSD spec (magic "8BPS", version 1, RGB color mode, 8-bit channel)
 fn write_psd_flat(path: &Path, width: u32, height: u32, rgb: &[u8]) -> Result<(), String> {
@@ -123,6 +127,203 @@ fn convert_for_browser(path: &str) -> Result<Option<String>, String> {
     }
 }
 
+fn preset_values(preset: &str) -> (&'static str, &'static str) {
+    match preset {
+        "Fast" | "fast" => ("fast", "28"),
+        "Quality" | "quality" => ("slow", "18"),
+        "Lossless" | "lossless" => ("veryslow", "0"),
+        _ => ("medium", "23"),
+    }
+}
+
+fn jpeg_quality_value(preset: &str) -> &'static str {
+    match preset {
+        "Fast" | "fast" => "5",
+        "Quality" | "quality" => "2",
+        "Lossless" | "lossless" => "1",
+        _ => "3",
+    }
+}
+
+fn append_video_quality(args: &mut Vec<String>, encoder: &str, preset: &str) {
+    let (x264_preset, crf) = preset_values(preset);
+    match encoder {
+        "h264_nvenc" => {
+            args.extend([
+                "-preset".into(),
+                "p5".into(),
+                "-rc".into(),
+                "vbr".into(),
+                "-cq".into(),
+                crf.into(),
+            ]);
+        }
+        "h264_qsv" => {
+            args.extend(["-global_quality".into(), crf.into()]);
+        }
+        "h264_amf" => {
+            args.extend([
+                "-qp_i".into(),
+                crf.into(),
+                "-qp_p".into(),
+                crf.into(),
+            ]);
+        }
+        _ => {
+            args.extend([
+                "-preset".into(),
+                x264_preset.into(),
+                "-crf".into(),
+                crf.into(),
+            ]);
+        }
+    }
+}
+
+fn append_webp_quality(args: &mut Vec<String>, preset: &str) {
+    match preset {
+        "Fast" | "fast" => args.extend(["-quality".into(), "50".into()]),
+        "Balanced" | "balanced" => args.extend(["-quality".into(), "75".into()]),
+        "Quality" | "quality" => args.extend(["-quality".into(), "90".into()]),
+        "Lossless" | "lossless" => args.extend(["-lossless".into(), "1".into()]),
+        _ => {}
+    }
+}
+
+fn build_convert_args(
+    input: &Path,
+    output: &Path,
+    ext: &str,
+    preset: &str,
+    audio_bitrate: u32,
+    preserve_metadata: bool,
+    encoder: &str,
+) -> Vec<String> {
+    let mut args: Vec<String> = vec![
+        "-y".into(),
+        "-hide_banner".into(),
+        "-loglevel".into(),
+        "error".into(),
+        "-i".into(),
+        input.to_string_lossy().to_string(),
+    ];
+    let bitrate = format!("{audio_bitrate}k");
+    let (_, crf) = preset_values(preset);
+
+    match ext {
+        "mp4" => {
+            args.extend(["-c:v".into(), encoder.into()]);
+            append_video_quality(&mut args, encoder, preset);
+            args.extend([
+                "-c:a".into(),
+                "aac".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+                "-movflags".into(),
+                "+faststart".into(),
+            ]);
+        }
+        "mkv" => {
+            args.extend(["-c:v".into(), encoder.into()]);
+            append_video_quality(&mut args, encoder, preset);
+            args.extend([
+                "-c:a".into(),
+                "aac".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+            ]);
+        }
+        "webm" => {
+            args.extend([
+                "-c:v".into(),
+                "libvpx-vp9".into(),
+                "-crf".into(),
+                crf.into(),
+                "-b:v".into(),
+                "0".into(),
+                "-c:a".into(),
+                "libopus".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+            ]);
+        }
+        "gif" => {
+            args.extend([
+                "-vf".into(),
+                "fps=30,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into(),
+                "-loop".into(),
+                "0".into(),
+            ]);
+        }
+        "png" => {
+            args.extend(["-c:v".into(), "png".into()]);
+        }
+        "jpg" | "jpeg" => {
+            args.extend(["-q:v".into(), jpeg_quality_value(preset).into()]);
+        }
+        "webp" => {
+            args.extend(["-c:v".into(), "libwebp".into()]);
+            append_webp_quality(&mut args, preset);
+        }
+        "mp3" => {
+            args.extend([
+                "-c:a".into(),
+                "libmp3lame".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+            ]);
+        }
+        "wav" => {
+            args.extend(["-c:a".into(), "pcm_s16le".into()]);
+        }
+        "flac" => {
+            args.extend([
+                "-c:a".into(),
+                "flac".into(),
+                "-compression_level".into(),
+                "5".into(),
+            ]);
+        }
+        "ogg" => {
+            args.extend([
+                "-c:a".into(),
+                "libvorbis".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+            ]);
+        }
+        "aac" => {
+            args.extend([
+                "-c:a".into(),
+                "aac".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+            ]);
+        }
+        "opus" => {
+            args.extend([
+                "-c:a".into(),
+                "libopus".into(),
+                "-b:a".into(),
+                bitrate.clone(),
+            ]);
+        }
+        _ => {}
+    }
+
+    if preserve_metadata {
+        args.extend([
+            "-map_metadata".into(),
+            "0".into(),
+            "-map_chapters".into(),
+            "0".into(),
+        ]);
+    }
+
+    args.push(output.to_string_lossy().to_string());
+    args
+}
+
 #[tauri::command]
 pub async fn convert_media(
     path: String,
@@ -130,6 +331,10 @@ pub async fn convert_media(
     format: String,
     preset: String,
     custom_output: Option<String>,
+    audio_bitrate: u32,
+    preserve_metadata: bool,
+    overwrite: bool,
+    gpu_encoding: bool,
 ) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let input = PathBuf::from(&path);
@@ -138,9 +343,30 @@ pub async fn convert_media(
         }
 
         let ext = format.to_lowercase();
-
-        let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", &ext);
-        let output_path = unique_path(output_path);
+        let mut output_path = resolve_output_path(
+            &input,
+            &output_dir,
+            custom_output.as_deref(),
+            "_converted",
+            &ext,
+        );
+        if !overwrite {
+            output_path = unique_path(output_path);
+        } else {
+            if output_path == input {
+                return Err("Output path matches the source file".into());
+            }
+            if output_path.exists() {
+                if let (Ok(source), Ok(target)) = (
+                    std::fs::canonicalize(&input),
+                    std::fs::canonicalize(&output_path),
+                ) {
+                    if source == target {
+                        return Err("Output path matches the source file".into());
+                    }
+                }
+            }
+        }
 
         // PSD encoding: FFmpeg has no PSD encoder, so write it directly using the image crate.
         if ext == "psd" {
@@ -150,153 +376,21 @@ pub async fn convert_media(
             return Ok(output_path.to_string_lossy().to_string());
         }
 
-        let mut args: Vec<String> = vec![
-            "-y".into(),
-            "-hide_banner".into(),
-            "-loglevel".into(),
-            "error".into(),
-            "-i".into(),
-            input.to_string_lossy().to_string(),
-        ];
-
-        match ext.as_str() {
-            "mp4" => {
-                args.push("-c:v".into());
-                args.push("libx264".into());
-                args.push("-c:a".into());
-                args.push("aac".into());
-                args.push("-movflags".into());
-                args.push("+faststart".into());
-            }
-            "webm" => {
-                args.push("-c:v".into());
-                args.push("libvpx-vp9".into());
-                args.push("-c:a".into());
-                args.push("libopus".into());
-            }
-            "mkv" => {
-                args.push("-c:v".into());
-                args.push("libx264".into());
-                args.push("-c:a".into());
-                args.push("aac".into());
-            }
-            "gif" => {
-                args.push("-vf".into());
-                args.push("fps=30,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into());
-                args.push("-loop".into());
-                args.push("0".into());
-            }
-            "png" => {
-                args.push("-c:v".into());
-                args.push("png".into());
-            }
-            "jpg" | "jpeg" => {
-                args.push("-q:v".into());
-                args.push("2".into());
-            }
-            "webp" => {
-                args.push("-c:v".into());
-                args.push("libwebp".into());
-            }
-            "mp3" => {
-                args.push("-c:a".into());
-                args.push("libmp3lame".into());
-                args.push("-q:a".into());
-                args.push("2".into());
-            }
-            "wav" => {
-                args.push("-c:a".into());
-                args.push("pcm_s16le".into());
-            }
-            "flac" => {
-                args.push("-c:a".into());
-                args.push("flac".into());
-                args.push("-compression_level".into());
-                args.push("5".into());
-            }
-            "ogg" => {
-                args.push("-c:a".into());
-                args.push("libvorbis".into());
-                args.push("-q:a".into());
-                args.push("4".into());
-            }
-            "aac" => {
-                args.push("-c:a".into());
-                args.push("aac".into());
-                args.push("-b:a".into());
-                args.push("192k".into());
-            }
-            "opus" => {
-                args.push("-c:a".into());
-                args.push("libopus".into());
-                args.push("-b:a".into());
-                args.push("128k".into());
-            }
-            _ => {}
-        }
-
-        if ext != "gif"
-            && ext != "png"
-            && ext != "jpg"
-            && ext != "jpeg"
-            && ext != "webp"
-            && ext != "mp3"
-            && ext != "wav"
-            && ext != "flac"
-            && ext != "ogg"
-            && ext != "aac"
-            && ext != "opus"
-        {
-            match preset.as_str() {
-                "Fast" => {
-                    args.push("-preset".into());
-                    args.push("fast".into());
-                    args.push("-crf".into());
-                    args.push("28".into());
-                }
-                "Balanced" => {
-                    args.push("-preset".into());
-                    args.push("medium".into());
-                    args.push("-crf".into());
-                    args.push("23".into());
-                }
-                "Quality" => {
-                    args.push("-preset".into());
-                    args.push("slow".into());
-                    args.push("-crf".into());
-                    args.push("18".into());
-                }
-                "Lossless" => {
-                    args.push("-preset".into());
-                    args.push("veryslow".into());
-                    args.push("-crf".into());
-                    args.push("0".into());
-                }
-                _ => {}
-            }
-        } else if ext == "webp" {
-            match preset.as_str() {
-                "Fast" => {
-                    args.push("-quality".into());
-                    args.push("50".into());
-                }
-                "Balanced" => {
-                    args.push("-quality".into());
-                    args.push("75".into());
-                }
-                "Quality" => {
-                    args.push("-quality".into());
-                    args.push("90".into());
-                }
-                "Lossless" => {
-                    args.push("-lossless".into());
-                    args.push("1".into());
-                }
-                _ => {}
-            }
-        }
-
-        args.push(output_path.to_string_lossy().to_string());
+        let hardware_encoder = if gpu_encoding && (ext == "mp4" || ext == "mkv") {
+            preferred_hardware_h264_encoder()
+        } else {
+            None
+        };
+        let encoder = hardware_encoder.unwrap_or("libx264");
+        let args = build_convert_args(
+            &input,
+            &output_path,
+            &ext,
+            &preset,
+            audio_bitrate,
+            preserve_metadata,
+            encoder,
+        );
 
         let output = ffmpeg_command()
             .args(&args)
@@ -304,10 +398,30 @@ pub async fn convert_media(
             .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
 
         if output.status.success() {
-            Ok(output_path.to_string_lossy().to_string())
-        } else {
-            Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+            return Ok(output_path.to_string_lossy().to_string());
         }
+
+        if hardware_encoder.is_some() {
+            let fallback_args = build_convert_args(
+                &input,
+                &output_path,
+                &ext,
+                &preset,
+                audio_bitrate,
+                preserve_metadata,
+                "libx264",
+            );
+            let fallback = ffmpeg_command()
+                .args(&fallback_args)
+                .output()
+                .map_err(|e| format!("Failed to start ffmpeg fallback: {e}"))?;
+            if fallback.status.success() {
+                return Ok(output_path.to_string_lossy().to_string());
+            }
+            return Err(String::from_utf8_lossy(&fallback.stderr).trim().to_string());
+        }
+
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
     })
     .await
     .map_err(|e| format!("Thread join error: {e}"))?
@@ -319,6 +433,10 @@ pub fn convert_audio_to_waveform_video(
     path: String,
     output_dir: String,
     custom_output: Option<String>,
+    audio_bitrate: u32,
+    overwrite: bool,
+    cover_art_mode: String,
+    preset: String,
 ) -> Result<String, String> {
     use std::io::BufRead;
     use tauri::Emitter;
@@ -328,29 +446,32 @@ pub fn convert_audio_to_waveform_video(
         return Err("Source file does not exist".into());
     }
 
-    let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_waveform", "mp4");
-    let output_path = unique_path(output_path);
+    let mut output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_waveform", "mp4");
+    if !overwrite {
+        output_path = unique_path(output_path);
+    }
 
     // Step 1: Generate background image to temp file
     let temp_dir = std::env::temp_dir().join("Vyu-temp");
     let _ = fs::create_dir_all(&temp_dir);
     let temp_image = temp_dir.join(format!("vyu_wave_{}.jpg", hash_path_xxh3(&path)));
 
-    // Try embedded artwork first
-    let has_artwork = ffmpeg_command()
-        .args([
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", &input.to_string_lossy(),
-            "-an", "-frames:v", "1",
-            &temp_image.to_string_lossy(),
-        ])
-        .output()
-        .map(|o| {
-            o.status.success()
-                && temp_image.exists()
-                && temp_image.metadata().map(|m| m.len()).unwrap_or(0) > 1024
-        })
-        .unwrap_or(false);
+    // Try embedded artwork first unless the user explicitly requested a waveform.
+    let has_artwork = cover_art_mode != "waveform"
+        && ffmpeg_command()
+            .args([
+                "-y", "-hide_banner", "-loglevel", "error",
+                "-i", &input.to_string_lossy(),
+                "-an", "-frames:v", "1",
+                &temp_image.to_string_lossy(),
+            ])
+            .output()
+            .map(|o| {
+                o.status.success()
+                    && temp_image.exists()
+                    && temp_image.metadata().map(|m| m.len()).unwrap_or(0) > 1024
+            })
+            .unwrap_or(false);
 
     if !has_artwork {
         let wf_output = ffmpeg_command()
@@ -397,6 +518,7 @@ pub fn convert_audio_to_waveform_video(
         .unwrap_or(0.0);
 
     // Step 3: Create video from image + audio with progress
+    let (encoder_preset, encoder_crf) = preset_values(&preset);
     let mut args: Vec<String> = vec![
         "-y".into(),
         "-hide_banner".into(),
@@ -420,13 +542,13 @@ pub fn convert_audio_to_waveform_video(
         "-c:v".into(),
         "libx264".into(),
         "-preset".into(),
-        "medium".into(),
+        encoder_preset.into(),
         "-crf".into(),
-        "23".into(),
+        encoder_crf.into(),
         "-c:a".into(),
         "aac".into(),
         "-b:a".into(),
-        "192k".into(),
+        format!("{audio_bitrate}k"),
         "-pix_fmt".into(),
         "yuv420p".into(),
         "-movflags".into(),
@@ -495,6 +617,7 @@ pub async fn convert_image_to_pdf(
     path: String,
     output_dir: String,
     custom_output: Option<String>,
+    overwrite: bool,
 ) -> Result<String, String> {
     use image::codecs::jpeg::JpegEncoder;
 
@@ -504,8 +627,10 @@ pub async fn convert_image_to_pdf(
             return Err("Source file does not exist".into());
         }
 
-        let output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", "pdf");
-        let output_path = unique_path(output_path);
+        let mut output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", "pdf");
+        if !overwrite {
+            output_path = unique_path(output_path);
+        }
 
         let img = image::open(&input).map_err(|e| format!("Failed to open image: {e}"))?;
         let rgb = img.to_rgb8();
@@ -570,6 +695,30 @@ pub async fn convert_image_to_pdf(
     })
     .await
     .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FfmpegInfo {
+    ffmpeg_path: String,
+    ffmpeg_version: String,
+    ffprobe_path: String,
+    ffprobe_version: String,
+    hardware_encoders: Vec<String>,
+}
+
+#[tauri::command]
+pub fn get_ffmpeg_info() -> FfmpegInfo {
+    FfmpegInfo {
+        ffmpeg_path: ffmpeg_binary_path().to_string(),
+        ffmpeg_version: ffmpeg_version(),
+        ffprobe_path: ffprobe_binary_path().to_string(),
+        ffprobe_version: ffprobe_version(),
+        hardware_encoders: hardware_h264_encoders()
+            .iter()
+            .map(|encoder| encoder.to_string())
+            .collect(),
+    }
 }
 
 /// Open in browser

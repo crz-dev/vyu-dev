@@ -6,7 +6,10 @@
   import {
     invokeCleanupTempFolder,
     invokeClearBackups,
+    invokeGetFfmpegInfo,
+    type FfmpegInfo,
   } from "$lib/features/media/api";
+  import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { showToast } from "$lib/components/toast.svelte";
   import {
     loadLastDialogSection,
@@ -162,10 +165,16 @@
       rememberEdits: editing.rememberEdits,
       backupDir: editing.backupDir,
       compareEnabled: editing.compareEnabled,
-      preserveMetadata,
-      gpuEncoding,
-      overwriteExisting,
-      includeSubtitles,
+      processQuality: conversionPrefs.quality,
+      processOutputDir: conversionPrefs.outputDir,
+      processDeleteOriginal: conversionPrefs.deleteOriginal,
+      processAudioBitrate: conversionPrefs.audioBitrate,
+      processOverwrite: conversionPrefs.overwriteExisting,
+      processGpu: conversionPrefs.gpuEncoding,
+      processAutoOpen: conversionPrefs.autoOpenConverted,
+      processPreserveMetadata: conversionPrefs.preserveMetadata,
+      processCoverArt: conversionPrefs.coverArtMode,
+      clipOutputDir: conversionPrefs.clipOutputDir,
       hardwareAcceleration,
       minimizeToTray,
       startOnLogin,
@@ -239,7 +248,6 @@
   }
 
   let autoSaveMarkers = $state(true);
-  let preserveMetadata = $state(true);
   let imageQualityPreview = $state(editing.imageQuality);
 
   const exportQualityLevels = [
@@ -267,10 +275,6 @@
   function exportQualityLabel(index: number): string {
     return exportQualityLabels[index] ?? "Balanced";
   }
-
-  let gpuEncoding = $state(true);
-  let overwriteExisting = $state(false);
-  let includeSubtitles = $state(false);
 
   let hardwareAcceleration = $state(true);
   let minimizeToTray = $state(false);
@@ -379,8 +383,6 @@
     clearingBackups = false;
   }
 
-  let processOutputFolder = $state("~/Videos/Exports");
-
   function shortFolderPath(path: string): string {
     if (!path) return "Source folder";
     const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
@@ -416,6 +418,64 @@
   function handleClearBackupDir() {
     editing.setBackupDir("");
   }
+
+  async function handlePickProcessOutputDir() {
+    const dir = await open({
+      directory: true,
+      defaultPath: conversionPrefs.outputDir || undefined,
+    });
+    if (dir) conversionPrefs.setOutputDir(dir as string);
+  }
+
+  function handleClearProcessOutputDir() {
+    conversionPrefs.setOutputDir("");
+  }
+
+  async function handlePickClipOutputDir() {
+    const dir = await open({
+      directory: true,
+      defaultPath: conversionPrefs.clipOutputDir || undefined,
+    });
+    if (dir) conversionPrefs.setClipOutputDir(dir as string);
+  }
+
+  function handleClearClipOutputDir() {
+    conversionPrefs.setClipOutputDir("");
+  }
+
+  let ffmpegInfo = $state<FfmpegInfo | null>(null);
+  let ffmpegLoading = $state(false);
+
+  async function loadFfmpegInfo() {
+    ffmpegLoading = true;
+    try {
+      ffmpegInfo = await invokeGetFfmpegInfo();
+    } catch {
+      ffmpegInfo = null;
+    }
+    ffmpegLoading = false;
+  }
+
+  function ffmpegStatus(): string {
+    if (ffmpegLoading) return "Checking…";
+    if (!ffmpegInfo || ffmpegInfo.ffmpegVersion === "Unavailable") {
+      return "Unavailable";
+    }
+    const version =
+      ffmpegInfo.ffmpegVersion.split(/\s+/)[2]?.split("-")[0] ?? "Unknown";
+    const hardware =
+      ffmpegInfo.hardwareEncoders.length > 0
+        ? ffmpegInfo.hardwareEncoders.join(", ")
+        : "Software only";
+    return `${version} · ${hardware}`;
+  }
+
+  $effect(() => {
+    if (settingsOpen) {
+      conversionPrefs.refreshClipOutputDir();
+      void loadFfmpegInfo();
+    }
+  });
 
   let cleaningTempFolder = $state(false);
   let flagsOpen = $state(false);
@@ -2614,43 +2674,6 @@
                 </label>
               </div>
             </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><ellipse cx="12" cy="5" rx="9" ry="3" /><path
-                    d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"
-                  /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Preserve Metadata</span>
-                  <span class="settings-hint">Keep EXIF and tags on export</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={preserveMetadata}
-                    onchange={(e) =>
-                      (preserveMetadata = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={preserveMetadata}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
           </div>
 
           <!-- Process -->
@@ -2677,6 +2700,286 @@
               >
               Process
             </p>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Default Output Folder</span>
+                  <span class="settings-hint"
+                    >Starting folder for conversions</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control" style="gap: 6px;">
+                <button
+                  class="settings-action-btn blue"
+                  title={conversionPrefs.outputDir ||
+                    "Same folder as the original"}
+                  style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  onclick={handlePickProcessOutputDir}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                    /></svg
+                  >
+                  {shortFolderPath(conversionPrefs.outputDir)}
+                </button>
+                {#if conversionPrefs.outputDir}
+                  <button
+                    class="settings-action-btn"
+                    title="Use the source folder"
+                    onclick={handleClearProcessOutputDir}>Clear</button
+                  >
+                {/if}
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Conversion Quality</span>
+                  <span class="settings-hint"
+                    >Speed and quality for converted media</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <div class="pill-group pill-group-4">
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.quality === "fast"}
+                    onclick={() => conversionPrefs.setQuality("fast")}
+                    >Fast</button
+                  >
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.quality === "balanced"}
+                    onclick={() => conversionPrefs.setQuality("balanced")}
+                    >Balanced</button
+                  >
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.quality === "quality"}
+                    onclick={() => conversionPrefs.setQuality("quality")}
+                    >Quality</button
+                  >
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.quality === "lossless"}
+                    onclick={() => conversionPrefs.setQuality("lossless")}
+                    >Lossless</button
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path
+                    d="M15.54 8.46a5 5 0 010 7.07"
+                  /><path d="M19.07 4.93a10 10 0 010 14.14" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Audio Bitrate</span>
+                  <span class="settings-hint">Lossy audio bitrate in kbps</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <div class="pill-group pill-group-4">
+                  {#each [128, 192, 256, 320] as bitrate}
+                    <button
+                      class="pill-btn"
+                      class:active={conversionPrefs.audioBitrate === bitrate}
+                      onclick={() => conversionPrefs.setAudioBitrate(bitrate)}
+                      >{bitrate}</button
+                    >
+                  {/each}
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><ellipse cx="12" cy="5" rx="9" ry="3" /><path
+                    d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"
+                  /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Preserve Metadata</span>
+                  <span class="settings-hint"
+                    >Keep tags and chapters through conversion</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={conversionPrefs.preserveMetadata}
+                    onchange={(e) =>
+                      conversionPrefs.setPreserveMetadata(
+                        e.currentTarget.checked,
+                      )}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.preserveMetadata}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><polyline points="3 6 5 6 21 6" /><path
+                    d="M19 6l-1 14H6L5 6"
+                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
+                    d="M9 6V4h6v2"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label"
+                    >Delete Original After Convert</span
+                  >
+                  <span class="settings-hint"
+                    >Remove the source after a successful conversion</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={conversionPrefs.deleteOriginal}
+                    onchange={(e) =>
+                      conversionPrefs.setDeleteOriginal(
+                        e.currentTarget.checked,
+                      )}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.deleteOriginal}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                  /><polyline points="14 2 14 8 20 8" /><line
+                    x1="12"
+                    y1="18"
+                    x2="12"
+                    y2="12"
+                  /><line x1="9" y1="15" x2="15" y2="15" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Overwrite Existing</span>
+                  <span class="settings-hint"
+                    >Replace same-name outputs instead of adding a suffix</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={conversionPrefs.overwriteExisting}
+                    onchange={(e) =>
+                      conversionPrefs.setOverwriteExisting(
+                        e.currentTarget.checked,
+                      )}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.overwriteExisting}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -2721,7 +3024,7 @@
                 <div class="settings-label-text">
                   <span class="settings-label">GPU Encoding</span>
                   <span class="settings-hint"
-                    >Accelerate exports with hardware</span
+                    >Use hardware H.264 when available</span
                   >
                 </div>
               </div>
@@ -2729,15 +3032,19 @@
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={gpuEncoding}
-                    onchange={(e) => (gpuEncoding = e.currentTarget.checked)}
+                    checked={conversionPrefs.gpuEncoding}
+                    onchange={(e) =>
+                      conversionPrefs.setGpuEncoding(e.currentTarget.checked)}
                   />
-                  <span class="toggle-track" class:on={gpuEncoding}
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.gpuEncoding}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
               </div>
             </div>
+
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -2751,57 +3058,18 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><path
-                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                  /><polyline points="14 2 14 8 20 8" /><line
-                    x1="12"
-                    y1="18"
-                    x2="12"
-                    y2="12"
-                  /><line x1="9" y1="15" x2="15" y2="15" /></svg
+                    d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+                  /><polyline points="15 3 21 3 21 9" /><line
+                    x1="10"
+                    y1="14"
+                    x2="21"
+                    y2="3"
+                  /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Overwrite Existing</span>
-                  <span class="settings-hint">Replace files with same name</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={overwriteExisting}
-                    onchange={(e) =>
-                      (overwriteExisting = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={overwriteExisting}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="4 7 4 4 20 4 20 7" /><line
-                    x1="9"
-                    y1="20"
-                    x2="15"
-                    y2="20"
-                  /><line x1="12" y1="4" x2="12" y2="20" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Include Subtitles</span>
+                  <span class="settings-label">Auto-open Conversions</span>
                   <span class="settings-hint"
-                    >Burn in captions when exporting</span
+                    >Open the converted file in the viewer</span
                   >
                 </div>
               </div>
@@ -2809,16 +3077,21 @@
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={includeSubtitles}
+                    checked={conversionPrefs.autoOpenConverted}
                     onchange={(e) =>
-                      (includeSubtitles = e.currentTarget.checked)}
+                      conversionPrefs.setAutoOpenConverted(
+                        e.currentTarget.checked,
+                      )}
                   />
-                  <span class="toggle-track" class:on={includeSubtitles}
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.autoOpenConverted}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
               </div>
             </div>
+
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -2833,19 +3106,31 @@
                   stroke-linejoin="round"
                   ><path
                     d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                  /></svg
+                  /><circle cx="6" cy="6" r="3" /><circle
+                    cx="6"
+                    cy="18"
+                    r="3"
+                  /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line
+                    x1="14.47"
+                    y1="14.48"
+                    x2="20"
+                    y2="20"
+                  /><line x1="8.12" y1="8.12" x2="12" y2="12" /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Default Output Folder</span>
+                  <span class="settings-label">Clip Output Folder</span>
                   <span class="settings-hint"
-                    >Where processed files are saved</span
+                    >Default folder for clip exports</span
                   >
                 </div>
               </div>
-              <div class="settings-control">
+              <div class="settings-control" style="gap: 6px;">
                 <button
                   class="settings-action-btn blue"
-                  style="min-width: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  title={conversionPrefs.clipOutputDir ||
+                    "Same folder as the original"}
+                  style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                  onclick={handlePickClipOutputDir}
                 >
                   <svg
                     width="12"
@@ -2860,8 +3145,103 @@
                       d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
                     /></svg
                   >
-                  {processOutputFolder}
+                  {shortFolderPath(conversionPrefs.clipOutputDir)}
                 </button>
+                {#if conversionPrefs.clipOutputDir}
+                  <button
+                    class="settings-action-btn"
+                    title="Use the source folder"
+                    onclick={handleClearClipOutputDir}>Clear</button
+                  >
+                {/if}
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="2"
+                    ry="2"
+                  /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
+                    points="21 15 16 10 5 21"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Cover Art</span>
+                  <span class="settings-hint"
+                    >Background for audio-to-video conversion</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <div class="pill-group pill-group-3">
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.coverArtMode === "auto"}
+                    onclick={() => conversionPrefs.setCoverArtMode("auto")}
+                    >Auto</button
+                  >
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.coverArtMode === "cover"}
+                    onclick={() => conversionPrefs.setCoverArtMode("cover")}
+                    >Cover</button
+                  >
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.coverArtMode === "waveform"}
+                    onclick={() => conversionPrefs.setCoverArtMode("waveform")}
+                    >Waveform</button
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><polyline points="4 17 10 11 4 5" /><line
+                    x1="12"
+                    y1="19"
+                    x2="20"
+                    y2="19"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">FFmpeg</span>
+                  <span class="settings-hint">{ffmpegStatus()}</span>
+                </div>
+              </div>
+              <div class="settings-control">
+                <button
+                  class="settings-action-btn"
+                  title={ffmpegInfo?.ffmpegPath || "FFmpeg path unavailable"}
+                  onclick={loadFfmpegInfo}
+                  disabled={ffmpegLoading}>Check</button
+                >
               </div>
             </div>
           </div>

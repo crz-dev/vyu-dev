@@ -51,6 +51,7 @@ pub fn run() {
             export_cropped_media,
             export_edited_media,
             convert_media,
+            get_ffmpeg_info,
             get_thumbnail,
             get_thumbnails,
             get_thumbnail_cache_size,

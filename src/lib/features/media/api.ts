@@ -260,12 +260,30 @@ export async function invokeExportCroppedMedia(
 
 // ── Conversion ──
 
+export interface ConversionOptions {
+  audioBitrate?: number;
+  preserveMetadata?: boolean;
+  overwrite?: boolean;
+  gpuEncoding?: boolean;
+  coverArtMode?: string;
+  preset?: string;
+}
+
+export interface FfmpegInfo {
+  ffmpegPath: string;
+  ffmpegVersion: string;
+  ffprobePath: string;
+  ffprobeVersion: string;
+  hardwareEncoders: string[];
+}
+
 export async function invokeConvertMedia(
   path: string,
   outputDir: string,
   format: string,
   preset: string,
   customOutput?: string,
+  options: ConversionOptions = {},
 ): Promise<string> {
   return invoke("convert_media", {
     path,
@@ -273,6 +291,10 @@ export async function invokeConvertMedia(
     format,
     preset,
     customOutput: customOutput ?? null,
+    audioBitrate: options.audioBitrate ?? 192,
+    preserveMetadata: options.preserveMetadata ?? true,
+    overwrite: options.overwrite ?? false,
+    gpuEncoding: options.gpuEncoding ?? false,
   });
 }
 
@@ -280,11 +302,16 @@ export async function invokeConvertAudioToWaveformVideo(
   path: string,
   outputDir: string,
   customOutput?: string,
+  options: ConversionOptions = {},
 ): Promise<string> {
   return invoke("convert_audio_to_waveform_video", {
     path,
     outputDir,
     customOutput: customOutput ?? null,
+    audioBitrate: options.audioBitrate ?? 192,
+    overwrite: options.overwrite ?? false,
+    coverArtMode: options.coverArtMode ?? "auto",
+    preset: options.preset ?? "Balanced",
   });
 }
 
@@ -292,12 +319,18 @@ export async function invokeConvertImageToPdf(
   path: string,
   outputDir: string,
   customOutput?: string,
+  overwrite = false,
 ): Promise<string> {
   return invoke("convert_image_to_pdf", {
     path,
     outputDir,
     customOutput: customOutput ?? null,
+    overwrite,
   });
+}
+
+export async function invokeGetFfmpegInfo(): Promise<FfmpegInfo> {
+  return invoke("get_ffmpeg_info");
 }
 
 export async function invokeExtractCoverArt(
@@ -871,6 +904,7 @@ export async function invokeExportEditedMedia(
   width: number,
   height: number,
   quality: string,
+  gpuEncoding: boolean,
 ): Promise<void> {
   return invoke("export_edited_media", {
     path,
@@ -889,6 +923,7 @@ export async function invokeExportEditedMedia(
     width,
     height,
     quality,
+    gpuEncoding,
   });
 }
 

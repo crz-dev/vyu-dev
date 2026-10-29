@@ -148,6 +148,7 @@
     onCloseDeleteConfirm,
     onCloseProperties,
     onCloseShare,
+    onOpenConverted,
     onUpdateDeleteNoAsk,
     onUpdateDeletePermanently,
     onCloseContextMenu,
@@ -334,6 +335,7 @@
     onCloseDeleteConfirm: () => void;
     onCloseProperties: () => void;
     onCloseShare: () => void;
+    onOpenConverted: (path: string) => void;
     onUpdateDeleteNoAsk: (v: boolean) => void;
     onUpdateDeletePermanently: (v: boolean) => void;
     onCloseContextMenu: () => void;
@@ -878,6 +880,7 @@
     updateDeleteNoAsk={onUpdateDeleteNoAsk}
     updateDeletePermanently={onUpdateDeletePermanently}
     onClose={onCloseContextMenu}
+    {onOpenConverted}
     {clipOutputDir}
     {corruptionWarning}
     {corruptionReason}

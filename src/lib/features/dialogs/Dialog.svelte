@@ -27,10 +27,7 @@
     invokeDeleteFile,
     invokeIdentifySong,
   } from "$lib/features/media/api";
-  import {
-    loadShareOutputDir,
-    saveShareOutputDir,
-  } from "$lib/services/storage";
+  import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
@@ -104,6 +101,7 @@
     updateDeleteNoAsk,
     updateDeletePermanently,
     onClose,
+    onOpenConverted,
     corruptionWarning,
     corruptionReason,
     corruptionFixing,
@@ -179,6 +177,7 @@
     updateDeleteNoAsk: (v: boolean) => void;
     updateDeletePermanently: (v: boolean) => void;
     onClose: () => void;
+    onOpenConverted?: (path: string) => void;
     corruptionWarning: boolean;
     corruptionReason: string;
     corruptionFixing: boolean;
@@ -193,8 +192,32 @@
   let pinned = $state(false);
   let deleteMarkersConfirm = $state(false);
   let deleteMarkersTimer: ReturnType<typeof setTimeout> | null = $state(null);
-  let shareOutputDir = $state(loadShareOutputDir());
-  let shareDeleteOriginal = $state(false);
+  const shareOutputDir = $derived(conversionPrefs.outputDir);
+  const shareDeleteOriginal = $derived(conversionPrefs.deleteOriginal);
+
+  function conversionPreset(): string {
+    switch (conversionPrefs.quality) {
+      case "fast":
+        return "Fast";
+      case "quality":
+        return "Quality";
+      case "lossless":
+        return "Lossless";
+      default:
+        return "Balanced";
+    }
+  }
+
+  function conversionOptions() {
+    return {
+      audioBitrate: conversionPrefs.audioBitrate,
+      preserveMetadata: conversionPrefs.preserveMetadata,
+      overwrite: conversionPrefs.overwriteExisting,
+      gpuEncoding: conversionPrefs.gpuEncoding,
+      coverArtMode: conversionPrefs.coverArtMode,
+      preset: conversionPreset(),
+    };
+  }
   let shareConverting = $state(false);
   let convertingFormat = $state<string | undefined>(undefined);
   let convertProgress = $state<number>(0);
@@ -217,7 +240,6 @@
 
   $effect(() => {
     if (!shareOpen) {
-      shareDeleteOriginal = false;
       shareConverting = false;
       convertingFormat = undefined;
       convertProgress = 0;
@@ -330,11 +352,11 @@
 
   async function handleShareLocation() {
     const { open } = await import("@tauri-apps/plugin-dialog");
-    const dir = await open({ directory: true });
-    if (dir) {
-      shareOutputDir = dir as string;
-      saveShareOutputDir(shareOutputDir);
-    }
+    const dir = await open({
+      directory: true,
+      defaultPath: shareOutputDir || undefined,
+    });
+    if (dir) conversionPrefs.setOutputDir(dir as string);
   }
 
   async function handleSaveAs(format: string) {
@@ -345,6 +367,7 @@
     }
     shareConverting = true;
     let success = false;
+    let resultPath: string | null = null;
     let unlisten: (() => void) | undefined;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
@@ -360,13 +383,39 @@
       }
 
       if (sourceExt === format) {
-        await invokeCopyFileUnique(filePath, outputDir);
+        if (conversionPrefs.overwriteExisting) {
+          const sep = outputDir.includes("\\") ? "\\" : "/";
+          const destination = `${outputDir}${sep}${fileName}`;
+          if (destination !== filePath) {
+            await invokeCopyFile(filePath, destination);
+          }
+          resultPath = destination;
+        } else {
+          resultPath = await invokeCopyFileUnique(filePath, outputDir);
+        }
       } else if (isWaveformConvert) {
-        await invokeConvertAudioToWaveformVideo(filePath, outputDir);
+        resultPath = await invokeConvertAudioToWaveformVideo(
+          filePath,
+          outputDir,
+          undefined,
+          conversionOptions(),
+        );
       } else if (isImage && format === "pdf") {
-        await invokeConvertImageToPdf(filePath, outputDir);
+        resultPath = await invokeConvertImageToPdf(
+          filePath,
+          outputDir,
+          undefined,
+          conversionPrefs.overwriteExisting,
+        );
       } else {
-        await invokeConvertMedia(filePath, outputDir, format, "Balanced");
+        resultPath = await invokeConvertMedia(
+          filePath,
+          outputDir,
+          format,
+          conversionPreset(),
+          undefined,
+          conversionOptions(),
+        );
       }
       showToast({
         message: "Saved as " + format.toUpperCase(),
@@ -406,6 +455,9 @@
           color: "red",
         });
       }
+    }
+    if (success && conversionPrefs.autoOpenConverted && resultPath) {
+      onOpenConverted?.(resultPath);
     }
     closeShare();
   }
@@ -488,6 +540,7 @@
 
     shareConverting = true;
     let success = false;
+    let resultPath: string | null = null;
     let unlisten: (() => void) | undefined;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
@@ -507,21 +560,29 @@
 
       if (sourceExt === outputExt) {
         await invokeCopyFile(filePath, outputPath);
+        resultPath = outputPath;
       } else if (isWaveformConvert) {
-        await invokeConvertAudioToWaveformVideo(
+        resultPath = await invokeConvertAudioToWaveformVideo(
           filePath,
           outputDirFromSave,
           outputPath,
+          conversionOptions(),
         );
       } else if (isImage && outputExt === "pdf") {
-        await invokeConvertImageToPdf(filePath, outputDirFromSave, outputPath);
+        resultPath = await invokeConvertImageToPdf(
+          filePath,
+          outputDirFromSave,
+          outputPath,
+          conversionPrefs.overwriteExisting,
+        );
       } else {
-        await invokeConvertMedia(
+        resultPath = await invokeConvertMedia(
           filePath,
           outputDirFromSave,
           outputExt,
-          "Balanced",
+          conversionPreset(),
           outputPath,
+          conversionOptions(),
         );
       }
       showToast({
@@ -562,6 +623,9 @@
           color: "red",
         });
       }
+    }
+    if (success && conversionPrefs.autoOpenConverted && resultPath) {
+      onOpenConverted?.(resultPath);
     }
     closeShare();
   }
@@ -1874,9 +1938,9 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                ><path
-                  d="M4 4h16v16H4z"
-                /><polyline points="4 4 12 12 20 4" /></svg
+                ><path d="M4 4h16v16H4z" /><polyline
+                  points="4 4 12 12 20 4"
+                /></svg
               >
               Pages
             </span>
@@ -1935,9 +1999,12 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="9" /><path d="M12 10.5V16" stroke-linecap="round" /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg>
+                  ><circle cx="12" cy="12" r="9" /><path
+                    d="M12 10.5V16"
+                    stroke-linecap="round"
+                  /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
                 >
-                Version
+                > Version
               </span>
               <span class="props-v">{pdfVersion}</span>
             </div>
@@ -3146,7 +3213,8 @@
           class:is-on={shareDeleteOriginal}
           data-tooltip="Delete original"
           aria-label="Delete original"
-          onclick={() => (shareDeleteOriginal = !shareDeleteOriginal)}
+          onclick={() =>
+            conversionPrefs.setDeleteOriginal(!conversionPrefs.deleteOriginal)}
         >
           <svg
             width="11"
