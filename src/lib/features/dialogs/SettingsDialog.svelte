@@ -1872,7 +1872,7 @@
                     <span class="settings-label">Default Export Format</span>
                     <span class="settings-hint"
                       >{editing.imageFormat === "original"
-                        ? "Use each file's format for exports"
+                        ? "Same file format"
                         : editing.imageFormat === "png"
                           ? "Lossless export format"
                           : editing.imageFormat === "jpg"
@@ -1935,12 +1935,12 @@
                     <span class="settings-label">Default Export Quality</span>
                     <span class="settings-hint"
                       >{editing.imageFormat === "png"
-                        ? "Not used for PNG exports"
+                        ? "PNG quality (lossless 100)"
                         : editing.imageFormat === "jpg"
                           ? "JPEG quality (max 95)"
                           : editing.imageFormat === "webp"
                             ? "WebP quality (max 100)"
-                            : "Applies to JPEG/WebP originals"}</span
+                            : "Quality for original format"}</span
                     >
                   </div>
                 </div>
@@ -1952,6 +1952,8 @@
                     step="1"
                     aria-label="Image export quality"
                     value={imageQualityPreview}
+                    disabled={editing.imageFormat === "png"}
+                    class:slider-locked={editing.imageFormat === "png"}
                     oninput={(e) =>
                       (imageQualityPreview = Number(e.currentTarget.value))}
                     onchange={(e) =>
@@ -2152,7 +2154,9 @@
                   <div class="settings-label-text">
                     <span class="settings-label">Default Export Format</span>
                     <span class="settings-hint"
-                      >Format used when exporting edited videos</span
+                      >{editing.videoFormat === "original"
+                        ? "Same file format"
+                        : "Format used when exporting edited videos"}</span
                     >
                   </div>
                 </div>

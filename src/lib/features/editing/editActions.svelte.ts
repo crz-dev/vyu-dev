@@ -284,7 +284,17 @@ export function createEditActions(deps: EditActionsDeps) {
       const videoEl = deps.getVideoEl();
       const pngOverride =
         !isVideo && editDialogStore.exportFormatOverride === "png";
-      const quality = editing.imageQuality / 100;
+      const sourceExt = getFileExt(filePath);
+      const qualityFormat = pngOverride
+        ? "png"
+        : sourceExt === "jpg" || sourceExt === "jpeg"
+          ? "jpg"
+          : sourceExt === "webp"
+            ? "webp"
+            : sourceExt === "png"
+              ? "png"
+              : "original";
+      const quality = editing.imageQualityFor(qualityFormat) / 100;
       const keepOriginalDate = isVideo
         ? editing.keepVideoOriginalDate
         : editing.keepImageOriginalDate;
@@ -417,7 +427,11 @@ export function createEditActions(deps: EditActionsDeps) {
       });
 
       const s = editing.snapshot;
-      const quality = editing.imageQuality / 100;
+      const qualityFormat =
+        editDialogStore.exportFormatOverride === "png"
+          ? "png"
+          : editing.imageFormat;
+      const quality = editing.imageQualityFor(qualityFormat) / 100;
       if (isVideo) {
         if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
           throw new Error("Video not ready for export");

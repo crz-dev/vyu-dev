@@ -13,6 +13,7 @@ export interface EqSettings {
 
 export type EditExportQuality = "fast" | "balanced" | "quality" | "lossless";
 export type EditImageFormat = "original" | "png" | "jpg" | "webp";
+export type EditImageQualityKey = "original" | "jpg" | "webp";
 export type EditVideoFormat = "original" | "mp4" | "webm" | "mkv";
 export type EditBackupMode = "off" | "ask" | "always";
 export type EditMediaKind = "image" | "video";
@@ -142,14 +143,32 @@ export function saveEditVideoFormat(format: EditVideoFormat): void {
   localStorage.setItem("vyu-edit-video-format", format);
 }
 
-export function loadEditImageQuality(): number {
-  const value = Number(localStorage.getItem("vyu-edit-image-quality"));
-  if (!Number.isFinite(value)) return 92;
-  return Math.min(100, Math.max(60, Math.round(value)));
+function imageQualityMaxForStorage(format: EditImageQualityKey): number {
+  return format === "jpg" ? 95 : 100;
 }
 
-export function saveEditImageQuality(quality: number): void {
-  localStorage.setItem("vyu-edit-image-quality", String(quality));
+function clampImageQuality(value: number, max: number): number {
+  return Math.min(max, Math.max(60, Math.round(value)));
+}
+
+export function loadEditImageQuality(format: EditImageQualityKey): number {
+  const max = imageQualityMaxForStorage(format);
+  const value = Number(
+    localStorage.getItem(`vyu-edit-image-quality-${format}`),
+  );
+  if (Number.isFinite(value)) return clampImageQuality(value, max);
+  const legacy = Number(localStorage.getItem("vyu-edit-image-quality"));
+  return Number.isFinite(legacy) ? clampImageQuality(legacy, max) : max;
+}
+
+export function saveEditImageQuality(
+  format: EditImageQualityKey,
+  quality: number,
+): void {
+  localStorage.setItem(
+    `vyu-edit-image-quality-${format}`,
+    String(clampImageQuality(quality, imageQualityMaxForStorage(format))),
+  );
 }
 
 export function loadEditKeepDate(kind: EditMediaKind): boolean {

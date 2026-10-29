@@ -34,6 +34,7 @@ import {
   type EditBackupMode,
   type EditExportQuality,
   type EditImageFormat,
+  type EditImageQualityKey,
   type EditVideoFormat,
   type PersistedEditSnapshot,
 } from "$lib/services/storage";
@@ -112,7 +113,11 @@ function createEditingStore() {
   let videoOutputDir = $state(loadEditOutputDir("video"));
   let imageFormat = $state<EditImageFormat>(loadEditImageFormat());
   let videoFormat = $state<EditVideoFormat>(loadEditVideoFormat());
-  let imageQuality = $state(loadEditImageQuality());
+  let imageQuality = $state<Record<EditImageQualityKey, number>>({
+    original: loadEditImageQuality("original"),
+    jpg: loadEditImageQuality("jpg"),
+    webp: loadEditImageQuality("webp"),
+  });
   let keepImageOriginalDate = $state(loadEditKeepDate("image"));
   let keepVideoOriginalDate = $state(loadEditKeepDate("video"));
   let autoOpenImageExport = $state(loadEditAutoOpenExport("image"));
@@ -385,11 +390,19 @@ function createEditingStore() {
     return format === "jpg" ? 95 : 100;
   }
 
+  function imageQualityFor(format: EditImageFormat): number {
+    if (format === "png") return 100;
+    return imageQuality[format];
+  }
+
   function setImageFormat(format: EditImageFormat) {
     imageFormat = format;
     saveEditImageFormat(format);
-    if (imageQuality > imageQualityMaxFor(format)) {
-      setImageQuality(imageQualityMaxFor(format));
+    if (format === "png") return;
+    const max = imageQualityMaxFor(format);
+    if (imageQuality[format] > max) {
+      imageQuality[format] = max;
+      saveEditImageQuality(format, max);
     }
   }
 
@@ -399,11 +412,13 @@ function createEditingStore() {
   }
 
   function setImageQuality(quality: number) {
-    imageQuality = Math.min(
+    if (imageFormat === "png") return;
+    const value = Math.min(
       imageQualityMaxFor(imageFormat),
       Math.max(60, Math.round(quality)),
     );
-    saveEditImageQuality(imageQuality);
+    imageQuality[imageFormat] = value;
+    saveEditImageQuality(imageFormat, value);
   }
 
   function setKeepImageOriginalDate(enabled: boolean) {
@@ -490,11 +505,12 @@ function createEditingStore() {
       return videoFormat;
     },
     get imageQuality() {
-      return imageQuality;
+      return imageQualityFor(imageFormat);
     },
     get imageQualityMax() {
       return imageQualityMaxFor(imageFormat);
     },
+    imageQualityFor,
     get keepImageOriginalDate() {
       return keepImageOriginalDate;
     },

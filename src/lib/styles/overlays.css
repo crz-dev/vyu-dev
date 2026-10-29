@@ -2780,6 +2780,23 @@
   transform: scale(1.1);
 }
 
+.settings-slider-control input[type="range"].slider-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-slider-control
+  input[type="range"].slider-locked::-webkit-slider-thumb {
+  background: var(--text-hint);
+  cursor: not-allowed;
+}
+
+.settings-slider-control
+  input[type="range"].slider-locked::-webkit-slider-thumb:hover {
+  background: var(--text-hint);
+  transform: none;
+}
+
 .settings-slider-value {
   font-size: 11px;
   color: var(--text-muted);
