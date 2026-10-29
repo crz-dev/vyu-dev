@@ -40,6 +40,7 @@ pub fn run() {
             rename_file,
             copy_file,
             copy_file_unique,
+            set_file_modified_time,
             cleanup_temp_folder,
             batch_stat,
             backup_file,

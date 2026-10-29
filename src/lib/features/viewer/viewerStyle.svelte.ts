@@ -9,13 +9,13 @@ export type ViewerStyleStore = ReturnType<typeof createViewerStyle>;
 export function createViewerStyle() {
   const imageScale = $derived(viewer.state.zoomLevel / 100);
   const cropClipPath = $derived.by(() => {
-    const bounds = editing.getCropBounds();
+    const bounds = editing.previewCropBounds;
     if (!bounds) return "";
     return `inset(${(bounds.top * 100).toFixed(2)}% ${(bounds.right * 100).toFixed(2)}% ${(bounds.bottom * 100).toFixed(2)}% ${(bounds.left * 100).toFixed(2)}%)`;
   });
   const colorFilter = $derived.by(() => {
     const parts: string[] = [];
-    const { brightness, contrast, saturation, hue } = editing.snapshot;
+    const { brightness, contrast, saturation, hue } = editing.previewSnapshot;
     if (brightness !== 1) parts.push(`brightness(${brightness})`);
     if (contrast !== 1) parts.push(`contrast(${contrast})`);
     if (saturation !== 1) parts.push(`saturate(${saturation})`);
@@ -23,7 +23,7 @@ export function createViewerStyle() {
     return parts.length ? ` filter: ${parts.join(" ")};` : "";
   });
   const imageStyle = $derived.by(() => {
-    const { rotation, flipped, flippedVertical } = editing.snapshot;
+    const { rotation, flipped, flippedVertical } = editing.previewSnapshot;
     return `transform: translate(${viewer.state.translateX}px, ${viewer.state.translateY}px) scale(${imageScale}) rotate(${rotation}deg) scaleX(${flipped ? -1 : 1}) scaleY(${flippedVertical ? -1 : 1}); transform-origin: center center; display: block;${colorFilter}${cropClipPath ? ` clip-path: ${cropClipPath};` : ""}`;
   });
   const videoWrapperTransform = $derived(viewer.getVideoWrapperTransform());

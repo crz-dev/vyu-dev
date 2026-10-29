@@ -1,22 +1,28 @@
 <script lang="ts">
+  import type { EditBackupMode } from "$lib/services/storage";
+
   let {
     open,
     fileName,
     applyNoAsk,
-    keepBackups,
+    backupMode,
+    keepBackup,
     onClose,
     onConfirm,
     onExportInstead,
     onUpdateApplyNoAsk,
+    onUpdateKeepBackup,
   }: {
     open: boolean;
     fileName: string;
     applyNoAsk: boolean;
-    keepBackups: boolean;
+    backupMode: EditBackupMode;
+    keepBackup: boolean;
     onClose: () => void;
     onConfirm: () => void;
     onExportInstead: () => void;
     onUpdateApplyNoAsk: (v: boolean) => void;
+    onUpdateKeepBackup: (v: boolean) => void;
   } = $props();
 </script>
 
@@ -77,13 +83,45 @@
       </div>
       <div class="edit-confirm-body-box">
         Applying edits will overwrite the current file.
-        {#if keepBackups}
+        {#if backupMode === "always"}
           A backup of the original is kept so you can restore it from the Edit
           menu later.
-        {:else}
+        {:else if backupMode === "off"}
           No backup will be kept. This cannot be undone.
+        {:else}
+          Choose whether to keep a backup of the original.
         {/if}
       </div>
+      {#if backupMode === "ask"}
+        <div class="delete-toggles">
+          <label class="toggle-row">
+            <span class="toggle-label"
+              ><svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path
+                  d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                /></svg
+              >
+              Keep a backup of the original</span
+            >
+            <input
+              type="checkbox"
+              checked={keepBackup}
+              onchange={(e) => onUpdateKeepBackup(e.currentTarget.checked)}
+            />
+            <span class="toggle-track green-toggle" class:on={keepBackup}
+              ><span class="toggle-thumb"></span></span
+            >
+          </label>
+        </div>
+      {/if}
       <div class="delete-toggles">
         <label class="toggle-row">
           <span class="toggle-label"
@@ -102,7 +140,7 @@
                 d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
               /><line x1="1" y1="1" x2="23" y2="23" /></svg
             >
-            Don't ask again</span
+            Always apply in place</span
           >
           <input
             type="checkbox"

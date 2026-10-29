@@ -5,7 +5,38 @@ import {
   invokeGetBackupPath,
   invokeRestoreBackup,
 } from "$lib/features/media/api";
-import { loadEditBackups, saveEditBackups } from "$lib/services/storage";
+import {
+  clearEditSession,
+  loadEditAutoOpenExport,
+  loadEditBackupDir,
+  loadEditBackupMode,
+  loadEditCompareEnabled,
+  loadEditExportQuality,
+  loadEditImageFormat,
+  loadEditImageQuality,
+  loadEditKeepDate,
+  loadEditOutputDir,
+  loadEditRememberSession,
+  loadEditSession,
+  loadEditVideoFormat,
+  saveEditAutoOpenExport,
+  saveEditBackupDir,
+  saveEditBackupMode,
+  saveEditCompareEnabled,
+  saveEditExportQuality,
+  saveEditImageFormat,
+  saveEditImageQuality,
+  saveEditKeepDate,
+  saveEditOutputDir,
+  saveEditRememberSession,
+  saveEditSession,
+  saveEditVideoFormat,
+  type EditBackupMode,
+  type EditExportQuality,
+  type EditImageFormat,
+  type EditVideoFormat,
+  type PersistedEditSnapshot,
+} from "$lib/services/storage";
 
 export interface EditSnapshot {
   rotation: number;
@@ -69,26 +100,70 @@ function createEditingStore() {
   let snapshot = $state<EditSnapshot>(defaultSnapshot());
   let undoStack = $state<EditSnapshot[]>([]);
   let isApplied = $state(false);
-  let keepBackups = $state(loadEditBackups());
+  let backupMode = $state<EditBackupMode>(loadEditBackupMode());
   let hasBackup = $state(false);
   let backupCheckGen = 0;
   let isExporting = $state(false);
   let isApplying = $state(false);
   let cropMode = $state(false);
   let _cropShouldCenter = $state(false);
+  let exportQuality = $state<EditExportQuality>(loadEditExportQuality());
+  let imageOutputDir = $state(loadEditOutputDir("image"));
+  let videoOutputDir = $state(loadEditOutputDir("video"));
+  let imageFormat = $state<EditImageFormat>(loadEditImageFormat());
+  let videoFormat = $state<EditVideoFormat>(loadEditVideoFormat());
+  let imageQuality = $state(loadEditImageQuality());
+  let keepImageOriginalDate = $state(loadEditKeepDate("image"));
+  let keepVideoOriginalDate = $state(loadEditKeepDate("video"));
+  let autoOpenImageExport = $state(loadEditAutoOpenExport("image"));
+  let autoOpenVideoExport = $state(loadEditAutoOpenExport("video"));
+  let compareEnabled = $state(loadEditCompareEnabled());
+  let backupDir = $state(loadEditBackupDir());
+  const initialRememberEdits = loadEditRememberSession();
+  let rememberEdits = $state(initialRememberEdits);
+  let compareOriginal = $state(false);
   const SESSION_EDITS_MAX = 100;
   const sessionEdits = new Map<string, EditSnapshot>();
   const sessionEditsOrder: string[] = [];
 
+  if (initialRememberEdits) {
+    const saved = loadEditSession();
+    for (const [path, savedSnapshot] of Object.entries(saved)) {
+      sessionEdits.set(path, cloneSnapshot(savedSnapshot));
+      sessionEditsOrder.push(path);
+    }
+  }
+
+  function persistSession() {
+    if (!rememberEdits) return;
+    const session: Record<string, PersistedEditSnapshot> = {};
+    for (const [path, savedSnapshot] of sessionEdits) {
+      session[path] = cloneSnapshot(savedSnapshot);
+    }
+    saveEditSession(session);
+  }
+
   function saveCurrentToSession() {
-    if (filePath && getHasEdits()) {
+    if (!filePath) return;
+    const index = sessionEditsOrder.indexOf(filePath);
+    if (index !== -1) sessionEditsOrder.splice(index, 1);
+    if (getHasEdits()) {
       sessionEdits.set(filePath, cloneSnapshot(snapshot));
       sessionEditsOrder.push(filePath);
       if (sessionEditsOrder.length > SESSION_EDITS_MAX) {
         const oldest = sessionEditsOrder.shift();
         if (oldest !== undefined) sessionEdits.delete(oldest);
       }
+    } else {
+      sessionEdits.delete(filePath);
     }
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", () => {
+      saveCurrentToSession();
+      persistSession();
+    });
   }
 
   function pushUndo() {
@@ -112,6 +187,7 @@ function createEditingStore() {
   }
 
   function startCropMode() {
+    compareOriginal = false;
     cropMode = true;
   }
 
@@ -190,10 +266,10 @@ function createEditingStore() {
     snapshot.hue = v;
   }
 
-  async function backupOriginal(path: string) {
-    if (!keepBackups || !path) return;
+  async function backupOriginal(path: string, enabled: boolean) {
+    if (!enabled || !path) return;
     try {
-      await invokeBackupFile(path);
+      await invokeBackupFile(path, backupDir || undefined);
       hasBackup = true;
     } catch (e) {
       console.error("backup_file failed (non-fatal):", e);
@@ -203,7 +279,10 @@ function createEditingStore() {
   async function restoreOriginal(): Promise<boolean> {
     if (!filePath) return false;
     try {
-      const restored = await invokeRestoreBackup(filePath);
+      const restored = await invokeRestoreBackup(
+        filePath,
+        backupDir || undefined,
+      );
       hasBackup = restored;
       return restored;
     } catch (e) {
@@ -217,7 +296,9 @@ function createEditingStore() {
     undoStack = [];
     cropMode = false;
     _cropShouldCenter = false;
+    compareOriginal = false;
     if (filePath) sessionEdits.delete(filePath);
+    persistSession();
   }
 
   async function reset(): Promise<boolean> {
@@ -230,7 +311,7 @@ function createEditingStore() {
   async function checkBackup(path: string) {
     const gen = ++backupCheckGen;
     try {
-      const backup = await invokeGetBackupPath(path);
+      const backup = await invokeGetBackupPath(path, backupDir || undefined);
       if (gen === backupCheckGen && filePath === path) {
         hasBackup = !!backup;
       }
@@ -241,6 +322,7 @@ function createEditingStore() {
 
   function switchFile(newPath: string) {
     saveCurrentToSession();
+    persistSession();
     filePath = newPath;
     const saved = sessionEdits.get(newPath);
     if (saved) {
@@ -251,6 +333,7 @@ function createEditingStore() {
     undoStack = [];
     cropMode = false;
     _cropShouldCenter = false;
+    compareOriginal = false;
     isApplied = false;
     hasBackup = false;
     void checkBackup(newPath);
@@ -258,10 +341,12 @@ function createEditingStore() {
 
   function cleanup() {
     saveCurrentToSession();
+    persistSession();
     undoStack = [];
     snapshot = defaultSnapshot();
     cropMode = false;
     _cropShouldCenter = false;
+    compareOriginal = false;
     isApplied = false;
     filePath = "";
     hasBackup = false;
@@ -270,9 +355,98 @@ function createEditingStore() {
     isApplying = false;
   }
 
-  function setKeepBackups(value: boolean) {
-    keepBackups = value;
-    saveEditBackups(value);
+  function setBackupMode(mode: EditBackupMode) {
+    backupMode = mode;
+    saveEditBackupMode(mode);
+  }
+
+  function setExportQuality(quality: EditExportQuality) {
+    exportQuality = quality;
+    saveEditExportQuality(quality);
+  }
+
+  function setImageOutputDir(dir: string) {
+    imageOutputDir = dir;
+    saveEditOutputDir("image", dir);
+  }
+
+  function setVideoOutputDir(dir: string) {
+    videoOutputDir = dir;
+    saveEditOutputDir("video", dir);
+  }
+
+  function setBackupDir(dir: string) {
+    backupDir = dir;
+    saveEditBackupDir(dir);
+    if (filePath) void checkBackup(filePath);
+  }
+
+  function imageQualityMaxFor(format: EditImageFormat): number {
+    return format === "jpg" ? 95 : 100;
+  }
+
+  function setImageFormat(format: EditImageFormat) {
+    imageFormat = format;
+    saveEditImageFormat(format);
+    if (imageQuality > imageQualityMaxFor(format)) {
+      setImageQuality(imageQualityMaxFor(format));
+    }
+  }
+
+  function setVideoFormat(format: EditVideoFormat) {
+    videoFormat = format;
+    saveEditVideoFormat(format);
+  }
+
+  function setImageQuality(quality: number) {
+    imageQuality = Math.min(
+      imageQualityMaxFor(imageFormat),
+      Math.max(60, Math.round(quality)),
+    );
+    saveEditImageQuality(imageQuality);
+  }
+
+  function setKeepImageOriginalDate(enabled: boolean) {
+    keepImageOriginalDate = enabled;
+    saveEditKeepDate("image", enabled);
+  }
+
+  function setKeepVideoOriginalDate(enabled: boolean) {
+    keepVideoOriginalDate = enabled;
+    saveEditKeepDate("video", enabled);
+  }
+
+  function setAutoOpenImageExport(enabled: boolean) {
+    autoOpenImageExport = enabled;
+    saveEditAutoOpenExport("image", enabled);
+  }
+
+  function setAutoOpenVideoExport(enabled: boolean) {
+    autoOpenVideoExport = enabled;
+    saveEditAutoOpenExport("video", enabled);
+  }
+
+  function setCompareEnabled(enabled: boolean) {
+    compareEnabled = enabled;
+    if (!enabled) compareOriginal = false;
+    saveEditCompareEnabled(enabled);
+  }
+
+  function setRememberEdits(enabled: boolean) {
+    rememberEdits = enabled;
+    saveEditRememberSession(enabled);
+    if (enabled) {
+      saveCurrentToSession();
+      persistSession();
+    } else {
+      sessionEdits.clear();
+      sessionEditsOrder.length = 0;
+      clearEditSession();
+    }
+  }
+
+  function setCompareOriginal(value: boolean) {
+    compareOriginal = compareEnabled && value;
   }
 
   function clearBackupState() {
@@ -294,13 +468,78 @@ function createEditingStore() {
     set isApplied(v: boolean) {
       isApplied = v;
     },
-    get keepBackups() {
-      return keepBackups;
+    get backupMode() {
+      return backupMode;
+    },
+    get backupDir() {
+      return backupDir;
+    },
+    get exportQuality() {
+      return exportQuality;
+    },
+    get imageOutputDir() {
+      return imageOutputDir;
+    },
+    get videoOutputDir() {
+      return videoOutputDir;
+    },
+    get imageFormat() {
+      return imageFormat;
+    },
+    get videoFormat() {
+      return videoFormat;
+    },
+    get imageQuality() {
+      return imageQuality;
+    },
+    get imageQualityMax() {
+      return imageQualityMaxFor(imageFormat);
+    },
+    get keepImageOriginalDate() {
+      return keepImageOriginalDate;
+    },
+    get keepVideoOriginalDate() {
+      return keepVideoOriginalDate;
+    },
+    get autoOpenImageExport() {
+      return autoOpenImageExport;
+    },
+    get autoOpenVideoExport() {
+      return autoOpenVideoExport;
+    },
+    get compareEnabled() {
+      return compareEnabled;
+    },
+    get rememberEdits() {
+      return rememberEdits;
+    },
+    get compareOriginal() {
+      return compareOriginal;
+    },
+    get previewSnapshot() {
+      return compareOriginal ? defaultSnapshot() : snapshot;
+    },
+    get previewCropBounds() {
+      return compareOriginal ? null : getCropBounds();
     },
     get hasBackup() {
       return hasBackup;
     },
-    setKeepBackups,
+    setBackupMode,
+    setBackupDir,
+    setExportQuality,
+    setImageOutputDir,
+    setVideoOutputDir,
+    setImageFormat,
+    setVideoFormat,
+    setImageQuality,
+    setKeepImageOriginalDate,
+    setKeepVideoOriginalDate,
+    setAutoOpenImageExport,
+    setAutoOpenVideoExport,
+    setCompareEnabled,
+    setRememberEdits,
+    setCompareOriginal,
     clearBackupState,
     get isExporting() {
       return isExporting;

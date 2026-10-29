@@ -702,9 +702,19 @@
     toggleLibrary: () => (menuStore.libraryOpen = !menuStore.libraryOpen),
     isLibraryOpen: () => menuStore.libraryOpen,
     isFilmstripView: () => library.viewMode === "filmstrip",
+    isCompareAvailable: () =>
+      editing.compareEnabled &&
+      !editing.cropMode &&
+      (editing.getHasEdits() || editing.getCropBounds() !== null),
+    setCompareOriginal: (value) => editing.setCompareOriginal(value),
   });
   function handleKeydown(e: KeyboardEvent) {
     configuredKeydown(e);
+  }
+  function handleKeyup(e: KeyboardEvent) {
+    if (e.key === "c" || e.key === "C") {
+      editing.setCompareOriginal(false);
+    }
   }
   // Intercept Ctrl+F in capture phase to prevent WebView2's built-in find
   $effect(() => {
@@ -747,7 +757,7 @@
     getIsVideo: () => isVideo,
     getVideoEl: () => videoEl,
     loadFile,
-    handleMarkupApply: () => handleMarkupApply(),
+    handleMarkupApply: (keepBackup) => handleMarkupApply(keepBackup),
     handleMarkupExport: () => handleMarkupExport(),
     handleClearMarkup: () => markup.clearAllStrokes(),
   });
@@ -764,7 +774,7 @@
     handleUpdateApplyNoAsk,
   } = editActions;
   let _markupActions: {
-    handleMarkupApply: (canvasDataUrl?: string) => Promise<void>;
+    handleMarkupApply: (keepBackup?: boolean) => Promise<void>;
     handleMarkupExport: (canvasDataUrl?: string) => Promise<void>;
   } | null = null;
   async function ensureMarkupActions() {
@@ -786,9 +796,9 @@
     }
     return _markupActions;
   }
-  async function handleMarkupApply(canvasDataUrl?: string) {
+  async function handleMarkupApply(keepBackup?: boolean) {
     const a = await ensureMarkupActions();
-    return a.handleMarkupApply(canvasDataUrl);
+    return a.handleMarkupApply(keepBackup);
   }
   async function handleMarkupExport(canvasDataUrl?: string) {
     const a = await ensureMarkupActions();
@@ -998,6 +1008,7 @@
     loadFile,
     saveResumePosition: saveCurrentPosition,
     handleKeydown,
+    handleKeyup,
     handleGlobalMouseDown,
   });
 
@@ -1410,11 +1421,13 @@
   open={editDialogStore.editApplyConfirm}
   {fileName}
   applyNoAsk={editActions.applyNoAsk}
-  keepBackups={editing.keepBackups}
+  backupMode={editing.backupMode}
+  keepBackup={editDialogStore.applyKeepBackup}
   onClose={closeEditApplyConfirm}
   onConfirm={handleApplyConfirm}
   onExportInstead={handleApplyExportInstead}
   onUpdateApplyNoAsk={handleUpdateApplyNoAsk}
+  onUpdateKeepBackup={(v) => (editDialogStore.applyKeepBackup = v)}
 />
 
 <audio

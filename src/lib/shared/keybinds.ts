@@ -20,6 +20,8 @@ type KeybindActions = {
   toggleLibrary: () => void;
   isLibraryOpen: () => boolean;
   isFilmstripView: () => boolean;
+  isCompareAvailable: () => boolean;
+  setCompareOriginal: (value: boolean) => void;
 };
 
 const NAV_KEYS = new Set(["ArrowRight", "ArrowLeft", " "]);
@@ -32,6 +34,20 @@ export function createKeybindHandler(actions: KeybindActions) {
       (target.closest("input, textarea, [contenteditable='true']") !== null ||
         target.isContentEditable);
     if (isTypingTarget) return;
+
+    if (
+      (e.key === "c" || e.key === "C") &&
+      !e.repeat &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !e.metaKey &&
+      actions.isCompareAvailable() &&
+      !actions.isLibraryOpen()
+    ) {
+      e.preventDefault();
+      actions.setCompareOriginal(true);
+      return;
+    }
 
     if (actions.areDialogsOpen()) {
       if (e.key === "Escape") {

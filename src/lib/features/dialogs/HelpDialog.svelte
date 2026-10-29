@@ -257,6 +257,11 @@
                 <strong>Zoom & Pan</strong> — Scroll to zoom, click and drag to pan
                 when zoomed in.
               </p>
+              <p>
+                <strong>Compare with original</strong> — Hold
+                <span class="help-kbd-inline">C</span> while editing to preview the
+                original.
+              </p>
             </div>
           </div>
         </div>

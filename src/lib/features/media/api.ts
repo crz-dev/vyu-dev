@@ -43,6 +43,7 @@ async function loadImageAsElement(filePath: string): Promise<LoadedImage> {
 async function saveCanvasToFile(
   canvas: HTMLCanvasElement,
   outputPath: string,
+  quality?: number,
 ): Promise<void> {
   const ext = getFileExt(outputPath) || "png";
   const mimeType =
@@ -51,15 +52,38 @@ async function saveCanvasToFile(
       : ext === "webp"
         ? "image/webp"
         : "image/png";
+  const normalizedQuality =
+    quality === undefined ? 0.92 : Math.min(1, Math.max(0, quality));
+  const encodedQuality =
+    mimeType === "image/png"
+      ? undefined
+      : mimeType === "image/jpeg"
+        ? Math.min(0.95, normalizedQuality)
+        : normalizedQuality;
+
+  let encodedCanvas = canvas;
+  if (mimeType === "image/jpeg") {
+    // JPEG has no alpha channel; flatten transparency onto white.
+    const flattened = document.createElement("canvas");
+    flattened.width = canvas.width;
+    flattened.height = canvas.height;
+    const ctx = flattened.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, flattened.width, flattened.height);
+      ctx.drawImage(canvas, 0, 0);
+      encodedCanvas = flattened;
+    }
+  }
 
   const outBlob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
+    encodedCanvas.toBlob(
       (b) => {
         if (b) resolve(b);
         else reject(new Error("Canvas toBlob returned null"));
       },
       mimeType,
-      0.92,
+      encodedQuality,
     );
   });
   const arrayBuffer = await outBlob.arrayBuffer();
@@ -288,6 +312,7 @@ export async function exportEditedImage(
   filePath: string,
   snapshot: EditSnapshot,
   outputPath: string,
+  quality?: number,
 ) {
   const { img, url } = await loadImageAsElement(filePath);
   const w = img.naturalWidth;
@@ -383,7 +408,7 @@ export async function exportEditedImage(
   ctx.restore();
   URL.revokeObjectURL(url);
 
-  await saveCanvasToFile(canvas, outputPath);
+  await saveCanvasToFile(canvas, outputPath, quality);
 }
 
 export async function renderMarkupOnImage(
@@ -845,6 +870,7 @@ export async function invokeExportEditedMedia(
   snapshot: EditSnapshot,
   width: number,
   height: number,
+  quality: string,
 ): Promise<void> {
   return invoke("export_edited_media", {
     path,
@@ -862,25 +888,51 @@ export async function invokeExportEditedMedia(
     cropBottom: snapshot.cropBounds.bottom,
     width,
     height,
+    quality,
   });
 }
 
-export async function invokeBackupFile(source: string): Promise<string> {
-  return invoke("backup_file", { source });
+export async function invokeSetFileModifiedTime(
+  path: string,
+  timestampMs: number,
+): Promise<void> {
+  return invoke("set_file_modified_time", { path, timestampMs });
+}
+
+export async function invokeBackupFile(
+  source: string,
+  backupDir?: string,
+): Promise<string> {
+  return invoke("backup_file", {
+    source,
+    customBackupDir: backupDir ?? null,
+  });
 }
 
 export async function invokeGetBackupPath(
   source: string,
+  backupDir?: string,
 ): Promise<string | null> {
-  return invoke("get_backup_path", { source });
+  return invoke("get_backup_path", {
+    source,
+    customBackupDir: backupDir ?? null,
+  });
 }
 
-export async function invokeRestoreBackup(path: string): Promise<boolean> {
-  return invoke("restore_backup", { path });
+export async function invokeRestoreBackup(
+  path: string,
+  backupDir?: string,
+): Promise<boolean> {
+  return invoke("restore_backup", {
+    path,
+    customBackupDir: backupDir ?? null,
+  });
 }
 
-export async function invokeClearBackups(): Promise<number> {
-  return invoke("clear_backups");
+export async function invokeClearBackups(backupDir?: string): Promise<number> {
+  return invoke("clear_backups", {
+    customBackupDir: backupDir ?? null,
+  });
 }
 
 export function onEditApplyProgress(

@@ -84,8 +84,18 @@ fn backup_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .join("backups"))
 }
 
-fn backup_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let dir = backup_root(app)?;
+fn resolve_backup_root(
+    app: &tauri::AppHandle,
+    custom: Option<&str>,
+) -> Result<PathBuf, String> {
+    match custom.filter(|dir| !dir.trim().is_empty()) {
+        Some(dir) => Ok(PathBuf::from(dir)),
+        None => backup_root(app),
+    }
+}
+
+fn backup_dir(app: &tauri::AppHandle, custom: Option<&str>) -> Result<PathBuf, String> {
+    let dir = resolve_backup_root(app, custom)?;
     std::fs::create_dir_all(&dir)
         .map_err(|e| format!("Failed to create backups dir: {e}"))?;
     Ok(dir)
@@ -100,8 +110,12 @@ fn backup_file_name(source: &Path) -> String {
     format!("{hash}.{ext}")
 }
 
-fn backup_path_for(app: &tauri::AppHandle, source: &Path) -> Result<PathBuf, String> {
-    Ok(backup_root(app)?.join(backup_file_name(source)))
+fn backup_path_for(
+    app: &tauri::AppHandle,
+    source: &Path,
+    custom: Option<&str>,
+) -> Result<PathBuf, String> {
+    Ok(resolve_backup_root(app, custom)?.join(backup_file_name(source)))
 }
 
 fn unique_temp(dir: &Path, tag: &str) -> PathBuf {
@@ -238,6 +252,7 @@ pub async fn export_edited_media(
     crop_bottom: f64,
     width: u32,
     height: u32,
+    quality: String,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let input = PathBuf::from(&path);
@@ -361,6 +376,23 @@ pub async fn export_edited_media(
         let input_str = input.to_string_lossy().to_string();
         let write_str = write_path.to_string_lossy().to_string();
         let duration_us = probe_duration_us(&input_str);
+        let (encoder_preset, encoder_crf) = match quality.to_ascii_lowercase().as_str() {
+            "fast" => ("fast", "28"),
+            "quality" => ("slow", "18"),
+            "lossless" => ("veryslow", "0"),
+            _ => ("medium", "23"),
+        };
+        let source_ext = input
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let target_ext = if in_place {
+            source_ext.as_str()
+        } else {
+            write_path.extension().and_then(|ext| ext.to_str()).unwrap_or("")
+        }
+        .to_ascii_lowercase();
 
         let run = |copy_audio: bool| -> Result<(bool, String), String> {
             let mut cmd = ffmpeg_command();
@@ -372,12 +404,23 @@ pub async fn export_edited_media(
                 "-i",
                 &input_str,
             ]);
-            if filters.is_empty() {
-                cmd.args(["-c:v", "copy"]);
+            let needs_encode = !filters.is_empty() || target_ext != source_ext;
+            if needs_encode {
+                if !filters.is_empty() {
+                    cmd.args(["-vf", &filter_arg]);
+                }
+                if target_ext == "webm" {
+                    cmd.args(["-c:v", "libvpx-vp9", "-crf", encoder_crf, "-b:v", "0"]);
+                } else {
+                    cmd.args(["-c:v", "libx264", "-preset", encoder_preset]);
+                    cmd.args(["-crf", encoder_crf]);
+                }
             } else {
-                cmd.args(["-vf", &filter_arg]);
+                cmd.args(["-c:v", "copy"]);
             }
-            if copy_audio {
+            if target_ext == "webm" {
+                cmd.args(["-c:a", "libopus"]);
+            } else if copy_audio {
                 cmd.args(["-c:a", "copy"]);
             }
             if let Some(muxer) = muxer {
@@ -448,10 +491,14 @@ pub async fn export_edited_media(
 
 /// Backup source
 #[tauri::command]
-pub async fn backup_file(app: tauri::AppHandle, source: String) -> Result<String, String> {
+pub async fn backup_file(
+    app: tauri::AppHandle,
+    source: String,
+    custom_backup_dir: Option<String>,
+) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let source_path = canonicalize_path(&source)?;
-        let dir = backup_dir(&app)?;
+        let dir = backup_dir(&app, custom_backup_dir.as_deref())?;
         let backup_path = dir.join(backup_file_name(&source_path));
         if backup_path.exists() {
             return Ok(backup_path.to_string_lossy().to_string());
@@ -474,10 +521,12 @@ pub async fn backup_file(app: tauri::AppHandle, source: String) -> Result<String
 pub async fn get_backup_path(
     app: tauri::AppHandle,
     source: String,
+    custom_backup_dir: Option<String>,
 ) -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let source_path = canonicalize_path(&source)?;
-        let backup_path = backup_path_for(&app, &source_path)?;
+        let backup_path =
+            backup_path_for(&app, &source_path, custom_backup_dir.as_deref())?;
         Ok(backup_path
             .exists()
             .then(|| backup_path.to_string_lossy().to_string()))
@@ -487,9 +536,12 @@ pub async fn get_backup_path(
 }
 
 #[tauri::command]
-pub async fn clear_backups(app: tauri::AppHandle) -> Result<u64, String> {
+pub async fn clear_backups(
+    app: tauri::AppHandle,
+    custom_backup_dir: Option<String>,
+) -> Result<u64, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let dir = backup_root(&app)?;
+        let dir = resolve_backup_root(&app, custom_backup_dir.as_deref())?;
         if !dir.exists() {
             return Ok(0);
         }
@@ -500,6 +552,17 @@ pub async fn clear_backups(app: tauri::AppHandle) -> Result<u64, String> {
         for entry in entries.flatten() {
             let path = entry.path();
             if !path.is_file() {
+                continue;
+            }
+            // Custom backup folders may contain unrelated files; only remove
+            // names produced by backup_file_name (16-char xxh3 hash + extension).
+            let is_backup = path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .map_or(false, |stem| {
+                    stem.len() == 16 && stem.chars().all(|c| c.is_ascii_hexdigit())
+                });
+            if !is_backup {
                 continue;
             }
             if let Ok(meta) = entry.metadata() {
@@ -514,10 +577,15 @@ pub async fn clear_backups(app: tauri::AppHandle) -> Result<u64, String> {
 }
 
 #[tauri::command]
-pub async fn restore_backup(app: tauri::AppHandle, path: String) -> Result<bool, String> {
+pub async fn restore_backup(
+    app: tauri::AppHandle,
+    path: String,
+    custom_backup_dir: Option<String>,
+) -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let target = canonicalize_path(&path)?;
-        let backup_path = backup_path_for(&app, &target)?;
+        let backup_path =
+            backup_path_for(&app, &target, custom_backup_dir.as_deref())?;
         if !backup_path.exists() {
             return Ok(false);
         }

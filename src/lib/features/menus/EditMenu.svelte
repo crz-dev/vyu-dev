@@ -105,6 +105,7 @@
       flipRowOpen = false;
       cropRowOpen = false;
       activeCropTool = null;
+      editing.setCompareOriginal(false);
       if (editing.cropMode) editing.exitCropMode();
     }
   });

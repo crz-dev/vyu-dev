@@ -144,7 +144,8 @@ function createViewer() {
   }
 
   function getVideoInnerTransform(): string {
-    return `transform: rotate(${editing.snapshot.rotation}deg) scaleX(${editing.snapshot.flipped ? -1 : 1}) scaleY(${editing.snapshot.flippedVertical ? -1 : 1}); transform-origin: center center;`;
+    const preview = editing.previewSnapshot;
+    return `transform: rotate(${preview.rotation}deg) scaleX(${preview.flipped ? -1 : 1}) scaleY(${preview.flippedVertical ? -1 : 1}); transform-origin: center center;`;
   }
 
   function handleViewerScroll(e: WheelEvent, fileSrc: string) {

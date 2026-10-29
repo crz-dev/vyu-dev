@@ -220,6 +220,19 @@ pub fn open_directory(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn set_file_modified_time(path: String, timestamp_ms: u64) -> Result<(), String> {
+    let modified = std::time::UNIX_EPOCH
+        .checked_add(std::time::Duration::from_millis(timestamp_ms))
+        .ok_or_else(|| "Invalid timestamp".to_string())?;
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .open(&path)
+        .map_err(|e| format!("Failed to open file for timestamp update: {e}"))?;
+    file.set_times(fs::FileTimes::new().set_modified(modified))
+        .map_err(|e| format!("Failed to set file timestamp: {e}"))
+}
+
+#[tauri::command]
 pub fn cleanup_temp_folder() {
     crate::util::cleanup_vyu_temp();
 }

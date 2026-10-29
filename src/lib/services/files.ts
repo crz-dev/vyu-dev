@@ -170,6 +170,13 @@ export function getParentFolder(filePath: string): string {
     : "";
 }
 
+export function joinPath(dir: string, name: string): string {
+  if (!dir) return name;
+  const sep = detectSep(dir);
+  const trimmed = dir.replace(/[\\/]+$/, "");
+  return `${trimmed}${sep}${name}`;
+}
+
 export function getFileExt(filePath: string): string {
   const name = getFileName(filePath);
   const lastDot = name.lastIndexOf(".");

@@ -1,11 +1,13 @@
 // Edit actions
 import { save } from "@tauri-apps/plugin-dialog";
-import { getFileExt } from "$lib/services/files";
+import { exists, stat } from "@tauri-apps/plugin-fs";
+import { getFileExt, joinPath } from "$lib/services/files";
 import { editing } from "$lib/features/editing/editing.svelte";
 import { markup } from "$lib/features/markup/markup.svelte";
 import {
   exportEditedImage,
   invokeExportEditedMedia,
+  invokeSetFileModifiedTime,
   onEditApplyProgress,
 } from "$lib/features/media/api";
 import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
@@ -39,10 +41,17 @@ function createEditDialogStore() {
   let editTransparencyConfirm = $state(false);
   let pendingEditAction = $state<PendingEditAction>(null);
   let exportFormatOverride = $state<ExportFormatOverride>(null);
+  let applyKeepBackup = $state(true);
 
   return {
     get editApplyConfirm() {
       return editApplyConfirm;
+    },
+    get applyKeepBackup() {
+      return applyKeepBackup;
+    },
+    set applyKeepBackup(v: boolean) {
+      applyKeepBackup = v;
     },
     set editApplyConfirm(v: boolean) {
       editApplyConfirm = v;
@@ -70,6 +79,7 @@ function createEditDialogStore() {
       editTransparencyConfirm = false;
       pendingEditAction = null;
       exportFormatOverride = null;
+      applyKeepBackup = true;
     },
   };
 }
@@ -82,7 +92,7 @@ export interface EditActionsDeps {
   getIsVideo: () => boolean;
   getVideoEl: () => HTMLVideoElement | null;
   loadFile: (path: string, refresh?: boolean) => Promise<void>;
-  handleMarkupApply?: () => Promise<void>;
+  handleMarkupApply?: (keepBackup?: boolean) => Promise<void>;
   handleMarkupExport?: () => Promise<void>;
   handleClearMarkup?: () => void;
 }
@@ -243,8 +253,9 @@ export function createEditActions(deps: EditActionsDeps) {
     );
   }
 
-  async function performApply() {
+  async function performApply(keepBackup?: boolean) {
     const isVideo = deps.getIsVideo();
+    const shouldBackup = keepBackup ?? editing.backupMode === "always";
     let progressToastId: number | null = null;
     let unlisten: (() => void) | null = null;
 
@@ -273,8 +284,20 @@ export function createEditActions(deps: EditActionsDeps) {
       const videoEl = deps.getVideoEl();
       const pngOverride =
         !isVideo && editDialogStore.exportFormatOverride === "png";
-      if (!pngOverride) {
-        await editing.backupOriginal(filePath);
+      const quality = editing.imageQuality / 100;
+      const keepOriginalDate = isVideo
+        ? editing.keepVideoOriginalDate
+        : editing.keepImageOriginalDate;
+      let originalMtime: number | null = null;
+      if (keepOriginalDate && !pngOverride) {
+        try {
+          originalMtime = (await stat(filePath)).mtime?.getTime() ?? null;
+        } catch {
+          // timestamp preservation is best-effort
+        }
+      }
+      if (!pngOverride && shouldBackup) {
+        await editing.backupOriginal(filePath, true);
       }
 
       if (isVideo) {
@@ -287,13 +310,22 @@ export function createEditActions(deps: EditActionsDeps) {
           s,
           videoEl.videoWidth,
           videoEl.videoHeight,
+          editing.exportQuality,
         );
       } else if (pngOverride) {
         const pngPath = filePath.replace(/\.\w+$/, ".png");
-        await exportEditedImage(filePath, s, pngPath);
+        await exportEditedImage(filePath, s, pngPath, quality);
         await deps.loadFile(pngPath);
       } else {
-        await exportEditedImage(filePath, s, filePath);
+        await exportEditedImage(filePath, s, filePath, quality);
+      }
+
+      if (originalMtime !== null) {
+        try {
+          await invokeSetFileModifiedTime(filePath, originalMtime);
+        } catch (e) {
+          console.error("Failed to restore file timestamp:", e);
+        }
       }
 
       editing.isApplying = false;
@@ -341,15 +373,35 @@ export function createEditActions(deps: EditActionsDeps) {
       const ext = getFileExt(filePath);
       const isVideo = deps.getIsVideo();
       const videoEl = deps.getVideoEl();
+      const targetExt = isVideo
+        ? editing.videoFormat === "original"
+          ? ext
+          : editing.videoFormat
+        : editing.imageFormat === "original"
+          ? ext
+          : editing.imageFormat;
       const overrideExt =
-        editDialogStore.exportFormatOverride === "png" ? "png" : ext;
+        editDialogStore.exportFormatOverride === "png" ? "png" : targetExt;
       const defaultName =
         fileName.replace(/\.[^.]+$/, "") + "_edited." + overrideExt;
+      const outputDir = isVideo
+        ? editing.videoOutputDir
+        : editing.imageOutputDir;
+      let defaultPath = defaultName;
+      if (outputDir) {
+        try {
+          if (await exists(outputDir)) {
+            defaultPath = joinPath(outputDir, defaultName);
+          }
+        } catch {
+          // fall back to the source folder
+        }
+      }
 
       const outputPath = await save({
-        defaultPath: defaultName,
+        defaultPath,
         filters: isVideo
-          ? [{ name: "Video", extensions: [ext] }]
+          ? [{ name: "Video", extensions: [overrideExt] }]
           : [{ name: "Image", extensions: [overrideExt] }],
       });
 
@@ -365,6 +417,7 @@ export function createEditActions(deps: EditActionsDeps) {
       });
 
       const s = editing.snapshot;
+      const quality = editing.imageQuality / 100;
       if (isVideo) {
         if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
           throw new Error("Video not ready for export");
@@ -375,9 +428,10 @@ export function createEditActions(deps: EditActionsDeps) {
           s,
           videoEl.videoWidth,
           videoEl.videoHeight,
+          editing.exportQuality,
         );
       } else {
-        await exportEditedImage(filePath, s, outputPath);
+        await exportEditedImage(filePath, s, outputPath, quality);
       }
 
       editing.isExporting = false;
@@ -395,6 +449,16 @@ export function createEditActions(deps: EditActionsDeps) {
           },
         ],
       });
+      const autoOpen = isVideo
+        ? editing.autoOpenVideoExport
+        : editing.autoOpenImageExport;
+      if (autoOpen) {
+        try {
+          await deps.loadFile(outputPath);
+        } catch (e) {
+          console.error("Failed to auto-open export:", e);
+        }
+      }
     } catch (err) {
       editing.isExporting = false;
       showToast({
@@ -413,22 +477,25 @@ export function createEditActions(deps: EditActionsDeps) {
 
       if (needsTransparencyDialog()) {
         editDialogStore.pendingEditAction = "apply";
+        editDialogStore.applyKeepBackup = true;
         editDialogStore.editTransparencyConfirm = true;
         return;
       }
 
-      if (applyNoAsk) {
+      if (applyNoAsk && editing.backupMode !== "ask") {
         await performApply();
       } else {
+        editDialogStore.applyKeepBackup = true;
         editDialogStore.editApplyConfirm = true;
         return;
       }
     }
     if (markup.hasUnapplied && deps.handleMarkupApply) {
       menuStore.markupMenuVisible = false;
-      if (applyNoAsk) {
+      if (applyNoAsk && editing.backupMode !== "ask") {
         await deps.handleMarkupApply();
       } else {
+        editDialogStore.applyKeepBackup = true;
         editDialogStore.editApplyConfirm = true;
         return;
       }
@@ -473,13 +540,17 @@ export function createEditActions(deps: EditActionsDeps) {
   async function handleApplyConfirm() {
     editDialogStore.editApplyConfirm = false;
     if (applyNoAsk) saveSkipApplyConfirm();
+    const keepBackup =
+      editing.backupMode === "ask"
+        ? editDialogStore.applyKeepBackup
+        : undefined;
     if (markup.hasUnapplied && deps.handleMarkupApply) {
-      await deps.handleMarkupApply();
+      await deps.handleMarkupApply(keepBackup);
     }
     const hasImageEdits =
       editing.getHasEdits() || editing.getCropBounds() !== null;
     if (hasImageEdits) {
-      await performApply();
+      await performApply(keepBackup);
     }
   }
 

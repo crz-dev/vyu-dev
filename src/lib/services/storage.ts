@@ -1,5 +1,5 @@
 // localStorage persistence
-import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
+import type { VideoMarker, ClipBoundary, CropBounds } from "$lib/shared/types";
 import type { LoopMode } from "$lib/shared/constants";
 
 const MAX_STALE_ENTRIES = 500;
@@ -9,6 +9,24 @@ export interface EqSettings {
   bypass: boolean;
   outputGain: number;
   activePreset: string;
+}
+
+export type EditExportQuality = "fast" | "balanced" | "quality" | "lossless";
+export type EditImageFormat = "original" | "png" | "jpg" | "webp";
+export type EditVideoFormat = "original" | "mp4" | "webm" | "mkv";
+export type EditBackupMode = "off" | "ask" | "always";
+export type EditMediaKind = "image" | "video";
+
+export interface PersistedEditSnapshot {
+  rotation: number;
+  flipped: boolean;
+  flippedVertical: boolean;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  hue: number;
+  cropBounds: CropBounds;
+  cropAspectRatio: number | null;
 }
 
 export function cleanupStaleStorageEntries(): void {
@@ -60,6 +78,7 @@ export function saveSkipDeleteConfirmation(): void {
   localStorage.setItem("vyu-delete-no-ask", "true");
 }
 
+// ── Editor ──
 export function loadSkipApplyConfirm(): boolean {
   return localStorage.getItem("vyu-edit-apply-no-warn") === "true";
 }
@@ -68,12 +87,188 @@ export function saveSkipApplyConfirm(): void {
   localStorage.setItem("vyu-edit-apply-no-warn", "true");
 }
 
-export function loadEditBackups(): boolean {
-  return localStorage.getItem("vyu-edit-backups") === "true";
+export function loadEditExportQuality(): EditExportQuality {
+  const value = localStorage.getItem("vyu-edit-export-quality");
+  if (
+    value === "fast" ||
+    value === "balanced" ||
+    value === "quality" ||
+    value === "lossless"
+  ) {
+    return value;
+  }
+  return "balanced";
 }
 
-export function saveEditBackups(enabled: boolean): void {
-  localStorage.setItem("vyu-edit-backups", String(enabled));
+export function saveEditExportQuality(quality: EditExportQuality): void {
+  localStorage.setItem("vyu-edit-export-quality", quality);
+}
+
+function editMediaKey(base: string, kind: EditMediaKind): string {
+  return `vyu-edit-${kind}-${base}`;
+}
+
+export function loadEditOutputDir(kind: EditMediaKind): string {
+  return (
+    localStorage.getItem(editMediaKey("output-dir", kind)) ??
+    localStorage.getItem("vyu-edit-output-dir") ??
+    ""
+  );
+}
+
+export function saveEditOutputDir(kind: EditMediaKind, dir: string): void {
+  const key = editMediaKey("output-dir", kind);
+  if (dir) localStorage.setItem(key, dir);
+  else localStorage.removeItem(key);
+}
+
+export function loadEditImageFormat(): EditImageFormat {
+  const value = localStorage.getItem("vyu-edit-image-format");
+  if (value === "png" || value === "jpg" || value === "webp") return value;
+  return "original";
+}
+
+export function saveEditImageFormat(format: EditImageFormat): void {
+  localStorage.setItem("vyu-edit-image-format", format);
+}
+
+export function loadEditVideoFormat(): EditVideoFormat {
+  const value = localStorage.getItem("vyu-edit-video-format");
+  if (value === "mp4" || value === "webm" || value === "mkv") return value;
+  return "original";
+}
+
+export function saveEditVideoFormat(format: EditVideoFormat): void {
+  localStorage.setItem("vyu-edit-video-format", format);
+}
+
+export function loadEditImageQuality(): number {
+  const value = Number(localStorage.getItem("vyu-edit-image-quality"));
+  if (!Number.isFinite(value)) return 92;
+  return Math.min(100, Math.max(60, Math.round(value)));
+}
+
+export function saveEditImageQuality(quality: number): void {
+  localStorage.setItem("vyu-edit-image-quality", String(quality));
+}
+
+export function loadEditKeepDate(kind: EditMediaKind): boolean {
+  const value = localStorage.getItem(editMediaKey("keep-date", kind));
+  if (value !== null) return value !== "false";
+  return localStorage.getItem("vyu-edit-keep-date") !== "false";
+}
+
+export function saveEditKeepDate(kind: EditMediaKind, enabled: boolean): void {
+  localStorage.setItem(editMediaKey("keep-date", kind), String(enabled));
+}
+
+export function loadEditAutoOpenExport(kind: EditMediaKind): boolean {
+  const value = localStorage.getItem(editMediaKey("auto-open-export", kind));
+  if (value !== null) return value === "true";
+  return localStorage.getItem("vyu-edit-auto-open-export") === "true";
+}
+
+export function saveEditAutoOpenExport(
+  kind: EditMediaKind,
+  enabled: boolean,
+): void {
+  localStorage.setItem(editMediaKey("auto-open-export", kind), String(enabled));
+}
+
+export function loadEditCompareEnabled(): boolean {
+  return localStorage.getItem("vyu-edit-compare-enabled") !== "false";
+}
+
+export function saveEditCompareEnabled(enabled: boolean): void {
+  localStorage.setItem("vyu-edit-compare-enabled", String(enabled));
+}
+
+export function loadEditRememberSession(): boolean {
+  const value = localStorage.getItem("vyu-edit-remember-session");
+  if (value !== null) return value !== "false";
+  const image = localStorage.getItem("vyu-edit-image-remember-session");
+  const video = localStorage.getItem("vyu-edit-video-remember-session");
+  const legacy = [image, video].filter((v): v is string => v !== null);
+  if (legacy.length > 0) return legacy.some((v) => v !== "false");
+  return true;
+}
+
+export function saveEditRememberSession(enabled: boolean): void {
+  localStorage.setItem("vyu-edit-remember-session", String(enabled));
+  localStorage.removeItem("vyu-edit-image-remember-session");
+  localStorage.removeItem("vyu-edit-video-remember-session");
+}
+
+function isPersistedEditSnapshot(
+  value: unknown,
+): value is PersistedEditSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  const bounds = v.cropBounds as Record<string, unknown> | null;
+  return (
+    typeof v.rotation === "number" &&
+    typeof v.flipped === "boolean" &&
+    typeof v.flippedVertical === "boolean" &&
+    typeof v.brightness === "number" &&
+    typeof v.contrast === "number" &&
+    typeof v.saturation === "number" &&
+    typeof v.hue === "number" &&
+    !!bounds &&
+    typeof bounds.left === "number" &&
+    typeof bounds.top === "number" &&
+    typeof bounds.right === "number" &&
+    typeof bounds.bottom === "number" &&
+    (v.cropAspectRatio === null || typeof v.cropAspectRatio === "number")
+  );
+}
+
+export function loadEditSession(): Record<string, PersistedEditSnapshot> {
+  const raw = localStorage.getItem("vyu-edit-session");
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object") return {};
+    const session: Record<string, PersistedEditSnapshot> = {};
+    for (const [path, snapshot] of Object.entries(parsed)) {
+      if (isPersistedEditSnapshot(snapshot)) session[path] = snapshot;
+    }
+    return session;
+  } catch {
+    return {};
+  }
+}
+
+export function saveEditSession(
+  session: Record<string, PersistedEditSnapshot>,
+): void {
+  try {
+    localStorage.setItem("vyu-edit-session", JSON.stringify(session));
+  } catch (e) {
+    console.error("Failed to save edit session:", e);
+  }
+}
+
+export function clearEditSession(): void {
+  localStorage.removeItem("vyu-edit-session");
+}
+
+export function loadEditBackupMode(): EditBackupMode {
+  const value = localStorage.getItem("vyu-edit-backup-mode");
+  if (value === "off" || value === "ask" || value === "always") return value;
+  return localStorage.getItem("vyu-edit-backups") === "true" ? "always" : "off";
+}
+
+export function saveEditBackupMode(mode: EditBackupMode): void {
+  localStorage.setItem("vyu-edit-backup-mode", mode);
+}
+
+export function loadEditBackupDir(): string {
+  return localStorage.getItem("vyu-edit-backup-dir") ?? "";
+}
+
+export function saveEditBackupDir(dir: string): void {
+  if (dir) localStorage.setItem("vyu-edit-backup-dir", dir);
+  else localStorage.removeItem("vyu-edit-backup-dir");
 }
 
 export function loadClipPreferences(): {

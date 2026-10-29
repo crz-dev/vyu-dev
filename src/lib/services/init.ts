@@ -35,6 +35,7 @@ export interface InitState {
   loadFile: (path: string) => Promise<void>;
   saveResumePosition: () => void;
   handleKeydown: (e: KeyboardEvent) => void;
+  handleKeyup: (e: KeyboardEvent) => void;
   handleGlobalMouseDown: (e: MouseEvent) => void;
 }
 
@@ -101,6 +102,7 @@ export function setupInit(s: InitState) {
       });
 
     window.addEventListener("keydown", s.handleKeydown);
+    window.addEventListener("keyup", s.handleKeyup);
     window.addEventListener("mousedown", s.handleGlobalMouseDown);
 
     const handlePaste = createPasteHandler({ loadFile: s.loadFile });
@@ -109,6 +111,7 @@ export function setupInit(s: InitState) {
 
     return () => {
       window.removeEventListener("keydown", s.handleKeydown);
+      window.removeEventListener("keyup", s.handleKeyup);
       window.removeEventListener("mousedown", s.handleGlobalMouseDown);
       window.removeEventListener("paste", handlePaste);
       window.removeEventListener("beforeunload", saveResumeBeforeUnload);

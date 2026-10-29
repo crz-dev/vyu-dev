@@ -22,15 +22,18 @@ export interface MarkupActionsDeps {
 }
 
 export function createMarkupActions(deps: MarkupActionsDeps) {
-  async function handleMarkupApply() {
+  async function handleMarkupApply(keepBackup?: boolean) {
     if (markup.strokes.length === 0) return;
     if (markup.currentPage > 0) {
-      await applyPdfMarkup();
+      await applyPdfMarkup(keepBackup);
       return;
     }
     try {
       deps.folderWatcher.stopWatching();
-      await editing.backupOriginal(deps.getFilePath());
+      const shouldBackup = keepBackup ?? editing.backupMode === "always";
+      if (shouldBackup) {
+        await editing.backupOriginal(deps.getFilePath(), true);
+      }
       await renderMarkupOnImage(
         deps.getFilePath(),
         markup.strokes,
@@ -54,12 +57,15 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
     }
   }
 
-  async function applyPdfMarkup() {
+  async function applyPdfMarkup(keepBackup?: boolean) {
     const pages = markup.collectAllPageStrokes();
     if (pages.every((p) => p.strokes.length === 0)) return;
     try {
       deps.folderWatcher.stopWatching();
-      await editing.backupOriginal(deps.getFilePath());
+      const shouldBackup = keepBackup ?? editing.backupMode === "always";
+      if (shouldBackup) {
+        await editing.backupOriginal(deps.getFilePath(), true);
+      }
       await invokeApplyMarkupToPdf({
         filePath: deps.getFilePath(),
         pages,

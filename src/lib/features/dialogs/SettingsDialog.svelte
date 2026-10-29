@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
   import { invoke } from "@tauri-apps/api/core";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
   import {
     invokeCleanupTempFolder,
@@ -147,10 +148,20 @@
       seekStep: playbackPrefs.seekStep,
       keepAudio: playbackPrefs.keepAudio,
       autoSaveMarkers,
-      keepBackups: editing.keepBackups,
-      defaultQuality,
-      defaultFormat,
-      confirmDelete,
+      backupMode: editing.backupMode,
+      exportQuality: editing.exportQuality,
+      imageOutputDir: editing.imageOutputDir,
+      videoOutputDir: editing.videoOutputDir,
+      imageFormat: editing.imageFormat,
+      videoFormat: editing.videoFormat,
+      imageQuality: editing.imageQuality,
+      keepImageOriginalDate: editing.keepImageOriginalDate,
+      keepVideoOriginalDate: editing.keepVideoOriginalDate,
+      autoOpenImageExport: editing.autoOpenImageExport,
+      autoOpenVideoExport: editing.autoOpenVideoExport,
+      rememberEdits: editing.rememberEdits,
+      backupDir: editing.backupDir,
+      compareEnabled: editing.compareEnabled,
       preserveMetadata,
       gpuEncoding,
       overwriteExisting,
@@ -228,12 +239,34 @@
   }
 
   let autoSaveMarkers = $state(true);
-  let defaultQuality = $state<"fast" | "balanced" | "quality" | "lossless">(
-    "balanced",
-  );
-  let defaultFormat = $state<"original" | "mp4" | "webm" | "mkv">("original");
-  let confirmDelete = $state(true);
   let preserveMetadata = $state(true);
+  let imageQualityPreview = $state(editing.imageQuality);
+
+  const exportQualityLevels = [
+    "fast",
+    "balanced",
+    "quality",
+    "lossless",
+  ] as const;
+  const exportQualityLabels = ["Fast", "Balanced", "Quality", "Lossless"];
+  let exportQualityPreview = $state(
+    Math.max(0, exportQualityLevels.indexOf(editing.exportQuality)),
+  );
+
+  $effect(() => {
+    imageQualityPreview = editing.imageQuality;
+  });
+
+  $effect(() => {
+    exportQualityPreview = Math.max(
+      0,
+      exportQualityLevels.indexOf(editing.exportQuality),
+    );
+  });
+
+  function exportQualityLabel(index: number): string {
+    return exportQualityLabels[index] ?? "Balanced";
+  }
 
   let gpuEncoding = $state(true);
   let overwriteExisting = $state(false);
@@ -333,7 +366,7 @@
     clearBackupsConfirming = false;
     clearingBackups = true;
     try {
-      const freed = await invokeClearBackups();
+      const freed = await invokeClearBackups(editing.backupDir || undefined);
       editing.clearBackupState();
       showToast({
         message:
@@ -346,8 +379,43 @@
     clearingBackups = false;
   }
 
-  let editorOutputFolder = $state("~/Videos/Editor");
   let processOutputFolder = $state("~/Videos/Exports");
+
+  function shortFolderPath(path: string): string {
+    if (!path) return "Source folder";
+    const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
+    if (parts.length <= 2) return parts.join("/");
+    return parts.slice(-2).join("/");
+  }
+
+  async function handlePickEditorOutputDir(kind: "image" | "video") {
+    const current =
+      kind === "image" ? editing.imageOutputDir : editing.videoOutputDir;
+    const dir = await open({
+      directory: true,
+      defaultPath: current || undefined,
+    });
+    if (!dir) return;
+    if (kind === "image") editing.setImageOutputDir(dir as string);
+    else editing.setVideoOutputDir(dir as string);
+  }
+
+  function handleClearEditorOutputDir(kind: "image" | "video") {
+    if (kind === "image") editing.setImageOutputDir("");
+    else editing.setVideoOutputDir("");
+  }
+
+  async function handlePickBackupDir() {
+    const dir = await open({
+      directory: true,
+      defaultPath: editing.backupDir || undefined,
+    });
+    if (dir) editing.setBackupDir(dir as string);
+  }
+
+  function handleClearBackupDir() {
+    editing.setBackupDir("");
+  }
 
   let cleaningTempFolder = $state(false);
   let flagsOpen = $state(false);
@@ -365,6 +433,7 @@
     { id: "seek-bwd", action: "Seek backward", key: "←" },
     { id: "frame-back", action: "Frame step back", key: "," },
     { id: "frame-fwd", action: "Frame step forward", key: "." },
+    { id: "compare", action: "Compare with original", key: "C" },
     { id: "nav-first", action: "Navigate to first", key: "Ctrl + ←" },
     { id: "nav-last", action: "Navigate to last", key: "Ctrl + →" },
     { id: "escape", action: "Close dialogs / Exit fullscreen", key: "Esc" },
@@ -382,6 +451,7 @@
       { id: "seek-bwd", action: "Seek backward", key: "←" },
       { id: "frame-back", action: "Frame step back", key: "," },
       { id: "frame-fwd", action: "Frame step forward", key: "." },
+      { id: "compare", action: "Compare with original", key: "C" },
       { id: "nav-first", action: "Navigate to first", key: "Ctrl + ←" },
       { id: "nav-last", action: "Navigate to last", key: "Ctrl + →" },
       { id: "escape", action: "Close dialogs / Exit fullscreen", key: "Esc" },
@@ -771,7 +841,10 @@
               >
               Appearance
             </p>
-            <div class="settings-card">
+            <div
+              class="settings-card"
+              class:has-child={themeStore.resolved === "dark"}
+            >
               <div class="settings-row">
                 <div class="settings-label-col">
                   <svg
@@ -1118,7 +1191,10 @@
               >
               Playback
             </p>
-            <div class="settings-card">
+            <div
+              class="settings-card"
+              class:has-child={playbackPrefs.resumeMode !== "off"}
+            >
               <div class="settings-row">
                 <div class="settings-label-col">
                   <svg
@@ -1298,7 +1374,10 @@
                 </label>
               </div>
             </div>
-            <div class="settings-card">
+            <div
+              class="settings-card"
+              class:has-child={!playbackPrefs.rememberVolume}
+            >
               <div class="settings-row">
                 <div class="settings-label-col">
                   <svg
@@ -1390,7 +1469,10 @@
                 </div>
               {/if}
             </div>
-            <div class="settings-card">
+            <div
+              class="settings-card"
+              class:has-child={!playbackPrefs.rememberSpeed}
+            >
               <div class="settings-row">
                 <div class="settings-label-col">
                   <svg
@@ -1583,7 +1665,7 @@
                 </div>
               </div>
             </div>
-            <div class="settings-card">
+            <div class="settings-card" class:has-child={sleepTimer.active}>
               <div class="settings-row">
                 <div class="settings-label-col">
                   <svg
@@ -1737,49 +1819,12 @@
               >
               Editor
             </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
                 <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
-                  /><line x1="4" y1="22" x2="4" y2="15" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Auto-save Markers</span>
-                  <span class="settings-hint"
-                    >Save timestamps &amp; clips automatically</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={autoSaveMarkers}
-                    onchange={(e) =>
-                      (autoSaveMarkers = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={autoSaveMarkers}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
+                  width="13"
+                  height="13"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -1787,84 +1832,707 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><rect
-                    x="9"
-                    y="9"
-                    width="13"
-                    height="13"
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
                     rx="2"
                     ry="2"
-                  /><path
-                    d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                  /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
+                    points="21 15 16 10 5 21"
                   /></svg
                 >
-                <div class="settings-label-text">
-                  <span class="settings-label">File Backups</span>
-                  <span class="settings-hint"
-                    >Keep one original copy per edited file</span
+                Images
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
+                      points="21 15 16 10 5 21"
+                    /></svg
                   >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Default Export Format</span>
+                    <span class="settings-hint"
+                      >{editing.imageFormat === "original"
+                        ? "Use each file's format for exports"
+                        : editing.imageFormat === "png"
+                          ? "Lossless export format"
+                          : editing.imageFormat === "jpg"
+                            ? "Smaller exports, no transparency"
+                            : "Good quality with transparency"}</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-4">
+                    <button
+                      class="pill-btn"
+                      class:active={editing.imageFormat === "original"}
+                      onclick={() => editing.setImageFormat("original")}
+                      >Original</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.imageFormat === "png"}
+                      onclick={() => editing.setImageFormat("png")}>PNG</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.imageFormat === "jpg"}
+                      onclick={() => editing.setImageFormat("jpg")}>JPG</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.imageFormat === "webp"}
+                      onclick={() => editing.setImageFormat("webp")}
+                      >WebP</button
+                    >
+                  </div>
                 </div>
               </div>
-              <div class="settings-control">
-                <label class="toggle-row">
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path d="M4 21v-7" /><path d="M4 10V3" /><path
+                      d="M12 21v-9"
+                    /><path d="M12 8V3" /><path d="M20 21v-5" /><path
+                      d="M20 12V3"
+                    /><line x1="1" y1="14" x2="7" y2="14" /><line
+                      x1="9"
+                      y1="8"
+                      x2="15"
+                      y2="8"
+                    /><line x1="17" y1="16" x2="23" y2="16" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Default Export Quality</span>
+                    <span class="settings-hint"
+                      >{editing.imageFormat === "png"
+                        ? "Not used for PNG exports"
+                        : editing.imageFormat === "jpg"
+                          ? "JPEG quality (max 95)"
+                          : editing.imageFormat === "webp"
+                            ? "WebP quality (max 100)"
+                            : "Applies to JPEG/WebP originals"}</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control settings-slider-control">
                   <input
-                    type="checkbox"
-                    checked={editing.keepBackups}
+                    type="range"
+                    min="60"
+                    max={editing.imageQualityMax}
+                    step="1"
+                    aria-label="Image export quality"
+                    value={imageQualityPreview}
+                    oninput={(e) =>
+                      (imageQualityPreview = Number(e.currentTarget.value))}
                     onchange={(e) =>
-                      editing.setKeepBackups(e.currentTarget.checked)}
+                      editing.setImageQuality(Number(e.currentTarget.value))}
                   />
-                  <span class="toggle-track" class:on={editing.keepBackups}
-                    ><span class="toggle-thumb"></span></span
+                  <span class="settings-slider-value"
+                    >{imageQualityPreview}%</span
                   >
-                </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Default Output Folder</span>
+                    <span class="settings-hint"
+                      >Starting folder for exports</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control" style="gap: 6px;">
+                  <button
+                    class="settings-action-btn blue"
+                    title={editing.imageOutputDir ||
+                      "Same folder as the original"}
+                    style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    onclick={() => handlePickEditorOutputDir("image")}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path
+                        d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                      /></svg
+                    >
+                    {shortFolderPath(editing.imageOutputDir)}
+                  </button>
+                  {#if editing.imageOutputDir}
+                    <button
+                      class="settings-action-btn"
+                      title="Use the source folder"
+                      onclick={() => handleClearEditorOutputDir("image")}
+                      >Clear</button
+                    >
+                  {/if}
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+                    /><polyline points="15 3 21 3 21 9" /><line
+                      x1="10"
+                      y1="14"
+                      x2="21"
+                      y2="3"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Auto-open Exports</span>
+                    <span class="settings-hint"
+                      >Open the exported file in the viewer</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={editing.autoOpenImageExport}
+                      onchange={(e) =>
+                        editing.setAutoOpenImageExport(e.currentTarget.checked)}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={editing.autoOpenImageExport}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><circle cx="12" cy="12" r="9" /><polyline
+                      points="12 7 12 12 15 14"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Keep Original File Date</span>
+                    <span class="settings-hint"
+                      >Restore the modified date after in-place edits</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={editing.keepImageOriginalDate}
+                      onchange={(e) =>
+                        editing.setKeepImageOriginalDate(
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={editing.keepImageOriginalDate}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
               </div>
             </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
                 <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
+                  width="13"
+                  height="13"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><polygon
-                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  ><polygon points="23 7 16 12 23 17 23 7" /><rect
+                    x="1"
+                    y="5"
+                    width="15"
+                    height="14"
+                    rx="2"
+                    ry="2"
                   /></svg
                 >
-                <div class="settings-label-text">
-                  <span class="settings-label">Default Quality</span>
+                Videos
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                    /><polyline points="14 2 14 8 20 8" /><polygon
+                      points="10 12 16 15 10 18 10 12"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Default Export Format</span>
+                    <span class="settings-hint"
+                      >Format used when exporting edited videos</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-4">
+                    <button
+                      class="pill-btn"
+                      class:active={editing.videoFormat === "original"}
+                      onclick={() => editing.setVideoFormat("original")}
+                      >Original</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.videoFormat === "mp4"}
+                      onclick={() => editing.setVideoFormat("mp4")}>MP4</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.videoFormat === "webm"}
+                      onclick={() => editing.setVideoFormat("webm")}
+                      >WebM</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.videoFormat === "mkv"}
+                      onclick={() => editing.setVideoFormat("mkv")}>MKV</button
+                    >
+                  </div>
                 </div>
               </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-4">
-                  <button
-                    class="pill-btn"
-                    class:active={defaultQuality === "fast"}
-                    onclick={() => (defaultQuality = "fast")}>Fast</button
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                    /></svg
                   >
-                  <button
-                    class="pill-btn"
-                    class:active={defaultQuality === "balanced"}
-                    onclick={() => (defaultQuality = "balanced")}
-                    >Balanced</button
+                  <div class="settings-label-text">
+                    <span class="settings-label">Default Export Quality</span>
+                    <span class="settings-hint"
+                      >Quality preset for edited video exports</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control settings-slider-control">
+                  <input
+                    type="range"
+                    min="0"
+                    max="3"
+                    step="1"
+                    aria-label="Video export quality"
+                    aria-valuetext={exportQualityLabel(exportQualityPreview)}
+                    value={exportQualityPreview}
+                    oninput={(e) =>
+                      (exportQualityPreview = Number(e.currentTarget.value))}
+                    onchange={(e) => {
+                      const level =
+                        exportQualityLevels[Number(e.currentTarget.value)];
+                      if (level) editing.setExportQuality(level);
+                    }}
+                  />
+                  <span class="settings-slider-value" style="min-width: 62px"
+                    >{exportQualityLabel(exportQualityPreview)}</span
                   >
-                  <button
-                    class="pill-btn"
-                    class:active={defaultQuality === "quality"}
-                    onclick={() => (defaultQuality = "quality")}>Quality</button
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                    /></svg
                   >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Default Output Folder</span>
+                    <span class="settings-hint"
+                      >Starting folder for exports</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control" style="gap: 6px;">
                   <button
-                    class="pill-btn"
-                    class:active={defaultQuality === "lossless"}
-                    onclick={() => (defaultQuality = "lossless")}
-                    >Lossless</button
+                    class="settings-action-btn blue"
+                    title={editing.videoOutputDir ||
+                      "Same folder as the original"}
+                    style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    onclick={() => handlePickEditorOutputDir("video")}
                   >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path
+                        d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                      /></svg
+                    >
+                    {shortFolderPath(editing.videoOutputDir)}
+                  </button>
+                  {#if editing.videoOutputDir}
+                    <button
+                      class="settings-action-btn"
+                      title="Use the source folder"
+                      onclick={() => handleClearEditorOutputDir("video")}
+                      >Clear</button
+                    >
+                  {/if}
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"
+                    /><polyline points="15 3 21 3 21 9" /><line
+                      x1="10"
+                      y1="14"
+                      x2="21"
+                      y2="3"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Auto-open Exports</span>
+                    <span class="settings-hint"
+                      >Open the exported file in the viewer</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={editing.autoOpenVideoExport}
+                      onchange={(e) =>
+                        editing.setAutoOpenVideoExport(e.currentTarget.checked)}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={editing.autoOpenVideoExport}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><circle cx="12" cy="12" r="9" /><polyline
+                      points="12 7 12 12 15 14"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Keep Original File Date</span>
+                    <span class="settings-hint"
+                      >Restore the modified date after in-place edits</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={editing.keepVideoOriginalDate}
+                      onchange={(e) =>
+                        editing.setKeepVideoOriginalDate(
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={editing.keepVideoOriginalDate}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+                    /><line x1="4" y1="22" x2="4" y2="15" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Auto-save Markers</span>
+                    <span class="settings-hint"
+                      >Save timestamps &amp; clips automatically</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={autoSaveMarkers}
+                      onchange={(e) =>
+                        (autoSaveMarkers = e.currentTarget.checked)}
+                    />
+                    <span class="toggle-track" class:on={autoSaveMarkers}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
                 </div>
               </div>
             </div>
+
+            <div
+              class="settings-card"
+              class:has-child={editing.backupMode !== "off"}
+            >
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"
+                    /><path
+                      d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">File Backups</span>
+                    <span class="settings-hint"
+                      >Off, ask before applying, or always keep</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-3">
+                    <button
+                      class="pill-btn"
+                      class:active={editing.backupMode === "off"}
+                      onclick={() => editing.setBackupMode("off")}>Off</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.backupMode === "ask"}
+                      onclick={() => editing.setBackupMode("ask")}>Ask</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.backupMode === "always"}
+                      onclick={() => editing.setBackupMode("always")}
+                      >Always</button
+                    >
+                  </div>
+                </div>
+              </div>
+              {#if editing.backupMode !== "off"}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
+                >
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path
+                        d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Backup Folder</span>
+                      <span class="settings-hint"
+                        >Where original copies are stored</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control" style="gap: 6px;">
+                    <button
+                      class="settings-action-btn blue"
+                      title={editing.backupDir || "App data backups"}
+                      style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                      onclick={handlePickBackupDir}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path
+                          d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                        /></svg
+                      >
+                      {editing.backupDir
+                        ? shortFolderPath(editing.backupDir)
+                        : "App data backups"}
+                    </button>
+                    {#if editing.backupDir}
+                      <button
+                        class="settings-action-btn"
+                        title="Use the default backup folder"
+                        onclick={handleClearBackupDir}>Clear</button
+                      >
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </div>
+
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -1878,71 +2546,15 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><path
-                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                  /><polyline points="14 2 14 8 20 8" /><line
-                    x1="16"
-                    y1="13"
-                    x2="8"
-                    y2="13"
-                  /><line x1="16" y1="17" x2="8" y2="17" /><polyline
-                    points="10 9 9 9 8 9"
+                    d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+                  /><polyline points="17 21 17 13 7 13 7 21" /><polyline
+                    points="7 3 7 8 15 8"
                   /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Default Format</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-4">
-                  <button
-                    class="pill-btn"
-                    class:active={defaultFormat === "original"}
-                    onclick={() => (defaultFormat = "original")}
-                    >Original</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={defaultFormat === "mp4"}
-                    onclick={() => (defaultFormat = "mp4")}>MP4</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={defaultFormat === "webm"}
-                    onclick={() => (defaultFormat = "webm")}>WebM</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={defaultFormat === "mkv"}
-                    onclick={() => (defaultFormat = "mkv")}>MKV</button
-                  >
-                </div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                  /><line x1="12" y1="9" x2="12" y2="13" /><line
-                    x1="12"
-                    y1="17"
-                    x2="12.01"
-                    y2="17"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Confirm Before Delete</span>
+                  <span class="settings-label">Remember Unapplied Edits</span>
                   <span class="settings-hint"
-                    >Show warning before removing files</span
+                    >Restore pending edits after restarting</span
                   >
                 </div>
               </div>
@@ -1950,15 +2562,55 @@
                 <label class="toggle-row">
                   <input
                     type="checkbox"
-                    checked={confirmDelete}
-                    onchange={(e) => (confirmDelete = e.currentTarget.checked)}
+                    checked={editing.rememberEdits}
+                    onchange={(e) =>
+                      editing.setRememberEdits(e.currentTarget.checked)}
                   />
-                  <span class="toggle-track" class:on={confirmDelete}
+                  <span class="toggle-track" class:on={editing.rememberEdits}
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
               </div>
             </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                  /><circle cx="12" cy="12" r="3" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Compare with Original</span>
+                  <span class="settings-hint"
+                    >Hold C while editing to preview the original</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={editing.compareEnabled}
+                    onchange={(e) =>
+                      editing.setCompareEnabled(e.currentTarget.checked)}
+                  />
+                  <span class="toggle-track" class:on={editing.compareEnabled}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
             <div class="settings-row">
               <div class="settings-label-col">
                 <svg
@@ -1993,50 +2645,6 @@
                     ><span class="toggle-thumb"></span></span
                   >
                 </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Default Output Folder</span>
-                  <span class="settings-hint">Where edited files are saved</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn blue"
-                  style="min-width: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                    /></svg
-                  >
-                  {editorOutputFolder}
-                </button>
               </div>
             </div>
           </div>
