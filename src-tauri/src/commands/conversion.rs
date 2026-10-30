@@ -11,7 +11,7 @@ use crate::constants::{
 use crate::util::{
     ffmpeg_binary_path, ffmpeg_command, ffmpeg_version, ffprobe_binary_path,
     ffprobe_command, ffprobe_version, hardware_h264_encoders, hash_path_xxh3,
-    preferred_hardware_h264_encoder, resolve_output_path, unique_path,
+    resolve_hardware_h264_encoder, resolve_output_path, unique_path,
 };
 
 // Write PSD file — binary header follows the PSD spec (magic "8BPS", version 1, RGB color mode, 8-bit channel)
@@ -335,6 +335,7 @@ pub async fn convert_media(
     preserve_metadata: bool,
     overwrite: bool,
     gpu_encoding: bool,
+    hardware_encoder: Option<String>,
 ) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let input = PathBuf::from(&path);
@@ -350,7 +351,7 @@ pub async fn convert_media(
             "_converted",
             &ext,
         );
-        if !overwrite {
+        if custom_output.is_none() && !overwrite {
             output_path = unique_path(output_path);
         } else {
             if output_path == input {
@@ -377,7 +378,7 @@ pub async fn convert_media(
         }
 
         let hardware_encoder = if gpu_encoding && (ext == "mp4" || ext == "mkv") {
-            preferred_hardware_h264_encoder()
+            resolve_hardware_h264_encoder(hardware_encoder.as_deref())
         } else {
             None
         };
@@ -447,7 +448,7 @@ pub fn convert_audio_to_waveform_video(
     }
 
     let mut output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_waveform", "mp4");
-    if !overwrite {
+    if custom_output.is_none() && !overwrite {
         output_path = unique_path(output_path);
     }
 
@@ -628,7 +629,7 @@ pub async fn convert_image_to_pdf(
         }
 
         let mut output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_converted", "pdf");
-        if !overwrite {
+        if custom_output.is_none() && !overwrite {
             output_path = unique_path(output_path);
         }
 

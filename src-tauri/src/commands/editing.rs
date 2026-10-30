@@ -8,7 +8,7 @@ use tauri::{Emitter, Manager};
 
 use crate::util::{
     canonicalize_path, ffmpeg_command, ffprobe_command, hash_path_xxh3,
-    preferred_hardware_h264_encoder,
+    resolve_hardware_h264_encoder,
 };
 
 // Same-file applies must never hand ffmpeg its own input as output.
@@ -255,6 +255,7 @@ pub async fn export_edited_media(
     height: u32,
     quality: String,
     gpu_encoding: bool,
+    hardware_encoder: Option<String>,
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let input = PathBuf::from(&path);
@@ -396,7 +397,7 @@ pub async fn export_edited_media(
         }
         .to_ascii_lowercase();
         let hardware_encoder = if gpu_encoding && target_ext != "webm" {
-            preferred_hardware_h264_encoder()
+            resolve_hardware_h264_encoder(hardware_encoder.as_deref())
         } else {
             None
         };

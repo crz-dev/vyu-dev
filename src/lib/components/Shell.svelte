@@ -74,11 +74,8 @@
     triggerClipSegments,
     clipJobRunning,
     clipDeleteOriginal,
-    clipUseCustomPath,
     clipMergeSegments,
-    getClipTargetDir,
     toggleClipDeleteOriginal,
-    toggleClipPathSelection,
     toggleClipMergeSegments,
     clipJobLabel,
     toggleSlideshowMenu,
@@ -178,7 +175,6 @@
     timestamps,
     clipBoundaries,
     resumePoint,
-    clipOutputDir,
     parentFolder,
     invokeOpenDirectory,
     ctxCopyPdfPage,
@@ -261,11 +257,8 @@
     triggerClipSegments: () => void;
     clipJobRunning: boolean;
     clipDeleteOriginal: boolean;
-    clipUseCustomPath: boolean;
     clipMergeSegments: boolean;
-    getClipTargetDir: () => string;
     toggleClipDeleteOriginal: () => void;
-    toggleClipPathSelection: () => void;
     toggleClipMergeSegments: () => void;
     clipJobLabel: string;
     toggleSlideshowMenu: () => void;
@@ -365,7 +358,6 @@
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
     resumePoint: number | null;
-    clipOutputDir: string;
     parentFolder: () => string;
     invokeOpenDirectory: (path: string) => Promise<void>;
     ctxCopyPdfPage: () => void;
@@ -761,11 +753,8 @@
     {triggerClipSegments}
     {clipJobRunning}
     {clipDeleteOriginal}
-    {clipUseCustomPath}
     {clipMergeSegments}
-    {getClipTargetDir}
     {toggleClipDeleteOriginal}
-    {toggleClipPathSelection}
     {toggleClipMergeSegments}
     {clipJobLabel}
     {toggleSlideshowMenu}
@@ -881,7 +870,6 @@
     updateDeletePermanently={onUpdateDeletePermanently}
     onClose={onCloseContextMenu}
     {onOpenConverted}
-    {clipOutputDir}
     {corruptionWarning}
     {corruptionReason}
     {corruptionFixing}

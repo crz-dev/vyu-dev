@@ -19,6 +19,7 @@ import {
   loadEditRememberSession,
   loadEditSession,
   loadEditVideoFormat,
+  loadSkipApplyConfirm,
   saveEditAutoOpenExport,
   saveEditBackupDir,
   saveEditBackupMode,
@@ -31,6 +32,7 @@ import {
   saveEditRememberSession,
   saveEditSession,
   saveEditVideoFormat,
+  saveSkipApplyConfirm,
   type EditBackupMode,
   type EditExportQuality,
   type EditImageFormat,
@@ -123,6 +125,7 @@ function createEditingStore() {
   let autoOpenImageExport = $state(loadEditAutoOpenExport("image"));
   let autoOpenVideoExport = $state(loadEditAutoOpenExport("video"));
   let compareEnabled = $state(loadEditCompareEnabled());
+  let confirmBeforeApply = $state(!loadSkipApplyConfirm());
   let backupDir = $state(loadEditBackupDir());
   const initialRememberEdits = loadEditRememberSession();
   let rememberEdits = $state(initialRememberEdits);
@@ -460,6 +463,11 @@ function createEditingStore() {
     }
   }
 
+  function setConfirmBeforeApply(enabled: boolean) {
+    confirmBeforeApply = enabled;
+    saveSkipApplyConfirm(!enabled);
+  }
+
   function setCompareOriginal(value: boolean) {
     compareOriginal = compareEnabled && value;
   }
@@ -529,6 +537,9 @@ function createEditingStore() {
     get rememberEdits() {
       return rememberEdits;
     },
+    get confirmBeforeApply() {
+      return confirmBeforeApply;
+    },
     get compareOriginal() {
       return compareOriginal;
     },
@@ -555,6 +566,7 @@ function createEditingStore() {
     setAutoOpenVideoExport,
     setCompareEnabled,
     setRememberEdits,
+    setConfirmBeforeApply,
     setCompareOriginal,
     clearBackupState,
     get isExporting() {

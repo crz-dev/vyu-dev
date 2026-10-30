@@ -1201,11 +1201,8 @@
   triggerClipSegments={clips.triggerSegments}
   clipJobRunning={clips.clipJobRunning}
   clipDeleteOriginal={clips.clipDeleteOriginal}
-  clipUseCustomPath={clips.clipUseCustomPath}
   clipMergeSegments={clips.clipMergeSegments}
-  getClipTargetDir={clips.getTargetDir}
   toggleClipDeleteOriginal={clips.toggleDeleteOriginal}
-  toggleClipPathSelection={clips.togglePathSelection}
   toggleClipMergeSegments={clips.toggleMergeSegments}
   clipJobLabel={clips.clipJobLabel}
   slideshowMenuVisible={menuStore.slideshowMenuVisible}
@@ -1272,7 +1269,6 @@
   timestamps={markerStore.timestamps}
   clipBoundaries={clips.clipBoundaries}
   resumePoint={markerStore.resumePoint}
-  clipOutputDir={clips.clipOutputDir}
   parentFolder={() => getParentFolder(filePath)}
   {invokeOpenDirectory}
   ctxCopyPdfPage={ctxCopyPdfPageFn}

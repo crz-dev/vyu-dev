@@ -17,10 +17,6 @@ import {
   updateToast,
   dismissToast,
 } from "$lib/components/toast.svelte";
-import {
-  loadSkipApplyConfirm,
-  saveSkipApplyConfirm,
-} from "$lib/services/storage";
 
 export type PendingEditAction = "apply" | "export" | null;
 export type ExportFormatOverride = "png" | null;
@@ -108,7 +104,6 @@ const CONFIRM_ICON =
   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #ef4444"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
 
 export function createEditActions(deps: EditActionsDeps) {
-  let applyNoAsk = $state(loadSkipApplyConfirm());
   let unsavedToastId = $state<number | null>(null);
   let unsavedToastDismissed = $state(false);
   let resetConfirming = $state(false);
@@ -243,7 +238,7 @@ export function createEditActions(deps: EditActionsDeps) {
   });
 
   function handleUpdateApplyNoAsk(v: boolean) {
-    applyNoAsk = v;
+    editing.setConfirmBeforeApply(!v);
   }
 
   function needsTransparencyDialog(): boolean {
@@ -323,6 +318,7 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoHeight,
           editing.exportQuality,
           conversionPrefs.gpuEncoding,
+          conversionPrefs.hardwareEncoder,
         );
       } else if (pngOverride) {
         const pngPath = filePath.replace(/\.\w+$/, ".png");
@@ -446,6 +442,7 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoHeight,
           editing.exportQuality,
           conversionPrefs.gpuEncoding,
+          conversionPrefs.hardwareEncoder,
         );
       } else {
         await exportEditedImage(filePath, s, outputPath, quality);
@@ -499,7 +496,7 @@ export function createEditActions(deps: EditActionsDeps) {
         return;
       }
 
-      if (applyNoAsk && editing.backupMode !== "ask") {
+      if (!editing.confirmBeforeApply && editing.backupMode !== "ask") {
         await performApply();
       } else {
         editDialogStore.applyKeepBackup = true;
@@ -509,7 +506,7 @@ export function createEditActions(deps: EditActionsDeps) {
     }
     if (markup.hasUnapplied && deps.handleMarkupApply) {
       menuStore.markupMenuVisible = false;
-      if (applyNoAsk && editing.backupMode !== "ask") {
+      if (!editing.confirmBeforeApply && editing.backupMode !== "ask") {
         await deps.handleMarkupApply();
       } else {
         editDialogStore.applyKeepBackup = true;
@@ -556,7 +553,6 @@ export function createEditActions(deps: EditActionsDeps) {
 
   async function handleApplyConfirm() {
     editDialogStore.editApplyConfirm = false;
-    if (applyNoAsk) saveSkipApplyConfirm();
     const keepBackup =
       editing.backupMode === "ask"
         ? editDialogStore.applyKeepBackup
@@ -634,7 +630,7 @@ export function createEditActions(deps: EditActionsDeps) {
     handleUndo,
     handleReset,
     get applyNoAsk() {
-      return applyNoAsk;
+      return !editing.confirmBeforeApply;
     },
     handleUpdateApplyNoAsk,
   };

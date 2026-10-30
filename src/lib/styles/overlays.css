@@ -1169,27 +1169,8 @@
   align-items: center;
   background: var(--bg-primary);
   border: 0.5px solid var(--bg-elevated);
-  border-right: none;
-  border-radius: 7px 0 0 7px;
+  border-radius: 7px;
   padding: 5px 10px;
-}
-.share-dest-btn {
-  background: var(--bg-elevated);
-  border: 0.5px solid var(--bg-border);
-  border-radius: 0 7px 7px 0;
-  padding: 5px 10px;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-family: var(--font-family);
-  cursor: pointer;
-  max-width: 220px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  transition: color 0.15s;
-}
-.share-dest-btn:hover {
-  color: var(--text-primary);
 }
 .share-delete-toggle {
   position: relative;

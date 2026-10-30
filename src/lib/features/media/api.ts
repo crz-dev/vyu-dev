@@ -265,6 +265,7 @@ export interface ConversionOptions {
   preserveMetadata?: boolean;
   overwrite?: boolean;
   gpuEncoding?: boolean;
+  hardwareEncoder?: string;
   coverArtMode?: string;
   preset?: string;
 }
@@ -295,6 +296,7 @@ export async function invokeConvertMedia(
     preserveMetadata: options.preserveMetadata ?? true,
     overwrite: options.overwrite ?? false,
     gpuEncoding: options.gpuEncoding ?? false,
+    hardwareEncoder: options.hardwareEncoder ?? "auto",
   });
 }
 
@@ -905,6 +907,7 @@ export async function invokeExportEditedMedia(
   height: number,
   quality: string,
   gpuEncoding: boolean,
+  hardwareEncoder = "auto",
 ): Promise<void> {
   return invoke("export_edited_media", {
     path,
@@ -924,6 +927,7 @@ export async function invokeExportEditedMedia(
     height,
     quality,
     gpuEncoding,
+    hardwareEncoder,
   });
 }
 

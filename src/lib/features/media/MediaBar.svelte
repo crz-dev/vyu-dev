@@ -113,11 +113,8 @@
     triggerClipSegments,
     clipJobRunning,
     clipDeleteOriginal,
-    clipUseCustomPath,
     clipMergeSegments,
-    getClipTargetDir,
     toggleClipDeleteOriginal,
-    toggleClipPathSelection,
     toggleClipMergeSegments,
     clipJobLabel,
     toggleSlideshowMenu,
@@ -177,11 +174,8 @@
     triggerClipSegments: () => void;
     clipJobRunning: boolean;
     clipDeleteOriginal: boolean;
-    clipUseCustomPath: boolean;
     clipMergeSegments: boolean;
-    getClipTargetDir: () => string;
     toggleClipDeleteOriginal: () => void;
-    toggleClipPathSelection: () => void;
     toggleClipMergeSegments: () => void;
     clipJobLabel: string;
     toggleSlideshowMenu: () => void;
@@ -803,23 +797,6 @@
             /></svg
           >
           <span>Delete Original</span>
-        </button>
-        <button
-          class="clip-toggle-btn yellow tooltip-above"
-          class:is-on={clipUseCustomPath}
-          data-tooltip={getClipTargetDir() || "No output path"}
-          title={getClipTargetDir() || "No output path"}
-          onclick={toggleClipPathSelection}
-          disabled={clipJobRunning}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-              stroke="currentColor"
-              stroke-width="2"
-            /></svg
-          >
-          <span>Select Path</span>
         </button>
         <button
           class="clip-toggle-btn green"

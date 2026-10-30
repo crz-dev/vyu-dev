@@ -24,7 +24,7 @@
     invokeConvertImageToPdf,
     invokeCopyFile,
     invokeCopyFileUnique,
-    invokeDeleteFile,
+    invokeTrashFile,
     invokeIdentifySong,
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
@@ -44,7 +44,6 @@
     timestamps,
     clipBoundaries,
     resumePoint,
-    clipOutputDir,
     parentFolder,
     invokeOpenDirectory,
     ctxCopyPdfPage,
@@ -120,7 +119,6 @@
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
     resumePoint: number | null;
-    clipOutputDir: string;
     parentFolder: () => string;
     invokeOpenDirectory: (path: string) => Promise<void>;
     ctxCopyPdfPage: () => void;
@@ -192,7 +190,6 @@
   let pinned = $state(false);
   let deleteMarkersConfirm = $state(false);
   let deleteMarkersTimer: ReturnType<typeof setTimeout> | null = $state(null);
-  const shareOutputDir = $derived(conversionPrefs.outputDir);
   const shareDeleteOriginal = $derived(conversionPrefs.deleteOriginal);
 
   function conversionPreset(): string {
@@ -214,6 +211,7 @@
       preserveMetadata: conversionPrefs.preserveMetadata,
       overwrite: conversionPrefs.overwriteExisting,
       gpuEncoding: conversionPrefs.gpuEncoding,
+      hardwareEncoder: conversionPrefs.hardwareEncoder,
       coverArtMode: conversionPrefs.coverArtMode,
       preset: conversionPreset(),
     };
@@ -350,17 +348,8 @@
     await shareAction(() => invokeSetWallpaper(filePath), "Wallpaper set");
   }
 
-  async function handleShareLocation() {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    const dir = await open({
-      directory: true,
-      defaultPath: shareOutputDir || undefined,
-    });
-    if (dir) conversionPrefs.setOutputDir(dir as string);
-  }
-
   async function handleSaveAs(format: string) {
-    const outputDir = shareOutputDir || parentFolder();
+    const outputDir = parentFolder();
     if (!outputDir) {
       showToast({ message: "Pick a save location", color: "yellow" });
       return;
@@ -421,13 +410,6 @@
         message: "Saved as " + format.toUpperCase(),
         color: "green",
         duration: 5000,
-        actions: [
-          {
-            label: "Open in explorer",
-            icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
-            onClick: () => invokeOpenDirectory(outputDir),
-          },
-        ],
       });
       success = true;
     } catch (e) {
@@ -445,13 +427,25 @@
       convertProgress = 0;
       unlisten?.();
     }
-    if (success && shareDeleteOriginal) {
+    if (success) {
       try {
-        await invokeDeleteFile(filePath);
+        await invokeOpenDirectory(outputDir);
+      } catch {
+        // revealing the output is best-effort
+      }
+    }
+    if (
+      success &&
+      shareDeleteOriginal &&
+      resultPath &&
+      resultPath !== filePath
+    ) {
+      try {
+        await invokeTrashFile(filePath);
       } catch (e) {
         console.error("Failed to delete original:", e);
         showToast({
-          message: "Converted but couldn't delete original",
+          message: "Converted but couldn't move original to trash",
           color: "red",
         });
       }
@@ -526,7 +520,7 @@
     }
 
     const stem = fileName.replace(/\.[^.]+$/, "");
-    const defaultDir = shareOutputDir || parentFolder() || "";
+    const defaultDir = parentFolder() || "";
     const defaultPath = defaultDir ? `${defaultDir}\\${stem}` : stem;
 
     const outputPath = await save({ defaultPath, filters });
@@ -538,15 +532,16 @@
       return;
     }
 
+    const sep = outputPath.includes("\\") ? "\\" : "/";
+    const lastSep = outputPath.lastIndexOf(sep);
+    const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";
+
     shareConverting = true;
     let success = false;
     let resultPath: string | null = null;
     let unlisten: (() => void) | undefined;
     try {
       const sourceExt = fileExt().toLowerCase().replace(".", "");
-      const sep = outputPath.includes("\\") ? "\\" : "/";
-      const lastSep = outputPath.lastIndexOf(sep);
-      const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";
 
       const isWaveformConvert = isAudio && outputExt === "mp4";
 
@@ -589,13 +584,6 @@
         message: "Saved as " + outputExt.toUpperCase(),
         color: "green",
         duration: 5000,
-        actions: [
-          {
-            label: "Open in explorer",
-            icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
-            onClick: () => invokeOpenDirectory(outputDirFromSave),
-          },
-        ],
       });
       success = true;
     } catch (e) {
@@ -613,13 +601,25 @@
       convertProgress = 0;
       unlisten?.();
     }
-    if (success && shareDeleteOriginal) {
+    if (success) {
       try {
-        await invokeDeleteFile(filePath);
+        await invokeOpenDirectory(outputDirFromSave);
+      } catch {
+        // revealing the output is best-effort
+      }
+    }
+    if (
+      success &&
+      shareDeleteOriginal &&
+      resultPath &&
+      resultPath !== filePath
+    ) {
+      try {
+        await invokeTrashFile(filePath);
       } catch (e) {
         console.error("Failed to delete original:", e);
         showToast({
-          message: "Converted but couldn't delete original",
+          message: "Converted but couldn't move original to trash",
           color: "red",
         });
       }
@@ -3180,60 +3180,56 @@
         {/if}
       </div>
 
-      <div class="share-dest-bar">
-        <span class="share-dest-label">
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            style="margin-right: 4px; flex-shrink: 0;"
-            ><path
-              d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-            /><polyline points="17 21 17 13 7 13 7 21" /><polyline
-              points="7 3 7 8 15 8"
-            /></svg
+      {#if !isPdf}
+        <div class="share-dest-bar">
+          <span class="share-dest-label">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="margin-right: 4px; flex-shrink: 0;"
+              ><path
+                d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+              /><polyline points="17 21 17 13 7 13 7 21" /><polyline
+                points="7 3 7 8 15 8"
+              /></svg
+            >
+            Saves next to the original
+          </span>
+          <button
+            class="share-delete-toggle tooltip-above"
+            class:is-on={shareDeleteOriginal}
+            data-tooltip="Move original to trash"
+            aria-label="Move original to trash"
+            onclick={() =>
+              conversionPrefs.setDeleteOriginal(
+                !conversionPrefs.deleteOriginal,
+              )}
           >
-          Save to:
-        </span>
-        <span
-          class="tooltip-above"
-          data-tooltip={shareOutputDir || parentFolder()}
-        >
-          <button class="share-dest-btn" onclick={handleShareLocation}>
-            {shareOutputDir || parentFolder()}
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
           </button>
-        </span>
-        <button
-          class="share-delete-toggle tooltip-above"
-          class:is-on={shareDeleteOriginal}
-          data-tooltip="Delete original"
-          aria-label="Delete original"
-          onclick={() =>
-            conversionPrefs.setDeleteOriginal(!conversionPrefs.deleteOriginal)}
-        >
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-          </svg>
-        </button>
-      </div>
+        </div>
+      {/if}
     </div>
   </div>
 {/if}

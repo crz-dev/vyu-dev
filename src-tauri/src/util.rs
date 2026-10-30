@@ -248,6 +248,17 @@ pub fn preferred_hardware_h264_encoder() -> Option<&'static str> {
     hardware_h264_encoders().first().copied()
 }
 
+pub fn resolve_hardware_h264_encoder(requested: Option<&str>) -> Option<&'static str> {
+    match requested {
+        Some("auto") | None => preferred_hardware_h264_encoder(),
+        Some(name) => hardware_h264_encoders()
+            .iter()
+            .copied()
+            .find(|encoder| *encoder == name)
+            .or_else(preferred_hardware_h264_encoder),
+    }
+}
+
 /// Run ffmpeg with timeout
 pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Result<Option<String>, String> {
     let mut child = ffmpeg_command()

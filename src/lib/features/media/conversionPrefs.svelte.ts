@@ -1,49 +1,42 @@
 // Conversion / process preferences
 import {
-  loadClipPreferences,
   loadProcessAudioBitrate,
   loadProcessAutoOpen,
   loadProcessCoverArtMode,
   loadProcessDeleteOriginal,
   loadProcessGpuEncoding,
+  loadProcessHardwareEncoder,
   loadProcessOverwrite,
   loadProcessPreserveMetadata,
   loadProcessQuality,
-  loadShareOutputDir,
-  saveClipPreferences,
   saveProcessAudioBitrate,
   saveProcessAutoOpen,
   saveProcessCoverArtMode,
   saveProcessDeleteOriginal,
   saveProcessGpuEncoding,
+  saveProcessHardwareEncoder,
   saveProcessOverwrite,
   saveProcessPreserveMetadata,
   saveProcessQuality,
-  saveShareOutputDir,
   type CoverArtMode,
+  type HardwareEncoder,
   type ProcessQuality,
 } from "$lib/services/storage";
 
 function createConversionPrefs() {
   let quality = $state<ProcessQuality>(loadProcessQuality());
-  let outputDir = $state(loadShareOutputDir());
   let deleteOriginal = $state(loadProcessDeleteOriginal());
   let audioBitrate = $state(loadProcessAudioBitrate());
   let overwriteExisting = $state(loadProcessOverwrite());
   let gpuEncoding = $state(loadProcessGpuEncoding());
+  let hardwareEncoder = $state<HardwareEncoder>(loadProcessHardwareEncoder());
   let autoOpenConverted = $state(loadProcessAutoOpen());
   let preserveMetadata = $state(loadProcessPreserveMetadata());
   let coverArtMode = $state<CoverArtMode>(loadProcessCoverArtMode());
-  let clipOutputDir = $state(loadClipPreferences().outputDir);
 
   function setQuality(value: ProcessQuality) {
     quality = value;
     saveProcessQuality(value);
-  }
-
-  function setOutputDir(dir: string) {
-    outputDir = dir;
-    saveShareOutputDir(dir);
   }
 
   function setDeleteOriginal(enabled: boolean) {
@@ -66,6 +59,11 @@ function createConversionPrefs() {
     saveProcessGpuEncoding(enabled);
   }
 
+  function setHardwareEncoder(encoder: HardwareEncoder) {
+    hardwareEncoder = encoder;
+    saveProcessHardwareEncoder(encoder);
+  }
+
   function setAutoOpenConverted(enabled: boolean) {
     autoOpenConverted = enabled;
     saveProcessAutoOpen(enabled);
@@ -81,24 +79,9 @@ function createConversionPrefs() {
     saveProcessCoverArtMode(mode);
   }
 
-  function setClipOutputDir(dir: string) {
-    clipOutputDir = dir;
-    saveClipPreferences({
-      outputDir: dir,
-      useCustomPath: dir.length > 0,
-    });
-  }
-
-  function refreshClipOutputDir() {
-    clipOutputDir = loadClipPreferences().outputDir;
-  }
-
   return {
     get quality() {
       return quality;
-    },
-    get outputDir() {
-      return outputDir;
     },
     get deleteOriginal() {
       return deleteOriginal;
@@ -112,6 +95,9 @@ function createConversionPrefs() {
     get gpuEncoding() {
       return gpuEncoding;
     },
+    get hardwareEncoder() {
+      return hardwareEncoder;
+    },
     get autoOpenConverted() {
       return autoOpenConverted;
     },
@@ -121,20 +107,15 @@ function createConversionPrefs() {
     get coverArtMode() {
       return coverArtMode;
     },
-    get clipOutputDir() {
-      return clipOutputDir;
-    },
     setQuality,
-    setOutputDir,
     setDeleteOriginal,
     setAudioBitrate,
     setOverwriteExisting,
     setGpuEncoding,
+    setHardwareEncoder,
     setAutoOpenConverted,
     setPreserveMetadata,
     setCoverArtMode,
-    setClipOutputDir,
-    refreshClipOutputDir,
   };
 }
 

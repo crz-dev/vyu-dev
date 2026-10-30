@@ -1,41 +1,32 @@
 # Contributing to Vyu
 
-Thanks for your interest in Vyu! Here's how things work.
+Thanks for your interest in Vyu.
 
-## License Status
+## License status
 
-Vyu is currently in **development**. The repository is made public for transparency and
-visibility, but it is **not yet open source**:
+Vyu is in **development** and is **not yet open source**.
 
-- **Copyright:** © crz-dev. All rights reserved.
-- **Name, icon, and branding:** The name "Vyu" and the project's icons and visual
-  identity are trademarks of crz-dev and may not be used without permission.
-- **Code:** You may read the source for personal reference, but copying,
-  modifying, redistributing, or building on it is **not** permitted during development.
+- **Copyright:** © 2026 crz-dev. All rights reserved.
+- **Code:** You may read, download, and clone the repository for personal reference. Copying, modifying, redistributing, or building on the code is not permitted during development.
+- **Name, icon, and branding:** “Vyu”, its icons, and its visual identity remain crz-dev property and are not granted by the later open-source license.
 
-At the first stable release, this project will be relicensed under **GPL-3.0**.
-Until that release, the proprietary terms in `LICENSE` apply.
+At the first stable release, the code will be relicensed under **GPL-3.0**. The full terms are in [LICENSE](./LICENSE).
 
-## Code Contributions
+## Code contributions
 
 Vyu does not currently accept pull requests or code contributions.
 
-This is intentional — not a slight against anyone. Keeping sole copyright
-allows Vyu to remain flexible: future licensing changes (like partnering with
-a Linux distro or offering a commercial build) require the copyright to stay
-consolidated. Accepting external code would complicate that significantly.
+This is intentional, not a judgment on contributions. Keeping sole copyright allows future licensing and distribution options that would be harder with externally owned code.
 
-## What You Can Do
+## What you can do
 
-- **Report bugs** — open an Issue, please be as detailed as possible and include images/videos
-- **Request features** — Issues are great for this too! We'll consider every single one
-- **Share ideas** — the in-app feedback menu is the best place for quick thoughts, and rewards you with a unique theme!
-- **Fork it (after release)** — once Vyu ships under GPL-3.0 at first stable release, you'll be free to build on it for your own use
+- **Report bugs** — open an Issue with steps to reproduce and, where useful, screenshots or a short recording.
+- **Request features** — open an Issue describing the use case.
+- **Share ideas** — use Issues for anything actionable. The in-app feedback form is currently a UI placeholder and does not submit data.
+- **Fork after release** — once Vyu ships under GPL-3.0 at the first stable release, you can build on it for your own use.
 
-## Why GPL-3.0 Then?
+## Why GPL-3.0 then?
 
-Because transparency matters most to us. You can read every line of code, verify there's
-no telemetry, and trust what's running on your machine. That's the point.
-Openness and accepting contributions are separate things.
+Transparency. The code will be readable and verifiable, including the absence of telemetry. Openness and accepting contributions are separate decisions.
 
-Thank you for understanding! We truly hope to give you the best experience.
+For setup and architecture, see [README.md](./README.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).

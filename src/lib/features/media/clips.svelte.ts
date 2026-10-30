@@ -1,5 +1,4 @@
 // Clip boundaries
-import { open } from "@tauri-apps/plugin-dialog";
 import type { ClipBoundary, ClipPair } from "$lib/shared/types";
 import {
   writeClipBoundaries,
@@ -37,9 +36,7 @@ export function createClips(deps: ClipsDeps) {
   let clipMarkerJustDragged = $state(false);
   let _saveTimer: ReturnType<typeof setTimeout> | undefined;
 
-  let clipOutputDir = $state("");
   let clipDeleteOriginal = $state(false);
-  let clipUseCustomPath = $state(false);
   let clipMergeSegments = $state(false);
   let clipJobRunning = $state(false);
   let clipJobLabel = $state("");
@@ -150,46 +147,26 @@ export function createClips(deps: ClipsDeps) {
 
   function loadPrefs() {
     const prefs = loadClipPreferences();
-    clipOutputDir = prefs.outputDir;
     clipDeleteOriginal = prefs.deleteOriginal;
-    clipUseCustomPath = prefs.useCustomPath;
     clipMergeSegments = prefs.mergeSegments;
   }
 
   function persistPrefs() {
     saveClipPreferences({
       deleteOriginal: clipDeleteOriginal,
-      useCustomPath: clipUseCustomPath,
       mergeSegments: clipMergeSegments,
     });
   }
 
   function getTargetDir(): string {
-    return clipUseCustomPath
-      ? clipOutputDir || deps.getFileParentFolder()
-      : deps.getFileParentFolder();
+    return deps.getFileParentFolder();
   }
 
-  function showClipToast(
-    message: string,
-    tone: "success" | "error",
-    outputDir: string = clipOutputDir || deps.getFileParentFolder(),
-  ) {
-    const actions =
-      tone === "success"
-        ? [
-            {
-              label: "Open in explorer",
-              icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
-              onClick: () => invokeOpenDirectory(outputDir),
-            },
-          ]
-        : [];
+  function showClipToast(message: string, tone: "success" | "error") {
     showToast({
       message,
       color: tone === "success" ? "green" : "red",
       duration: tone === "success" ? 5000 : 3000,
-      actions,
     });
   }
 
@@ -208,13 +185,6 @@ export function createClips(deps: ClipsDeps) {
       return JSON.stringify(e);
     } catch {
       return "Unknown error";
-    }
-  }
-
-  async function togglePathSelection() {
-    const dir = await open({ directory: true });
-    if (dir) {
-      clipOutputDir = dir as string;
     }
   }
 
@@ -246,6 +216,7 @@ export function createClips(deps: ClipsDeps) {
     clipJobRunning = true;
     clipJobLabel = `Clipping ${segments.length} segment${segments.length > 1 ? "s" : ""}...`;
 
+    let outputDir = "";
     try {
       const result = await invokeProcessVideoClips(
         deps.getFilePath(),
@@ -254,16 +225,21 @@ export function createClips(deps: ClipsDeps) {
         mode,
         clipDeleteOriginal,
       );
+      outputDir = result.output_dir;
       showClipToast(
         `${result.outputs.length} clip${result.outputs.length > 1 ? "s" : ""} saved`,
         "success",
-        result.output_dir,
       );
     } catch (err) {
       showClipToast(extractInvokeErrorMessage(err), "error");
     } finally {
       clipJobRunning = false;
       clipJobLabel = "";
+    }
+    if (outputDir) {
+      await invokeOpenDirectory(outputDir).catch(() => {
+        // revealing the output is best-effort
+      });
     }
   }
 
@@ -283,23 +259,11 @@ export function createClips(deps: ClipsDeps) {
     set clipMarkerJustDragged(v: boolean) {
       clipMarkerJustDragged = v;
     },
-    get clipOutputDir() {
-      return clipOutputDir;
-    },
-    set clipOutputDir(v: string) {
-      clipOutputDir = v;
-    },
     get clipDeleteOriginal() {
       return clipDeleteOriginal;
     },
     set clipDeleteOriginal(v: boolean) {
       clipDeleteOriginal = v;
-    },
-    get clipUseCustomPath() {
-      return clipUseCustomPath;
-    },
-    set clipUseCustomPath(v: boolean) {
-      clipUseCustomPath = v;
     },
     get clipMergeSegments() {
       return clipMergeSegments;
@@ -338,7 +302,6 @@ export function createClips(deps: ClipsDeps) {
     showClipToast,
     sanitizeClipPairs,
     extractInvokeErrorMessage,
-    togglePathSelection,
     toggleDeleteOriginal,
     toggleMergeSegments,
     triggerSegments,

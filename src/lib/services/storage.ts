@@ -16,7 +16,8 @@ export type EditImageFormat = "original" | "png" | "jpg" | "webp";
 export type EditImageQualityKey = "original" | "jpg" | "webp";
 export type EditVideoFormat = "original" | "mp4" | "webm" | "mkv";
 export type ProcessQuality = "fast" | "balanced" | "quality" | "lossless";
-export type CoverArtMode = "auto" | "cover" | "waveform";
+export type CoverArtMode = "cover" | "waveform";
+export type HardwareEncoder = "auto" | "h264_nvenc" | "h264_qsv" | "h264_amf";
 export type EditBackupMode = "off" | "ask" | "always";
 export type EditMediaKind = "image" | "video";
 
@@ -86,8 +87,8 @@ export function loadSkipApplyConfirm(): boolean {
   return localStorage.getItem("vyu-edit-apply-no-warn") === "true";
 }
 
-export function saveSkipApplyConfirm(): void {
-  localStorage.setItem("vyu-edit-apply-no-warn", "true");
+export function saveSkipApplyConfirm(skip: boolean): void {
+  localStorage.setItem("vyu-edit-apply-no-warn", String(skip));
 }
 
 export function loadEditExportQuality(): EditExportQuality {
@@ -294,41 +295,28 @@ export function saveEditBackupDir(dir: string): void {
 
 export function loadClipPreferences(): {
   deleteOriginal: boolean;
-  useCustomPath: boolean;
   mergeSegments: boolean;
-  outputDir: string;
 } {
   return {
     deleteOriginal: localStorage.getItem("vyu-clip-delete-original") === "true",
-    useCustomPath: localStorage.getItem("vyu-clip-use-custom-path") === "true",
     mergeSegments: localStorage.getItem("vyu-clip-merge-segments") === "true",
-    outputDir: localStorage.getItem("vyu-clip-output-dir") ?? "",
   };
 }
 
 export function saveClipPreferences(prefs: {
   deleteOriginal?: boolean;
-  useCustomPath?: boolean;
   mergeSegments?: boolean;
-  outputDir?: string;
 }): void {
   if (prefs.deleteOriginal !== undefined)
     localStorage.setItem(
       "vyu-clip-delete-original",
       String(prefs.deleteOriginal),
     );
-  if (prefs.useCustomPath !== undefined)
-    localStorage.setItem(
-      "vyu-clip-use-custom-path",
-      String(prefs.useCustomPath),
-    );
   if (prefs.mergeSegments !== undefined)
     localStorage.setItem(
       "vyu-clip-merge-segments",
       String(prefs.mergeSegments),
     );
-  if (prefs.outputDir !== undefined)
-    localStorage.setItem("vyu-clip-output-dir", prefs.outputDir);
 }
 
 export function readTimestamps(filePath: string): VideoMarker[] {
@@ -659,14 +647,6 @@ export function saveAudioLayoutMode(mode: AudioLayoutMode): void {
   localStorage.setItem("vyu-audio-layout-mode", mode);
 }
 
-export function loadShareOutputDir(): string {
-  return localStorage.getItem("vyu-share-output-dir") ?? "";
-}
-
-export function saveShareOutputDir(dir: string): void {
-  localStorage.setItem("vyu-share-output-dir", dir);
-}
-
 // ── Process / conversion ──
 export function loadProcessQuality(): ProcessQuality {
   const value = localStorage.getItem("vyu-process-quality");
@@ -695,12 +675,18 @@ export function saveProcessDeleteOriginal(enabled: boolean): void {
 
 export function loadProcessAudioBitrate(): number {
   const value = Number(localStorage.getItem("vyu-process-audio-bitrate"));
-  return [128, 192, 256, 320].includes(value) ? value : 192;
+  return isAudioBitrate(value) ? value : 192;
 }
 
 export function saveProcessAudioBitrate(bitrate: number): void {
-  const value = [128, 192, 256, 320].includes(bitrate) ? bitrate : 192;
+  const value = isAudioBitrate(bitrate) ? bitrate : 192;
   localStorage.setItem("vyu-process-audio-bitrate", String(value));
+}
+
+function isAudioBitrate(value: number): boolean {
+  return (
+    Number.isFinite(value) && value >= 64 && value <= 320 && value % 64 === 0
+  );
 }
 
 export function loadProcessOverwrite(): boolean {
@@ -737,12 +723,23 @@ export function saveProcessPreserveMetadata(enabled: boolean): void {
 
 export function loadProcessCoverArtMode(): CoverArtMode {
   const value = localStorage.getItem("vyu-process-cover-art");
-  if (value === "cover" || value === "waveform") return value;
-  return "auto";
+  return value === "waveform" ? "waveform" : "cover";
 }
 
 export function saveProcessCoverArtMode(mode: CoverArtMode): void {
   localStorage.setItem("vyu-process-cover-art", mode);
+}
+
+export function loadProcessHardwareEncoder(): HardwareEncoder {
+  const value = localStorage.getItem("vyu-process-hardware-encoder");
+  if (value === "h264_nvenc" || value === "h264_qsv" || value === "h264_amf") {
+    return value;
+  }
+  return "auto";
+}
+
+export function saveProcessHardwareEncoder(encoder: HardwareEncoder): void {
+  localStorage.setItem("vyu-process-hardware-encoder", encoder);
 }
 
 // ── Markup custom colors ──

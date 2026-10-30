@@ -14,6 +14,7 @@
   import {
     loadLastDialogSection,
     saveLastDialogSection,
+    type HardwareEncoder,
   } from "$lib/services/storage";
 
   let {
@@ -79,7 +80,7 @@
     appearance: "Customize how vyu looks and feels.",
     playback: "Control how media plays and behaves.",
     editor: "Configure editing and export preferences.",
-    process: "Set processing and encoding options.",
+    process: "Quality, encoding and output for conversions.",
     library: "Manage your media library and history.",
     system: "System-level app behavior and updates.",
     keybinds: "View and customize keyboard shortcuts.",
@@ -166,15 +167,14 @@
       backupDir: editing.backupDir,
       compareEnabled: editing.compareEnabled,
       processQuality: conversionPrefs.quality,
-      processOutputDir: conversionPrefs.outputDir,
       processDeleteOriginal: conversionPrefs.deleteOriginal,
       processAudioBitrate: conversionPrefs.audioBitrate,
       processOverwrite: conversionPrefs.overwriteExisting,
       processGpu: conversionPrefs.gpuEncoding,
+      processHardwareEncoder: conversionPrefs.hardwareEncoder,
       processAutoOpen: conversionPrefs.autoOpenConverted,
       processPreserveMetadata: conversionPrefs.preserveMetadata,
       processCoverArt: conversionPrefs.coverArtMode,
-      clipOutputDir: conversionPrefs.clipOutputDir,
       hardwareAcceleration,
       minimizeToTray,
       startOnLogin,
@@ -260,6 +260,10 @@
   let exportQualityPreview = $state(
     Math.max(0, exportQualityLevels.indexOf(editing.exportQuality)),
   );
+  let processQualityPreview = $state(
+    Math.max(0, exportQualityLevels.indexOf(conversionPrefs.quality)),
+  );
+  let audioBitratePreview = $state(conversionPrefs.audioBitrate);
 
   $effect(() => {
     imageQualityPreview = editing.imageQuality;
@@ -270,6 +274,17 @@
       0,
       exportQualityLevels.indexOf(editing.exportQuality),
     );
+  });
+
+  $effect(() => {
+    processQualityPreview = Math.max(
+      0,
+      exportQualityLevels.indexOf(conversionPrefs.quality),
+    );
+  });
+
+  $effect(() => {
+    audioBitratePreview = conversionPrefs.audioBitrate;
   });
 
   function exportQualityLabel(index: number): string {
@@ -419,32 +434,20 @@
     editing.setBackupDir("");
   }
 
-  async function handlePickProcessOutputDir() {
-    const dir = await open({
-      directory: true,
-      defaultPath: conversionPrefs.outputDir || undefined,
-    });
-    if (dir) conversionPrefs.setOutputDir(dir as string);
-  }
-
-  function handleClearProcessOutputDir() {
-    conversionPrefs.setOutputDir("");
-  }
-
-  async function handlePickClipOutputDir() {
-    const dir = await open({
-      directory: true,
-      defaultPath: conversionPrefs.clipOutputDir || undefined,
-    });
-    if (dir) conversionPrefs.setClipOutputDir(dir as string);
-  }
-
-  function handleClearClipOutputDir() {
-    conversionPrefs.setClipOutputDir("");
-  }
-
   let ffmpegInfo = $state<FfmpegInfo | null>(null);
   let ffmpegLoading = $state(false);
+
+  const detectedEncoders = $derived(ffmpegInfo?.hardwareEncoders ?? []);
+
+  const encoderLabels: Record<string, string> = {
+    h264_nvenc: "NVIDIA",
+    h264_qsv: "Intel",
+    h264_amf: "AMD",
+  };
+
+  function encoderLabel(encoder: string): string {
+    return encoderLabels[encoder] ?? encoder;
+  }
 
   async function loadFfmpegInfo() {
     ffmpegLoading = true;
@@ -465,14 +468,13 @@
       ffmpegInfo.ffmpegVersion.split(/\s+/)[2]?.split("-")[0] ?? "Unknown";
     const hardware =
       ffmpegInfo.hardwareEncoders.length > 0
-        ? ffmpegInfo.hardwareEncoders.join(", ")
+        ? ffmpegInfo.hardwareEncoders.map(encoderLabel).join(", ")
         : "Software only";
     return `${version} · ${hardware}`;
   }
 
   $effect(() => {
     if (settingsOpen) {
-      conversionPrefs.refreshClipOutputDir();
       void loadFfmpegInfo();
     }
   });
@@ -1880,6 +1882,244 @@
               Editor
             </p>
 
+            <div
+              class="settings-card"
+              class:has-child={editing.backupMode !== "off"}
+            >
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"
+                    /><path
+                      d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">File Backups</span>
+                    <span class="settings-hint"
+                      >Off, ask before applying, or always keep</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-3">
+                    <button
+                      class="pill-btn"
+                      class:active={editing.backupMode === "off"}
+                      onclick={() => editing.setBackupMode("off")}>Off</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.backupMode === "ask"}
+                      onclick={() => editing.setBackupMode("ask")}>Ask</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={editing.backupMode === "always"}
+                      onclick={() => editing.setBackupMode("always")}
+                      >Always</button
+                    >
+                  </div>
+                </div>
+              </div>
+              {#if editing.backupMode !== "off"}
+                <div
+                  class="settings-row settings-subrow"
+                  transition:slide={{
+                    duration: appearance.reducedMotion ? 0 : 160,
+                  }}
+                >
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path
+                        d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Backup Folder</span>
+                      <span class="settings-hint"
+                        >Where original copies are stored</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control" style="gap: 6px;">
+                    <button
+                      class="settings-action-btn blue"
+                      title={editing.backupDir || "App data backups"}
+                      style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                      onclick={handlePickBackupDir}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        ><path
+                          d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                        /></svg
+                      >
+                      {editing.backupDir
+                        ? shortFolderPath(editing.backupDir)
+                        : "App data backups"}
+                    </button>
+                    {#if editing.backupDir}
+                      <button
+                        class="settings-action-btn"
+                        title="Use the default backup folder"
+                        onclick={handleClearBackupDir}>Clear</button
+                      >
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+                  /><polyline points="17 21 17 13 7 13 7 21" /><polyline
+                    points="7 3 7 8 15 8"
+                  /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Remember Unapplied Edits</span>
+                  <span class="settings-hint"
+                    >Restore pending edits after restarting</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={editing.rememberEdits}
+                    onchange={(e) =>
+                      editing.setRememberEdits(e.currentTarget.checked)}
+                  />
+                  <span class="toggle-track" class:on={editing.rememberEdits}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                  /><circle cx="12" cy="12" r="3" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Compare with Original</span>
+                  <span class="settings-hint"
+                    >Hold C while editing to preview the original</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={editing.compareEnabled}
+                    onchange={(e) =>
+                      editing.setCompareEnabled(e.currentTarget.checked)}
+                  />
+                  <span class="toggle-track" class:on={editing.compareEnabled}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                  /><polyline points="9 12 11 14 15 10" /></svg
+                >
+                <div class="settings-label-text">
+                  <span class="settings-label">Confirm Before Applying</span>
+                  <span class="settings-hint"
+                    >Ask before writing edits to the file</span
+                  >
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={editing.confirmBeforeApply}
+                    onchange={(e) =>
+                      editing.setConfirmBeforeApply(e.currentTarget.checked)}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={editing.confirmBeforeApply}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
             <div class="settings-subcard">
               <p class="settings-subcard-header">
                 <svg
@@ -1917,16 +2157,13 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    ><rect
-                      x="3"
-                      y="3"
-                      width="18"
-                      height="18"
-                      rx="2"
-                      ry="2"
-                    /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
-                      points="21 15 16 10 5 21"
-                    /></svg
+                    ><path
+                      d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                    /><polyline points="14 2 14 8 20 8" /><circle
+                      cx="10"
+                      cy="13"
+                      r="1.5"
+                    /><polyline points="20 18 15.5 13.5 8 21" /></svg
                   >
                   <div class="settings-label-text">
                     <span class="settings-label">Default Export Format</span>
@@ -2476,204 +2713,6 @@
                 </div>
               </div>
             </div>
-
-            <div
-              class="settings-card"
-              class:has-child={editing.backupMode !== "off"}
-            >
-              <div class="settings-row">
-                <div class="settings-label-col">
-                  <svg
-                    class="settings-row-icon"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><rect
-                      x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"
-                    /><path
-                      d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
-                    /></svg
-                  >
-                  <div class="settings-label-text">
-                    <span class="settings-label">File Backups</span>
-                    <span class="settings-hint"
-                      >Off, ask before applying, or always keep</span
-                    >
-                  </div>
-                </div>
-                <div class="settings-control">
-                  <div class="pill-group pill-group-3">
-                    <button
-                      class="pill-btn"
-                      class:active={editing.backupMode === "off"}
-                      onclick={() => editing.setBackupMode("off")}>Off</button
-                    >
-                    <button
-                      class="pill-btn"
-                      class:active={editing.backupMode === "ask"}
-                      onclick={() => editing.setBackupMode("ask")}>Ask</button
-                    >
-                    <button
-                      class="pill-btn"
-                      class:active={editing.backupMode === "always"}
-                      onclick={() => editing.setBackupMode("always")}
-                      >Always</button
-                    >
-                  </div>
-                </div>
-              </div>
-              {#if editing.backupMode !== "off"}
-                <div
-                  class="settings-row settings-subrow"
-                  transition:slide={{
-                    duration: appearance.reducedMotion ? 0 : 160,
-                  }}
-                >
-                  <div class="settings-label-col">
-                    <svg
-                      class="settings-row-icon"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><path
-                        d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                      /></svg
-                    >
-                    <div class="settings-label-text">
-                      <span class="settings-label">Backup Folder</span>
-                      <span class="settings-hint"
-                        >Where original copies are stored</span
-                      >
-                    </div>
-                  </div>
-                  <div class="settings-control" style="gap: 6px;">
-                    <button
-                      class="settings-action-btn blue"
-                      title={editing.backupDir || "App data backups"}
-                      style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                      onclick={handlePickBackupDir}
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        ><path
-                          d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                        /></svg
-                      >
-                      {editing.backupDir
-                        ? shortFolderPath(editing.backupDir)
-                        : "App data backups"}
-                    </button>
-                    {#if editing.backupDir}
-                      <button
-                        class="settings-action-btn"
-                        title="Use the default backup folder"
-                        onclick={handleClearBackupDir}>Clear</button
-                      >
-                    {/if}
-                  </div>
-                </div>
-              {/if}
-            </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-                  /><polyline points="17 21 17 13 7 13 7 21" /><polyline
-                    points="7 3 7 8 15 8"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Remember Unapplied Edits</span>
-                  <span class="settings-hint"
-                    >Restore pending edits after restarting</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={editing.rememberEdits}
-                    onchange={(e) =>
-                      editing.setRememberEdits(e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={editing.rememberEdits}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                  /><circle cx="12" cy="12" r="3" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Compare with Original</span>
-                  <span class="settings-hint"
-                    >Hold C while editing to preview the original</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={editing.compareEnabled}
-                    onchange={(e) =>
-                      editing.setCompareEnabled(e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={editing.compareEnabled}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
           </div>
 
           <!-- Process -->
@@ -2713,62 +2752,6 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><path
-                    d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Default Output Folder</span>
-                  <span class="settings-hint"
-                    >Starting folder for conversions</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control" style="gap: 6px;">
-                <button
-                  class="settings-action-btn blue"
-                  title={conversionPrefs.outputDir ||
-                    "Same folder as the original"}
-                  style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                  onclick={handlePickProcessOutputDir}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                    /></svg
-                  >
-                  {shortFolderPath(conversionPrefs.outputDir)}
-                </button>
-                {#if conversionPrefs.outputDir}
-                  <button
-                    class="settings-action-btn"
-                    title="Use the source folder"
-                    onclick={handleClearProcessOutputDir}>Clear</button
-                  >
-                {/if}
-              </div>
-            </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
                   ><polygon
                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
                   /></svg
@@ -2776,37 +2759,30 @@
                 <div class="settings-label-text">
                   <span class="settings-label">Conversion Quality</span>
                   <span class="settings-hint"
-                    >Speed and quality for converted media</span
+                    >Speed and quality for video and image conversions</span
                   >
                 </div>
               </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-4">
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.quality === "fast"}
-                    onclick={() => conversionPrefs.setQuality("fast")}
-                    >Fast</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.quality === "balanced"}
-                    onclick={() => conversionPrefs.setQuality("balanced")}
-                    >Balanced</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.quality === "quality"}
-                    onclick={() => conversionPrefs.setQuality("quality")}
-                    >Quality</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.quality === "lossless"}
-                    onclick={() => conversionPrefs.setQuality("lossless")}
-                    >Lossless</button
-                  >
-                </div>
+              <div class="settings-control settings-slider-control">
+                <input
+                  type="range"
+                  min="0"
+                  max="3"
+                  step="1"
+                  aria-label="Conversion quality"
+                  aria-valuetext={exportQualityLabel(processQualityPreview)}
+                  value={processQualityPreview}
+                  oninput={(e) =>
+                    (processQualityPreview = Number(e.currentTarget.value))}
+                  onchange={(e) => {
+                    const level =
+                      exportQualityLevels[Number(e.currentTarget.value)];
+                    if (level) conversionPrefs.setQuality(level);
+                  }}
+                />
+                <span class="settings-slider-value" style="min-width: 62px"
+                  >{exportQualityLabel(processQualityPreview)}</span
+                >
               </div>
             </div>
 
@@ -2828,155 +2804,29 @@
                 >
                 <div class="settings-label-text">
                   <span class="settings-label">Audio Bitrate</span>
-                  <span class="settings-hint">Lossy audio bitrate in kbps</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-4">
-                  {#each [128, 192, 256, 320] as bitrate}
-                    <button
-                      class="pill-btn"
-                      class:active={conversionPrefs.audioBitrate === bitrate}
-                      onclick={() => conversionPrefs.setAudioBitrate(bitrate)}
-                      >{bitrate}</button
-                    >
-                  {/each}
-                </div>
-              </div>
-            </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><ellipse cx="12" cy="5" rx="9" ry="3" /><path
-                    d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"
-                  /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Preserve Metadata</span>
                   <span class="settings-hint"
-                    >Keep tags and chapters through conversion</span
+                    >Bitrate for lossy audio outputs</span
                   >
                 </div>
               </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={conversionPrefs.preserveMetadata}
-                    onchange={(e) =>
-                      conversionPrefs.setPreserveMetadata(
-                        e.currentTarget.checked,
-                      )}
-                  />
-                  <span
-                    class="toggle-track"
-                    class:on={conversionPrefs.preserveMetadata}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6l-1 14H6L5 6"
-                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                    d="M9 6V4h6v2"
-                  /></svg
+              <div class="settings-control settings-slider-control">
+                <input
+                  type="range"
+                  min="64"
+                  max="320"
+                  step="64"
+                  aria-label="Audio bitrate"
+                  value={audioBitratePreview}
+                  oninput={(e) =>
+                    (audioBitratePreview = Number(e.currentTarget.value))}
+                  onchange={(e) =>
+                    conversionPrefs.setAudioBitrate(
+                      Number(e.currentTarget.value),
+                    )}
+                />
+                <span class="settings-slider-value" style="min-width: 60px"
+                  >{audioBitratePreview} kbps</span
                 >
-                <div class="settings-label-text">
-                  <span class="settings-label"
-                    >Delete Original After Convert</span
-                  >
-                  <span class="settings-hint"
-                    >Remove the source after a successful conversion</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={conversionPrefs.deleteOriginal}
-                    onchange={(e) =>
-                      conversionPrefs.setDeleteOriginal(
-                        e.currentTarget.checked,
-                      )}
-                  />
-                  <span
-                    class="toggle-track"
-                    class:on={conversionPrefs.deleteOriginal}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                  /><polyline points="14 2 14 8 20 8" /><line
-                    x1="12"
-                    y1="18"
-                    x2="12"
-                    y2="12"
-                  /><line x1="9" y1="15" x2="15" y2="15" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Overwrite Existing</span>
-                  <span class="settings-hint"
-                    >Replace same-name outputs instead of adding a suffix</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={conversionPrefs.overwriteExisting}
-                    onchange={(e) =>
-                      conversionPrefs.setOverwriteExisting(
-                        e.currentTarget.checked,
-                      )}
-                  />
-                  <span
-                    class="toggle-track"
-                    class:on={conversionPrefs.overwriteExisting}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
               </div>
             </div>
 
@@ -2993,55 +2843,38 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><rect
-                    x="4"
-                    y="4"
-                    width="16"
-                    height="16"
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
                     rx="2"
                     ry="2"
-                  /><rect x="9" y="9" width="6" height="6" /><line
-                    x1="9"
-                    y1="1"
-                    x2="9"
-                    y2="4"
-                  /><line x1="15" y1="1" x2="15" y2="4" /><line
-                    x1="9"
-                    y1="20"
-                    x2="9"
-                    y2="23"
-                  /><line x1="15" y1="20" x2="15" y2="23" /><line
-                    x1="20"
-                    y1="9"
-                    x2="23"
-                    y2="9"
-                  /><line x1="20" y1="14" x2="23" y2="14" /><line
-                    x1="1"
-                    y1="9"
-                    x2="4"
-                    y2="9"
-                  /><line x1="1" y1="14" x2="4" y2="14" /></svg
+                  /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
+                    points="21 15 16 10 5 21"
+                  /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">GPU Encoding</span>
+                  <span class="settings-label">Cover Art</span>
                   <span class="settings-hint"
-                    >Use hardware H.264 when available</span
+                    >Background for audio-to-video conversion</span
                   >
                 </div>
               </div>
               <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={conversionPrefs.gpuEncoding}
-                    onchange={(e) =>
-                      conversionPrefs.setGpuEncoding(e.currentTarget.checked)}
-                  />
-                  <span
-                    class="toggle-track"
-                    class:on={conversionPrefs.gpuEncoding}
-                    ><span class="toggle-thumb"></span></span
+                <div class="pill-group pill-group-2">
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.coverArtMode === "cover"}
+                    onclick={() => conversionPrefs.setCoverArtMode("cover")}
+                    >Cover</button
                   >
-                </label>
+                  <button
+                    class="pill-btn"
+                    class:active={conversionPrefs.coverArtMode === "waveform"}
+                    onclick={() => conversionPrefs.setCoverArtMode("waveform")}
+                    >Waveform</button
+                  >
+                </div>
               </div>
             </div>
 
@@ -3105,55 +2938,79 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><path
-                    d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                  /><circle cx="6" cy="6" r="3" /><circle
-                    cx="6"
-                    cy="18"
-                    r="3"
-                  /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line
-                    x1="14.47"
-                    y1="14.48"
-                    x2="20"
-                    y2="20"
-                  /><line x1="8.12" y1="8.12" x2="12" y2="12" /></svg
+                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                  /><polyline points="14 2 14 8 20 8" /><line
+                    x1="12"
+                    y1="18"
+                    x2="12"
+                    y2="12"
+                  /><line x1="9" y1="15" x2="15" y2="15" /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Clip Output Folder</span>
+                  <span class="settings-label">Overwrite Existing</span>
                   <span class="settings-hint"
-                    >Default folder for clip exports</span
+                    >Replace same-name outputs instead of adding (1), (2)…</span
                   >
                 </div>
               </div>
-              <div class="settings-control" style="gap: 6px;">
-                <button
-                  class="settings-action-btn blue"
-                  title={conversionPrefs.clipOutputDir ||
-                    "Same folder as the original"}
-                  style="min-width: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                  onclick={handlePickClipOutputDir}
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={conversionPrefs.overwriteExisting}
+                    onchange={(e) =>
+                      conversionPrefs.setOverwriteExisting(
+                        e.currentTarget.checked,
+                      )}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.overwriteExisting}
+                    ><span class="toggle-thumb"></span></span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-row">
+              <div class="settings-label-col">
+                <svg
+                  class="settings-row-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><ellipse cx="12" cy="5" rx="9" ry="3" /><path
+                    d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"
+                  /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg
                 >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                    /></svg
+                <div class="settings-label-text">
+                  <span class="settings-label">Preserve Metadata</span>
+                  <span class="settings-hint"
+                    >Keep tags and chapters through conversion</span
                   >
-                  {shortFolderPath(conversionPrefs.clipOutputDir)}
-                </button>
-                {#if conversionPrefs.clipOutputDir}
-                  <button
-                    class="settings-action-btn"
-                    title="Use the source folder"
-                    onclick={handleClearClipOutputDir}>Clear</button
+                </div>
+              </div>
+              <div class="settings-control">
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={conversionPrefs.preserveMetadata}
+                    onchange={(e) =>
+                      conversionPrefs.setPreserveMetadata(
+                        e.currentTarget.checked,
+                      )}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.preserveMetadata}
+                    ><span class="toggle-thumb"></span></span
                   >
-                {/if}
+                </label>
               </div>
             </div>
 
@@ -3170,46 +3027,121 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   ><rect
-                    x="3"
-                    y="3"
-                    width="18"
-                    height="18"
+                    x="4"
+                    y="4"
+                    width="16"
+                    height="16"
                     rx="2"
                     ry="2"
-                  /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
-                    points="21 15 16 10 5 21"
-                  /></svg
+                  /><rect x="9" y="9" width="6" height="6" /><line
+                    x1="9"
+                    y1="1"
+                    x2="9"
+                    y2="4"
+                  /><line x1="15" y1="1" x2="15" y2="4" /><line
+                    x1="9"
+                    y1="20"
+                    x2="9"
+                    y2="23"
+                  /><line x1="15" y1="20" x2="15" y2="23" /><line
+                    x1="20"
+                    y1="9"
+                    x2="23"
+                    y2="9"
+                  /><line x1="20" y1="14" x2="23" y2="14" /><line
+                    x1="1"
+                    y1="9"
+                    x2="4"
+                    y2="9"
+                  /><line x1="1" y1="14" x2="4" y2="14" /></svg
                 >
                 <div class="settings-label-text">
-                  <span class="settings-label">Cover Art</span>
+                  <span class="settings-label">GPU Encoding</span>
                   <span class="settings-hint"
-                    >Background for audio-to-video conversion</span
+                    >{!ffmpegLoading &&
+                    ffmpegInfo &&
+                    detectedEncoders.length === 0
+                      ? "No hardware H.264 encoder detected"
+                      : "Use hardware H.264 when available"}</span
                   >
                 </div>
               </div>
               <div class="settings-control">
-                <div class="pill-group pill-group-3">
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.coverArtMode === "auto"}
-                    onclick={() => conversionPrefs.setCoverArtMode("auto")}
-                    >Auto</button
+                <label class="toggle-row">
+                  <input
+                    type="checkbox"
+                    checked={conversionPrefs.gpuEncoding}
+                    disabled={!conversionPrefs.gpuEncoding &&
+                      !ffmpegLoading &&
+                      ffmpegInfo !== null &&
+                      detectedEncoders.length === 0}
+                    onchange={(e) =>
+                      conversionPrefs.setGpuEncoding(e.currentTarget.checked)}
+                  />
+                  <span
+                    class="toggle-track"
+                    class:on={conversionPrefs.gpuEncoding}
+                    ><span class="toggle-thumb"></span></span
                   >
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.coverArtMode === "cover"}
-                    onclick={() => conversionPrefs.setCoverArtMode("cover")}
-                    >Cover</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={conversionPrefs.coverArtMode === "waveform"}
-                    onclick={() => conversionPrefs.setCoverArtMode("waveform")}
-                    >Waveform</button
-                  >
-                </div>
+                </label>
               </div>
             </div>
+            {#if conversionPrefs.gpuEncoding && detectedEncoders.length > 0}
+              <div
+                class="settings-row settings-subrow"
+                transition:slide={{
+                  duration: appearance.reducedMotion ? 0 : 160,
+                }}
+              >
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><circle cx="6" cy="19" r="3" /><path
+                      d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"
+                    /><circle cx="18" cy="5" r="3" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Hardware Encoder</span>
+                    <span class="settings-hint"
+                      >Which detected encoder to prefer</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-4">
+                    <button
+                      class="pill-btn"
+                      class:active={conversionPrefs.hardwareEncoder ===
+                        "auto" ||
+                        !detectedEncoders.includes(
+                          conversionPrefs.hardwareEncoder,
+                        )}
+                      onclick={() => conversionPrefs.setHardwareEncoder("auto")}
+                      >Auto</button
+                    >
+                    {#each detectedEncoders as encoder}
+                      <button
+                        class="pill-btn"
+                        class:active={conversionPrefs.hardwareEncoder ===
+                          encoder}
+                        onclick={() =>
+                          conversionPrefs.setHardwareEncoder(
+                            encoder as HardwareEncoder,
+                          )}>{encoderLabel(encoder)}</button
+                      >
+                    {/each}
+                  </div>
+                </div>
+              </div>
+            {/if}
 
             <div class="settings-row">
               <div class="settings-label-col">
