@@ -2,7 +2,7 @@
 
 # View YOUR universe (Vyu)
 
-**A local media viewer for Windows, with the tools built in.**
+**A media viewer actually built for this decade. And for you.**
 
 ![Platform: Windows](https://img.shields.io/badge/Platform-Windows-0078d4)
 ![Version: Dev](https://img.shields.io/badge/Version-Dev-orange)
@@ -12,7 +12,7 @@
 
 ---
 
-Vyu opens images, video, audio, and PDFs with editing, clipping, and conversion built in. No telemetry, no accounts, no extensions. Media processing stays local; only optional Song ID needs a connection.
+Vyu opens images, videos, audios, and more — with real editing, clipping, converting, and format support built in. No telemetry, no accounts, no extensions needed. Everything works out of the box and stays on your machine offline. It's the much needed replacement for Windows Photos and ancient-looking viewers.
 
 ## Features
 
