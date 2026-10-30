@@ -81,7 +81,7 @@
     playback: "Control how media plays and behaves.",
     editor: "Configure editing and export preferences.",
     process: "Quality, encoding and output for conversions.",
-    library: "Manage your media library and history.",
+    library: "Layout, content, history and privacy.",
     system: "System-level app behavior and updates.",
     keybinds: "View and customize keyboard shortcuts.",
     debug: "Dev tools and internal state.",
@@ -179,6 +179,22 @@
       minimizeToTray,
       startOnLogin,
       keybinds,
+      libraryViewMode: library.viewMode,
+      libraryDensity: library.density,
+      libraryThumbnailSize: library.thumbnailSize,
+      libraryDividers: library.dividersOn,
+      libraryNames: library.namesOn,
+      libraryFileFilters: library.fileFilters,
+      libraryRecentFilesLimit: library.recentFilesLimit,
+      libraryRecentsDisabled: library.recentsDisabled,
+      libraryRecentRetentionDays: library.recentRetentionDays,
+      libraryShowFolders: library.showFolders,
+      libraryShowThumbnails: library.showThumbnails,
+      libraryCollectionCovers: library.showCollectionCovers,
+      libraryPrivacyMode: library.privacyMode,
+      libraryPrivacyBlur: library.privacyBlur,
+      libraryPrivacyHideNames: library.privacyHideNames,
+      libraryPrivacyRevealHover: library.privacyRevealHover,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
@@ -206,9 +222,28 @@
   let defaultSpeedPreview = $state(playbackPrefs.defaultSpeed);
   let defaultVolumePreview = $state(playbackPrefs.defaultVolume);
   let sleepPreview = $state(sleepTimer.minutes);
+  let densityPreview = $state(Math.round((1 - library.density) * 100));
+  let privacyBlurPreview = $state(library.privacyBlur);
+
+  const activeFileTypeCount = $derived(
+    [
+      library.fileFilters.images,
+      library.fileFilters.videos,
+      library.fileFilters.audio,
+      library.fileFilters.documents,
+    ].filter(Boolean).length,
+  );
 
   $effect(() => {
     scalePreview = Math.round(appearance.uiScale * 100);
+  });
+
+  $effect(() => {
+    densityPreview = Math.round((1 - library.density) * 100);
+  });
+
+  $effect(() => {
+    privacyBlurPreview = library.privacyBlur;
   });
 
   $effect(() => {
@@ -245,6 +280,18 @@
 
   function formatVolume(value: number): string {
     return `${Math.round(value * 100)}%`;
+  }
+
+  function formatThumbnailDensity(value: number): string {
+    if (value >= 67) return "Large";
+    if (value <= 33) return "Small";
+    return "Medium";
+  }
+
+  type LibraryFileKind = keyof typeof library.fileFilters;
+
+  function isLastActiveFileType(kind: LibraryFileKind): boolean {
+    return library.fileFilters[kind] && activeFileTypeCount === 1;
   }
 
   let autoSaveMarkers = $state(true);
@@ -3200,12 +3247,628 @@
               >
               Library
             </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
                 <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect x="3" y="3" width="7" height="7" /><rect
+                    x="14"
+                    y="3"
+                    width="7"
+                    height="7"
+                  /><rect x="3" y="14" width="7" height="7" /><rect
+                    x="14"
+                    y="14"
+                    width="7"
+                    height="7"
+                  /></svg
+                >
+                Layout
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect x="3" y="3" width="7" height="7" /><rect
+                      x="14"
+                      y="3"
+                      width="7"
+                      height="7"
+                    /><rect x="3" y="14" width="7" height="7" /><rect
+                      x="14"
+                      y="14"
+                      width="7"
+                      height="7"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">View Mode</span>
+                    <span class="settings-hint"
+                      >Layout used when the library opens</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-4" style="width: 240px">
+                    <button
+                      class="pill-btn"
+                      class:active={library.viewMode === "grid"}
+                      onclick={() => library.setViewMode("grid")}>Grid</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={library.viewMode === "river"}
+                      onclick={() => library.setViewMode("river")}>River</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={library.viewMode === "list"}
+                      onclick={() => library.setViewMode("list")}>List</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={library.viewMode === "filmstrip"}
+                      onclick={() => library.setViewMode("filmstrip")}
+                      >Filmstrip</button
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><polyline points="15 3 21 3 21 9" /><polyline
+                      points="9 21 3 21 3 15"
+                    /><line x1="21" y1="3" x2="14" y2="10" /><line
+                      x1="3"
+                      y1="21"
+                      x2="10"
+                      y2="14"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Thumbnail Size</span>
+                    <span class="settings-hint"
+                      >Item size in grid, river, filmstrip and list views</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control settings-slider-control">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    aria-label="Thumbnail size"
+                    value={densityPreview}
+                    oninput={(e) =>
+                      (densityPreview = Number(e.currentTarget.value))}
+                    onchange={(e) =>
+                      library.setDensity(
+                        1 - Number(e.currentTarget.value) / 100,
+                      )}
+                  />
+                  <span class="settings-slider-value" style="min-width: 54px"
+                    >{formatThumbnailDensity(densityPreview)}</span
+                  >
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M12 3l1.9 5.8L20 10l-5 3.6L17 20l-5-3.8L7 20l2-6.4L4 10l6.1-1.2z"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Thumbnail Quality</span>
+                    <span class="settings-hint"
+                      >Preview resolution; higher quality uses more memory</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <div class="pill-group pill-group-3">
+                    <button
+                      class="pill-btn"
+                      class:active={library.thumbnailSize === 128}
+                      onclick={() => library.setThumbnailSize(128)}>Fast</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={library.thumbnailSize === 256}
+                      onclick={() => library.setThumbnailSize(256)}
+                      >Normal</button
+                    >
+                    <button
+                      class="pill-btn"
+                      class:active={library.thumbnailSize === 512}
+                      onclick={() => library.setThumbnailSize(512)}
+                      >Sharp</button
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><line x1="3" y1="6" x2="21" y2="6" /><line
+                      x1="3"
+                      y1="12"
+                      x2="21"
+                      y2="12"
+                    /><line x1="3" y1="18" x2="21" y2="18" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Section Dividers</span>
+                    <span class="settings-hint"
+                      >Group files by name, type, size or date</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.dividersOn}
+                      onchange={(e) =>
+                        library.setDividersOn(e.currentTarget.checked)}
+                    />
+                    <span class="toggle-track" class:on={library.dividersOn}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><polyline points="4 7 4 4 20 4 20 7" /><line
+                      x1="9"
+                      y1="20"
+                      x2="15"
+                      y2="20"
+                    /><line x1="12" y1="4" x2="12" y2="20" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Show File Names</span>
+                    <span class="settings-hint"
+                      >Display filename labels in library views</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.namesOn}
+                      onchange={(e) =>
+                        library.setNamesOn(e.currentTarget.checked)}
+                    />
+                    <span class="toggle-track" class:on={library.namesOn}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path d="M12 2L2 7l10 5 10-5-10-5z" /><path
+                    d="M2 17l10 5 10-5"
+                  /><path d="M2 12l10 5 10-5" /></svg
+                >
+                File Types
+              </p>
+              <p class="settings-hint" style="margin: 0 8px 6px;">
+                At least one type stays visible.
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect x="3" y="3" width="18" height="18" rx="2" /><circle
+                      cx="8.5"
+                      cy="8.5"
+                      r="1.5"
+                    /><polyline points="21 15 16 10 5 21" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Images</span>
+                    <span class="settings-hint">Show image files</span>
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.fileFilters.images}
+                      disabled={isLastActiveFileType("images")}
+                      onchange={(e) =>
+                        library.setFileKindVisible(
+                          "images",
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={library.fileFilters.images}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect x="2" y="5" width="14" height="14" rx="2" /><polygon
+                      points="23 7 16 12 23 17 23 7"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Videos</span>
+                    <span class="settings-hint">Show video files</span>
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.fileFilters.videos}
+                      disabled={isLastActiveFileType("videos")}
+                      onchange={(e) =>
+                        library.setFileKindVisible(
+                          "videos",
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={library.fileFilters.videos}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path d="M9 18V5l12-2v13" /><circle
+                      cx="6"
+                      cy="18"
+                      r="3"
+                    /><circle cx="18" cy="16" r="3" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Audio</span>
+                    <span class="settings-hint">Show audio files</span>
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.fileFilters.audio}
+                      disabled={isLastActiveFileType("audio")}
+                      onchange={(e) =>
+                        library.setFileKindVisible(
+                          "audio",
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={library.fileFilters.audio}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                    /><polyline points="14 2 14 8 20 8" /><line
+                      x1="16"
+                      y1="13"
+                      x2="8"
+                      y2="13"
+                    /><line x1="16" y1="17" x2="8" y2="17" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Documents</span>
+                    <span class="settings-hint">Show document files</span>
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.fileFilters.documents}
+                      disabled={isLastActiveFileType("documents")}
+                      onchange={(e) =>
+                        library.setFileKindVisible(
+                          "documents",
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={library.fileFilters.documents}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                  /><circle cx="12" cy="12" r="3" /></svg
+                >
+                Browsing
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Show Folders</span>
+                    <span class="settings-hint"
+                      >Display folders alongside files</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.showFolders}
+                      onchange={(e) =>
+                        library.setShowFolders(e.currentTarget.checked)}
+                    />
+                    <span class="toggle-track" class:on={library.showFolders}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    /><circle cx="8.5" cy="8.5" r="1.5" /><circle
+                      cx="15.5"
+                      cy="8.5"
+                      r="1.5"
+                    /><circle cx="15.5" cy="15.5" r="1.5" /><circle
+                      cx="8.5"
+                      cy="15.5"
+                      r="1.5"
+                    /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Show Thumbnails</span>
+                    <span class="settings-hint"
+                      >Generate previews in library views</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.showThumbnails}
+                      onchange={(e) =>
+                        library.setShowThumbnails(e.currentTarget.checked)}
+                    />
+                    <span class="toggle-track" class:on={library.showThumbnails}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><rect x="3" y="3" width="18" height="18" rx="2" /><circle
+                      cx="8.5"
+                      cy="8.5"
+                      r="1.5"
+                    /><polyline points="21 15 16 10 5 21" /></svg
+                  >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Show Collection Covers</span>
+                    <span class="settings-hint"
+                      >{library.showThumbnails
+                        ? "Preview the first item in each collection"
+                        : "Requires Show Thumbnails"}</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.showCollectionCovers}
+                      disabled={!library.showThumbnails}
+                      onchange={(e) =>
+                        library.setShowCollectionCovers(
+                          e.currentTarget.checked,
+                        )}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={library.showCollectionCovers}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
+                <svg
+                  width="13"
+                  height="13"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -3216,84 +3879,206 @@
                     points="12 6 12 12 16 14"
                   /></svg
                 >
-                <div class="settings-label-text">
-                  <span class="settings-label">Recent Files Limit</span>
-                  <span class="settings-hint"
-                    >How many recent items to remember</span
+                History
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path d="M3 3v6h6" /><path
+                      d="M3.5 9a9 9 0 101.7-4.6L3 9"
+                    /></svg
                   >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Record Recents</span>
+                    <span class="settings-hint"
+                      >{library.recentsDisabled
+                        ? "Recently opened files are not recorded"
+                        : library.privacyMode
+                          ? "Paused while Privacy Mode is on"
+                          : "Remember recently opened files"}</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={!library.recentsDisabled}
+                      onchange={(e) =>
+                        library.setRecentsDisabled(!e.currentTarget.checked)}
+                    />
+                    <span
+                      class="toggle-track"
+                      class:on={!library.recentsDisabled}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
                 </div>
               </div>
-              <div class="settings-control">
-                <div class="pill-group pill-group-4">
-                  <button
-                    class="pill-btn"
-                    class:active={library.recentFilesLimit === 10}
-                    onclick={() => library.setRecentFilesLimit(10)}>10</button
+
+              {#if !library.recentsDisabled}
+                <div class="settings-row settings-subrow">
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><circle cx="12" cy="12" r="10" /><polyline
+                        points="12 6 12 12 16 14"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Recent Files Limit</span>
+                      <span class="settings-hint"
+                        >How many recent items to remember</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control">
+                    <div class="pill-group pill-group-4">
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentFilesLimit === 10}
+                        onclick={() => library.setRecentFilesLimit(10)}
+                        >10</button
+                      >
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentFilesLimit === 25}
+                        onclick={() => library.setRecentFilesLimit(25)}
+                        >25</button
+                      >
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentFilesLimit === 50}
+                        onclick={() => library.setRecentFilesLimit(50)}
+                        >50</button
+                      >
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentFilesLimit === 100}
+                        onclick={() => library.setRecentFilesLimit(100)}
+                        >100</button
+                      >
+                    </div>
+                  </div>
+                </div>
+
+                <div class="settings-row settings-subrow">
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><circle cx="12" cy="12" r="9" /><polyline
+                        points="12 7 12 12 15 14"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Remove After</span>
+                      <span class="settings-hint"
+                        >Older entries drop off automatically</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control">
+                    <div class="pill-group pill-group-4">
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentRetentionDays === 0}
+                        onclick={() => library.setRecentRetentionDays(0)}
+                        >Never</button
+                      >
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentRetentionDays === 7}
+                        onclick={() => library.setRecentRetentionDays(7)}
+                        >7d</button
+                      >
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentRetentionDays === 30}
+                        onclick={() => library.setRecentRetentionDays(30)}
+                        >30d</button
+                      >
+                      <button
+                        class="pill-btn"
+                        class:active={library.recentRetentionDays === 90}
+                        onclick={() => library.setRecentRetentionDays(90)}
+                        >90d</button
+                      >
+                    </div>
+                  </div>
+                </div>
+              {/if}
+
+              <div class="settings-row settings-subrow">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><polyline points="3 6 5 6 21 6" /><path
+                      d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
+                    /></svg
                   >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Clear Recents</span>
+                    <span class="settings-hint"
+                      >Remove all items from the recent files list</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
                   <button
-                    class="pill-btn"
-                    class:active={library.recentFilesLimit === 25}
-                    onclick={() => library.setRecentFilesLimit(25)}>25</button
+                    class="settings-action-btn"
+                    onclick={() => {
+                      library.clearRecentFiles();
+                      showToast({
+                        message: "Recent files cleared",
+                        color: "green",
+                      });
+                    }}
                   >
-                  <button
-                    class="pill-btn"
-                    class:active={library.recentFilesLimit === 50}
-                    onclick={() => library.setRecentFilesLimit(50)}>50</button
-                  >
-                  <button
-                    class="pill-btn"
-                    class:active={library.recentFilesLimit === 100}
-                    onclick={() => library.setRecentFilesLimit(100)}>100</button
-                  >
+                    Clear
+                  </button>
                 </div>
               </div>
             </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
+
+            <div class="settings-subcard">
+              <p class="settings-subcard-header">
                 <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><line
-                    x1="4.93"
-                    y1="4.93"
-                    x2="19.07"
-                    y2="19.07"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Disable Recents</span>
-                  <span class="settings-hint"
-                    >Stop recording newly opened files</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={library.recentsDisabled}
-                    onchange={(e) =>
-                      library.setRecentsDisabled(e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={library.recentsDisabled}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
+                  width="13"
+                  height="13"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -3302,152 +4087,174 @@
                   stroke-linejoin="round"
                   ><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg
                 >
-                <div class="settings-label-text">
-                  <span class="settings-label">Privacy Mode</span>
-                  <span class="settings-hint"
-                    >Blur thumbnails, obscure paths, censor dates</span
+                Privacy
+              </p>
+
+              <div class="settings-row">
+                <div class="settings-label-col">
+                  <svg
+                    class="settings-row-icon"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    ><path
+                      d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                    /></svg
                   >
+                  <div class="settings-label-text">
+                    <span class="settings-label">Privacy Mode</span>
+                    <span class="settings-hint"
+                      >Blur thumbnails and pause recents</span
+                    >
+                  </div>
+                </div>
+                <div class="settings-control">
+                  <label class="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={library.privacyMode}
+                      onchange={(e) =>
+                        library.setPrivacyMode(e.currentTarget.checked)}
+                    />
+                    <span class="toggle-track" class:on={library.privacyMode}
+                      ><span class="toggle-thumb"></span></span
+                    >
+                  </label>
                 </div>
               </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={library.privacyMode}
-                    onchange={(e) =>
-                      library.setPrivacyMode(e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={library.privacyMode}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear Recents</span>
-                  <span class="settings-hint"
-                    >Remove all items from the recent files list</span
-                  >
+
+              {#if library.privacyMode}
+                <div class="settings-row settings-subrow">
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><circle cx="12" cy="12" r="3" /><path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                      /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Blur Strength</span>
+                      <span class="settings-hint"
+                        >Higher values hide more detail</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control settings-slider-control">
+                    <input
+                      type="range"
+                      min="4"
+                      max="32"
+                      step="2"
+                      aria-label="Privacy blur strength"
+                      value={privacyBlurPreview}
+                      oninput={(e) =>
+                        (privacyBlurPreview = Number(e.currentTarget.value))}
+                      onchange={(e) =>
+                        library.setPrivacyBlur(Number(e.currentTarget.value))}
+                    />
+                    <span class="settings-slider-value" style="min-width: 54px"
+                      >{privacyBlurPreview}px</span
+                    >
+                  </div>
                 </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn"
-                  onclick={() => {
-                    library.clearRecentFiles();
-                    showToast({
-                      message: "Recent files cleared",
-                      color: "green",
-                    });
-                  }}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Show folders</span>
-                  <span class="settings-hint"
-                    >Display folders alongside files in the library and
-                    collection views</span
-                  >
+
+                <div class="settings-row settings-subrow">
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path
+                        d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"
+                      /><path
+                        d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
+                      /><line x1="1" y1="1" x2="23" y2="23" /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Hide File Names</span>
+                      <span class="settings-hint"
+                        >Mask filenames in library views</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control">
+                    <label class="toggle-row">
+                      <input
+                        type="checkbox"
+                        checked={library.privacyHideNames}
+                        onchange={(e) =>
+                          library.setPrivacyHideNames(e.currentTarget.checked)}
+                      />
+                      <span
+                        class="toggle-track"
+                        class:on={library.privacyHideNames}
+                        ><span class="toggle-thumb"></span></span
+                      >
+                    </label>
+                  </div>
                 </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={library.showFolders}
-                    onchange={(e) =>
-                      library.setShowFolders(e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={library.showFolders}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><rect
-                    x="3"
-                    y="3"
-                    width="18"
-                    height="18"
-                    rx="2"
-                    ry="2"
-                  /><circle cx="8.5" cy="8.5" r="1.5" /><circle
-                    cx="15.5"
-                    cy="8.5"
-                    r="1.5"
-                  /><circle cx="15.5" cy="15.5" r="1.5" /><circle
-                    cx="8.5"
-                    cy="15.5"
-                    r="1.5"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Show Thumbnails</span>
-                  <span class="settings-hint"
-                    >Generate previews in library grid</span
-                  >
+
+                <div class="settings-row settings-subrow">
+                  <div class="settings-label-col">
+                    <svg
+                      class="settings-row-icon"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><path
+                        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                      /><circle cx="12" cy="12" r="3" /></svg
+                    >
+                    <div class="settings-label-text">
+                      <span class="settings-label">Reveal on Hover</span>
+                      <span class="settings-hint"
+                        >Show sharp thumbnails when hovering</span
+                      >
+                    </div>
+                  </div>
+                  <div class="settings-control">
+                    <label class="toggle-row">
+                      <input
+                        type="checkbox"
+                        checked={library.privacyRevealHover}
+                        onchange={(e) =>
+                          library.setPrivacyRevealHover(
+                            e.currentTarget.checked,
+                          )}
+                      />
+                      <span
+                        class="toggle-track"
+                        class:on={library.privacyRevealHover}
+                        ><span class="toggle-thumb"></span></span
+                      >
+                    </label>
+                  </div>
                 </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={library.showThumbnails}
-                    onchange={(e) =>
-                      library.setShowThumbnails(e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={library.showThumbnails}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
+              {/if}
             </div>
           </div>
 

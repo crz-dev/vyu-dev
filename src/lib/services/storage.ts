@@ -957,6 +957,86 @@ export function saveShowThumbnails(enabled: boolean): void {
   localStorage.setItem("vyu-show-thumbnails", String(enabled));
 }
 
+// ── Library display ──
+
+export interface LibraryFileFilters {
+  images: boolean;
+  videos: boolean;
+  audio: boolean;
+  documents: boolean;
+}
+
+const DEFAULT_LIBRARY_FILE_FILTERS: LibraryFileFilters = {
+  images: true,
+  videos: true,
+  audio: true,
+  documents: true,
+};
+
+export function loadLibraryFileFilters(): LibraryFileFilters {
+  const raw = localStorage.getItem("vyu-library-file-filters");
+  if (!raw) return { ...DEFAULT_LIBRARY_FILE_FILTERS };
+  try {
+    const parsed = JSON.parse(raw) as Partial<
+      Record<keyof LibraryFileFilters, unknown>
+    >;
+    if (!parsed || typeof parsed !== "object") {
+      return { ...DEFAULT_LIBRARY_FILE_FILTERS };
+    }
+    const filters: LibraryFileFilters = {
+      images: parsed.images !== false,
+      videos: parsed.videos !== false,
+      audio: parsed.audio !== false,
+      documents: parsed.documents !== false,
+    };
+    if (
+      !filters.images &&
+      !filters.videos &&
+      !filters.audio &&
+      !filters.documents
+    ) {
+      return { ...DEFAULT_LIBRARY_FILE_FILTERS };
+    }
+    return filters;
+  } catch {
+    return { ...DEFAULT_LIBRARY_FILE_FILTERS };
+  }
+}
+
+export function saveLibraryFileFilters(filters: LibraryFileFilters): void {
+  localStorage.setItem("vyu-library-file-filters", JSON.stringify(filters));
+}
+
+export function loadRecentRetentionDays(): number {
+  const raw = localStorage.getItem("vyu-recent-retention-days");
+  if (raw === "7" || raw === "30" || raw === "90") return Number(raw);
+  return 0;
+}
+
+export function saveRecentRetentionDays(days: number): void {
+  localStorage.setItem("vyu-recent-retention-days", String(days));
+}
+
+export function loadLibraryThumbnailSize(): number {
+  const raw = localStorage.getItem("vyu-library-thumbnail-size");
+  if (raw === "128" || raw === "256" || raw === "512") return Number(raw);
+  return 256;
+}
+
+export function saveLibraryThumbnailSize(size: number): void {
+  localStorage.setItem("vyu-library-thumbnail-size", String(size));
+}
+
+export function loadCollectionCovers(): boolean {
+  const v = localStorage.getItem("vyu-collection-covers");
+  if (v === null) return true;
+  return v === "true";
+}
+
+export function saveCollectionCovers(enabled: boolean): void {
+  localStorage.setItem("vyu-collection-covers", String(enabled));
+}
+
 // ── Collections ──
 
 export interface CollectionItem {
@@ -1041,6 +1121,37 @@ export function loadPrivacyMode(): boolean {
 
 export function savePrivacyMode(enabled: boolean): void {
   localStorage.setItem("vyu-privacy-mode", String(enabled));
+}
+
+export function loadPrivacyBlur(): number {
+  const raw = localStorage.getItem("vyu-privacy-blur");
+  if (raw !== null) {
+    const v = Number(raw);
+    if (Number.isFinite(v)) return Math.max(4, Math.min(32, v));
+  }
+  return 12;
+}
+
+export function savePrivacyBlur(px: number): void {
+  localStorage.setItem("vyu-privacy-blur", String(px));
+}
+
+export function loadPrivacyHideNames(): boolean {
+  return localStorage.getItem("vyu-privacy-hide-names") === "true";
+}
+
+export function savePrivacyHideNames(enabled: boolean): void {
+  localStorage.setItem("vyu-privacy-hide-names", String(enabled));
+}
+
+export function loadPrivacyRevealHover(): boolean {
+  const v = localStorage.getItem("vyu-privacy-reveal-hover");
+  if (v === null) return true;
+  return v === "true";
+}
+
+export function savePrivacyRevealHover(enabled: boolean): void {
+  localStorage.setItem("vyu-privacy-reveal-hover", String(enabled));
 }
 
 // ── Color Blind Mode ──

@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    IMAGE_EXTS,
     VIDEO_EXTS,
     AUDIO_EXTS,
     DOCUMENT_EXTS,
@@ -28,6 +29,7 @@
     invokeCopyFileUnique,
   } from "$lib/features/media/api";
   import { showToast } from "$lib/components/toast.svelte";
+  import { maskFileName } from "$lib/shared/privacy";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import { saveLastDialogSection } from "$lib/services/storage";
   import { computeContextMenuPosition } from "$lib/services/session";
@@ -152,8 +154,25 @@
   let colCtxPinned = $state(false);
   let colCtxKey = $state(0);
 
+  const IMAGE_SET = new Set(IMAGE_EXTS);
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
+  const DOCUMENT_SET = new Set(DOCUMENT_EXTS);
+
+  function isVisibleFile(path: string): boolean {
+    const ext = getFileExt(path);
+    if (IMAGE_SET.has(ext)) return library.fileFilters.images;
+    if (VIDEO_SET.has(ext)) return library.fileFilters.videos;
+    if (AUDIO_SET.has(ext)) return library.fileFilters.audio;
+    if (DOCUMENT_SET.has(ext)) return library.fileFilters.documents;
+    return true;
+  }
+
+  function displayName(path: string): string {
+    return library.privacyMode && library.privacyHideNames
+      ? maskFileName(path)
+      : getFileName(path);
+  }
 
   function densityMap(
     d: number,
@@ -277,7 +296,7 @@
   const isCustomCollection = $derived(activeCollection?.type === "custom");
 
   const collectionItemCount = $derived(
-    collectionFolders.length + collectionFiles.length,
+    collectionFolders.length + collectionFiles.filter(isVisibleFile).length,
   );
 
   const recentFilesWarning = $derived(
@@ -391,12 +410,14 @@
       (library.privacyMode || library.recentsDisabled)
     )
       return [];
-    if (library.activeTab === "recents") return library.getRecentPaths();
-    if (library.activeTab === "favorites") return library.getFavoritePaths();
-    if (isViewingCollection) return collectionFiles;
+    if (library.activeTab === "recents")
+      return library.getRecentPaths().filter(isVisibleFile);
+    if (library.activeTab === "favorites")
+      return library.getFavoritePaths().filter(isVisibleFile);
+    if (isViewingCollection) return collectionFiles.filter(isVisibleFile);
     if (library.activeTab === "library" && libraryDirPath)
-      return libraryDirFiles;
-    return fileList;
+      return libraryDirFiles.filter(isVisibleFile);
+    return fileList.filter(isVisibleFile);
   });
 
   const sortedFiles = $derived.by(() => {
@@ -1252,6 +1273,7 @@
   });
 
   $effect(() => {
+    void library.thumbnailSize;
     library.rebuildQueue(sortedFiles, currentIndex);
   });
 
@@ -1384,10 +1406,21 @@
   });
 
   $effect(() => {
+    void library.thumbnailSize;
     if (library.activeTab !== "collections") return;
+    if (!library.showCollectionCovers || !library.showThumbnails) {
+      if (Object.keys(collectionFirstFiles).length > 0) {
+        collectionFirstFiles = {};
+      }
+      return;
+    }
     const cols = library.collections;
     for (const col of cols) {
-      if (collectionFirstFiles[col.path]) continue;
+      const existing = collectionFirstFiles[col.path];
+      if (existing) {
+        library.requestThumbnail(existing);
+        continue;
+      }
       if (col.thumbnailPath) {
         collectionFirstFiles = {
           ...collectionFirstFiles,
@@ -1773,9 +1806,9 @@
           <button
             class="library-header-count tooltip-ctrl"
             class:warning={recentFilesWarning}
-            data-tooltip="Recents limit — older files drop off once full"
+            data-tooltip="Recents limit — older files drop off by count or age"
             onclick={openRecentsSettings}
-            >({library.recentFiles.length}/{library.recentFilesLimit})</button
+            >({displayFiles.length}/{library.recentFilesLimit})</button
           >
         {/if}
       </span>
@@ -1799,7 +1832,7 @@
       >
       <span class="library-breadcrumb-segment active"
         >Favorites <span class="library-header-count"
-          >({library.favorites.length})</span
+          >({displayFiles.length})</span
         ></span
       >
     </div>
@@ -1899,7 +1932,7 @@
           class="library-breadcrumb-segment active"
           onclick={() => invokeOpenDirectory(libraryDirPath!)}
           >{libraryRootName}
-          <span class="library-header-count">({libraryDirFiles.length})</span
+          <span class="library-header-count">({displayFiles.length})</span
           ></button
         >
       {/if}
@@ -2069,7 +2102,7 @@
                           <div class="library-placeholder"></div>
                         {/if}
                         {#if library.namesOn}
-                          <div class="file-name-label">{getFileName(path)}</div>
+                          <div class="file-name-label">{displayName(path)}</div>
                         {/if}
                         <div
                           class="library-checkbox"
@@ -2307,7 +2340,7 @@
                           {/if}
                           {#if library.namesOn}
                             <div class="file-name-label">
-                              {getFileName(path)}
+                              {displayName(path)}
                             </div>
                           {/if}
                           <div
@@ -2564,7 +2597,7 @@
                           <div class="river-placeholder"></div>
                         {/if}
                         {#if library.namesOn}
-                          <div class="file-name-label">{getFileName(path)}</div>
+                          <div class="file-name-label">{displayName(path)}</div>
                         {/if}
                         <div
                           class="library-checkbox"
@@ -2783,7 +2816,7 @@
                         <div class="filmstrip-placeholder"></div>
                       {/if}
                       {#if library.namesOn}
-                        <div class="file-name-label">{getFileName(path)}</div>
+                        <div class="file-name-label">{displayName(path)}</div>
                       {/if}
                       <div
                         class="library-checkbox"
@@ -3213,7 +3246,7 @@
                           {/if}
                         </span>
                         <span class="list-col list-col-name">
-                          {path.split(/[/\\]/).pop()}
+                          {displayName(path)}
                         </span>
                         <span class="list-col list-col-size">
                           {stat?.size != null ? formatFileSize(stat.size) : ""}
@@ -3251,7 +3284,11 @@
                   d="M12 2a9 8 0 0 0-9 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a9 8 0 0 0-9-8z"
                 />
               </svg>
-              <span>No files favorited</span>
+              <span
+                >{library.favorites.length > 0
+                  ? "No favorites match the selected types"
+                  : "No files favorited"}</span
+              >
             </div>
           {/if}
 
@@ -3271,7 +3308,15 @@
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
-              <span>No recent files</span>
+              <span
+                >{library.privacyMode
+                  ? "Recents are paused while Privacy Mode is on"
+                  : library.recentsDisabled
+                    ? "Recents are off"
+                    : library.getRecentPaths().length > 0
+                      ? "No recent files match the selected types"
+                      : "No recent files"}</span
+              >
             </div>
           {/if}
 
@@ -3329,7 +3374,11 @@
                   <line x1="11" y1="8" x2="17" y2="6.5" />
                 </svg>
               </div>
-              <span>No files in this folder</span>
+              <span
+                >{fileList.length > 0
+                  ? "No files match the selected types"
+                  : "No files in this folder"}</span
+              >
             </div>
           {/if}
 
@@ -3350,7 +3399,11 @@
                   d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
                 />
               </svg>
-              <span>No files in this folder</span>
+              <span
+                >{collectionFiles.length > 0
+                  ? "No files match the selected types"
+                  : "No files in this folder"}</span
+              >
             </div>
           {/if}
           {#if library.activeTab === "library" && libraryDirPath && displayFiles.length === 0 && currentFolderPaths.length === 0}
@@ -3370,7 +3423,11 @@
                   d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
                 />
               </svg>
-              <span>No files in this folder</span>
+              <span
+                >{libraryDirFiles.length > 0
+                  ? "No files match the selected types"
+                  : "No files in this folder"}</span
+              >
             </div>
           {/if}
 
@@ -3448,7 +3505,7 @@
                     }}
                   >
                     <div class="library-collection-content">
-                      {#if library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
+                      {#if library.showCollectionCovers && library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
                         <img
                           class="library-collection-thumb"
                           src={library.cache[firstFilePath]}

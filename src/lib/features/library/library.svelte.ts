@@ -11,7 +11,10 @@ import {
   invokeDeleteFile,
   invokeMigrateThumbnailCache,
 } from "$lib/features/media/api";
-import { generatePdfThumbnail, isPdfPath } from "$lib/features/viewer/pdf.svelte";
+import {
+  generatePdfThumbnail,
+  isPdfPath,
+} from "$lib/features/viewer/pdf.svelte";
 import {
   loadViewDensity,
   saveViewDensity,
@@ -41,11 +44,26 @@ import {
   saveNamesOn,
   loadPrivacyMode,
   savePrivacyMode,
+  loadLibraryFileFilters,
+  saveLibraryFileFilters,
+  loadRecentRetentionDays,
+  saveRecentRetentionDays,
+  loadPrivacyBlur,
+  savePrivacyBlur,
+  loadPrivacyHideNames,
+  savePrivacyHideNames,
+  loadPrivacyRevealHover,
+  savePrivacyRevealHover,
+  loadLibraryThumbnailSize,
+  saveLibraryThumbnailSize,
+  loadCollectionCovers,
+  saveCollectionCovers,
 } from "$lib/services/storage";
 import type {
   CollectionItem,
   RecentFileItem,
   FavoriteItem,
+  LibraryFileFilters,
 } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
 import { getParentFolder } from "$lib/services/files";
@@ -57,7 +75,22 @@ import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
 const MAX_CONCURRENT = 2;
-const THUMB_SIZE = 256;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const THUMBNAIL_SIZES: readonly number[] = [128, 256, 512];
+const RECENT_RETENTION_DAYS: readonly number[] = [0, 7, 30, 90];
+
+function clampPrivacyBlur(value: number): number {
+  return Math.max(4, Math.min(32, Math.round(value / 2) * 2));
+}
+
+function pruneRecentByAge(
+  items: RecentFileItem[],
+  retentionDays: number,
+): RecentFileItem[] {
+  if (retentionDays <= 0) return items;
+  const cutoff = Date.now() - retentionDays * DAY_MS;
+  return items.filter((item) => item.openedAt >= cutoff);
+}
 
 type LibraryTab = "library" | "recents" | "collections" | "favorites";
 const TAB_ORDER: LibraryTab[] = [
@@ -84,8 +117,12 @@ function createLibrary() {
 
   let recentFilesLimit = $state(loadRecentFilesLimit());
   let recentsDisabled = $state(loadRecentsDisabled());
+  let recentRetentionDays = $state(loadRecentRetentionDays());
   let recentFiles = $state<RecentFileItem[]>(
-    loadRecentFiles(loadRecentFilesLimit()),
+    pruneRecentByAge(
+      loadRecentFiles(loadRecentFilesLimit()),
+      loadRecentRetentionDays(),
+    ),
   );
   let recentTimestamps = $derived.by(() => {
     const map: Record<string, number> = {};
@@ -122,6 +159,13 @@ function createLibrary() {
   let namesOn = $state(loadNamesOn());
 
   let privacyMode = $state(loadPrivacyMode());
+  let privacyBlur = $state(clampPrivacyBlur(loadPrivacyBlur()));
+  let privacyHideNames = $state(loadPrivacyHideNames());
+  let privacyRevealHover = $state(loadPrivacyRevealHover());
+
+  let fileFilters = $state<LibraryFileFilters>(loadLibraryFileFilters());
+  let thumbnailSize = $state(loadLibraryThumbnailSize());
+  let showCollectionCovers = $state(loadCollectionCovers());
 
   let selectedPaths = $state<Record<string, boolean>>({});
   let collectMode = $state(false);
@@ -141,6 +185,13 @@ function createLibrary() {
     }
     return map;
   });
+
+  function applyPrivacyStyles() {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    root.style.setProperty("--privacy-blur", `${privacyBlur}px`);
+    root.dataset.privacyReveal = privacyRevealHover ? "true" : "false";
+  }
 
   function evictCacheOne() {
     while (cacheOrder.length > 0) {
@@ -163,7 +214,7 @@ function createLibrary() {
   }
 
   function setCacheEntry(path: string, dataUrl: string) {
-    sharedSetCached(path, THUMB_SIZE, dataUrl);
+    sharedSetCached(path, thumbnailSize, dataUrl);
     if (path in cache) touchCache(path);
     else {
       cache[path] = dataUrl;
@@ -200,7 +251,7 @@ function createLibrary() {
         if (!(p in cache)) setCacheEntry(p, dataUrl);
       });
 
-      const results = await invokeGetThumbnails(batchPaths, THUMB_SIZE);
+      const results = await invokeGetThumbnails(batchPaths, thumbnailSize);
       if (localGen !== _fetchGen) return;
       for (const [p, dataUrl] of Object.entries(results)) {
         if (dataUrl && !(p in cache)) {
@@ -211,7 +262,7 @@ function createLibrary() {
       // PDFs: generate thumbnails on frontend (backend FFmpeg can't decode PDFs)
       for (const p of batchPaths) {
         if (isPdfPath(p) && !(p in cache)) {
-          generatePdfThumbnail(p, THUMB_SIZE).then((dataUrl) => {
+          generatePdfThumbnail(p, thumbnailSize).then((dataUrl) => {
             if (localGen !== _fetchGen) return;
             if (dataUrl && !(p in cache)) {
               setCacheEntry(p, dataUrl);
@@ -241,7 +292,7 @@ function createLibrary() {
       touchCache(path);
       return cache[path];
     }
-    const shared = sharedGetCached(path, 256);
+    const shared = sharedGetCached(path, thumbnailSize);
     if (shared) {
       setCacheEntry(path, shared);
       return shared;
@@ -334,10 +385,14 @@ function createLibrary() {
 
   function addRecent(path: string) {
     if (recentsDisabled || privacyMode) return;
-    recentFiles = [
-      { path, openedAt: Date.now() },
-      ...recentFiles.filter((r) => r.path !== path),
-    ].slice(0, recentFilesLimit);
+    const next = pruneRecentByAge(
+      [
+        { path, openedAt: Date.now() },
+        ...recentFiles.filter((r) => r.path !== path),
+      ],
+      recentRetentionDays,
+    );
+    recentFiles = next.slice(0, recentFilesLimit);
     saveRecentFiles(recentFiles, recentFilesLimit);
   }
 
@@ -349,10 +404,19 @@ function createLibrary() {
   function setRecentFilesLimit(limit: number) {
     recentFilesLimit = limit;
     saveRecentFilesLimit(limit);
-    if (recentFiles.length > limit) {
-      recentFiles.length = limit;
+    const pruned = pruneRecentByAge(recentFiles, recentRetentionDays);
+    if (pruned.length !== recentFiles.length || recentFiles.length > limit) {
+      recentFiles = pruned.slice(0, limit);
       saveRecentFiles(recentFiles, limit);
     }
+  }
+
+  function setRecentRetentionDays(days: number) {
+    if (!RECENT_RETENTION_DAYS.includes(days)) return;
+    recentRetentionDays = days;
+    saveRecentRetentionDays(days);
+    recentFiles = pruneRecentByAge(recentFiles, days);
+    saveRecentFiles(recentFiles, recentFilesLimit);
   }
 
   function getRecentPaths(): string[] {
@@ -387,6 +451,57 @@ function createLibrary() {
   function setPrivacyMode(enabled: boolean) {
     privacyMode = enabled;
     savePrivacyMode(enabled);
+  }
+
+  function setPrivacyBlur(value: number) {
+    if (!Number.isFinite(value)) return;
+    privacyBlur = clampPrivacyBlur(value);
+    savePrivacyBlur(privacyBlur);
+    applyPrivacyStyles();
+  }
+
+  function setPrivacyHideNames(enabled: boolean) {
+    privacyHideNames = enabled;
+    savePrivacyHideNames(enabled);
+  }
+
+  function setPrivacyRevealHover(enabled: boolean) {
+    privacyRevealHover = enabled;
+    savePrivacyRevealHover(enabled);
+    applyPrivacyStyles();
+  }
+
+  function setFileKindVisible(
+    kind: keyof LibraryFileFilters,
+    enabled: boolean,
+  ) {
+    const next = { ...fileFilters, [kind]: enabled };
+    if (!next.images && !next.videos && !next.audio && !next.documents) return;
+    fileFilters = next;
+    saveLibraryFileFilters(next);
+    clearSelection();
+  }
+
+  function setThumbnailSize(size: number) {
+    if (!THUMBNAIL_SIZES.includes(size) || size === thumbnailSize) {
+      return;
+    }
+    thumbnailSize = size;
+    saveLibraryThumbnailSize(size);
+    _fetchGen++;
+    for (const key of Object.keys(cache)) {
+      delete cache[key];
+    }
+    cacheOrder.length = 0;
+    indexMap.clear();
+    pendingSet.clear();
+    pendingOrder = [];
+    updateGenerating();
+  }
+
+  function setShowCollectionCovers(enabled: boolean) {
+    showCollectionCovers = enabled;
+    saveCollectionCovers(enabled);
   }
 
   function setDensity(v: number) {
@@ -634,6 +749,8 @@ function createLibrary() {
     saveCollections(collections);
   }
 
+  applyPrivacyStyles();
+
   return {
     get cache() {
       return cache;
@@ -658,6 +775,10 @@ function createLibrary() {
       return recentFilesLimit;
     },
     setRecentFilesLimit,
+    get recentRetentionDays() {
+      return recentRetentionDays;
+    },
+    setRecentRetentionDays,
     get recentTimestamps() {
       return recentTimestamps;
     },
@@ -674,6 +795,18 @@ function createLibrary() {
       return showThumbnails;
     },
     setShowThumbnails,
+    get fileFilters() {
+      return fileFilters;
+    },
+    setFileKindVisible,
+    get thumbnailSize() {
+      return thumbnailSize;
+    },
+    setThumbnailSize,
+    get showCollectionCovers() {
+      return showCollectionCovers;
+    },
+    setShowCollectionCovers,
     get viewMode() {
       return viewMode;
     },
@@ -701,6 +834,18 @@ function createLibrary() {
       return privacyMode;
     },
     setPrivacyMode,
+    get privacyBlur() {
+      return privacyBlur;
+    },
+    setPrivacyBlur,
+    get privacyHideNames() {
+      return privacyHideNames;
+    },
+    setPrivacyHideNames,
+    get privacyRevealHover() {
+      return privacyRevealHover;
+    },
+    setPrivacyRevealHover,
     get totalSize() {
       return totalSize;
     },

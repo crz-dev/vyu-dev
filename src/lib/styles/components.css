@@ -1405,12 +1405,16 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 
 .privacy-blur img {
-  filter: blur(12px);
+  filter: blur(var(--privacy-blur, 12px));
   transition: filter 0.2s;
 }
 
 .privacy-blur:hover img {
   filter: none;
+}
+
+:root[data-privacy-reveal="false"] .privacy-blur:hover img {
+  filter: blur(var(--privacy-blur, 12px));
 }
 
 /** Placeholder shown while thumbnail is loading */
