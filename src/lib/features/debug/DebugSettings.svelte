@@ -1,17 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { slide } from "svelte/transition";
   import { save } from "@tauri-apps/plugin-dialog";
   import { writeTextFile } from "@tauri-apps/plugin-fs";
   import { showToast } from "$lib/components/toast.svelte";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
   import { copyTextToClipboard } from "$lib/services/clipboard";
   import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     collectDebugInfo,
     diagnosticsJson,
     fileMetadataJson,
     formatBytes,
-    redactArgs,
   } from "$lib/features/debug/debugInfo";
   import { invokeVacuumDatabase } from "$lib/features/debug/api";
   import type {
@@ -19,7 +20,6 @@
     DebugInfo,
   } from "$lib/features/debug/debugTypes";
   import {
-    invokeOpenAppFolder,
     invokeOpenDevTools,
     invokeRestartAppMode,
   } from "$lib/features/system/api";
@@ -37,7 +37,7 @@
   let refreshing = $state(false);
   let compacting = $state(false);
   let error = $state("");
-  let flagsOpen = $state(false);
+  let detailsOpen = $state(false);
 
   onMount(() => {
     void load();
@@ -79,12 +79,6 @@
     return info.ffmpeg.hardwareEncoders.length > 0
       ? info.ffmpeg.hardwareEncoders.join(", ")
       : "Software only";
-  }
-
-  function argsLabel(): string {
-    if (!info) return "Loading…";
-    const args = redactArgs(info.runtime.args);
-    return args.length > 0 ? args.join(" ") : "None";
   }
 
   function databaseLabel(): string {
@@ -139,14 +133,6 @@
     }
   }
 
-  async function openFolder(kind: "data" | "config" | "cache") {
-    try {
-      await invokeOpenAppFolder(kind);
-    } catch (e) {
-      showToast({ message: String(e), color: "red" });
-    }
-  }
-
   async function compactDatabase() {
     if (compacting) return;
     compacting = true;
@@ -175,21 +161,6 @@
       // The process exits before the IPC response arrives.
     }
   }
-
-  function toggleFlags() {
-    flagsOpen = !flagsOpen;
-  }
-
-  const flagKeys = $derived.by(() => {
-    if (!flagsOpen) return [];
-    return Array.from(
-      { length: typeof localStorage !== "undefined" ? localStorage.length : 0 },
-      (_, i) =>
-        typeof localStorage !== "undefined" ? localStorage.key(i) : null,
-    )
-      .filter((key): key is string => !!key && key.startsWith("vyu-"))
-      .sort();
-  });
 </script>
 
 <div id="settings-section-debug" class="settings-section" class:flash>
@@ -234,74 +205,183 @@
     </div>
     <div class="settings-row">
       <div class="settings-label-text">
-        <span class="settings-label">WebView2</span>
-      </div>
-      <span class="settings-hint">{info?.webview2Version ?? "—"}</span>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">System</span>
-      </div>
-      <span class="settings-hint">{platformLabel()}</span>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-text">
         <span class="settings-label">GPU</span>
       </div>
       <span class="settings-hint" title={gpuLabel()}>{gpuLabel()}</span>
     </div>
     <div class="settings-row">
       <div class="settings-label-text">
-        <span class="settings-label">Acceleration</span>
+        <span class="settings-label">FFmpeg</span>
       </div>
       <span class="settings-hint"
-        >{info
-          ? info.systemConfig.hardwareAcceleration
-            ? "Enabled"
-            : "Disabled"
-          : "—"}</span
+        >{info?.ffmpeg.ffmpegVersion ?? "—"} · {encoderLabel()}</span
       >
     </div>
     <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">User Agent</span>
+      <div class="settings-label-col">
+        <div class="settings-label-text">
+          <span class="settings-label">Runtime Details</span>
+          <span class="settings-hint"
+            >WebView2, system, safety and maintenance</span
+          >
+        </div>
       </div>
-      <span class="settings-hint debug-code" title={info?.userAgent ?? ""}
-        >{info?.userAgent ?? "—"}</span
-      >
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-hint">Runtime and graphics details</span>
+      <div class="settings-control">
+        <button
+          class="settings-action-btn"
+          onclick={() => (detailsOpen = !detailsOpen)}
+        >
+          {detailsOpen ? "Hide" : "Show"}
+        </button>
       </div>
-      <button
-        class="settings-action-btn"
-        onclick={() => load(true)}
-        disabled={refreshing}>{refreshing ? "Refreshing…" : "Refresh"}</button
-      >
-    </div>
-
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">Version</span>
-      </div>
-      <span class="settings-hint">{info?.ffmpeg.ffmpegVersion ?? "—"}</span>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">Encoders</span>
-      </div>
-      <span class="settings-hint">{encoderLabel()}</span>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">Path</span>
-      </div>
-      <span class="settings-hint" title={info?.ffmpeg.ffmpegPath ?? ""}
-        >{shortPath(info?.ffmpeg.ffmpegPath ?? "")}</span
-      >
     </div>
   </div>
+
+  {#if detailsOpen}
+    <div
+      class="settings-group-stack"
+      transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
+    >
+      <p class="settings-group-label">
+        <span class="settings-group-icon">
+          <SettingsGroupIcon name="info" />
+        </span>
+        Details
+      </p>
+      <div class="settings-card has-child">
+        <div class="settings-row">
+          <div class="settings-label-text">
+            <span class="settings-label">WebView2</span>
+          </div>
+          <span class="settings-hint">{info?.webview2Version ?? "—"}</span>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-text">
+            <span class="settings-label">System</span>
+          </div>
+          <span class="settings-hint">{platformLabel()}</span>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-text">
+            <span class="settings-label">Acceleration</span>
+          </div>
+          <span class="settings-hint"
+            >{info
+              ? info.systemConfig.hardwareAcceleration
+                ? "Enabled"
+                : "Disabled"
+              : "—"}</span
+          >
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-text">
+            <span class="settings-label">FFmpeg Path</span>
+          </div>
+          <span class="settings-hint" title={info?.ffmpeg.ffmpegPath ?? ""}
+            >{shortPath(info?.ffmpeg.ffmpegPath ?? "")}</span
+          >
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-text">
+            <span class="settings-label">Safe Mode</span>
+          </div>
+          <span class="settings-hint"
+            >{info ? (info.runtime.safeMode ? "On" : "Off") : "—"}</span
+          >
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-col">
+            <div class="settings-label-text">
+              <span class="settings-label">Database</span>
+              <span class="settings-hint">{databaseLabel()}</span>
+            </div>
+          </div>
+          <div class="settings-control">
+            <button
+              class="settings-action-btn"
+              onclick={compactDatabase}
+              disabled={compacting || loading}
+              >{compacting ? "Compacting…" : "Compact"}</button
+            >
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-col">
+            <div class="settings-label-text">
+              <span class="settings-label">Open Webview DevTools</span>
+              <span class="settings-hint">Inspect the app window</span>
+            </div>
+          </div>
+          <div class="settings-control">
+            <button
+              class="settings-action-btn"
+              onclick={() => void invokeOpenDevTools()}>Open</button
+            >
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-col">
+            <div class="settings-label-text">
+              <span class="settings-label">Debug Overlay</span>
+              <span class="settings-hint"
+                >FPS, heap, media state and viewport</span
+              >
+            </div>
+          </div>
+          <div class="settings-control">
+            <label class="toggle-row">
+              <input
+                type="checkbox"
+                checked={debugPrefs.overlayOpen}
+                onchange={(e) =>
+                  debugPrefs.setOverlayOpen(e.currentTarget.checked)}
+              />
+              <span class="toggle-track" class:on={debugPrefs.overlayOpen}
+                ><span class="toggle-thumb"></span></span
+              >
+            </label>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-col">
+            <div class="settings-label-text">
+              <span class="settings-label">Refresh</span>
+              <span class="settings-hint"
+                >Reload runtime and graphics details</span
+              >
+            </div>
+          </div>
+          <div class="settings-control">
+            <button
+              class="settings-action-btn"
+              onclick={() => load(true)}
+              disabled={refreshing}
+              >{refreshing ? "Refreshing…" : "Refresh"}</button
+            >
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-label-col">
+            <div class="settings-label-text">
+              <span class="settings-label">Restart Mode</span>
+              <span class="settings-hint"
+                >{info?.runtime.safeMode
+                  ? "Relaunch without --safe-mode"
+                  : "Relaunch with --safe-mode"}</span
+              >
+            </div>
+          </div>
+          <div class="settings-control">
+            <button class="settings-action-btn" onclick={restartMode}
+              >{info?.runtime.safeMode
+                ? "Restart Normally"
+                : "Restart in Safe Mode"}</button
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <p class="settings-group-label">
     <span class="settings-group-icon">
@@ -355,149 +435,5 @@
         >
       </div>
     </div>
-
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Open Webview DevTools</span>
-          <span class="settings-hint">Inspect the app window</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button
-          class="settings-action-btn"
-          onclick={() => void invokeOpenDevTools()}>Open</button
-        >
-      </div>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Debug Overlay</span>
-          <span class="settings-hint">FPS, heap, media state and viewport</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={debugPrefs.overlayOpen}
-            onchange={(e) => debugPrefs.setOverlayOpen(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={debugPrefs.overlayOpen}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      </div>
-    </div>
-  </div>
-
-  <p class="settings-group-label">
-    <span class="settings-group-icon">
-      <SettingsGroupIcon name="database" />
-    </span>
-    Maintenance
-  </p>
-  <div class="settings-card has-child">
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Database</span>
-          <span class="settings-hint">{databaseLabel()}</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button
-          class="settings-action-btn"
-          onclick={compactDatabase}
-          disabled={compacting || loading}
-          >{compacting ? "Compacting…" : "Compact"}</button
-        >
-      </div>
-    </div>
-    <div class="settings-row settings-subrow">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Config</span>
-          <span class="settings-hint">System and window configuration</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button class="settings-action-btn" onclick={() => openFolder("config")}
-          >Open</button
-        >
-      </div>
-    </div>
-
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">Safe Mode</span>
-      </div>
-      <span class="settings-hint"
-        >{info ? (info.runtime.safeMode ? "On" : "Off") : "—"}</span
-      >
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-text">
-        <span class="settings-label">Arguments</span>
-      </div>
-      <span class="settings-hint debug-code" title={argsLabel()}
-        >{argsLabel()}</span
-      >
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Restart Mode</span>
-          <span class="settings-hint"
-            >{info?.runtime.safeMode
-              ? "Relaunch without --safe-mode"
-              : "Relaunch with --safe-mode"}</span
-          >
-        </div>
-      </div>
-      <div class="settings-control">
-        <button class="settings-action-btn" onclick={restartMode}
-          >{info?.runtime.safeMode
-            ? "Restart Normally"
-            : "Restart in Safe Mode"}</button
-        >
-      </div>
-    </div>
-  </div>
-
-  <p class="settings-group-label">
-    <span class="settings-group-icon">
-      <SettingsGroupIcon name="filter" />
-    </span>
-    Local Flags
-  </p>
-  <div class="settings-card has-child">
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Toggle Flags</span>
-          <span class="settings-hint">View all localStorage keys</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button class="settings-action-btn" onclick={toggleFlags}
-          >{flagsOpen ? "Close" : "View"}</button
-        >
-      </div>
-    </div>
-    {#if flagsOpen}
-      <div class="flags-list">
-        {#each flagKeys as key}
-          <div class="flag-row">
-            <code>{key}</code>
-            <code>{(localStorage.getItem(key) ?? "").slice(0, 120)}</code>
-          </div>
-        {/each}
-        {#if flagKeys.length === 0}
-          <span class="settings-hint">No vyu- flags stored.</span>
-        {/if}
-      </div>
-    {/if}
   </div>
 </div>

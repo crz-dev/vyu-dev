@@ -2194,6 +2194,45 @@
   margin-top: 2px;
 }
 
+.settings-group-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.settings-group-chevron.open {
+  transform: rotate(90deg);
+}
+
+.keybind-category-toggle {
+  width: calc(100% - 8px);
+  margin: 6px 4px 0;
+  padding: 7px 4px;
+  border: none;
+  border-top: 0.5px solid var(--bg-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.keybind-category-toggle:first-of-type {
+  border-top: none;
+}
+
+.keybind-category-toggle:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+}
+
+.keybind-category-count {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
 .settings-card.has-child {
   margin: 2px 0;
   background: var(--bg-secondary);
@@ -2738,6 +2777,13 @@
   min-width: 160px;
 }
 
+.settings-control-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
 .settings-slider-control input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -3014,6 +3060,10 @@
   padding-top: 7px;
 }
 
+.keybind-reset-card {
+  margin-top: 8px;
+}
+
 .keybind-filter-row {
   align-items: center;
 }
@@ -3035,6 +3085,27 @@
   font-size: 11px;
   font-family: var(--font-family);
   outline: none;
+}
+
+.keybind-search-wrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.keybind-search-wrap .keybind-search-input {
+  width: 100%;
+  padding-left: 26px;
+}
+
+.keybind-search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-hint);
+  pointer-events: none;
 }
 
 .keybind-search-input:focus {
@@ -4527,8 +4598,37 @@
 }
 
 /* Danger Zone */
-.danger-intro {
-  padding: 0 4px 4px;
+.danger-warning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 340px;
+  margin-top: 4px;
+  padding: 32px 24px;
+  text-align: center;
+  border: 0.5px solid var(--yellow-border-subtle);
+  border-radius: 10px;
+  background: var(--yellow-bg-subtle);
+  color: var(--yellow);
+}
+
+.danger-warning-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+.danger-warning-text {
+  margin: 0;
+  max-width: 320px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  font-family: var(--font-family);
 }
 
 .danger-confirm {

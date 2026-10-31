@@ -12,23 +12,19 @@
     invokeRunUninstaller,
     type MarkerClearMode,
   } from "$lib/features/danger/api";
-  import type { DebugFileInfo } from "$lib/features/debug/debugTypes";
   import { editing } from "$lib/features/editing/editing.svelte";
   import {
     invokeClearBackups,
     invokeCleanupTempFolder,
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
-  import { library } from "$lib/features/library/library.svelte";
   import {
     invokeClearAllCaches,
     invokeResetSystemIntegrations,
   } from "$lib/features/system/api";
 
   type ActionId =
-    | "reset-view"
     | "markers"
-    | "recents"
     | "backups"
     | "clean-temp"
     | "reset-settings"
@@ -47,16 +43,12 @@
 
   let {
     flash = false,
-    fileInfo = null,
-    resetView,
     clearTimestamps,
     clearClips,
     clipDeleteOriginal = false,
     toggleClipDeleteOriginal = () => {},
   }: {
     flash?: boolean;
-    fileInfo?: DebugFileInfo | null;
-    resetView: () => void;
     clearTimestamps: () => void;
     clearClips: () => void;
     clipDeleteOriginal?: boolean;
@@ -66,6 +58,7 @@
   let busy = $state<ActionId | null>(null);
   let pending = $state<ActionId | null>(null);
   let typed = $state("");
+  let acknowledged = $state(false);
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   const hasActiveRisks = $derived(
@@ -127,7 +120,6 @@
 
   function actionDisabled(id: ActionId): boolean {
     if (busy) return true;
-    if (id === "reset-view") return !fileInfo?.filePath;
     if (pending === id && CRITICAL_WORDS[id]) return true;
     return false;
   }
@@ -251,16 +243,8 @@
     busy = id;
     try {
       switch (id) {
-        case "reset-view":
-          resetView();
-          showToast({ message: "View reset", color: "green" });
-          break;
         case "markers":
           await clearMarkers("all");
-          break;
-        case "recents":
-          library.clearRecentFiles();
-          showToast({ message: "Recent files cleared", color: "green" });
           break;
         case "backups":
           await clearBackups();
@@ -341,185 +325,202 @@
     >
     Danger Zone
   </p>
-  <p class="settings-hint danger-intro">
-    Irreversible actions. Media files on disk are never deleted here.
-  </p>
-
-  <SettingsGroup label="Active Risks" icon="danger">
-    <SettingsRow
-      label="File backups are off"
-      hint="Edits may be applied without a saved original"
-      open={editing.backupMode === "off"}
-    >
-      {#snippet control()}
-        <button class="settings-action-btn" onclick={() => fixRisk("backups")}
-          >Enable</button
+  {#if !acknowledged}
+    <div class="danger-warning">
+      <svg
+        width="34"
+        height="34"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><path
+          d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+        /><line x1="12" y1="9" x2="12" y2="13" /><line
+          x1="12"
+          y1="17"
+          x2="12.01"
+          y2="17"
+        /></svg
+      >
+      <p class="danger-warning-title">These actions cannot be undone</p>
+      <p class="danger-warning-text">
+        Resetting settings, history, caches or backups is permanent. Media files
+        on your PC are never deleted from this panel.
+      </p>
+      <button
+        class="settings-action-btn yellow"
+        onclick={() => (acknowledged = true)}
+      >
+        I understand
+      </button>
+    </div>
+  {:else}
+    {#if hasActiveRisks}
+      <SettingsGroup label="Active Risks" icon="danger">
+        <SettingsRow
+          label="File backups are off"
+          hint="Edits may be applied without a saved original"
+          open={editing.backupMode === "off"}
         >
-      {/snippet}
-    </SettingsRow>
+          {#snippet control()}
+            <button
+              class="settings-action-btn"
+              onclick={() => fixRisk("backups")}>Enable</button
+            >
+          {/snippet}
+        </SettingsRow>
 
-    <SettingsRow
-      label="Delete original after conversion"
-      hint="Converting permanently removes the source file"
-      open={conversionPrefs.deleteOriginal}
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn"
-          onclick={() => fixRisk("conversion")}>Disable</button
+        <SettingsRow
+          label="Delete original after conversion"
+          hint="Converting permanently removes the source file"
+          open={conversionPrefs.deleteOriginal}
         >
-      {/snippet}
-    </SettingsRow>
+          {#snippet control()}
+            <button
+              class="settings-action-btn"
+              onclick={() => fixRisk("conversion")}>Disable</button
+            >
+          {/snippet}
+        </SettingsRow>
 
-    <SettingsRow
-      label="Delete original after clip export"
-      hint="Clip export permanently removes the source file"
-      open={clipDeleteOriginal}
-    >
-      {#snippet control()}
-        <button class="settings-action-btn" onclick={() => fixRisk("clips")}
-          >Disable</button
+        <SettingsRow
+          label="Delete original after clip export"
+          hint="Clip export permanently removes the source file"
+          open={clipDeleteOriginal}
         >
-      {/snippet}
-    </SettingsRow>
+          {#snippet control()}
+            <button class="settings-action-btn" onclick={() => fixRisk("clips")}
+              >Disable</button
+            >
+          {/snippet}
+        </SettingsRow>
+      </SettingsGroup>
+    {/if}
 
-    <SettingsRow
-      label="No high-risk settings enabled"
-      hint="Backups and originals are preserved"
-      open={!hasActiveRisks}
-    >
-      {#snippet control()}
-        <span class="settings-hint">Safe</span>
-      {/snippet}
-    </SettingsRow>
-  </SettingsGroup>
+    <SettingsGroup label="App Data" icon="archive">
+      <SettingsRow
+        label="Clear Markers"
+        hint="Remove timestamps and clip markers from all files"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={actionDisabled("markers")}
+            onclick={() => requestAction("markers")}
+            >{buttonLabel("markers", "Clear")}</button
+          >
+        {/snippet}
+      </SettingsRow>
 
-  <SettingsGroup label="Clean Up" icon="broom">
-    <SettingsRow
-      label="Reset View"
-      hint="Clear zoom, pan, rotation, crop and color adjustments"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("reset-view")}
-          onclick={() => requestAction("reset-view")}
-          >{buttonLabel("reset-view", "Reset")}</button
-        >
-      {/snippet}
-    </SettingsRow>
+      <SettingsRow
+        label="Clear File Backups"
+        hint="Delete saved original copies"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={actionDisabled("backups")}
+            onclick={() => requestAction("backups")}
+            >{buttonLabel("backups", "Clear")}</button
+          >
+        {/snippet}
+      </SettingsRow>
 
-    <SettingsRow
-      label="Clear All Markers"
-      hint="Remove timestamps and clip boundaries everywhere"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("markers")}
-          onclick={() => requestAction("markers")}
-          >{buttonLabel("markers", "Clear All")}</button
-        >
-      {/snippet}
-    </SettingsRow>
+      <SettingsRow
+        label="Clear Temp Files"
+        hint="Remove temporary processing files"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={busy !== null}
+            onclick={() => void execute("clean-temp")}>Clear</button
+          >
+        {/snippet}
+      </SettingsRow>
 
-    <SettingsRow
-      label="Clear Recents"
-      hint="Remove all items from the recent files list"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("recents")}
-          onclick={() => requestAction("recents")}
-          >{buttonLabel("recents", "Clear")}</button
-        >
-      {/snippet}
-    </SettingsRow>
-  </SettingsGroup>
+      <SettingsRow
+        label="Reset All Settings"
+        hint="Clear preferences and reset OS integration"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={actionDisabled("reset-settings")}
+            onclick={() => requestAction("reset-settings")}
+            >{buttonLabel("reset-settings", "Reset")}</button
+          >
+        {/snippet}
+      </SettingsRow>
+      {@render typedConfirm("reset-settings")}
 
-  <SettingsGroup label="App Data" icon="archive">
-    <SettingsRow label="Clear File Backups" hint="Delete saved original copies">
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("backups")}
-          onclick={() => requestAction("backups")}
-          >{buttonLabel("backups", "Clear")}</button
-        >
-      {/snippet}
-    </SettingsRow>
+      <SettingsRow
+        label="Factory Reset"
+        hint="Clear settings, file history, caches, backups and temp files"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={actionDisabled("factory-reset")}
+            onclick={() => requestAction("factory-reset")}
+            >{buttonLabel("factory-reset", "Reset")}</button
+          >
+        {/snippet}
+      </SettingsRow>
+      {@render typedConfirm("factory-reset")}
+    </SettingsGroup>
 
-    <SettingsRow
-      label="Clear Temp Files"
-      hint="Remove temporary processing files"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={busy !== null}
-          onclick={() => void execute("clean-temp")}>Clean</button
-        >
-      {/snippet}
-    </SettingsRow>
+    <SettingsGroup label="Installation" icon="trash">
+      <SettingsRow
+        label="Delete FFmpeg"
+        hint="Remove bundled binaries; restart and reinstall to restore"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={actionDisabled("delete-ffmpeg")}
+            onclick={() => requestAction("delete-ffmpeg")}>Delete</button
+          >
+        {/snippet}
+      </SettingsRow>
+      {@render typedConfirm("delete-ffmpeg")}
 
-    <SettingsRow
-      label="Reset All Settings"
-      hint="Clear preferences and reset OS integration"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("reset-settings")}
-          onclick={() => requestAction("reset-settings")}>Reset</button
-        >
-      {/snippet}
-    </SettingsRow>
-    {@render typedConfirm("reset-settings")}
-
-    <SettingsRow
-      label="Factory Reset"
-      hint="Clear settings, file history, caches, backups and temp files"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("factory-reset")}
-          onclick={() => requestAction("factory-reset")}
-          >Reset Everything</button
-        >
-      {/snippet}
-    </SettingsRow>
-    {@render typedConfirm("factory-reset")}
-  </SettingsGroup>
-
-  <SettingsGroup label="Installation" icon="trash">
-    <SettingsRow
-      label="Delete FFmpeg"
-      hint="Remove bundled binaries; restart and reinstall to restore"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("delete-ffmpeg")}
-          onclick={() => requestAction("delete-ffmpeg")}>Delete</button
-        >
-      {/snippet}
-    </SettingsRow>
-    {@render typedConfirm("delete-ffmpeg")}
-
-    <SettingsRow
-      label="Uninstall"
-      hint="Run the Windows uninstaller or open Apps settings"
-    >
-      {#snippet control()}
-        <button
-          class="settings-action-btn red"
-          disabled={actionDisabled("uninstall")}
-          onclick={() => requestAction("uninstall")}>Run Uninstaller</button
-        >
-      {/snippet}
-    </SettingsRow>
-    {@render typedConfirm("uninstall")}
-  </SettingsGroup>
+      <SettingsRow
+        label="Uninstall Vyu"
+        hint="Run the Windows uninstaller or open Apps settings"
+      >
+        {#snippet control()}
+          <button
+            class="settings-action-btn red"
+            disabled={actionDisabled("uninstall")}
+            onclick={() => requestAction("uninstall")}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="12" cy="12" r="10" /><path
+                d="M16 16s-1.5-2-4-2-4 2-4 2"
+              /><line x1="9" y1="9" x2="9.01" y2="9" /><line
+                x1="15"
+                y1="9"
+                x2="15.01"
+                y2="9"
+              /></svg
+            >
+            {buttonLabel("uninstall", "Uninstall")}
+          </button>
+        {/snippet}
+      </SettingsRow>
+      {@render typedConfirm("uninstall")}
+    </SettingsGroup>
+  {/if}
 </div>

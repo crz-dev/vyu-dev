@@ -3,8 +3,27 @@
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
+  import { sleepTimer } from "$lib/features/media/sleepTimer.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  let sleepEnabled = $state(sleepTimer.active);
+  let sleepMinutesPreview = $state(sleepTimer.minutes);
+
+  function toggleSleepTimer(enabled: boolean) {
+    sleepEnabled = enabled;
+    if (!enabled) sleepTimer.clear();
+  }
+
+  function handleSleepMinutes(value: number) {
+    sleepMinutesPreview = value;
+    if (sleepTimer.active) sleepTimer.start(value);
+  }
+
+  function toggleSleepRunning() {
+    if (sleepTimer.active) sleepTimer.clear();
+    else sleepTimer.start(sleepMinutesPreview);
+  }
 
   let thresholdPreview = $state(playbackPrefs.resumeThreshold);
   let speedPreview = $state(playbackPrefs.defaultSpeed);
@@ -295,6 +314,58 @@
             class:active={loopModeStore.loopMode === "shuffle"}
             onclick={() => loopModeStore.setMode("shuffle")}>Shuffle</button
           >
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Sleep Timer"
+      hint={sleepTimer.active
+        ? `Stops playback in ${sleepTimer.label}`
+        : "Stop playback after a set time"}
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={sleepEnabled}
+            onchange={(e) => toggleSleepTimer(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={sleepEnabled}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Timer Length"
+      hint="How long until playback stops"
+      subrow
+      open={sleepEnabled}
+    >
+      {#snippet control()}
+        <div class="settings-control-inline">
+          <div class="settings-slider-control">
+            <input
+              type="range"
+              min="5"
+              max="120"
+              step="5"
+              aria-label="Sleep timer length"
+              value={sleepMinutesPreview}
+              oninput={(e) =>
+                (sleepMinutesPreview = Number(e.currentTarget.value))}
+              onchange={(e) =>
+                handleSleepMinutes(Number(e.currentTarget.value))}
+            />
+            <span class="settings-slider-value" style="min-width: 54px"
+              >{sleepMinutesPreview} min</span
+            >
+          </div>
+          <button class="settings-action-btn" onclick={toggleSleepRunning}>
+            {sleepTimer.active ? "Pause" : "Start"}
+          </button>
         </div>
       {/snippet}
     </SettingsRow>

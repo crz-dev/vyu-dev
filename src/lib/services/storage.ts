@@ -1270,12 +1270,15 @@ export function saveCheckUpdatesOnLaunch(enabled: boolean): void {
   saveSystemBoolean("check-updates-on-launch", enabled);
 }
 
-export function loadConfirmCloseWhilePlaying(): boolean {
-  return loadSystemBoolean("confirm-close-while-playing", false);
+export function loadConfirmCloseWhileEditing(): boolean {
+  return loadSystemBoolean(
+    "confirm-close-while-editing",
+    loadSystemBoolean("confirm-close-while-playing", false),
+  );
 }
 
-export function saveConfirmCloseWhilePlaying(enabled: boolean): void {
-  saveSystemBoolean("confirm-close-while-playing", enabled);
+export function saveConfirmCloseWhileEditing(enabled: boolean): void {
+  saveSystemBoolean("confirm-close-while-editing", enabled);
 }
 
 export function loadReopenLastFile(): boolean {

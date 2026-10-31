@@ -2,7 +2,6 @@
   import { onDestroy, onMount } from "svelte";
   import { slide } from "svelte/transition";
   import { getVersion } from "@tauri-apps/api/app";
-  import { open } from "@tauri-apps/plugin-dialog";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
@@ -13,11 +12,13 @@
     invokeCheckForUpdates,
     invokeClearAllCaches,
     invokeGetCacheStats,
+    invokeGetExplorerContextMenu,
     invokeGetSystemConfig,
     invokeGetSystemRestartStatus,
     invokeOpenAppFolder,
+    invokeOpenDefaultAppsSettings,
     invokeRestartApp,
-    invokeSetClearCacheOnExit,
+    invokeSetExplorerContextMenu,
     invokeSetHardwareAcceleration,
     invokeSetSingleInstance,
     invokeSetThumbnailCacheLimit,
@@ -25,12 +26,13 @@
     type SystemConfig,
     type UpdateCheckResult,
   } from "$lib/features/system/api";
-  import { editing } from "$lib/features/editing/editing.svelte";
   import { showToast } from "$lib/components/toast.svelte";
+  import type { StartupView } from "$lib/services/storage";
 
   let { flash = false }: { flash?: boolean } = $props();
 
   let loading = $state(true);
+  let contextMenu = $state(false);
   let config = $state<SystemConfig>({
     hardwareAcceleration: true,
     singleInstance: true,
@@ -68,11 +70,18 @@
     if (clearCacheTimeout) clearTimeout(clearCacheTimeout);
   });
 
+  const startupOptions: { value: StartupView; label: string }[] = [
+    { value: "last-file", label: "Last File" },
+    { value: "library", label: "Library" },
+    { value: "empty", label: "Empty" },
+  ];
+
   async function load() {
-    const [cfg, restart, stats] = await Promise.allSettled([
+    const [cfg, restart, stats, menu] = await Promise.allSettled([
       invokeGetSystemConfig(),
       invokeGetSystemRestartStatus(),
       invokeGetCacheStats(),
+      invokeGetExplorerContextMenu(),
     ]);
     if (cfg.status === "fulfilled") {
       config = cfg.value;
@@ -94,6 +103,7 @@
       };
     }
     if (stats.status === "fulfilled") cacheStats = stats.value;
+    if (menu.status === "fulfilled") contextMenu = menu.value;
     try {
       appVersion = await getVersion();
     } catch {
@@ -123,13 +133,6 @@
     return mb >= 1024
       ? `${(mb / 1024).toFixed(mb % 1024 === 0 ? 0 : 1)} GB`
       : `${mb} MB`;
-  }
-
-  function shortFolderPath(path: string): string {
-    if (!path) return "App data backups";
-    const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
-    if (parts.length <= 2) return parts.join("/");
-    return parts.slice(-2).join("/");
   }
 
   function powerHint(): string {
@@ -166,10 +169,18 @@
     }
   }
 
-  async function handleClearCacheOnExit(enabled: boolean) {
+  async function handleContextMenu(enabled: boolean) {
     try {
-      await invokeSetClearCacheOnExit(enabled);
-      config = { ...config, clearCacheOnExit: enabled };
+      await invokeSetExplorerContextMenu(enabled);
+      contextMenu = enabled;
+    } catch (e) {
+      showToast({ message: String(e), color: "red" });
+    }
+  }
+
+  async function handleOpenDefaultApps() {
+    try {
+      await invokeOpenDefaultAppsSettings();
     } catch (e) {
       showToast({ message: String(e), color: "red" });
     }
@@ -288,14 +299,6 @@
       // The process exits before the IPC response arrives.
     }
   }
-
-  async function handlePickBackupDir() {
-    const dir = await open({
-      directory: true,
-      defaultPath: editing.backupDir || undefined,
-    });
-    if (dir) editing.setBackupDir(dir as string);
-  }
 </script>
 
 <div id="settings-section-system" class="settings-section" class:flash>
@@ -319,7 +322,7 @@
     System
   </p>
 
-  <SettingsGroup label="Window & Performance" icon="window">
+  <SettingsGroup label="Window & Startup" icon="window">
     <SettingsRow label="Always on Top" hint="Keep Vyu above other windows">
       {#snippet control()}
         <label class="toggle-row">
@@ -476,9 +479,59 @@
         </label>
       {/snippet}
     </SettingsRow>
+
+    <SettingsRow
+      label="Startup View"
+      hint="What Vyu shows when it starts without a file"
+    >
+      {#snippet control()}
+        <div class="pill-group pill-group-3">
+          {#each startupOptions as option}
+            <button
+              class="pill-btn"
+              class:active={systemPrefs.startupView === option.value}
+              onclick={() => systemPrefs.setStartupView(option.value)}
+              >{option.label}</button
+            >
+          {/each}
+        </div>
+      {/snippet}
+    </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Storage & Backups" icon="database">
+  <SettingsGroup label="Windows" icon="windows">
+    <SettingsRow
+      label="Default Media App"
+      hint="Choose Vyu in Windows Default Apps"
+    >
+      {#snippet control()}
+        <button class="settings-action-btn" onclick={handleOpenDefaultApps}
+          >Open</button
+        >
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Explorer Context Menu"
+      hint="Adds “Open with Vyu” to the classic right-click menu"
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={contextMenu}
+            disabled={loading}
+            onchange={(e) => handleContextMenu(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={contextMenu}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup label="Storage" icon="database">
     <SettingsRow
       label="Thumbnail Limit"
       hint="Oldest thumbnails are removed above this size"
@@ -499,25 +552,6 @@
             >{formatLimit(cacheLimitPreview)}</span
           >
         </div>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Clear Cache on Exit"
-      hint="Remove thumbnails and previews when Vyu closes"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={config.clearCacheOnExit}
-            disabled={loading}
-            onchange={(e) => handleClearCacheOnExit(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={config.clearCacheOnExit}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
       {/snippet}
     </SettingsRow>
 
@@ -568,30 +602,6 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Thumbnails" hint="Thumbnail cache size" subrow>
-      {#snippet control()}
-        <span class="settings-hint"
-          >{cacheStats ? formatBytes(cacheStats.thumbnails) : "—"}</span
-        >
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow label="Display Previews" hint="Display cache size" subrow>
-      {#snippet control()}
-        <span class="settings-hint"
-          >{cacheStats ? formatBytes(cacheStats.displays) : "—"}</span
-        >
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow label="Cover Art" hint="Cover art cache size" subrow>
-      {#snippet control()}
-        <span class="settings-hint"
-          >{cacheStats ? formatBytes(cacheStats.coverArt) : "—"}</span
-        >
-      {/snippet}
-    </SettingsRow>
-
     <SettingsRow label="App Data" hint="Database and configuration">
       {#snippet control()}
         <button
@@ -600,63 +610,6 @@
         >
       {/snippet}
     </SettingsRow>
-
-    <SettingsRow
-      label="File Backups"
-      hint="Off, ask before applying, or always keep"
-    >
-      {#snippet control()}
-        <div class="pill-group pill-group-3">
-          <button
-            class="pill-btn"
-            class:active={editing.backupMode === "off"}
-            onclick={() => editing.setBackupMode("off")}>Off</button
-          >
-          <button
-            class="pill-btn"
-            class:active={editing.backupMode === "ask"}
-            onclick={() => editing.setBackupMode("ask")}>Ask</button
-          >
-          <button
-            class="pill-btn"
-            class:active={editing.backupMode === "always"}
-            onclick={() => editing.setBackupMode("always")}>Always</button
-          >
-        </div>
-      {/snippet}
-    </SettingsRow>
-
-    {#if editing.backupMode !== "off"}
-      <div
-        class="settings-row settings-subrow"
-        transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
-      >
-        <div class="settings-label-col">
-          <div class="settings-label-text">
-            <span class="settings-label">Backup Folder</span>
-            <span class="settings-hint">Where original copies are stored</span>
-          </div>
-        </div>
-        <div class="settings-control">
-          <div class="settings-control-inline">
-            <button
-              class="settings-action-btn blue"
-              title={editing.backupDir || "App data backups"}
-              onclick={handlePickBackupDir}
-            >
-              {shortFolderPath(editing.backupDir)}
-            </button>
-            {#if editing.backupDir}
-              <button
-                class="settings-action-btn"
-                title="Use the default backup folder"
-                onclick={() => editing.setBackupDir("")}>Clear</button
-              >
-            {/if}
-          </div>
-        </div>
-      </div>
-    {/if}
   </SettingsGroup>
 
   <SettingsGroup label="Updates" icon="refresh">
@@ -675,6 +628,25 @@
             >
           {/if}
         </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Check for Updates on Launch"
+      hint="Look for a newer release in the background · applies next launch"
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={systemPrefs.checkUpdatesOnLaunch}
+            onchange={(e) =>
+              systemPrefs.setCheckUpdatesOnLaunch(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={systemPrefs.checkUpdatesOnLaunch}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
       {/snippet}
     </SettingsRow>
   </SettingsGroup>

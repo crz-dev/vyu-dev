@@ -8,7 +8,6 @@
   import EditorSettings from "$lib/features/settings/EditorSettings.svelte";
   import ProcessSettings from "$lib/features/settings/ProcessSettings.svelte";
   import LibrarySettings from "$lib/features/settings/LibrarySettings.svelte";
-  import IntegrationSettings from "$lib/features/settings/IntegrationSettings.svelte";
   import SystemSettings from "$lib/features/system/SystemSettings.svelte";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
   import KeybindsSettings from "$lib/features/keybinds/KeybindsSettings.svelte";
@@ -29,7 +28,6 @@
     settingsOpen,
     closeSettings,
     fileInfo = null,
-    resetView,
     clearTimestamps,
     clearClips,
     clipDeleteOriginal,
@@ -38,7 +36,6 @@
     settingsOpen: boolean;
     closeSettings: () => void;
     fileInfo?: DebugFileInfo | null;
-    resetView: () => void;
     clearTimestamps: () => void;
     clearClips: () => void;
     clipDeleteOriginal: boolean;
@@ -74,7 +71,6 @@
     { id: "process", label: "Conversion" },
     { id: "library", label: "Library" },
     { id: "system", label: "System" },
-    { id: "integration", label: "Integration" },
     { id: "keybinds", label: "Keybinds" },
     { id: "debug", label: "Debug" },
     { id: "danger-zone", label: "Danger Zone" },
@@ -86,8 +82,7 @@
     editor: "Editing safety and image/video export defaults.",
     process: "Quality, output and hardware for conversions.",
     library: "Layout, content, history and privacy.",
-    system: "Window, performance, storage and updates.",
-    integration: "Startup, Windows shortcuts and external apps.",
+    system: "Window, startup, storage and updates.",
     keybinds: "View and customize keyboard shortcuts.",
     debug: "Diagnostics, developer tools and maintenance.",
     "danger-zone": "Destructive actions that cannot be undone.",
@@ -505,22 +500,6 @@
                     y2="21"
                   /></svg
                 >
-              {:else if sec.id === "integration"}
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-                  /><path
-                    d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-                  /></svg
-                >
               {:else if sec.id === "keybinds"}
                 <svg
                   width="14"
@@ -603,9 +582,6 @@
           <!-- System -->
           <SystemSettings flash={flashId === "system"} />
 
-          <!-- Integration -->
-          <IntegrationSettings flash={flashId === "integration"} />
-
           <!-- Keybinds -->
           <KeybindsSettings flash={flashId === "keybinds"} />
 
@@ -615,8 +591,6 @@
           <!-- Danger Zone -->
           <DangerSettings
             flash={flashId === "danger-zone"}
-            {fileInfo}
-            {resetView}
             {clearTimestamps}
             {clearClips}
             {clipDeleteOriginal}

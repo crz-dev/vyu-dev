@@ -7,6 +7,7 @@ import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import { invokeCheckForUpdates } from "$lib/features/system/api";
 import { showToast } from "$lib/components/toast.svelte";
+import { editing } from "$lib/features/editing/editing.svelte";
 import {
   cleanupStaleStorageEntries,
   loadVolume,
@@ -189,11 +190,11 @@ export function setupInit(s: InitState) {
     let unlistenClose: () => void = () => {};
     getCurrentWindow()
       .onCloseRequested(async (event) => {
-        if (!systemPrefs.confirmCloseWhilePlaying || !s.hasPlayback()) {
+        if (!systemPrefs.confirmCloseWhileEditing || !editing.filePath) {
           return;
         }
         event.preventDefault();
-        const quit = await confirm("Playback is still running. Close Vyu?", {
+        const quit = await confirm("Edits are still open. Close Vyu?", {
           title: "Close Vyu",
           kind: "warning",
         });

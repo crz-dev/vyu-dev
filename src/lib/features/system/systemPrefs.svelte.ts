@@ -5,7 +5,7 @@ import {
   loadAlwaysOnTop,
   loadBatterySaverThumbnails,
   loadCheckUpdatesOnLaunch,
-  loadConfirmCloseWhilePlaying,
+  loadConfirmCloseWhileEditing,
   loadExternalAppPaths,
   loadKeepAwake,
   loadLastFile,
@@ -14,7 +14,7 @@ import {
   saveAlwaysOnTop,
   saveBatterySaverThumbnails,
   saveCheckUpdatesOnLaunch,
-  saveConfirmCloseWhilePlaying,
+  saveConfirmCloseWhileEditing,
   saveExternalAppPath,
   saveKeepAwake,
   saveLastFile,
@@ -32,7 +32,7 @@ function createSystemPrefs() {
   let pauseOnFocusLoss = $state(loadPauseOnFocusLoss());
   let batterySaverThumbnails = $state(loadBatterySaverThumbnails());
   let checkUpdatesOnLaunch = $state(loadCheckUpdatesOnLaunch());
-  let confirmCloseWhilePlaying = $state(loadConfirmCloseWhilePlaying());
+  let confirmCloseWhileEditing = $state(loadConfirmCloseWhileEditing());
   let lastFile = $state(loadLastFile());
   let externalApps = $state<ExternalAppPaths>(loadExternalAppPaths());
 
@@ -76,9 +76,9 @@ function createSystemPrefs() {
     saveCheckUpdatesOnLaunch(enabled);
   }
 
-  function setConfirmCloseWhilePlaying(enabled: boolean) {
-    confirmCloseWhilePlaying = enabled;
-    saveConfirmCloseWhilePlaying(enabled);
+  function setConfirmCloseWhileEditing(enabled: boolean) {
+    confirmCloseWhileEditing = enabled;
+    saveConfirmCloseWhileEditing(enabled);
   }
 
   function setLastFile(path: string) {
@@ -129,8 +129,8 @@ function createSystemPrefs() {
     get checkUpdatesOnLaunch() {
       return checkUpdatesOnLaunch;
     },
-    get confirmCloseWhilePlaying() {
-      return confirmCloseWhilePlaying;
+    get confirmCloseWhileEditing() {
+      return confirmCloseWhileEditing;
     },
     get lastFile() {
       return lastFile;
@@ -144,7 +144,7 @@ function createSystemPrefs() {
     setPauseOnFocusLoss,
     setBatterySaverThumbnails,
     setCheckUpdatesOnLaunch,
-    setConfirmCloseWhilePlaying,
+    setConfirmCloseWhileEditing,
     setLastFile,
     clearLastFile,
     setExternalApp,

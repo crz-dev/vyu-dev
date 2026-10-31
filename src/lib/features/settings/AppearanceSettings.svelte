@@ -156,76 +156,7 @@
         </div>
       {/snippet}
     </SettingsRow>
-  </SettingsGroup>
 
-  <SettingsGroup label="Viewer" icon="eye">
-    <SettingsRow
-      label="Transparency Background"
-      hint="Show a checkerboard behind transparent images"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.checkerboard}
-            onchange={(e) =>
-              appearance.setCheckerboard(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={appearance.checkerboard}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Viewer Background"
-      hint="Canvas color behind images and video"
-    >
-      {#snippet control()}
-        <div class="pill-group pill-group-3">
-          <button
-            class="pill-btn"
-            class:active={appearance.viewerBackground === "theme"}
-            onclick={() => appearance.setViewerBackground("theme")}
-            >Theme</button
-          >
-          <button
-            class="pill-btn"
-            class:active={appearance.viewerBackground === "black"}
-            onclick={() => appearance.setViewerBackground("black")}
-            >Black</button
-          >
-          <button
-            class="pill-btn"
-            class:active={appearance.viewerBackground === "gray"}
-            onclick={() => appearance.setViewerBackground("gray")}>Gray</button
-          >
-        </div>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Auto-hide Cursor"
-      hint="Hide the cursor when fullscreen controls fade"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.cursorAutoHide}
-            onchange={(e) =>
-              appearance.setCursorAutoHide(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={appearance.cursorAutoHide}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-  </SettingsGroup>
-
-  <SettingsGroup label="Accessibility" icon="accessibility">
     <SettingsRow
       label="Reduced Motion"
       hint="Minimize animations and transitions"
@@ -255,6 +186,46 @@
               appearance.setHighContrast(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={appearance.highContrast}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup label="Viewer" icon="eye">
+    <SettingsRow
+      label="Transparency Background"
+      hint="Show a checkerboard behind transparent images"
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={appearance.checkerboard}
+            onchange={(e) =>
+              appearance.setCheckerboard(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={appearance.checkerboard}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Auto-hide Cursor"
+      hint="Hide the cursor when fullscreen controls fade"
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={appearance.cursorAutoHide}
+            onchange={(e) =>
+              appearance.setCursorAutoHide(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={appearance.cursorAutoHide}
             ><span class="toggle-thumb"></span></span
           >
         </label>

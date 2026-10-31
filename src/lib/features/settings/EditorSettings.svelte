@@ -3,6 +3,8 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
+  import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
+  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
 
@@ -66,6 +68,15 @@
   function setKeepOriginalDate(enabled: boolean) {
     editing.setKeepImageOriginalDate(enabled);
     editing.setKeepVideoOriginalDate(enabled);
+    conversionPrefs.setKeepOriginalDate(enabled);
+  }
+
+  async function handlePickBackupDir() {
+    const dir = await open({
+      directory: true,
+      defaultPath: editing.backupDir || undefined,
+    });
+    if (dir) editing.setBackupDir(dir as string);
   }
 </script>
 
@@ -142,9 +153,82 @@
         </label>
       {/snippet}
     </SettingsRow>
+    <SettingsRow
+      label="Confirm Close While Editing"
+      hint="Ask before closing with an edit in progress"
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={systemPrefs.confirmCloseWhileEditing}
+            onchange={(e) =>
+              systemPrefs.setConfirmCloseWhileEditing(e.currentTarget.checked)}
+          />
+          <span
+            class="toggle-track"
+            class:on={systemPrefs.confirmCloseWhileEditing}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+    <SettingsRow
+      label="File Backups"
+      hint="Off, ask before applying, or always keep"
+    >
+      {#snippet control()}
+        <div class="pill-group pill-group-3">
+          <button
+            class="pill-btn"
+            class:active={editing.backupMode === "off"}
+            onclick={() => editing.setBackupMode("off")}>Off</button
+          >
+          <button
+            class="pill-btn"
+            class:active={editing.backupMode === "ask"}
+            onclick={() => editing.setBackupMode("ask")}>Ask</button
+          >
+          <button
+            class="pill-btn"
+            class:active={editing.backupMode === "always"}
+            onclick={() => editing.setBackupMode("always")}>Always</button
+          >
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    {#if editing.backupMode !== "off"}
+      <SettingsRow
+        label="Backup Folder"
+        hint="Where original copies are stored"
+        subrow
+      >
+        {#snippet control()}
+          <div class="settings-control-inline">
+            <button
+              class="settings-action-btn blue"
+              title={editing.backupDir || "App data backups"}
+              onclick={handlePickBackupDir}
+            >
+              {editing.backupDir
+                ? shortFolderPath(editing.backupDir)
+                : "App data backups"}
+            </button>
+            {#if editing.backupDir}
+              <button
+                class="settings-action-btn"
+                title="Use the default backup folder"
+                onclick={() => editing.setBackupDir("")}>Clear</button
+              >
+            {/if}
+          </div>
+        {/snippet}
+      </SettingsRow>
+    {/if}
   </SettingsGroup>
 
-  <SettingsGroup label="Export" icon="image">
+  <SettingsGroup label="Export Defaults" icon="image">
     <SettingsRow
       label="Image Format"
       hint={editing.imageFormat === "original"
@@ -352,13 +436,15 @@
           <input
             type="checkbox"
             checked={editing.keepImageOriginalDate &&
-              editing.keepVideoOriginalDate}
+              editing.keepVideoOriginalDate &&
+              conversionPrefs.keepOriginalDate}
             onchange={(e) => setKeepOriginalDate(e.currentTarget.checked)}
           />
           <span
             class="toggle-track"
             class:on={editing.keepImageOriginalDate &&
-              editing.keepVideoOriginalDate}
+              editing.keepVideoOriginalDate &&
+              conversionPrefs.keepOriginalDate}
             ><span class="toggle-thumb"></span></span
           >
         </label>

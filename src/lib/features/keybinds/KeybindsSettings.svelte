@@ -23,6 +23,7 @@
   let contextFilter = $state<ContextFilter>("all");
   let unboundOnly = $state(false);
   let selectedKey = $state<string | null>(null);
+  let expandedCategories = $state<Record<string, boolean>>({});
   let resetAllConfirming = $state(false);
   let resetAllTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -33,6 +34,13 @@
         action.context === "global" ||
         action.context === contextFilter,
     ),
+  );
+
+  const filtersActive = $derived(
+    search.trim() !== "" ||
+      contextFilter !== "all" ||
+      unboundOnly ||
+      !!selectedKey,
   );
 
   const filteredActions = $derived.by(() => {
@@ -114,8 +122,19 @@
     showToast({ message: "Shortcuts restored to defaults", color: "green" });
   }
 
+  function toggleCategory(category: string) {
+    expandedCategories = {
+      ...expandedCategories,
+      [category]: !expandedCategories[category],
+    };
+  }
+
   function toggleSelectedKey(key: string) {
     selectedKey = selectedKey === key ? null : key;
+  }
+
+  function isCategoryOpen(category: string): boolean {
+    return filtersActive || !!expandedCategories[category];
   }
 
   const contextFilters: { id: ContextFilter; label: string }[] = [
@@ -166,22 +185,35 @@
     onSelectKey={toggleSelectedKey}
   />
 
-  <p class="settings-group-label">
-    <span class="settings-group-icon">
-      <SettingsGroupIcon name="filter" />
-    </span>
-    Find
-  </p>
   <div class="settings-card has-child">
     <div class="settings-row keybind-filter-row">
       <div class="settings-control keybind-search-control">
-        <input
-          class="keybind-search-input"
-          type="search"
-          placeholder="Search actions or shortcuts"
-          bind:value={search}
-          aria-label="Search keybindings"
-        />
+        <div class="keybind-search-wrap">
+          <svg
+            class="keybind-search-icon"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="11" cy="11" r="8" /><line
+              x1="21"
+              y1="21"
+              x2="16.65"
+              y2="16.65"
+            /></svg
+          >
+          <input
+            class="keybind-search-input"
+            type="search"
+            placeholder="Search actions"
+            bind:value={search}
+            aria-label="Search keybindings"
+          />
+        </div>
         <div class="pill-group pill-group-4">
           {#each contextFilters as filter}
             <button
@@ -228,86 +260,99 @@
     </div>
   {:else}
     {#each groupedActions as group}
-      <p class="settings-group-label">
+      <button
+        class="settings-group-label keybind-category-toggle"
+        aria-expanded={isCategoryOpen(group.category)}
+        onclick={() => toggleCategory(group.category)}
+      >
         <span class="settings-group-icon">
           <SettingsGroupIcon
             name={categoryIcons[group.category] ?? "keyboard"}
           />
         </span>
         {KEYBIND_CATEGORY_LABELS[group.category]}
-      </p>
-      <div class="settings-card has-child">
-        {#each group.actions as action}
-          {@const recording = keybindStore.recordingActionId === action.id}
-          {@const label = keybindStore.label(action.id)}
-          {@const custom = keybindStore.isCustom(action.id)}
-          <div class="settings-row keybind-row">
-            <div class="settings-label-col">
-              <div class="settings-label-text">
-                <span class="settings-label">{action.label}</span>
-                <span class="settings-hint">
-                  {action.description} · {KEYBIND_CONTEXT_LABELS[
-                    action.context
-                  ]}
-                </span>
-                {#if recording && keybindStore.recordingError}
-                  <span class="keybind-conflict"
-                    >{keybindStore.recordingError}</span
+        <span class="keybind-category-count">{group.actions.length}</span>
+        <svg
+          class="settings-group-chevron"
+          class:open={isCategoryOpen(group.category)}
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg
+        >
+      </button>
+      {#if isCategoryOpen(group.category)}
+        <div class="settings-card has-child">
+          {#each group.actions as action}
+            {@const recording = keybindStore.recordingActionId === action.id}
+            {@const label = keybindStore.label(action.id)}
+            {@const custom = keybindStore.isCustom(action.id)}
+            <div class="settings-row keybind-row">
+              <div class="settings-label-col">
+                <div class="settings-label-text">
+                  <span class="settings-label">{action.label}</span>
+                  <span class="settings-hint">
+                    {action.description} · {KEYBIND_CONTEXT_LABELS[
+                      action.context
+                    ]}
+                  </span>
+                  {#if recording && keybindStore.recordingError}
+                    <span class="keybind-conflict"
+                      >{keybindStore.recordingError}</span
+                    >
+                  {/if}
+                </div>
+              </div>
+              <div class="settings-control keybind-control">
+                <button
+                  class="help-kbd-btn keybind-key-btn"
+                  class:keybind-recording={recording}
+                  aria-pressed={recording}
+                  aria-label={`Change ${action.label} shortcut`}
+                  title={custom
+                    ? `Default: ${formatBinding(action.defaultBinding)}`
+                    : "Click to change"}
+                  onclick={(e) => startRecording(action.id, e.currentTarget)}
+                  onkeydown={(e) => handleRecordKey(e, action.id)}
+                  onblur={() => handleRecordBlur(action.id)}
+                >
+                  {recording ? "Press keys…" : label || "Unbound"}
+                </button>
+                {#if custom}
+                  <button
+                    class="settings-action-btn keybind-reset-btn"
+                    title={`Reset ${action.label}`}
+                    aria-label={`Reset ${action.label}`}
+                    onclick={() => handleReset(action.id)}
                   >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      ><polyline points="1 4 1 10 7 10" /><path
+                        d="M3.51 15a9 9 0 102.13-9.36L1 10"
+                      /></svg
+                    >
+                  </button>
                 {/if}
               </div>
             </div>
-            <div class="settings-control keybind-control">
-              <button
-                class="help-kbd-btn keybind-key-btn"
-                class:keybind-recording={recording}
-                aria-pressed={recording}
-                aria-label={`Change ${action.label} shortcut`}
-                title={custom
-                  ? `Default: ${formatBinding(action.defaultBinding)}`
-                  : "Click to change"}
-                onclick={(e) => startRecording(action.id, e.currentTarget)}
-                onkeydown={(e) => handleRecordKey(e, action.id)}
-                onblur={() => handleRecordBlur(action.id)}
-              >
-                {recording ? "Press keys…" : label || "Unbound"}
-              </button>
-              {#if custom}
-                <button
-                  class="settings-action-btn keybind-reset-btn"
-                  title={`Reset ${action.label}`}
-                  aria-label={`Reset ${action.label}`}
-                  onclick={() => handleReset(action.id)}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="1 4 1 10 7 10" /><path
-                      d="M3.51 15a9 9 0 102.13-9.36L1 10"
-                    /></svg
-                  >
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {/if}
     {/each}
   {/if}
 
-  <p class="settings-group-label">
-    <span class="settings-group-icon">
-      <SettingsGroupIcon name="refresh" />
-    </span>
-    Reset
-  </p>
-  <div class="settings-card has-child">
+  <div class="settings-card has-child keybind-reset-card">
     <div class="settings-row keybind-reset-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
@@ -329,7 +374,7 @@
               d="M3.51 15a9 9 0 102.13-9.36L1 10"
             /></svg
           >
-          {resetAllConfirming ? "Confirm?" : "Reset all"}
+          {resetAllConfirming ? "Confirm?" : "Reset"}
         </button>
       </div>
     </div>

@@ -52,7 +52,6 @@
     isPdf,
     playing,
     getMediaEl,
-    resetView,
     clearTimestamps,
     clearClips,
     pdfPageCount,
@@ -240,7 +239,6 @@
     isPdf: boolean;
     playing: boolean;
     getMediaEl: () => HTMLMediaElement | null;
-    resetView: () => void;
     clearTimestamps: () => void;
     clearClips: () => void;
     pdfPageCount: number;
@@ -956,7 +954,6 @@
         index: currentIndex,
         count: fileList.length,
       }}
-      {resetView}
       {clearTimestamps}
       {clearClips}
       {clipDeleteOriginal}

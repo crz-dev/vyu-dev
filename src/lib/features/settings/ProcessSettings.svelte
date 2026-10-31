@@ -116,7 +116,7 @@
     Conversion
   </p>
 
-  <SettingsGroup label="Quality & Format" icon="sliders">
+  <SettingsGroup label="Quality" icon="sliders">
     <SettingsRow
       label="Conversion Quality"
       hint="Speed and quality for video and image conversions"
@@ -139,50 +139,6 @@
           />
           <span class="settings-slider-value" style="min-width: 62px"
             >{exportQualityLabel(qualityPreview)}</span
-          >
-        </div>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow label="Audio Bitrate" hint="Bitrate for lossy audio outputs">
-      {#snippet control()}
-        <div class="settings-slider-control">
-          <input
-            type="range"
-            min="64"
-            max="320"
-            step="64"
-            aria-label="Audio bitrate"
-            value={audioBitratePreview}
-            oninput={(e) =>
-              (audioBitratePreview = Number(e.currentTarget.value))}
-            onchange={(e) =>
-              conversionPrefs.setAudioBitrate(Number(e.currentTarget.value))}
-          />
-          <span class="settings-slider-value" style="min-width: 60px"
-            >{audioBitratePreview} kbps</span
-          >
-        </div>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Cover Art"
-      hint="Background for audio-to-video conversion"
-    >
-      {#snippet control()}
-        <div class="pill-group pill-group-2">
-          <button
-            class="pill-btn"
-            class:active={conversionPrefs.coverArtMode === "cover"}
-            onclick={() => conversionPrefs.setCoverArtMode("cover")}
-            >Cover</button
-          >
-          <button
-            class="pill-btn"
-            class:active={conversionPrefs.coverArtMode === "waveform"}
-            onclick={() => conversionPrefs.setCoverArtMode("waveform")}
-            >Waveform</button
           >
         </div>
       {/snippet}
@@ -295,7 +251,51 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Compatibility & Diagnostics" icon="cpu">
+  <SettingsGroup label="Advanced" icon="cpu">
+    <SettingsRow label="Audio Bitrate" hint="Bitrate for lossy audio outputs">
+      {#snippet control()}
+        <div class="settings-slider-control">
+          <input
+            type="range"
+            min="64"
+            max="320"
+            step="64"
+            aria-label="Audio bitrate"
+            value={audioBitratePreview}
+            oninput={(e) =>
+              (audioBitratePreview = Number(e.currentTarget.value))}
+            onchange={(e) =>
+              conversionPrefs.setAudioBitrate(Number(e.currentTarget.value))}
+          />
+          <span class="settings-slider-value" style="min-width: 60px"
+            >{audioBitratePreview} kbps</span
+          >
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Cover Art"
+      hint="Background for audio-to-video conversion"
+    >
+      {#snippet control()}
+        <div class="pill-group pill-group-2">
+          <button
+            class="pill-btn"
+            class:active={conversionPrefs.coverArtMode === "cover"}
+            onclick={() => conversionPrefs.setCoverArtMode("cover")}
+            >Cover</button
+          >
+          <button
+            class="pill-btn"
+            class:active={conversionPrefs.coverArtMode === "waveform"}
+            onclick={() => conversionPrefs.setCoverArtMode("waveform")}
+            >Waveform</button
+          >
+        </div>
+      {/snippet}
+    </SettingsRow>
+
     <SettingsRow
       label="Preserve Metadata"
       hint="Keep tags and chapters through conversion"
@@ -309,25 +309,6 @@
               conversionPrefs.setPreserveMetadata(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={conversionPrefs.preserveMetadata}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Keep Original File Date"
-      hint="Apply the source modified date to converted files"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={conversionPrefs.keepOriginalDate}
-            onchange={(e) =>
-              conversionPrefs.setKeepOriginalDate(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={conversionPrefs.keepOriginalDate}
             ><span class="toggle-thumb"></span></span
           >
         </label>

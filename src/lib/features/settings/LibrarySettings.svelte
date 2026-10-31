@@ -2,6 +2,7 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { library } from "$lib/features/library/library.svelte";
+  import { showToast } from "$lib/components/toast.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
 
@@ -37,6 +38,11 @@
     return library.fileFilters[kind] && activeFileTypeCount === 1;
   }
 
+  function clearRecents() {
+    library.clearRecentFiles();
+    showToast({ message: "Recent files cleared", color: "green" });
+  }
+
   const fileKinds: { kind: LibraryFileKind; label: string }[] = [
     { kind: "images", label: "Images" },
     { kind: "videos", label: "Videos" },
@@ -66,49 +72,43 @@
   <SettingsGroup label="Display" icon="layout">
     <SettingsRow
       label="Thumbnail Size"
-      hint="Item size in grid, river, filmstrip and list views"
+      hint="Item size and preview resolution in library views"
     >
       {#snippet control()}
-        <div class="settings-slider-control">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            step="1"
-            aria-label="Thumbnail size"
-            value={densityPreview}
-            oninput={(e) => (densityPreview = Number(e.currentTarget.value))}
-            onchange={(e) =>
-              library.setDensity(1 - Number(e.currentTarget.value) / 100)}
-          />
-          <span class="settings-slider-value" style="min-width: 54px"
-            >{formatThumbnailDensity(densityPreview)}</span
-          >
-        </div>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Thumbnail Quality"
-      hint="Preview resolution; higher quality uses more memory"
-    >
-      {#snippet control()}
-        <div class="pill-group pill-group-3">
-          <button
-            class="pill-btn"
-            class:active={library.thumbnailSize === 128}
-            onclick={() => library.setThumbnailSize(128)}>Fast</button
-          >
-          <button
-            class="pill-btn"
-            class:active={library.thumbnailSize === 256}
-            onclick={() => library.setThumbnailSize(256)}>Normal</button
-          >
-          <button
-            class="pill-btn"
-            class:active={library.thumbnailSize === 512}
-            onclick={() => library.setThumbnailSize(512)}>Sharp</button
-          >
+        <div class="settings-control-stack">
+          <div class="settings-slider-control">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              aria-label="Thumbnail size"
+              value={densityPreview}
+              oninput={(e) => (densityPreview = Number(e.currentTarget.value))}
+              onchange={(e) =>
+                library.setDensity(1 - Number(e.currentTarget.value) / 100)}
+            />
+            <span class="settings-slider-value" style="min-width: 54px"
+              >{formatThumbnailDensity(densityPreview)}</span
+            >
+          </div>
+          <div class="pill-group pill-group-3" aria-label="Preview resolution">
+            <button
+              class="pill-btn"
+              class:active={library.thumbnailSize === 128}
+              onclick={() => library.setThumbnailSize(128)}>Fast</button
+            >
+            <button
+              class="pill-btn"
+              class:active={library.thumbnailSize === 256}
+              onclick={() => library.setThumbnailSize(256)}>Normal</button
+            >
+            <button
+              class="pill-btn"
+              class:active={library.thumbnailSize === 512}
+              onclick={() => library.setThumbnailSize(512)}>Sharp</button
+            >
+          </div>
         </div>
       {/snippet}
     </SettingsRow>
@@ -288,6 +288,17 @@
             >
           {/each}
         </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Clear Recent Files"
+      hint="Remove all items from the recent files list"
+    >
+      {#snippet control()}
+        <button class="settings-action-btn red" onclick={clearRecents}
+          >Clear</button
+        >
       {/snippet}
     </SettingsRow>
   </SettingsGroup>

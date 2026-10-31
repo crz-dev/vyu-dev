@@ -265,11 +265,6 @@
 
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
 
-  function resetView() {
-    resetZoom();
-    if (!isPdf) editing.clearEdits();
-  }
-
   function hasPlayback() {
     return playing || backgroundAudio.playing;
   }
@@ -1041,7 +1036,6 @@
     isPdf,
     playing,
     getMediaEl,
-    resetView,
     clearTimestamps: clearAllTimestamps,
     clearClips: () => clips.clearBoundaries(),
     pdfPageCount: pdf.state.pageCount,
