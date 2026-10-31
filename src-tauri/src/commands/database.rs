@@ -1,8 +1,11 @@
 // Database commands
 use rusqlite::params;
-use tauri::State;
+use serde::Serialize;
+use std::fs;
+use std::path::{Path, PathBuf};
+use tauri::{AppHandle, Manager, State};
 
-use crate::database::connection::DbConnection;
+use crate::database::connection::{get_db_path, DbConnection};
 use crate::database::models::{FileMetadata, FileMetadataLight, FileMetadataPosition};
 
 fn now_secs() -> i64 {
@@ -265,6 +268,79 @@ pub fn db_get_file_metadata_position(
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
         Err(e) => Err(format!("Failed to execute query: {e}")),
     }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseStats {
+    pub path: String,
+    pub size_bytes: u64,
+    pub wal_bytes: u64,
+    pub metadata_rows: u64,
+    pub settings_rows: u64,
+}
+
+fn database_paths(app: &AppHandle) -> Result<(PathBuf, PathBuf), String> {
+    let path = get_db_path(app)?;
+    let wal = PathBuf::from(format!("{}-wal", path.to_string_lossy()));
+    Ok((path, wal))
+}
+
+fn file_size(path: &Path) -> u64 {
+    fs::metadata(path).map(|m| m.len()).unwrap_or(0)
+}
+
+fn read_database_stats(app: &AppHandle) -> Result<DatabaseStats, String> {
+    let (path, wal) = database_paths(app)?;
+    let db = app.state::<DbConnection>();
+    let conn = db
+        .0
+        .lock()
+        .map_err(|e| format!("Failed to lock database: {e}"))?;
+    let metadata_rows: u64 = conn
+        .query_row("SELECT COUNT(*) FROM file_metadata", [], |row| {
+            row.get::<_, i64>(0)
+        })
+        .unwrap_or(0) as u64;
+    let settings_rows: u64 = conn
+        .query_row("SELECT COUNT(*) FROM settings", [], |row| {
+            row.get::<_, i64>(0)
+        })
+        .unwrap_or(0) as u64;
+    Ok(DatabaseStats {
+        path: path.to_string_lossy().to_string(),
+        size_bytes: file_size(&path),
+        wal_bytes: file_size(&wal),
+        metadata_rows,
+        settings_rows,
+    })
+}
+
+#[tauri::command]
+pub fn get_database_stats(app: AppHandle) -> Result<DatabaseStats, String> {
+    read_database_stats(&app)
+}
+
+#[tauri::command]
+pub async fn vacuum_database(app: AppHandle) -> Result<u64, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let (path, wal) = database_paths(&app)?;
+        let before = file_size(&path) + file_size(&wal);
+        {
+            let db = app.state::<DbConnection>();
+            let conn = db
+                .0
+                .lock()
+                .map_err(|e| format!("Failed to lock database: {e}"))?;
+            conn.execute_batch("VACUUM;")
+                .map_err(|e| format!("Failed to compact database: {e}"))?;
+            let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+        }
+        let after = file_size(&path) + file_size(&wal);
+        Ok(before.saturating_sub(after))
+    })
+    .await
+    .map_err(|e| format!("Database compact task failed: {e}"))?
 }
 
 #[derive(serde::Deserialize)]

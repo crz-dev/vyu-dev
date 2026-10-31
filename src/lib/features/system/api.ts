@@ -7,6 +7,14 @@ export interface SystemConfig {
   thumbnailCacheLimitMb: number;
 }
 
+export interface RuntimeInfo {
+  os: string;
+  arch: string;
+  exePath: string;
+  args: string[];
+  safeMode: boolean;
+}
+
 export interface RestartStatus {
   hardwareAcceleration: boolean;
   singleInstance: boolean;
@@ -42,6 +50,14 @@ export interface UpdateCheckResult {
 
 export function invokeGetSystemConfig(): Promise<SystemConfig> {
   return invoke("get_system_config");
+}
+
+export function invokeGetRuntimeInfo(): Promise<RuntimeInfo> {
+  return invoke("get_runtime_info");
+}
+
+export function invokeOpenDevTools(): Promise<void> {
+  return invoke("open_devtools");
 }
 
 export function invokeGetSystemRestartStatus(): Promise<RestartStatus> {
@@ -108,6 +124,10 @@ export function invokeOpenDefaultAppsSettings(): Promise<void> {
 
 export function invokeRestartApp(): Promise<void> {
   return invoke("restart_app");
+}
+
+export function invokeRestartAppMode(safeMode: boolean): Promise<void> {
+  return invoke("restart_app_mode", { safeMode });
 }
 
 export function invokeResetSystemIntegrations(): Promise<void> {

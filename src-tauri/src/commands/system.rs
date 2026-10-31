@@ -15,6 +15,16 @@ const CONTEXT_KINDS: [&str; 5] = ["image", "video", "audio", "document", ".pdf"]
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct RuntimeInfo {
+    pub os: String,
+    pub arch: String,
+    pub exe_path: String,
+    pub args: Vec<String>,
+    pub safe_mode: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RestartStatus {
     pub hardware_acceleration: bool,
     pub single_instance: bool,
@@ -82,6 +92,17 @@ where
 #[tauri::command]
 pub fn get_system_config(state: State<'_, SystemState>) -> Result<SystemConfig, String> {
     lock_config(&state)
+}
+
+#[tauri::command]
+pub fn get_runtime_info() -> RuntimeInfo {
+    RuntimeInfo {
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+        exe_path: current_exe_path().unwrap_or_default(),
+        args: std::env::args().collect(),
+        safe_mode: crate::state::system::safe_mode_enabled(),
+    }
 }
 
 #[tauri::command]
@@ -358,8 +379,7 @@ pub fn open_default_apps_settings() -> Result<(), String> {
     }
 }
 
-#[tauri::command]
-pub fn restart_app(app: AppHandle) -> Result<(), String> {
+fn spawn_restart(app: AppHandle, safe_mode: Option<bool>) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
         let skip_save = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         crate::state::window::persist_window_state(&window, &skip_save);
@@ -370,15 +390,33 @@ pub fn restart_app(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("Failed to resolve executable path: {e}"))?;
     let mut command = std::process::Command::new(exe);
     for arg in std::env::args_os().skip(1) {
-        if arg.to_string_lossy() != "--restart-delay" {
-            command.arg(arg);
+        let value = arg.to_string_lossy();
+        if value == "--restart-delay" {
+            continue;
         }
+        if safe_mode.is_some() && value == "--safe-mode" {
+            continue;
+        }
+        command.arg(arg);
+    }
+    if safe_mode == Some(true) {
+        command.arg("--safe-mode");
     }
     command
         .arg("--restart-delay")
         .spawn()
         .map_err(|e| format!("Failed to restart vyu: {e}"))?;
     std::process::exit(0);
+}
+
+#[tauri::command]
+pub fn restart_app(app: AppHandle) -> Result<(), String> {
+    spawn_restart(app, None)
+}
+
+#[tauri::command]
+pub fn restart_app_mode(app: AppHandle, safe_mode: bool) -> Result<(), String> {
+    spawn_restart(app, Some(safe_mode))
 }
 
 #[tauri::command]

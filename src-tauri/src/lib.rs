@@ -140,6 +140,7 @@ pub fn run() {
 
             get_system_config,
             get_system_restart_status,
+            get_runtime_info,
             set_hardware_acceleration,
             set_single_instance,
             set_thumbnail_cache_limit,
@@ -154,6 +155,9 @@ pub fn run() {
             open_app_folder,
             open_default_apps_settings,
             restart_app,
+            restart_app_mode,
+            get_database_stats,
+            vacuum_database,
             reset_system_integrations,
             check_for_updates,
         ])

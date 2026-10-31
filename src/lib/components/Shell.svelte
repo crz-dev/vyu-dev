@@ -22,6 +22,8 @@
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
   import ShortcutCheatSheet from "$lib/features/keybinds/ShortcutCheatSheet.svelte";
+  import DebugOverlay from "$lib/features/debug/DebugOverlay.svelte";
+  import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
   import ToastStack from "$lib/components/ToastStack.svelte";
   import { fade } from "svelte/transition";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -48,6 +50,8 @@
     isVideo,
     isAudio,
     isPdf,
+    playing,
+    getMediaEl,
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
@@ -231,6 +235,8 @@
     isVideo: boolean;
     isAudio: boolean;
     isPdf: boolean;
+    playing: boolean;
+    getMediaEl: () => HTMLMediaElement | null;
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
@@ -927,7 +933,24 @@
   <VisualizerMenu type="diamonds" />
 
   {#key settingsOpen}
-    <SettingsDialog {settingsOpen} closeSettings={() => closeSettings()} />
+    <SettingsDialog
+      {settingsOpen}
+      closeSettings={() => closeSettings()}
+      fileInfo={{
+        fileName,
+        filePath,
+        fileSize,
+        fileDimensions,
+        fileCreated,
+        fileModified,
+        mediaProps,
+        isVideo,
+        isAudio,
+        isPdf,
+        index: currentIndex,
+        count: fileList.length,
+      }}
+    />
   {/key}
   {#key accessibilityOpen}
     <AccessibilityDialog
@@ -946,6 +969,22 @@
   {/key}
 
   <ShortcutCheatSheet />
+
+  {#if debugPrefs.overlayOpen}
+    <DebugOverlay
+      {fileName}
+      {filePath}
+      {isVideo}
+      {isAudio}
+      {isPdf}
+      {playing}
+      {getMediaEl}
+      {fileDimensions}
+      {zoomLevel}
+      {playbackSpeed}
+      {durationDisplay}
+    />
+  {/if}
 
   <Tooltip
     {tsTooltip}

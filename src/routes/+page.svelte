@@ -681,8 +681,7 @@
 
   function isVideoHover(): boolean {
     return (
-      isTimedMedia() &&
-      (hoverZone === "video" || viewer.state.isFullscreen)
+      isTimedMedia() && (hoverZone === "video" || viewer.state.isFullscreen)
     );
   }
 
@@ -768,10 +767,7 @@
       "seek-backward": () => {
         const el = getMediaEl();
         if (el && isVideoHover()) {
-          el.currentTime = Math.max(
-            el.currentTime - playbackPrefs.seekStep,
-            0,
-          );
+          el.currentTime = Math.max(el.currentTime - playbackPrefs.seekStep, 0);
         } else {
           void navigate(-1);
         }
@@ -1038,6 +1034,8 @@
     isVideo,
     isAudio,
     isPdf,
+    playing,
+    getMediaEl,
     pdfPageCount: pdf.state.pageCount,
     pdfVersion: pdf.state.pdfVersion,
     pdfPageSize: pdf.state.pdfPageSize,

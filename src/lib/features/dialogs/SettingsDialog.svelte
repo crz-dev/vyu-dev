@@ -1,15 +1,14 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
-  import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
-  import { getVersion, getTauriVersion } from "@tauri-apps/api/app";
   import {
-    invokeCleanupTempFolder,
     invokeClearBackups,
     invokeGetFfmpegInfo,
     type FfmpegInfo,
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
+  import DebugSettings from "$lib/features/debug/DebugSettings.svelte";
+  import type { DebugFileInfo } from "$lib/features/debug/debugTypes";
   import { showToast } from "$lib/components/toast.svelte";
   import {
     loadLastDialogSection,
@@ -20,9 +19,11 @@
   let {
     settingsOpen,
     closeSettings,
+    fileInfo = null,
   }: {
     settingsOpen: boolean;
     closeSettings: () => void;
+    fileInfo?: DebugFileInfo | null;
   } = $props();
 
   let activeSection = $state(loadLastDialogSection("settings") || "appearance");
@@ -47,23 +48,6 @@
     }
   });
 
-  let resetConfirmTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  $effect(() => {
-    if (resetConfirming) {
-      resetConfirmTimeout = setTimeout(() => {
-        resetConfirming = false;
-        resetConfirmTimeout = null;
-      }, 5000);
-    }
-    return () => {
-      if (resetConfirmTimeout) {
-        clearTimeout(resetConfirmTimeout);
-        resetConfirmTimeout = null;
-      }
-    };
-  });
-
   const sections = [
     { id: "appearance", label: "Appearance" },
     { id: "playback", label: "Playback" },
@@ -84,7 +68,7 @@
     library: "Layout, content, history and privacy.",
     system: "Startup, performance, storage, integration and updates.",
     keybinds: "View and customize keyboard shortcuts.",
-    debug: "Dev tools and internal state.",
+    debug: "Diagnostics, developer tools and maintenance.",
     "danger-zone": "Destructive actions that cannot be undone.",
   };
 
@@ -212,7 +196,6 @@
 
   import SystemSettings from "$lib/features/system/SystemSettings.svelte";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
-  import { invokeResetSystemIntegrations } from "$lib/features/system/api";
   import KeybindsSettings from "$lib/features/keybinds/KeybindsSettings.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { theme as themeStore } from "$lib/features/theme/theme.svelte";
@@ -346,90 +329,6 @@
     return exportQualityLabels[index] ?? "Balanced";
   }
 
-  let thumbnailCacheSizeText = $state("Calculating…");
-  let clearingThumbnailCache = $state(false);
-
-  $effect(() => {
-    if (settingsOpen) {
-      invoke<number>("get_thumbnail_cache_size")
-        .then((bytes) => {
-          if (bytes > 0) {
-            const mb = (bytes / (1024 * 1024)).toFixed(1);
-            thumbnailCacheSizeText = `${mb} MB`;
-          } else {
-            thumbnailCacheSizeText = "Empty";
-          }
-        })
-        .catch(() => {
-          thumbnailCacheSizeText = "Unavailable";
-        });
-    }
-  });
-
-  async function handleClearThumbnailCache() {
-    clearingThumbnailCache = true;
-    try {
-      const freed = await invoke<number>("clear_thumbnail_cache");
-      thumbnailCacheSizeText = "0 B";
-    } catch {
-      thumbnailCacheSizeText = "Error";
-    }
-    clearingThumbnailCache = false;
-  }
-
-  async function handleCopyAppInfo() {
-    try {
-      const [version, tauriVersion] = await Promise.all([
-        getVersion(),
-        getTauriVersion(),
-      ]);
-      const text = `Vyu v${version} · Tauri ${tauriVersion} · ${navigator.platform}`;
-      await navigator.clipboard.writeText(text);
-      showToast({ message: "App info copied", color: "green" });
-    } catch {
-      showToast({ message: "Failed to copy app info", color: "red" });
-    }
-  }
-
-  async function handleCleanTempFolder() {
-    cleaningTempFolder = true;
-    try {
-      await invokeCleanupTempFolder();
-    } catch {
-      // temp cleanup is best-effort
-    }
-    cleaningTempFolder = false;
-  }
-
-  async function handleOpenDevTools() {
-    try {
-      await invoke("open_devtools");
-    } catch {
-      // DevTools only available in debug builds unless devtools flag is set
-    }
-  }
-
-  function handleToggleFlags() {
-    flagsOpen = !flagsOpen;
-  }
-
-  async function handleResetConfirm() {
-    if (!resetConfirming) {
-      resetConfirming = true;
-      return;
-    }
-    try {
-      await invokeResetSystemIntegrations();
-    } catch {
-      // System integration reset is best-effort; local preferences still clear.
-    }
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i);
-      if (key?.startsWith("vyu-")) localStorage.removeItem(key);
-    }
-    window.location.reload();
-  }
-
   let clearingBackups = $state(false);
   let clearBackupsConfirming = $state(false);
 
@@ -534,10 +433,6 @@
       void loadFfmpegInfo();
     }
   });
-
-  let cleaningTempFolder = $state(false);
-  let flagsOpen = $state(false);
-  let resetConfirming = $state(false);
 
   let profileMenuOpen = $state(false);
   let profileNameInput = $state("");
@@ -4237,246 +4132,7 @@
           <KeybindsSettings flash={flashId === "keybinds"} />
 
           <!-- Debug -->
-          <div
-            id="settings-section-debug"
-            class="settings-section"
-            class:flash={flashId === "debug"}
-          >
-            <p class="settings-section-header">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path d="M12 2L2 7l10 5 10-5-10-5z" /><path
-                  d="M2 17l10 5 10-5"
-                /><path d="M2 12l10 5 10-5" /></svg
-              >
-              Debug
-            </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><line
-                    x1="12"
-                    y1="16"
-                    x2="12"
-                    y2="12"
-                  /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">App Info</span>
-                  <span class="settings-hint"
-                    >Version, platform, architecture</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleCopyAppInfo}>
-                  Copy
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
-                  /><polyline points="14 2 14 8 20 8" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Thumbnail Cache</span>
-                  <span class="settings-hint"
-                    >{thumbnailCacheSizeText} stored on disk</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn"
-                  onclick={handleClearThumbnailCache}
-                  disabled={clearingThumbnailCache}
-                >
-                  {clearingThumbnailCache ? "Clearing\u2026" : "Clear"}
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6l-1 14H6L5 6"
-                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                    d="M9 6V4h6v2"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Temp Folder</span>
-                  <span class="settings-hint">Temporary processing files</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn"
-                  onclick={handleCleanTempFolder}
-                  disabled={cleaningTempFolder}
-                >
-                  {cleaningTempFolder ? "Cleaning\u2026" : "Clean"}
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><rect
-                    x="2"
-                    y="3"
-                    width="20"
-                    height="14"
-                    rx="2"
-                    ry="2"
-                  /><line x1="8" y1="21" x2="16" y2="21" /><line
-                    x1="12"
-                    y1="17"
-                    x2="12"
-                    y2="21"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Open Webview DevTools</span>
-                  <span class="settings-hint">Inspect the app window</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleOpenDevTools}
-                  >Open</button
-                >
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><line x1="8" y1="6" x2="21" y2="6" /><line
-                    x1="8"
-                    y1="12"
-                    x2="21"
-                    y2="12"
-                  /><line x1="8" y1="18" x2="21" y2="18" /><line
-                    x1="3"
-                    y1="6"
-                    x2="3.01"
-                    y2="6"
-                  /><line x1="3" y1="12" x2="3.01" y2="12" /><line
-                    x1="3"
-                    y1="18"
-                    x2="3.01"
-                    y2="18"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Toggle Flags</span>
-                  <span class="settings-hint">View all localStorage keys</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn" onclick={handleToggleFlags}
-                  >{flagsOpen ? "Close" : "View"}</button
-                >
-              </div>
-            </div>
-            {#if flagsOpen}
-              <div class="flags-list">
-                {#each Array.from( { length: localStorage.length }, (_, i) => localStorage.key(i), ).filter((k): k is string => k !== null && k.startsWith("vyu-")) as key}
-                  <div class="flag-row">
-                    <code>{key}</code>
-                    <code
-                      >{(localStorage.getItem(key) ?? "").slice(0, 120)}</code
-                    >
-                  </div>
-                {/each}
-              </div>
-            {/if}
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="23 4 23 10 17 10" /><path
-                    d="M20.49 15a9 9 0 11-2.12-9.36L23 10"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Reset All Settings</span>
-                  <span class="settings-hint"
-                    >Clear all preferences and reload</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn red"
-                  onclick={handleResetConfirm}
-                  >{resetConfirming ? "Confirm?" : "Reset"}</button
-                >
-              </div>
-            </div>
-          </div>
+          <DebugSettings flash={flashId === "debug"} {fileInfo} />
 
           <!-- Danger Zone -->
           <div

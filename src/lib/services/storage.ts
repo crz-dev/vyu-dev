@@ -1278,3 +1278,13 @@ export function loadKeybinds(): unknown {
 export function saveKeybinds(config: unknown): void {
   localStorage.setItem("vyu-keybinds", JSON.stringify(config));
 }
+
+// ── Debug ──
+
+export function loadDebugOverlay(): boolean {
+  return localStorage.getItem("vyu-debug-overlay") === "true";
+}
+
+export function saveDebugOverlay(enabled: boolean): void {
+  localStorage.setItem("vyu-debug-overlay", String(enabled));
+}

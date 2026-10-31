@@ -27,7 +27,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 - **Feature modules** own domain logic and feature state. Some are stateful singletons/factories; `features/media/media.svelte.ts` is a stateless factory that receives page-held state through callbacks.
 - **Pages and shell** may own view state and thin event wiring; domain rules belong in feature modules.
-- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `features/system/api.ts` owns System/OS integration IPC; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. The only current direct `invoke()` outside wrappers is the debug-only `open_devtools` call in `SettingsDialog.svelte`.
+- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `features/system/api.ts` owns System/OS integration IPC; `features/debug/api.ts` owns database-maintenance IPC; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. Components should not call `invoke()` directly.
 - **Async loads** use a generation counter in `media.svelte.ts` so stale results are ignored. Long-running commands emit events such as `conversion-progress` and `edit-apply-progress`.
 
 ## Task-to-owner lookup
@@ -37,6 +37,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Settings UI / preferences       | `features/dialogs/SettingsDialog.svelte` + the owning feature store                                    |
 | Keybinds                        | `features/keybinds/*`, `shared/keybinds.ts`, `features/keybinds/KeybindsSettings.svelte`               |
 | System / OS integration         | `features/system/*`, `commands/system.rs`, `state/system.rs`                                           |
+| Debug / diagnostics             | `features/debug/*`, `commands/system.rs`, `commands/database.rs`                                       |
 | Share, save-as, conversion      | `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/conversion.rs` |
 | Playback / media bar            | `features/media/playback*.ts`, `features/media/MediaBar.svelte`, `features/media/media.svelte.ts`      |
 | Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
@@ -111,28 +112,31 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Global mouse handler                                   | `features/actions/globalMouseHandler.ts`                                       |
 | Context actions                                        | `features/actions/*`                                                           |
 | Properties actions                                     | `features/actions/propertiesActions.ts`                                        |
+| System settings                                        | `features/system/SystemSettings.svelte`                                        |
+| Debug settings / diagnostics                           | `features/debug/DebugSettings.svelte`, `features/debug/debugInfo.ts`           |
+| Debug overlay                                          | `features/debug/DebugOverlay.svelte`, `features/debug/debugPrefs.svelte.ts`    |
 
 ### Services and shared
 
-| Concern                                   | Module                                |
-| ----------------------------------------- | ------------------------------------- |
-| Filesystem scans / folder cache           | `services/files.ts`                   |
-| localStorage preferences                  | `services/storage.ts`                 |
-| SQLite frontend wrappers / migration      | `services/database.ts`                |
-| Shared in-memory thumbnail cache          | `services/thumbnailCache.ts`          |
-| Thumbnail generation indicator            | `components/ThumbnailGenToast.svelte` |
-| Clipboard                                 | `services/clipboard.ts`               |
-| Filename tooltip                          | `services/filenameTooltip.ts`         |
-| Session state                             | `services/session.ts`                 |
-| Initialization (drag-drop, paste, resume) | `services/init.ts`                    |
-| Toasts                                    | `components/toast.svelte.ts`          |
-| Constants                                 | `shared/constants.ts`                 |
-| Shared types                              | `shared/types.ts`                     |
+| Concern                                   | Module                                       |
+| ----------------------------------------- | -------------------------------------------- |
+| Filesystem scans / folder cache           | `services/files.ts`                          |
+| localStorage preferences                  | `services/storage.ts`                        |
+| SQLite frontend wrappers / migration      | `services/database.ts`                       |
+| Shared in-memory thumbnail cache          | `services/thumbnailCache.ts`                 |
+| Thumbnail generation indicator            | `components/ThumbnailGenToast.svelte`        |
+| Clipboard                                 | `services/clipboard.ts`                      |
+| Filename tooltip                          | `services/filenameTooltip.ts`                |
+| Session state                             | `services/session.ts`                        |
+| Initialization (drag-drop, paste, resume) | `services/init.ts`                           |
+| Toasts                                    | `components/toast.svelte.ts`                 |
+| Constants                                 | `shared/constants.ts`                        |
+| Shared types                              | `shared/types.ts`                            |
 | Keybinds                                  | `features/keybinds/*` + `shared/keybinds.ts` |
-| Media-kind detection                      | `shared/mediaKind.ts`                 |
-| File metadata formatting                  | `shared/fileMeta.ts`                  |
-| Privacy utilities                         | `shared/privacy.ts`                   |
-| Derived prop objects                      | `shared/pageProps.ts`                 |
+| Media-kind detection                      | `shared/mediaKind.ts`                        |
+| File metadata formatting                  | `shared/fileMeta.ts`                         |
+| Privacy utilities                         | `shared/privacy.ts`                          |
+| Derived prop objects                      | `shared/pageProps.ts`                        |
 
 ### Rust backend
 
@@ -151,7 +155,8 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Integrity repair                   | `commands/integrity.rs`                               |
 | Clipboard                          | `commands/clipboard.rs`                               |
 | PDF markup application             | `commands/annotations.rs`                             |
-| DB commands                        | `commands/database.rs`                                |
+| DB commands / maintenance          | `commands/database.rs`                                |
+| System, runtime info, restart      | `commands/system.rs`, `state/system.rs`               |
 | Tauri setup / command registration | `lib.rs`                                              |
 
 ## State model
@@ -184,7 +189,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 **localStorage (app settings + fallback)** — `services/storage.ts`.
 
-- App-wide keys: `vyu-{name}`. System preferences use `vyu-system-*` (window behavior, power behavior, external app paths, last file). Keybinds use `vyu-keybinds` (versioned per-action bindings).
+- App-wide keys: `vyu-{name}`. System preferences use `vyu-system-*` (window behavior, power behavior, external app paths, last file). Keybinds use `vyu-keybinds` (versioned per-action bindings). The debug overlay toggle uses `vyu-debug-overlay`.
 - Legacy/fallback per-file keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
 - SQLite is primary after migration (`migrateFromLocalStorage`). User updates to resume position, EQ settings, and CD color are still dual-written to localStorage as fallback. Timestamps and clips use SQLite; their localStorage values are read only when the DB row is missing or the query fails.
 - Do not add new per-file localStorage keys; use SQLite.
@@ -225,26 +230,29 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 
 ## Known constraints
 
-| Constraint                                                          | Reason                                                                              |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Library reactive caches use `$state<Record>`                        | Svelte proxy tracking depends on property access.                                   |
-| `services/thumbnailCache.ts` uses a non-reactive `Map`              | It is an in-memory batching/cache layer, not UI state.                              |
-| `pdfjs-dist` remains dynamic                                        | Keeps startup bundle smaller.                                                       |
-| Sort-related stat uses one batch IPC call                           | Eliminates per-call IPC overhead.                                                   |
-| Batch stat processes paths in chunks of 8                           | Limits work per blocking task; overall concurrency is not capped at 8.              |
+| Constraint                                                            | Reason                                                                              |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Library reactive caches use `$state<Record>`                          | Svelte proxy tracking depends on property access.                                   |
+| `services/thumbnailCache.ts` uses a non-reactive `Map`                | It is an in-memory batching/cache layer, not UI state.                              |
+| `pdfjs-dist` remains dynamic                                          | Keeps startup bundle smaller.                                                       |
+| Sort-related stat uses one batch IPC call                             | Eliminates per-call IPC overhead.                                                   |
+| Batch stat processes paths in chunks of 8                             | Limits work per blocking task; overall concurrency is not capped at 8.              |
 | Thumbnail cache evicted at a configurable soft limit (500 MB default) | Prevents unbounded disk usage while letting users trade cache size for speed.       |
-| Display cache evicted at 2 GB soft limit                            | Prevents unbounded disk usage.                                                      |
-| Temp paths are unique per operation                                 | Prevents concurrent-operation conflicts.                                            |
-| Cross-volume rename uses copy+delete fallback                       | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
-| JPEG scale-down via `jpeg-decoder`, not `image`                     | `image` uses `zune-jpeg`, which lacks IDCT scaling.                                 |
-| Semaphores: 16 native image, 2 video/FFmpeg/RAW, 2 audio            | Keeps native image work from queueing behind FFmpeg.                                |
-| Thumbnail eviction counter is atomic and best-effort                | Avoids full directory scans on the hot path; `get_thumbnail_cache_size` resyncs it. |
-| Inflight dedup keyed by `{hash}_{size}` (no mtime)                  | Allows metadata stat inside `spawn_blocking`.                                       |
-| FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified | Reproducible provisioning.                                                          |
-| Webview CSP restricts `connect-src` to `self`                       | Prevents frontend telemetry/network access.                                         |
-| Update checks run in the Rust backend only                          | CSP stays locked down; the request is user-initiated and never automatic.           |
-| Keybind conflicts are scoped to viewer/library/PDF                  | Arrow keys stay natural in each view; global actions conflict with every context.   |
-| Escape, Backspace, and plain Delete are reserved                    | Escape closes, and Backspace/Delete clear a binding while recording.                |
-| `system.json` is read before the webview is created                 | GPU args and single-instance registration cannot change at runtime.                 |
-| `--safe-mode` forces GPU acceleration on                            | Recovery path if a disabled-GPU startup renders incorrectly.                        |
-| Keep-awake uses a dedicated thread                                  | `SetThreadExecutionState` is per-thread and would expire on a command thread.        |
+| Display cache evicted at 2 GB soft limit                              | Prevents unbounded disk usage.                                                      |
+| Temp paths are unique per operation                                   | Prevents concurrent-operation conflicts.                                            |
+| Cross-volume rename uses copy+delete fallback                         | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
+| JPEG scale-down via `jpeg-decoder`, not `image`                       | `image` uses `zune-jpeg`, which lacks IDCT scaling.                                 |
+| Semaphores: 16 native image, 2 video/FFmpeg/RAW, 2 audio              | Keeps native image work from queueing behind FFmpeg.                                |
+| Thumbnail eviction counter is atomic and best-effort                  | Avoids full directory scans on the hot path; `get_thumbnail_cache_size` resyncs it. |
+| Inflight dedup keyed by `{hash}_{size}` (no mtime)                    | Allows metadata stat inside `spawn_blocking`.                                       |
+| FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified   | Reproducible provisioning.                                                          |
+| Webview CSP restricts `connect-src` to `self`                         | Prevents frontend telemetry/network access.                                         |
+| Update checks run in the Rust backend only                            | CSP stays locked down; the request is user-initiated and never automatic.           |
+| Keybind conflicts are scoped to viewer/library/PDF                    | Arrow keys stay natural in each view; global actions conflict with every context.   |
+| Escape, Backspace, and plain Delete are reserved                      | Escape closes, and Backspace/Delete clear a binding while recording.                |
+| `system.json` is read before the webview is created                   | GPU args and single-instance registration cannot change at runtime.                 |
+| `--safe-mode` forces GPU acceleration on                              | Recovery path if a disabled-GPU startup renders incorrectly.                        |
+| Keep-awake uses a dedicated thread                                    | `SetThreadExecutionState` is per-thread and would expire on a command thread.       |
+| `vacuum_database` runs in `spawn_blocking`                            | `VACUUM` rewrites the DB and must not block the UI/command thread.                  |
+| Diagnostics omit the current media path                               | Reports stay safe to share; explicit file-metadata copy includes the path.          |
+| Safe-mode restart reuses `--restart-delay`                            | The single-instance release must finish before the new process starts.              |
