@@ -4,28 +4,35 @@ import {
   clearLastFile as clearStoredLastFile,
   loadAlwaysOnTop,
   loadBatterySaverThumbnails,
+  loadCheckUpdatesOnLaunch,
+  loadConfirmCloseWhilePlaying,
   loadExternalAppPaths,
   loadKeepAwake,
   loadLastFile,
   loadPauseOnFocusLoss,
-  loadReopenLastFile,
+  loadStartupView,
   saveAlwaysOnTop,
   saveBatterySaverThumbnails,
+  saveCheckUpdatesOnLaunch,
+  saveConfirmCloseWhilePlaying,
   saveExternalAppPath,
   saveKeepAwake,
   saveLastFile,
   savePauseOnFocusLoss,
-  saveReopenLastFile,
+  saveStartupView,
   type ExternalAppKind,
   type ExternalAppPaths,
+  type StartupView,
 } from "$lib/services/storage";
 
 function createSystemPrefs() {
-  let reopenLastFile = $state(loadReopenLastFile());
+  let startupView = $state<StartupView>(loadStartupView());
   let alwaysOnTop = $state(loadAlwaysOnTop());
   let keepAwake = $state(loadKeepAwake());
   let pauseOnFocusLoss = $state(loadPauseOnFocusLoss());
   let batterySaverThumbnails = $state(loadBatterySaverThumbnails());
+  let checkUpdatesOnLaunch = $state(loadCheckUpdatesOnLaunch());
+  let confirmCloseWhilePlaying = $state(loadConfirmCloseWhilePlaying());
   let lastFile = $state(loadLastFile());
   let externalApps = $state<ExternalAppPaths>(loadExternalAppPaths());
 
@@ -38,9 +45,9 @@ function createSystemPrefs() {
     }
   }
 
-  function setReopenLastFile(enabled: boolean) {
-    reopenLastFile = enabled;
-    saveReopenLastFile(enabled);
+  function setStartupView(view: StartupView) {
+    startupView = view;
+    saveStartupView(view);
   }
 
   function setAlwaysOnTop(enabled: boolean) {
@@ -62,6 +69,16 @@ function createSystemPrefs() {
   function setBatterySaverThumbnails(enabled: boolean) {
     batterySaverThumbnails = enabled;
     saveBatterySaverThumbnails(enabled);
+  }
+
+  function setCheckUpdatesOnLaunch(enabled: boolean) {
+    checkUpdatesOnLaunch = enabled;
+    saveCheckUpdatesOnLaunch(enabled);
+  }
+
+  function setConfirmCloseWhilePlaying(enabled: boolean) {
+    confirmCloseWhilePlaying = enabled;
+    saveConfirmCloseWhilePlaying(enabled);
   }
 
   function setLastFile(path: string) {
@@ -91,8 +108,11 @@ function createSystemPrefs() {
   }
 
   return {
+    get startupView() {
+      return startupView;
+    },
     get reopenLastFile() {
-      return reopenLastFile;
+      return startupView === "last-file";
     },
     get alwaysOnTop() {
       return alwaysOnTop;
@@ -106,17 +126,25 @@ function createSystemPrefs() {
     get batterySaverThumbnails() {
       return batterySaverThumbnails;
     },
+    get checkUpdatesOnLaunch() {
+      return checkUpdatesOnLaunch;
+    },
+    get confirmCloseWhilePlaying() {
+      return confirmCloseWhilePlaying;
+    },
     get lastFile() {
       return lastFile;
     },
     get externalApps() {
       return externalApps;
     },
-    setReopenLastFile,
+    setStartupView,
     setAlwaysOnTop,
     setKeepAwake,
     setPauseOnFocusLoss,
     setBatterySaverThumbnails,
+    setCheckUpdatesOnLaunch,
+    setConfirmCloseWhilePlaying,
     setLastFile,
     clearLastFile,
     setExternalApp,

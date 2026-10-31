@@ -2,17 +2,26 @@
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
   loadCheckerboard,
+  loadCursorAutoHide,
   loadDensity,
+  loadHighContrast,
   loadReducedMotion,
+  loadShowTooltips,
   loadUiScale,
+  loadViewerBackground,
   saveCheckerboard,
+  saveCursorAutoHide,
   saveDensity,
+  saveHighContrast,
   saveReducedMotion,
+  saveShowTooltips,
   saveUiScale,
+  saveViewerBackground,
   type DisplayDensity,
+  type ViewerBackground,
 } from "$lib/services/storage";
 
-export type { DisplayDensity };
+export type { DisplayDensity, ViewerBackground };
 
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 1.5;
@@ -29,6 +38,10 @@ function createAppearance() {
   let density = $state<DisplayDensity>(loadDensity());
   let reducedMotion = $state(loadReducedMotion());
   let checkerboard = $state(loadCheckerboard());
+  let showTooltips = $state(loadShowTooltips());
+  let cursorAutoHide = $state(loadCursorAutoHide());
+  let highContrast = $state(loadHighContrast());
+  let viewerBackground = $state<ViewerBackground>(loadViewerBackground());
 
   function applyRootAttributes() {
     if (typeof document === "undefined") return;
@@ -36,6 +49,9 @@ function createAppearance() {
     root.dataset.density = density;
     root.dataset.transparency = checkerboard ? "checkerboard" : "solid";
     root.dataset.reduceMotion = reducedMotion ? "true" : "false";
+    root.dataset.tooltips = showTooltips ? "on" : "off";
+    root.dataset.highContrast = highContrast ? "true" : "false";
+    root.dataset.viewerBg = viewerBackground;
   }
 
   async function applyZoom() {
@@ -70,6 +86,29 @@ function createAppearance() {
     applyRootAttributes();
   }
 
+  function setShowTooltips(enabled: boolean) {
+    showTooltips = enabled;
+    saveShowTooltips(enabled);
+    applyRootAttributes();
+  }
+
+  function setCursorAutoHide(enabled: boolean) {
+    cursorAutoHide = enabled;
+    saveCursorAutoHide(enabled);
+  }
+
+  function setHighContrast(enabled: boolean) {
+    highContrast = enabled;
+    saveHighContrast(enabled);
+    applyRootAttributes();
+  }
+
+  function setViewerBackground(background: ViewerBackground) {
+    viewerBackground = background;
+    saveViewerBackground(background);
+    applyRootAttributes();
+  }
+
   function init() {
     applyRootAttributes();
     void applyZoom();
@@ -90,10 +129,26 @@ function createAppearance() {
     get checkerboard() {
       return checkerboard;
     },
+    get showTooltips() {
+      return showTooltips;
+    },
+    get cursorAutoHide() {
+      return cursorAutoHide;
+    },
+    get highContrast() {
+      return highContrast;
+    },
+    get viewerBackground() {
+      return viewerBackground;
+    },
     setUiScale,
     setDensity,
     setReducedMotion,
     setCheckerboard,
+    setShowTooltips,
+    setCursorAutoHide,
+    setHighContrast,
+    setViewerBackground,
     init,
   };
 }

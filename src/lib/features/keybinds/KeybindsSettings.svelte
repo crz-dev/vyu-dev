@@ -1,7 +1,5 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { slide } from "svelte/transition";
-  import { appearance } from "$lib/features/theme/appearance.svelte";
   import { showToast } from "$lib/components/toast.svelte";
   import {
     KEYBIND_ACTIONS,
@@ -15,6 +13,7 @@
     formatKey,
   } from "$lib/features/keybinds/keybindUtils";
   import KeyboardOverview from "$lib/features/keybinds/KeyboardOverview.svelte";
+  import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
 
@@ -24,7 +23,6 @@
   let contextFilter = $state<ContextFilter>("all");
   let unboundOnly = $state(false);
   let selectedKey = $state<string | null>(null);
-  let showOverview = $state(true);
   let resetAllConfirming = $state(false);
   let resetAllTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -126,6 +124,16 @@
     { id: "library", label: "Library" },
     { id: "pdf", label: "PDF" },
   ];
+
+  const categoryIcons: Record<string, string> = {
+    app: "window",
+    viewer: "eye",
+    file: "file",
+    editing: "pencil",
+    library: "book",
+    pdf: "file",
+    slideshow: "slideshow",
+  };
 </script>
 
 <div id="settings-section-keybinds" class="settings-section" class:flash>
@@ -146,66 +154,59 @@
     Keybinds
   </p>
 
-  <div class="settings-row keybind-filter-row">
-    <div class="settings-control keybind-search-control">
-      <input
-        class="keybind-search-input"
-        type="search"
-        placeholder="Search actions or shortcuts"
-        bind:value={search}
-        aria-label="Search keybindings"
-      />
-      <div class="pill-group pill-group-4">
-        {#each contextFilters as filter}
-          <button
-            class="pill-btn"
-            class:active={contextFilter === filter.id}
-            onclick={() => (contextFilter = filter.id)}>{filter.label}</button
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="keyboard" />
+    </span>
+    Keyboard Overview
+  </p>
+  <KeyboardOverview
+    actions={contextActions}
+    {selectedKey}
+    onSelectKey={toggleSelectedKey}
+  />
+
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="filter" />
+    </span>
+    Find
+  </p>
+  <div class="settings-card has-child">
+    <div class="settings-row keybind-filter-row">
+      <div class="settings-control keybind-search-control">
+        <input
+          class="keybind-search-input"
+          type="search"
+          placeholder="Search actions or shortcuts"
+          bind:value={search}
+          aria-label="Search keybindings"
+        />
+        <div class="pill-group pill-group-4">
+          {#each contextFilters as filter}
+            <button
+              class="pill-btn"
+              class:active={contextFilter === filter.id}
+              onclick={() => (contextFilter = filter.id)}>{filter.label}</button
+            >
+          {/each}
+        </div>
+      </div>
+      <div class="settings-control">
+        <label class="toggle-row keybind-unbound-toggle">
+          <input type="checkbox" bind:checked={unboundOnly} />
+          <span class="toggle-track" class:on={unboundOnly}
+            ><span class="toggle-thumb"></span></span
           >
-        {/each}
+          <span class="settings-hint">Unbound</span>
+        </label>
       </div>
     </div>
-    <div class="settings-control">
-      <label class="toggle-row keybind-unbound-toggle">
-        <input type="checkbox" bind:checked={unboundOnly} />
-        <span class="toggle-track" class:on={unboundOnly}
-          ><span class="toggle-thumb"></span></span
-        >
-        <span class="settings-hint">Unbound</span>
-      </label>
-    </div>
   </div>
-
-  <div class="settings-row keybind-overview-toggle">
-    <div class="settings-label-col">
-      <div class="settings-label-text">
-        <span class="settings-label">Keyboard overview</span>
-        <span class="settings-hint">Click a used key to filter the list</span>
-      </div>
-    </div>
-    <div class="settings-control">
-      <button
-        class="settings-action-btn"
-        onclick={() => (showOverview = !showOverview)}
-        >{showOverview ? "Hide" : "Show"}</button
-      >
-    </div>
-  </div>
-
-  {#if showOverview}
-    <div transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}>
-      <KeyboardOverview
-        actions={contextActions}
-        {selectedKey}
-        onSelectKey={toggleSelectedKey}
-      />
-    </div>
-  {/if}
 
   <div class="settings-row keybind-help-row">
     <span class="settings-hint"
-      >Click a shortcut and press a key combo. Escape cancels; Backspace or
-      Delete clears.</span
+      >Click a shortcut, then press a key combo. Esc cancels.</span
     >
   </div>
 
@@ -228,6 +229,11 @@
   {:else}
     {#each groupedActions as group}
       <p class="settings-group-label">
+        <span class="settings-group-icon">
+          <SettingsGroupIcon
+            name={categoryIcons[group.category] ?? "keyboard"}
+          />
+        </span>
         {KEYBIND_CATEGORY_LABELS[group.category]}
       </p>
       <div class="settings-card has-child">
@@ -295,29 +301,37 @@
     {/each}
   {/if}
 
-  <div class="settings-row keybind-reset-row">
-    <div class="settings-label-col">
-      <div class="settings-label-text">
-        <span class="settings-hint">Restore all shortcuts to defaults</span>
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="refresh" />
+    </span>
+    Reset
+  </p>
+  <div class="settings-card has-child">
+    <div class="settings-row keybind-reset-row">
+      <div class="settings-label-col">
+        <div class="settings-label-text">
+          <span class="settings-hint">Restore all shortcuts to defaults</span>
+        </div>
       </div>
-    </div>
-    <div class="settings-control">
-      <button class="settings-action-btn yellow" onclick={handleResetAll}>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          ><polyline points="1 4 1 10 7 10" /><path
-            d="M3.51 15a9 9 0 102.13-9.36L1 10"
-          /></svg
-        >
-        {resetAllConfirming ? "Confirm?" : "Reset all"}
-      </button>
+      <div class="settings-control">
+        <button class="settings-action-btn yellow" onclick={handleResetAll}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><polyline points="1 4 1 10 7 10" /><path
+              d="M3.51 15a9 9 0 102.13-9.36L1 10"
+            /></svg
+          >
+          {resetAllConfirming ? "Confirm?" : "Reset all"}
+        </button>
+      </div>
     </div>
   </div>
 </div>

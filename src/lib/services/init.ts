@@ -2,8 +2,11 @@ import { onMount } from "svelte";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { exists } from "@tauri-apps/plugin-fs";
+import { confirm } from "@tauri-apps/plugin-dialog";
 import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+import { invokeCheckForUpdates } from "$lib/features/system/api";
+import { showToast } from "$lib/components/toast.svelte";
 import {
   cleanupStaleStorageEntries,
   loadVolume,
@@ -37,6 +40,7 @@ export interface InitState {
     setPlaybackSpeed: (v: number) => void;
   };
   loadFile: (path: string) => Promise<void>;
+  openLibrary: () => void;
   saveResumePosition: () => void;
   hasPlayback: () => boolean;
   pausePlayback: () => void;
@@ -69,7 +73,11 @@ export function setupInit(s: InitState) {
           await s.loadFile(initial);
           return;
         }
-        if (systemPrefs.reopenLastFile && systemPrefs.lastFile) {
+        if (systemPrefs.startupView === "library") {
+          s.openLibrary();
+          return;
+        }
+        if (systemPrefs.startupView === "last-file" && systemPrefs.lastFile) {
           const last = systemPrefs.lastFile;
           if (await exists(last)) {
             await s.loadFile(last);
@@ -81,6 +89,22 @@ export function setupInit(s: InitState) {
         console.error("Failed to load initial file:", e);
       }
     })();
+
+    if (systemPrefs.checkUpdatesOnLaunch) {
+      void invokeCheckForUpdates()
+        .then((result) => {
+          if (result.status === "update") {
+            showToast({
+              message: result.message,
+              color: "blue",
+              duration: 7000,
+            });
+          }
+        })
+        .catch(() => {
+          // Update checks are best-effort at launch.
+        });
+    }
 
     if (typeof requestIdleCallback === "function") {
       requestIdleCallback(
@@ -162,6 +186,26 @@ export function setupInit(s: InitState) {
 
     window.addEventListener("paste", handlePaste);
 
+    let unlistenClose: () => void = () => {};
+    getCurrentWindow()
+      .onCloseRequested(async (event) => {
+        if (!systemPrefs.confirmCloseWhilePlaying || !s.hasPlayback()) {
+          return;
+        }
+        event.preventDefault();
+        const quit = await confirm("Playback is still running. Close Vyu?", {
+          title: "Close Vyu",
+          kind: "warning",
+        });
+        if (quit) await getCurrentWindow().destroy();
+      })
+      .then((fn) => {
+        unlistenClose = fn;
+      })
+      .catch((e) => {
+        console.error("Failed to register close listener:", e);
+      });
+
     return () => {
       window.removeEventListener("keydown", s.handleKeydown);
       window.removeEventListener("keyup", s.handleKeyup);
@@ -173,6 +217,7 @@ export function setupInit(s: InitState) {
       unlistenDragDrop();
       unlistenOpenFile();
       unlistenFocus();
+      unlistenClose();
       powerStatus.stop();
     };
   });

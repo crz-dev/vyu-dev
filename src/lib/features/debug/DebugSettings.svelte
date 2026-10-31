@@ -3,6 +3,7 @@
   import { save } from "@tauri-apps/plugin-dialog";
   import { writeTextFile } from "@tauri-apps/plugin-fs";
   import { showToast } from "$lib/components/toast.svelte";
+  import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
   import { copyTextToClipboard } from "$lib/services/clipboard";
   import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
   import {
@@ -215,7 +216,12 @@
     </div>
   {/if}
 
-  <p class="settings-group-label">System &amp; Runtime</p>
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="cpu" />
+    </span>
+    Runtime
+  </p>
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-text">
@@ -274,10 +280,7 @@
         disabled={refreshing}>{refreshing ? "Refreshing…" : "Refresh"}</button
       >
     </div>
-  </div>
 
-  <p class="settings-group-label">FFmpeg</p>
-  <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-text">
         <span class="settings-label">Version</span>
@@ -300,7 +303,12 @@
     </div>
   </div>
 
-  <p class="settings-group-label">Reporting</p>
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="file" />
+    </span>
+    Diagnostics
+  </p>
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-col">
@@ -347,10 +355,7 @@
         >
       </div>
     </div>
-  </div>
 
-  <p class="settings-group-label">Developer Tools</p>
-  <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
@@ -387,7 +392,12 @@
     </div>
   </div>
 
-  <p class="settings-group-label">Storage &amp; Maintenance</p>
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="database" />
+    </span>
+    Maintenance
+  </p>
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-col">
@@ -405,32 +415,6 @@
         >
       </div>
     </div>
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">App Data</span>
-          <span class="settings-hint">Database and configuration</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button class="settings-action-btn" onclick={() => openFolder("data")}
-          >Open</button
-        >
-      </div>
-    </div>
-    <div class="settings-row settings-subrow">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
-          <span class="settings-label">Cache</span>
-          <span class="settings-hint">Thumbnails, previews and cover art</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button class="settings-action-btn" onclick={() => openFolder("cache")}
-          >Open</button
-        >
-      </div>
-    </div>
     <div class="settings-row settings-subrow">
       <div class="settings-label-col">
         <div class="settings-label-text">
@@ -444,10 +428,7 @@
         >
       </div>
     </div>
-  </div>
 
-  <p class="settings-group-label">Launch &amp; Recovery</p>
-  <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-text">
         <span class="settings-label">Safe Mode</span>
@@ -485,7 +466,12 @@
     </div>
   </div>
 
-  <p class="settings-group-label">Local Flags</p>
+  <p class="settings-group-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="filter" />
+    </span>
+    Local Flags
+  </p>
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-col">

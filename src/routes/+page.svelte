@@ -1136,6 +1136,7 @@
     rawDurationSecs: { get: () => rawDurationSecs },
     playbackUI,
     loadFile,
+    openLibrary: () => (menuStore.libraryOpen = true),
     saveResumePosition: saveCurrentPosition,
     hasPlayback,
     pausePlayback,

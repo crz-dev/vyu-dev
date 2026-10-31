@@ -6,6 +6,9 @@ import {
   loadProcessDeleteOriginal,
   loadProcessGpuEncoding,
   loadProcessHardwareEncoder,
+  loadProcessKeepOriginalDate,
+  loadProcessOpenOutputFolder,
+  loadProcessOutputDir,
   loadProcessOverwrite,
   loadProcessPreserveMetadata,
   loadProcessQuality,
@@ -15,6 +18,9 @@ import {
   saveProcessDeleteOriginal,
   saveProcessGpuEncoding,
   saveProcessHardwareEncoder,
+  saveProcessKeepOriginalDate,
+  saveProcessOpenOutputFolder,
+  saveProcessOutputDir,
   saveProcessOverwrite,
   saveProcessPreserveMetadata,
   saveProcessQuality,
@@ -33,6 +39,9 @@ function createConversionPrefs() {
   let autoOpenConverted = $state(loadProcessAutoOpen());
   let preserveMetadata = $state(loadProcessPreserveMetadata());
   let coverArtMode = $state<CoverArtMode>(loadProcessCoverArtMode());
+  let outputDir = $state(loadProcessOutputDir());
+  let openOutputFolder = $state(loadProcessOpenOutputFolder());
+  let keepOriginalDate = $state(loadProcessKeepOriginalDate());
 
   function setQuality(value: ProcessQuality) {
     quality = value;
@@ -79,6 +88,21 @@ function createConversionPrefs() {
     saveProcessCoverArtMode(mode);
   }
 
+  function setOutputDir(dir: string) {
+    outputDir = dir;
+    saveProcessOutputDir(dir);
+  }
+
+  function setOpenOutputFolder(enabled: boolean) {
+    openOutputFolder = enabled;
+    saveProcessOpenOutputFolder(enabled);
+  }
+
+  function setKeepOriginalDate(enabled: boolean) {
+    keepOriginalDate = enabled;
+    saveProcessKeepOriginalDate(enabled);
+  }
+
   return {
     get quality() {
       return quality;
@@ -107,6 +131,15 @@ function createConversionPrefs() {
     get coverArtMode() {
       return coverArtMode;
     },
+    get outputDir() {
+      return outputDir;
+    },
+    get openOutputFolder() {
+      return openOutputFolder;
+    },
+    get keepOriginalDate() {
+      return keepOriginalDate;
+    },
     setQuality,
     setDeleteOriginal,
     setAudioBitrate,
@@ -116,6 +149,9 @@ function createConversionPrefs() {
     setAutoOpenConverted,
     setPreserveMetadata,
     setCoverArtMode,
+    setOutputDir,
+    setOpenOutputFolder,
+    setKeepOriginalDate,
   };
 }
 

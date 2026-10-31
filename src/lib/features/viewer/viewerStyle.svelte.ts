@@ -3,6 +3,7 @@ import { viewer } from "./viewer.svelte";
 import { editing } from "$lib/features/editing/editing.svelte";
 import { markup } from "$lib/features/markup/markup.svelte";
 import { markerStore } from "$lib/features/markers/markers.svelte";
+import { appearance } from "$lib/features/theme/appearance.svelte";
 
 export type ViewerStyleStore = ReturnType<typeof createViewerStyle>;
 
@@ -39,7 +40,9 @@ export function createViewerStyle() {
   const fsCursor = $derived(
     markup.drawActive
       ? markup.cursorStyle
-      : !viewer.state.fsControlsVisible && !markerStore.tsEditMenu.visible
+      : appearance.cursorAutoHide &&
+          !viewer.state.fsControlsVisible &&
+          !markerStore.tsEditMenu.visible
         ? "none"
         : panCursor,
   );

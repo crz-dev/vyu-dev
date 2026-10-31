@@ -26,6 +26,8 @@
     invokeCopyFileUnique,
     invokeTrashFile,
     invokeIdentifySong,
+    invokeBatchStat,
+    invokeSetFileModifiedTime,
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { library } from "$lib/features/library/library.svelte";
@@ -217,6 +219,32 @@
       preset: conversionPreset(),
     };
   }
+
+  function conversionOutputDir(): string {
+    return conversionPrefs.outputDir || parentFolder();
+  }
+
+  async function sourceModifiedMs(): Promise<number | null> {
+    if (!conversionPrefs.keepOriginalDate) return null;
+    try {
+      const stat = await invokeBatchStat([filePath]);
+      return stat[0]?.mtime_ms ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function restoreModifiedTime(
+    path: string | null,
+    modifiedMs: number | null,
+  ) {
+    if (!path || modifiedMs === null) return;
+    try {
+      await invokeSetFileModifiedTime(path, modifiedMs);
+    } catch {
+      // Preserving the source timestamp is best-effort.
+    }
+  }
   let shareConverting = $state(false);
   let convertingFormat = $state<string | undefined>(undefined);
   let convertProgress = $state<number>(0);
@@ -350,11 +378,12 @@
   }
 
   async function handleSaveAs(format: string) {
-    const outputDir = parentFolder();
+    const outputDir = conversionOutputDir();
     if (!outputDir) {
       showToast({ message: "Pick a save location", color: "yellow" });
       return;
     }
+    const modifiedMs = await sourceModifiedMs();
     shareConverting = true;
     let success = false;
     let resultPath: string | null = null;
@@ -429,6 +458,9 @@
       unlisten?.();
     }
     if (success) {
+      await restoreModifiedTime(resultPath, modifiedMs);
+    }
+    if (success && conversionPrefs.openOutputFolder) {
       try {
         await invokeOpenDirectory(outputDir);
       } catch {
@@ -521,11 +553,12 @@
     }
 
     const stem = fileName.replace(/\.[^.]+$/, "");
-    const defaultDir = parentFolder() || "";
+    const defaultDir = conversionOutputDir() || "";
     const defaultPath = defaultDir ? `${defaultDir}\\${stem}` : stem;
 
     const outputPath = await save({ defaultPath, filters });
     if (!outputPath) return;
+    const modifiedMs = await sourceModifiedMs();
 
     const outputExt = outputPath.split(".").pop()?.toLowerCase() || "";
     if (!outputExt) {
@@ -603,6 +636,9 @@
       unlisten?.();
     }
     if (success) {
+      await restoreModifiedTime(resultPath, modifiedMs);
+    }
+    if (success && conversionPrefs.openOutputFolder) {
       try {
         await invokeOpenDirectory(outputDirFromSave);
       } catch {
@@ -3215,7 +3251,9 @@
                 points="7 3 7 8 15 8"
               /></svg
             >
-            Saves next to the original
+            {conversionPrefs.outputDir
+              ? "Saves to the default output folder"
+              : "Saves next to the original"}
           </span>
           <button
             class="share-delete-toggle tooltip-above"

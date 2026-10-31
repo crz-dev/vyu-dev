@@ -17,6 +17,8 @@ pub struct SystemConfig {
     pub hardware_acceleration: bool,
     pub single_instance: bool,
     pub thumbnail_cache_limit_mb: u64,
+    pub launch_minimized: bool,
+    pub clear_cache_on_exit: bool,
 }
 
 impl Default for SystemConfig {
@@ -25,6 +27,8 @@ impl Default for SystemConfig {
             hardware_acceleration: true,
             single_instance: true,
             thumbnail_cache_limit_mb: DEFAULT_CACHE_LIMIT_MB,
+            launch_minimized: false,
+            clear_cache_on_exit: false,
         }
     }
 }

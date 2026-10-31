@@ -140,6 +140,18 @@ pub fn set_single_instance(state: State<'_, SystemState>, enabled: bool) -> Resu
 }
 
 #[tauri::command]
+pub fn set_launch_minimized(state: State<'_, SystemState>, enabled: bool) -> Result<(), String> {
+    update_config(&state, |config| config.launch_minimized = enabled)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_clear_cache_on_exit(state: State<'_, SystemState>, enabled: bool) -> Result<(), String> {
+    update_config(&state, |config| config.clear_cache_on_exit = enabled)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn set_thumbnail_cache_limit(
     app: AppHandle,
     state: State<'_, SystemState>,

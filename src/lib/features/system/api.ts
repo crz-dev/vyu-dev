@@ -5,6 +5,8 @@ export interface SystemConfig {
   hardwareAcceleration: boolean;
   singleInstance: boolean;
   thumbnailCacheLimitMb: number;
+  launchMinimized: boolean;
+  clearCacheOnExit: boolean;
 }
 
 export interface RuntimeInfo {
@@ -70,6 +72,14 @@ export function invokeSetHardwareAcceleration(enabled: boolean): Promise<void> {
 
 export function invokeSetSingleInstance(enabled: boolean): Promise<void> {
   return invoke("set_single_instance", { enabled });
+}
+
+export function invokeSetLaunchMinimized(enabled: boolean): Promise<void> {
+  return invoke("set_launch_minimized", { enabled });
+}
+
+export function invokeSetClearCacheOnExit(enabled: boolean): Promise<void> {
+  return invoke("set_clear_cache_on_exit", { enabled });
 }
 
 export function invokeSetThumbnailCacheLimit(

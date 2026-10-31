@@ -452,6 +452,7 @@ export function saveFont(f: "geist" | "satoshi" | "system"): void {
 // ── Appearance ──
 export type DisplayDensity = "comfortable" | "compact";
 export type DarkVariant = "standard" | "oled";
+export type ViewerBackground = "theme" | "black" | "gray";
 
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 1.5;
@@ -503,6 +504,40 @@ export function loadDarkVariant(): DarkVariant {
 
 export function saveDarkVariant(variant: DarkVariant): void {
   localStorage.setItem("vyu-dark-variant", variant);
+}
+
+export function loadShowTooltips(): boolean {
+  return localStorage.getItem("vyu-show-tooltips") !== "false";
+}
+
+export function saveShowTooltips(enabled: boolean): void {
+  localStorage.setItem("vyu-show-tooltips", String(enabled));
+}
+
+export function loadCursorAutoHide(): boolean {
+  return localStorage.getItem("vyu-cursor-auto-hide") !== "false";
+}
+
+export function saveCursorAutoHide(enabled: boolean): void {
+  localStorage.setItem("vyu-cursor-auto-hide", String(enabled));
+}
+
+export function loadHighContrast(): boolean {
+  return localStorage.getItem("vyu-high-contrast") === "true";
+}
+
+export function saveHighContrast(enabled: boolean): void {
+  localStorage.setItem("vyu-high-contrast", String(enabled));
+}
+
+export function loadViewerBackground(): ViewerBackground {
+  const value = localStorage.getItem("vyu-viewer-background");
+  if (value === "black" || value === "gray") return value;
+  return "theme";
+}
+
+export function saveViewerBackground(background: ViewerBackground): void {
+  localStorage.setItem("vyu-viewer-background", background);
 }
 
 // ── Playback ──
@@ -671,6 +706,31 @@ export function loadProcessDeleteOriginal(): boolean {
 
 export function saveProcessDeleteOriginal(enabled: boolean): void {
   localStorage.setItem("vyu-process-delete-original", String(enabled));
+}
+
+export function loadProcessOutputDir(): string {
+  return localStorage.getItem("vyu-process-output-dir") ?? "";
+}
+
+export function saveProcessOutputDir(dir: string): void {
+  if (dir) localStorage.setItem("vyu-process-output-dir", dir);
+  else localStorage.removeItem("vyu-process-output-dir");
+}
+
+export function loadProcessOpenOutputFolder(): boolean {
+  return localStorage.getItem("vyu-process-open-output-folder") !== "false";
+}
+
+export function saveProcessOpenOutputFolder(enabled: boolean): void {
+  localStorage.setItem("vyu-process-open-output-folder", String(enabled));
+}
+
+export function loadProcessKeepOriginalDate(): boolean {
+  return localStorage.getItem("vyu-process-keep-original-date") !== "false";
+}
+
+export function saveProcessKeepOriginalDate(enabled: boolean): void {
+  localStorage.setItem("vyu-process-keep-original-date", String(enabled));
 }
 
 export function loadProcessAudioBitrate(): number {
@@ -1178,6 +1238,8 @@ export function saveColorBlindMode(mode: ColorBlindMode): void {
 
 const SYSTEM_PREFIX = "vyu-system-";
 
+export type StartupView = "last-file" | "library" | "empty";
+
 function loadSystemBoolean(key: string, fallback: boolean): boolean {
   const value = localStorage.getItem(`${SYSTEM_PREFIX}${key}`);
   if (value === null) return fallback;
@@ -1188,12 +1250,36 @@ function saveSystemBoolean(key: string, value: boolean): void {
   localStorage.setItem(`${SYSTEM_PREFIX}${key}`, String(value));
 }
 
-export function loadReopenLastFile(): boolean {
-  return loadSystemBoolean("reopen-last-file", false);
+export function loadStartupView(): StartupView {
+  const value = localStorage.getItem(`${SYSTEM_PREFIX}startup-view`);
+  if (value === "last-file" || value === "library" || value === "empty") {
+    return value;
+  }
+  return loadReopenLastFile() ? "last-file" : "empty";
 }
 
-export function saveReopenLastFile(enabled: boolean): void {
-  saveSystemBoolean("reopen-last-file", enabled);
+export function saveStartupView(view: StartupView): void {
+  localStorage.setItem(`${SYSTEM_PREFIX}startup-view`, view);
+}
+
+export function loadCheckUpdatesOnLaunch(): boolean {
+  return loadSystemBoolean("check-updates-on-launch", false);
+}
+
+export function saveCheckUpdatesOnLaunch(enabled: boolean): void {
+  saveSystemBoolean("check-updates-on-launch", enabled);
+}
+
+export function loadConfirmCloseWhilePlaying(): boolean {
+  return loadSystemBoolean("confirm-close-while-playing", false);
+}
+
+export function saveConfirmCloseWhilePlaying(enabled: boolean): void {
+  saveSystemBoolean("confirm-close-while-playing", enabled);
+}
+
+export function loadReopenLastFile(): boolean {
+  return loadSystemBoolean("reopen-last-file", false);
 }
 
 export function loadAlwaysOnTop(): boolean {

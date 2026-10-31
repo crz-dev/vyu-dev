@@ -32,6 +32,8 @@ const EMPTY_SYSTEM: SystemConfig = {
   hardwareAcceleration: true,
   singleInstance: true,
   thumbnailCacheLimitMb: 500,
+  launchMinimized: false,
+  clearCacheOnExit: false,
 };
 
 const EMPTY_FFMPEG: FfmpegInfo = {

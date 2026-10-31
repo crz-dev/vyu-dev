@@ -1941,12 +1941,14 @@
 }
 
 .settings-nav-item[data-section="editor"].active,
-.settings-nav-item[data-section="process"].active {
+.settings-nav-item[data-section="process"].active,
+.settings-nav-item[data-section="integration"].active {
   background: var(--blue-bg-faint);
   color: #bfdbfe;
 }
 .settings-nav-item[data-section="editor"].active::before,
-.settings-nav-item[data-section="process"].active::before {
+.settings-nav-item[data-section="process"].active::before,
+.settings-nav-item[data-section="integration"].active::before {
   background: var(--blue);
 }
 
@@ -2176,6 +2178,16 @@
   color: var(--text-muted);
   font-family: var(--font-family);
   user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
 }
 
 .settings-group-label:first-of-type {
@@ -2209,46 +2221,8 @@
   background: var(--bg-secondary);
 }
 
-.settings-subcard {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border: 0.5px solid var(--bg-elevated);
-  border-radius: 8px;
-  background: var(--bg-secondary);
-}
-
-.settings-subcard:not(:last-child) {
-  margin-bottom: 8px;
-}
-
-.settings-subcard-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 6px 8px 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  font-family: var(--font-family);
-  user-select: none;
-}
-
-.settings-subcard-header svg {
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-
 .settings-row.settings-subrow {
   padding-left: 22px;
-}
-
-.settings-row.settings-subrow .settings-row-icon {
-  opacity: 0.7;
 }
 
 .settings-label-col {
@@ -2256,11 +2230,6 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.settings-row-icon {
-  color: var(--text-dim);
-  flex-shrink: 0;
 }
 
 .settings-label-text {
@@ -2286,6 +2255,22 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+.settings-control-inline {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.settings-control-inline .settings-action-btn.blue {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pill-group {
@@ -2324,6 +2309,11 @@
 .pill-btn.active {
   background: var(--blue-bg-default);
   color: var(--blue-lighter);
+}
+
+.pill-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .pill-btn + .pill-btn {
@@ -3020,9 +3010,8 @@
 }
 
 .keybind-reset-row {
-  margin-top: 6px;
-  padding-top: 10px;
-  border-top: 0.5px solid var(--bg-elevated);
+  margin-top: 0;
+  padding-top: 7px;
 }
 
 .keybind-filter-row {
@@ -3056,45 +3045,50 @@
   gap: 6px;
 }
 
-.keybind-overview-toggle {
-  padding-bottom: 2px;
-}
-
 .keyboard-overview {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px;
+  gap: 3px;
+  padding: 8px;
   margin: 2px 0 6px;
   border: 0.5px solid var(--bg-border);
   border-radius: 8px;
   background: var(--bg-secondary);
-  overflow-x: auto;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .keyboard-row {
   display: flex;
-  gap: 4px;
-  min-width: max-content;
+  gap: clamp(2px, 0.45vw, 4px);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .keyboard-row-offset {
-  padding-left: 14px;
+  padding-left: clamp(6px, 2%, 14px);
 }
 
 .keycap {
   position: relative;
-  width: calc(27px * var(--keycap-width, 1));
-  height: 27px;
-  padding: 0;
+  flex: var(--keycap-width, 1) 1 0;
+  min-width: 0;
+  height: clamp(21px, 3.1vw, 27px);
+  padding: 0 2px;
   border-radius: 5px;
   border: 0.5px solid var(--bg-border);
   background: var(--bg-primary);
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: clamp(8px, 1vw, 10px);
   font-family: var(--font-family);
   line-height: 1;
   cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
   transition:
     background 0.15s,
     border-color 0.15s,
@@ -4535,15 +4529,6 @@
 /* Danger Zone */
 .danger-intro {
   padding: 0 4px 4px;
-}
-
-.danger-risk-icon {
-  color: var(--yellow);
-}
-
-.danger-risk-safe .settings-row-icon,
-.danger-risk-safe .settings-label {
-  color: var(--text-muted);
 }
 
 .danger-confirm {

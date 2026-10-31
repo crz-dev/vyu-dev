@@ -56,6 +56,7 @@ pub fn run() {
     }
 
     let config_for_setup = system_config.clone();
+    let launch_minimized = config_for_setup.launch_minimized;
     let mut builder = tauri::Builder::default();
     if system_config.single_instance {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -145,6 +146,8 @@ pub fn run() {
             get_runtime_info,
             set_hardware_acceleration,
             set_single_instance,
+            set_launch_minimized,
+            set_clear_cache_on_exit,
             set_thumbnail_cache_limit,
             set_keep_awake,
             get_power_status,
@@ -226,6 +229,10 @@ pub fn run() {
 
             state::window::restore_window_state(&window, &skip_save);
 
+            if launch_minimized {
+                let _ = window.minimize();
+            }
+
             let window_for_events = window.clone();
             let skip_for_events = skip_save.clone();
             let last_save = Arc::new(Mutex::new(Instant::now() - Duration::from_secs(60)));
@@ -258,6 +265,20 @@ pub fn run() {
             app.manage(InitialFile(std::sync::Mutex::new(initial_file)));
             Ok(())
         })
-        .run(context)
-        .expect("error while running tauri application");
+        .build(context)
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Exit = event {
+                let clear = app_handle
+                    .state::<state::system::SystemState>()
+                    .config
+                    .lock()
+                    .map(|config| config.clear_cache_on_exit)
+                    .unwrap_or(false);
+                if clear {
+                    let _ = fs::remove_dir_all(commands::thumbnail::thumb_cache_dir(app_handle));
+                    commands::display::clear_display_caches(app_handle);
+                }
+            }
+        });
 }

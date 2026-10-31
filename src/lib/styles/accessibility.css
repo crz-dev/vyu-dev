@@ -11,3 +11,37 @@
 [data-colorblind="tritanopia"] {
   filter: url(#cvd-tritanopia);
 }
+
+/* High contrast — stronger text and border separation */
+html[data-high-contrast="true"] {
+  --text-primary: #ffffff;
+  --text-secondary: #f0f0f0;
+  --text-muted: #d4d4d4;
+  --text-dim: #b8b8b8;
+  --bg-border: rgba(255, 255, 255, 0.32);
+  --bg-elevated: rgba(255, 255, 255, 0.12);
+}
+
+html[data-high-contrast="true"][data-theme="light"] {
+  --text-primary: #000000;
+  --text-secondary: #111111;
+  --text-muted: #333333;
+  --text-dim: #444444;
+  --bg-border: rgba(0, 0, 0, 0.35);
+  --bg-elevated: rgba(0, 0, 0, 0.1);
+}
+
+/* Viewer canvas background */
+html[data-viewer-bg="black"] .viewer {
+  background-color: #000000;
+}
+
+html[data-viewer-bg="gray"] .viewer {
+  background-color: #181818;
+}
+
+/* Global tooltip visibility */
+html[data-tooltips="off"] [data-tooltip]::after,
+html[data-tooltips="off"] .tooltip-ctrl::after {
+  display: none !important;
+}
