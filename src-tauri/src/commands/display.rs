@@ -14,7 +14,7 @@ const DISPLAY_CACHE_MAX: u64 = 2 * 1024 * 1024 * 1024;
 const EVICTION_MARGIN: u64 = 50 * 1024 * 1024;
 static DISPLAY_CACHE_USED: AtomicU64 = AtomicU64::new(0);
 
-fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
+pub(crate) fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     let dir = app
         .path()
         .app_cache_dir()
@@ -24,7 +24,7 @@ fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     dir
 }
 
-fn display_cache_dir(app: &tauri::AppHandle) -> PathBuf {
+pub(crate) fn display_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     let dir = app
         .path()
         .app_cache_dir()
@@ -32,6 +32,24 @@ fn display_cache_dir(app: &tauri::AppHandle) -> PathBuf {
         .join("displays");
     let _ = fs::create_dir_all(&dir);
     dir
+}
+
+pub(crate) fn clear_display_caches(app: &tauri::AppHandle) -> u64 {
+    let mut freed = 0u64;
+    for dir in [display_cache_dir(app), cover_art_cache_dir(app)] {
+        let Ok(entries) = fs::read_dir(dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                freed += entry.metadata().map(|m| m.len()).unwrap_or(0);
+                let _ = fs::remove_file(&path);
+            }
+        }
+    }
+    DISPLAY_CACHE_USED.store(0, Ordering::Relaxed);
+    freed
 }
 
 fn record_display_cache_write(written_bytes: u64, cache_dir: &Path) {

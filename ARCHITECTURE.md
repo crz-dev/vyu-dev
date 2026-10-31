@@ -7,7 +7,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 - **Frontend:** `src/` — Svelte 5 runes, TypeScript strict, SvelteKit static SPA, no SSR. One page route (`+page.svelte`); `+layout` and `+error` are scaffolding only.
 - **Backend:** `src-tauri/src/` — Tauri 2 + Rust, Windows-only, Win32 APIs. `lib.rs` is startup, plugin registration, command wiring, and window lifecycle only.
 - **Shared backend:** `util.rs`, `types.rs`, `constants.rs`, `state/`, `database/`.
-- **Privacy boundary:** the webview CSP uses `connect-src 'self'` (`tauri.conf.json`), so frontend code cannot make arbitrary network requests. The bundled SongRec sidecar is the only component that makes network requests (optional Song ID); external-app and browser launches are user-initiated.
+- **Privacy boundary:** the webview CSP uses `connect-src 'self'` (`tauri.conf.json`), so frontend code cannot make arbitrary network requests. The bundled SongRec sidecar and the user-initiated update check in `commands/system.rs` are the only components that make network requests; external-app and browser launches are user-initiated.
 
 ## Composition and data flow
 
@@ -27,7 +27,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 - **Feature modules** own domain logic and feature state. Some are stateful singletons/factories; `features/media/media.svelte.ts` is a stateless factory that receives page-held state through callbacks.
 - **Pages and shell** may own view state and thin event wiring; domain rules belong in feature modules.
-- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. The only current direct `invoke()` outside wrappers is the debug-only `open_devtools` call in `SettingsDialog.svelte`.
+- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `features/system/api.ts` owns System/OS integration IPC; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. The only current direct `invoke()` outside wrappers is the debug-only `open_devtools` call in `SettingsDialog.svelte`.
 - **Async loads** use a generation counter in `media.svelte.ts` so stale results are ignored. Long-running commands emit events such as `conversion-progress` and `edit-apply-progress`.
 
 ## Task-to-owner lookup
@@ -35,6 +35,8 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Task                            | Start with                                                                                             |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Settings UI / preferences       | `features/dialogs/SettingsDialog.svelte` + the owning feature store                                    |
+| Keybinds                        | `features/keybinds/*`, `shared/keybinds.ts`, `features/keybinds/KeybindsSettings.svelte`               |
+| System / OS integration         | `features/system/*`, `commands/system.rs`, `state/system.rs`                                           |
 | Share, save-as, conversion      | `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/conversion.rs` |
 | Playback / media bar            | `features/media/playback*.ts`, `features/media/MediaBar.svelte`, `features/media/media.svelte.ts`      |
 | Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
@@ -126,7 +128,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Toasts                                    | `components/toast.svelte.ts`          |
 | Constants                                 | `shared/constants.ts`                 |
 | Shared types                              | `shared/types.ts`                     |
-| Keybinds                                  | `shared/keybinds.ts`                  |
+| Keybinds                                  | `features/keybinds/*` + `shared/keybinds.ts` |
 | Media-kind detection                      | `shared/mediaKind.ts`                 |
 | File metadata formatting                  | `shared/fileMeta.ts`                  |
 | Privacy utilities                         | `shared/privacy.ts`                   |
@@ -182,7 +184,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 **localStorage (app settings + fallback)** — `services/storage.ts`.
 
-- App-wide keys: `vyu-{name}`.
+- App-wide keys: `vyu-{name}`. System preferences use `vyu-system-*` (window behavior, power behavior, external app paths, last file). Keybinds use `vyu-keybinds` (versioned per-action bindings).
 - Legacy/fallback per-file keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
 - SQLite is primary after migration (`migrateFromLocalStorage`). User updates to resume position, EQ settings, and CD color are still dual-written to localStorage as fallback. Timestamps and clips use SQLite; their localStorage values are read only when the DB row is missing or the query fails.
 - Do not add new per-file localStorage keys; use SQLite.
@@ -191,10 +193,13 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 - Edit backups: `%APPDATA%/com.vyu.desktop/backups` (opt-in via File Backups).
 - Window state: app config dir / `window-state.json`.
-- Thumbnail cache: `%LOCALAPPDATA%/com.vyu.desktop/thumbnails/` (500 MB soft limit).
+- System startup config: app config dir / `system.json` (GPU, single instance, thumbnail cache limit). This file is read before the webview exists; do not move these values to localStorage without a replacement pre-webview source.
+- Thumbnail cache: `%LOCALAPPDATA%/com.vyu.desktop/thumbnails/` (configurable soft limit, default 500 MB).
 - Display cache: `%LOCALAPPDATA%/com.vyu.desktop/displays/` (2 GB soft limit).
 - Cover-art cache: `%LOCALAPPDATA%/com.vyu.desktop/cover_art/`.
 - Temp: `%TEMP%/Vyu-temp/` with unique hash-based paths per operation.
+- Launch at login: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `Vyu` (release builds only).
+- Explorer context menu: `HKCU\Software\Classes\SystemFileAssociations\{image,video,audio,document,.pdf}\shell\Vyu`.
 
 ## File watching and lifecycle
 
@@ -227,7 +232,7 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | `pdfjs-dist` remains dynamic                                        | Keeps startup bundle smaller.                                                       |
 | Sort-related stat uses one batch IPC call                           | Eliminates per-call IPC overhead.                                                   |
 | Batch stat processes paths in chunks of 8                           | Limits work per blocking task; overall concurrency is not capped at 8.              |
-| Thumbnail cache evicted at 500 MB soft limit                        | Prevents unbounded disk usage.                                                      |
+| Thumbnail cache evicted at a configurable soft limit (500 MB default) | Prevents unbounded disk usage while letting users trade cache size for speed.       |
 | Display cache evicted at 2 GB soft limit                            | Prevents unbounded disk usage.                                                      |
 | Temp paths are unique per operation                                 | Prevents concurrent-operation conflicts.                                            |
 | Cross-volume rename uses copy+delete fallback                       | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
@@ -237,3 +242,9 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Inflight dedup keyed by `{hash}_{size}` (no mtime)                  | Allows metadata stat inside `spawn_blocking`.                                       |
 | FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified | Reproducible provisioning.                                                          |
 | Webview CSP restricts `connect-src` to `self`                       | Prevents frontend telemetry/network access.                                         |
+| Update checks run in the Rust backend only                          | CSP stays locked down; the request is user-initiated and never automatic.           |
+| Keybind conflicts are scoped to viewer/library/PDF                  | Arrow keys stay natural in each view; global actions conflict with every context.   |
+| Escape, Backspace, and plain Delete are reserved                    | Escape closes, and Backspace/Delete clear a binding while recording.                |
+| `system.json` is read before the webview is created                 | GPU args and single-instance registration cannot change at runtime.                 |
+| `--safe-mode` forces GPU acceleration on                            | Recovery path if a disabled-GPU startup renders incorrectly.                        |
+| Keep-awake uses a dedicated thread                                  | `SetThreadExecutionState` is per-thread and would expire on a command thread.        |

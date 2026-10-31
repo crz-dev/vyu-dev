@@ -9,6 +9,12 @@
   import type { LoopMode } from "$lib/shared/constants";
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
   import { showToast } from "$lib/components/toast.svelte";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+
+  function shortcutSuffix(id: string): string {
+    const label = keybindStore.label(id);
+    return label ? ` (${label})` : "";
+  }
 
   let {
     fileName,
@@ -275,7 +281,7 @@
           <div class="audio-transport-card">
             <button
               class="retro-transport-btn is-playpause tooltip-ctrl"
-              data-tooltip={playing ? "Pause track" : "Play track"}
+              data-tooltip={`${playing ? "Pause track" : "Play track"}${shortcutSuffix("play-pause")}`}
               onclick={togglePlay}
               aria-label={playing ? "Pause" : "Play"}
             >
@@ -351,7 +357,7 @@
               <button
                 class="retro-slider-btn tooltip-ctrl"
                 class:active={!(muted || volume === 0)}
-                data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
+                data-tooltip={`${muted || volume === 0 ? "Unmute" : "Mute"}${shortcutSuffix("mute")}`}
                 onclick={toggleMute}
                 aria-label={muted ? "unmute" : "mute"}
                 oncontextmenu={handleVolumeRightClick}

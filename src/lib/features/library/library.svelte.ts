@@ -71,6 +71,8 @@ import {
   getCached as sharedGetCached,
   setCached as sharedSetCached,
 } from "$lib/services/thumbnailCache";
+import { powerStatus } from "$lib/features/system/powerStatus.svelte";
+import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -279,7 +281,12 @@ function createLibrary() {
     }
   }
 
+  function thumbnailsPaused() {
+    return systemPrefs.batterySaverThumbnails && powerStatus.onBattery;
+  }
+
   function kick() {
+    if (thumbnailsPaused()) return;
     if (inflight >= MAX_CONCURRENT || pendingOrder.length === 0) return;
     const path = pendingOrder.shift()!;
     pendingSet.delete(path);
@@ -297,6 +304,7 @@ function createLibrary() {
       setCacheEntry(path, shared);
       return shared;
     }
+    if (thumbnailsPaused()) return "";
     if (!pendingSet.has(path)) {
       pendingSet.add(path);
       pendingOrder.push(path);
@@ -327,6 +335,11 @@ function createLibrary() {
     _fetchGen++;
     pendingSet.clear();
     pendingOrder = [];
+
+    if (thumbnailsPaused()) {
+      _generating = false;
+      return;
+    }
 
     for (let i = 0; i < fileList.length; i++) {
       const path = fileList[i];
@@ -759,6 +772,9 @@ function createLibrary() {
     cancelPending,
     clearQueue,
     rebuildQueue,
+    get thumbnailsPaused() {
+      return thumbnailsPaused();
+    },
     get activeTab() {
       return activeTab;
     },

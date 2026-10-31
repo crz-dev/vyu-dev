@@ -82,7 +82,7 @@
     editor: "Configure editing and export preferences.",
     process: "Quality, encoding and output for conversions.",
     library: "Layout, content, history and privacy.",
-    system: "System-level app behavior and updates.",
+    system: "Startup, performance, storage, integration and updates.",
     keybinds: "View and customize keyboard shortcuts.",
     debug: "Dev tools and internal state.",
     "danger-zone": "Destructive actions that cannot be undone.",
@@ -175,10 +175,13 @@
       processAutoOpen: conversionPrefs.autoOpenConverted,
       processPreserveMetadata: conversionPrefs.preserveMetadata,
       processCoverArt: conversionPrefs.coverArtMode,
-      hardwareAcceleration,
-      minimizeToTray,
-      startOnLogin,
-      keybinds,
+      reopenLastFile: systemPrefs.reopenLastFile,
+      alwaysOnTop: systemPrefs.alwaysOnTop,
+      keepAwake: systemPrefs.keepAwake,
+      pauseOnFocusLoss: systemPrefs.pauseOnFocusLoss,
+      batterySaverThumbnails: systemPrefs.batterySaverThumbnails,
+      externalApps: systemPrefs.externalApps,
+      keybinds: keybindStore.exportConfig(),
       libraryViewMode: library.viewMode,
       libraryDensity: library.density,
       libraryThumbnailSize: library.thumbnailSize,
@@ -207,6 +210,11 @@
     URL.revokeObjectURL(url);
   }
 
+  import SystemSettings from "$lib/features/system/SystemSettings.svelte";
+  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+  import { invokeResetSystemIntegrations } from "$lib/features/system/api";
+  import KeybindsSettings from "$lib/features/keybinds/KeybindsSettings.svelte";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { theme as themeStore } from "$lib/features/theme/theme.svelte";
   import { font as fontStore } from "$lib/features/theme/font.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -338,10 +346,6 @@
     return exportQualityLabels[index] ?? "Balanced";
   }
 
-  let hardwareAcceleration = $state(true);
-  let minimizeToTray = $state(false);
-  let startOnLogin = $state(false);
-
   let thumbnailCacheSizeText = $state("Calculating…");
   let clearingThumbnailCache = $state(false);
 
@@ -409,10 +413,15 @@
     flagsOpen = !flagsOpen;
   }
 
-  function handleResetConfirm() {
+  async function handleResetConfirm() {
     if (!resetConfirming) {
       resetConfirming = true;
       return;
+    }
+    try {
+      await invokeResetSystemIntegrations();
+    } catch {
+      // System integration reset is best-effort; local preferences still clear.
     }
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
@@ -529,43 +538,6 @@
   let cleaningTempFolder = $state(false);
   let flagsOpen = $state(false);
   let resetConfirming = $state(false);
-
-  type KeybindEntry = { action: string; key: string; id: string };
-  let keybinds = $state<KeybindEntry[]>([
-    { id: "fullscreen", action: "Fullscreen", key: "F" },
-    { id: "play-pause", action: "Play / Pause", key: "Space" },
-    { id: "next-file", action: "Next file", key: "Alt + →" },
-    { id: "prev-file", action: "Previous file", key: "Alt + ←" },
-    { id: "vol-up", action: "Volume up", key: "↑" },
-    { id: "vol-down", action: "Volume down", key: "↓" },
-    { id: "seek-fwd", action: "Seek forward", key: "→" },
-    { id: "seek-bwd", action: "Seek backward", key: "←" },
-    { id: "frame-back", action: "Frame step back", key: "," },
-    { id: "frame-fwd", action: "Frame step forward", key: "." },
-    { id: "compare", action: "Compare with original", key: "C" },
-    { id: "nav-first", action: "Navigate to first", key: "Ctrl + ←" },
-    { id: "nav-last", action: "Navigate to last", key: "Ctrl + →" },
-    { id: "escape", action: "Close dialogs / Exit fullscreen", key: "Esc" },
-  ]);
-
-  function resetKeybindsToDefault() {
-    keybinds = [
-      { id: "fullscreen", action: "Fullscreen", key: "F" },
-      { id: "play-pause", action: "Play / Pause", key: "Space" },
-      { id: "next-file", action: "Next file", key: "Alt + →" },
-      { id: "prev-file", action: "Previous file", key: "Alt + ←" },
-      { id: "vol-up", action: "Volume up", key: "↑" },
-      { id: "vol-down", action: "Volume down", key: "↓" },
-      { id: "seek-fwd", action: "Seek forward", key: "→" },
-      { id: "seek-bwd", action: "Seek backward", key: "←" },
-      { id: "frame-back", action: "Frame step back", key: "," },
-      { id: "frame-fwd", action: "Frame step forward", key: "." },
-      { id: "compare", action: "Compare with original", key: "C" },
-      { id: "nav-first", action: "Navigate to first", key: "Ctrl + ←" },
-      { id: "nav-last", action: "Navigate to last", key: "Ctrl + →" },
-      { id: "escape", action: "Close dialogs / Exit fullscreen", key: "Esc" },
-    ];
-  }
 
   let profileMenuOpen = $state(false);
   let profileNameInput = $state("");
@@ -4259,375 +4231,10 @@
           </div>
 
           <!-- System -->
-          <div
-            id="settings-section-system"
-            class="settings-section"
-            class:flash={flashId === "system"}
-          >
-            <p class="settings-section-header">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line
-                  x1="8"
-                  y1="21"
-                  x2="16"
-                  y2="21"
-                /><line x1="12" y1="17" x2="12" y2="21" /></svg
-              >
-              System
-            </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><rect
-                    x="4"
-                    y="4"
-                    width="16"
-                    height="16"
-                    rx="2"
-                    ry="2"
-                  /><rect x="9" y="9" width="6" height="6" /><line
-                    x1="9"
-                    y1="1"
-                    x2="9"
-                    y2="4"
-                  /><line x1="15" y1="1" x2="15" y2="4" /><line
-                    x1="9"
-                    y1="20"
-                    x2="9"
-                    y2="23"
-                  /><line x1="15" y1="20" x2="15" y2="23" /><line
-                    x1="20"
-                    y1="9"
-                    x2="23"
-                    y2="9"
-                  /><line x1="20" y1="14" x2="23" y2="14" /><line
-                    x1="1"
-                    y1="9"
-                    x2="4"
-                    y2="9"
-                  /><line x1="1" y1="14" x2="4" y2="14" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Hardware Acceleration</span>
-                  <span class="settings-hint"
-                    >Use GPU for decoding when available</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={hardwareAcceleration}
-                    onchange={(e) =>
-                      (hardwareAcceleration = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={hardwareAcceleration}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="4 14 10 14 10 20" /><polyline
-                    points="20 10 14 10 14 4"
-                  /><line x1="14" y1="10" x2="21" y2="3" /><line
-                    x1="3"
-                    y1="21"
-                    x2="10"
-                    y2="14"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Minimize to Tray</span>
-                  <span class="settings-hint">Keep running in background</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={minimizeToTray}
-                    onchange={(e) => (minimizeToTray = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={minimizeToTray}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" /><polyline
-                    points="10 17 15 12 10 7"
-                  /><line x1="15" y1="12" x2="3" y2="12" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Start on Login</span>
-                  <span class="settings-hint">Launch when system starts</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <label class="toggle-row">
-                  <input
-                    type="checkbox"
-                    checked={startOnLogin}
-                    onchange={(e) => (startOnLogin = e.currentTarget.checked)}
-                  />
-                  <span class="toggle-track" class:on={startOnLogin}
-                    ><span class="toggle-thumb"></span></span
-                  >
-                </label>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-                    points="7 10 12 15 17 10"
-                  /><line x1="12" y1="15" x2="12" y2="3" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Check for Updates</span>
-                  <span class="settings-hint"
-                    >Verify you are on the latest version</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn yellow">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"
-                    /><polyline points="7 10 12 15 17 10" /><line
-                      x1="12"
-                      y1="15"
-                      x2="12"
-                      y2="3"
-                    /></svg
-                  >
-                  Check
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6l-1 14H6L5 6"
-                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                    d="M9 6V4h6v2"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear Cache</span>
-                  <span class="settings-hint"
-                    >{thumbnailCacheSizeText} stored on disk</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn yellow"
-                  onclick={handleClearThumbnailCache}
-                  disabled={clearingThumbnailCache}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="3 6 5 6 21 6" /><path
-                      d="M19 6l-1 14H6L5 6"
-                    /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                      d="M9 6V4h6v2"
-                    /></svg
-                  >
-                  {clearingThumbnailCache ? "Clearing…" : "Clear Cache"}
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="1 4 1 10 7 10" /><path
-                    d="M3.51 15a9 9 0 102.13-9.36L1 10"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Reset All Settings</span>
-                  <span class="settings-hint">Restore factory defaults</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn yellow">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="1 4 1 10 7 10" /><path
-                      d="M3.51 15a9 9 0 102.13-9.36L1 10"
-                    /></svg
-                  >
-                  Reset
-                </button>
-              </div>
-            </div>
-          </div>
+          <SystemSettings flash={flashId === "system"} />
 
           <!-- Keybinds -->
-          <div
-            id="settings-section-keybinds"
-            class="settings-section"
-            class:flash={flashId === "keybinds"}
-          >
-            <p class="settings-section-header">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><rect x="2" y="4" width="20" height="16" rx="2" ry="2" /><path
-                  d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"
-                /></svg
-              >
-              Keybinds
-            </p>
-            {#each keybinds as kb}
-              <div class="settings-row">
-                <div class="settings-label-col">
-                  <div class="settings-label-text">
-                    <span class="settings-label">{kb.action}</span>
-                  </div>
-                </div>
-                <div class="settings-control">
-                  <button
-                    class="help-kbd-btn"
-                    title="Click to set custom keybind"
-                    onclick={() => {}}
-                  >
-                    {kb.key}
-                  </button>
-                </div>
-              </div>
-            {/each}
-            <div class="settings-row keybind-reset-row">
-              <div class="settings-label-col">
-                <div class="settings-label-text">
-                  <span class="settings-hint"
-                    >Restore all shortcuts to defaults</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn yellow"
-                  onclick={resetKeybindsToDefault}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="1 4 1 10 7 10" /><path
-                      d="M3.51 15a9 9 0 102.13-9.36L1 10"
-                    /></svg
-                  >
-                  Reset to default
-                </button>
-              </div>
-            </div>
-          </div>
+          <KeybindsSettings flash={flashId === "keybinds"} />
 
           <!-- Debug -->
           <div

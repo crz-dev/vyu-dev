@@ -14,6 +14,7 @@
   } from "$lib/services/files";
   import { cubicInOut } from "svelte/easing";
   import { library } from "$lib/features/library/library.svelte";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { getSections, type Section } from "$lib/features/library/sections";
   import type { BatchStatItem } from "$lib/shared/types";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -1030,13 +1031,72 @@
     }
   }
 
+  function openHighlighted() {
+    const path = sortedFiles[highlightIndex] ?? fileList[currentIndex];
+    if (path) onSelect(path);
+  }
+
+  function moveHighlight(direction: -1 | 1) {
+    if (sortedFiles.length === 0) return;
+    if (library.viewMode === "filmstrip") {
+      lastManualHighlight = performance.now();
+      highlightIndex = Math.max(
+        0,
+        Math.min(sortedFiles.length - 1, highlightIndex + direction),
+      );
+      scrollToFilmstripCell(sortedFiles[highlightIndex]);
+      return;
+    }
+    const idx = Math.max(
+      0,
+      Math.min(fileList.length - 1, currentIndex + direction),
+    );
+    if (idx !== currentIndex) onSelect(fileList[idx]);
+  }
+
+  function jumpToEdge(last: boolean) {
+    if (sortedFiles.length === 0) return;
+    if (library.viewMode === "filmstrip") {
+      lastManualHighlight = performance.now();
+      highlightIndex = last ? sortedFiles.length - 1 : 0;
+      scrollToFilmstripCell(sortedFiles[highlightIndex]);
+      return;
+    }
+    const path = last ? fileList[fileList.length - 1] : fileList[0];
+    if (path) onSelect(path);
+  }
+
+  async function deleteLibrarySelection() {
+    const selected = library.getSelectedPaths();
+    const paths =
+      selected.length > 0
+        ? selected
+        : [sortedFiles[highlightIndex]].filter((p): p is string => !!p);
+    if (paths.length === 0) return;
+    try {
+      for (const path of paths) await invokeTrashFile(path);
+      library.clearSelection();
+      library.triggerRescan();
+      showToast({
+        message:
+          paths.length === 1 ? "File deleted" : `${paths.length} files deleted`,
+        color: "red",
+      });
+    } catch {
+      showToast({ message: "Failed to delete file", color: "red" });
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     const target = e.target as HTMLElement | null;
     if (target && target.closest("input, textarea, [contenteditable='true']")) {
       return;
     }
+    if (target?.closest(".context-menu, [role='menu']")) return;
+    if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       if (isViewingCollection) {
         library.closeCollection();
       } else {
@@ -1044,65 +1104,52 @@
       }
       return;
     }
+
+    const run = (fn: () => void) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fn();
+    };
+
+    if (keybindStore.matches("library-first", e)) {
+      run(() => jumpToEdge(false));
+      return;
+    }
+    if (keybindStore.matches("library-last", e)) {
+      run(() => jumpToEdge(true));
+      return;
+    }
+    if (keybindStore.matches("library-open", e)) {
+      if (target?.closest("button, [role='button'], a")) return;
+      run(openHighlighted);
+      return;
+    }
+    if (keybindStore.matches("library-delete", e)) {
+      run(() => void deleteLibrarySelection());
+      return;
+    }
     if (
-      library.viewMode === "grid" ||
-      library.viewMode === "filmstrip" ||
-      library.viewMode === "list"
+      keybindStore.matches("library-up", e) ||
+      keybindStore.matches("library-left", e)
     ) {
-      if (library.viewMode === "filmstrip") {
-        if (e.ctrlKey && e.key === "ArrowRight") {
-          e.preventDefault();
-          e.stopPropagation();
-          lastManualHighlight = performance.now();
-          highlightIndex = sortedFiles.length - 1;
-          scrollToFilmstripCell(sortedFiles[highlightIndex]);
-          return;
-        }
-        if (e.ctrlKey && e.key === "ArrowLeft") {
-          e.preventDefault();
-          e.stopPropagation();
-          lastManualHighlight = performance.now();
-          highlightIndex = 0;
-          scrollToFilmstripCell(sortedFiles[highlightIndex]);
-          return;
-        }
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-          e.preventDefault();
-          e.stopPropagation();
-          lastManualHighlight = performance.now();
-          highlightIndex = Math.min(highlightIndex + 1, sortedFiles.length - 1);
-          scrollToFilmstripCell(sortedFiles[highlightIndex]);
-          return;
-        }
-        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-          e.preventDefault();
-          e.stopPropagation();
-          lastManualHighlight = performance.now();
-          highlightIndex = Math.max(highlightIndex - 1, 0);
-          scrollToFilmstripCell(sortedFiles[highlightIndex]);
-          return;
-        }
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          e.stopPropagation();
-          const path = sortedFiles[highlightIndex];
-          if (path) onSelect(path);
-          return;
-        }
-        return;
-      }
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        e.preventDefault();
-        const idx = Math.min(currentIndex + 1, fileList.length - 1);
-        if (idx !== currentIndex) onSelect(fileList[idx]);
-        return;
-      }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        const idx = Math.max(currentIndex - 1, 0);
-        if (idx !== currentIndex) onSelect(fileList[idx]);
-        return;
-      }
+      run(() => moveHighlight(-1));
+      return;
+    }
+    if (
+      keybindStore.matches("library-down", e) ||
+      keybindStore.matches("library-right", e)
+    ) {
+      run(() => moveHighlight(1));
+      return;
+    }
+
+    // Preserve the filmstrip Space alias alongside the configurable Enter key.
+    if (
+      library.viewMode === "filmstrip" &&
+      e.key === " " &&
+      !target?.closest("button, [role='button'], a")
+    ) {
+      run(openHighlighted);
     }
   }
 
@@ -1270,6 +1317,15 @@
         observer.observe(el);
       }
     }
+  });
+
+  let previousThumbnailsPaused = library.thumbnailsPaused;
+  $effect(() => {
+    const paused = library.thumbnailsPaused;
+    if (previousThumbnailsPaused && !paused) {
+      library.rebuildQueue(sortedFiles, currentIndex);
+    }
+    previousThumbnailsPaused = paused;
   });
 
   $effect(() => {

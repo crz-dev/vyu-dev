@@ -8,10 +8,11 @@ mod database;
 use commands::*;
 
 use std::fs;
+use std::path::Path;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tauri::{Manager, WindowEvent};
+use tauri::{Emitter, Manager, WindowEvent};
 use windows::core::w;
 use windows::Win32::UI::Shell::SetCurrentProcessExplicitAppUserModelID;
 
@@ -24,7 +25,52 @@ fn get_initial_file(state: tauri::State<'_, InitialFile>) -> Option<String> {
 }
 
 pub fn run() {
-    tauri::Builder::default()
+    // A restart spawns the new process before this one exits. Give the
+    // single-instance mutex/window time to disappear before registration.
+    if std::env::args().any(|arg| arg == "--restart-delay") {
+        std::thread::sleep(Duration::from_millis(700));
+    }
+
+    let mut context = tauri::generate_context!();
+    let identifier = context.config().identifier.clone();
+    let system_config = state::system::load_config(&identifier);
+
+    if !system_config.hardware_acceleration && !state::system::safe_mode_enabled() {
+        const WRY_DEFAULT_BROWSER_ARGS: &str =
+            "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection";
+        let existing = context
+            .config()
+            .app
+            .windows
+            .first()
+            .and_then(|window| window.additional_browser_args.clone())
+            .unwrap_or_else(|| WRY_DEFAULT_BROWSER_ARGS.to_string());
+        let args = if existing.trim().is_empty() {
+            format!("{WRY_DEFAULT_BROWSER_ARGS} --disable-gpu")
+        } else {
+            format!("{existing} --disable-gpu")
+        };
+        if let Some(window) = context.config_mut().app.windows.first_mut() {
+            window.additional_browser_args = Some(args);
+        }
+    }
+
+    let config_for_setup = system_config.clone();
+    let mut builder = tauri::Builder::default();
+    if system_config.single_instance {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+            if let Some(file) = argv.iter().skip(1).find(|arg| Path::new(arg).is_file()) {
+                let _ = app.emit("system:open-file", file.clone());
+            }
+        }));
+    }
+
+    builder
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -91,11 +137,42 @@ pub fn run() {
             create_collection_folder,
             delete_collection_folder,
             get_initial_file,
+
+            get_system_config,
+            get_system_restart_status,
+            set_hardware_acceleration,
+            set_single_instance,
+            set_thumbnail_cache_limit,
+            set_keep_awake,
+            get_power_status,
+            get_start_on_login,
+            set_start_on_login,
+            get_explorer_context_menu,
+            set_explorer_context_menu,
+            get_cache_stats,
+            clear_all_caches,
+            open_app_folder,
+            open_default_apps_settings,
+            restart_app,
+            reset_system_integrations,
+            check_for_updates,
         ])
-        .setup(|app| {
+        .setup(move |app| {
             unsafe {
                 let _ = SetCurrentProcessExplicitAppUserModelID(w!("com.vyu.app"));
             }
+
+            let config_dir = app
+                .path()
+                .app_config_dir()
+                .unwrap_or_else(|_| std::env::temp_dir());
+            crate::commands::thumbnail::set_cache_limit_bytes(
+                config_for_setup.thumbnail_cache_limit_mb * 1024 * 1024,
+            );
+            let system_state = state::system::SystemState::new(config_for_setup, config_dir);
+            let keep_awake = system_state.keep_awake.clone();
+            app.manage(system_state);
+            state::system::start_keep_awake_monitor(keep_awake);
 
             if let Err(e) = database::connection::init(app.handle()) {
                 eprintln!("Database initialization failed: {e}");
@@ -132,7 +209,7 @@ pub fn run() {
                 }
             });
 
-            let mut args: Vec<String> = std::env::args().collect();
+            let args: Vec<String> = std::env::args().collect();
             let window = app
                 .get_webview_window("main")
                 .expect("main webview window should exist at startup");
@@ -165,14 +242,14 @@ pub fn run() {
                 _ => {}
             });
 
-            if args.len() > 1 {
-                let file_path = args.swap_remove(1);
-                app.manage(InitialFile(std::sync::Mutex::new(Some(file_path))));
-            } else {
-                app.manage(InitialFile(std::sync::Mutex::new(None)));
-            }
+            let initial_file = args
+                .iter()
+                .skip(1)
+                .find(|arg| !arg.starts_with("--") && Path::new(arg).is_file())
+                .cloned();
+            app.manage(InitialFile(std::sync::Mutex::new(initial_file)));
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }

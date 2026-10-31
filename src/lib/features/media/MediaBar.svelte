@@ -8,6 +8,12 @@
   import { library } from "$lib/features/library/library.svelte";
   import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+
+  function shortcutSuffix(id: string): string {
+    const label = keybindStore.label(id);
+    return label ? ` (${label})` : "";
+  }
 
   const RECENTS_SORT_MODES = [
     { value: "date-opened", label: "Date opened" },
@@ -525,7 +531,7 @@
       </div>
       <button
         class="fs-btn tooltip-above-shift-left"
-        data-tooltip={fullscreen ? "Unfullscreen" : "Fullscreen"}
+        data-tooltip={`${fullscreen ? "Unfullscreen" : "Fullscreen"}${shortcutSuffix("fullscreen")}`}
         onclick={toggleFullscreen}
         aria-label={fullscreen ? "exit fullscreen" : "toggle fullscreen"}
       >

@@ -317,21 +317,33 @@ pub fn open_in_photos(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn open_in_paint(path: String) -> Result<(), String> {
+pub fn open_in_paint(path: String, executable: Option<String>) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());
     }
     #[cfg(target_os = "windows")]
     {
-        let result = Command::new("mspaint")
+        let custom = executable
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        let program = if let Some(exe) = custom {
+            if !Path::new(exe).is_file() {
+                return Err("Custom Paint path not found".into());
+            }
+            exe
+        } else {
+            "mspaint"
+        };
+        let result = Command::new(program)
             .creation_flags(CREATE_NO_WINDOW)
             .arg(&path)
             .spawn();
         match result {
             Ok(_) => {}
             Err(e) => {
-                if e.kind() == std::io::ErrorKind::NotFound {
+                if custom.is_none() && e.kind() == std::io::ErrorKind::NotFound {
                     return Err(
                         "APP_NOT_FOUND:Paint:https://apps.microsoft.com/store/apps/microsoft-paint/9PCFS5B6T72H"
                             .into(),
@@ -343,30 +355,43 @@ pub fn open_in_paint(path: String) -> Result<(), String> {
     }
     #[cfg(not(target_os = "windows"))]
     {
+        let _ = executable;
         return Err("Opening in Paint is only supported on Windows.".into());
     }
     Ok(())
 }
 
 #[tauri::command]
-pub fn open_in_vlc(path: String) -> Result<(), String> {
+pub fn open_in_vlc(path: String, executable: Option<String>) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());
     }
     #[cfg(target_os = "windows")]
     {
-        let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
-        let known_paths = [
-            format!("{local_app}\\VideoLAN\\VLC\\vlc.exe"),
-            "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe".to_string(),
-            "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe".to_string(),
-        ];
+        let custom = executable
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
         let mut vlc_path: Option<String> = None;
-        for kp in &known_paths {
-            if Path::new(kp).exists() {
-                vlc_path = Some(kp.clone());
-                break;
+        if let Some(exe) = custom {
+            if !Path::new(exe).is_file() {
+                return Err("Custom VLC path not found".into());
+            }
+            vlc_path = Some(exe.to_string());
+        }
+        if vlc_path.is_none() {
+            let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
+            let known_paths = [
+                format!("{local_app}\\VideoLAN\\VLC\\vlc.exe"),
+                "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe".to_string(),
+                "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe".to_string(),
+            ];
+            for kp in &known_paths {
+                if Path::new(kp).exists() {
+                    vlc_path = Some(kp.clone());
+                    break;
+                }
             }
         }
         if vlc_path.is_none() {
@@ -394,13 +419,14 @@ pub fn open_in_vlc(path: String) -> Result<(), String> {
     }
     #[cfg(not(target_os = "windows"))]
     {
+        let _ = executable;
         return Err("Opening in VLC is only supported on Windows.".into());
     }
     Ok(())
 }
 
 #[tauri::command]
-pub fn open_in_spotify(path: String) -> Result<(), String> {
+pub fn open_in_spotify(path: String, executable: Option<String>) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());
@@ -435,8 +461,19 @@ pub fn open_in_spotify(path: String) -> Result<(), String> {
         }
         fs::copy(&p, &dest).map_err(|e| format!("Failed to copy file to Music/Vyu: {e}"))?;
 
-        let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
-        let spotify_exe = format!("{local_app}\\Spotify\\Spotify.exe");
+        let custom = executable
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
+        let spotify_exe = if let Some(exe) = custom {
+            if !Path::new(exe).is_file() {
+                return Err("Custom Spotify path not found".into());
+            }
+            exe.to_string()
+        } else {
+            let local_app = std::env::var("LOCALAPPDATA").unwrap_or_default();
+            format!("{local_app}\\Spotify\\Spotify.exe")
+        };
         if !Path::new(&spotify_exe).exists() {
             return Err("APP_NOT_FOUND:Spotify:https://www.spotify.com/download/".into());
         }
@@ -448,6 +485,7 @@ pub fn open_in_spotify(path: String) -> Result<(), String> {
     }
     #[cfg(not(target_os = "windows"))]
     {
+        let _ = executable;
         return Err("Opening in Spotify is only supported on Windows.".into());
     }
     Ok(())

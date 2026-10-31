@@ -29,6 +29,7 @@
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { library } from "$lib/features/library/library.svelte";
+  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
   import { showToast, updateToast } from "$lib/components/toast.svelte";
@@ -2881,7 +2882,11 @@
                 class="share-btn-circle"
                 onclick={() =>
                   shareAction(
-                    () => invokeOpenInSpotify(filePath),
+                    () =>
+                      invokeOpenInSpotify(
+                        filePath,
+                        systemPrefs.externalApps.spotify || undefined,
+                      ),
                     "Copied to Spotify Local Files",
                   )}
               >
@@ -2950,7 +2955,11 @@
                 class="share-btn-circle"
                 onclick={() =>
                   shareAction(
-                    () => invokeOpenInPaint(filePath),
+                    () =>
+                      invokeOpenInPaint(
+                        filePath,
+                        systemPrefs.externalApps.paint || undefined,
+                      ),
                     "Opened in Paint",
                   )}
               >
@@ -2975,7 +2984,14 @@
               <button
                 class="share-btn-circle"
                 onclick={() =>
-                  shareAction(() => invokeOpenInVlc(filePath), "Opened in VLC")}
+                  shareAction(
+                    () =>
+                      invokeOpenInVlc(
+                        filePath,
+                        systemPrefs.externalApps.vlc || undefined,
+                      ),
+                    "Opened in VLC",
+                  )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><rect

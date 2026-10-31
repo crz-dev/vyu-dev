@@ -1173,3 +1173,108 @@ export function loadColorBlindMode(): ColorBlindMode {
 export function saveColorBlindMode(mode: ColorBlindMode): void {
   localStorage.setItem("vyu-colorblind-mode", mode);
 }
+
+// ── System preferences ──
+
+const SYSTEM_PREFIX = "vyu-system-";
+
+function loadSystemBoolean(key: string, fallback: boolean): boolean {
+  const value = localStorage.getItem(`${SYSTEM_PREFIX}${key}`);
+  if (value === null) return fallback;
+  return value === "true";
+}
+
+function saveSystemBoolean(key: string, value: boolean): void {
+  localStorage.setItem(`${SYSTEM_PREFIX}${key}`, String(value));
+}
+
+export function loadReopenLastFile(): boolean {
+  return loadSystemBoolean("reopen-last-file", false);
+}
+
+export function saveReopenLastFile(enabled: boolean): void {
+  saveSystemBoolean("reopen-last-file", enabled);
+}
+
+export function loadAlwaysOnTop(): boolean {
+  return loadSystemBoolean("always-on-top", false);
+}
+
+export function saveAlwaysOnTop(enabled: boolean): void {
+  saveSystemBoolean("always-on-top", enabled);
+}
+
+export function loadKeepAwake(): boolean {
+  return loadSystemBoolean("keep-awake", true);
+}
+
+export function saveKeepAwake(enabled: boolean): void {
+  saveSystemBoolean("keep-awake", enabled);
+}
+
+export function loadPauseOnFocusLoss(): boolean {
+  return loadSystemBoolean("pause-on-focus-loss", false);
+}
+
+export function savePauseOnFocusLoss(enabled: boolean): void {
+  saveSystemBoolean("pause-on-focus-loss", enabled);
+}
+
+export function loadBatterySaverThumbnails(): boolean {
+  return loadSystemBoolean("battery-saver-thumbnails", true);
+}
+
+export function saveBatterySaverThumbnails(enabled: boolean): void {
+  saveSystemBoolean("battery-saver-thumbnails", enabled);
+}
+
+export function loadLastFile(): string {
+  return localStorage.getItem("vyu-system-last-file") ?? "";
+}
+
+export function saveLastFile(path: string): void {
+  if (path) localStorage.setItem("vyu-system-last-file", path);
+  else localStorage.removeItem("vyu-system-last-file");
+}
+
+export function clearLastFile(): void {
+  localStorage.removeItem("vyu-system-last-file");
+}
+
+export type ExternalAppKind = "vlc" | "spotify" | "paint";
+
+export interface ExternalAppPaths {
+  vlc: string;
+  spotify: string;
+  paint: string;
+}
+
+export function loadExternalAppPaths(): ExternalAppPaths {
+  return {
+    vlc: localStorage.getItem("vyu-system-vlc-path") ?? "",
+    spotify: localStorage.getItem("vyu-system-spotify-path") ?? "",
+    paint: localStorage.getItem("vyu-system-paint-path") ?? "",
+  };
+}
+
+export function saveExternalAppPath(kind: ExternalAppKind, path: string): void {
+  const key = `vyu-system-${kind}-path`;
+  if (path) localStorage.setItem(key, path);
+  else localStorage.removeItem(key);
+}
+
+// ── Keybinds ──
+
+export function loadKeybinds(): unknown {
+  const raw = localStorage.getItem("vyu-keybinds");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function saveKeybinds(config: unknown): void {
+  localStorage.setItem("vyu-keybinds", JSON.stringify(config));
+}

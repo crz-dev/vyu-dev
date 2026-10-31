@@ -4,6 +4,12 @@
   import { getFileName } from "$lib/services/files";
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
   import Marquee from "$lib/components/Marquee.svelte";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+
+  function shortcutSuffix(id: string): string {
+    const label = keybindStore.label(id);
+    return label ? ` (${label})` : "";
+  }
 
   let {
     fileName,
@@ -277,7 +283,7 @@
     <span class="divider">/</span>
     <button
       class="folder-btn close-file-btn tooltip-below"
-      data-tooltip="Close file"
+      data-tooltip={`Close file${shortcutSuffix("close-file")}`}
       onclick={closeFile}
       aria-label="close file"
     >
@@ -301,7 +307,7 @@
     <span class="divider">/</span>
     <button
       class="folder-btn open-file-btn tooltip-below"
-      data-tooltip="Open file"
+      data-tooltip={`Open file${shortcutSuffix("open-file")}`}
       onclick={openFileDialog}
       aria-label="open file"
     >

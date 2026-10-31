@@ -5,6 +5,8 @@
   import { showToast } from "$lib/components/toast.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 
   let {
     pdfContainerEl = $bindable(null),
@@ -286,12 +288,15 @@
       target.isContentEditable
     )
       return;
-    if (e.key === "ArrowUp") {
+    if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
+    if (menuStore.isAnyOpen) return;
+    if (keybindStore.matches("pdf-previous-page", e)) {
       e.preventDefault();
       e.stopPropagation();
       prevPage();
+      return;
     }
-    if (e.key === "ArrowDown") {
+    if (keybindStore.matches("pdf-next-page", e)) {
       e.preventDefault();
       e.stopPropagation();
       nextPage();

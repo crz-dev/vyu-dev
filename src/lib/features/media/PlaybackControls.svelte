@@ -3,6 +3,12 @@
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
   import type { LoopMode } from "$lib/shared/constants";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+
+  function shortcutSuffix(id: string): string {
+    const label = keybindStore.label(id);
+    return label ? ` (${label})` : "";
+  }
 
   let {
     fullscreen = false,
@@ -183,7 +189,7 @@
   <div class="controls-row" class:hide-for-gif={isGifVideo}>
     <button
       class="ctrl-btn tooltip-ctrl"
-      data-tooltip={playing ? "Pause" : "Play"}
+      data-tooltip={`${playing ? "Pause" : "Play"}${shortcutSuffix("play-pause")}`}
       onclick={togglePlay}
       aria-label={playing ? "pause" : "play"}
     >
@@ -367,7 +373,7 @@
       <button
         class="ctrl-btn volume-btn tooltip-ctrl"
         class:active={!(muted || volume === 0)}
-        data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
+        data-tooltip={`${muted || volume === 0 ? "Unmute" : "Mute"}${shortcutSuffix("mute")}`}
         onclick={toggleMute}
         aria-label={muted ? "unmute" : "mute"}
         oncontextmenu={handleVolumeRightClick}
@@ -728,7 +734,7 @@
   <div class="fs-controls-row" class:hide-for-gif={isGifVideo}>
     <button
       class="fs-ctrl-btn tooltip-ctrl"
-      data-tooltip={playing ? "Pause" : "Play"}
+      data-tooltip={`${playing ? "Pause" : "Play"}${shortcutSuffix("play-pause")}`}
       onclick={togglePlay}
       aria-label={playing ? "pause" : "play"}
     >
@@ -912,7 +918,7 @@
       <button
         class="fs-ctrl-btn volume-btn tooltip-ctrl"
         class:active={!(muted || volume === 0)}
-        data-tooltip={muted || volume === 0 ? "Unmute" : "Mute"}
+        data-tooltip={`${muted || volume === 0 ? "Unmute" : "Mute"}${shortcutSuffix("mute")}`}
         onclick={toggleMute}
         aria-label={muted ? "unmute" : "mute"}
         oncontextmenu={handleVolumeRightClick}

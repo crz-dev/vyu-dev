@@ -8,6 +8,7 @@ import { markerStore } from "$lib/features/markers/markers.svelte";
 import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
 import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 
 import { corruption } from "$lib/features/media/corruption.svelte";
 import {
@@ -249,6 +250,7 @@ export function createNavigation(deps: NavigationDeps) {
       deps.getSortDesc(),
       refresh,
     );
+    if (deps.getFilePath() === path) systemPrefs.setLastFile(path);
     const folder = getParentFolder(path);
     if (folder) folderWatcher.startWatching(folder);
     if (loadedIndex >= 0) {
@@ -390,6 +392,7 @@ export function createNavigation(deps: NavigationDeps) {
     deps.pdf.cleanup();
     deps.setMediaProps(null);
     deps.setMediaPropsLoading(false);
+    systemPrefs.clearLastFile();
     clearFolderCache();
     corruption.reset();
   }

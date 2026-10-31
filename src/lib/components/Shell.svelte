@@ -21,6 +21,7 @@
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
+  import ShortcutCheatSheet from "$lib/features/keybinds/ShortcutCheatSheet.svelte";
   import ToastStack from "$lib/components/ToastStack.svelte";
   import { fade } from "svelte/transition";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -943,6 +944,8 @@
   {#key feedbackOpen}
     <FeedbackDialog {feedbackOpen} closeFeedback={() => closeFeedback()} />
   {/key}
+
+  <ShortcutCheatSheet />
 
   <Tooltip
     {tsTooltip}

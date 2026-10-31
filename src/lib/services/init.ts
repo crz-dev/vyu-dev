@@ -1,5 +1,9 @@
 import { onMount } from "svelte";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { exists } from "@tauri-apps/plugin-fs";
+import { powerStatus } from "$lib/features/system/powerStatus.svelte";
+import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import {
   cleanupStaleStorageEntries,
   loadVolume,
@@ -34,6 +38,8 @@ export interface InitState {
   };
   loadFile: (path: string) => Promise<void>;
   saveResumePosition: () => void;
+  hasPlayback: () => boolean;
+  pausePlayback: () => void;
   handleKeydown: (e: KeyboardEvent) => void;
   handleKeyup: (e: KeyboardEvent) => void;
   handleGlobalMouseDown: (e: MouseEvent) => void;
@@ -52,12 +58,25 @@ export function setupInit(s: InitState) {
       s.speedSliderMode.get(),
     );
     s.clips.loadPrefs();
+    powerStatus.start();
+    systemPrefs.setAlwaysOnTop(systemPrefs.alwaysOnTop);
 
     (async () => {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
         const initial = await invoke<string | null>("get_initial_file");
-        if (initial) await s.loadFile(initial);
+        if (initial) {
+          await s.loadFile(initial);
+          return;
+        }
+        if (systemPrefs.reopenLastFile && systemPrefs.lastFile) {
+          const last = systemPrefs.lastFile;
+          if (await exists(last)) {
+            await s.loadFile(last);
+          } else {
+            systemPrefs.clearLastFile();
+          }
+        }
       } catch (e) {
         console.error("Failed to load initial file:", e);
       }
@@ -101,6 +120,40 @@ export function setupInit(s: InitState) {
         console.error("Failed to register drag-drop listener:", e);
       });
 
+    let unlistenOpenFile: () => void = () => {};
+    listen<string>("system:open-file", (event) => {
+      void s.loadFile(event.payload);
+    })
+      .then((fn) => {
+        unlistenOpenFile = fn;
+      })
+      .catch((e) => {
+        console.error("Failed to register second-instance listener:", e);
+      });
+
+    let focusTimer: ReturnType<typeof setTimeout> | null = null;
+    let unlistenFocus: () => void = () => {};
+    getCurrentWindow()
+      .onFocusChanged(({ payload: focused }) => {
+        if (focusTimer) {
+          clearTimeout(focusTimer);
+          focusTimer = null;
+        }
+        if (focused) return;
+        focusTimer = setTimeout(() => {
+          focusTimer = null;
+          if (systemPrefs.pauseOnFocusLoss && s.hasPlayback()) {
+            s.pausePlayback();
+          }
+        }, 400);
+      })
+      .then((fn) => {
+        unlistenFocus = fn;
+      })
+      .catch((e) => {
+        console.error("Failed to register focus listener:", e);
+      });
+
     window.addEventListener("keydown", s.handleKeydown);
     window.addEventListener("keyup", s.handleKeyup);
     window.addEventListener("mousedown", s.handleGlobalMouseDown);
@@ -116,7 +169,11 @@ export function setupInit(s: InitState) {
       window.removeEventListener("paste", handlePaste);
       window.removeEventListener("beforeunload", saveResumeBeforeUnload);
       clearInterval(resumeInterval);
+      if (focusTimer) clearTimeout(focusTimer);
       unlistenDragDrop();
+      unlistenOpenFile();
+      unlistenFocus();
+      powerStatus.stop();
     };
   });
 }

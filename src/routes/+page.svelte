@@ -13,6 +13,10 @@
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import { sleepTimer } from "$lib/features/media/sleepTimer.svelte";
   import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { isTypingTarget } from "$lib/features/keybinds/keybindUtils";
+  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+  import { invokeSetKeepAwake } from "$lib/features/system/api";
   import {
     createOnMediaEnded,
     createFrameStep,
@@ -25,7 +29,11 @@
     createMarkerActions,
   } from "$lib/features/markers/markers.svelte";
   import { createKeybindHandler } from "$lib/shared/keybinds";
-  import { VOLUME_SEGMENTS, type LoopMode } from "$lib/shared/constants";
+  import {
+    VOLUME_SEGMENTS,
+    VOLUME_STEP,
+    type LoopMode,
+  } from "$lib/shared/constants";
   import type { MediaProperties } from "$lib/shared/types";
   import {
     saveLoopMode,
@@ -256,6 +264,15 @@
   } = viewerFx;
 
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
+
+  function hasPlayback() {
+    return playing || backgroundAudio.playing;
+  }
+
+  function pausePlayback() {
+    getMediaEl()?.pause();
+    backgroundAudio.pause();
+  }
   const playbackUI = createPlaybackUI(
     getMediaEl,
     () => volume,
@@ -656,7 +673,43 @@
     togglePlay,
   });
 
-  const configuredKeydown = createKeybindHandler({
+  const frameStep = createFrameStep({ getVideoEl: () => videoEl });
+
+  function isTimedMedia(): boolean {
+    return (isVideo || isAudio) && !isGifVideo;
+  }
+
+  function isVideoHover(): boolean {
+    return (
+      isTimedMedia() &&
+      (hoverZone === "video" || viewer.state.isFullscreen)
+    );
+  }
+
+  function compareAvailable(): boolean {
+    return (
+      editing.compareEnabled &&
+      !editing.cropMode &&
+      (editing.getHasEdits() || editing.getCropBounds() !== null)
+    );
+  }
+
+  function toggleSleepTimer() {
+    if (sleepTimer.active) {
+      sleepTimer.clear();
+      showToast({ message: "Sleep timer cleared", color: "grey" });
+    } else {
+      sleepTimer.start(sleepTimer.minutes);
+      showToast({
+        message: `Sleep timer set for ${sleepTimer.minutes} min`,
+        color: "blue",
+      });
+    }
+  }
+
+  const configuredKeybind = createKeybindHandler({
+    getContext: () =>
+      isPdf ? "pdf" : menuStore.libraryOpen ? "library" : "viewer",
     areDialogsOpen: () =>
       areDialogsOpen({
         contextMenuStore,
@@ -686,48 +739,119 @@
       markup.highlightActive = false;
       markup.textActive = false;
     },
-    navigateToEdge,
-    navigate,
-    toggleFullscreen,
-    setVolume,
-    getVolume: () => volume,
-    isTimedMedia: () => (isVideo || isAudio) && !isGifVideo,
-    isVideo: () => isVideo,
-    getMediaEl: () => (isVideo ? videoEl : isAudio ? audioEl : null),
-    getSeekStep: () => playbackPrefs.seekStep,
-    getHoverZone: () => hoverZone,
     isFullscreen: () => viewer.state.isFullscreen,
-    togglePlay,
-    frameStep: createFrameStep({ getVideoEl: () => videoEl }),
-    toggleLibrary: () => (menuStore.libraryOpen = !menuStore.libraryOpen),
-    isLibraryOpen: () => menuStore.libraryOpen,
-    isFilmstripView: () => library.viewMode === "filmstrip",
-    isCompareAvailable: () =>
-      editing.compareEnabled &&
-      !editing.cropMode &&
-      (editing.getHasEdits() || editing.getCropBounds() !== null),
-    setCompareOriginal: (value) => editing.setCompareOriginal(value),
+    exitFullscreen: toggleFullscreen,
+    actions: {
+      "open-file": openFileDialog,
+      "close-file": closeFile,
+      "toggle-library": () => (menuStore.libraryOpen = !menuStore.libraryOpen),
+      "show-shortcuts": keybindStore.toggleCheatSheet,
+      "play-pause": () => {
+        if (isTimedMedia()) togglePlay();
+      },
+      fullscreen: toggleFullscreen,
+      "next-file": () => void navigate(1),
+      "previous-file": () => void navigate(-1),
+      "first-file": () => void navigateToEdge(true),
+      "last-file": () => void navigateToEdge(false),
+      "seek-forward": () => {
+        const el = getMediaEl();
+        if (el && isVideoHover()) {
+          el.currentTime = Math.min(
+            el.currentTime + playbackPrefs.seekStep,
+            el.duration,
+          );
+        } else {
+          void navigate(1);
+        }
+      },
+      "seek-backward": () => {
+        const el = getMediaEl();
+        if (el && isVideoHover()) {
+          el.currentTime = Math.max(
+            el.currentTime - playbackPrefs.seekStep,
+            0,
+          );
+        } else {
+          void navigate(-1);
+        }
+      },
+      "volume-up": () => setVolume(volume + VOLUME_STEP),
+      "volume-down": () => setVolume(volume - VOLUME_STEP),
+      mute: toggleMute,
+      "frame-back": () => {
+        if (isVideo) frameStep(-1);
+      },
+      "frame-forward": () => {
+        if (isVideo) frameStep(1);
+      },
+      "add-marker": () => {
+        if (isTimedMedia()) addTimestamp();
+      },
+      undo: () => handleUndo(),
+      "loop-start": () => {
+        if (isTimedMedia()) addLoopStart();
+      },
+      "loop-end": () => {
+        if (isTimedMedia()) addLoopEnd();
+      },
+      "delete-file": () => void performDelete(),
+      "copy-path": () => void propsCopyPath(),
+      "export-edits": () => void handleExportEdits(),
+      "toggle-slideshow": () =>
+        slideshow.active ? slideshow.stop() : slideshow.start(),
+      "toggle-sleep-timer": toggleSleepTimer,
+    },
+    holdActions: {
+      compare: {
+        start: () => {
+          if (compareAvailable()) editing.setCompareOriginal(true);
+        },
+        end: () => editing.setCompareOriginal(false),
+      },
+    },
   });
   function handleKeydown(e: KeyboardEvent) {
-    configuredKeydown(e);
+    configuredKeybind.handleKeydown(e);
   }
   function handleKeyup(e: KeyboardEvent) {
-    if (e.key === "c" || e.key === "C") {
-      editing.setCompareOriginal(false);
-    }
+    configuredKeybind.handleKeyup(e);
   }
-  // Intercept Ctrl+F in capture phase to prevent WebView2's built-in find
   $effect(() => {
-    function captureCtrlF(e: KeyboardEvent) {
-      if (e.ctrlKey && (e.key === "f" || e.key === "F")) {
+    const release = () => configuredKeybind.releaseHolds();
+    window.addEventListener("blur", release);
+    return () => window.removeEventListener("blur", release);
+  });
+
+  // Intercept the PDF find binding before WebView2's built-in find.
+  $effect(() => {
+    function capturePdfFind(e: KeyboardEvent) {
+      if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
+      const dialogsOpen = menuStore.isAnyOpen;
+      const isCtrlF = e.ctrlKey && (e.key === "f" || e.key === "F");
+      if (isCtrlF) {
         e.preventDefault();
         e.stopPropagation();
-        if (isPdf) pdf.toggleFind();
+        if (
+          !dialogsOpen &&
+          isPdf &&
+          !isTypingTarget(e.target) &&
+          keybindStore.matches("pdf-find", e)
+        ) {
+          pdf.toggleFind();
+        }
+        return;
+      }
+      if (dialogsOpen || isTypingTarget(e.target)) return;
+      if (isPdf && keybindStore.matches("pdf-find", e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        pdf.toggleFind();
       }
     }
-    window.addEventListener("keydown", captureCtrlF, { capture: true });
+    window.addEventListener("keydown", capturePdfFind, { capture: true });
     return () =>
-      window.removeEventListener("keydown", captureCtrlF, { capture: true });
+      window.removeEventListener("keydown", capturePdfFind, { capture: true });
   });
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -1007,9 +1131,25 @@
     playbackUI,
     loadFile,
     saveResumePosition: saveCurrentPosition,
+    hasPlayback,
+    pausePlayback,
     handleKeydown,
     handleKeyup,
     handleGlobalMouseDown,
+  });
+
+  let keepAwakeMode: "none" | "system" | "display" = "none";
+  $effect(() => {
+    const active =
+      systemPrefs.keepAwake && (playing || backgroundAudio.playing);
+    const mode: "none" | "system" | "display" = !active
+      ? "none"
+      : isVideo
+        ? "display"
+        : "system";
+    if (mode === keepAwakeMode) return;
+    keepAwakeMode = mode;
+    void invokeSetKeepAwake(mode);
   });
 
   $effect(() => {

@@ -3,6 +3,11 @@
     loadLastDialogSection,
     saveLastDialogSection,
   } from "$lib/services/storage";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+
+  function shortcut(id: string): string {
+    return keybindStore.label(id) || "Unbound";
+  }
 
   let {
     helpOpen,
@@ -243,7 +248,8 @@
             <div class="help-text">
               <p>
                 <strong>Open a file</strong> — Click the folder icon in the top
-                bar or press <span class="help-kbd-inline">Ctrl+O</span>.
+                bar or press
+                <span class="help-kbd-inline">{shortcut("open-file")}</span>.
               </p>
               <p>
                 <strong>Navigate</strong> — Use the arrow buttons or keyboard shortcuts
@@ -251,7 +257,7 @@
               </p>
               <p>
                 <strong>Fullscreen</strong> — Double-click the viewer or press
-                <span class="help-kbd-inline">F</span>.
+                <span class="help-kbd-inline">{shortcut("fullscreen")}</span>.
               </p>
               <p>
                 <strong>Zoom & Pan</strong> — Scroll to zoom, click and drag to pan
@@ -259,8 +265,14 @@
               </p>
               <p>
                 <strong>Compare with original</strong> — Hold
-                <span class="help-kbd-inline">C</span> while editing to preview the
-                original.
+                <span class="help-kbd-inline">{shortcut("compare")}</span> while editing
+                to preview the original.
+              </p>
+              <p>
+                <strong>All shortcuts</strong> — Press
+                <span class="help-kbd-inline">{shortcut("show-shortcuts")}</span
+                >
+                to open the shortcut cheat sheet.
               </p>
             </div>
           </div>
@@ -343,8 +355,8 @@
               </p>
               <p>
                 <strong>Timestamps</strong> — Press
-                <span class="help-kbd-inline">T</span> while a video is playing to
-                mark a moment.
+                <span class="help-kbd-inline">{shortcut("add-marker")}</span>
+                while a video is playing to mark a moment.
               </p>
               <p>
                 <strong>Crop tool</strong> — Enter crop mode in the Edit menu to export
@@ -401,8 +413,10 @@
                 Properties menu for advanced features.
               </p>
               <p>
-                <strong>Performance issues?</strong> — Try disabling hardware acceleration
-                in Settings > System.
+                <strong>Performance issues?</strong> — Try disabling hardware
+                acceleration in Settings > System and restarting. If the window
+                fails to start, launch vyu with <code>--safe-mode</code> to force
+                GPU rendering on.
               </p>
               <p>
                 <strong>Shortcuts not working?</strong> — Make sure you are not focused

@@ -127,6 +127,11 @@ function createBackgroundAudio() {
     playing = value;
   }
 
+  function pause() {
+    if (element && !element.paused) element.pause();
+    playing = false;
+  }
+
   function queueSeek(pathValue: string, time: number) {
     pendingSeek = { path: pathValue, time };
   }
@@ -209,6 +214,7 @@ function createBackgroundAudio() {
     attach,
     start,
     stop,
+    pause,
     toggle,
     setVolume,
     setMuted,

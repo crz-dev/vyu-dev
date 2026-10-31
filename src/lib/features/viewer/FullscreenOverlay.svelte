@@ -3,6 +3,12 @@
   import Controls from "$lib/components/Controls.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
   import type { SortMode } from "$lib/shared/constants";
+  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+
+  function shortcutSuffix(id: string): string {
+    const label = keybindStore.label(id);
+    return label ? ` (${label})` : "";
+  }
 
   interface FullscreenOverlayProps {
     isFullscreen: boolean;
@@ -125,7 +131,7 @@
         <div class="fs-right">
           <button
             class="fs-ctrl-btn tooltip-ctrl"
-            data-tooltip="Unfullscreen"
+            data-tooltip={`Unfullscreen${shortcutSuffix("fullscreen")}`}
             onclick={toggleFullscreen}
             aria-label="exit fullscreen"
             ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
@@ -214,7 +220,7 @@
             <div class="fs-right">
               <button
                 class="fs-ctrl-btn tooltip-ctrl"
-                data-tooltip="Unfullscreen"
+                data-tooltip={`Unfullscreen${shortcutSuffix("fullscreen")}`}
                 onclick={toggleFullscreen}
                 aria-label="exit fullscreen"
                 ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"

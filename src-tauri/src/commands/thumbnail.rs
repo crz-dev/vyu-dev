@@ -18,9 +18,11 @@ use crate::constants::{
 use crate::types::{MediaKind, ThumbState};
 use crate::util::{canonicalize_path, format_data_url, hash_path_xxh3, run_ffmpeg};
 
-const MAX_CACHE_BYTES: u64 = 500 * 1024 * 1024;
+const DEFAULT_MAX_CACHE_BYTES: u64 = 500 * 1024 * 1024;
 const EVICTION_MARGIN: u64 = 10 * 1024 * 1024;
 
+/// Configurable cache cap (driven by System settings)
+static CACHE_LIMIT_BYTES: AtomicU64 = AtomicU64::new(DEFAULT_MAX_CACHE_BYTES);
 /// Total cache size tracker
 static CACHE_USED: AtomicU64 = AtomicU64::new(u64::MAX);
 
@@ -504,13 +506,14 @@ fn record_cache_write(written_bytes: u64, cache_dir: &Path) {
         return;
     }
     let new_val = prev.wrapping_add(written_bytes);
-    if new_val > MAX_CACHE_BYTES + EVICTION_MARGIN {
+    let limit = cache_limit_bytes();
+    if new_val > limit + EVICTION_MARGIN {
         let dir = cache_dir.to_path_buf();
         let _ = std::thread::spawn(move || {
             // Recompute from disk (counter may have drifted).
             let actual = compute_cache_size(&dir);
             CACHE_USED.store(actual, Ordering::SeqCst);
-            if actual > MAX_CACHE_BYTES {
+            if actual > cache_limit_bytes() {
                 try_evict_cache(&dir);
             }
         });
@@ -531,10 +534,30 @@ fn compute_cache_size(cache_dir: &Path) -> u64 {
     total
 }
 
+pub fn cache_limit_bytes() -> u64 {
+    CACHE_LIMIT_BYTES.load(Ordering::Relaxed)
+}
+
+pub fn set_cache_limit_bytes(bytes: u64) {
+    CACHE_LIMIT_BYTES.store(bytes.max(1), Ordering::Relaxed);
+}
+
+/// Trim the cache immediately to the current limit. Returns bytes freed.
+pub fn enforce_cache_limit(app: &tauri::AppHandle) -> u64 {
+    let cache_dir = thumb_cache_dir(app);
+    let before = compute_cache_size(cache_dir);
+    CACHE_USED.store(before, Ordering::Relaxed);
+    if before <= cache_limit_bytes() {
+        return 0;
+    }
+    let after = try_evict_cache(cache_dir);
+    after
+}
+
 // Evict oldest entries
-fn try_evict_cache(cache_dir: &Path) {
+fn try_evict_cache(cache_dir: &Path) -> u64 {
     let Ok(entries) = fs::read_dir(cache_dir) else {
-        return;
+        return 0;
     };
     let mut jpeg_entries: Vec<(PathBuf, SystemTime)> = Vec::new();
     let mut total: u64 = 0;
@@ -549,13 +572,14 @@ fn try_evict_cache(cache_dir: &Path) {
             }
         }
     }
-    if total <= MAX_CACHE_BYTES {
+    let limit = cache_limit_bytes();
+    if total <= limit {
         CACHE_USED.store(total, Ordering::Relaxed);
-        return;
+        return 0;
     }
     jpeg_entries.sort_by(|a, b| a.1.cmp(&b.1));
     let mut freed: u64 = 0;
-    let target = total - MAX_CACHE_BYTES;
+    let target = total - limit;
     for (jpg_path, _) in &jpeg_entries {
         if freed >= target {
             break;
@@ -568,6 +592,7 @@ fn try_evict_cache(cache_dir: &Path) {
         let _ = fs::remove_file(src_path);
     }
     CACHE_USED.fetch_sub(freed, Ordering::Relaxed);
+    freed
 }
 
 /// Cache total size

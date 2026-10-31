@@ -1,159 +1,107 @@
-// Keybindings
-import { VOLUME_STEP } from "$lib/shared/constants";
+// Configurable keybind dispatcher
+import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+import type { KeybindContext } from "$lib/features/keybinds/keybindTypes";
+import { isTypingTarget } from "$lib/features/keybinds/keybindUtils";
 
-type KeybindActions = {
+export interface KeybindActions {
+  getContext: () => Exclude<KeybindContext, "global">;
   areDialogsOpen: () => boolean;
   closeDialogs: () => void;
-  navigateToEdge: (left: boolean) => void;
-  navigate: (dir: number) => void;
-  toggleFullscreen: () => void;
-  setVolume: (v: number) => void;
-  getVolume: () => number;
-  isTimedMedia: () => boolean;
-  isVideo: () => boolean;
-  getMediaEl: () => HTMLMediaElement | null;
-  getSeekStep: () => number;
-  getHoverZone: () => string;
   isFullscreen: () => boolean;
-  togglePlay: () => void;
-  frameStep: (direction: -1 | 1) => void;
-  toggleLibrary: () => void;
-  isLibraryOpen: () => boolean;
-  isFilmstripView: () => boolean;
-  isCompareAvailable: () => boolean;
-  setCompareOriginal: (value: boolean) => void;
-};
+  exitFullscreen: () => void;
+  actions: Record<string, () => void>;
+  holdActions?: Record<string, { start: () => void; end: () => void }>;
+}
 
-const NAV_KEYS = new Set(["ArrowRight", "ArrowLeft", " "]);
+const SCROLL_KEYS = new Set([
+  " ",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+]);
 
-export function createKeybindHandler(actions: KeybindActions) {
-  return function handleKeydown(e: KeyboardEvent) {
-    const target = e.target as HTMLElement | null;
-    const isTypingTarget =
-      !!target &&
-      (target.closest("input, textarea, [contenteditable='true']") !== null ||
-        target.isContentEditable);
-    if (isTypingTarget) return;
+export function createKeybindHandler(deps: KeybindActions) {
+  let heldActionId: string | null = null;
 
-    if (
-      (e.key === "c" || e.key === "C") &&
-      !e.repeat &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.metaKey &&
-      actions.isCompareAvailable() &&
-      !actions.isLibraryOpen()
-    ) {
-      e.preventDefault();
-      actions.setCompareOriginal(true);
-      return;
-    }
+  function releaseHolds() {
+    if (!heldActionId) return;
+    deps.holdActions?.[heldActionId]?.end();
+    heldActionId = null;
+  }
 
-    if (actions.areDialogsOpen()) {
+  function handleKeydown(e: KeyboardEvent) {
+    if (keybindStore.isRecording) return;
+    if (e.defaultPrevented) return;
+    if (isTypingTarget(e.target)) return;
+
+    if (keybindStore.cheatSheetOpen) {
       if (e.key === "Escape") {
-        actions.closeDialogs();
-      }
-      if (e.key === "l" || e.key === "L") {
-        actions.toggleLibrary();
-      }
-      return;
-    }
-
-    // Library is open — let library handle navigation keys
-    if (actions.isLibraryOpen()) {
-      if (
-        e.key === "ArrowLeft" ||
-        e.key === "ArrowRight" ||
-        e.key === "ArrowUp" ||
-        e.key === "ArrowDown" ||
-        (e.ctrlKey && (e.key === "ArrowLeft" || e.key === "ArrowRight"))
-      ) {
+        e.preventDefault();
+        keybindStore.closeCheatSheet();
         return;
       }
-      if (actions.isFilmstripView() && e.key === " ") {
+      if (keybindStore.matches("show-shortcuts", e)) {
+        e.preventDefault();
+        if (!e.repeat) keybindStore.toggleCheatSheet();
+      }
+      return;
+    }
+
+    if (deps.areDialogsOpen()) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        deps.closeDialogs();
         return;
       }
-    }
-
-    if (e.ctrlKey && e.key === "ArrowRight") {
-      e.preventDefault();
-      actions.navigateToEdge(false);
-      return;
-    }
-    if (e.ctrlKey && e.key === "ArrowLeft") {
-      e.preventDefault();
-      actions.navigateToEdge(true);
-      return;
-    }
-    if (e.altKey && e.key === "ArrowRight") {
-      e.preventDefault();
-      actions.navigate(1);
-      return;
-    }
-    if (e.altKey && e.key === "ArrowLeft") {
-      e.preventDefault();
-      actions.navigate(-1);
-      return;
-    }
-    if (e.key === "f" || e.key === "F") {
-      actions.toggleFullscreen();
-      return;
-    }
-    if (e.key === "Escape" && actions.isFullscreen()) {
-      actions.toggleFullscreen();
-      return;
-    }
-    if (e.key === "l" || e.key === "L") {
-      actions.toggleLibrary();
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      actions.setVolume(actions.getVolume() + VOLUME_STEP);
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      actions.setVolume(actions.getVolume() - VOLUME_STEP);
-      return;
-    }
-
-    if (NAV_KEYS.has(e.key)) e.preventDefault();
-
-    const isTimed = actions.isTimedMedia();
-    const mediaEl = actions.getMediaEl();
-    const isVideoHover =
-      isTimed &&
-      mediaEl &&
-      (actions.getHoverZone() === "video" || actions.isFullscreen());
-    const isVid = actions.isVideo();
-
-    if (e.key === " " && isTimed && mediaEl) {
-      actions.togglePlay();
-    } else if (e.key === "ArrowRight") {
-      if (isVideoHover) {
-        mediaEl!.currentTime = Math.min(
-          mediaEl!.currentTime + actions.getSeekStep(),
-          mediaEl!.duration,
-        );
-      } else {
-        actions.navigate(1);
+      if (keybindStore.matches("toggle-library", e)) {
+        e.preventDefault();
+        if (!e.repeat) deps.actions["toggle-library"]?.();
       }
-    } else if (e.key === "ArrowLeft") {
-      if (isVideoHover) {
-        mediaEl!.currentTime = Math.max(
-          mediaEl!.currentTime - actions.getSeekStep(),
-          0,
-        );
-      } else {
-        actions.navigate(-1);
-      }
-    } else if (e.key === "," || e.key === "<") {
-      e.preventDefault();
-      if (isVideoHover || isVid) actions.frameStep(-1);
-    } else if (e.key === "." || e.key === ">") {
-      e.preventDefault();
-      if (isVideoHover || isVid) actions.frameStep(1);
+      return;
     }
-  };
+
+    const context = deps.getContext();
+    const contexts: KeybindContext[] =
+      context === "viewer" ? ["global", "viewer"] : ["global"];
+    const action = keybindStore.actionForEvent(e, contexts);
+
+    if (action) {
+      if (e.repeat && !action.allowRepeat) {
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      if (action.behavior === "hold") {
+        const hold = deps.holdActions?.[action.id];
+        if (hold) {
+          releaseHolds();
+          hold.start();
+          heldActionId = action.id;
+        }
+        return;
+      }
+      deps.actions[action.id]?.();
+      return;
+    }
+
+    if (e.key === "Escape" && deps.isFullscreen()) {
+      e.preventDefault();
+      deps.exitFullscreen();
+      return;
+    }
+
+    if (context === "viewer" && SCROLL_KEYS.has(e.key)) {
+      e.preventDefault();
+    }
+  }
+
+  function handleKeyup(_e: KeyboardEvent) {
+    // Hold actions end on any key release. This also covers releasing a
+    // modifier before the primary key, which would otherwise leave compare
+    // stuck on.
+    releaseHolds();
+  }
+
+  return { handleKeydown, handleKeyup, releaseHolds };
 }
