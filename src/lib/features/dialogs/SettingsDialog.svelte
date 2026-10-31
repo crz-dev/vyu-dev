@@ -2,11 +2,11 @@
   import { slide } from "svelte/transition";
   import { open } from "@tauri-apps/plugin-dialog";
   import {
-    invokeClearBackups,
     invokeGetFfmpegInfo,
     type FfmpegInfo,
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
+  import DangerSettings from "$lib/features/danger/DangerSettings.svelte";
   import DebugSettings from "$lib/features/debug/DebugSettings.svelte";
   import type { DebugFileInfo } from "$lib/features/debug/debugTypes";
   import { showToast } from "$lib/components/toast.svelte";
@@ -20,10 +20,20 @@
     settingsOpen,
     closeSettings,
     fileInfo = null,
+    resetView,
+    clearTimestamps,
+    clearClips,
+    clipDeleteOriginal,
+    toggleClipDeleteOriginal,
   }: {
     settingsOpen: boolean;
     closeSettings: () => void;
     fileInfo?: DebugFileInfo | null;
+    resetView: () => void;
+    clearTimestamps: () => void;
+    clearClips: () => void;
+    clipDeleteOriginal: boolean;
+    toggleClipDeleteOriginal: () => void;
   } = $props();
 
   let activeSection = $state(loadLastDialogSection("settings") || "appearance");
@@ -327,30 +337,6 @@
 
   function exportQualityLabel(index: number): string {
     return exportQualityLabels[index] ?? "Balanced";
-  }
-
-  let clearingBackups = $state(false);
-  let clearBackupsConfirming = $state(false);
-
-  async function handleClearBackups() {
-    if (!clearBackupsConfirming) {
-      clearBackupsConfirming = true;
-      return;
-    }
-    clearBackupsConfirming = false;
-    clearingBackups = true;
-    try {
-      const freed = await invokeClearBackups(editing.backupDir || undefined);
-      editing.clearBackupState();
-      showToast({
-        message:
-          freed > 0 ? "File backups cleared" : "No file backups to clear",
-        color: freed > 0 ? "green" : "yellow",
-      });
-    } catch {
-      showToast({ message: "Failed to clear file backups", color: "red" });
-    }
-    clearingBackups = false;
   }
 
   function shortFolderPath(path: string): string {
@@ -4135,365 +4121,15 @@
           <DebugSettings flash={flashId === "debug"} {fileInfo} />
 
           <!-- Danger Zone -->
-          <div
-            id="settings-section-danger-zone"
-            class="settings-section"
-            class:flash={flashId === "danger-zone"}
-          >
-            <p class="settings-section-header">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path
-                  d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-                /><line x1="12" y1="9" x2="12" y2="13" /><line
-                  x1="12"
-                  y1="17"
-                  x2="12.01"
-                  y2="17"
-                /></svg
-              >
-              Danger Zone
-            </p>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="23 4 23 10 17 10" /><path
-                    d="M20.49 15a9 9 0 11-2.12-9.36L23 10"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Reset View</span>
-                  <span class="settings-hint"
-                    >Clear zoom, rotation, crop &amp; flip</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="23 4 23 10 17 10" /><path
-                      d="M20.49 15a9 9 0 11-2.12-9.36L23 10"
-                    /></svg
-                  >
-                  Reset
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><line
-                    x1="15"
-                    y1="9"
-                    x2="9"
-                    y2="15"
-                  /><line x1="9" y1="9" x2="15" y2="15" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear All Timestamps</span>
-                  <span class="settings-hint"
-                    >Remove every timestamp marker</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><circle cx="12" cy="12" r="10" /><line
-                      x1="15"
-                      y1="9"
-                      x2="9"
-                      y2="15"
-                    /><line x1="9" y1="9" x2="15" y2="15" /></svg
-                  >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="6" cy="6" r="3" /><circle
-                    cx="6"
-                    cy="18"
-                    r="3"
-                  /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line
-                    x1="14.47"
-                    y1="14.48"
-                    x2="20"
-                    y2="20"
-                  /><line x1="8.12" y1="8.12" x2="12" y2="12" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear All Clip Boundaries</span>
-                  <span class="settings-hint">Remove every segment marker</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><circle cx="6" cy="6" r="3" /><circle
-                      cx="6"
-                      cy="18"
-                      r="3"
-                    /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line
-                      x1="14.47"
-                      y1="14.48"
-                      x2="20"
-                      y2="20"
-                    /><line x1="8.12" y1="8.12" x2="12" y2="12" /></svg
-                  >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6l-1 14H6L5 6"
-                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                    d="M9 6V4h6v2"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear All Markers</span>
-                  <span class="settings-hint"
-                    >Wipe timestamps &amp; clip boundaries</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="3 6 5 6 21 6" /><path
-                      d="M19 6l-1 14H6L5 6"
-                    /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                      d="M9 6V4h6v2"
-                    /></svg
-                  >
-                  Clear All
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6l-1 14H6L5 6"
-                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                    d="M9 6V4h6v2"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Clear File Backups</span>
-                  <span class="settings-hint">Delete saved original copies</span
-                  >
-                </div>
-              </div>
-              <div class="settings-control">
-                <button
-                  class="settings-action-btn red"
-                  onclick={handleClearBackups}
-                  disabled={clearingBackups}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="3 6 5 6 21 6" /><path
-                      d="M19 6l-1 14H6L5 6"
-                    /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                      d="M9 6V4h6v2"
-                    /></svg
-                  >
-                  {clearingBackups
-                    ? "Clearing..."
-                    : clearBackupsConfirming
-                      ? "Confirm?"
-                      : "Clear"}
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><polyline points="3 6 5 6 21 6" /><path
-                    d="M19 6l-1 14H6L5 6"
-                  /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                    d="M9 6V4h6v2"
-                  /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Delete FFmpeg</span>
-                  <span class="settings-hint">Remove bundled binary</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="3 6 5 6 21 6" /><path
-                      d="M19 6l-1 14H6L5 6"
-                    /><path d="M10 11v6" /><path d="M14 11v6" /><path
-                      d="M9 6V4h6v2"
-                    /></svg
-                  >
-                  Delete
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label-col">
-                <svg
-                  class="settings-row-icon"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-                    points="7 10 12 15 17 10"
-                  /><line x1="12" y1="15" x2="12" y2="3" /></svg
-                >
-                <div class="settings-label-text">
-                  <span class="settings-label">Uninstall</span>
-                  <span class="settings-hint">Remove vyu from your system</span>
-                </div>
-              </div>
-              <div class="settings-control">
-                <button class="settings-action-btn red">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"
-                    /><polyline points="7 10 12 15 17 10" /><line
-                      x1="12"
-                      y1="15"
-                      x2="12"
-                      y2="3"
-                    /></svg
-                  >
-                  Run Uninstaller
-                </button>
-              </div>
-            </div>
-          </div>
+          <DangerSettings
+            flash={flashId === "danger-zone"}
+            {fileInfo}
+            {resetView}
+            {clearTimestamps}
+            {clearClips}
+            {clipDeleteOriginal}
+            {toggleClipDeleteOriginal}
+          />
         </div>
       </div>
 

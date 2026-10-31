@@ -41,6 +41,11 @@ pub fn init_ffmpeg_path(resource_dir: &Path) {
     _ = BUNDLED_FFMPEG_DIR.set(dir);
 }
 
+/// Directory containing the bundled FFmpeg binaries, if one was found at startup.
+pub fn bundled_ffmpeg_dir() -> Option<PathBuf> {
+    BUNDLED_FFMPEG_DIR.get().cloned().flatten()
+}
+
 /// Cache filename hash
 pub fn hash_path_xxh3(path: &str) -> String {
     format!("{:016x}", xxh3_64(path.as_bytes()))

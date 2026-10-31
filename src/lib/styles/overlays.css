@@ -4532,6 +4532,58 @@
   white-space: nowrap;
 }
 
+/* Danger Zone */
+.danger-intro {
+  padding: 0 4px 4px;
+}
+
+.danger-risk-icon {
+  color: var(--yellow);
+}
+
+.danger-risk-safe .settings-row-icon,
+.danger-risk-safe .settings-label {
+  color: var(--text-muted);
+}
+
+.danger-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 9px 30px;
+  border-top: 0.5px solid var(--red-border-subtle);
+  background: var(--red-bg-faint);
+}
+
+.danger-confirm-label {
+  font-size: 11px;
+  color: var(--red-soft);
+  font-family: var(--font-family);
+}
+
+.danger-confirm-label strong {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.danger-confirm-input {
+  width: 112px;
+  height: 27px;
+  padding: 0 8px;
+  border: 0.5px solid var(--red-border-subtle);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  outline: none;
+}
+
+.danger-confirm-input:focus {
+  border-color: var(--red-border);
+}
+
 /* Hide viewer menus when library is open */
 .library-mode .context-menu:not(.lib-ctx),
 .library-mode .edit-menu-wrapper,

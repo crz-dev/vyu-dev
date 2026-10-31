@@ -1,6 +1,6 @@
 // System integration commands
 use serde::Serialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tauri::{AppHandle, Manager, State};
@@ -21,6 +21,13 @@ pub struct RuntimeInfo {
     pub exe_path: String,
     pub args: Vec<String>,
     pub safe_mode: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UninstallResult {
+    pub started: bool,
+    pub opened_settings: bool,
 }
 
 #[derive(Serialize)]
@@ -349,33 +356,93 @@ pub fn open_app_folder(app: AppHandle, kind: String) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+fn open_settings_uri(uri: &str) -> Result<(), String> {
+    use windows::core::HSTRING;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT;
+
+    let target = HSTRING::from(uri);
+    let result = unsafe {
+        ShellExecuteW(
+            None,
+            windows::core::w!("open"),
+            &target,
+            None,
+            None,
+            SW_SHOWDEFAULT,
+        )
+    };
+    if result.is_invalid() || result.0 as isize <= 32 {
+        return Err(format!("Failed to open Windows settings: {uri}"));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn open_default_apps_settings() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use windows::core::HSTRING;
-        use windows::Win32::UI::Shell::ShellExecuteW;
-        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT;
-
-        let target = HSTRING::from("ms-settings:defaultapps");
-        let result = unsafe {
-            ShellExecuteW(
-                None,
-                windows::core::w!("open"),
-                &target,
-                None,
-                None,
-                SW_SHOWDEFAULT,
-            )
-        };
-        if result.is_invalid() || result.0 as isize <= 32 {
-            return Err("Failed to open Windows Default Apps settings.".into());
-        }
-        Ok(())
+        open_settings_uri("ms-settings:defaultapps")
     }
     #[cfg(not(target_os = "windows"))]
     {
         Err("Default app settings are only supported on Windows.".into())
+    }
+}
+
+fn delete_ffmpeg_binaries(dir: &Path) -> Result<u64, String> {
+    let mut freed = 0u64;
+    for name in ["ffmpeg.exe", "ffprobe.exe"] {
+        let path = dir.join(name);
+        if !path.exists() {
+            continue;
+        }
+        let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+        std::fs::remove_file(&path)
+            .map_err(|e| format!("Failed to remove {}: {e}", path.display()))?;
+        freed += size;
+    }
+    Ok(freed)
+}
+
+#[tauri::command]
+pub fn delete_bundled_ffmpeg() -> Result<u64, String> {
+    let dir = crate::util::bundled_ffmpeg_dir()
+        .ok_or_else(|| "No bundled FFmpeg binaries were found.".to_string())?;
+    delete_ffmpeg_binaries(&dir)
+}
+
+fn find_uninstaller(dir: &Path) -> Option<PathBuf> {
+    ["uninstall.exe", "Uninstall.exe"]
+        .iter()
+        .map(|name| dir.join(name))
+        .find(|path| path.exists())
+}
+
+#[tauri::command]
+pub fn run_uninstaller() -> Result<UninstallResult, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let exe = std::env::current_exe()
+            .map_err(|e| format!("Failed to resolve executable path: {e}"))?;
+        if let Some(dir) = exe.parent() {
+            if let Some(uninstaller) = find_uninstaller(dir) {
+                std::process::Command::new(uninstaller)
+                    .spawn()
+                    .map_err(|e| format!("Failed to start uninstaller: {e}"))?;
+                std::process::exit(0);
+            }
+        }
+        open_settings_uri("ms-settings:appsfeatures")?;
+        Ok(UninstallResult {
+            started: false,
+            opened_settings: true,
+        })
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Uninstall is only supported on Windows.".into())
     }
 }
 
@@ -781,5 +848,43 @@ mod tests {
     fn ignores_prerelease_suffixes() {
         assert!(!is_newer_version("v0.1.0-beta.2", "0.1.0"));
         assert!(is_newer_version("v0.1.1-beta", "0.1.0"));
+    }
+
+    fn temp_test_dir(name: &str) -> PathBuf {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "vyu-{name}-{}-{stamp}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn deletes_bundled_ffmpeg_binaries() {
+        let dir = temp_test_dir("ffmpeg-delete");
+        std::fs::write(dir.join("ffmpeg.exe"), b"ffmpeg").unwrap();
+        std::fs::write(dir.join("ffprobe.exe"), b"ffprobe").unwrap();
+
+        let freed = delete_ffmpeg_binaries(&dir).unwrap();
+
+        assert!(freed > 0);
+        assert!(!dir.join("ffmpeg.exe").exists());
+        assert!(!dir.join("ffprobe.exe").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn finds_uninstaller_next_to_app() {
+        let dir = temp_test_dir("uninstaller-find");
+        std::fs::write(dir.join("uninstall.exe"), b"stub").unwrap();
+
+        let found = find_uninstaller(&dir);
+
+        assert_eq!(found, Some(dir.join("uninstall.exe")));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

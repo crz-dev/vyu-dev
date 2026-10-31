@@ -52,6 +52,9 @@
     isPdf,
     playing,
     getMediaEl,
+    resetView,
+    clearTimestamps,
+    clearClips,
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
@@ -237,6 +240,9 @@
     isPdf: boolean;
     playing: boolean;
     getMediaEl: () => HTMLMediaElement | null;
+    resetView: () => void;
+    clearTimestamps: () => void;
+    clearClips: () => void;
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
@@ -950,6 +956,11 @@
         index: currentIndex,
         count: fileList.length,
       }}
+      {resetView}
+      {clearTimestamps}
+      {clearClips}
+      {clipDeleteOriginal}
+      {toggleClipDeleteOriginal}
     />
   {/key}
   {#key accessibilityOpen}

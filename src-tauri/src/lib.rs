@@ -134,6 +134,8 @@ pub fn run() {
             db_get_setting,
             db_set_setting,
             db_batch_upsert_file_metadata,
+            clear_all_markers,
+            factory_reset_database,
             create_collection_folder,
             delete_collection_folder,
             get_initial_file,
@@ -158,6 +160,8 @@ pub fn run() {
             restart_app_mode,
             get_database_stats,
             vacuum_database,
+            delete_bundled_ffmpeg,
+            run_uninstaller,
             reset_system_integrations,
             check_for_updates,
         ])

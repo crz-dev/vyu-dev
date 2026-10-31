@@ -321,6 +321,54 @@ pub fn get_database_stats(app: AppHandle) -> Result<DatabaseStats, String> {
     read_database_stats(&app)
 }
 
+fn marker_clear_sql(mode: &str) -> Result<&'static str, String> {
+    match mode {
+        "timestamps" => Ok(
+            "UPDATE file_metadata SET timestamp_data = NULL, updated_at = ?1 \
+             WHERE timestamp_data IS NOT NULL",
+        ),
+        "clips" => Ok(
+            "UPDATE file_metadata SET clips_data = NULL, updated_at = ?1 \
+             WHERE clips_data IS NOT NULL",
+        ),
+        "all" => Ok(
+            "UPDATE file_metadata
+             SET timestamp_data = NULL, clips_data = NULL, updated_at = ?1
+             WHERE timestamp_data IS NOT NULL OR clips_data IS NOT NULL",
+        ),
+        _ => Err(format!("Unknown marker mode: {mode}")),
+    }
+}
+
+#[tauri::command]
+pub fn clear_all_markers(db: State<'_, DbConnection>, mode: String) -> Result<u64, String> {
+    let sql = marker_clear_sql(&mode)?;
+    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    conn.execute(sql, params![now_secs()])
+        .map(|count| count as u64)
+        .map_err(|e| format!("Failed to clear markers: {e}"))
+}
+
+#[tauri::command]
+pub async fn factory_reset_database(app: AppHandle) -> Result<u64, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let db = app.state::<DbConnection>();
+        let conn = db
+            .0
+            .lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
+        let deleted = conn
+            .execute("DELETE FROM file_metadata", [])
+            .map_err(|e| format!("Failed to clear file metadata: {e}"))? as u64;
+        conn.execute("DELETE FROM settings", [])
+            .map_err(|e| format!("Failed to clear database settings: {e}"))?;
+        let _ = conn.execute_batch("VACUUM; PRAGMA wal_checkpoint(TRUNCATE);");
+        Ok(deleted)
+    })
+    .await
+    .map_err(|e| format!("Database reset task failed: {e}"))?
+}
+
 #[tauri::command]
 pub async fn vacuum_database(app: AppHandle) -> Result<u64, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -352,4 +400,65 @@ pub struct FileMetadataBatchEntry {
     pub eq_data: Option<String>,
     pub cd_color: Option<i32>,
     pub last_viewed: Option<i64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn marker_clear_sql_validates_mode() {
+        assert!(marker_clear_sql("timestamps").is_ok());
+        assert!(marker_clear_sql("clips").is_ok());
+        assert!(marker_clear_sql("all").is_ok());
+        assert!(marker_clear_sql("other").is_err());
+    }
+
+    #[test]
+    fn marker_clear_sql_clears_expected_columns() {
+        let conn = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE file_metadata (
+                path TEXT PRIMARY KEY,
+                timestamp_data TEXT,
+                clips_data TEXT,
+                updated_at INTEGER NOT NULL
+            );",
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO file_metadata VALUES ('a', '[]', '[]', 0), ('b', NULL, NULL, 0)",
+            [],
+        )
+        .unwrap();
+
+        let changed = conn
+            .execute(marker_clear_sql("timestamps").unwrap(), rusqlite::params![1])
+            .unwrap();
+        assert_eq!(changed, 1);
+
+        let clips: Option<String> = conn
+            .query_row(
+                "SELECT clips_data FROM file_metadata WHERE path = 'a'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(clips.as_deref(), Some("[]"));
+
+        let changed = conn
+            .execute(marker_clear_sql("all").unwrap(), rusqlite::params![2])
+            .unwrap();
+        assert_eq!(changed, 1);
+
+        let (timestamps, clips): (Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT timestamp_data, clips_data FROM file_metadata WHERE path = 'a'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert!(timestamps.is_none());
+        assert!(clips.is_none());
+    }
 }

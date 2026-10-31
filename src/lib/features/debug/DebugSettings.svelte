@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { save } from "@tauri-apps/plugin-dialog";
   import { writeTextFile } from "@tauri-apps/plugin-fs";
   import { showToast } from "$lib/components/toast.svelte";
@@ -17,12 +17,10 @@
     DebugFileInfo,
     DebugInfo,
   } from "$lib/features/debug/debugTypes";
-  import { invokeCleanupTempFolder } from "$lib/features/media/api";
   import {
     invokeOpenAppFolder,
     invokeOpenDevTools,
     invokeRestartAppMode,
-    invokeResetSystemIntegrations,
   } from "$lib/features/system/api";
 
   let {
@@ -37,18 +35,11 @@
   let loading = $state(true);
   let refreshing = $state(false);
   let compacting = $state(false);
-  let cleaningTemp = $state(false);
   let error = $state("");
   let flagsOpen = $state(false);
-  let resetConfirming = $state(false);
-  let resetTimeout: ReturnType<typeof setTimeout> | null = null;
 
   onMount(() => {
     void load();
-  });
-
-  onDestroy(() => {
-    if (resetTimeout) clearTimeout(resetTimeout);
   });
 
   async function load(refresh = false) {
@@ -155,18 +146,6 @@
     }
   }
 
-  async function cleanTemp() {
-    cleaningTemp = true;
-    try {
-      await invokeCleanupTempFolder();
-      showToast({ message: "Temporary files cleaned", color: "green" });
-    } catch {
-      showToast({ message: "Failed to clean temporary files", color: "red" });
-    } finally {
-      cleaningTemp = false;
-    }
-  }
-
   async function compactDatabase() {
     if (compacting) return;
     compacting = true;
@@ -198,33 +177,6 @@
 
   function toggleFlags() {
     flagsOpen = !flagsOpen;
-  }
-
-  async function resetAll() {
-    if (!resetConfirming) {
-      resetConfirming = true;
-      if (resetTimeout) clearTimeout(resetTimeout);
-      resetTimeout = setTimeout(() => {
-        resetConfirming = false;
-        resetTimeout = null;
-      }, 5000);
-      return;
-    }
-    if (resetTimeout) {
-      clearTimeout(resetTimeout);
-      resetTimeout = null;
-    }
-    resetConfirming = false;
-    try {
-      await invokeResetSystemIntegrations();
-    } catch {
-      // System integration reset is best-effort; local preferences still clear.
-    }
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i);
-      if (key?.startsWith("vyu-")) localStorage.removeItem(key);
-    }
-    window.location.reload();
   }
 
   const flagKeys = $derived.by(() => {
@@ -456,21 +408,6 @@
     <div class="settings-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
-          <span class="settings-label">Temp Folder</span>
-          <span class="settings-hint">Temporary processing files</span>
-        </div>
-      </div>
-      <div class="settings-control">
-        <button
-          class="settings-action-btn"
-          onclick={cleanTemp}
-          disabled={cleaningTemp}>{cleaningTemp ? "Cleaning…" : "Clean"}</button
-        >
-      </div>
-    </div>
-    <div class="settings-row">
-      <div class="settings-label-col">
-        <div class="settings-label-text">
           <span class="settings-label">App Data</span>
           <span class="settings-hint">Database and configuration</span>
         </div>
@@ -576,19 +513,5 @@
         {/if}
       </div>
     {/if}
-  </div>
-
-  <div class="settings-row keybind-reset-row">
-    <div class="settings-label-col">
-      <div class="settings-label-text">
-        <span class="settings-label">Reset All Settings</span>
-        <span class="settings-hint">Clear preferences and backend state</span>
-      </div>
-    </div>
-    <div class="settings-control">
-      <button class="settings-action-btn red" onclick={resetAll}
-        >{resetConfirming ? "Confirm?" : "Reset"}</button
-      >
-    </div>
   </div>
 </div>

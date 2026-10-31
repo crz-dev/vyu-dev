@@ -27,7 +27,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 - **Feature modules** own domain logic and feature state. Some are stateful singletons/factories; `features/media/media.svelte.ts` is a stateless factory that receives page-held state through callbacks.
 - **Pages and shell** may own view state and thin event wiring; domain rules belong in feature modules.
-- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `features/system/api.ts` owns System/OS integration IPC; `features/debug/api.ts` owns database-maintenance IPC; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. Components should not call `invoke()` directly.
+- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `features/system/api.ts` owns System/OS integration IPC; `features/debug/api.ts` owns diagnostics and database-compaction IPC; `features/danger/api.ts` owns destructive maintenance IPC; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. Components should not call `invoke()` directly.
 - **Async loads** use a generation counter in `media.svelte.ts` so stale results are ignored. Long-running commands emit events such as `conversion-progress` and `edit-apply-progress`.
 
 ## Task-to-owner lookup
@@ -38,6 +38,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Keybinds                        | `features/keybinds/*`, `shared/keybinds.ts`, `features/keybinds/KeybindsSettings.svelte`               |
 | System / OS integration         | `features/system/*`, `commands/system.rs`, `state/system.rs`                                           |
 | Debug / diagnostics             | `features/debug/*`, `commands/system.rs`, `commands/database.rs`                                       |
+| Danger Zone / destructive ops   | `features/danger/*`, `commands/system.rs`, `commands/database.rs`                                      |
 | Share, save-as, conversion      | `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/conversion.rs` |
 | Playback / media bar            | `features/media/playback*.ts`, `features/media/MediaBar.svelte`, `features/media/media.svelte.ts`      |
 | Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
@@ -115,6 +116,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | System settings                                        | `features/system/SystemSettings.svelte`                                        |
 | Debug settings / diagnostics                           | `features/debug/DebugSettings.svelte`, `features/debug/debugInfo.ts`           |
 | Debug overlay                                          | `features/debug/DebugOverlay.svelte`, `features/debug/debugPrefs.svelte.ts`    |
+| Danger Zone / destructive actions                      | `features/danger/DangerSettings.svelte`, `features/danger/api.ts`              |
 
 ### Services and shared
 
@@ -140,24 +142,25 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 ### Rust backend
 
-| Concern                            | Module                                                |
-| ---------------------------------- | ----------------------------------------------------- |
-| Database persistence (SQLite)      | `database/` (Rust), `services/database.ts` (frontend) |
-| Collection directory operations    | `commands/collections.rs`                             |
-| Sidecar binary execution (SongRec) | `commands/external_apps.rs`                           |
-| Window state persistence           | `state::window`                                       |
-| Thumbnail generation, cache, dedup | `commands/thumbnail.rs`                               |
-| Display cache / cover art          | `commands/display.rs`                                 |
-| File operations / batch stat       | `commands/file_ops.rs`                                |
-| Media conversion                   | `commands/conversion.rs`                              |
-| Editing / export / backups         | `commands/editing.rs`                                 |
-| Clips                              | `commands/clips.rs`                                   |
-| Integrity repair                   | `commands/integrity.rs`                               |
-| Clipboard                          | `commands/clipboard.rs`                               |
-| PDF markup application             | `commands/annotations.rs`                             |
-| DB commands / maintenance          | `commands/database.rs`                                |
-| System, runtime info, restart      | `commands/system.rs`, `state/system.rs`               |
-| Tauri setup / command registration | `lib.rs`                                              |
+| Concern                            | Module                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| Database persistence (SQLite)      | `database/` (Rust), `services/database.ts` (frontend)                    |
+| Collection directory operations    | `commands/collections.rs`                                                |
+| Sidecar binary execution (SongRec) | `commands/external_apps.rs`                                              |
+| Window state persistence           | `state::window`                                                          |
+| Thumbnail generation, cache, dedup | `commands/thumbnail.rs`                                                  |
+| Display cache / cover art          | `commands/display.rs`                                                    |
+| File operations / batch stat       | `commands/file_ops.rs`                                                   |
+| Media conversion                   | `commands/conversion.rs`                                                 |
+| Editing / export / backups         | `commands/editing.rs`                                                    |
+| Clips                              | `commands/clips.rs`                                                      |
+| Integrity repair                   | `commands/integrity.rs`                                                  |
+| Clipboard                          | `commands/clipboard.rs`                                                  |
+| PDF markup application             | `commands/annotations.rs`                                                |
+| DB commands / maintenance          | `commands/database.rs` (including global marker clear and factory reset) |
+| System, runtime info, restart      | `commands/system.rs`, `state/system.rs`                                  |
+| Bundled FFmpeg removal, uninstall  | `commands/system.rs`                                                     |
+| Tauri setup / command registration | `lib.rs`                                                                 |
 
 ## State model
 
@@ -256,3 +259,7 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | `vacuum_database` runs in `spawn_blocking`                            | `VACUUM` rewrites the DB and must not block the UI/command thread.                  |
 | Diagnostics omit the current media path                               | Reports stay safe to share; explicit file-metadata copy includes the path.          |
 | Safe-mode restart reuses `--restart-delay`                            | The single-instance release must finish before the new process starts.              |
+| Danger Zone actions never delete user media                           | Destructive settings clear Vyu data, caches, backups or installation files only.    |
+| Global marker clears update the DB and current in-memory stores       | Avoids stale timestamps/clips after clearing every file.                            |
+| Factory Reset clears the database and reinitializes preferences       | Leaves media files on disk untouched.                                               |
+| Bundled FFmpeg removal requires restart or reinstall                  | The startup-resolved binary path and PATH fallback are not re-evaluated at runtime. |
