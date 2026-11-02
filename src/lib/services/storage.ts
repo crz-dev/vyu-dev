@@ -156,12 +156,17 @@ function clampImageQuality(value: number, max: number): number {
 
 export function loadEditImageQuality(format: EditImageQualityKey): number {
   const max = imageQualityMaxForStorage(format);
-  const value = Number(
-    localStorage.getItem(`vyu-edit-image-quality-${format}`),
-  );
-  if (Number.isFinite(value)) return clampImageQuality(value, max);
-  const legacy = Number(localStorage.getItem("vyu-edit-image-quality"));
-  return Number.isFinite(legacy) ? clampImageQuality(legacy, max) : max;
+  const stored = localStorage.getItem(`vyu-edit-image-quality-${format}`);
+  if (stored !== null) {
+    const value = Number(stored);
+    return Number.isFinite(value) ? clampImageQuality(value, max) : max;
+  }
+  const legacy = localStorage.getItem("vyu-edit-image-quality");
+  if (legacy !== null) {
+    const value = Number(legacy);
+    return Number.isFinite(value) ? clampImageQuality(value, max) : max;
+  }
+  return max;
 }
 
 export function saveEditImageQuality(
@@ -458,7 +463,9 @@ const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 1.5;
 
 export function loadUiScale(): number {
-  const v = Number(localStorage.getItem("vyu-ui-scale"));
+  const raw = localStorage.getItem("vyu-ui-scale");
+  if (raw === null) return 1;
+  const v = Number(raw);
   if (!Number.isFinite(v)) return 1;
   return Math.min(
     UI_SCALE_MAX,
@@ -554,7 +561,9 @@ export function saveResumeMode(mode: ResumeMode): void {
 }
 
 export function loadResumeThreshold(): number {
-  const v = Number(localStorage.getItem("vyu-resume-threshold"));
+  const raw = localStorage.getItem("vyu-resume-threshold");
+  if (raw === null) return 30;
+  const v = Number(raw);
   if (!Number.isFinite(v)) return 30;
   const snapped = Math.round(v / 30) * 30;
   return Math.min(900, Math.max(0, snapped));
@@ -589,7 +598,9 @@ export function saveRememberVolume(enabled: boolean): void {
 }
 
 export function loadDefaultSpeed(): number {
-  const v = Number(localStorage.getItem("vyu-default-speed"));
+  const raw = localStorage.getItem("vyu-default-speed");
+  if (raw === null) return 1;
+  const v = Number(raw);
   if (!Number.isFinite(v)) return 1;
   return Math.min(3, Math.max(0.1, Math.round(v / 0.05) * 0.05));
 }
@@ -599,7 +610,9 @@ export function saveDefaultSpeed(speed: number): void {
 }
 
 export function loadDefaultVolume(): number {
-  const v = Number(localStorage.getItem("vyu-default-volume"));
+  const raw = localStorage.getItem("vyu-default-volume");
+  if (raw === null) return 0.5;
+  const v = Number(raw);
   if (!Number.isFinite(v)) return 0.5;
   return Math.min(1, Math.max(0, Math.round(v * 100) / 100));
 }
@@ -617,7 +630,9 @@ export function saveVolumeBoost(enabled: boolean): void {
 }
 
 export function loadSeekStep(): number {
-  const v = Number(localStorage.getItem("vyu-seek-step"));
+  const raw = localStorage.getItem("vyu-seek-step");
+  if (raw === null) return 5;
+  const v = Number(raw);
   if (!Number.isFinite(v)) return 5;
   return Math.min(60, Math.max(1, Math.round(v)));
 }

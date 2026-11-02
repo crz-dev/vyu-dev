@@ -40,18 +40,31 @@ async function loadImageAsElement(filePath: string): Promise<LoadedImage> {
   return { img, url };
 }
 
+const CANVAS_OUTPUT_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+};
+
+function canvasMimeForPath(outputPath: string): string {
+  const ext = getFileExt(outputPath);
+  if (!ext) return "image/png";
+  const mimeType = CANVAS_OUTPUT_MIME[ext];
+  if (!mimeType) {
+    throw new Error(
+      `Edits can only be saved as PNG, JPG or WebP, not .${ext}. Export to a supported format instead.`,
+    );
+  }
+  return mimeType;
+}
+
 async function saveCanvasToFile(
   canvas: HTMLCanvasElement,
   outputPath: string,
   quality?: number,
 ): Promise<void> {
-  const ext = getFileExt(outputPath) || "png";
-  const mimeType =
-    ext === "jpg" || ext === "jpeg"
-      ? "image/jpeg"
-      : ext === "webp"
-        ? "image/webp"
-        : "image/png";
+  const mimeType = canvasMimeForPath(outputPath);
   const normalizedQuality =
     quality === undefined ? 0.92 : Math.min(1, Math.max(0, quality));
   const encodedQuality =

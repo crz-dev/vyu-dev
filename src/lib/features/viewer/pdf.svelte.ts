@@ -155,6 +155,7 @@ export function createPdf() {
   let scrollHandler: ((e: Event) => void) | null = null;
   let currentFilePath = "";
   let disposed = false;
+  let loadGen = 0;
 
   function setContainer(el: HTMLElement | null) {
     pdfContainerEl = el;
@@ -410,6 +411,7 @@ export function createPdf() {
 
   async function loadFile(path: string): Promise<void> {
     cleanup();
+    const gen = ++loadGen;
     disposed = false;
     currentFilePath = path;
     state.loading = true;
@@ -419,7 +421,7 @@ export function createPdf() {
     state.currentPage = 1;
 
     const timeoutId = setTimeout(() => {
-      if (state.loading) {
+      if (state.loading && gen === loadGen) {
         state.loading = false;
         state.error =
           "PDF loading timed out. The file may be too large or corrupted.";
@@ -430,6 +432,10 @@ export function createPdf() {
     try {
       // Dynamic import so pdfjs-dist only loads when a PDF is opened (code-split)
       const loadedPdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
+      if (gen !== loadGen) {
+        clearTimeout(timeoutId);
+        return;
+      }
       pdfjsLib = loadedPdfjsLib;
 
       // Preload the worker module on the main thread — this triggers PDF.js's
@@ -437,6 +443,10 @@ export function createPdf() {
       // instead of spawning a Web Worker.  Necessary because Tauri's WebView2
       // custom protocol (asset://) does not support Web Workers.
       const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs");
+      if (gen !== loadGen) {
+        clearTimeout(timeoutId);
+        return;
+      }
       globalThis.pdfjsWorker = pdfjsWorker;
 
       // Must be a truthy non-empty string — PDF.js 4.x checks for falsy
@@ -448,14 +458,20 @@ export function createPdf() {
         enableXfa: true,
         disableAutoFetch: false,
       });
-      pdfDoc = await loadingTask.promise;
+      const pdfDocument = await loadingTask.promise;
+      if (gen !== loadGen) {
+        clearTimeout(timeoutId);
+        void pdfDocument.destroy();
+        return;
+      }
+      pdfDoc = pdfDocument;
 
-      const numPages = pdfDoc.numPages;
+      const numPages = pdfDocument.numPages;
       state.pageCount = numPages;
 
       const pagePromises: Promise<PDFPageProxy>[] = [];
       for (let i = 1; i <= numPages; i++) {
-        pagePromises.push(pdfDoc.getPage(i));
+        pagePromises.push(pdfDocument.getPage(i));
       }
 
       const pages: PdfPage[] = [];
@@ -476,12 +492,14 @@ export function createPdf() {
 
       // Wait for page promises to resolve
       const pageResults = await Promise.allSettled(pagePromises);
+      if (gen !== loadGen) return;
 
       // Store viewport heights and pre-set canvas dimensions so DOM layout is correct
       // even for pages not yet rendered
       await new Promise((r) =>
         requestAnimationFrame(() => requestAnimationFrame(r)),
       );
+      if (gen !== loadGen) return;
 
       for (let i = 0; i < numPages; i++) {
         const result = pageResults[i];
@@ -507,7 +525,8 @@ export function createPdf() {
         state.pdfPageSize = `${Math.round(w)} × ${Math.round(h)} pt`;
       }
       try {
-        const meta = await pdfDoc.getMetadata();
+        const meta = await pdfDocument.getMetadata();
+        if (gen !== loadGen) return;
         const info = meta.info as Record<string, unknown> | undefined;
         if (info?.PDFFormatVersion) {
           state.pdfVersion = String(info.PDFFormatVersion);
@@ -515,6 +534,7 @@ export function createPdf() {
       } catch {
         /* ignore */
       }
+      if (gen !== loadGen) return;
 
       setupObserver();
 
@@ -525,6 +545,7 @@ export function createPdf() {
       }
     } catch (err) {
       clearTimeout(timeoutId);
+      if (gen !== loadGen) return;
       state.loading = false;
       state.error = err instanceof Error ? err.message : "Failed to load PDF";
       console.error("PDF load error:", err);
@@ -532,6 +553,7 @@ export function createPdf() {
   }
 
   function cleanup() {
+    loadGen++;
     disposed = true;
     for (const [, timer] of renderTimers) clearTimeout(timer);
     renderTimers.clear();

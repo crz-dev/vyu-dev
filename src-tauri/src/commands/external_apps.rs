@@ -426,7 +426,16 @@ pub fn open_in_vlc(path: String, executable: Option<String>) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub fn open_in_spotify(path: String, executable: Option<String>) -> Result<(), String> {
+pub async fn open_in_spotify(
+    path: String,
+    executable: Option<String>,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || open_in_spotify_sync(path, executable))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+fn open_in_spotify_sync(path: String, executable: Option<String>) -> Result<(), String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());
@@ -513,7 +522,17 @@ pub fn open_with_dialog(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_media_properties(path: String) -> Result<crate::types::MediaProperties, String> {
+pub async fn get_media_properties(
+    path: String,
+) -> Result<crate::types::MediaProperties, String> {
+    tauri::async_runtime::spawn_blocking(move || get_media_properties_sync(path))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+fn get_media_properties_sync(
+    path: String,
+) -> Result<crate::types::MediaProperties, String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());

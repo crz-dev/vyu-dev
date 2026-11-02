@@ -66,7 +66,13 @@ fn fix_document(input: &Path, output: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
+pub async fn fix_media(path: String, mode: String) -> Result<FixResult, String> {
+    tauri::async_runtime::spawn_blocking(move || fix_media_sync(path, mode))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+fn fix_media_sync(path: String, mode: String) -> Result<FixResult, String> {
     let input = PathBuf::from(&path);
     if !input.exists() {
         return Ok(FixResult {

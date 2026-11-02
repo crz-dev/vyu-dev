@@ -429,7 +429,33 @@ pub async fn convert_media(
 }
 
 #[tauri::command]
-pub fn convert_audio_to_waveform_video(
+pub async fn convert_audio_to_waveform_video(
+    app: tauri::AppHandle,
+    path: String,
+    output_dir: String,
+    custom_output: Option<String>,
+    audio_bitrate: u32,
+    overwrite: bool,
+    cover_art_mode: String,
+    preset: String,
+) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        convert_audio_to_waveform_video_sync(
+            app,
+            path,
+            output_dir,
+            custom_output,
+            audio_bitrate,
+            overwrite,
+            cover_art_mode,
+            preset,
+        )
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+fn convert_audio_to_waveform_video_sync(
     app: tauri::AppHandle,
     path: String,
     output_dir: String,

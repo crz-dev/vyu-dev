@@ -54,7 +54,13 @@ pub async fn copy_image_to_clipboard(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn get_clipboard_file_path() -> Option<String> {
+pub async fn get_clipboard_file_path() -> Option<String> {
+    tauri::async_runtime::spawn_blocking(get_clipboard_file_path_sync)
+        .await
+        .unwrap_or(None)
+}
+
+fn get_clipboard_file_path_sync() -> Option<String> {
     #[cfg(target_os = "windows")]
     {
         let output = Command::new("powershell")
