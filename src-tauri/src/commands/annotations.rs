@@ -266,8 +266,8 @@ fn highlight_to_annot(
         let quads = vec![
             Object::Real(tl_x as f32), Object::Real(tl_y as f32),
             Object::Real(tr_x as f32), Object::Real(tr_y as f32),
-            Object::Real(br_x as f32), Object::Real(br_y as f32),
             Object::Real(bl_x as f32), Object::Real(bl_y as f32),
+            Object::Real(br_x as f32), Object::Real(br_y as f32),
         ];
 
         Ok(dictionary! {
@@ -310,8 +310,8 @@ fn highlight_to_annot(
         let quads = vec![
             Object::Real(tl_x as f32), Object::Real(tl_y as f32),
             Object::Real(tr_x as f32), Object::Real(tr_y as f32),
-            Object::Real(br_x as f32), Object::Real(br_y as f32),
             Object::Real(bl_x as f32), Object::Real(bl_y as f32),
+            Object::Real(br_x as f32), Object::Real(br_y as f32),
         ];
 
         Ok(dictionary! {

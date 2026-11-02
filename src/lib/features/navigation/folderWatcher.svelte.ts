@@ -17,8 +17,10 @@ export function createFolderWatcher(opts: {
   let unwatchFn: (() => void) | null = null;
   let watchDebounce: ReturnType<typeof setTimeout> | null = null;
   let lastStartedAt = 0;
+  let watchGen = 0;
 
   function stopWatching() {
+    watchGen++;
     if (watchDebounce) {
       clearTimeout(watchDebounce);
       watchDebounce = null;
@@ -30,21 +32,28 @@ export function createFolderWatcher(opts: {
   }
 
   function startWatching(folderPath: string) {
-    lastStartedAt = Date.now();
     stopWatching();
+    const gen = ++watchGen;
+    lastStartedAt = Date.now();
     watchImmediate(
       folderPath,
       () => {
+        if (gen !== watchGen) return;
         // Debounce: reset timer on every event
         if (watchDebounce) clearTimeout(watchDebounce);
         watchDebounce = setTimeout(() => {
           watchDebounce = null;
+          if (gen !== watchGen) return;
           onFolderChanged(folderPath);
         }, 300);
       },
       { recursive: false },
     )
       .then((unwatch) => {
+        if (gen !== watchGen) {
+          unwatch();
+          return;
+        }
         unwatchFn = unwatch;
       })
       .catch((e) => {

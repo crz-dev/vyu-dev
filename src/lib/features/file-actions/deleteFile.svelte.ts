@@ -125,6 +125,8 @@ export function createDeleteActions(deps: DeleteActionsDeps) {
       });
     } catch {
       showToast({ message: "Failed to delete file", color: "red" });
+      if (pathToDelete) await deps.loadFile(pathToDelete);
+      return;
     }
     const remaining = prevList.filter((p) => p !== pathToDelete);
     if (remaining.length > 0)

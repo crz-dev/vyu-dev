@@ -325,10 +325,10 @@ function createLibrary() {
   }
 
   function clearQueue() {
+    _fetchGen++;
     pendingSet.clear();
     pendingOrder = [];
-    inflight = 0;
-    _generating = false;
+    _generating = inflight > 0;
   }
 
   function rebuildQueue(fileList: string[], currentIndex: number) {

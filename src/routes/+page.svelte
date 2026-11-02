@@ -621,6 +621,7 @@
     navigate,
     getFileList: () => fileList,
     getCurrentIndex: () => currentIndex,
+    setCurrentIndex: (v) => (currentIndex = v),
     media,
     setMediaState,
   });

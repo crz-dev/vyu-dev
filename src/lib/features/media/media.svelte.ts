@@ -2,7 +2,11 @@
 import { volumeToActual } from "$lib/features/media/playback.svelte";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";
-import { getFileName } from "$lib/services/files";
+import {
+  getFileName,
+  getParentFolder,
+  clearFolderCache,
+} from "$lib/services/files";
 import { prepareDisplayPath } from "$lib/features/media/api";
 import { getFileMetadataLight } from "$lib/services/database";
 import {
@@ -255,7 +259,7 @@ export function createMedia(
     path: string,
     set: (data: Partial<MediaState>) => void,
     refresh = false,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const gen = ++loadGen;
 
     // Consume prefetch cache if available
@@ -282,7 +286,7 @@ export function createMedia(
     } else if (isVideo || isAudio) {
       try {
         const meta = await getFileMetadataLight(path);
-        if (gen !== loadGen) return;
+        if (gen !== loadGen) return false;
         if (meta) {
           if (meta.timestamp_data) {
             timestamps = parseTimestamps(meta.timestamp_data);
@@ -341,14 +345,14 @@ export function createMedia(
     onReset(path);
 
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (gen !== loadGen) return;
+    if (gen !== loadGen) return false;
 
     const src =
       !refresh && cached?.baseSrc
         ? cached.baseSrc
         : convertFileSrc(await prepareDisplayPath(path));
     const baseSrc = `${src}?v=${++srcNonce}`;
-    if (gen !== loadGen) return;
+    if (gen !== loadGen) return false;
     set({
       fileSrc: baseSrc,
     });
@@ -357,7 +361,7 @@ export function createMedia(
       let info = statCache.get(path);
       if (!info) {
         info = await stat(path);
-        if (gen !== loadGen) return;
+        if (gen !== loadGen) return false;
         statCache.set(path, info);
         evictStatCache();
       }
@@ -378,6 +382,7 @@ export function createMedia(
     } catch (e) {
       console.error("stat() failed:", e);
     }
+    return true;
   }
 
   async function loadFile(
@@ -391,11 +396,16 @@ export function createMedia(
     clearTimeout(loadingTimer);
     finishLoadingCalled = false;
     set({ isLoadingFile: true, loadingFadingOut: false });
-    await displayFile(path, set, refresh);
+    const loaded = await displayFile(path, set, refresh);
+    if (!loaded) return;
     library.addRecent(path);
     try {
       const { readMediaFilesInFolder } = await import("$lib/services/files");
-      const list = await readMediaFilesInFolder(path, sortMode, sortDesc);
+      let list = await readMediaFilesInFolder(path, sortMode, sortDesc);
+      if (!list.includes(path)) {
+        clearFolderCache(getParentFolder(path));
+        list = await readMediaFilesInFolder(path, sortMode, sortDesc);
+      }
       setFileList(list, list.indexOf(path));
     } catch (e) {
       console.error("readMediaFilesInFolder failed:", e);
@@ -407,10 +417,10 @@ export function createMedia(
     fileList: string[],
     currentIndex: number,
     set: (data: Partial<MediaState>) => void,
-  ): Promise<number> {
+  ): Promise<number | null> {
     if (fileList.length === 0) return currentIndex;
     const next = (currentIndex + direction + fileList.length) % fileList.length;
-    await displayFile(fileList[next], set);
+    if (!(await displayFile(fileList[next], set))) return null;
     return next;
   }
 
@@ -418,10 +428,10 @@ export function createMedia(
     first: boolean,
     fileList: string[],
     set: (data: Partial<MediaState>) => void,
-  ): Promise<number> {
+  ): Promise<number | null> {
     if (fileList.length === 0) return 0;
     const next = first ? 0 : fileList.length - 1;
-    await displayFile(fileList[next], set);
+    if (!(await displayFile(fileList[next], set))) return null;
     return next;
   }
 

@@ -1155,14 +1155,15 @@ function createMarkupStore() {
   }
 
   function saveToSession() {
-    if (filePath) {
-      const key = sessionKey(filePath, currentPage);
-      sessionStrokes.set(key, [...strokes]);
-      sessionStrokesOrder.push(key);
-      if (sessionStrokesOrder.length > SESSION_STROKES_MAX) {
-        const oldest = sessionStrokesOrder.shift();
-        if (oldest !== undefined) sessionStrokes.delete(oldest);
-      }
+    if (!filePath) return;
+    const key = sessionKey(filePath, currentPage);
+    sessionStrokes.set(key, [...strokes]);
+    const existing = sessionStrokesOrder.indexOf(key);
+    if (existing !== -1) sessionStrokesOrder.splice(existing, 1);
+    sessionStrokesOrder.push(key);
+    if (sessionStrokesOrder.length > SESSION_STROKES_MAX) {
+      const oldest = sessionStrokesOrder.shift();
+      if (oldest !== undefined) sessionStrokes.delete(oldest);
     }
   }
 
@@ -1288,6 +1289,7 @@ function createMarkupStore() {
     pageMax = 0;
     pageDimensions = new Map();
     sessionStrokes.clear();
+    sessionStrokesOrder.length = 0;
   }
 
   return {

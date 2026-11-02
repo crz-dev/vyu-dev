@@ -3,8 +3,9 @@ import { createTimeline } from "$lib/features/markers/timeline";
 import {
   writeTimestamps,
   deleteTimestamps,
-  deleteResumePoint,
+  deleteResumePoint as deleteDbResumePoint,
 } from "$lib/services/database";
+import { deleteResumePoint as deleteLocalResumePoint } from "$lib/services/storage";
 import type { LoopMode } from "$lib/shared/constants";
 import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
 
@@ -683,7 +684,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     markerStore.tsTooltip = { ...markerStore.tsTooltip, visible: false };
     markerStore.resumeTooltipVisible = false;
     markerStore.resumePoint = null;
-    deleteResumePoint(deps.getFilePath());
+    deleteLocalResumePoint(deps.getFilePath());
+    void deleteDbResumePoint(deps.getFilePath());
   }
 
   function seekToResumePoint() {

@@ -290,6 +290,7 @@ export function createNavigation(deps: NavigationDeps) {
         deps.getCurrentIndex(),
         setMediaState,
       );
+      if (next === null) return;
       deps.setCurrentIndex(next);
       library.addRecent(deps.getFileList()[next]);
       media.prefetchAdjacent(deps.getFileList(), next);
@@ -324,6 +325,7 @@ export function createNavigation(deps: NavigationDeps) {
       deps.getFileList(),
       setMediaState,
     );
+    if (next === null) return;
     deps.setCurrentIndex(next);
     library.addRecent(deps.getFileList()[next]);
     media.prefetchAdjacent(deps.getFileList(), next);

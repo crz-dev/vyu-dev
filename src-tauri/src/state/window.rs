@@ -61,6 +61,25 @@ pub fn persist_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool
     }
 }
 
+/// Keep the window's top-left on a connected monitor's work area so the
+/// title bar stays reachable after monitor layout changes.
+fn position_on_monitor(window: &tauri::WebviewWindow, x: i32, y: i32) -> bool {
+    const SLACK: i64 = 16;
+    let Ok(monitors) = window.available_monitors() else {
+        return false;
+    };
+    monitors.iter().any(|monitor| {
+        let area = monitor.work_area();
+        let left = area.position.x as i64;
+        let top = area.position.y as i64;
+        let right = left + area.size.width as i64;
+        let bottom = top + area.size.height as i64;
+        let wx = x as i64;
+        let wy = y as i64;
+        wx >= left - SLACK && wx < right + SLACK && wy >= top - SLACK && wy < bottom + SLACK
+    })
+}
+
 pub fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool>) {
     skip.store(true, Ordering::Relaxed);
 
@@ -69,27 +88,25 @@ pub fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool
         return;
     };
 
+    let position_valid = position_on_monitor(window, state.x, state.y);
+
     if state.maximized {
         if state.width > 0 && state.height > 0 {
             let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
         }
-        // Limit: dual 6K (12288 x 6912) + slack
-        let plausible = state.x > -12288 && state.x < 12288 && state.y > -6912 && state.y < 6912;
-        if plausible {
+        if position_valid {
             let _ =
                 window.set_position(Position::Physical(PhysicalPosition::new(state.x, state.y)));
         }
         let _ = window.maximize();
     } else {
         let valid_size = state.width >= 400 && state.height >= 300;
-        // Limit: dual 6K (12288 x 6912) + slack
-        let plausible = state.x > -12288 && state.x < 12288 && state.y > -6912 && state.y < 6912;
 
         if valid_size {
             let _ = window.set_size(Size::Physical(PhysicalSize::new(state.width, state.height)));
         }
 
-        if plausible {
+        if position_valid {
             let _ =
                 window.set_position(Position::Physical(PhysicalPosition::new(state.x, state.y)));
         }

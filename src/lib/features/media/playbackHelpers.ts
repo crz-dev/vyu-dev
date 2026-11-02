@@ -9,13 +9,14 @@ export function createOnMediaEnded(deps: {
   navigate: (dir: number) => void;
   getFileList: () => string[];
   getCurrentIndex: () => number;
+  setCurrentIndex: (index: number) => void;
   media: {
     navigate: (
       dir: number,
       list: string[],
       idx: number,
       setState: (data: Partial<MediaState>) => void,
-    ) => Promise<number>;
+    ) => Promise<number | null>;
   };
   setMediaState: (data: Partial<MediaState>) => void;
 }) {
@@ -31,12 +32,13 @@ export function createOnMediaEnded(deps: {
       if (list.length > 1) {
         const idx = Math.floor(Math.random() * list.length);
         const currentIndex = deps.getCurrentIndex();
-        await deps.media.navigate(
+        const nextIndex = await deps.media.navigate(
           idx - currentIndex,
           list,
           currentIndex,
           deps.setMediaState,
         );
+        if (nextIndex !== null) deps.setCurrentIndex(nextIndex);
       }
     } else if (mode === "shuffle-songs") {
       const list = deps.getFileList();
@@ -47,12 +49,13 @@ export function createOnMediaEnded(deps: {
         const chosen = audioFiles[idx];
         const listIdx = list.indexOf(chosen);
         if (listIdx !== -1) {
-          await deps.media.navigate(
+          const nextIndex = await deps.media.navigate(
             listIdx - currentIndex,
             list,
             currentIndex,
             deps.setMediaState,
           );
+          if (nextIndex !== null) deps.setCurrentIndex(nextIndex);
         }
       }
     }
