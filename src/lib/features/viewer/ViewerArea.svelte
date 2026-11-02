@@ -243,17 +243,17 @@
     bind:this={viewerEl}
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
-    onwheel={isPdf ? undefined : handleViewerScroll}
+    onwheel={isPdf || isAudio ? undefined : handleViewerScroll}
     onmousedown={!markup.drawActive &&
     !markup.selectActive &&
     !markup.removeActive
       ? isPdf ? undefined : startPan
       : undefined}
     ontouchstart={(e) => {
-      if (e.touches.length === 2) e.preventDefault();
+      if (!isAudio && e.touches.length === 2) e.preventDefault();
     }}
-    ontouchmove={viewer.handleTouchZoom}
-    ontouchend={viewer.handleTouchEnd}
+    ontouchmove={isAudio ? undefined : viewer.handleTouchZoom}
+    ontouchend={isAudio ? undefined : viewer.handleTouchEnd}
     style="cursor: {markup.drawActive ||
     markup.selectActive ||
     markup.removeActive

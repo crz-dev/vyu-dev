@@ -169,13 +169,13 @@
       class:audio-fullscreen={isAudio}
       role="button"
       tabindex="0"
-      onwheel={handleViewerScroll}
+      onwheel={isAudio ? undefined : handleViewerScroll}
       onmousedown={drawActive ? undefined : startPan}
       ontouchstart={(e) => {
-        if (e.touches.length === 2) e.preventDefault();
+        if (!isAudio && e.touches.length === 2) e.preventDefault();
       }}
-      ontouchmove={handleTouchZoom}
-      ontouchend={handleTouchEnd}
+      ontouchmove={isAudio ? undefined : handleTouchZoom}
+      ontouchend={isAudio ? undefined : handleTouchEnd}
       style="cursor: {fsCursor}"
     >
       <div class="fs-topbar">

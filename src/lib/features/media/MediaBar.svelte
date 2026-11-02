@@ -106,6 +106,8 @@
     toggleFullscreen,
     isVideo,
     isAudio,
+    volume = 1,
+    muted = false,
     isPdf = false,
     pdfScale = 1,
     pdfFitScale = 1,
@@ -167,6 +169,8 @@
     toggleFullscreen: () => void;
     isVideo: boolean;
     isAudio: boolean;
+    volume?: number;
+    muted?: boolean;
     isPdf?: boolean;
     pdfScale?: number;
     pdfFitScale?: number;
@@ -470,65 +474,82 @@
   </div>
   <div class="bottombar-right">
     <div class="icon-slot viewer-right" class:hidden={libraryOpen}>
-      <div class="zoom-control">
-        <button
-          class="zoom tooltip-above"
-          class:menu-active={zoomMenuVisible}
-          class:tooltip-hidden={!zoomTooltipVisible}
-          data-tooltip="Zoom level"
-          onclick={toggleZoomMenu}
-          onmouseenter={handleZoomMouseEnter}
-          oncontextmenu={(e) => {
-            e.preventDefault();
-            toggleZoomLock?.();
-          }}
-          aria-expanded={zoomMenuVisible}
-          aria-label="Zoom controls"
+      {#if isAudio}
+        <span
+          class="audio-volume tooltip-above"
+          data-tooltip="Current volume"
+          aria-label="Current volume"
         >
-          {#if zoomLocked}
-            <svg
-              class="zoom-lock-icon"
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="5" y="10" width="14" height="11" rx="2" />
-              <path d="M8 10V7a4 4 0 0 1 7.6-1.3" />
-              <circle cx="12" cy="15" r="1" fill="currentColor" stroke="none" />
-              <path d="M12 16v2" />
-            </svg>
-          {/if}
-          {Math.round(isPdf ? pdfScale * 100 : zoomLevel)}%</button
-        >
-        {#if zoomMenuVisible}
-          <div class="zoom-menu-clip">
-            <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
-              <button
-                class="zoom-menu-btn"
-                onpointerdown={() => startZoomRepeat(-1)}
-                onpointerup={stopZoomRepeat}
-                onpointercancel={stopZoomRepeat}
-                onclick={(e) => handleZoomClick(-1, e)}
-                aria-label="Decrease zoom by 1 percent">−</button
+          {muted ? "Muted" : `${Math.round(volume * 100)}%`}
+        </span>
+      {/if}
+      {#if !isAudio}
+        <div class="zoom-control">
+          <button
+            class="zoom tooltip-above"
+            class:menu-active={zoomMenuVisible}
+            class:tooltip-hidden={!zoomTooltipVisible}
+            data-tooltip="Zoom level"
+            onclick={toggleZoomMenu}
+            onmouseenter={handleZoomMouseEnter}
+            oncontextmenu={(e) => {
+              e.preventDefault();
+              toggleZoomLock?.();
+            }}
+            aria-expanded={zoomMenuVisible}
+            aria-label="Zoom controls"
+          >
+            {#if zoomLocked}
+              <svg
+                class="zoom-lock-icon"
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
               >
-              <button
-                class="zoom-menu-btn"
-                onpointerdown={() => startZoomRepeat(1)}
-                onpointerup={stopZoomRepeat}
-                onpointercancel={stopZoomRepeat}
-                onclick={(e) => handleZoomClick(1, e)}
-                aria-label="Increase zoom by 1 percent">+</button
-              >
+                <rect x="5" y="10" width="14" height="11" rx="2" />
+                <path d="M8 10V7a4 4 0 0 1 7.6-1.3" />
+                <circle
+                  cx="12"
+                  cy="15"
+                  r="1"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <path d="M12 16v2" />
+              </svg>
+            {/if}
+            {Math.round(isPdf ? pdfScale * 100 : zoomLevel)}%</button
+          >
+          {#if zoomMenuVisible}
+            <div class="zoom-menu-clip">
+              <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
+                <button
+                  class="zoom-menu-btn"
+                  onpointerdown={() => startZoomRepeat(-1)}
+                  onpointerup={stopZoomRepeat}
+                  onpointercancel={stopZoomRepeat}
+                  onclick={(e) => handleZoomClick(-1, e)}
+                  aria-label="Decrease zoom by 1 percent">−</button
+                >
+                <button
+                  class="zoom-menu-btn"
+                  onpointerdown={() => startZoomRepeat(1)}
+                  onpointerup={stopZoomRepeat}
+                  onpointercancel={stopZoomRepeat}
+                  onclick={(e) => handleZoomClick(1, e)}
+                  aria-label="Increase zoom by 1 percent">+</button
+                >
+              </div>
             </div>
-          </div>
-        {/if}
-      </div>
+          {/if}
+        </div>
+      {/if}
       <button
         class="fs-btn tooltip-above-shift-left"
         data-tooltip={`${fullscreen ? "Unfullscreen" : "Fullscreen"}${shortcutSuffix("fullscreen")}`}

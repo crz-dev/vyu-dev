@@ -753,6 +753,8 @@
     toggleFullscreen={viewerToggleFullscreen}
     {isVideo}
     {isAudio}
+    {volume}
+    {muted}
     {isPdf}
     {pdfScale}
     {pdfFitScale}
