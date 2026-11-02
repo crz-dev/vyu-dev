@@ -1867,6 +1867,79 @@
   margin: 0;
 }
 
+.settings-search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  margin-top: 8px;
+  padding: 0 9px 0 10px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: var(--bg-primary);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.settings-search-field:focus-within {
+  border-color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.settings-search-icon {
+  flex-shrink: 0;
+  color: var(--text-hint);
+}
+
+.settings-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-family);
+}
+
+.settings-search-input::placeholder {
+  color: var(--text-hint);
+}
+
+.settings-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.settings-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.settings-search-clear:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="light"] .settings-search-clear:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
 .settings-layout {
   display: flex;
   width: 100%;
@@ -2052,6 +2125,38 @@
 .settings-content::-webkit-scrollbar-thumb {
   background: var(--bg-shimmer);
   border-radius: 2px;
+}
+
+.settings-content .settings-search-hidden {
+  display: none;
+}
+
+.settings-content.searching .settings-section::after {
+  display: none;
+}
+
+.settings-search-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 46px 20px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.settings-search-empty-title {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
+
+.settings-search-empty-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-hint);
+  font-family: var(--font-family);
 }
 
 .settings-section {

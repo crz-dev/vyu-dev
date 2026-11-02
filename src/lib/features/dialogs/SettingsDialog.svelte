@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, tick } from "svelte";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import DangerSettings from "$lib/features/danger/DangerSettings.svelte";
   import DebugSettings from "$lib/features/debug/DebugSettings.svelte";
@@ -19,6 +20,13 @@
   import { editing } from "$lib/features/editing/editing.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+  import {
+    applySettingsSearchFilter,
+    buildSettingsIndex,
+    searchSettings,
+    type SettingsSearchResult,
+  } from "$lib/features/settings/settingsSearch";
+  import { settingsSearchState } from "$lib/features/settings/settingsSearchState.svelte";
   import {
     loadLastDialogSection,
     saveLastDialogSection,
@@ -46,8 +54,15 @@
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
   let isScrolling = $state(false);
+  let searchQuery = $state("");
+  let searchResults = $state<SettingsSearchResult[]>([]);
+  let searchScrollTop = 0;
   let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
   let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    settingsSearchState.active = false;
+  });
 
   $effect(() => {
     saveLastDialogSection("settings", activeSection);
@@ -88,7 +103,80 @@
     "danger-zone": "Destructive actions that cannot be undone.",
   };
 
-  function scrollToSection(id: string) {
+  const searchActive = $derived(searchQuery.trim() !== "");
+
+  const searchSections = sections.map((section) => ({
+    id: section.id,
+    label: section.label,
+    description: sectionDescriptions[section.id],
+  }));
+
+  $effect(() => {
+    const query = searchQuery.trim();
+    if (!contentEl) return;
+    const root = contentEl;
+    if (!query) {
+      searchResults = [];
+      applySettingsSearchFilter(root, [], false);
+      return;
+    }
+    const runSearch = () => {
+      const results = searchSettings(
+        buildSettingsIndex(root, searchSections),
+        query,
+      );
+      searchResults = results;
+      applySettingsSearchFilter(root, results);
+    };
+    runSearch();
+
+    const observer = new MutationObserver(runSearch);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  });
+
+  function flashSection(id: string) {
+    if (flashTimeout) clearTimeout(flashTimeout);
+    flashId = id;
+    flashTimeout = setTimeout(() => {
+      if (flashId === id) flashId = null;
+    }, 900);
+  }
+
+  function setSearchQuery(value: string) {
+    const wasActive = searchActive;
+    if (!wasActive && value.trim() && contentEl) {
+      searchScrollTop = contentEl.scrollTop;
+    }
+    searchQuery = value;
+    settingsSearchState.active = value.trim() !== "";
+    if (!value.trim()) {
+      if (wasActive && contentEl) {
+        applySettingsSearchFilter(contentEl, [], false);
+        void tick().then(() => {
+          if (!searchActive && contentEl) contentEl.scrollTop = searchScrollTop;
+        });
+      }
+      return;
+    }
+    if (contentEl) contentEl.scrollTop = 0;
+  }
+
+  async function clearSearch() {
+    searchQuery = "";
+    settingsSearchState.active = false;
+    if (contentEl) applySettingsSearchFilter(contentEl, [], false);
+    await tick();
+    if (contentEl) contentEl.scrollTop = searchScrollTop;
+  }
+
+  async function scrollToSection(id: string) {
+    if (searchActive) {
+      searchQuery = "";
+      settingsSearchState.active = false;
+      if (contentEl) applySettingsSearchFilter(contentEl, [], false);
+      await tick();
+    }
     activeSection = id;
     if (scrollTimeout) clearTimeout(scrollTimeout);
     if (flashTimeout) clearTimeout(flashTimeout);
@@ -96,10 +184,7 @@
     const el = document.getElementById(`settings-section-${id}`);
     if (el && contentEl) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-      flashId = id;
-      flashTimeout = setTimeout(() => {
-        if (flashId === id) flashId = null;
-      }, 900);
+      flashSection(id);
     }
     scrollTimeout = setTimeout(() => {
       isScrolling = false;
@@ -107,7 +192,7 @@
   }
 
   function handleScroll() {
-    if (!contentEl || isScrolling) return;
+    if (!contentEl || isScrolling || searchActive) return;
     const nearBottom =
       contentEl.scrollTop + contentEl.clientHeight >=
       contentEl.scrollHeight - 8;
@@ -381,6 +466,59 @@
           Settings
         </p>
         <p class="delete-subtitle">Configure your media viewer experience</p>
+        <div class="settings-search-field">
+          <svg
+            class="settings-search-icon"
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><circle cx="11" cy="11" r="8" /><line
+              x1="21"
+              y1="21"
+              x2="16.65"
+              y2="16.65"
+            /></svg
+          >
+          <input
+            class="settings-search-input"
+            type="search"
+            placeholder="Search settings"
+            aria-label="Search settings"
+            value={searchQuery}
+            oninput={(e) => setSearchQuery(e.currentTarget.value)}
+            onkeydown={(e) => {
+              if (e.key === "Escape" && searchActive) {
+                e.preventDefault();
+                e.stopPropagation();
+                void clearSearch();
+              }
+            }}
+          />
+          {#if searchActive}
+            <button
+              class="settings-search-clear"
+              type="button"
+              aria-label="Clear search"
+              onclick={() => void clearSearch()}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg
+              >
+            </button>
+          {/if}
+        </div>
         <button
           class="dialog-close-x"
           onclick={closeSettings}
@@ -570,9 +708,35 @@
 
         <div
           class="settings-content"
+          class:searching={searchActive}
           bind:this={contentEl}
           onscroll={handleScroll}
         >
+          {#if searchActive && searchResults.length === 0}
+            <div class="settings-search-empty">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="11" cy="11" r="8" /><line
+                  x1="21"
+                  y1="21"
+                  x2="16.65"
+                  y2="16.65"
+                /></svg
+              >
+              <p class="settings-search-empty-title">No settings found</p>
+              <p class="settings-search-empty-hint">
+                Try “theme”, “volume”, or “shortcuts”.
+              </p>
+            </div>
+          {/if}
+
           <AppearanceSettings flash={flashId === "appearance"} />
           <PlaybackSettings flash={flashId === "playback"} />
           <EditorSettings flash={flashId === "editor"} />

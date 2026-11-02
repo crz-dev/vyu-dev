@@ -5,6 +5,7 @@
   import { editing } from "$lib/features/editing/editing.svelte";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+  import { settingsSearchState } from "$lib/features/settings/settingsSearchState.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
 
@@ -198,7 +199,7 @@
       {/snippet}
     </SettingsRow>
 
-    {#if editing.backupMode !== "off"}
+    {#if editing.backupMode !== "off" || settingsSearchState.active}
       <SettingsRow
         label="Backup Folder"
         hint="Where original copies are stored"

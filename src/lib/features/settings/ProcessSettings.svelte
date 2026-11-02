@@ -9,6 +9,7 @@
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
+  import { settingsSearchState } from "$lib/features/settings/settingsSearchState.svelte";
   import type { HardwareEncoder } from "$lib/services/storage";
 
   let { flash = false }: { flash?: boolean } = $props();
@@ -340,9 +341,11 @@
       {/snippet}
     </SettingsRow>
 
-    {#if conversionPrefs.gpuEncoding && detectedEncoders.length > 0}
+    {#if detectedEncoders.length > 0 && (conversionPrefs.gpuEncoding || settingsSearchState.active)}
       <div
         class="settings-row settings-subrow"
+        data-settings-label="Hardware Encoder"
+        data-settings-hint="Which detected encoder to prefer"
         transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
       >
         <div class="settings-label-col">
