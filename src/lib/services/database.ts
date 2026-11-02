@@ -276,6 +276,22 @@ export async function deleteResumePoint(filePath: string): Promise<void> {
   await clearField(filePath, "last_position");
 }
 
+// Path migration after rename/move
+
+export async function migrateFilePath(
+  oldPath: string,
+  newPath: string,
+): Promise<number> {
+  return invoke("db_migrate_file_path", { oldPath, newPath });
+}
+
+export async function migrateFolderPaths(
+  oldFolder: string,
+  newFolder: string,
+): Promise<number> {
+  return invoke("db_migrate_folder_paths", { oldFolder, newFolder });
+}
+
 // CD color
 
 export async function loadCdColor(filePath: string): Promise<number> {

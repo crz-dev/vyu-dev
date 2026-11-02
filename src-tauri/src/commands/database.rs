@@ -128,6 +128,101 @@ pub fn db_delete_file_metadata(
     Ok(())
 }
 
+fn folder_suffix<'a>(path: &'a str, folder: &str) -> Option<&'a str> {
+    let folder = folder.trim_end_matches(['\\', '/']);
+    let mut chars = path.char_indices();
+    for expected in folder.chars() {
+        let (_, actual) = chars.next()?;
+        if !actual.eq_ignore_ascii_case(&expected) {
+            return None;
+        }
+    }
+    let offset = chars.next().map(|(index, _)| index).unwrap_or(path.len());
+    let rest = &path[offset..];
+    if rest.is_empty() || rest.starts_with('\\') || rest.starts_with('/') {
+        Some(rest)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn db_migrate_file_path(
+    db: State<'_, DbConnection>,
+    old_path: String,
+    new_path: String,
+) -> Result<u64, String> {
+    if old_path == new_path {
+        return Ok(0);
+    }
+    let mut conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
+    // The destination file did not exist before the rename, so any row there is stale.
+    tx.execute("DELETE FROM file_metadata WHERE path = ?1", params![&new_path])
+        .map_err(|e| format!("Failed to clear destination metadata: {e}"))?;
+    let changed = tx
+        .execute(
+            "UPDATE file_metadata SET path = ?1 WHERE path = ?2",
+            params![&new_path, &old_path],
+        )
+        .map_err(|e| format!("Failed to migrate file metadata: {e}"))?;
+    tx.commit()
+        .map_err(|e| format!("Failed to commit metadata migration: {e}"))?;
+    Ok(changed as u64)
+}
+
+#[tauri::command]
+pub fn db_migrate_folder_paths(
+    db: State<'_, DbConnection>,
+    old_folder: String,
+    new_folder: String,
+) -> Result<u64, String> {
+    if old_folder == new_folder {
+        return Ok(0);
+    }
+    let mut conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+
+    let paths: Vec<String> = {
+        let mut stmt = conn
+            .prepare("SELECT path FROM file_metadata")
+            .map_err(|e| format!("Failed to prepare query: {e}"))?;
+        let rows = stmt
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|e| format!("Failed to read metadata paths: {e}"))?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(|e| format!("Failed to read metadata paths: {e}"))?
+    };
+
+    let new_root = new_folder.trim_end_matches(['\\', '/']).to_string();
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
+    let mut changed = 0u64;
+    for path in paths {
+        let Some(suffix) = folder_suffix(&path, &old_folder) else {
+            continue;
+        };
+        if suffix.is_empty() {
+            continue;
+        }
+        let new_path = format!("{new_root}{suffix}");
+        tx.execute("DELETE FROM file_metadata WHERE path = ?1", params![&new_path])
+            .map_err(|e| format!("Failed to clear destination metadata: {e}"))?;
+        changed += tx
+            .execute(
+                "UPDATE file_metadata SET path = ?1 WHERE path = ?2",
+                params![&new_path, &path],
+            )
+            .map_err(|e| format!("Failed to migrate folder metadata: {e}"))?
+            as u64;
+    }
+    tx.commit()
+        .map_err(|e| format!("Failed to commit metadata migration: {e}"))?;
+    Ok(changed)
+}
+
 #[tauri::command]
 pub fn db_get_setting(
     db: State<'_, DbConnection>,

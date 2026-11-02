@@ -7,6 +7,7 @@ import type {
   BatchStatItem,
 } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
+import { arrayBufferToBase64 } from "$lib/shared/base64";
 import { isBrowserUnsupportedImage, needsRemux } from "$lib/shared/mediaKind";
 import type { EditSnapshot } from "$lib/features/editing/editing.svelte";
 import type {
@@ -100,8 +101,21 @@ async function saveCanvasToFile(
     );
   });
   const arrayBuffer = await outBlob.arrayBuffer();
-  const { writeFile } = await import("@tauri-apps/plugin-fs");
-  await writeFile(outputPath, new Uint8Array(arrayBuffer));
+  await invokeWriteFileAtomic(outputPath, arrayBufferToBase64(arrayBuffer));
+}
+
+export async function invokeWriteFileAtomic(
+  path: string,
+  dataBase64: string,
+): Promise<void> {
+  return invoke("write_file_atomic", { path, dataBase64 });
+}
+
+export async function invokeWriteTempFile(
+  dataBase64: string,
+  ext: string,
+): Promise<string> {
+  return invoke("write_temp_file", { dataBase64, ext });
 }
 
 export async function exportCroppedImage(

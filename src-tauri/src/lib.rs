@@ -79,6 +79,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             delete_file,
             trash_file,
+            write_file_atomic,
+            write_temp_file,
             show_in_explorer,
             open_directory,
             get_media_properties,
@@ -132,6 +134,8 @@ pub fn run() {
             db_save_file_metadata,
             db_clear_file_metadata_field,
             db_delete_file_metadata,
+            db_migrate_file_path,
+            db_migrate_folder_paths,
             db_get_setting,
             db_set_setting,
             db_batch_upsert_file_metadata,

@@ -1,9 +1,12 @@
 // File operations
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use base64::Engine as _;
 
 use crate::types::BatchStatItem;
-use crate::util::canonicalize_path;
+use crate::util::{canonicalize_path, hash_path_xxh3};
 
 #[cfg(target_os = "windows")]
 use std::ffi::OsStr;
@@ -235,6 +238,98 @@ pub fn set_file_modified_time(path: String, timestamp_ms: u64) -> Result<(), Str
 #[tauri::command]
 pub fn cleanup_temp_folder() {
     crate::util::cleanup_vyu_temp();
+}
+
+fn allowed_output_extension(path: &Path) -> bool {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "json")
+}
+
+/// Write bytes to a temporary file next to the target, then replace it atomically.
+#[tauri::command]
+pub async fn write_file_atomic(path: String, data_base64: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || write_file_atomic_sync(path, data_base64))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+fn write_file_atomic_sync(path: String, data_base64: String) -> Result<(), String> {
+    let target = PathBuf::from(&path);
+    if !allowed_output_extension(&target) {
+        return Err("Unsupported output format".into());
+    }
+    let parent = target
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .ok_or_else(|| "Output path has no parent directory".to_string())?;
+    if !parent.is_dir() {
+        return Err("Output directory does not exist".into());
+    }
+
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data_base64.as_bytes())
+        .map_err(|e| format!("Failed to decode output data: {e}"))?;
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let temp = parent.join(format!(
+        ".vyu-write-{}-{nanos}.tmp",
+        hash_path_xxh3(&path)
+    ));
+
+    fs::write(&temp, &bytes).map_err(|e| {
+        let _ = fs::remove_file(&temp);
+        format!("Failed to write output: {e}")
+    })?;
+    if let Err(e) = fs::rename(&temp, &target) {
+        let _ = fs::remove_file(&temp);
+        return Err(format!("Failed to replace output: {e}"));
+    }
+    Ok(())
+}
+
+/// Write pasted clipboard bytes to a unique file inside the app temp directory.
+#[tauri::command]
+pub async fn write_temp_file(data_base64: String, ext: String) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || write_temp_file_sync(data_base64, ext))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?
+}
+
+fn write_temp_file_sync(data_base64: String, ext: String) -> Result<String, String> {
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data_base64.as_bytes())
+        .map_err(|e| format!("Failed to decode clipboard data: {e}"))?;
+    let clean_ext: String = ext
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .take(8)
+        .collect::<String>()
+        .to_ascii_lowercase();
+    let ext = if clean_ext.is_empty() {
+        "png".to_string()
+    } else {
+        clean_ext
+    };
+    let dir = std::env::temp_dir().join("Vyu-temp");
+    fs::create_dir_all(&dir).map_err(|e| format!("Failed to create temp directory: {e}"))?;
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let name = format!(
+        "vyu-paste-{}.{}",
+        hash_path_xxh3(&format!("{nanos}:{ext}")),
+        ext
+    );
+    let path = dir.join(name);
+    fs::write(&path, &bytes).map_err(|e| format!("Failed to save pasted file: {e}"))?;
+    Ok(path.to_string_lossy().to_string())
 }
 
 #[tauri::command]

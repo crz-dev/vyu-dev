@@ -1,5 +1,6 @@
 // Editing state
 import type { CropBounds } from "$lib/shared/types";
+import { replacePathPrefix, samePath } from "$lib/services/files";
 import {
   invokeBackupFile,
   invokeGetBackupPath,
@@ -363,6 +364,36 @@ function createEditingStore() {
     isApplying = false;
   }
 
+  function moveSessionKey(oldKey: string, newKey: string) {
+    const saved = sessionEdits.get(oldKey);
+    if (!saved) return;
+    sessionEdits.delete(oldKey);
+    sessionEdits.set(newKey, saved);
+    const oldIndex = sessionEditsOrder.indexOf(oldKey);
+    if (oldIndex !== -1) sessionEditsOrder.splice(oldIndex, 1);
+    const newIndex = sessionEditsOrder.indexOf(newKey);
+    if (newIndex !== -1) sessionEditsOrder.splice(newIndex, 1);
+    sessionEditsOrder.push(newKey);
+  }
+
+  function migratePath(oldPath: string, newPath: string) {
+    if (!oldPath || !newPath || oldPath === newPath) return;
+    moveSessionKey(oldPath, newPath);
+    if (samePath(filePath, oldPath)) filePath = newPath;
+    persistSession();
+  }
+
+  function migrateFolderPath(oldFolder: string, newFolder: string) {
+    if (!oldFolder || !newFolder || oldFolder === newFolder) return;
+    for (const key of [...sessionEdits.keys()]) {
+      const next = replacePathPrefix(key, oldFolder, newFolder);
+      if (next) moveSessionKey(key, next);
+    }
+    const nextFile = replacePathPrefix(filePath, oldFolder, newFolder);
+    if (nextFile) filePath = nextFile;
+    persistSession();
+  }
+
   function setBackupMode(mode: EditBackupMode) {
     backupMode = mode;
     saveEditBackupMode(mode);
@@ -616,6 +647,8 @@ function createEditingStore() {
     clearEdits,
     reset,
     cleanup,
+    migratePath,
+    migrateFolderPath,
     setFilePath,
   };
 }

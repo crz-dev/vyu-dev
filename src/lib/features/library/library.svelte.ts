@@ -66,7 +66,11 @@ import type {
   LibraryFileFilters,
 } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
-import { getParentFolder } from "$lib/services/files";
+import {
+  getParentFolder,
+  replacePathPrefix,
+  samePath,
+} from "$lib/services/files";
 import {
   getCached as sharedGetCached,
   setCached as sharedSetCached,
@@ -641,11 +645,14 @@ function createLibrary() {
     if (activeCollectionPath === path) activeCollectionPath = null;
   }
 
-  async function renameCollection(path: string, newName: string) {
+  async function renameCollection(
+    path: string,
+    newName: string,
+  ): Promise<string | null> {
     const trimmed = newName.trim();
-    if (!trimmed) return;
+    if (!trimmed) return null;
     const col = collections.find((c) => c.path === path);
-    if (!col) return;
+    if (!col) return null;
     const parent = getParentFolder(path);
     const newPath =
       parent +
@@ -655,19 +662,25 @@ function createLibrary() {
           ? "\\"
           : "/") +
       trimmed;
-    if (newPath === path) return;
+    if (newPath === path) return null;
     try {
       await invokeRenameFile(path, newPath);
-      await invokeMigrateThumbnailCache(path, newPath);
-      collections = collections.map((c) =>
-        c.path === path ? { ...c, name: trimmed, path: newPath } : c,
-      );
-      if (activeCollectionPath === path) activeCollectionPath = newPath;
     } catch (err) {
       console.error("Failed to rename collection folder:", err);
-      return;
+      return null;
     }
+    try {
+      await invokeMigrateThumbnailCache(path, newPath);
+    } catch (err) {
+      // Thumbnail cache migration is best-effort; the folder is already renamed.
+      console.error("Failed to migrate collection thumbnails:", err);
+    }
+    collections = collections.map((c) =>
+      c.path === path ? { ...c, name: trimmed, path: newPath } : c,
+    );
+    if (activeCollectionPath === path) activeCollectionPath = newPath;
     saveCollections(collections);
+    return newPath;
   }
 
   function openCollection(path: string) {
@@ -695,6 +708,70 @@ function createLibrary() {
       collections = valid;
       saveCollections(collections);
     }
+  }
+
+  function remapRecentFiles(remap: (path: string) => string): RecentFileItem[] {
+    const seen = new Set<string>();
+    const next: RecentFileItem[] = [];
+    for (const item of recentFiles) {
+      const path = remap(item.path);
+      const key = path.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      next.push({ ...item, path });
+    }
+    return next;
+  }
+
+  function remapFavorites(remap: (path: string) => string): FavoriteItem[] {
+    const seen = new Set<string>();
+    const next: FavoriteItem[] = [];
+    for (const item of favorites) {
+      const path = remap(item.path);
+      const key = path.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      next.push({ ...item, path });
+    }
+    return next;
+  }
+
+  function remapCollections(remap: (path: string) => string) {
+    collections = collections.map((collection) => ({
+      ...collection,
+      path: remap(collection.path),
+      thumbnailPath: collection.thumbnailPath
+        ? remap(collection.thumbnailPath)
+        : collection.thumbnailPath,
+    }));
+    if (activeCollectionPath) {
+      activeCollectionPath = remap(activeCollectionPath);
+    }
+  }
+
+  function persistLibraryPaths() {
+    saveRecentFiles(recentFiles, recentFilesLimit);
+    saveFavorites(favorites);
+    saveCollections(collections);
+  }
+
+  function migrateFilePath(oldPath: string, newPath: string) {
+    if (!oldPath || !newPath || oldPath === newPath) return;
+    const remap = (path: string) => (samePath(path, oldPath) ? newPath : path);
+    recentFiles = remapRecentFiles(remap);
+    favorites = remapFavorites(remap);
+    remapCollections(remap);
+    persistLibraryPaths();
+  }
+
+  function migrateFolderPath(oldFolder: string, newFolder: string) {
+    if (!oldFolder || !newFolder || oldFolder === newFolder) return;
+    const remap = (path: string) =>
+      replacePathPrefix(path, oldFolder, newFolder) ?? path;
+    recentFiles = remapRecentFiles(remap);
+    favorites = remapFavorites(remap);
+    remapCollections(remap);
+    persistLibraryPaths();
   }
 
   function getFavoritePaths(): string[] {
@@ -891,6 +968,8 @@ function createLibrary() {
     createCustomCollection,
     removeCollection,
     renameCollection,
+    migrateFilePath,
+    migrateFolderPath,
     get activeCollectionPath() {
       return activeCollectionPath;
     },

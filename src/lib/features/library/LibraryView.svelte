@@ -10,6 +10,7 @@
     getFileExt,
     getFileName,
     getParentFolder,
+    joinPath,
     typeRank,
   } from "$lib/services/files";
   import { cubicInOut } from "svelte/easing";
@@ -42,12 +43,19 @@
     currentIndex,
     onSelect,
     onClose,
+    onFileMoved,
+    onFolderMoved,
     selectMode = false,
   }: {
     fileList: string[];
     currentIndex: number;
     onSelect: (path: string) => void;
     onClose: () => void;
+    onFileMoved?: (oldPath: string, newPath: string) => void | Promise<void>;
+    onFolderMoved?: (
+      oldFolderPath: string,
+      newFolderPath: string,
+    ) => void | Promise<void>;
     selectMode?: boolean;
   } = $props();
 
@@ -841,12 +849,14 @@
     renameOriginal = currentName;
   }
 
-  function confirmRename() {
+  async function confirmRename() {
     if (!renamingPath) return;
-    if (renameValue !== renameOriginal) {
-      library.renameCollection(renamingPath, renameValue);
-    }
+    const path = renamingPath;
+    const nextName = renameValue;
     renamingPath = null;
+    if (nextName === renameOriginal) return;
+    const newPath = await library.renameCollection(path, nextName);
+    if (newPath) await onFolderMoved?.(path, newPath);
   }
 
   function cancelRename() {
@@ -897,8 +907,10 @@
       const destDir = await open({ directory: true });
       if (!destDir) return;
       const fileName = getFileName(path);
-      const destPath = `${destDir}\\${fileName}`;
+      const destPath = joinPath(destDir as string, fileName);
       await invokeRenameFile(path, destPath);
+      await onFileMoved?.(path, destPath);
+      library.triggerRescan();
       showToast({ message: "File moved", color: "blue" });
     } catch {
       showToast({ message: "Failed to move file", color: "red" });

@@ -33,6 +33,7 @@ import {
   loadTextCustomColors,
   saveTextCustomColors,
 } from "$lib/services/storage";
+import { replacePathPrefix, samePath } from "$lib/services/files";
 import { showToast } from "$lib/components/toast.svelte";
 
 export interface DrawPoint {
@@ -142,6 +143,7 @@ function createMarkupStore() {
   let sessionStrokes = new Map<string, MarkupStroke[]>();
   const sessionStrokesOrder: string[] = [];
   const SESSION_STROKES_MAX = 100;
+  let sessionHasStrokes = $state(false);
   let displayWidth = $state(0);
   let displayHeight = $state(0);
 
@@ -737,10 +739,21 @@ function createMarkupStore() {
     currentStroke = null;
     selectedIndex = null;
     selectedIndices = [];
-    if (currentPage > 0) {
-      const key = sessionKey(filePath, currentPage);
-      sessionStrokes.delete(key);
+    if (filePath) {
+      const prefix = `${filePath}#page=`;
+      for (const key of [...sessionStrokes.keys()]) {
+        if (samePath(key, filePath) || key.startsWith(prefix)) {
+          sessionStrokes.delete(key);
+        }
+      }
+      for (let i = sessionStrokesOrder.length - 1; i >= 0; i--) {
+        const key = sessionStrokesOrder[i];
+        if (samePath(key, filePath) || key.startsWith(prefix)) {
+          sessionStrokesOrder.splice(i, 1);
+        }
+      }
     }
+    refreshSessionHasStrokes();
   }
 
   function distToSegment(
@@ -1154,6 +1167,19 @@ function createMarkupStore() {
     return page > 0 ? `${path}#page=${page}` : path;
   }
 
+  function refreshSessionHasStrokes() {
+    if (!filePath) {
+      sessionHasStrokes = false;
+      return;
+    }
+    const prefix = `${filePath}#page=`;
+    const currentKey = sessionKey(filePath, currentPage);
+    sessionHasStrokes = [...sessionStrokes.entries()].some(
+      ([key, saved]) =>
+        key !== currentKey && key.startsWith(prefix) && saved.length > 0,
+    );
+  }
+
   function saveToSession() {
     if (!filePath) return;
     const key = sessionKey(filePath, currentPage);
@@ -1165,6 +1191,53 @@ function createMarkupStore() {
       const oldest = sessionStrokesOrder.shift();
       if (oldest !== undefined) sessionStrokes.delete(oldest);
     }
+    refreshSessionHasStrokes();
+  }
+
+  function moveSessionKey(oldKey: string, newKey: string) {
+    const saved = sessionStrokes.get(oldKey);
+    if (!saved) return;
+    sessionStrokes.delete(oldKey);
+    sessionStrokes.set(newKey, saved);
+    const oldIndex = sessionStrokesOrder.indexOf(oldKey);
+    if (oldIndex !== -1) sessionStrokesOrder.splice(oldIndex, 1);
+    const newIndex = sessionStrokesOrder.indexOf(newKey);
+    if (newIndex !== -1) sessionStrokesOrder.splice(newIndex, 1);
+    sessionStrokesOrder.push(newKey);
+  }
+
+  function remapSessionKey(
+    key: string,
+    oldPath: string,
+    newPath: string,
+  ): string | null {
+    const marker = key.indexOf("#page=");
+    const pathPart = marker === -1 ? key : key.slice(0, marker);
+    const suffix = marker === -1 ? "" : key.slice(marker);
+    const mapped = replacePathPrefix(pathPart, oldPath, newPath);
+    return mapped ? `${mapped}${suffix}` : null;
+  }
+
+  function migratePath(oldPath: string, newPath: string) {
+    if (!oldPath || !newPath || oldPath === newPath) return;
+    for (const key of [...sessionStrokes.keys()]) {
+      const next = remapSessionKey(key, oldPath, newPath);
+      if (next) moveSessionKey(key, next);
+    }
+    const nextFile = replacePathPrefix(filePath, oldPath, newPath);
+    if (nextFile) filePath = nextFile;
+    refreshSessionHasStrokes();
+  }
+
+  function migrateFolderPath(oldFolder: string, newFolder: string) {
+    if (!oldFolder || !newFolder || oldFolder === newFolder) return;
+    for (const key of [...sessionStrokes.keys()]) {
+      const next = remapSessionKey(key, oldFolder, newFolder);
+      if (next) moveSessionKey(key, next);
+    }
+    const nextFile = replacePathPrefix(filePath, oldFolder, newFolder);
+    if (nextFile) filePath = nextFile;
+    refreshSessionHasStrokes();
   }
 
   function switchFile(newPath: string) {
@@ -1176,6 +1249,7 @@ function createMarkupStore() {
     strokes = saved ? [...saved] : [];
     selectedIndex = null;
     selectedIndices = [];
+    refreshSessionHasStrokes();
   }
 
   function initPages(
@@ -1198,6 +1272,7 @@ function createMarkupStore() {
     }
     selectedIndex = null;
     selectedIndices = [];
+    refreshSessionHasStrokes();
   }
 
   function updatePageDimensions(dims: { width: number; height: number }[]) {
@@ -1217,6 +1292,7 @@ function createMarkupStore() {
     strokes = saved ? [...saved] : [];
     selectedIndex = null;
     selectedIndices = [];
+    refreshSessionHasStrokes();
   }
 
   function collectAllPageStrokes(): {
@@ -1290,6 +1366,7 @@ function createMarkupStore() {
     pageDimensions = new Map();
     sessionStrokes.clear();
     sessionStrokesOrder.length = 0;
+    sessionHasStrokes = false;
   }
 
   return {
@@ -1470,13 +1547,15 @@ function createMarkupStore() {
       return pageMax;
     },
     get hasUnapplied() {
-      return strokes.length > 0;
+      return strokes.length > 0 || sessionHasStrokes;
     },
     toggleDraw,
     initPages,
     switchPage,
     collectAllPageStrokes,
     updatePageDimensions,
+    migratePath,
+    migrateFolderPath,
     setDrawColor,
     setCustomColor,
     setDrawThickness,

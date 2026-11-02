@@ -41,9 +41,14 @@
     loadAudioLayoutMode,
     loadPlaybackSpeed,
     savePlaybackSpeed,
+    migrateFilePathStorage,
+    migrateFolderPathStorage,
   } from "$lib/services/storage";
   import { createFfmpegHelpers } from "$lib/features/media/ffmpeg";
-  import { invokeOpenDirectory } from "$lib/features/media/api";
+  import {
+    invokeOpenDirectory,
+    invokeCleanupTempFolder,
+  } from "$lib/features/media/api";
   import {
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -55,6 +60,8 @@
     getParentFolder,
     getFileExt,
     clearFolderCache,
+    replacePathPrefix,
+    samePath,
   } from "$lib/services/files";
   import { viewer } from "$lib/features/viewer/viewer.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
@@ -103,6 +110,11 @@
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";
+  import { fxEngine } from "$lib/features/effects/effects-engine";
+  import {
+    migrateFilePath as dbMigrateFilePath,
+    migrateFolderPaths as dbMigrateFolderPaths,
+  } from "$lib/services/database";
   import {
     buildTimelineProps,
     buildAudioMarkerProps,
@@ -1074,7 +1086,7 @@
     closeEditMenu,
     closeMarkupMenu,
     closeEffectsMenu,
-    markupMenuHasEdits: markup.strokes.length > 0,
+    markupMenuHasEdits: markup.hasUnapplied,
     openConvertedFile,
     showValue,
     muted,
@@ -1101,6 +1113,70 @@
     onEditorDeleteSegment,
     invokeOpenDirectory,
   });
+
+  async function migrateFilePathState(oldPath: string, newPath: string) {
+    if (!oldPath || !newPath || oldPath === newPath) return;
+    try {
+      await dbMigrateFilePath(oldPath, newPath);
+    } catch (e) {
+      console.error("Failed to migrate file metadata:", e);
+    }
+    library.migrateFilePath(oldPath, newPath);
+    editing.migratePath(oldPath, newPath);
+    markup.migratePath(oldPath, newPath);
+    migrateFilePathStorage(oldPath, newPath);
+    clearFolderCache(getParentFolder(oldPath));
+    clearFolderCache(getParentFolder(newPath));
+    if (samePath(filePath, oldPath)) {
+      filePath = newPath;
+      await loadFile(newPath);
+    }
+  }
+
+  async function migrateFolderPathState(oldFolder: string, newFolder: string) {
+    if (!oldFolder || !newFolder || oldFolder === newFolder) return;
+    try {
+      await dbMigrateFolderPaths(oldFolder, newFolder);
+    } catch (e) {
+      console.error("Failed to migrate folder metadata:", e);
+    }
+    library.migrateFolderPath(oldFolder, newFolder);
+    editing.migrateFolderPath(oldFolder, newFolder);
+    markup.migrateFolderPath(oldFolder, newFolder);
+    migrateFolderPathStorage(oldFolder, newFolder);
+    clearFolderCache(oldFolder);
+    clearFolderCache(newFolder);
+    const nextPath = replacePathPrefix(filePath, oldFolder, newFolder);
+    if (nextPath) {
+      filePath = nextPath;
+      await loadFile(nextPath);
+    }
+  }
+
+  function hasOpenEdits(): boolean {
+    return (
+      editing.getHasEdits() ||
+      editing.getCropBounds() !== null ||
+      markup.hasUnapplied
+    );
+  }
+
+  async function cleanupBeforeClose() {
+    saveCurrentPosition();
+    backgroundAudio.stop();
+    slideshow.stop();
+    sleepTimer.clear();
+    pdf.cleanup();
+    editing.cleanup();
+    markup.cleanup();
+    fxEngine.destroy();
+    eqEngine.destroy();
+    try {
+      await invokeCleanupTempFolder();
+    } catch (e) {
+      console.error("Failed to clean temp files on close:", e);
+    }
+  }
 
   setupInit({
     volume: { get: () => volume, set: (v) => (volume = v) },
@@ -1135,6 +1211,8 @@
     saveResumePosition: saveCurrentPosition,
     hasPlayback,
     pausePlayback,
+    hasOpenEdits,
+    cleanupBeforeClose,
     handleKeydown,
     handleKeyup,
     handleGlobalMouseDown,
@@ -1370,15 +1448,13 @@
   showInExplorer={ctxShowInExplorerFn}
   loadMediaProperties={runLoadMediaProperties}
   onRenamed={async (newPath: string) => {
-    clearFolderCache(getParentFolder(newPath));
-    await loadFile(newPath);
+    await migrateFilePathState(filePath, newPath);
   }}
   onFolderRenamed={async (newFolderPath: string) => {
-    clearFolderCache(getParentFolder(newFolderPath));
-    const sep = newFolderPath.includes("\\") ? "\\" : "/";
-    const newFilePath = `${newFolderPath}${sep}${fileName}`;
-    await loadFile(newFilePath);
+    await migrateFolderPathState(getParentFolder(filePath), newFolderPath);
   }}
+  onFileMoved={migrateFilePathState}
+  onFolderMoved={migrateFolderPathState}
   onSelect={navigateToIndex}
   {loadFile}
   onCloseClipDeleteConfirm={() => {

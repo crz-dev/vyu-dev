@@ -1,10 +1,115 @@
 // PDF annotations — apply markup strokes as native PDF annotation objects
 use std::path::PathBuf;
 
-use lopdf::{dictionary, Dictionary, Document, Object};
+use lopdf::{dictionary, Dictionary, Document, Object, ObjectId};
 
 use crate::types::{ApplyMarkupRequest, MarkupStrokeData};
 use crate::util::hash_path_xxh3;
+
+#[derive(Clone, Copy)]
+struct PageGeometry {
+    x0: f64,
+    y0: f64,
+    width: f64,
+    height: f64,
+    rotation: i32,
+}
+
+fn object_number(object: &Object) -> Option<f64> {
+    match object {
+        Object::Integer(value) => Some(*value as f64),
+        Object::Real(value) => Some(*value as f64),
+        _ => None,
+    }
+}
+
+fn inherited_page_entry(doc: &Document, page_id: ObjectId, key: &[u8]) -> Option<Object> {
+    let mut current = page_id;
+    for _ in 0..32 {
+        let dict = doc.get_dictionary(current).ok()?;
+        if let Ok(value) = dict.get(key) {
+            return Some(value.clone());
+        }
+        match dict.get(b"Parent") {
+            Ok(Object::Reference(parent)) => current = *parent,
+            _ => return None,
+        }
+    }
+    None
+}
+
+fn page_box(doc: &Document, object: &Object) -> Option<[f64; 4]> {
+    let object = match object {
+        Object::Reference(id) => doc.get_object(*id).ok()?,
+        other => other,
+    };
+    let Object::Array(values) = object else {
+        return None;
+    };
+    if values.len() < 4 {
+        return None;
+    }
+    Some([
+        object_number(&values[0])?,
+        object_number(&values[1])?,
+        object_number(&values[2])?,
+        object_number(&values[3])?,
+    ])
+}
+
+fn page_geometry(
+    doc: &Document,
+    page_id: ObjectId,
+    fallback_width: f64,
+    fallback_height: f64,
+) -> PageGeometry {
+    let rotation = inherited_page_entry(doc, page_id, b"Rotate")
+        .and_then(|value| match value {
+            Object::Integer(value) => Some(value as i32),
+            Object::Real(value) => Some(value.round() as i32),
+            _ => None,
+        })
+        .map(|value| ((value % 360) + 360) % 360)
+        .unwrap_or(0);
+
+    let box_values = inherited_page_entry(doc, page_id, b"CropBox")
+        .and_then(|value| page_box(doc, &value))
+        .or_else(|| {
+            inherited_page_entry(doc, page_id, b"MediaBox")
+                .and_then(|value| page_box(doc, &value))
+        });
+
+    let [x0, y0, x1, y1] = box_values.unwrap_or_else(|| {
+        if rotation == 90 || rotation == 270 {
+            [0.0, 0.0, fallback_height, fallback_width]
+        } else {
+            [0.0, 0.0, fallback_width, fallback_height]
+        }
+    });
+    let left = x0.min(x1);
+    let bottom = y0.min(y1);
+    let width = (x1 - x0).abs().max(1.0);
+    let height = (y1 - y0).abs().max(1.0);
+
+    PageGeometry {
+        x0: left,
+        y0: bottom,
+        width,
+        height,
+        rotation,
+    }
+}
+
+/// Convert normalized display coordinates (top-left origin) to PDF user space.
+fn norm_to_pdf(geo: PageGeometry, nx: f64, ny: f64) -> (f64, f64) {
+    let (ux, uy) = match geo.rotation {
+        90 => (ny, nx),
+        180 => (1.0 - nx, ny),
+        270 => (1.0 - ny, 1.0 - nx),
+        _ => (nx, 1.0 - ny),
+    };
+    (geo.x0 + ux * geo.width, geo.y0 + uy * geo.height)
+}
 
 #[tauri::command]
 pub async fn apply_markup_to_pdf(request: ApplyMarkupRequest) -> Result<(), String> {
@@ -54,11 +159,12 @@ pub async fn apply_markup_to_pdf(request: ApplyMarkupRequest) -> Result<(), Stri
                     continue;
                 }
             };
+            let geo = page_geometry(&doc, page_id, pw, ph);
 
             let mut annot_ids = Vec::new();
 
             for stroke in &page_data.strokes {
-                match stroke_to_annot(stroke, pw, ph) {
+                match stroke_to_annot(stroke, geo) {
                     Ok(mut annot_dict) => {
                         annot_dict.set("P", Object::Reference(page_id));
                         let annot_id = doc.add_object(annot_dict);
@@ -128,29 +234,37 @@ pub async fn apply_markup_to_pdf(request: ApplyMarkupRequest) -> Result<(), Stri
 
 fn stroke_to_annot(
     stroke: &MarkupStrokeData,
-    pw: f64,
-    ph: f64,
+    geo: PageGeometry,
 ) -> Result<Dictionary, String> {
     match stroke {
-        MarkupStrokeData::Freehand(s) => freehand_to_ink(s, pw, ph),
-        MarkupStrokeData::Highlight(s) => highlight_to_annot(s, pw, ph),
-        MarkupStrokeData::Shape(s) => shape_to_annot(s, pw, ph),
-        MarkupStrokeData::Line(s) => line_to_annot(s, pw, ph),
-        MarkupStrokeData::Text(s) => text_to_freetext(s, pw, ph),
+        MarkupStrokeData::Freehand(s) => freehand_to_ink(s, geo),
+        MarkupStrokeData::Highlight(s) => highlight_to_annot(s, geo),
+        MarkupStrokeData::Shape(s) => shape_to_annot(s, geo),
+        MarkupStrokeData::Line(s) => line_to_annot(s, geo),
+        MarkupStrokeData::Text(s) => text_to_freetext(s, geo),
     }
 }
 
 // ── Coordinate helpers ──
 
-/// Convert normalized (0-1, top-left origin) to PDF point (bottom-left origin)
-fn norm_to_pdf(nx: f64, ny: f64, pw: f64, ph: f64) -> (f64, f64) {
-    (nx * pw, (1.0 - ny) * ph)
-}
-
-/// Compute annotation Rect [llx, lly, urx, ury] from bounding box
-fn bbox_to_rect(min_x: f64, min_y: f64, max_x: f64, max_y: f64, pw: f64, ph: f64) -> Vec<Object> {
-    let (llx, lly) = norm_to_pdf(min_x, max_y, pw, ph);
-    let (urx, ury) = norm_to_pdf(max_x, min_y, pw, ph);
+/// Compute annotation Rect [llx, lly, urx, ury] from a normalized bounding box.
+fn bbox_to_rect(
+    geo: PageGeometry,
+    min_x: f64,
+    min_y: f64,
+    max_x: f64,
+    max_y: f64,
+) -> Vec<Object> {
+    let corners = [
+        norm_to_pdf(geo, min_x, min_y),
+        norm_to_pdf(geo, max_x, min_y),
+        norm_to_pdf(geo, min_x, max_y),
+        norm_to_pdf(geo, max_x, max_y),
+    ];
+    let llx = corners.iter().map(|p| p.0).fold(f64::MAX, f64::min);
+    let urx = corners.iter().map(|p| p.0).fold(f64::MIN, f64::max);
+    let lly = corners.iter().map(|p| p.1).fold(f64::MAX, f64::min);
+    let ury = corners.iter().map(|p| p.1).fold(f64::MIN, f64::max);
     vec![
         Object::Real(llx as f32),
         Object::Real(lly as f32),
@@ -194,8 +308,7 @@ fn map_font(family: &str) -> &str {
 
 fn freehand_to_ink(
     s: &crate::types::FreehandStrokeData,
-    pw: f64,
-    ph: f64,
+    geo: PageGeometry,
 ) -> Result<Dictionary, String> {
     if s.points.is_empty() {
         return Err("Freehand stroke has no points".into());
@@ -218,7 +331,7 @@ fn freehand_to_ink(
     // Build InkList: alternating x,y pairs in PDF coords
     let mut ink_coords = Vec::new();
     for p in &s.points {
-        let (px, py) = norm_to_pdf(p.x, p.y, pw, ph);
+        let (px, py) = norm_to_pdf(geo, p.x, p.y);
         ink_coords.push(Object::Real(px as f32));
         ink_coords.push(Object::Real(py as f32));
     }
@@ -226,7 +339,7 @@ fn freehand_to_ink(
     Ok(dictionary! {
         "Type" => "Annot",
         "Subtype" => "Ink",
-        "Rect" => bbox_to_rect(min_x, min_y, max_x, max_y, pw, ph),
+        "Rect" => bbox_to_rect(geo, min_x, min_y, max_x, max_y),
         "InkList" => vec![Object::Array(ink_coords)],
         "C" => color,
         "Border" => vec![Object::Integer(0), Object::Integer(0), Object::Integer(s.thickness.max(1.0) as i64)],
@@ -236,10 +349,26 @@ fn freehand_to_ink(
 
 // ── Highlight → Highlight annotation ──
 
+fn quad_points_from_rect(rect: &[Object]) -> Vec<Object> {
+    let llx = object_number(&rect[0]).unwrap_or(0.0) as f32;
+    let lly = object_number(&rect[1]).unwrap_or(0.0) as f32;
+    let urx = object_number(&rect[2]).unwrap_or(0.0) as f32;
+    let ury = object_number(&rect[3]).unwrap_or(0.0) as f32;
+    vec![
+        Object::Real(llx),
+        Object::Real(ury),
+        Object::Real(urx),
+        Object::Real(ury),
+        Object::Real(llx),
+        Object::Real(lly),
+        Object::Real(urx),
+        Object::Real(lly),
+    ]
+}
+
 fn highlight_to_annot(
     s: &crate::types::HighlightStrokeData,
-    pw: f64,
-    ph: f64,
+    geo: PageGeometry,
 ) -> Result<Dictionary, String> {
     let color = color_obj(&s.color)?;
 
@@ -249,26 +378,14 @@ fn highlight_to_annot(
         let x2 = s.x2.unwrap_or(0.0);
         let y2 = s.y2.unwrap_or(0.0);
 
-        let (llx, lly) = norm_to_pdf(x1.min(x2), y1.max(y2), pw, ph);
-        let (urx, ury) = norm_to_pdf(x1.max(x2), y1.min(y2), pw, ph);
-
-        // QuadPoints: [tl_x tl_y tr_x tr_y bl_x bl_y br_x br_y]
-        // where tl = top-left, tr = top-right, bl = bottom-left, br = bottom-right
-        let (tl_x, tl_y) = norm_to_pdf(x1.min(x2), y1.min(y2), pw, ph);
-        let (tr_x, tr_y) = norm_to_pdf(x1.max(x2), y1.min(y2), pw, ph);
-        let (bl_x, bl_y) = norm_to_pdf(x1.min(x2), y1.max(y2), pw, ph);
-        let (br_x, br_y) = norm_to_pdf(x1.max(x2), y1.max(y2), pw, ph);
-
-        let rect = vec![
-            Object::Real(llx as f32), Object::Real(lly as f32),
-            Object::Real(urx as f32), Object::Real(ury as f32),
-        ];
-        let quads = vec![
-            Object::Real(tl_x as f32), Object::Real(tl_y as f32),
-            Object::Real(tr_x as f32), Object::Real(tr_y as f32),
-            Object::Real(bl_x as f32), Object::Real(bl_y as f32),
-            Object::Real(br_x as f32), Object::Real(br_y as f32),
-        ];
+        let rect = bbox_to_rect(
+            geo,
+            x1.min(x2),
+            y1.min(y2),
+            x1.max(x2),
+            y1.max(y2),
+        );
+        let quads = quad_points_from_rect(&rect);
 
         Ok(dictionary! {
             "Type" => "Annot",
@@ -279,7 +396,6 @@ fn highlight_to_annot(
             "CA" => Object::Real(s.opacity as f32),
         })
     } else {
-        // Free-mode highlight — use bounding box as single quad
         if s.points.is_empty() {
             return Err("Free highlight has no points".into());
         }
@@ -295,24 +411,8 @@ fn highlight_to_annot(
             if p.y > max_y { max_y = p.y; }
         }
 
-        let (llx, lly) = norm_to_pdf(min_x, max_y, pw, ph);
-        let (urx, ury) = norm_to_pdf(max_x, min_y, pw, ph);
-
-        let (tl_x, tl_y) = norm_to_pdf(min_x, min_y, pw, ph);
-        let (tr_x, tr_y) = norm_to_pdf(max_x, min_y, pw, ph);
-        let (bl_x, bl_y) = norm_to_pdf(min_x, max_y, pw, ph);
-        let (br_x, br_y) = norm_to_pdf(max_x, max_y, pw, ph);
-
-        let rect = vec![
-            Object::Real(llx as f32), Object::Real(lly as f32),
-            Object::Real(urx as f32), Object::Real(ury as f32),
-        ];
-        let quads = vec![
-            Object::Real(tl_x as f32), Object::Real(tl_y as f32),
-            Object::Real(tr_x as f32), Object::Real(tr_y as f32),
-            Object::Real(bl_x as f32), Object::Real(bl_y as f32),
-            Object::Real(br_x as f32), Object::Real(br_y as f32),
-        ];
+        let rect = bbox_to_rect(geo, min_x, min_y, max_x, max_y);
+        let quads = quad_points_from_rect(&rect);
 
         Ok(dictionary! {
             "Type" => "Annot",
@@ -329,19 +429,18 @@ fn highlight_to_annot(
 
 fn shape_to_annot(
     s: &crate::types::ShapeStrokeData,
-    pw: f64,
-    ph: f64,
+    geo: PageGeometry,
 ) -> Result<Dictionary, String> {
     let color = color_obj(&s.color)?;
     let half_w = s.width / 2.0;
     let half_h = s.height / 2.0;
-    let (llx, lly) = norm_to_pdf(s.cx - half_w, s.cy + half_h, pw, ph);
-    let (urx, ury) = norm_to_pdf(s.cx + half_w, s.cy - half_h, pw, ph);
-
-    let rect = vec![
-        Object::Real(llx as f32), Object::Real(lly as f32),
-        Object::Real(urx as f32), Object::Real(ury as f32),
-    ];
+    let rect = bbox_to_rect(
+        geo,
+        s.cx - half_w,
+        s.cy - half_h,
+        s.cx + half_w,
+        s.cy + half_h,
+    );
 
     let border = vec![
         Object::Integer(0),
@@ -379,10 +478,10 @@ fn shape_to_annot(
             Ok(dict)
         }
         "triangle" => {
-            // Triangle vertices in PDF coords (bottom-left origin)
-            let top = norm_to_pdf(s.cx, s.cy - half_h, pw, ph);        // top vertex
-            let right = norm_to_pdf(s.cx + half_w, s.cy + half_h, pw, ph); // right vertex
-            let left = norm_to_pdf(s.cx - half_w, s.cy + half_h, pw, ph);  // left vertex
+            // Triangle vertices in PDF user space
+            let top = norm_to_pdf(geo, s.cx, s.cy - half_h);
+            let right = norm_to_pdf(geo, s.cx + half_w, s.cy + half_h);
+            let left = norm_to_pdf(geo, s.cx - half_w, s.cy + half_h);
 
             let mut dict = dictionary! {
                 "Type" => "Annot",
@@ -411,30 +510,25 @@ fn shape_to_annot(
 
 fn line_to_annot(
     s: &crate::types::LineStrokeData,
-    pw: f64,
-    ph: f64,
+    geo: PageGeometry,
 ) -> Result<Dictionary, String> {
     let color = color_obj(&s.color)?;
 
-    let (x1_pdf, y1_pdf) = norm_to_pdf(s.x1, s.y1, pw, ph);
-    let (x2_pdf, y2_pdf) = norm_to_pdf(s.x2, s.y2, pw, ph);
+    let (x1_pdf, y1_pdf) = norm_to_pdf(geo, s.x1, s.y1);
+    let (x2_pdf, y2_pdf) = norm_to_pdf(geo, s.x2, s.y2);
 
-    // Bounding box
-    let min_x = s.x1.min(s.x2);
-    let max_x = s.x1.max(s.x2);
-    let min_y = s.y1.min(s.y2);
-    let max_y = s.y1.max(s.y2);
-
-    let (llx, lly) = norm_to_pdf(min_x, max_y, pw, ph);
-    let (urx, ury) = norm_to_pdf(max_x, min_y, pw, ph);
+    let rect = bbox_to_rect(
+        geo,
+        s.x1.min(s.x2),
+        s.y1.min(s.y2),
+        s.x1.max(s.x2),
+        s.y1.max(s.y2),
+    );
 
     let mut dict = dictionary! {
         "Type" => "Annot",
         "Subtype" => "Line",
-        "Rect" => vec![
-            Object::Real(llx as f32), Object::Real(lly as f32),
-            Object::Real(urx as f32), Object::Real(ury as f32),
-        ],
+        "Rect" => rect,
         "L" => vec![
             Object::Real(x1_pdf as f32), Object::Real(y1_pdf as f32),
             Object::Real(x2_pdf as f32), Object::Real(y2_pdf as f32),
@@ -473,19 +567,24 @@ fn line_to_annot(
 
 fn text_to_freetext(
     s: &crate::types::TextStrokeData,
-    pw: f64,
-    ph: f64,
+    geo: PageGeometry,
 ) -> Result<Dictionary, String> {
     let color = color_obj(&s.color)?;
 
     // Estimate text box dimensions from font size (approximate)
-    let est_text_width = (s.text.len() as f64 * s.font_size * 0.55 + s.box_extra_width) / pw;
-    let est_text_height = (s.font_size * 1.4) / ph;
+    let est_text_width =
+        (s.text.len() as f64 * s.font_size * 0.55 + s.box_extra_width) / geo.width;
+    let est_text_height = (s.font_size * 1.4) / geo.height;
 
     let half_w = est_text_width / 2.0;
     let half_h = est_text_height / 2.0;
-    let (llx, lly) = norm_to_pdf(s.x - half_w, s.y + half_h, pw, ph);
-    let (urx, ury) = norm_to_pdf(s.x + half_w, s.y - half_h, pw, ph);
+    let rect = bbox_to_rect(
+        geo,
+        s.x - half_w,
+        s.y - half_h,
+        s.x + half_w,
+        s.y + half_h,
+    );
 
     let font_base = map_font(&s.font_family);
     let font_name = if s.bold {
@@ -504,10 +603,7 @@ fn text_to_freetext(
     let mut dict = dictionary! {
         "Type" => "Annot",
         "Subtype" => "FreeText",
-        "Rect" => vec![
-            Object::Real(llx as f32), Object::Real(lly as f32),
-            Object::Real(urx as f32), Object::Real(ury as f32),
-        ],
+        "Rect" => rect,
         "Contents" => Object::string_literal(s.text.as_str()),
         "C" => color,
         "DA" => Object::string_literal(da.as_str()),
@@ -525,4 +621,40 @@ fn text_to_freetext(
     }
 
     Ok(dict)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn geo(rotation: i32) -> PageGeometry {
+        PageGeometry {
+            x0: 10.0,
+            y0: 20.0,
+            width: 100.0,
+            height: 200.0,
+            rotation,
+        }
+    }
+
+    fn close(a: f64, b: f64) -> bool {
+        (a - b).abs() < 0.001
+    }
+
+    #[test]
+    fn maps_display_corners_for_each_rotation() {
+        let g0 = geo(0);
+        assert!(close(norm_to_pdf(g0, 0.0, 0.0).1, 220.0));
+        let g90 = geo(90);
+        let (x, y) = norm_to_pdf(g90, 0.0, 0.0);
+        assert!(close(x, 10.0) && close(y, 20.0));
+        let (x, y) = norm_to_pdf(g90, 1.0, 0.0);
+        assert!(close(x, 10.0) && close(y, 220.0));
+        let g180 = geo(180);
+        let (x, y) = norm_to_pdf(g180, 0.0, 0.0);
+        assert!(close(x, 110.0) && close(y, 20.0));
+        let g270 = geo(270);
+        let (x, y) = norm_to_pdf(g270, 0.0, 0.0);
+        assert!(close(x, 110.0) && close(y, 220.0));
+    }
 }

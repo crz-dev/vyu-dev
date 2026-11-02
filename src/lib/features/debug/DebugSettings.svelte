@@ -2,10 +2,11 @@
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import { save } from "@tauri-apps/plugin-dialog";
-  import { writeTextFile } from "@tauri-apps/plugin-fs";
   import { showToast } from "$lib/components/toast.svelte";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
   import { copyTextToClipboard } from "$lib/services/clipboard";
+  import { stringToBase64 } from "$lib/shared/base64";
+  import { invokeWriteFileAtomic } from "$lib/features/media/api";
   import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
@@ -113,7 +114,7 @@
     });
     if (!path) return;
     try {
-      await writeTextFile(path, diagnosticsJson(info));
+      await invokeWriteFileAtomic(path, stringToBase64(diagnosticsJson(info)));
       showToast({ message: "Diagnostics exported", color: "green" });
     } catch {
       showToast({ message: "Failed to export diagnostics", color: "red" });

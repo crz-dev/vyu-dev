@@ -503,7 +503,7 @@
   }
 
   const canUndo = $derived(markup.strokes.length > 0);
-  const hasEdits = $derived(markup.strokes.length > 0);
+  const hasEdits = $derived(markup.hasUnapplied);
 </script>
 
 {#if visible}

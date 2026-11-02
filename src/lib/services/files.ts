@@ -183,6 +183,31 @@ export function getFileExt(filePath: string): string {
   return lastDot > 0 ? name.substring(lastDot + 1).toLowerCase() : "";
 }
 
+export function samePath(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
+/// Replace a file or folder prefix while preserving the separator and suffix.
+/// Returns null when value is not inside the prefix.
+export function replacePathPrefix(
+  value: string,
+  oldPrefix: string,
+  newPrefix: string,
+): string | null {
+  const trimmedOld = oldPrefix.replace(/[\\/]+$/, "");
+  const trimmedNew = newPrefix.replace(/[\\/]+$/, "");
+  if (!trimmedOld || !trimmedNew) return null;
+  if (value.length < trimmedOld.length) return null;
+  if (
+    value.slice(0, trimmedOld.length).toLowerCase() !== trimmedOld.toLowerCase()
+  ) {
+    return null;
+  }
+  const suffix = value.slice(trimmedOld.length);
+  if (suffix && suffix[0] !== "\\" && suffix[0] !== "/") return null;
+  return `${trimmedNew}${suffix}`;
+}
+
 export function getFileName(filePath: string): string {
   const lastSep = Math.max(
     filePath.lastIndexOf("\\"),

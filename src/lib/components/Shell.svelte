@@ -98,6 +98,8 @@
     navigate,
     onRenamed,
     onFolderRenamed,
+    onFileMoved,
+    onFolderMoved,
     startDrag,
     showFilenameTooltip,
     hideFilenameTooltip,
@@ -284,6 +286,11 @@
     onSortChange: (mode: SortMode, desc: boolean) => void;
     onRenamed: (newPath: string) => Promise<void>;
     onFolderRenamed?: (newFolderPath: string) => void;
+    onFileMoved?: (oldPath: string, newPath: string) => void | Promise<void>;
+    onFolderMoved?: (
+      oldFolderPath: string,
+      newFolderPath: string,
+    ) => void | Promise<void>;
     navigate: (dir: number) => void;
     startDrag: (e: MouseEvent) => void;
     showFilenameTooltip: (e: MouseEvent) => void;
@@ -715,6 +722,8 @@
             {fileList}
             {currentIndex}
             selectMode={library.selectedCount > 0}
+            {onFileMoved}
+            {onFolderMoved}
             onSelect={async (path) => {
               const idx = fileList.indexOf(path);
               if (idx !== -1) {

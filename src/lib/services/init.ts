@@ -7,7 +7,6 @@ import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import { invokeCheckForUpdates } from "$lib/features/system/api";
 import { showToast } from "$lib/components/toast.svelte";
-import { editing } from "$lib/features/editing/editing.svelte";
 import {
   cleanupStaleStorageEntries,
   loadVolume,
@@ -45,6 +44,8 @@ export interface InitState {
   saveResumePosition: () => void;
   hasPlayback: () => boolean;
   pausePlayback: () => void;
+  hasOpenEdits: () => boolean;
+  cleanupBeforeClose: () => void | Promise<void>;
   handleKeydown: (e: KeyboardEvent) => void;
   handleKeyup: (e: KeyboardEvent) => void;
   handleGlobalMouseDown: (e: MouseEvent) => void;
@@ -188,17 +189,26 @@ export function setupInit(s: InitState) {
     window.addEventListener("paste", handlePaste);
 
     let unlistenClose: () => void = () => {};
+    let closing = false;
     getCurrentWindow()
       .onCloseRequested(async (event) => {
-        if (!systemPrefs.confirmCloseWhileEditing || !editing.filePath) {
-          return;
-        }
+        if (closing) return;
         event.preventDefault();
-        const quit = await confirm("Edits are still open. Close Vyu?", {
-          title: "Close Vyu",
-          kind: "warning",
-        });
-        if (quit) await getCurrentWindow().destroy();
+        if (systemPrefs.confirmCloseWhileEditing && s.hasOpenEdits()) {
+          const quit = await confirm("Edits are still open. Close Vyu?", {
+            title: "Close Vyu",
+            kind: "warning",
+          });
+          if (!quit) return;
+        }
+        closing = true;
+        try {
+          await s.cleanupBeforeClose();
+          await getCurrentWindow().close();
+        } catch (e) {
+          closing = false;
+          console.error("Failed to close cleanly:", e);
+        }
       })
       .then((fn) => {
         unlistenClose = fn;

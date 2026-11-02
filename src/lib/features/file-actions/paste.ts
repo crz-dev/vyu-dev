@@ -1,11 +1,11 @@
 // Paste handler
-import { tempDir, join } from "@tauri-apps/api/path";
-import { writeFile, mkdir } from "@tauri-apps/plugin-fs";
 import { save } from "@tauri-apps/plugin-dialog";
 import {
   invokeGetClipboardFilePath,
   invokeCopyFile,
+  invokeWriteTempFile,
 } from "$lib/features/media/api";
+import { arrayBufferToBase64 } from "$lib/shared/base64";
 import { ALL_EXTS_SET } from "$lib/shared/constants";
 import { getFileExt } from "$lib/services/files";
 import { showToast } from "$lib/components/toast.svelte";
@@ -28,13 +28,11 @@ export function createPasteHandler(deps: PasteDeps) {
       if (file) {
         const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
         const arrayBuffer = await file.arrayBuffer();
-        const uint8 = new Uint8Array(arrayBuffer);
         try {
-          const tmp = await tempDir();
-          const vyuTemp = await join(tmp, "Vyu-temp");
-          await mkdir(vyuTemp, { recursive: true });
-          const dest = await join(vyuTemp, `vyu-paste-${Date.now()}.${ext}`);
-          await writeFile(dest, uint8);
+          const dest = await invokeWriteTempFile(
+            arrayBufferToBase64(arrayBuffer),
+            ext,
+          );
           await deps.loadFile(dest);
           showToast({
             message: "Image pasted from clipboard",

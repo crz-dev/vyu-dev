@@ -1,8 +1,51 @@
 // localStorage persistence
 import type { VideoMarker, ClipBoundary, CropBounds } from "$lib/shared/types";
 import type { LoopMode } from "$lib/shared/constants";
+import { replacePathPrefix } from "$lib/services/files";
 
 const MAX_STALE_ENTRIES = 500;
+const PER_FILE_PREFIXES = [
+  "vyu-ts-",
+  "vyu-clips-",
+  "vyu-resume-",
+  "vyu-eq-",
+  "vyu-cd-color-",
+] as const;
+
+export function migrateFilePathStorage(oldPath: string, newPath: string): void {
+  if (!oldPath || !newPath || oldPath === newPath) return;
+  for (const prefix of PER_FILE_PREFIXES) {
+    const oldKey = `${prefix}${oldPath}`;
+    const value = localStorage.getItem(oldKey);
+    if (value !== null) {
+      localStorage.setItem(`${prefix}${newPath}`, value);
+      localStorage.removeItem(oldKey);
+    }
+  }
+}
+
+export function migrateFolderPathStorage(
+  oldFolder: string,
+  newFolder: string,
+): void {
+  if (!oldFolder || !newFolder || oldFolder === newFolder) return;
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) keys.push(key);
+  }
+  for (const key of keys) {
+    const prefix = PER_FILE_PREFIXES.find((p) => key.startsWith(p));
+    if (!prefix) continue;
+    const path = key.slice(prefix.length);
+    const next = replacePathPrefix(path, oldFolder, newFolder);
+    if (!next) continue;
+    const value = localStorage.getItem(key);
+    if (value === null) continue;
+    localStorage.setItem(`${prefix}${next}`, value);
+    localStorage.removeItem(key);
+  }
+}
 
 export interface EqSettings {
   bands: number[];
