@@ -1,9 +1,11 @@
 // PDF rendering
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { setCached } from "$lib/services/thumbnailCache";
+import { getCached, setCached } from "$lib/services/thumbnailCache";
+import { invokeStoreThumbnail } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import { DOCUMENT_EXTS } from "$lib/shared/constants";
 import type {
+  PDFDocumentLoadingTask,
   PDFDocumentProxy,
   PDFPageProxy,
 } from "pdfjs-dist/types/src/display/api";
@@ -11,32 +13,44 @@ import type {
 // Standalone PDF page 1 thumbnail generator.
 // Used by library and thumbnail bar when the backend (FFmpeg) can't handle PDFs.
 const PDF_THUMB_CONCURRENT = 2;
-let pdfThumbInflight = 0;
+const PDF_THUMB_TIMEOUT_MS = 15_000;
+let pdfThumbActive = 0;
 let pdfThumbQueue: Array<() => void> = [];
+const pdfThumbRequests = new Map<string, Promise<string>>();
 
 async function acquirePdfSlot(): Promise<void> {
-  if (pdfThumbInflight < PDF_THUMB_CONCURRENT) {
-    pdfThumbInflight++;
+  if (pdfThumbActive < PDF_THUMB_CONCURRENT) {
+    pdfThumbActive++;
     return;
   }
+  // releasePdfSlot hands the slot directly to the next waiter, so the
+  // active count stays unchanged across the handoff.
   await new Promise<void>((resolve) => pdfThumbQueue.push(resolve));
-  pdfThumbInflight++;
 }
 
 function releasePdfSlot(): void {
-  pdfThumbInflight--;
   const next = pdfThumbQueue.shift();
   if (next) {
-    pdfThumbInflight++;
     next();
+    return;
   }
+  pdfThumbActive = Math.max(0, pdfThumbActive - 1);
 }
 
-export async function generatePdfThumbnail(
-  path: string,
-  size: number,
-): Promise<string> {
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("PDF thumbnail timed out")), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+async function renderPdfThumbnail(path: string, size: number): Promise<string> {
   await acquirePdfSlot();
+  let loadingTask: PDFDocumentLoadingTask | null = null;
+  let pdfDoc: PDFDocumentProxy | null = null;
   try {
     const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
     const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs");
@@ -44,14 +58,14 @@ export async function generatePdfThumbnail(
     pdfjsLib.GlobalWorkerOptions.workerSrc = ".";
 
     const url = convertFileSrc(path);
-    const loadingTask = pdfjsLib.getDocument({
+    loadingTask = pdfjsLib.getDocument({
       url,
       enableXfa: true,
       disableAutoFetch: false,
     });
-    const pdfDoc = await loadingTask.promise;
+    pdfDoc = await withTimeout(loadingTask.promise, PDF_THUMB_TIMEOUT_MS);
 
-    const page = await pdfDoc.getPage(1);
+    const page = await withTimeout(pdfDoc.getPage(1), PDF_THUMB_TIMEOUT_MS);
     const vp = page.getViewport({ scale: 1 });
     const scale = size / Math.max(vp.width, vp.height);
     const renderVp = page.getViewport({ scale });
@@ -62,15 +76,50 @@ export async function generatePdfThumbnail(
     const ctx = canvas.getContext("2d");
     if (!ctx) return "";
 
-    await page.render({ canvasContext: ctx, viewport: renderVp }).promise;
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-    pdfDoc.destroy();
-    return dataUrl;
+    await withTimeout(
+      page.render({ canvasContext: ctx, viewport: renderVp }).promise,
+      PDF_THUMB_TIMEOUT_MS,
+    );
+    return canvas.toDataURL("image/jpeg", 0.7);
   } catch {
     return "";
   } finally {
+    // Release the slot before cleanup so a slow destroy cannot block others.
     releasePdfSlot();
+    if (pdfDoc) {
+      void pdfDoc.destroy().catch(() => {});
+    } else if (loadingTask) {
+      void loadingTask.destroy().catch(() => {});
+    }
   }
+}
+
+export function generatePdfThumbnail(
+  path: string,
+  size: number,
+): Promise<string> {
+  const cached = getCached(path, size);
+  if (cached) return Promise.resolve(cached);
+
+  const key = `${path}\0${size}`;
+  const existing = pdfThumbRequests.get(key);
+  if (existing) return existing;
+
+  const request = renderPdfThumbnail(path, size)
+    .then((dataUrl) => {
+      if (dataUrl) {
+        setCached(path, size, dataUrl);
+        // Persist so later sessions can return it from the backend cache.
+        void invokeStoreThumbnail(path, size, dataUrl).catch(() => {});
+      }
+      return dataUrl;
+    })
+    .finally(() => {
+      pdfThumbRequests.delete(key);
+    });
+
+  pdfThumbRequests.set(key, request);
+  return request;
 }
 
 export function isPdfPath(path: string): boolean {

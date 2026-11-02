@@ -1,4 +1,5 @@
 // Library state
+import { untrack } from "svelte";
 import {
   invokeGetThumbnails,
   onThumbnailProgress,
@@ -345,9 +346,13 @@ function createLibrary() {
       return;
     }
 
+    // Snapshot the reactive cache without subscribing the calling effect to
+    // every thumbnail write (which would reset _fetchGen mid-generation).
+    const cachedPaths = untrack(() => new Set(Object.keys(cache)));
+
     for (let i = 0; i < fileList.length; i++) {
       const path = fileList[i];
-      if (!(path in cache)) {
+      if (!cachedPaths.has(path)) {
         pendingSet.add(path);
         pendingOrder.push(path);
       }

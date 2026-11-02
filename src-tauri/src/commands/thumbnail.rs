@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use base64::Engine as _;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use image::GenericImageView;
@@ -13,7 +15,7 @@ use tauri::Emitter;
 use tauri::Manager;
 
 use crate::constants::{
-    FFMPEG_THUMB_TIMEOUT, THUMB_JPEG_QUALITY, THUMB_SHORT_SIDE,
+    DOCUMENT_EXTS_RUST, FFMPEG_THUMB_TIMEOUT, THUMB_JPEG_QUALITY, THUMB_SHORT_SIDE,
 };
 use crate::types::{MediaKind, ThumbState};
 use crate::util::{canonicalize_path, format_data_url, hash_path_xxh3, run_ffmpeg};
@@ -278,6 +280,31 @@ fn complementary_thumb_size(size: u32) -> Option<u32> {
     }
 }
 
+fn source_mtime(path: &Path) -> u64 {
+    fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
+}
+
+// PDFs are rendered by PDF.js in the frontend. Serve a previously stored
+// render from the cache instead of asking the frontend to render it again.
+fn cached_document_thumbnail(
+    cache_dir: &Path,
+    path: &str,
+    size: u32,
+) -> Result<String, String> {
+    let mtime = source_mtime(Path::new(path));
+    let hash = hash_path_xxh3(path);
+    let thumb_path = cache_dir.join(format!("{hash}_{mtime}_{size}.jpg"));
+    match fs::read(&thumb_path) {
+        Ok(bytes) if !bytes.is_empty() => Ok(format_data_url(&bytes)),
+        _ => Ok(String::new()),
+    }
+}
+
 // Inner thumbnail logic shared by single and batch commands
 async fn thumbnail_for_path(
     _app: &tauri::AppHandle,
@@ -292,16 +319,16 @@ async fn thumbnail_for_path(
     if !kind.is_image && !kind.is_video && !kind.is_audio && !kind.is_document {
         return Ok(String::new());
     }
-    // PDFs are rendered by PDF.js in the frontend.
-    if kind.is_document {
-        return Ok(String::new());
-    }
 
     let use_image_crate = kind.is_image && !kind.is_ffmpeg_image && !kind.is_raw;
 
     // Canonicalize to ensure consistent cache keys across sessions (Windows path casing)
     let canonical = canonicalize_path(path)?;
     let path = canonical.to_string_lossy();
+
+    if kind.is_document {
+        return cached_document_thumbnail(cache_dir, &path, thumb_size);
+    }
 
     // In-flight dedup (keyed by hash + size)
     let hash = hash_path_xxh3(&path);
@@ -493,6 +520,54 @@ pub async fn get_thumbnails(
         }
     }
     Ok(results)
+}
+
+/// Persist a frontend-rendered PDF thumbnail in the shared thumbnail cache.
+#[tauri::command]
+pub async fn store_thumbnail(
+    app: tauri::AppHandle,
+    path: String,
+    size: u32,
+    data_url: String,
+) -> Result<(), String> {
+    const MAX_THUMB_BYTES: usize = 8 * 1024 * 1024;
+    if !(1..=2048).contains(&size) {
+        return Err("Invalid thumbnail size".into());
+    }
+
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    if !DOCUMENT_EXTS_RUST.contains(&ext.as_str()) {
+        return Err("Unsupported document type for stored thumbnail".into());
+    }
+
+    let payload = data_url
+        .strip_prefix("data:image/jpeg;base64,")
+        .ok_or("Expected a JPEG data URL")?;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(payload.as_bytes())
+        .map_err(|e| format!("Invalid thumbnail data: {e}"))?;
+    if bytes.is_empty() || bytes.len() > MAX_THUMB_BYTES {
+        return Err("Invalid thumbnail size".into());
+    }
+
+    let cache_dir = thumb_cache_dir(&app).to_path_buf();
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let canonical = canonicalize_path(&path)?;
+        let path = canonical.to_string_lossy();
+        let mtime = source_mtime(&canonical);
+        let hash = hash_path_xxh3(&path);
+        let cache_key = format!("{hash}_{mtime}_{size}");
+        let thumb_path = cache_dir.join(format!("{cache_key}.jpg"));
+        let src_path = cache_dir.join(format!("{cache_key}.src"));
+
+        fs::write(&thumb_path, &bytes)
+            .map_err(|e| format!("Failed to write thumbnail: {e}"))?;
+        let _ = fs::write(&src_path, path.as_ref());
+        record_cache_write(bytes.len() as u64, &cache_dir);
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
 }
 
 // Record cache entry

@@ -165,6 +165,14 @@ export async function invokeGetThumbnails(
   return invoke("get_thumbnails", { paths, size: size ?? null });
 }
 
+export async function invokeStoreThumbnail(
+  path: string,
+  size: number,
+  dataUrl: string,
+): Promise<void> {
+  return invoke("store_thumbnail", { path, size, dataUrl });
+}
+
 // Listen for streaming thumbnail results from get_thumbnails
 export function onThumbnailProgress(
   callback: (path: string, dataUrl: string) => void,
