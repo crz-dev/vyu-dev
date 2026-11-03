@@ -1,4 +1,3 @@
-// Clipboard operations
 import type { MediaProperties } from "$lib/shared/types";
 import { invokeCopyImageToClipboard } from "$lib/features/media/api";
 

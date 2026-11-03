@@ -1,4 +1,3 @@
-// SQLite persistence
 import { invoke } from "@tauri-apps/api/core";
 import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
 import type { EqSettings } from "./storage";

@@ -1,4 +1,3 @@
-// File integrity
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -103,10 +102,14 @@ fn fix_media_sync(path: String, mode: String) -> Result<FixResult, String> {
         let fixed_name = format!("{stem}_fixed.{ext}");
         unique_path(parent.join(&fixed_name))
     } else {
-        let hash = hash_path_xxh3(&format!("{}:{}", path, SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)));
+        let hash = hash_path_xxh3(&format!(
+            "{}:{}",
+            path,
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
         let tmp = std::env::temp_dir()
             .join("Vyu-temp")
             .join(format!("fix-{hash}.{ext}"));
@@ -130,15 +133,12 @@ fn fix_media_sync(path: String, mode: String) -> Result<FixResult, String> {
         Ok(()) => {
             if mode == "replace" {
                 // Backup before replace
-                let stem = input
-                    .file_stem()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("file");
+                let stem = input.file_stem().and_then(|s| s.to_str()).unwrap_or("file");
                 let backup = unique_path(
                     input
                         .parent()
                         .unwrap_or_else(|| Path::new("."))
-                        .join(format!(".{stem}.bak"))
+                        .join(format!(".{stem}.bak")),
                 );
                 if let Err(e) = fs::rename(&input, &backup) {
                     let _ = fs::remove_file(&output_path);

@@ -1,4 +1,3 @@
-// Thumbnail cache
 import { invokeGetThumbnails } from "$lib/features/media/api";
 
 const cache = new Map<string, string>();

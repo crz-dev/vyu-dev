@@ -1,4 +1,3 @@
-// Debug diagnostics collection
 import { getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
 import { invokeGetDatabaseStats } from "$lib/features/debug/api";

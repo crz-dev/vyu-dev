@@ -1,4 +1,3 @@
-// File operations
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -74,7 +73,8 @@ pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
             // Cross-device fallback
             std::fs::copy(&old, &dest)
                 .map_err(|ce| format!("Failed to copy across devices: {ce}"))?;
-            std::fs::remove_file(&old).map_err(|de| format!("Copied but failed to remove original: {de}"))?;
+            std::fs::remove_file(&old)
+                .map_err(|de| format!("Copied but failed to remove original: {de}"))?;
             Ok(())
         }
         Err(e) => Err(format!("Failed to rename file: {e}")),
@@ -128,9 +128,7 @@ pub fn trash_file(path: String) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 fn trash_file_inner(p: &std::path::Path) -> Result<(), String> {
     use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::Shell::{
-        SHFileOperationW, SHFILEOPSTRUCTW, FO_DELETE, FOF_ALLOWUNDO,
-    };
+    use windows::Win32::UI::Shell::{SHFileOperationW, FOF_ALLOWUNDO, FO_DELETE, SHFILEOPSTRUCTW};
 
     let wide: Vec<u16> = OsStr::new(p.as_os_str())
         .encode_wide()
@@ -277,10 +275,7 @@ fn write_file_atomic_sync(path: String, data_base64: String) -> Result<(), Strin
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    let temp = parent.join(format!(
-        ".vyu-write-{}-{nanos}.tmp",
-        hash_path_xxh3(&path)
-    ));
+    let temp = parent.join(format!(".vyu-write-{}-{nanos}.tmp", hash_path_xxh3(&path)));
 
     fs::write(&temp, &bytes).map_err(|e| {
         let _ = fs::remove_file(&temp);

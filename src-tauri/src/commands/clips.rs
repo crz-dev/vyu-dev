@@ -1,11 +1,12 @@
-// Video clips
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::constants::REMUX_VIDEO_EXTS_RUST;
 use crate::types::{ClipProcessResult, ClipSegment};
-use crate::util::{ffmpeg_command, format_clip_tag, hash_path_xxh3, sanitize_segments, unique_path};
+use crate::util::{
+    ffmpeg_command, format_clip_tag, hash_path_xxh3, sanitize_segments, unique_path,
+};
 
 #[tauri::command]
 pub async fn process_video_clips(
@@ -32,7 +33,8 @@ pub async fn process_video_clips(
             PathBuf::from(&output_dir)
         };
         if !out_dir.exists() {
-            fs::create_dir_all(&out_dir).map_err(|e| format!("Failed to create output folder: {e}"))?;
+            fs::create_dir_all(&out_dir)
+                .map_err(|e| format!("Failed to create output folder: {e}"))?;
         }
         let mut ext = input
             .extension()
@@ -80,12 +82,17 @@ pub async fn process_video_clips(
             } else {
                 let temp_dir = std::env::temp_dir().join(format!(
                     "vyu-clips-{}",
-                    hash_path_xxh3(&format!("{}:{}", path, SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .map(|d| d.as_nanos())
-                        .unwrap_or(0)))
+                    hash_path_xxh3(&format!(
+                        "{}:{}",
+                        path,
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .map(|d| d.as_nanos())
+                            .unwrap_or(0)
+                    ))
                 ));
-                fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed creating temp dir: {e}"))?;
+                fs::create_dir_all(&temp_dir)
+                    .map_err(|e| format!("Failed creating temp dir: {e}"))?;
                 let mut temp_files: Vec<PathBuf> = Vec::new();
                 for (idx, seg) in clean_segments.iter().enumerate() {
                     let temp_file = temp_dir.join(format!("seg-{:03}.{}", idx + 1, ext));

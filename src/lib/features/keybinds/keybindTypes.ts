@@ -1,4 +1,3 @@
-// Keybind types
 export type KeybindContext = "global" | "viewer" | "library" | "pdf";
 
 export type KeybindCategory =

@@ -1,5 +1,3 @@
-// Realtime audio metrics for visualizer overlays
-
 export interface AudioMetrics {
   levelDb: number | null;
   peakFrequencyHz: number | null;

@@ -1,4 +1,3 @@
-// Debug preferences
 import { loadDebugOverlay, saveDebugOverlay } from "$lib/services/storage";
 
 function createDebugPrefs() {

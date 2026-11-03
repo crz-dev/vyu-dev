@@ -1,4 +1,3 @@
-// Folder watcher
 import { watchImmediate } from "@tauri-apps/plugin-fs";
 import { rescanFolder } from "$lib/services/files";
 import type { SortMode } from "$lib/shared/constants";

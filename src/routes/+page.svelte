@@ -44,7 +44,7 @@
     migrateFilePathStorage,
     migrateFolderPathStorage,
   } from "$lib/services/storage";
-  import { createFfmpegHelpers } from "$lib/features/media/ffmpeg";
+  import { loadMediaProperties } from "$lib/features/media/ffmpeg";
   import {
     invokeOpenDirectory,
     invokeCleanupTempFolder,
@@ -195,11 +195,12 @@
     closeSlideshowMenu,
   } = menuActions;
   const menuBindings = createMenuBindings();
-  const { runLoadMediaProperties } = createFfmpegHelpers({
-    filePath: () => filePath,
-    setMediaProps: (v) => (mediaProps = v),
-    setMediaPropsLoading: (v) => (mediaPropsLoading = v),
-  });
+  const runLoadMediaProperties = () =>
+    loadMediaProperties({
+      filePath,
+      setMediaProps: (v) => (mediaProps = v),
+      setMediaPropsLoading: (v) => (mediaPropsLoading = v),
+    });
 
   const style = createViewerStyle();
   const pdf = createPdf();

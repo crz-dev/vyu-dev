@@ -166,14 +166,12 @@
   const IMAGE_SET = new Set(IMAGE_EXTS);
   const VIDEO_SET = new Set(VIDEO_EXTS);
   const AUDIO_SET = new Set(AUDIO_EXTS);
-  const DOCUMENT_SET = new Set(DOCUMENT_EXTS);
-
   function isVisibleFile(path: string): boolean {
     const ext = getFileExt(path);
     if (IMAGE_SET.has(ext)) return library.fileFilters.images;
     if (VIDEO_SET.has(ext)) return library.fileFilters.videos;
     if (AUDIO_SET.has(ext)) return library.fileFilters.audio;
-    if (DOCUMENT_SET.has(ext)) return library.fileFilters.documents;
+    if (DOCUMENT_EXTS.includes(ext)) return library.fileFilters.documents;
     return true;
   }
 
@@ -218,9 +216,7 @@
     gridContentWidth > 0
       ? Math.max(
           1,
-          Math.floor(
-            (gridContentWidth + GRID_GAP) / (gridMinCol + GRID_GAP),
-          ),
+          Math.floor((gridContentWidth + GRID_GAP) / (gridMinCol + GRID_GAP)),
         )
       : 1,
   );
@@ -2031,12 +2027,12 @@
           in:swipe={{
             direction: library.tabDirection,
             duration: 240,
-          easing: cubicInOut,
+            easing: cubicInOut,
           }}
           out:swipe={{
             direction: -library.tabDirection,
             duration: 240,
-          easing: cubicInOut,
+            easing: cubicInOut,
           }}
           style="grid-area: 1 / 1;"
         >
@@ -2161,8 +2157,19 @@
                           />
                         {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
                           <div class="library-placeholder pdf-placeholder">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path
+                                d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                              />
                               <polyline points="14 2 14 8 20 8" />
                             </svg>
                           </div>
@@ -2656,8 +2663,19 @@
                           />
                         {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
                           <div class="river-placeholder pdf-placeholder">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <svg
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.8"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <path
+                                d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                              />
                               <polyline points="14 2 14 8 20 8" />
                             </svg>
                           </div>
@@ -2875,8 +2893,19 @@
                         />
                       {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
                         <div class="filmstrip-placeholder pdf-placeholder">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path
+                              d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                            />
                             <polyline points="14 2 14 8 20 8" />
                           </svg>
                         </div>
@@ -3304,8 +3333,19 @@
                             />
                           {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
                             <div class="list-placeholder pdf-placeholder">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                              >
+                                <path
+                                  d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                                />
                                 <polyline points="14 2 14 8 20 8" />
                               </svg>
                             </div>

@@ -1,4 +1,3 @@
-// Playback preferences
 import {
   loadAutoplay,
   loadDefaultSpeed,

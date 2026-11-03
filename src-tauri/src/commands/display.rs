@@ -1,12 +1,11 @@
-// Display pipeline
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::Manager;
 
 use crate::constants::{
-    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, FFMPEG_IMAGE_EXTS_RUST,
-    RAW_IMAGE_EXTS_RUST, REMUX_VIDEO_EXTS_RUST,
+    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, FFMPEG_IMAGE_EXTS_RUST, RAW_IMAGE_EXTS_RUST,
+    REMUX_VIDEO_EXTS_RUST,
 };
 use crate::util::{check_cache, ffmpeg_command, hash_path_xxh3};
 
@@ -68,10 +67,16 @@ fn record_display_cache_write(written_bytes: u64, cache_dir: &Path) {
 }
 
 fn compute_display_cache_size(cache_dir: &Path) -> u64 {
-    let Ok(entries) = fs::read_dir(cache_dir) else { return 0 };
+    let Ok(entries) = fs::read_dir(cache_dir) else {
+        return 0;
+    };
     let mut total: u64 = 0;
     for entry in entries.flatten() {
-        let ext = entry.path().extension().map(|e| e.to_os_string()).unwrap_or_default();
+        let ext = entry
+            .path()
+            .extension()
+            .map(|e| e.to_os_string())
+            .unwrap_or_default();
         if ext == "jpg" || ext == "mp4" || ext == "png" {
             total += entry.metadata().map(|m| m.len()).unwrap_or(0);
         }
@@ -80,7 +85,9 @@ fn compute_display_cache_size(cache_dir: &Path) -> u64 {
 }
 
 fn try_evict_display_cache(cache_dir: &Path) {
-    let Ok(entries) = fs::read_dir(cache_dir) else { return };
+    let Ok(entries) = fs::read_dir(cache_dir) else {
+        return;
+    };
     let mut cached_entries: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
     let mut total: u64 = 0;
     for entry in entries.flatten() {
@@ -103,7 +110,9 @@ fn try_evict_display_cache(cache_dir: &Path) {
     let mut freed: u64 = 0;
     let target = total - DISPLAY_CACHE_MAX;
     for (path, _) in &cached_entries {
-        if freed >= target { break; }
+        if freed >= target {
+            break;
+        }
         if let Ok(meta) = path.metadata() {
             freed += meta.len();
         }
@@ -173,9 +182,15 @@ pub async fn prepare_display_image(
                 .map_err(|e| format!("Failed to decode {} for display: {e}", ext_clone))?;
 
             let mut jpeg_bytes: Vec<u8> = Vec::new();
-            let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 85);
+            let mut encoder =
+                image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_bytes, 85);
             encoder
-                .encode(img.as_bytes(), img.width(), img.height(), img.color().into())
+                .encode(
+                    img.as_bytes(),
+                    img.width(),
+                    img.height(),
+                    img.color().into(),
+                )
                 .map_err(|e| format!("Failed to encode display JPEG: {e}"))?;
 
             fs::write(&cached_clone, &jpeg_bytes)
@@ -250,9 +265,12 @@ pub async fn prepare_video_display(
 
 /// Extract cover art
 #[tauri::command]
-pub async fn extract_cover_art(app: tauri::AppHandle, path: String) -> Result<Option<String>, String> {
-    use crate::util::run_ffmpeg;
+pub async fn extract_cover_art(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<Option<String>, String> {
     use crate::constants::FFMPEG_THUMB_TIMEOUT;
+    use crate::util::run_ffmpeg;
 
     let cache_dir = cover_art_cache_dir(&app);
     let hash = hash_path_xxh3(&path);

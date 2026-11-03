@@ -1,4 +1,3 @@
-// Utilities
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -6,9 +5,9 @@ use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 use xxhash_rust::xxh3::xxh3_64;
 
+use crate::constants::CREATE_NO_WINDOW;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
-use crate::constants::CREATE_NO_WINDOW;
 
 static BUNDLED_FFMPEG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
 
@@ -16,7 +15,8 @@ fn find_ffmpeg_dir(dir: &Path) -> Option<PathBuf> {
     let ffmpeg = dir.join("ffmpeg.exe");
     let ffprobe = dir.join("ffprobe.exe");
     const MIN_SIZE: u64 = 1_000_000;
-    if ffmpeg.exists() && ffprobe.exists()
+    if ffmpeg.exists()
+        && ffprobe.exists()
         && ffmpeg.metadata().map(|m| m.len()).unwrap_or(0) >= MIN_SIZE
         && ffprobe.metadata().map(|m| m.len()).unwrap_or(0) >= MIN_SIZE
     {
@@ -76,7 +76,9 @@ pub fn format_clip_tag(seconds: f64) -> String {
     }
 }
 
-pub fn sanitize_segments(mut segments: Vec<crate::types::ClipSegment>) -> Vec<crate::types::ClipSegment> {
+pub fn sanitize_segments(
+    mut segments: Vec<crate::types::ClipSegment>,
+) -> Vec<crate::types::ClipSegment> {
     segments.sort_by(|a, b| {
         a.start
             .partial_cmp(&b.start)
@@ -168,9 +170,11 @@ fn ffmpeg_path() -> &'static str {
     BUNDLED_FFMPEG_DIR
         .get_or_init(|| None)
         .as_ref()
-        .and_then(|d| d.join("ffmpeg.exe").to_str().map(|s| {
-            Box::leak(s.to_string().into_boxed_str()) as &str
-        }))
+        .and_then(|d| {
+            d.join("ffmpeg.exe")
+                .to_str()
+                .map(|s| Box::leak(s.to_string().into_boxed_str()) as &str)
+        })
         .unwrap_or("ffmpeg")
 }
 
@@ -178,9 +182,11 @@ fn ffprobe_path() -> &'static str {
     BUNDLED_FFMPEG_DIR
         .get_or_init(|| None)
         .as_ref()
-        .and_then(|d| d.join("ffprobe.exe").to_str().map(|s| {
-            Box::leak(s.to_string().into_boxed_str()) as &str
-        }))
+        .and_then(|d| {
+            d.join("ffprobe.exe")
+                .to_str()
+                .map(|s| Box::leak(s.to_string().into_boxed_str()) as &str)
+        })
         .unwrap_or("ffprobe")
 }
 
@@ -238,7 +244,10 @@ static HARDWARE_H264_ENCODERS: OnceLock<Vec<&'static str>> = OnceLock::new();
 
 pub fn hardware_h264_encoders() -> &'static [&'static str] {
     HARDWARE_H264_ENCODERS.get_or_init(|| {
-        let Ok(output) = ffmpeg_command().args(["-hide_banner", "-encoders"]).output() else {
+        let Ok(output) = ffmpeg_command()
+            .args(["-hide_banner", "-encoders"])
+            .output()
+        else {
             return Vec::new();
         };
         let text = String::from_utf8_lossy(&output.stdout);
@@ -265,7 +274,11 @@ pub fn resolve_hardware_h264_encoder(requested: Option<&str>) -> Option<&'static
 }
 
 /// Run ffmpeg with timeout
-pub fn run_ffmpeg(args: &[&str], output_path: &Path, timeout: Duration) -> Result<Option<String>, String> {
+pub fn run_ffmpeg(
+    args: &[&str],
+    output_path: &Path,
+    timeout: Duration,
+) -> Result<Option<String>, String> {
     let mut child = ffmpeg_command()
         .args(args)
         .spawn()
@@ -348,7 +361,12 @@ pub fn cleanup_vyu_temp() {
 }
 
 /// Extract video segment
-pub fn ffmpeg_extract_segment(input: &Path, output: &Path, start: f64, end: f64) -> Result<(), String> {
+pub fn ffmpeg_extract_segment(
+    input: &Path,
+    output: &Path,
+    start: f64,
+    end: f64,
+) -> Result<(), String> {
     let fast_err = match ffmpeg_command()
         .args([
             "-y",
@@ -412,7 +430,11 @@ pub fn check_cache(path: &Path, cache_dir: &Path, ext: &str) -> Option<PathBuf> 
     let (Ok(src_time), Ok(cached_time)) = (src_meta.modified(), cached_meta.modified()) else {
         return None;
     };
-    if cached_time >= src_time { Some(cached) } else { None }
+    if cached_time >= src_time {
+        Some(cached)
+    } else {
+        None
+    }
 }
 
 /// Resolve output path
@@ -497,10 +519,22 @@ mod tests {
     fn test_sanitize_segments_sorts_and_filters() {
         use crate::types::ClipSegment;
         let input = vec![
-            ClipSegment { start: 10.0, end: 20.0 },
-            ClipSegment { start: 5.0, end: 15.0 },
-            ClipSegment { start: 0.0, end: 0.03 },
-            ClipSegment { start: f64::NAN, end: 10.0 },
+            ClipSegment {
+                start: 10.0,
+                end: 20.0,
+            },
+            ClipSegment {
+                start: 5.0,
+                end: 15.0,
+            },
+            ClipSegment {
+                start: 0.0,
+                end: 0.03,
+            },
+            ClipSegment {
+                start: f64::NAN,
+                end: 10.0,
+            },
         ];
         let result = sanitize_segments(input);
         assert_eq!(result.len(), 2);
@@ -511,9 +545,10 @@ mod tests {
     #[test]
     fn test_sanitize_segments_clips_negative() {
         use crate::types::ClipSegment;
-        let input = vec![
-            ClipSegment { start: -5.0, end: 10.0 },
-        ];
+        let input = vec![ClipSegment {
+            start: -5.0,
+            end: 10.0,
+        }];
         let result = sanitize_segments(input);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].start, 0.0);

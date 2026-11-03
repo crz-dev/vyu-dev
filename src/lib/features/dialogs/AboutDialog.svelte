@@ -55,7 +55,7 @@
         <div class="about-brand">
           <div class="about-logo-wrap">
             <div class="about-logo-border"></div>
-            <img class="about-logo" src="/app-icon.png" alt="vyu" />
+            <img class="about-logo" src="/favicon.png" alt="vyu" />
           </div>
         </div>
 

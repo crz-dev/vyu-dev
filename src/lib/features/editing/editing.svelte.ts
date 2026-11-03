@@ -1,4 +1,3 @@
-// Editing state
 import type { CropBounds } from "$lib/shared/types";
 import { replacePathPrefix, samePath } from "$lib/services/files";
 import {

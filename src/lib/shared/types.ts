@@ -1,4 +1,3 @@
-// Shared types
 export interface ContextMenu {
   x: number;
   y: number;

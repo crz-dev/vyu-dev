@@ -1,4 +1,3 @@
-// Viewer effects
 import { viewer } from "./viewer.svelte";
 import { editing } from "$lib/features/editing/editing.svelte";
 

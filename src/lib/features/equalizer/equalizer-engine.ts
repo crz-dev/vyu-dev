@@ -1,4 +1,3 @@
-// EQ engine
 import { BAND_FREQUENCIES, BAND_Q } from "./bandConfig";
 
 const NUM_BANDS = BAND_FREQUENCIES.length;

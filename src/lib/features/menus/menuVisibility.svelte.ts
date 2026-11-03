@@ -1,5 +1,3 @@
-// Menu visibility state
-
 function createMenuVisibilityStore() {
   let editMenuVisible = $state(false);
   let markupMenuVisible = $state(false);

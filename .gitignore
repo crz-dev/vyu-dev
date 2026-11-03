@@ -12,9 +12,11 @@ node_modules/
 # Environment
 .env
 .env.*
+!.env.example
 
 # Editor
-/.idea/
+**/.idea/
+*.iml
 *.swp
 *.swo
 *.code-workspace
@@ -25,10 +27,11 @@ node_modules/
 Thumbs.db
 desktop.ini
 
-# Logs
+# Logs and crash dumps
 *.log
+*.dmp
+*.stackdump
 tauri-dev-*.txt
-pnpm-debug.log*
 
 # TypeScript
 *.tsbuildinfo

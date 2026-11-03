@@ -1,4 +1,3 @@
-// Pan drag handler
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { viewer } from "./viewer.svelte";
 

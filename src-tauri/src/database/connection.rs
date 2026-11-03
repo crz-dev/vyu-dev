@@ -1,4 +1,3 @@
-// DB connection
 use rusqlite::Connection;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -24,8 +23,7 @@ pub fn init(app: &tauri::AppHandle) -> Result<(), String> {
             .map_err(|e| format!("Failed to create DB directory: {e}"))?;
     }
 
-    let mut conn =
-        Connection::open(&path).map_err(|e| format!("Failed to open database: {e}"))?;
+    let mut conn = Connection::open(&path).map_err(|e| format!("Failed to open database: {e}"))?;
 
     // WAL mode — concurrent reads without blocking writers (critical for UI responsiveness)
     conn.execute_batch("PRAGMA journal_mode=WAL;")

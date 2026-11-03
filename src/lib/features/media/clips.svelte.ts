@@ -1,4 +1,3 @@
-// Clip boundaries
 import type { ClipBoundary, ClipPair } from "$lib/shared/types";
 import {
   writeClipBoundaries,

@@ -1,4 +1,3 @@
-// System integration commands
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -113,9 +112,7 @@ pub fn get_runtime_info() -> RuntimeInfo {
 }
 
 #[tauri::command]
-pub fn get_system_restart_status(
-    state: State<'_, SystemState>,
-) -> Result<RestartStatus, String> {
+pub fn get_system_restart_status(state: State<'_, SystemState>) -> Result<RestartStatus, String> {
     let config = lock_config(&state)?;
     Ok(RestartStatus {
         hardware_acceleration: config.hardware_acceleration
@@ -465,8 +462,8 @@ fn spawn_restart(app: AppHandle, safe_mode: Option<bool>) -> Result<(), String> 
     }
     crate::util::cleanup_vyu_temp();
 
-    let exe = std::env::current_exe()
-        .map_err(|e| format!("Failed to resolve executable path: {e}"))?;
+    let exe =
+        std::env::current_exe().map_err(|e| format!("Failed to resolve executable path: {e}"))?;
     let mut command = std::process::Command::new(exe);
     for arg in std::env::args_os().skip(1) {
         let value = arg.to_string_lossy();
@@ -867,10 +864,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
-            "vyu-{name}-{}-{stamp}",
-            std::process::id()
-        ));
+        let dir = std::env::temp_dir().join(format!("vyu-{name}-{}-{stamp}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         dir
     }

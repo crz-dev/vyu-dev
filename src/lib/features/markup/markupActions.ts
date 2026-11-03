@@ -1,4 +1,3 @@
-// Markup actions
 import { save } from "@tauri-apps/plugin-dialog";
 import {
   renderMarkupOnImage,

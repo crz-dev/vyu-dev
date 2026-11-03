@@ -1,4 +1,3 @@
-// Toast state
 export type ToastColor = "green" | "red" | "yellow" | "blue" | "grey";
 
 export interface ToastAction {

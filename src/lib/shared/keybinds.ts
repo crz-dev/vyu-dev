@@ -1,4 +1,3 @@
-// Configurable keybind dispatcher
 import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
 import type { KeybindContext } from "$lib/features/keybinds/keybindTypes";
 import { isTypingTarget } from "$lib/features/keybinds/keybindUtils";

@@ -1,4 +1,3 @@
-// Context menu actions
 import { invokeShowInExplorer } from "$lib/features/media/api";
 import {
   copyImageToClipboard,
@@ -22,21 +21,14 @@ export async function ctxCopyPdfPage(opts: {
       canvas.toBlob(resolve, "image/png"),
     );
     if (!blob) throw new Error("Could not encode page as PNG");
-    if (
-      typeof ClipboardItem === "undefined" ||
-      !navigator.clipboard?.write
-    ) {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
       throw new Error("Image clipboard API is unavailable in this runtime.");
     }
-    await navigator.clipboard.write([
-      new ClipboardItem({ "image/png": blob }),
-    ]);
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     showToast({ message: "Page copied to clipboard", color: "green" });
   } catch (err) {
     const message =
-      err instanceof Error
-        ? err.message
-        : "Failed to copy page to clipboard";
+      err instanceof Error ? err.message : "Failed to copy page to clipboard";
     showToast({ message, color: "red" });
   }
 }

@@ -1,4 +1,3 @@
-// PDF rendering
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getCached, setCached } from "$lib/services/thumbnailCache";
 import { invokeStoreThumbnail } from "$lib/features/media/api";

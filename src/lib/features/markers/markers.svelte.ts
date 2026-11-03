@@ -1,4 +1,3 @@
-// Marker state
 import { createTimeline } from "$lib/features/markers/timeline";
 import {
   writeTimestamps,

@@ -1,4 +1,3 @@
-// Keybind action catalog
 import type {
   KeybindAction,
   KeybindBinding,

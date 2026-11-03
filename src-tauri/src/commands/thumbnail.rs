@@ -1,4 +1,3 @@
-// Thumbnail generation
 use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
@@ -61,9 +60,7 @@ fn open_jpeg_scaled(path: &Path, short_side: u32) -> Result<image::DynamicImage,
         .scale(short_side as u16, short_side as u16)
         .map_err(|e| format!("JPEG scale config: {e}"))?;
 
-    let pixels = decoder
-        .decode()
-        .map_err(|e| format!("JPEG decode: {e}"))?;
+    let pixels = decoder.decode().map_err(|e| format!("JPEG decode: {e}"))?;
 
     let w = w as u32;
     let h = h as u32;
@@ -123,17 +120,30 @@ fn encode_and_save_thumbnail(
     Ok(jpeg_bytes)
 }
 
-fn generate_video_frame(path: &str, thumb_path: &Path, size: u32) -> Result<Option<String>, String> {
+fn generate_video_frame(
+    path: &str,
+    thumb_path: &Path,
+    size: u32,
+) -> Result<Option<String>, String> {
     let scale = format!("scale={size}:{size}:force_original_aspect_ratio=decrease");
     run_ffmpeg(
         &[
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-ss", "1",
-            "-i", path,
-            "-vframes", "1",
-            "-sws_flags", "lanczos",
-            "-vf", &scale,
-            "-q:v", "2",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            "1",
+            "-i",
+            path,
+            "-vframes",
+            "1",
+            "-sws_flags",
+            "lanczos",
+            "-vf",
+            &scale,
+            "-q:v",
+            "2",
             &thumb_path.to_string_lossy(),
         ],
         thumb_path,
@@ -141,16 +151,28 @@ fn generate_video_frame(path: &str, thumb_path: &Path, size: u32) -> Result<Opti
     )
 }
 
-fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path, size: u32) -> Result<Option<String>, String> {
+fn generate_ffmpeg_image_frame(
+    path: &str,
+    thumb_path: &Path,
+    size: u32,
+) -> Result<Option<String>, String> {
     let scale = format!("scale={size}:{size}:force_original_aspect_ratio=decrease");
     run_ffmpeg(
         &[
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", path,
-            "-vframes", "1",
-            "-sws_flags", "lanczos",
-            "-vf", &scale,
-            "-q:v", "2",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            path,
+            "-vframes",
+            "1",
+            "-sws_flags",
+            "lanczos",
+            "-vf",
+            &scale,
+            "-q:v",
+            "2",
             &thumb_path.to_string_lossy(),
         ],
         thumb_path,
@@ -161,11 +183,17 @@ fn generate_ffmpeg_image_frame(path: &str, thumb_path: &Path, size: u32) -> Resu
 fn try_extract_audio_cover_art(path: &str, thumb_path: &Path) -> Result<Option<String>, String> {
     let result = run_ffmpeg(
         &[
-            "-y", "-hide_banner", "-loglevel", "error",
-            "-i", path,
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            path,
             "-an",
-            "-c:v", "copy",
-            "-q:v", "4",
+            "-c:v",
+            "copy",
+            "-q:v",
+            "4",
             &thumb_path.to_string_lossy(),
         ],
         thumb_path,
@@ -230,11 +258,17 @@ fn thumbnail_via_ffmpeg(
         let fast_result = try_extract_raw_preview(path, thumb_path);
         if let Ok(Some(_)) = fast_result {
             let cached_thumb = thumb_path.to_path_buf();
-            match open_jpeg_scaled(thumb_path, size)
-                .or_else(|_| image::open(thumb_path).map_err(|e| format!("Failed to open embedded JPEG: {e}")))
-            {
+            match open_jpeg_scaled(thumb_path, size).or_else(|_| {
+                image::open(thumb_path).map_err(|e| format!("Failed to open embedded JPEG: {e}"))
+            }) {
                 Ok(img) => {
-                    let bytes = encode_and_save_thumbnail(&img, &cached_thumb, src_path, size, Path::new(path))?;
+                    let bytes = encode_and_save_thumbnail(
+                        &img,
+                        &cached_thumb,
+                        src_path,
+                        size,
+                        Path::new(path),
+                    )?;
                     let _ = fs::write(src_path, path);
                     return Ok(bytes);
                 }
@@ -291,11 +325,7 @@ fn source_mtime(path: &Path) -> u64 {
 
 // PDFs are rendered by PDF.js in the frontend. Serve a previously stored
 // render from the cache instead of asking the frontend to render it again.
-fn cached_document_thumbnail(
-    cache_dir: &Path,
-    path: &str,
-    size: u32,
-) -> Result<String, String> {
+fn cached_document_thumbnail(cache_dir: &Path, path: &str, size: u32) -> Result<String, String> {
     let mtime = source_mtime(Path::new(path));
     let hash = hash_path_xxh3(path);
     let thumb_path = cache_dir.join(format!("{hash}_{mtime}_{size}.jpg"));
@@ -362,85 +392,109 @@ async fn thumbnail_for_path(
     let path_c = path.to_string();
     let cache_dir_c = cache_dir.to_path_buf();
 
-    let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<(Vec<u8>, String, String), String> {
-        let src_meta = fs::metadata(&path_c).map_err(|e| format!("Cannot access file: {e}"))?;
-        let mtime = src_meta
-            .modified()
-            .map_err(|e| format!("Cannot read mtime: {e}"))?
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+    let spawn_result = tauri::async_runtime::spawn_blocking(
+        move || -> Result<(Vec<u8>, String, String), String> {
+            let src_meta = fs::metadata(&path_c).map_err(|e| format!("Cannot access file: {e}"))?;
+            let mtime = src_meta
+                .modified()
+                .map_err(|e| format!("Cannot read mtime: {e}"))?
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
 
-        let cache_key = format!("{hash}_{mtime}_{thumb_size}");
-        let thumb_path = cache_dir_c.join(format!("{cache_key}.jpg"));
-        let src_path = cache_dir_c.join(format!("{cache_key}.src"));
+            let cache_key = format!("{hash}_{mtime}_{thumb_size}");
+            let thumb_path = cache_dir_c.join(format!("{cache_key}.jpg"));
+            let src_path = cache_dir_c.join(format!("{cache_key}.src"));
 
-        if thumb_path.exists() {
-            if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
-                let data_url = format_data_url(&jpeg_bytes);
-                return Ok((jpeg_bytes, cache_key, data_url));
-            }
-        }
-
-        // Non-JPEG images > 50MB use FFmpeg to avoid full-resolution memory spike
-        let is_jpeg = matches!(path_c.rsplit('.').next().unwrap_or(""), "jpg" | "jpeg");
-        let use_ffmpeg_for_large = use_image_crate && !is_jpeg && src_meta.len() > 50 * 1024 * 1024;
-
-        let jpeg_bytes: Vec<u8> = if use_image_crate && !use_ffmpeg_for_large {
-            // Decode once and produce both common sizes (120 + 256) from the same image
-            let img = open_jpeg_scaled(Path::new(&path_c), thumb_size)
-                .or_else(|_| image::open(Path::new(&path_c)).map_err(|e| format!("Failed to open image: {e}")))?;
-
-            let primary = encode_and_save_thumbnail(&img, &thumb_path, &src_path, thumb_size, Path::new(&path_c))?;
-
-            // Generate complementary size only when the other size is also in-flight
-            if comp_needed {
-                if let Some(other) = complementary_thumb_size(thumb_size) {
-                    let other_key = format!("{hash}_{mtime}_{other}");
-                    let other_thumb = cache_dir_c.join(format!("{other_key}.jpg"));
-                    let other_src = cache_dir_c.join(format!("{other_key}.src"));
-                    if !other_thumb.exists() {
-                        let _ = encode_and_save_thumbnail(&img, &other_thumb, &other_src, other, Path::new(&path_c));
-                        if let Ok(meta) = fs::metadata(&other_thumb) {
-                            record_cache_write(meta.len(), &cache_dir_c);
-                        }
-                    }
+            if thumb_path.exists() {
+                if let Ok(jpeg_bytes) = fs::read(&thumb_path) {
+                    let data_url = format_data_url(&jpeg_bytes);
+                    return Ok((jpeg_bytes, cache_key, data_url));
                 }
             }
 
-            primary
-        } else {
-            let primary = thumbnail_via_ffmpeg(&path_c, &thumb_path, &src_path, &kind, thumb_size)?;
+            // Non-JPEG images > 50MB use FFmpeg to avoid full-resolution memory spike
+            let is_jpeg = matches!(path_c.rsplit('.').next().unwrap_or(""), "jpg" | "jpeg");
+            let use_ffmpeg_for_large =
+                use_image_crate && !is_jpeg && src_meta.len() > 50 * 1024 * 1024;
 
-            // Generate complementary size only when the other size is also in-flight
-            if comp_needed {
-                if let Some(other) = complementary_thumb_size(thumb_size) {
-                    let other_key = format!("{hash}_{mtime}_{other}");
-                    let other_thumb = cache_dir_c.join(format!("{other_key}.jpg"));
-                    let other_src = cache_dir_c.join(format!("{other_key}.src"));
-                    if !other_thumb.exists() {
-                        if let Ok(primary_jpeg) = fs::read(&thumb_path) {
-                            if let Ok(decoded) = image::load_from_memory(&primary_jpeg) {
-                                let _ = encode_and_save_thumbnail(&decoded, &other_thumb, &other_src, other, Path::new(&path_c));
-                                if let Ok(meta) = fs::metadata(&other_thumb) {
-                                    record_cache_write(meta.len(), &cache_dir_c);
+            let jpeg_bytes: Vec<u8> = if use_image_crate && !use_ffmpeg_for_large {
+                // Decode once and produce both common sizes (120 + 256) from the same image
+                let img = open_jpeg_scaled(Path::new(&path_c), thumb_size).or_else(|_| {
+                    image::open(Path::new(&path_c))
+                        .map_err(|e| format!("Failed to open image: {e}"))
+                })?;
+
+                let primary = encode_and_save_thumbnail(
+                    &img,
+                    &thumb_path,
+                    &src_path,
+                    thumb_size,
+                    Path::new(&path_c),
+                )?;
+
+                // Generate complementary size only when the other size is also in-flight
+                if comp_needed {
+                    if let Some(other) = complementary_thumb_size(thumb_size) {
+                        let other_key = format!("{hash}_{mtime}_{other}");
+                        let other_thumb = cache_dir_c.join(format!("{other_key}.jpg"));
+                        let other_src = cache_dir_c.join(format!("{other_key}.src"));
+                        if !other_thumb.exists() {
+                            let _ = encode_and_save_thumbnail(
+                                &img,
+                                &other_thumb,
+                                &other_src,
+                                other,
+                                Path::new(&path_c),
+                            );
+                            if let Ok(meta) = fs::metadata(&other_thumb) {
+                                record_cache_write(meta.len(), &cache_dir_c);
+                            }
+                        }
+                    }
+                }
+
+                primary
+            } else {
+                let primary =
+                    thumbnail_via_ffmpeg(&path_c, &thumb_path, &src_path, &kind, thumb_size)?;
+
+                // Generate complementary size only when the other size is also in-flight
+                if comp_needed {
+                    if let Some(other) = complementary_thumb_size(thumb_size) {
+                        let other_key = format!("{hash}_{mtime}_{other}");
+                        let other_thumb = cache_dir_c.join(format!("{other_key}.jpg"));
+                        let other_src = cache_dir_c.join(format!("{other_key}.src"));
+                        if !other_thumb.exists() {
+                            if let Ok(primary_jpeg) = fs::read(&thumb_path) {
+                                if let Ok(decoded) = image::load_from_memory(&primary_jpeg) {
+                                    let _ = encode_and_save_thumbnail(
+                                        &decoded,
+                                        &other_thumb,
+                                        &other_src,
+                                        other,
+                                        Path::new(&path_c),
+                                    );
+                                    if let Ok(meta) = fs::metadata(&other_thumb) {
+                                        record_cache_write(meta.len(), &cache_dir_c);
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                primary
+            };
+
+            if let Ok(meta) = fs::metadata(&thumb_path) {
+                record_cache_write(meta.len(), &cache_dir_c);
             }
 
-            primary
-        };
-
-        if let Ok(meta) = fs::metadata(&thumb_path) {
-            record_cache_write(meta.len(), &cache_dir_c);
-        }
-
-        let data_url = format_data_url(&jpeg_bytes);
-        Ok((jpeg_bytes, cache_key, data_url))
-    })
+            let data_url = format_data_url(&jpeg_bytes);
+            Ok((jpeg_bytes, cache_key, data_url))
+        },
+    )
     .await;
 
     let (jpeg_bytes, _cache_key, data_url) = match spawn_result {
@@ -455,10 +509,7 @@ async fn thumbnail_for_path(
         }
     };
 
-    state
-        .inflight
-        .complete(&inflight_key, Ok(jpeg_bytes))
-        .await;
+    state.inflight.complete(&inflight_key, Ok(jpeg_bytes)).await;
 
     Ok(data_url)
 }
@@ -560,8 +611,7 @@ pub async fn store_thumbnail(
         let thumb_path = cache_dir.join(format!("{cache_key}.jpg"));
         let src_path = cache_dir.join(format!("{cache_key}.src"));
 
-        fs::write(&thumb_path, &bytes)
-            .map_err(|e| format!("Failed to write thumbnail: {e}"))?;
+        fs::write(&thumb_path, &bytes).map_err(|e| format!("Failed to write thumbnail: {e}"))?;
         let _ = fs::write(&src_path, path.as_ref());
         record_cache_write(bytes.len() as u64, &cache_dir);
         Ok(())
@@ -713,8 +763,7 @@ pub async fn migrate_thumbnail_cache(
     tauri::async_runtime::spawn_blocking(move || {
         let mut migrated = 0usize;
 
-        let entries =
-            fs::read_dir(&cache_dir).map_err(|e| format!("Failed to read cache: {e}"))?;
+        let entries = fs::read_dir(&cache_dir).map_err(|e| format!("Failed to read cache: {e}"))?;
 
         for entry in entries {
             let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;

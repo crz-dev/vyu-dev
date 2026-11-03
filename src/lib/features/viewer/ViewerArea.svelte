@@ -247,7 +247,9 @@
     onmousedown={!markup.drawActive &&
     !markup.selectActive &&
     !markup.removeActive
-      ? isPdf ? undefined : startPan
+      ? isPdf
+        ? undefined
+        : startPan
       : undefined}
     ontouchstart={(e) => {
       if (!isAudio && e.touches.length === 2) e.preventDefault();

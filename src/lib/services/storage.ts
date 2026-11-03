@@ -1,6 +1,9 @@
-// localStorage persistence
 import type { VideoMarker, ClipBoundary, CropBounds } from "$lib/shared/types";
-import type { LoopMode } from "$lib/shared/constants";
+import {
+  SORT_MODES,
+  type LoopMode,
+  type SortMode,
+} from "$lib/shared/constants";
 import { replacePathPrefix } from "$lib/services/files";
 
 const MAX_STALE_ENTRIES = 500;
@@ -705,17 +708,17 @@ export function saveCdColor(filePath: string, index: number): void {
   localStorage.setItem(`vyu-cd-color-${filePath}`, String(index));
 }
 
-const VALID_SORT_MODES = ["name", "date-modified", "size", "type"] as const;
+const VALID_SORT_MODES = new Set<string>(SORT_MODES.map((mode) => mode.value));
 
-export function loadSortMode(): "name" | "date-modified" | "size" | "type" {
+export function loadSortMode(): SortMode {
   const v = localStorage.getItem("vyu-sort-mode");
-  if (v && (VALID_SORT_MODES as readonly string[]).includes(v)) {
-    return v as "name" | "date-modified" | "size" | "type";
+  if (v && VALID_SORT_MODES.has(v)) {
+    return v as SortMode;
   }
   return "name";
 }
 
-export function saveSortMode(mode: string): void {
+export function saveSortMode(mode: SortMode): void {
   localStorage.setItem("vyu-sort-mode", mode);
 }
 

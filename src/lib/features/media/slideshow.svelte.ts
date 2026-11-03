@@ -1,4 +1,3 @@
-// Slideshow state
 import { isPdf, isTimedMedia, isVideo, isAudio } from "$lib/shared/mediaKind";
 
 export type SlideshowOrder = "next" | "shuffle";
@@ -62,7 +61,11 @@ export function createSlideshow() {
       for (let offset = 1; offset < fileList.length; offset++) {
         const pos = (shufflePos + offset) % shuffledIndices.length;
         const idx = shuffledIndices[pos];
-        if (!isPdf(fileList[idx]) && !isAudio(fileList[idx]) && !(isVideo(fileList[idx]) && videoMode === "skip")) {
+        if (
+          !isPdf(fileList[idx]) &&
+          !isAudio(fileList[idx]) &&
+          !(isVideo(fileList[idx]) && videoMode === "skip")
+        ) {
           shufflePos = pos;
           return idx;
         }
@@ -72,7 +75,11 @@ export function createSlideshow() {
     }
     for (let offset = 1; offset < fileList.length; offset++) {
       const idx = (currentIndex + offset) % fileList.length;
-      if (!isPdf(fileList[idx]) && !isAudio(fileList[idx]) && !(isVideo(fileList[idx]) && videoMode === "skip")) {
+      if (
+        !isPdf(fileList[idx]) &&
+        !isAudio(fileList[idx]) &&
+        !(isVideo(fileList[idx]) && videoMode === "skip")
+      ) {
         return idx;
       }
     }
@@ -169,7 +176,12 @@ export function createSlideshow() {
     for (let i = 0; i < fileList.length; i++) {
       const path = fileList[targetIndex];
       const document = isPdf(path);
-      if (!document && !isAudio(path) && !(isVideo(path) && videoMode === "skip")) break;
+      if (
+        !document &&
+        !isAudio(path) &&
+        !(isVideo(path) && videoMode === "skip")
+      )
+        break;
       targetIndex = (targetIndex + 1) % fileList.length;
     }
     if (targetIndex !== currentIndex) {

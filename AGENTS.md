@@ -1,6 +1,6 @@
 # Vyu — Agent Notes
 
-Windows desktop media viewer. Tauri 2 + Rust backend, Svelte 5 runes + TypeScript strict frontend, pnpm. Local-first: no telemetry, no accounts; media processing stays local. Optional Song ID uses the bundled SongRec sidecar and needs a connection.
+Windows desktop media viewer. Tauri 2 + Rust backend, Svelte 5 runes + TypeScript strict frontend, pnpm. Local-first: no telemetry, no accounts; media processing stays local. Optional Song ID uses the SongRec sidecar, which must be supplied at build time, and needs a connection.
 
 ## Read first
 
@@ -98,7 +98,7 @@ Rust-only lists (`FFMPEG_IMAGE_EXTS_RUST`, `RAW_IMAGE_EXTS_RUST`, `BROWSER_UNSUP
 ## Generated files and destructive operations
 
 - Do not edit generated output: `.svelte-kit/`, `build/`, `src-tauri/target/`, `src-tauri/gen/`, `src-tauri/resources/*.exe`.
-- `src-tauri/binaries/songrec-*.exe` is a tracked sidecar; treat it as a binary asset.
+- `src-tauri/binaries/songrec-*.exe` is a tracked sidecar placeholder; replace it with the real SongRec binary before relying on Song ID.
 - Prefer recycle-bin behavior (`trash_file`) for user media. Use permanent deletion only when explicitly requested.
 - Never use real user media as test fixtures; use temporary paths.
 

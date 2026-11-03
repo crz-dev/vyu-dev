@@ -1,4 +1,3 @@
-// EQ state
 import { eqEngine } from "./equalizer-engine";
 import {
   loadEqSettings as dbLoadEqSettings,

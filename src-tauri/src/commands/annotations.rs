@@ -75,8 +75,7 @@ fn page_geometry(
     let box_values = inherited_page_entry(doc, page_id, b"CropBox")
         .and_then(|value| page_box(doc, &value))
         .or_else(|| {
-            inherited_page_entry(doc, page_id, b"MediaBox")
-                .and_then(|value| page_box(doc, &value))
+            inherited_page_entry(doc, page_id, b"MediaBox").and_then(|value| page_box(doc, &value))
         });
 
     let [x0, y0, x1, y1] = box_values.unwrap_or_else(|| {
@@ -126,18 +125,13 @@ pub async fn apply_markup_to_pdf(request: ApplyMarkupRequest) -> Result<(), Stri
         let temp_dir = std::env::temp_dir().join("Vyu-temp").join("originals");
         std::fs::create_dir_all(&temp_dir)
             .map_err(|e| format!("Failed to create backup dir: {e}"))?;
-        let ext = source
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("bak");
+        let ext = source.extension().and_then(|e| e.to_str()).unwrap_or("bak");
         let hash = hash_path_xxh3(&path);
         let backup_path = temp_dir.join(format!("{}.{}", hash, ext));
-        std::fs::copy(&source, &backup_path)
-            .map_err(|e| format!("Failed to backup PDF: {e}"))?;
+        std::fs::copy(&source, &backup_path).map_err(|e| format!("Failed to backup PDF: {e}"))?;
 
         // Open the PDF with lopdf
-        let mut doc = Document::load(&source)
-            .map_err(|e| format!("Failed to open PDF: {e}"))?;
+        let mut doc = Document::load(&source).map_err(|e| format!("Failed to open PDF: {e}"))?;
 
         let pages = doc.get_pages();
 
@@ -223,8 +217,7 @@ pub async fn apply_markup_to_pdf(request: ApplyMarkupRequest) -> Result<(), Stri
         let temp_path = source.with_extension("pdf_tmp_apply");
         doc.save(&temp_path)
             .map_err(|e| format!("Failed to save PDF: {e}"))?;
-        std::fs::rename(&temp_path, &source)
-            .map_err(|e| format!("Failed to replace PDF: {e}"))?;
+        std::fs::rename(&temp_path, &source).map_err(|e| format!("Failed to replace PDF: {e}"))?;
 
         Ok(())
     })
@@ -232,10 +225,7 @@ pub async fn apply_markup_to_pdf(request: ApplyMarkupRequest) -> Result<(), Stri
     .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-fn stroke_to_annot(
-    stroke: &MarkupStrokeData,
-    geo: PageGeometry,
-) -> Result<Dictionary, String> {
+fn stroke_to_annot(stroke: &MarkupStrokeData, geo: PageGeometry) -> Result<Dictionary, String> {
     match stroke {
         MarkupStrokeData::Freehand(s) => freehand_to_ink(s, geo),
         MarkupStrokeData::Highlight(s) => highlight_to_annot(s, geo),
@@ -248,13 +238,7 @@ fn stroke_to_annot(
 // ── Coordinate helpers ──
 
 /// Compute annotation Rect [llx, lly, urx, ury] from a normalized bounding box.
-fn bbox_to_rect(
-    geo: PageGeometry,
-    min_x: f64,
-    min_y: f64,
-    max_x: f64,
-    max_y: f64,
-) -> Vec<Object> {
+fn bbox_to_rect(geo: PageGeometry, min_x: f64, min_y: f64, max_x: f64, max_y: f64) -> Vec<Object> {
     let corners = [
         norm_to_pdf(geo, min_x, min_y),
         norm_to_pdf(geo, max_x, min_y),
@@ -322,10 +306,18 @@ fn freehand_to_ink(
     let mut max_x = f64::MIN;
     let mut max_y = f64::MIN;
     for p in &s.points {
-        if p.x < min_x { min_x = p.x; }
-        if p.y < min_y { min_y = p.y; }
-        if p.x > max_x { max_x = p.x; }
-        if p.y > max_y { max_y = p.y; }
+        if p.x < min_x {
+            min_x = p.x;
+        }
+        if p.y < min_y {
+            min_y = p.y;
+        }
+        if p.x > max_x {
+            max_x = p.x;
+        }
+        if p.y > max_y {
+            max_y = p.y;
+        }
     }
 
     // Build InkList: alternating x,y pairs in PDF coords
@@ -378,13 +370,7 @@ fn highlight_to_annot(
         let x2 = s.x2.unwrap_or(0.0);
         let y2 = s.y2.unwrap_or(0.0);
 
-        let rect = bbox_to_rect(
-            geo,
-            x1.min(x2),
-            y1.min(y2),
-            x1.max(x2),
-            y1.max(y2),
-        );
+        let rect = bbox_to_rect(geo, x1.min(x2), y1.min(y2), x1.max(x2), y1.max(y2));
         let quads = quad_points_from_rect(&rect);
 
         Ok(dictionary! {
@@ -405,10 +391,18 @@ fn highlight_to_annot(
         let mut max_x = f64::MIN;
         let mut max_y = f64::MIN;
         for p in &s.points {
-            if p.x < min_x { min_x = p.x; }
-            if p.y < min_y { min_y = p.y; }
-            if p.x > max_x { max_x = p.x; }
-            if p.y > max_y { max_y = p.y; }
+            if p.x < min_x {
+                min_x = p.x;
+            }
+            if p.y < min_y {
+                min_y = p.y;
+            }
+            if p.x > max_x {
+                max_x = p.x;
+            }
+            if p.y > max_y {
+                max_y = p.y;
+            }
         }
 
         let rect = bbox_to_rect(geo, min_x, min_y, max_x, max_y);
@@ -572,19 +566,12 @@ fn text_to_freetext(
     let color = color_obj(&s.color)?;
 
     // Estimate text box dimensions from font size (approximate)
-    let est_text_width =
-        (s.text.len() as f64 * s.font_size * 0.55 + s.box_extra_width) / geo.width;
+    let est_text_width = (s.text.len() as f64 * s.font_size * 0.55 + s.box_extra_width) / geo.width;
     let est_text_height = (s.font_size * 1.4) / geo.height;
 
     let half_w = est_text_width / 2.0;
     let half_h = est_text_height / 2.0;
-    let rect = bbox_to_rect(
-        geo,
-        s.x - half_w,
-        s.y - half_h,
-        s.x + half_w,
-        s.y + half_h,
-    );
+    let rect = bbox_to_rect(geo, s.x - half_w, s.y - half_h, s.x + half_w, s.y + half_h);
 
     let font_base = map_font(&s.font_family);
     let font_name = if s.bold {

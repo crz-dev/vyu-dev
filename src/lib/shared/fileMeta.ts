@@ -1,4 +1,3 @@
-// File metadata
 export function formatMetaDate(value: unknown): string {
   if (value === null || value === undefined) return "Unknown";
   const asNumber = typeof value === "number" ? value : Number(value);

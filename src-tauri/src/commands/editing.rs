@@ -1,4 +1,3 @@
-// Image editing
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -85,10 +84,7 @@ fn backup_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
         .join("backups"))
 }
 
-fn resolve_backup_root(
-    app: &tauri::AppHandle,
-    custom: Option<&str>,
-) -> Result<PathBuf, String> {
+fn resolve_backup_root(app: &tauri::AppHandle, custom: Option<&str>) -> Result<PathBuf, String> {
     match custom.filter(|dir| !dir.trim().is_empty()) {
         Some(dir) => Ok(PathBuf::from(dir)),
         None => backup_root(app),
@@ -97,17 +93,13 @@ fn resolve_backup_root(
 
 fn backup_dir(app: &tauri::AppHandle, custom: Option<&str>) -> Result<PathBuf, String> {
     let dir = resolve_backup_root(app, custom)?;
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("Failed to create backups dir: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create backups dir: {e}"))?;
     Ok(dir)
 }
 
 fn backup_file_name(source: &Path) -> String {
     let hash = hash_path_xxh3(&source.to_string_lossy());
-    let ext = source
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("bak");
+    let ext = source.extension().and_then(|e| e.to_str()).unwrap_or("bak");
     format!("{hash}.{ext}")
 }
 
@@ -537,8 +529,7 @@ pub async fn backup_file(
         }
 
         let temp = unique_temp(&dir, "vyu-backup");
-        std::fs::copy(&source_path, &temp)
-            .map_err(|e| format!("Failed to backup file: {e}"))?;
+        std::fs::copy(&source_path, &temp).map_err(|e| format!("Failed to backup file: {e}"))?;
         if let Err(e) = std::fs::rename(&temp, &backup_path) {
             let _ = std::fs::remove_file(&temp);
             return Err(format!("Failed to store backup: {e}"));
@@ -557,8 +548,7 @@ pub async fn get_backup_path(
 ) -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let source_path = canonicalize_path(&source)?;
-        let backup_path =
-            backup_path_for(&app, &source_path, custom_backup_dir.as_deref())?;
+        let backup_path = backup_path_for(&app, &source_path, custom_backup_dir.as_deref())?;
         Ok(backup_path
             .exists()
             .then(|| backup_path.to_string_lossy().to_string()))
@@ -616,8 +606,7 @@ pub async fn restore_backup(
 ) -> Result<bool, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let target = canonicalize_path(&path)?;
-        let backup_path =
-            backup_path_for(&app, &target, custom_backup_dir.as_deref())?;
+        let backup_path = backup_path_for(&app, &target, custom_backup_dir.as_deref())?;
         if !backup_path.exists() {
             return Ok(false);
         }

@@ -1,4 +1,3 @@
-// Markup state
 export const DRAW_COLORS = [
   "#000000",
   "#f87171",

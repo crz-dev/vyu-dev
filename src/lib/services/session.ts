@@ -1,4 +1,3 @@
-// Session utilities
 import type { ContextMenu } from "$lib/shared/types";
 
 export function computeContextMenuPosition(

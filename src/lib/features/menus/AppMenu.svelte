@@ -202,7 +202,7 @@
       aria-label="Open app menu"
       data-tooltip="Vyu"
     >
-      <img src="/app-icon.png" alt="vyu" class="app-icon" />
+      <img src="/favicon.png" alt="vyu" class="app-icon" />
     </button>
     <AppDropdownMenu
       visible={dropdownVisible}

@@ -1,0 +1,12 @@
+# Normalize text files to LF so Prettier and Git agree on line endings.
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.ico binary
+*.icns binary
+*.woff2 binary
+*.exe binary
+
+# SongRec sidecar: keep diffs and merges out of binary content.
+/src-tauri/binaries/songrec-x86_64-pc-windows-msvc.exe -diff -merge -text

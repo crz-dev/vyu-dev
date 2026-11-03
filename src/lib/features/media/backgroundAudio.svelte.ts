@@ -1,4 +1,3 @@
-// Background audio for browsing other files
 import { deleteResumePoint, saveResumePoint } from "$lib/services/storage";
 import {
   deleteResumePoint as dbDeleteResumePoint,

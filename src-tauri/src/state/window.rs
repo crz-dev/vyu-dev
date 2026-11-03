@@ -1,4 +1,3 @@
-// Window state
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};

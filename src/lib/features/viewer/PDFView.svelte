@@ -441,7 +441,8 @@
           class="pdf-page-label tooltip-ctrl"
           onclick={togglePagePanel}
           data-tooltip={showPagePanel ? "Close index" : "Open index"}
-          aria-label={showPagePanel ? "Close index" : "Open index"}>{i + 1}</button
+          aria-label={showPagePanel ? "Close index" : "Open index"}
+          >{i + 1}</button
         >
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(i + 1)}

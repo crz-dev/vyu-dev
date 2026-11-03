@@ -1,9 +1,8 @@
-// Clipboard operations
 use std::fs;
-use std::path::Path;
-use std::process::Command;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+use std::path::Path;
+use std::process::Command;
 
 use crate::constants::{CREATE_NO_WINDOW, RAW_IMAGE_EXTS_RUST};
 use crate::util::{ffmpeg_command, hash_path_xxh3};
@@ -15,7 +14,8 @@ pub async fn copy_image_to_clipboard(path: String) -> Result<(), String> {
         let is_raw = RAW_IMAGE_EXTS_RUST.contains(&ext.as_str());
 
         let img = if is_raw {
-            let temp_png = std::env::temp_dir().join(format!("vyu_clipboard_{}.png", hash_path_xxh3(&path)));
+            let temp_png =
+                std::env::temp_dir().join(format!("vyu_clipboard_{}.png", hash_path_xxh3(&path)));
             ffmpeg_command()
                 .args([
                     "-y",

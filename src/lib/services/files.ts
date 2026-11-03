@@ -1,4 +1,3 @@
-// Filesystem operations
 import { invoke } from "@tauri-apps/api/core";
 import { readDir } from "@tauri-apps/plugin-fs";
 import {

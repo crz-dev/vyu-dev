@@ -45,7 +45,7 @@ Retro vinyl and Modern cassette layouts, waveform scrubbing, markers, and clip b
 - **Keyboard:** F for fullscreen, arrows to browse or seek, space to play, L for the Library, and more.
 - **Privacy & playback:** privacy mode obscures thumbnails and paths; background audio keeps a track playing while you browse.
 - **Session persistence:** window position, playback resume points, and last-used settings.
-- **Song identification:** optional online lookup through the bundled SongRec sidecar.
+- **Song identification:** optional online lookup through the SongRec sidecar.
 
 ---
 
@@ -90,6 +90,7 @@ Retro vinyl and Modern cassette layouts, waveform scrubbing, markers, and clip b
 - **Rust** via [rustup.rs](https://rustup.rs), plus the MSVC C++ Build Tools.
 - **Node.js + pnpm** — `npm install -g pnpm` or [corepack](https://nodejs.org/api/corepack.html).
 - **FFmpeg** — downloaded automatically before `pnpm tauri dev` or `pnpm tauri build`. The first run needs internet and either Windows `tar` or 7-Zip to extract the archive.
+- **SongRec** — required only for Song ID. Place the Windows binary at `src-tauri/binaries/songrec-x86_64-pc-windows-msvc.exe` before building; the checked-in placeholder is not a working binary.
 
 ## Commands
 
@@ -103,7 +104,7 @@ Retro vinyl and Modern cassette layouts, waveform scrubbing, markers, and clip b
 | Format (writes) | `pnpm format`                                      |
 | Repair FFmpeg   | `pnpm ffmpeg:ensure`                               |
 
-`pnpm check` covers Svelte and TypeScript; `cargo check` covers Rust. `pnpm build` verifies the frontend bundle, and `cargo test --manifest-path src-tauri/Cargo.toml` runs the Rust unit tests in `util.rs`, `types.rs`, and `editing.rs`. There is no frontend test suite. For a format check without writing files, use `pnpm prettier --check <paths>`.
+`pnpm check` covers Svelte and TypeScript; `cargo check` covers Rust. `pnpm build` verifies the frontend bundle, and `cargo test --manifest-path src-tauri/Cargo.toml` runs the Rust unit tests in `commands/` and the shared backend modules. There is no frontend test suite. For a format check without writing files, use `pnpm prettier --check <paths>`.
 
 The dev server is pinned to port **1420** (`strictPort: true`). Make sure it is free.
 
@@ -126,7 +127,7 @@ src-tauri/              # Rust backend
 ├── src/state/          # Window state persistence
 ├── src/{lib,constants,types,util}.rs
 ├── resources/          # Provisioned FFmpeg (generated)
-├── binaries/           # SongRec sidecar
+├── binaries/           # SongRec sidecar (place the real binary here)
 ├── capabilities/       # Tauri permissions
 ├── tauri.conf.json
 └── Cargo.toml

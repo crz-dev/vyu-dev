@@ -1,4 +1,3 @@
-// Library sections
 import {
   IMAGE_EXTS,
   VIDEO_EXTS,

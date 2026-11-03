@@ -1,4 +1,3 @@
-// Viewer state
 import { editing } from "$lib/features/editing/editing.svelte";
 import { ZOOM_MIN } from "$lib/shared/constants";
 

@@ -1,4 +1,3 @@
-// Font state
 import { loadFont, saveFont } from "$lib/services/storage";
 
 export type FontFamily = "geist" | "satoshi" | "system";

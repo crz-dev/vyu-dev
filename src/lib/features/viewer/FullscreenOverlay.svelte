@@ -92,7 +92,10 @@
 {#if isFullscreen}
   {#if isPdf}
     <!-- PDF fullscreen: floating UI only, no blocking overlay -->
-    <div class="fs-topbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 200;">
+    <div
+      class="fs-topbar"
+      style="position: fixed; top: 0; left: 0; right: 0; z-index: 200;"
+    >
       <span class="fs-filename"
         ><Marquee text={fileName} scrollOnHover class="fs-marquee" /></span
       >
@@ -126,7 +129,12 @@
         aria-label="next file">›</button
       >
     </div>
-    <div class="fs-controls image-only" style="position: fixed; left: 0; right: 0; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible ? '' : 'opacity: 0; pointer-events: none;'}">
+    <div
+      class="fs-controls image-only"
+      style="position: fixed; left: 0; right: 0; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible
+        ? ''
+        : 'opacity: 0; pointer-events: none;'}"
+    >
       <div class="fs-controls-row">
         <div class="fs-right">
           <button
@@ -156,7 +164,9 @@
         data-tooltip="File position"
         onclick={toggleThumbnailBar}
         oncontextmenu={handleFsPillContext}
-        style="position: fixed; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible ? '' : 'opacity: 0; pointer-events: none;'}"
+        style="position: fixed; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible
+          ? ''
+          : 'opacity: 0; pointer-events: none;'}"
       >
         {currentIndex + 1} / {fileListLength}
       </button>
@@ -183,8 +193,10 @@
           ><Marquee text={fileName} scrollOnHover class="fs-marquee" /></span
         >
         <div class="fs-window-controls">
-          <button class="fs-wc-btn" onclick={minimizeWindow} aria-label="minimize"
-            >−</button
+          <button
+            class="fs-wc-btn"
+            onclick={minimizeWindow}
+            aria-label="minimize">−</button
           ><button
             class="fs-wc-btn"
             onclick={maximizeWindow}

@@ -1,4 +1,3 @@
-// System IPC wrappers
 import { invoke } from "@tauri-apps/api/core";
 
 export interface SystemConfig {

@@ -1,4 +1,3 @@
-// Debug and diagnostics types
 import type { FfmpegInfo } from "$lib/features/media/api";
 import type {
   CacheStats,

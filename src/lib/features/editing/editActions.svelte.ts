@@ -1,4 +1,3 @@
-// Edit actions
 import { save } from "@tauri-apps/plugin-dialog";
 import { exists, stat } from "@tauri-apps/plugin-fs";
 import { getFileExt, joinPath } from "$lib/services/files";

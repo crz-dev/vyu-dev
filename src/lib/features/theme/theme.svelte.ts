@@ -1,4 +1,3 @@
-// Theme state
 import {
   loadDarkVariant,
   loadTheme,

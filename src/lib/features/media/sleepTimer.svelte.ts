@@ -1,4 +1,3 @@
-// Sleep timer
 function createSleepTimer() {
   let endAt = $state<number | null>(null);
   let remainingSecs = $state(0);

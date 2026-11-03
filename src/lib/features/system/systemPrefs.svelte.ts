@@ -1,4 +1,3 @@
-// System preferences
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   clearLastFile as clearStoredLastFile,

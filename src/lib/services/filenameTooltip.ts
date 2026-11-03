@@ -1,4 +1,3 @@
-// Filename tooltip
 import {
   hideFloatingTooltip,
   showFloatingTooltip,

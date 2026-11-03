@@ -1,4 +1,3 @@
-// File open actions
 import { open } from "@tauri-apps/plugin-dialog";
 import { ALL_EXTS, AUDIO_EXTS } from "$lib/shared/constants";
 

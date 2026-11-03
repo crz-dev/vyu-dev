@@ -1,4 +1,3 @@
-// Schema migrations
 use rusqlite::Connection;
 
 const SCHEMA_VERSION: i32 = 1;

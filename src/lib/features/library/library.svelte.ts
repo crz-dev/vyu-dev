@@ -1,4 +1,3 @@
-// Library state
 import { untrack } from "svelte";
 import {
   invokeGetThumbnails,

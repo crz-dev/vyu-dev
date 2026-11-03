@@ -11,6 +11,6 @@
     "strict": true,
     "moduleResolution": "bundler"
   }
-  // Path aliases handled by SvelteKit (see docs/configuration#alias).
+  // Path aliases handled by SvelteKit.
   // TypeScript does not merge includes/excludes from referenced tsconfig.
 }

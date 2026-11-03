@@ -7,7 +7,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 - **Frontend:** `src/` — Svelte 5 runes, TypeScript strict, SvelteKit static SPA, no SSR. One page route (`+page.svelte`); `+layout` and `+error` are scaffolding only.
 - **Backend:** `src-tauri/src/` — Tauri 2 + Rust, Windows-only, Win32 APIs. `lib.rs` is startup, plugin registration, command wiring, and window lifecycle only.
 - **Shared backend:** `util.rs`, `types.rs`, `constants.rs`, `state/`, `database/`.
-- **Privacy boundary:** the webview CSP uses `connect-src 'self'` (`tauri.conf.json`), so frontend code cannot make arbitrary network requests. The bundled SongRec sidecar and the user-initiated update check in `commands/system.rs` are the only components that make network requests; external-app and browser launches are user-initiated.
+- **Privacy boundary:** the webview CSP uses `connect-src 'self'` (`tauri.conf.json`), so frontend code cannot make arbitrary network requests. The SongRec sidecar (supplied at build time) and the user-initiated update check in `commands/system.rs` are the only components that make network requests; external-app and browser launches are user-initiated.
 
 ## Composition and data flow
 

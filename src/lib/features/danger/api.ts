@@ -1,4 +1,3 @@
-// Danger Zone IPC wrappers
 import { invoke } from "@tauri-apps/api/core";
 
 export type MarkerClearMode = "timestamps" | "clips" | "all";

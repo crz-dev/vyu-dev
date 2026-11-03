@@ -35,6 +35,7 @@
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
   import { showToast, updateToast } from "$lib/components/toast.svelte";
+  import { joinPath } from "$lib/services/files";
 
   let {
     contextMenu,
@@ -316,9 +317,13 @@
           duration: 3000,
         });
       }
-    } catch {
+    } catch (e) {
+      const message =
+        typeof e === "string" && e.toLowerCase().includes("sidecar")
+          ? "Song ID is unavailable in this build"
+          : "Shazam failed \u2014 check your internet connection";
       updateToast(toastId, {
-        message: "Shazam failed \u2014 check your internet connection",
+        message,
         color: "blue",
         duration: 3000,
       });
@@ -377,12 +382,50 @@
     await shareAction(() => invokeSetWallpaper(filePath), "Wallpaper set");
   }
 
-  async function handleSaveAs(format: string) {
-    const outputDir = conversionOutputDir();
-    if (!outputDir) {
-      showToast({ message: "Pick a save location", color: "yellow" });
-      return;
+  async function finalizeSave(
+    success: boolean,
+    resultPath: string | null,
+    revealDir: string,
+    modifiedMs: number | null,
+  ) {
+    if (success) {
+      await restoreModifiedTime(resultPath, modifiedMs);
     }
+    if (success && conversionPrefs.openOutputFolder) {
+      try {
+        await invokeOpenDirectory(revealDir);
+      } catch {
+        // revealing the output is best-effort
+      }
+    }
+    if (
+      success &&
+      shareDeleteOriginal &&
+      resultPath &&
+      resultPath !== filePath
+    ) {
+      try {
+        await invokeTrashFile(filePath);
+      } catch (e) {
+        console.error("Failed to delete original:", e);
+        showToast({
+          message: "Converted but couldn't move original to trash",
+          color: "red",
+        });
+      }
+    }
+    if (success && conversionPrefs.autoOpenConverted && resultPath) {
+      onOpenConverted?.(resultPath);
+    }
+  }
+
+  async function runSaveAs(opts: {
+    outputDir: string;
+    revealDir: string;
+    format: string;
+    outputPath?: string;
+  }) {
+    const { outputDir, revealDir, format, outputPath } = opts;
     const modifiedMs = await sourceModifiedMs();
     shareConverting = true;
     let success = false;
@@ -402,9 +445,11 @@
       }
 
       if (sourceExt === format) {
-        if (conversionPrefs.overwriteExisting) {
-          const sep = outputDir.includes("\\") ? "\\" : "/";
-          const destination = `${outputDir}${sep}${fileName}`;
+        if (outputPath) {
+          await invokeCopyFile(filePath, outputPath);
+          resultPath = outputPath;
+        } else if (conversionPrefs.overwriteExisting) {
+          const destination = joinPath(outputDir, fileName);
           if (destination !== filePath) {
             await invokeCopyFile(filePath, destination);
           }
@@ -416,14 +461,14 @@
         resultPath = await invokeConvertAudioToWaveformVideo(
           filePath,
           outputDir,
-          undefined,
+          outputPath,
           conversionOptions(),
         );
       } else if (isImage && format === "pdf") {
         resultPath = await invokeConvertImageToPdf(
           filePath,
           outputDir,
-          undefined,
+          outputPath,
           conversionPrefs.overwriteExisting,
         );
       } else {
@@ -432,7 +477,7 @@
           outputDir,
           format,
           conversionPreset(),
-          undefined,
+          outputPath,
           conversionOptions(),
         );
       }
@@ -457,36 +502,17 @@
       convertProgress = 0;
       unlisten?.();
     }
-    if (success) {
-      await restoreModifiedTime(resultPath, modifiedMs);
-    }
-    if (success && conversionPrefs.openOutputFolder) {
-      try {
-        await invokeOpenDirectory(outputDir);
-      } catch {
-        // revealing the output is best-effort
-      }
-    }
-    if (
-      success &&
-      shareDeleteOriginal &&
-      resultPath &&
-      resultPath !== filePath
-    ) {
-      try {
-        await invokeTrashFile(filePath);
-      } catch (e) {
-        console.error("Failed to delete original:", e);
-        showToast({
-          message: "Converted but couldn't move original to trash",
-          color: "red",
-        });
-      }
-    }
-    if (success && conversionPrefs.autoOpenConverted && resultPath) {
-      onOpenConverted?.(resultPath);
-    }
+    await finalizeSave(success, resultPath, revealDir, modifiedMs);
     closeShare();
+  }
+
+  async function handleSaveAs(format: string) {
+    const outputDir = conversionOutputDir();
+    if (!outputDir) {
+      showToast({ message: "Pick a save location", color: "yellow" });
+      return;
+    }
+    await runSaveAs({ outputDir, revealDir: outputDir, format });
   }
 
   async function handleSaveAsOther() {
@@ -558,7 +584,6 @@
 
     const outputPath = await save({ defaultPath, filters });
     if (!outputPath) return;
-    const modifiedMs = await sourceModifiedMs();
 
     const outputExt = outputPath.split(".").pop()?.toLowerCase() || "";
     if (!outputExt) {
@@ -570,101 +595,12 @@
     const lastSep = outputPath.lastIndexOf(sep);
     const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";
 
-    shareConverting = true;
-    let success = false;
-    let resultPath: string | null = null;
-    let unlisten: (() => void) | undefined;
-    try {
-      const sourceExt = fileExt().toLowerCase().replace(".", "");
-
-      const isWaveformConvert = isAudio && outputExt === "mp4";
-
-      if (isWaveformConvert) {
-        convertingFormat = outputExt;
-        convertProgress = 0;
-        unlisten = await listen<number>("conversion-progress", (event) => {
-          convertProgress = event.payload;
-        });
-      }
-
-      if (sourceExt === outputExt) {
-        await invokeCopyFile(filePath, outputPath);
-        resultPath = outputPath;
-      } else if (isWaveformConvert) {
-        resultPath = await invokeConvertAudioToWaveformVideo(
-          filePath,
-          outputDirFromSave,
-          outputPath,
-          conversionOptions(),
-        );
-      } else if (isImage && outputExt === "pdf") {
-        resultPath = await invokeConvertImageToPdf(
-          filePath,
-          outputDirFromSave,
-          outputPath,
-          conversionPrefs.overwriteExisting,
-        );
-      } else {
-        resultPath = await invokeConvertMedia(
-          filePath,
-          outputDirFromSave,
-          outputExt,
-          conversionPreset(),
-          outputPath,
-          conversionOptions(),
-        );
-      }
-      showToast({
-        message: "Saved as " + outputExt.toUpperCase(),
-        color: "green",
-        duration: 5000,
-      });
-      success = true;
-    } catch (e) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : typeof e === "string"
-            ? e
-            : "Conversion failed";
-      console.error("Save as failed:", e);
-      showToast({ message: msg, color: "red" });
-    } finally {
-      shareConverting = false;
-      convertingFormat = undefined;
-      convertProgress = 0;
-      unlisten?.();
-    }
-    if (success) {
-      await restoreModifiedTime(resultPath, modifiedMs);
-    }
-    if (success && conversionPrefs.openOutputFolder) {
-      try {
-        await invokeOpenDirectory(outputDirFromSave);
-      } catch {
-        // revealing the output is best-effort
-      }
-    }
-    if (
-      success &&
-      shareDeleteOriginal &&
-      resultPath &&
-      resultPath !== filePath
-    ) {
-      try {
-        await invokeTrashFile(filePath);
-      } catch (e) {
-        console.error("Failed to delete original:", e);
-        showToast({
-          message: "Converted but couldn't move original to trash",
-          color: "red",
-        });
-      }
-    }
-    if (success && conversionPrefs.autoOpenConverted && resultPath) {
-      onOpenConverted?.(resultPath);
-    }
-    closeShare();
+    await runSaveAs({
+      outputDir: outputDirFromSave,
+      revealDir: outputDirFromSave,
+      format: outputExt,
+      outputPath,
+    });
   }
 </script>
 

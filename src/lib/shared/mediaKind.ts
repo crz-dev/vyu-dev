@@ -1,4 +1,3 @@
-// Media kind detection
 import { getFileExt } from "$lib/services/files";
 import {
   VIDEO_EXTS,

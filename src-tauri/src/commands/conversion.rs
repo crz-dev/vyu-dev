@@ -1,17 +1,14 @@
-// Media conversion
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
-use crate::constants::{
-    BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST,
-};
+use crate::constants::{BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST};
 use crate::util::{
-    ffmpeg_binary_path, ffmpeg_command, ffmpeg_version, ffprobe_binary_path,
-    ffprobe_command, ffprobe_version, hardware_h264_encoders, hash_path_xxh3,
-    resolve_hardware_h264_encoder, resolve_output_path, unique_path,
+    ffmpeg_binary_path, ffmpeg_command, ffmpeg_version, ffprobe_binary_path, ffprobe_command,
+    ffprobe_version, hardware_h264_encoders, hash_path_xxh3, resolve_hardware_h264_encoder,
+    resolve_output_path, unique_path,
 };
 
 // Write PSD file — binary header follows the PSD spec (magic "8BPS", version 1, RGB color mode, 8-bit channel)
@@ -19,20 +16,26 @@ fn write_psd_flat(path: &Path, width: u32, height: u32, rgb: &[u8]) -> Result<()
     let mut f = fs::File::create(path).map_err(|e| format!("Failed to create PSD: {e}"))?;
 
     f.write_all(b"8BPS").map_err(|e| e.to_string())?;
-    f.write_all(&1u16.to_be_bytes()).map_err(|e| e.to_string())?;
+    f.write_all(&1u16.to_be_bytes())
+        .map_err(|e| e.to_string())?;
     f.write_all(&[0u8; 6]).map_err(|e| e.to_string())?;
-    f.write_all(&3u16.to_be_bytes()).map_err(|e| e.to_string())?;
+    f.write_all(&3u16.to_be_bytes())
+        .map_err(|e| e.to_string())?;
     f.write_all(&(height as u32).to_be_bytes())
         .map_err(|e| e.to_string())?;
     f.write_all(&(width as u32).to_be_bytes())
         .map_err(|e| e.to_string())?;
-    f.write_all(&8u16.to_be_bytes()).map_err(|e| e.to_string())?;
+    f.write_all(&8u16.to_be_bytes())
+        .map_err(|e| e.to_string())?;
     f.write_all(&3u16.to_be_bytes())
         .map_err(|e| e.to_string())?;
 
-    f.write_all(&0u32.to_be_bytes()).map_err(|e| e.to_string())?;
-    f.write_all(&0u32.to_be_bytes()).map_err(|e| e.to_string())?;
-    f.write_all(&0u32.to_be_bytes()).map_err(|e| e.to_string())?;
+    f.write_all(&0u32.to_be_bytes())
+        .map_err(|e| e.to_string())?;
+    f.write_all(&0u32.to_be_bytes())
+        .map_err(|e| e.to_string())?;
+    f.write_all(&0u32.to_be_bytes())
+        .map_err(|e| e.to_string())?;
 
     f.write_all(&0u16.to_be_bytes())
         .map_err(|e| e.to_string())?;
@@ -162,12 +165,7 @@ fn append_video_quality(args: &mut Vec<String>, encoder: &str, preset: &str) {
             args.extend(["-global_quality".into(), crf.into()]);
         }
         "h264_amf" => {
-            args.extend([
-                "-qp_i".into(),
-                crf.into(),
-                "-qp_p".into(),
-                crf.into(),
-            ]);
+            args.extend(["-qp_i".into(), crf.into(), "-qp_p".into(), crf.into()]);
         }
         _ => {
             args.extend([
@@ -226,12 +224,7 @@ fn build_convert_args(
         "mkv" => {
             args.extend(["-c:v".into(), encoder.into()]);
             append_video_quality(&mut args, encoder, preset);
-            args.extend([
-                "-c:a".into(),
-                "aac".into(),
-                "-b:a".into(),
-                bitrate.clone(),
-            ]);
+            args.extend(["-c:a".into(), "aac".into(), "-b:a".into(), bitrate.clone()]);
         }
         "webm" => {
             args.extend([
@@ -293,12 +286,7 @@ fn build_convert_args(
             ]);
         }
         "aac" => {
-            args.extend([
-                "-c:a".into(),
-                "aac".into(),
-                "-b:a".into(),
-                bitrate.clone(),
-            ]);
+            args.extend(["-c:a".into(), "aac".into(), "-b:a".into(), bitrate.clone()]);
         }
         "opus" => {
             args.extend([
@@ -473,7 +461,13 @@ fn convert_audio_to_waveform_video_sync(
         return Err("Source file does not exist".into());
     }
 
-    let mut output_path = resolve_output_path(&input, &output_dir, custom_output.as_deref(), "_waveform", "mp4");
+    let mut output_path = resolve_output_path(
+        &input,
+        &output_dir,
+        custom_output.as_deref(),
+        "_waveform",
+        "mp4",
+    );
     if custom_output.is_none() && !overwrite {
         output_path = unique_path(output_path);
     }
@@ -487,9 +481,15 @@ fn convert_audio_to_waveform_video_sync(
     let has_artwork = cover_art_mode != "waveform"
         && ffmpeg_command()
             .args([
-                "-y", "-hide_banner", "-loglevel", "error",
-                "-i", &input.to_string_lossy(),
-                "-an", "-frames:v", "1",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                &input.to_string_lossy(),
+                "-an",
+                "-frames:v",
+                "1",
                 &temp_image.to_string_lossy(),
             ])
             .output()
@@ -503,29 +503,37 @@ fn convert_audio_to_waveform_video_sync(
     if !has_artwork {
         let wf_output = ffmpeg_command()
             .args([
-                "-y", "-hide_banner", "-loglevel", "error",
-                "-i", &input.to_string_lossy(),
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                &input.to_string_lossy(),
                 "-filter_complex",
                 "[0:a]showwavespic=s=1920x1080:colors=white",
-                "-frames:v", "1",
+                "-frames:v",
+                "1",
                 &temp_image.to_string_lossy(),
             ])
             .output()
             .map_err(|e| format!("Failed to generate waveform: {e}"))?;
         if !wf_output.status.success() {
             let _ = fs::remove_file(&temp_image);
-            return Err(
-                String::from_utf8_lossy(&wf_output.stderr).trim().to_string(),
-            );
+            return Err(String::from_utf8_lossy(&wf_output.stderr)
+                .trim()
+                .to_string());
         }
     }
 
     // Step 2: Probe audio duration
     let duration_ms: f64 = ffprobe_command()
         .args([
-            "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "csv=p=0",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "csv=p=0",
             &input.to_string_lossy(),
         ])
         .output()

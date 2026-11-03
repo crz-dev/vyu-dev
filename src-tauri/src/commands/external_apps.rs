@@ -1,12 +1,11 @@
-// External apps
+use serde::Serialize;
 use std::fs;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 #[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-#[cfg(target_os = "windows")]
 use windows::core::Interface;
-use serde::Serialize;
 
 use crate::constants::CREATE_NO_WINDOW;
 use crate::util::{canonicalize_path, ffprobe_command};
@@ -17,12 +16,35 @@ pub struct SongIdentification {
     pub artist: String,
 }
 
+// Tauri places sidecars next to the executable. A placeholder file is worse than
+// a missing one because the build succeeds while the command fails at runtime.
+fn ensure_sidecar_ready() -> Result<(), String> {
+    let Ok(exe) = std::env::current_exe() else {
+        return Ok(());
+    };
+    let Some(dir) = exe.parent() else {
+        return Ok(());
+    };
+    for name in ["songrec.exe", "songrec-x86_64-pc-windows-msvc.exe"] {
+        let path = dir.join(name);
+        if !path.is_file() {
+            continue;
+        }
+        if path.metadata().map(|m| m.len()).unwrap_or(0) == 0 {
+            return Err("Song ID sidecar is missing or invalid in this build".into());
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn identify_song(
     app: tauri::AppHandle,
     file_path: String,
 ) -> Result<Option<SongIdentification>, String> {
     use tauri_plugin_shell::ShellExt;
+
+    ensure_sidecar_ready()?;
 
     let p = PathBuf::from(&file_path);
     if !p.exists() {
@@ -214,10 +236,7 @@ pub fn create_desktop_shortcut(path: String) -> Result<(), String> {
                 windows::Win32::System::Com::COINIT_APARTMENTTHREADED,
             );
             if hr.is_err() && hr.0 != 0 {
-                return Err(format!(
-                    "COM initialization failed: HRESULT {:#x}",
-                    hr.0
-                ));
+                return Err(format!("COM initialization failed: HRESULT {:#x}", hr.0));
             }
 
             let com_result = (|| -> Result<(), String> {
@@ -242,8 +261,7 @@ pub fn create_desktop_shortcut(path: String) -> Result<(), String> {
                     .map_err(|e| format!("IPersistFile cast failed: {e}"))?;
 
                 let user_profile = std::env::var("USERPROFILE").unwrap_or_default();
-                let file_stem =
-                    p.file_stem().and_then(|s| s.to_str()).unwrap_or("shortcut");
+                let file_stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("shortcut");
                 let lnk_path = format!("{user_profile}\\Desktop\\{file_stem}.lnk");
 
                 let final_lnk = if Path::new(&lnk_path).exists() {
@@ -426,10 +444,7 @@ pub fn open_in_vlc(path: String, executable: Option<String>) -> Result<(), Strin
 }
 
 #[tauri::command]
-pub async fn open_in_spotify(
-    path: String,
-    executable: Option<String>,
-) -> Result<(), String> {
+pub async fn open_in_spotify(path: String, executable: Option<String>) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || open_in_spotify_sync(path, executable))
         .await
         .map_err(|e| format!("Thread join error: {e}"))?
@@ -522,17 +537,13 @@ pub fn open_with_dialog(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn get_media_properties(
-    path: String,
-) -> Result<crate::types::MediaProperties, String> {
+pub async fn get_media_properties(path: String) -> Result<crate::types::MediaProperties, String> {
     tauri::async_runtime::spawn_blocking(move || get_media_properties_sync(path))
         .await
         .map_err(|e| format!("Thread join error: {e}"))?
 }
 
-fn get_media_properties_sync(
-    path: String,
-) -> Result<crate::types::MediaProperties, String> {
+fn get_media_properties_sync(path: String) -> Result<crate::types::MediaProperties, String> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("File does not exist".into());

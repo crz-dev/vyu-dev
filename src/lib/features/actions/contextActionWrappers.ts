@@ -1,4 +1,3 @@
-// Context action wrappers
 import type { MediaProperties } from "$lib/shared/types";
 import {
   ctxCopyImage,

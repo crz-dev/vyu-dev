@@ -1,4 +1,3 @@
-// Central media state
 import { volumeToActual } from "$lib/features/media/playback.svelte";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { stat } from "@tauri-apps/plugin-fs";

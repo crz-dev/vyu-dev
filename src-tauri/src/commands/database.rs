@@ -1,4 +1,3 @@
-// Database commands
 use rusqlite::params;
 use serde::Serialize;
 use std::fs;
@@ -20,7 +19,9 @@ pub fn db_get_file_metadata(
     db: State<'_, DbConnection>,
     path: String,
 ) -> Result<Option<FileMetadata>, String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
         .prepare_cached(
             "SELECT path, last_position, timestamp_data, clips_data, eq_data,
@@ -61,7 +62,9 @@ pub fn db_save_file_metadata(
     cd_color: Option<i32>,
     last_viewed: Option<i64>,
 ) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let now = now_secs();
 
     let mut stmt = conn
@@ -111,18 +114,19 @@ pub fn db_clear_file_metadata_field(
         _ => return Err(format!("Unknown field: {field}")),
     };
 
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     conn.execute(sql, params![path])
         .map_err(|e| format!("Failed to clear field: {e}"))?;
     Ok(())
 }
 
 #[tauri::command]
-pub fn db_delete_file_metadata(
-    db: State<'_, DbConnection>,
-    path: String,
-) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+pub fn db_delete_file_metadata(db: State<'_, DbConnection>, path: String) -> Result<(), String> {
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     conn.execute("DELETE FROM file_metadata WHERE path = ?1", params![path])
         .map_err(|e| format!("Failed to delete file metadata: {e}"))?;
     Ok(())
@@ -155,13 +159,18 @@ pub fn db_migrate_file_path(
     if old_path == new_path {
         return Ok(0);
     }
-    let mut conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let mut conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let tx = conn
         .transaction()
         .map_err(|e| format!("Failed to begin transaction: {e}"))?;
     // The destination file did not exist before the rename, so any row there is stale.
-    tx.execute("DELETE FROM file_metadata WHERE path = ?1", params![&new_path])
-        .map_err(|e| format!("Failed to clear destination metadata: {e}"))?;
+    tx.execute(
+        "DELETE FROM file_metadata WHERE path = ?1",
+        params![&new_path],
+    )
+    .map_err(|e| format!("Failed to clear destination metadata: {e}"))?;
     let changed = tx
         .execute(
             "UPDATE file_metadata SET path = ?1 WHERE path = ?2",
@@ -182,7 +191,9 @@ pub fn db_migrate_folder_paths(
     if old_folder == new_folder {
         return Ok(0);
     }
-    let mut conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let mut conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
 
     let paths: Vec<String> = {
         let mut stmt = conn
@@ -208,15 +219,17 @@ pub fn db_migrate_folder_paths(
             continue;
         }
         let new_path = format!("{new_root}{suffix}");
-        tx.execute("DELETE FROM file_metadata WHERE path = ?1", params![&new_path])
-            .map_err(|e| format!("Failed to clear destination metadata: {e}"))?;
-        changed += tx
-            .execute(
+        tx.execute(
+            "DELETE FROM file_metadata WHERE path = ?1",
+            params![&new_path],
+        )
+        .map_err(|e| format!("Failed to clear destination metadata: {e}"))?;
+        changed +=
+            tx.execute(
                 "UPDATE file_metadata SET path = ?1 WHERE path = ?2",
                 params![&new_path, &path],
             )
-            .map_err(|e| format!("Failed to migrate folder metadata: {e}"))?
-            as u64;
+            .map_err(|e| format!("Failed to migrate folder metadata: {e}"))? as u64;
     }
     tx.commit()
         .map_err(|e| format!("Failed to commit metadata migration: {e}"))?;
@@ -224,11 +237,10 @@ pub fn db_migrate_folder_paths(
 }
 
 #[tauri::command]
-pub fn db_get_setting(
-    db: State<'_, DbConnection>,
-    key: String,
-) -> Result<Option<String>, String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+pub fn db_get_setting(db: State<'_, DbConnection>, key: String) -> Result<Option<String>, String> {
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
         .prepare_cached("SELECT value FROM settings WHERE key = ?1")
         .map_err(|e| format!("Failed to prepare query: {e}"))?;
@@ -246,7 +258,9 @@ pub fn db_set_setting(
     key: String,
     value: String,
 ) -> Result<(), String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
         .prepare_cached(
             "INSERT INTO settings (key, value) VALUES (?1, ?2)
@@ -264,7 +278,9 @@ pub fn db_batch_upsert_file_metadata(
     db: State<'_, DbConnection>,
     entries: Vec<FileMetadataBatchEntry>,
 ) -> Result<(), String> {
-    let mut conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let mut conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let tx = conn
         .transaction()
         .map_err(|e| format!("Failed to begin transaction: {e}"))?;
@@ -310,7 +326,9 @@ pub fn db_get_file_metadata_light(
     db: State<'_, DbConnection>,
     path: String,
 ) -> Result<Option<FileMetadataLight>, String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
         .prepare_cached(
             "SELECT path, last_position, timestamp_data, clips_data, updated_at
@@ -342,7 +360,9 @@ pub fn db_get_file_metadata_position(
     db: State<'_, DbConnection>,
     path: String,
 ) -> Result<Option<FileMetadataPosition>, String> {
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let mut stmt = conn
         .prepare_cached(
             "SELECT path, last_position, updated_at
@@ -388,10 +408,9 @@ fn file_size(path: &Path) -> u64 {
 fn read_database_stats(app: &AppHandle) -> Result<DatabaseStats, String> {
     let (path, wal) = database_paths(app)?;
     let db = app.state::<DbConnection>();
-    let conn = db
-        .0
-        .lock()
-        .map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     let metadata_rows: u64 = conn
         .query_row("SELECT COUNT(*) FROM file_metadata", [], |row| {
             row.get::<_, i64>(0)
@@ -426,11 +445,9 @@ fn marker_clear_sql(mode: &str) -> Result<&'static str, String> {
             "UPDATE file_metadata SET clips_data = NULL, updated_at = ?1 \
              WHERE clips_data IS NOT NULL",
         ),
-        "all" => Ok(
-            "UPDATE file_metadata
+        "all" => Ok("UPDATE file_metadata
              SET timestamp_data = NULL, clips_data = NULL, updated_at = ?1
-             WHERE timestamp_data IS NOT NULL OR clips_data IS NOT NULL",
-        ),
+             WHERE timestamp_data IS NOT NULL OR clips_data IS NOT NULL"),
         _ => Err(format!("Unknown marker mode: {mode}")),
     }
 }
@@ -438,7 +455,9 @@ fn marker_clear_sql(mode: &str) -> Result<&'static str, String> {
 #[tauri::command]
 pub fn clear_all_markers(db: State<'_, DbConnection>, mode: String) -> Result<u64, String> {
     let sql = marker_clear_sql(&mode)?;
-    let conn = db.0.lock().map_err(|e| format!("Failed to lock database: {e}"))?;
+    let conn =
+        db.0.lock()
+            .map_err(|e| format!("Failed to lock database: {e}"))?;
     conn.execute(sql, params![now_secs()])
         .map(|count| count as u64)
         .map_err(|e| format!("Failed to clear markers: {e}"))
@@ -448,13 +467,12 @@ pub fn clear_all_markers(db: State<'_, DbConnection>, mode: String) -> Result<u6
 pub async fn factory_reset_database(app: AppHandle) -> Result<u64, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let db = app.state::<DbConnection>();
-        let conn = db
-            .0
-            .lock()
-            .map_err(|e| format!("Failed to lock database: {e}"))?;
-        let deleted = conn
-            .execute("DELETE FROM file_metadata", [])
-            .map_err(|e| format!("Failed to clear file metadata: {e}"))? as u64;
+        let conn =
+            db.0.lock()
+                .map_err(|e| format!("Failed to lock database: {e}"))?;
+        let deleted =
+            conn.execute("DELETE FROM file_metadata", [])
+                .map_err(|e| format!("Failed to clear file metadata: {e}"))? as u64;
         conn.execute("DELETE FROM settings", [])
             .map_err(|e| format!("Failed to clear database settings: {e}"))?;
         let _ = conn.execute_batch("VACUUM; PRAGMA wal_checkpoint(TRUNCATE);");
@@ -471,10 +489,9 @@ pub async fn vacuum_database(app: AppHandle) -> Result<u64, String> {
         let before = file_size(&path) + file_size(&wal);
         {
             let db = app.state::<DbConnection>();
-            let conn = db
-                .0
-                .lock()
-                .map_err(|e| format!("Failed to lock database: {e}"))?;
+            let conn =
+                db.0.lock()
+                    .map_err(|e| format!("Failed to lock database: {e}"))?;
             conn.execute_batch("VACUUM;")
                 .map_err(|e| format!("Failed to compact database: {e}"))?;
             let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
@@ -528,7 +545,10 @@ mod tests {
         .unwrap();
 
         let changed = conn
-            .execute(marker_clear_sql("timestamps").unwrap(), rusqlite::params![1])
+            .execute(
+                marker_clear_sql("timestamps").unwrap(),
+                rusqlite::params![1],
+            )
             .unwrap();
         assert_eq!(changed, 1);
 

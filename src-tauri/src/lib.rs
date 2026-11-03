@@ -1,10 +1,9 @@
-// Tauri setup
+mod commands;
 mod constants;
+mod database;
+mod state;
 mod types;
 mod util;
-mod state;
-mod commands;
-mod database;
 use commands::*;
 
 use std::fs;
@@ -84,7 +83,6 @@ pub fn run() {
             show_in_explorer,
             open_directory,
             get_media_properties,
-
             process_video_clips,
             rename_file,
             copy_file,
@@ -145,7 +143,6 @@ pub fn run() {
             create_collection_folder,
             delete_collection_folder,
             get_initial_file,
-
             get_system_config,
             get_system_restart_status,
             get_runtime_info,

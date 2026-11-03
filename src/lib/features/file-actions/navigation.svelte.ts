@@ -1,4 +1,3 @@
-// File navigation
 import { createMedia } from "$lib/features/media/media.svelte";
 import { createFolderWatcher } from "$lib/features/navigation/folderWatcher.svelte";
 import { editing } from "$lib/features/editing/editing.svelte";

@@ -1,4 +1,3 @@
-// AC/battery status polling
 import { invokeGetPowerStatus } from "$lib/features/system/api";
 
 function createPowerStatus() {

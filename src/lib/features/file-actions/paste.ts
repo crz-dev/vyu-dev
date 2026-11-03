@@ -1,4 +1,3 @@
-// Paste handler
 import { save } from "@tauri-apps/plugin-dialog";
 import {
   invokeGetClipboardFilePath,

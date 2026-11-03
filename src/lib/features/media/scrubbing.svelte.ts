@@ -1,4 +1,3 @@
-// Scrub state
 function createDiscScrubStore() {
   let discScrubHandlers = $state<{
     onScrubMove: (e: MouseEvent | TouchEvent, newProgress: number) => void;

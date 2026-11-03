@@ -1,4 +1,3 @@
-// Media state setters
 import { markerStore } from "$lib/features/markers/markers.svelte";
 import { loadCdColorForFile } from "$lib/features/media/cdColor";
 import type { MediaProperties } from "$lib/shared/types";

@@ -1,4 +1,3 @@
-// Debug IPC wrappers
 import { invoke } from "@tauri-apps/api/core";
 import type { DatabaseStats } from "$lib/features/debug/debugTypes";
 

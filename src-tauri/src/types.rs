@@ -1,7 +1,11 @@
-// Shared Rust types
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{Mutex, Semaphore, oneshot};
+use tokio::sync::{oneshot, Mutex, Semaphore};
+
+use crate::constants::{
+    AUDIO_EXTS_RUST, DOCUMENT_EXTS_RUST, FFMPEG_IMAGE_EXTS_RUST, IMAGE_EXTS_RUST,
+    RAW_IMAGE_EXTS_RUST, VIDEO_EXTS_RUST,
+};
 
 #[derive(serde::Serialize)]
 pub struct MediaProperties {
@@ -154,45 +158,20 @@ impl MediaKind {
             is_raw: false,
         };
 
-        match ext {
-            // Standard images (image crate)
-            "jpg" | "jpeg" | "png" | "webp" | "bmp" | "avif" => kind.is_image = true,
-            "tiff" | "tif" => kind.is_image = true,
-
-            // FFmpeg images
-            "jxl" | "heic" | "heif" => {
-                kind.is_image = true;
-                kind.is_ffmpeg_image = true;
-            }
-            "psd" => {
-                kind.is_image = true;
-                kind.is_ffmpeg_image = true;
-            }
-            "gif" => {
-                kind.is_image = true;
-                kind.is_ffmpeg_image = true;
-            }
-
-            // RAW camera formats
-            "dng" | "cr2" | "cr3" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "raf" | "rw2"
-            | "orf" | "pef" | "3fr" | "fff" | "iiq" | "kdc" | "mef" | "mos" | "x3f"
-            | "gpr" => {
-                kind.is_image = true;
-                kind.is_raw = true;
-            }
-
-            // Video
-            "mp4" | "webm" | "mkv" | "avi" | "mov" | "wmv" | "mpeg" | "mpg" | "ts" | "m2ts"
-            | "m4v" => kind.is_video = true,
-
-            // Audio
-            "mp3" | "wav" | "flac" | "ogg" | "aac" | "wma" | "m4a" | "opus" | "aiff"
-            | "alac" => kind.is_audio = true,
-
-            // Document
-            "pdf" => kind.is_document = true,
-
-            _ => {}
+        if RAW_IMAGE_EXTS_RUST.contains(&ext) {
+            kind.is_image = true;
+            kind.is_raw = true;
+        } else if FFMPEG_IMAGE_EXTS_RUST.contains(&ext) {
+            kind.is_image = true;
+            kind.is_ffmpeg_image = true;
+        } else if IMAGE_EXTS_RUST.contains(&ext) {
+            kind.is_image = true;
+        } else if VIDEO_EXTS_RUST.contains(&ext) {
+            kind.is_video = true;
+        } else if AUDIO_EXTS_RUST.contains(&ext) {
+            kind.is_audio = true;
+        } else if DOCUMENT_EXTS_RUST.contains(&ext) {
+            kind.is_document = true;
         }
 
         kind

@@ -1,5 +1,5 @@
-// App constants
 // ── File extensions ──
+
 export const IMAGE_EXTS = [
   "jpg",
   "jpeg",
@@ -36,6 +36,7 @@ export const IMAGE_EXTS = [
   "x3f",
   "gpr",
 ];
+
 export const VIDEO_EXTS = [
   "mp4",
   "webm",
@@ -49,6 +50,7 @@ export const VIDEO_EXTS = [
   "m2ts",
   "m4v",
 ];
+
 export const AUDIO_EXTS = [
   "mp3",
   "wav",
@@ -61,7 +63,9 @@ export const AUDIO_EXTS = [
   "aiff",
   "alac",
 ];
+
 export const DOCUMENT_EXTS = ["pdf"];
+
 export const ALL_EXTS = [
   ...IMAGE_EXTS,
   ...VIDEO_EXTS,
@@ -72,7 +76,6 @@ export const ALL_EXTS_SET: ReadonlySet<string> = new Set(ALL_EXTS);
 
 // ── CD colors ──
 
-// CD visual colors
 export const CD_COLORS = [
   "var(--red)",
   "var(--orange)",
@@ -121,7 +124,11 @@ export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
 
 export const REMUX_VIDEO_EXTS = new Set(["ts", "m2ts"]);
 
+// ── Playback and viewer ──
+
 export const VOLUME_SEGMENTS = 8;
+export const VOLUME_STEP = 1 / VOLUME_SEGMENTS;
+export const ZOOM_MIN = 10;
 export const LOOP_MODES = [
   "loop",
   "stop",
@@ -131,10 +138,8 @@ export const LOOP_MODES = [
 ] as const;
 export type LoopMode = (typeof LOOP_MODES)[number];
 
-export const ZOOM_MIN = 10;
-export const VOLUME_STEP = 1 / VOLUME_SEGMENTS;
+// ── Sort ──
 
-// ── Sort and loop ──
 export const SORT_MODES = [
   { value: "name", label: "Name" },
   { value: "date-modified", label: "Date modified" },

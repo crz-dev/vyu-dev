@@ -1,4 +1,3 @@
-// Keybind state and persistence
 import {
   KEYBIND_ACTIONS,
   KEYBIND_ACTIONS_BY_ID,
