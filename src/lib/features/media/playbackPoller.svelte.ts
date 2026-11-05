@@ -1,4 +1,5 @@
 import { markerStore } from "$lib/features/markers/markers.svelte";
+import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 
 export interface PlaybackPollerDeps {
   getIsVideo: () => boolean;
@@ -22,29 +23,34 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
 
     let rafId: number;
     let wasScrubbing = false;
+    let lastUpdate = 0;
 
-    function poll() {
+    function poll(now: number) {
       const el = mediaEl;
       if (!el) return;
 
-      try {
-        const isScrubbing = deps.getIsScrubbing();
-        if (!isScrubbing) {
-          const t = el.currentTime;
-          const d = el.duration || 0;
-          deps.setRawCurrentSecs(t);
-          deps.setProgress(d > 0 ? (t / d) * 100 : 0);
+      const interval = systemPrefs.batterySaverActive ? 1000 / 15 : 0;
+      if (now - lastUpdate >= interval) {
+        lastUpdate = now;
+        try {
+          const isScrubbing = deps.getIsScrubbing();
+          if (!isScrubbing) {
+            const t = el.currentTime;
+            const d = el.duration || 0;
+            deps.setRawCurrentSecs(t);
+            deps.setProgress(d > 0 ? (t / d) * 100 : 0);
 
-          // Skip AB loop for one frame after scrubbing ends to avoid
-          // racing with the final seek dispatched on mouseUp
-          const ab = markerStore.abLoopRegion;
-          if (ab && !wasScrubbing && t >= ab.end) {
-            el.currentTime = ab.start;
+            // Skip AB loop for one frame after scrubbing ends to avoid
+            // racing with the final seek dispatched on mouseUp
+            const ab = markerStore.abLoopRegion;
+            if (ab && !wasScrubbing && t >= ab.end) {
+              el.currentTime = ab.start;
+            }
           }
+          wasScrubbing = isScrubbing;
+        } catch {
+          // Decoder may be in a bad state — keep polling to maintain RAF chain
         }
-        wasScrubbing = isScrubbing;
-      } catch {
-        // Decoder may be in a bad state — keep polling to maintain RAF chain
       }
 
       rafId = requestAnimationFrame(poll);

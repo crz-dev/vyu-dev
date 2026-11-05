@@ -1,5 +1,6 @@
 <script lang="ts">
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 
   let {
     progress = 0,
@@ -136,7 +137,8 @@
 
     function tick() {
       frameCount++;
-      if (frameCount % 3 !== 0) {
+      const frameSkip = systemPrefs.batterySaverActive ? 6 : 3;
+      if (frameCount % frameSkip !== 0) {
         rafId = requestAnimationFrame(tick);
         return;
       }

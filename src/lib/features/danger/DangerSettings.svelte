@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { slide } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import { showToast } from "$lib/components/toast.svelte";
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
@@ -283,22 +283,26 @@
       <span class="danger-confirm-label"
         >Type <strong>{CRITICAL_WORDS[id]}</strong> to confirm</span
       >
-      <input
-        class="danger-confirm-input"
-        bind:value={typed}
-        placeholder={CRITICAL_WORDS[id]}
-        autocomplete="off"
-        spellcheck="false"
-        onkeydown={(e) => {
-          if (e.key === "Enter") confirmTyped();
-        }}
-      />
-      <button
-        class="settings-action-btn red"
-        disabled={busy !== null || !typedMatches(id)}
-        onclick={confirmTyped}>Confirm</button
-      >
-      <button class="settings-action-btn" onclick={resetPending}>Cancel</button>
+      <div class="danger-confirm-controls">
+        <input
+          class="danger-confirm-input"
+          bind:value={typed}
+          placeholder={CRITICAL_WORDS[id]}
+          autocomplete="off"
+          spellcheck="false"
+          onkeydown={(e) => {
+            if (e.key === "Enter") confirmTyped();
+          }}
+        />
+        <button
+          class="settings-action-btn red"
+          disabled={busy !== null || !typedMatches(id)}
+          onclick={confirmTyped}>Confirm</button
+        >
+        <button class="settings-action-btn" onclick={resetPending}
+          >Cancel</button
+        >
+      </div>
     </div>
   {/if}
 {/snippet}
@@ -351,176 +355,183 @@
         on your PC are never deleted from this panel.
       </p>
       <button
-        class="settings-action-btn yellow"
+        class="settings-action-btn red"
         onclick={() => (acknowledged = true)}
       >
         I understand
       </button>
     </div>
   {:else}
-    {#if hasActiveRisks}
-      <SettingsGroup label="Active Risks" icon="danger">
+    <div
+      class="danger-content"
+      transition:fade={{ duration: appearance.reducedMotion ? 0 : 180 }}
+    >
+      {#if hasActiveRisks}
+        <SettingsGroup label="Active Risks" icon="danger">
+          <SettingsRow
+            label="File backups are off"
+            hint="Edits may be applied without a saved original"
+            open={editing.backupMode === "off"}
+          >
+            {#snippet control()}
+              <button
+                class="settings-action-btn"
+                onclick={() => fixRisk("backups")}>Enable</button
+              >
+            {/snippet}
+          </SettingsRow>
+
+          <SettingsRow
+            label="Delete original after conversion"
+            hint="Converting permanently removes the source file"
+            open={conversionPrefs.deleteOriginal}
+          >
+            {#snippet control()}
+              <button
+                class="settings-action-btn"
+                onclick={() => fixRisk("conversion")}>Disable</button
+              >
+            {/snippet}
+          </SettingsRow>
+
+          <SettingsRow
+            label="Delete original after clip export"
+            hint="Clip export permanently removes the source file"
+            open={clipDeleteOriginal}
+          >
+            {#snippet control()}
+              <button
+                class="settings-action-btn"
+                onclick={() => fixRisk("clips")}>Disable</button
+              >
+            {/snippet}
+          </SettingsRow>
+        </SettingsGroup>
+      {/if}
+
+      <SettingsGroup label="App Data" icon="archive">
         <SettingsRow
-          label="File backups are off"
-          hint="Edits may be applied without a saved original"
-          open={editing.backupMode === "off"}
+          label="Clear Markers"
+          hint="Remove timestamps and clip markers from all files"
         >
           {#snippet control()}
             <button
-              class="settings-action-btn"
-              onclick={() => fixRisk("backups")}>Enable</button
+              class="settings-action-btn red"
+              disabled={actionDisabled("markers")}
+              onclick={() => requestAction("markers")}
+              >{buttonLabel("markers", "Clear")}</button
             >
           {/snippet}
         </SettingsRow>
 
         <SettingsRow
-          label="Delete original after conversion"
-          hint="Converting permanently removes the source file"
-          open={conversionPrefs.deleteOriginal}
+          label="Clear File Backups"
+          hint="Delete saved original copies"
         >
           {#snippet control()}
             <button
-              class="settings-action-btn"
-              onclick={() => fixRisk("conversion")}>Disable</button
+              class="settings-action-btn red"
+              disabled={actionDisabled("backups")}
+              onclick={() => requestAction("backups")}
+              >{buttonLabel("backups", "Clear")}</button
             >
           {/snippet}
         </SettingsRow>
 
         <SettingsRow
-          label="Delete original after clip export"
-          hint="Clip export permanently removes the source file"
-          open={clipDeleteOriginal}
+          label="Clear Temp Files"
+          hint="Remove temporary processing files"
         >
           {#snippet control()}
-            <button class="settings-action-btn" onclick={() => fixRisk("clips")}
-              >Disable</button
+            <button
+              class="settings-action-btn red"
+              disabled={actionDisabled("clean-temp")}
+              onclick={() => requestAction("clean-temp")}
+              >{buttonLabel("clean-temp", "Clear")}</button
             >
           {/snippet}
         </SettingsRow>
+
+        <SettingsRow
+          label="Reset All Settings"
+          hint="Clear preferences and reset OS integration"
+        >
+          {#snippet control()}
+            <button
+              class="settings-action-btn red"
+              disabled={actionDisabled("reset-settings")}
+              onclick={() => requestAction("reset-settings")}
+              >{buttonLabel("reset-settings", "Reset")}</button
+            >
+          {/snippet}
+        </SettingsRow>
+        {@render typedConfirm("reset-settings")}
+
+        <SettingsRow
+          label="Factory Reset"
+          hint="Clear settings, file history, caches, backups and temp files"
+        >
+          {#snippet control()}
+            <button
+              class="settings-action-btn red"
+              disabled={actionDisabled("factory-reset")}
+              onclick={() => requestAction("factory-reset")}
+              >{buttonLabel("factory-reset", "Reset")}</button
+            >
+          {/snippet}
+        </SettingsRow>
+        {@render typedConfirm("factory-reset")}
       </SettingsGroup>
-    {/if}
 
-    <SettingsGroup label="App Data" icon="archive">
-      <SettingsRow
-        label="Clear Markers"
-        hint="Remove timestamps and clip markers from all files"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={actionDisabled("markers")}
-            onclick={() => requestAction("markers")}
-            >{buttonLabel("markers", "Clear")}</button
-          >
-        {/snippet}
-      </SettingsRow>
-
-      <SettingsRow
-        label="Clear File Backups"
-        hint="Delete saved original copies"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={actionDisabled("backups")}
-            onclick={() => requestAction("backups")}
-            >{buttonLabel("backups", "Clear")}</button
-          >
-        {/snippet}
-      </SettingsRow>
-
-      <SettingsRow
-        label="Clear Temp Files"
-        hint="Remove temporary processing files"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={busy !== null}
-            onclick={() => void execute("clean-temp")}>Clear</button
-          >
-        {/snippet}
-      </SettingsRow>
-
-      <SettingsRow
-        label="Reset All Settings"
-        hint="Clear preferences and reset OS integration"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={actionDisabled("reset-settings")}
-            onclick={() => requestAction("reset-settings")}
-            >{buttonLabel("reset-settings", "Reset")}</button
-          >
-        {/snippet}
-      </SettingsRow>
-      {@render typedConfirm("reset-settings")}
-
-      <SettingsRow
-        label="Factory Reset"
-        hint="Clear settings, file history, caches, backups and temp files"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={actionDisabled("factory-reset")}
-            onclick={() => requestAction("factory-reset")}
-            >{buttonLabel("factory-reset", "Reset")}</button
-          >
-        {/snippet}
-      </SettingsRow>
-      {@render typedConfirm("factory-reset")}
-    </SettingsGroup>
-
-    <SettingsGroup label="Installation" icon="trash">
-      <SettingsRow
-        label="Delete FFmpeg"
-        hint="Remove bundled binaries; restart and reinstall to restore"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={actionDisabled("delete-ffmpeg")}
-            onclick={() => requestAction("delete-ffmpeg")}>Delete</button
-          >
-        {/snippet}
-      </SettingsRow>
-      {@render typedConfirm("delete-ffmpeg")}
-
-      <SettingsRow
-        label="Uninstall Vyu"
-        hint="Run the Windows uninstaller or open Apps settings"
-      >
-        {#snippet control()}
-          <button
-            class="settings-action-btn red"
-            disabled={actionDisabled("uninstall")}
-            onclick={() => requestAction("uninstall")}
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><circle cx="12" cy="12" r="10" /><path
-                d="M16 16s-1.5-2-4-2-4 2-4 2"
-              /><line x1="9" y1="9" x2="9.01" y2="9" /><line
-                x1="15"
-                y1="9"
-                x2="15.01"
-                y2="9"
-              /></svg
+      <SettingsGroup label="Installation" icon="trash">
+        <SettingsRow
+          label="Delete FFmpeg"
+          hint="Remove bundled binaries; restart and reinstall to restore"
+        >
+          {#snippet control()}
+            <button
+              class="settings-action-btn red"
+              disabled={actionDisabled("delete-ffmpeg")}
+              onclick={() => requestAction("delete-ffmpeg")}>Delete</button
             >
-            {buttonLabel("uninstall", "Uninstall")}
-          </button>
-        {/snippet}
-      </SettingsRow>
-      {@render typedConfirm("uninstall")}
-    </SettingsGroup>
+          {/snippet}
+        </SettingsRow>
+        {@render typedConfirm("delete-ffmpeg")}
+
+        <SettingsRow
+          label="Uninstall Vyu"
+          hint="Run the Windows uninstaller or open Apps settings"
+        >
+          {#snippet control()}
+            <button
+              class="settings-action-btn red"
+              disabled={actionDisabled("uninstall")}
+              onclick={() => requestAction("uninstall")}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path
+                  d="M16 16s-1.5-2-4-2-4 2-4 2"
+                /><line x1="9" y1="9" x2="9.01" y2="9" /><line
+                  x1="15"
+                  y1="9"
+                  x2="15.01"
+                  y2="9"
+                /></svg
+              >
+              {buttonLabel("uninstall", "Uninstall")}
+            </button>
+          {/snippet}
+        </SettingsRow>
+        {@render typedConfirm("uninstall")}
+      </SettingsGroup>
+    </div>
   {/if}
 </div>

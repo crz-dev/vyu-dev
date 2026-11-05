@@ -279,7 +279,7 @@
     >
       {#snippet control()}
         <div class="pill-group pill-group-4">
-          {#each [{ value: 0, label: "Never" }, { value: 7, label: "7d" }, { value: 30, label: "30d" }, { value: 90, label: "90d" }] as option}
+          {#each [{ value: 7, label: "7d" }, { value: 30, label: "30d" }, { value: 90, label: "90d" }, { value: 0, label: "Never" }] as option}
             <button
               class="pill-btn"
               class:active={library.recentRetentionDays === option.value}
@@ -296,7 +296,7 @@
       hint="Remove all items from the recent files list"
     >
       {#snippet control()}
-        <button class="settings-action-btn red" onclick={clearRecents}
+        <button class="settings-action-btn yellow" onclick={clearRecents}
           >Clear</button
         >
       {/snippet}

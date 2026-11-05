@@ -82,6 +82,26 @@
       : "Software only";
   }
 
+  function appLabel(): string {
+    if (!info) return loading ? "Loading…" : "Unavailable";
+    return `${info.appVersion} · Tauri ${info.tauriVersion}`;
+  }
+
+  function ffmpegLabel(): string {
+    if (!info) return "—";
+    return `${info.ffmpeg.ffmpegVersion} · ${encoderLabel()}`;
+  }
+
+  function accelerationLabel(): string {
+    if (!info) return "—";
+    return info.systemConfig.hardwareAcceleration ? "Enabled" : "Disabled";
+  }
+
+  function safeModeLabel(): string {
+    if (!info) return "—";
+    return info.runtime.safeMode ? "On" : "Off";
+  }
+
   function databaseLabel(): string {
     if (!info) return "Loading…";
     return `${formatBytes(info.database.sizeBytes + info.database.walBytes)} · ${info.database.metadataRows} files`;
@@ -121,16 +141,35 @@
     }
   }
 
-  async function copyFileMetadata() {
+  async function exportFileMetadata() {
     if (!fileInfo?.filePath) {
       showToast({ message: "No file is open", color: "yellow" });
       return;
     }
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const path = await save({
+      defaultPath: `vyu-file-metadata-${stamp}.txt`,
+      filters: [{ name: "Text", extensions: ["txt"] }],
+    });
+    if (!path) return;
     try {
-      await copyTextToClipboard(fileMetadataJson(fileInfo));
-      showToast({ message: "File metadata copied", color: "green" });
+      await invokeWriteFileAtomic(
+        path,
+        stringToBase64(fileMetadataJson(fileInfo)),
+      );
+      showToast({ message: "File metadata exported", color: "green" });
     } catch {
-      showToast({ message: "Failed to copy file metadata", color: "red" });
+      showToast({ message: "Failed to export file metadata", color: "red" });
+    }
+  }
+
+  async function copyValue(value: string) {
+    if (!value || value === "—" || value === "Loading…") return;
+    try {
+      await copyTextToClipboard(value);
+      showToast({ message: "Copied to clipboard", color: "green" });
+    } catch {
+      showToast({ message: "Failed to copy", color: "red" });
     }
   }
 
@@ -197,25 +236,27 @@
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-text">
-        <span class="settings-label">Vyu</span>
+        <span class="settings-label">Vyu version</span>
       </div>
-      <span class="settings-hint"
-        >{info?.appVersion ?? (loading ? "Loading…" : "Unavailable")} · Tauri
-        {info?.tauriVersion ?? "—"}</span
+      <button class="settings-info-value" onclick={() => copyValue(appLabel())}
+        >{appLabel()}</button
       >
     </div>
     <div class="settings-row">
       <div class="settings-label-text">
         <span class="settings-label">GPU</span>
       </div>
-      <span class="settings-hint" title={gpuLabel()}>{gpuLabel()}</span>
+      <button class="settings-info-value" onclick={() => copyValue(gpuLabel())}
+        >{gpuLabel()}</button
+      >
     </div>
     <div class="settings-row">
       <div class="settings-label-text">
         <span class="settings-label">FFmpeg</span>
       </div>
-      <span class="settings-hint"
-        >{info?.ffmpeg.ffmpegVersion ?? "—"} · {encoderLabel()}</span
+      <button
+        class="settings-info-value"
+        onclick={() => copyValue(ffmpegLabel())}>{ffmpegLabel()}</button
       >
     </div>
     <div class="settings-row">
@@ -236,61 +277,60 @@
         </button>
       </div>
     </div>
-  </div>
-
-  {#if detailsOpen}
-    <div
-      class="settings-group-stack"
-      transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
-    >
-      <p class="settings-group-label">
-        <span class="settings-group-icon">
-          <SettingsGroupIcon name="info" />
-        </span>
-        Details
-      </p>
-      <div class="settings-card has-child">
-        <div class="settings-row">
+    {#if detailsOpen}
+      <div
+        class="settings-subgroup"
+        transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
+      >
+        <div class="settings-row settings-subrow">
           <div class="settings-label-text">
             <span class="settings-label">WebView2</span>
           </div>
-          <span class="settings-hint">{info?.webview2Version ?? "—"}</span>
+          <button
+            class="settings-info-value"
+            onclick={() => copyValue(info?.webview2Version ?? "—")}
+            >{info?.webview2Version ?? "—"}</button
+          >
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-text">
             <span class="settings-label">System</span>
           </div>
-          <span class="settings-hint">{platformLabel()}</span>
+          <button
+            class="settings-info-value"
+            onclick={() => copyValue(platformLabel())}>{platformLabel()}</button
+          >
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-text">
             <span class="settings-label">Acceleration</span>
           </div>
-          <span class="settings-hint"
-            >{info
-              ? info.systemConfig.hardwareAcceleration
-                ? "Enabled"
-                : "Disabled"
-              : "—"}</span
+          <button
+            class="settings-info-value"
+            onclick={() => copyValue(accelerationLabel())}
+            >{accelerationLabel()}</button
           >
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-text">
             <span class="settings-label">FFmpeg Path</span>
           </div>
-          <span class="settings-hint" title={info?.ffmpeg.ffmpegPath ?? ""}
-            >{shortPath(info?.ffmpeg.ffmpegPath ?? "")}</span
+          <button
+            class="settings-info-value"
+            onclick={() => copyValue(info?.ffmpeg.ffmpegPath ?? "")}
+            >{shortPath(info?.ffmpeg.ffmpegPath ?? "")}</button
           >
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-text">
             <span class="settings-label">Safe Mode</span>
           </div>
-          <span class="settings-hint"
-            >{info ? (info.runtime.safeMode ? "On" : "Off") : "—"}</span
+          <button
+            class="settings-info-value"
+            onclick={() => copyValue(safeModeLabel())}>{safeModeLabel()}</button
           >
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
               <span class="settings-label">Database</span>
@@ -306,7 +346,7 @@
             >
           </div>
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
               <span class="settings-label">Open Webview DevTools</span>
@@ -320,7 +360,7 @@
             >
           </div>
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
               <span class="settings-label">Debug Overlay</span>
@@ -343,7 +383,7 @@
             </label>
           </div>
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
               <span class="settings-label">Refresh</span>
@@ -361,7 +401,7 @@
             >
           </div>
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
               <span class="settings-label">Restart Mode</span>
@@ -381,8 +421,8 @@
           </div>
         </div>
       </div>
-    </div>
-  {/if}
+    {/if}
+  </div>
 
   <p class="settings-group-label">
     <span class="settings-group-icon">
@@ -431,8 +471,8 @@
       <div class="settings-control">
         <button
           class="settings-action-btn"
-          onclick={copyFileMetadata}
-          disabled={!fileInfo?.filePath}>Copy</button
+          onclick={exportFileMetadata}
+          disabled={!fileInfo?.filePath}>Export</button
         >
       </div>
     </div>

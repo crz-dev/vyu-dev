@@ -177,7 +177,7 @@
     <span class="settings-group-icon">
       <SettingsGroupIcon name="keyboard" />
     </span>
-    Keyboard Overview
+    Overview
   </p>
   <KeyboardOverview
     actions={contextActions}
@@ -185,61 +185,61 @@
     onSelectKey={toggleSelectedKey}
   />
 
-  <div class="settings-card has-child">
-    <div class="settings-row keybind-filter-row">
-      <div class="settings-control keybind-search-control">
-        <div class="keybind-search-wrap">
-          <svg
-            class="keybind-search-icon"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><circle cx="11" cy="11" r="8" /><line
-              x1="21"
-              y1="21"
-              x2="16.65"
-              y2="16.65"
-            /></svg
-          >
-          <input
-            class="keybind-search-input"
-            type="search"
-            placeholder="Search actions"
-            bind:value={search}
-            aria-label="Search keybindings"
-          />
-        </div>
-        <div class="pill-group pill-group-4">
-          {#each contextFilters as filter}
-            <button
-              class="pill-btn"
-              class:active={contextFilter === filter.id}
-              onclick={() => (contextFilter = filter.id)}>{filter.label}</button
-            >
-          {/each}
-        </div>
+  <p class="settings-group-label keybind-rebind-label">
+    <span class="settings-group-icon">
+      <SettingsGroupIcon name="pencil" />
+    </span>
+    Rebind
+    <span class="keybind-group-hint">Esc cancels, backspace unbinds</span>
+  </p>
+
+  <div class="settings-card has-child keybind-filter-card">
+    <div class="keybind-filter-top">
+      <div class="keybind-search-wrap">
+        <svg
+          class="keybind-search-icon"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="11" cy="11" r="8" /><line
+            x1="21"
+            y1="21"
+            x2="16.65"
+            y2="16.65"
+          /></svg
+        >
+        <input
+          class="keybind-search-input"
+          type="search"
+          placeholder="Search actions"
+          bind:value={search}
+          aria-label="Search keybindings"
+        />
       </div>
-      <div class="settings-control">
-        <label class="toggle-row keybind-unbound-toggle">
-          <input type="checkbox" bind:checked={unboundOnly} />
-          <span class="toggle-track" class:on={unboundOnly}
-            ><span class="toggle-thumb"></span></span
+      <label class="toggle-row keybind-unbound-toggle">
+        <input type="checkbox" bind:checked={unboundOnly} />
+        <span class="toggle-track" class:on={unboundOnly}
+          ><span class="toggle-thumb"></span></span
+        >
+        <span class="settings-hint">Unbound</span>
+      </label>
+    </div>
+    <div class="keybind-filter-pills">
+      <div class="pill-group pill-group-4">
+        {#each contextFilters as filter}
+          <button
+            class="pill-btn"
+            class:active={contextFilter === filter.id}
+            onclick={() => (contextFilter = filter.id)}>{filter.label}</button
           >
-          <span class="settings-hint">Unbound</span>
-        </label>
+        {/each}
       </div>
     </div>
-  </div>
-
-  <div class="settings-row keybind-help-row">
-    <span class="settings-hint"
-      >Click a shortcut, then press a key combo. Esc cancels.</span
-    >
   </div>
 
   {#if selectedKey}
@@ -360,7 +360,7 @@
         </div>
       </div>
       <div class="settings-control">
-        <button class="settings-action-btn yellow" onclick={handleResetAll}>
+        <button class="settings-action-btn red" onclick={handleResetAll}>
           <svg
             width="12"
             height="12"

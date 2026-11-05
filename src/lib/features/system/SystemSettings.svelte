@@ -45,7 +45,6 @@
     singleInstance: boolean;
   }>({ hardwareAcceleration: true, singleInstance: true });
   let cacheStats = $state<CacheStats | null>(null);
-  let cacheLoading = $state(false);
   let clearingCache = $state(false);
   let clearCacheConfirming = $state(false);
   let clearCacheTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -216,17 +215,6 @@
     }
   }
 
-  async function refreshCacheStats() {
-    cacheLoading = true;
-    try {
-      cacheStats = await invokeGetCacheStats();
-    } catch (e) {
-      showToast({ message: String(e), color: "red" });
-    } finally {
-      cacheLoading = false;
-    }
-  }
-
   function handleClearCaches() {
     if (!clearCacheConfirming) {
       clearCacheConfirming = true;
@@ -322,7 +310,7 @@
     System
   </p>
 
-  <SettingsGroup label="Window & Startup" icon="window">
+  <SettingsGroup label="General" icon="window">
     <SettingsRow label="Always on Top" hint="Keep Vyu above other windows">
       {#snippet control()}
         <label class="toggle-row">
@@ -417,6 +405,56 @@
     </SettingsRow>
 
     <SettingsRow
+      label="Startup View"
+      hint="What Vyu shows when it starts without a file"
+    >
+      {#snippet control()}
+        <div class="pill-group pill-group-3">
+          {#each startupOptions as option}
+            <button
+              class="pill-btn"
+              class:active={systemPrefs.startupView === option.value}
+              onclick={() => systemPrefs.setStartupView(option.value)}
+              >{option.label}</button
+            >
+          {/each}
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Default Media App"
+      hint="Choose Vyu in Windows Default Apps"
+    >
+      {#snippet control()}
+        <button class="settings-action-btn" onclick={handleOpenDefaultApps}
+          >Open</button
+        >
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label="Explorer Context Menu"
+      hint="Adds “Open with Vyu” to the classic right-click menu"
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={contextMenu}
+            disabled={loading}
+            onchange={(e) => handleContextMenu(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={contextMenu}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup label="Performance" icon="cpu">
+    <SettingsRow
       label="Hardware Acceleration"
       hint="Use WebView2 GPU rendering · requires restart"
     >
@@ -458,8 +496,8 @@
     {/if}
 
     <SettingsRow
-      label="Battery Saver Thumbnails"
-      hint="Pause thumbnail generation on battery{powerHint()
+      label="Battery Saver"
+      hint="Pause thumbnails and lower animation FPS on battery{powerHint()
         ? ` · ${powerHint()}`
         : ''}"
     >
@@ -480,58 +518,6 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow
-      label="Startup View"
-      hint="What Vyu shows when it starts without a file"
-    >
-      {#snippet control()}
-        <div class="pill-group pill-group-3">
-          {#each startupOptions as option}
-            <button
-              class="pill-btn"
-              class:active={systemPrefs.startupView === option.value}
-              onclick={() => systemPrefs.setStartupView(option.value)}
-              >{option.label}</button
-            >
-          {/each}
-        </div>
-      {/snippet}
-    </SettingsRow>
-  </SettingsGroup>
-
-  <SettingsGroup label="Windows" icon="windows">
-    <SettingsRow
-      label="Default Media App"
-      hint="Choose Vyu in Windows Default Apps"
-    >
-      {#snippet control()}
-        <button class="settings-action-btn" onclick={handleOpenDefaultApps}
-          >Open</button
-        >
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Explorer Context Menu"
-      hint="Adds “Open with Vyu” to the classic right-click menu"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={contextMenu}
-            disabled={loading}
-            onchange={(e) => handleContextMenu(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={contextMenu}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-  </SettingsGroup>
-
-  <SettingsGroup label="Storage" icon="database">
     <SettingsRow
       label="Thumbnail Limit"
       hint="Oldest thumbnails are removed above this size"
@@ -570,33 +556,13 @@
           <button
             class="settings-action-btn yellow"
             onclick={handleClearCaches}
-            disabled={clearingCache || cacheLoading}
+            disabled={clearingCache}
           >
             {clearingCache
               ? "Clearing…"
               : clearCacheConfirming
                 ? "Confirm?"
                 : "Clear"}
-          </button>
-          <button
-            class="settings-action-btn"
-            onclick={refreshCacheStats}
-            disabled={cacheLoading}
-            aria-label="Refresh cache size"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><polyline points="23 4 23 10 17 10" /><path
-                d="M20.49 15a9 9 0 11-2.12-9.36L23 10"
-              /></svg
-            >
           </button>
         </div>
       {/snippet}

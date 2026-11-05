@@ -2323,10 +2323,6 @@
     color 0.15s ease;
 }
 
-.keybind-category-toggle:first-of-type {
-  border-top: none;
-}
-
 .keybind-category-toggle:hover {
   background: rgba(255, 255, 255, 0.03);
   color: var(--text-secondary);
@@ -2354,6 +2350,17 @@
 }
 
 .settings-card > .settings-row + .settings-subrow {
+  border-top: 1px solid var(--settings-card-divider);
+}
+
+.settings-card > .settings-subgroup {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--settings-card-divider);
+}
+
+.settings-subgroup > .settings-row + .settings-row {
   border-top: 1px solid var(--settings-card-divider);
 }
 
@@ -2392,6 +2399,31 @@
   font-size: 11px;
   color: var(--text-hint);
   font-family: var(--font-family);
+}
+
+.settings-info-value {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-hint);
+  font-size: 11px;
+  font-family: var(--font-family);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.settings-info-value:hover {
+  color: var(--text-muted);
+}
+
+.settings-info-value:focus-visible {
+  outline: 1px solid var(--text-muted);
+  outline-offset: 2px;
 }
 
 .settings-control {
@@ -3169,13 +3201,36 @@
   margin-top: 8px;
 }
 
-.keybind-filter-row {
-  align-items: center;
+.keybind-rebind-label {
+  margin-top: 14px;
 }
 
-.keybind-search-control {
-  flex: 1;
-  min-width: 0;
+.keybind-group-hint {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-hint);
+}
+
+.keybind-filter-card {
+  gap: 8px;
+  padding: 8px;
+}
+
+.keybind-filter-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.keybind-filter-pills {
+  display: flex;
+}
+
+.keybind-filter-pills .pill-group {
+  width: 100%;
 }
 
 .keybind-search-input {
@@ -3214,11 +3269,12 @@
 }
 
 .keybind-search-input:focus {
-  border-color: var(--yellow-border);
+  border-color: var(--text-primary);
 }
 
 .keybind-unbound-toggle {
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .keyboard-overview {
@@ -3279,12 +3335,12 @@
 }
 
 .keycap-used:hover {
-  border-color: var(--yellow-border);
+  border-color: var(--text-primary);
 }
 
 .keycap-selected {
-  border-color: var(--yellow);
-  color: var(--yellow);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 .keycap-modifier,
@@ -3297,8 +3353,43 @@
   top: 2px;
   right: 3px;
   font-size: 8px;
-  color: var(--yellow);
+  color: var(--text-hint);
   line-height: 1;
+}
+
+.keycap-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: 240px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 0.5px solid var(--bg-border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-family);
+  line-height: normal;
+  pointer-events: none;
+  z-index: 9999;
+  animation: keycapTooltipIn 0.15s ease;
+}
+
+.keycap-tooltip-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes keycapTooltipIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .keybind-key-btn {
@@ -3306,18 +3397,18 @@
 }
 
 .keybind-key-btn.keybind-recording {
-  border-color: var(--yellow);
-  color: var(--yellow);
+  border-color: var(--green);
+  color: var(--green);
   animation: keybindPulse 1.1s ease-in-out infinite;
 }
 
 @keyframes keybindPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 var(--yellow-border-subtle);
+    box-shadow: 0 0 0 0 var(--green-border-subtle);
   }
   50% {
-    box-shadow: 0 0 0 3px var(--yellow-border-subtle);
+    box-shadow: 0 0 0 3px var(--green-border-subtle);
   }
 }
 
@@ -4703,6 +4794,12 @@
 }
 
 /* Danger Zone */
+.danger-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .danger-warning {
   display: flex;
   flex-direction: column;
@@ -4713,17 +4810,17 @@
   margin-top: 4px;
   padding: 32px 24px;
   text-align: center;
-  border: 0.5px solid var(--yellow-border-subtle);
+  border: 0.5px solid var(--bg-border);
   border-radius: 10px;
-  background: var(--yellow-bg-subtle);
-  color: var(--yellow);
+  background: var(--bg-secondary);
+  color: var(--red);
 }
 
 .danger-warning-title {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--red-soft);
   font-family: var(--font-family);
 }
 
@@ -4738,10 +4835,9 @@
 
 .danger-confirm {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
-  padding: 8px 10px 9px 30px;
+  padding: 9px 12px 10px 22px;
   border-top: 0.5px solid var(--red-border-subtle);
   background: var(--red-bg-faint);
 }
@@ -4757,8 +4853,16 @@
   font-weight: 600;
 }
 
+.danger-confirm-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .danger-confirm-input {
-  width: 112px;
+  flex: 1 1 140px;
+  min-width: 0;
   height: 27px;
   padding: 0 8px;
   border: 0.5px solid var(--red-border-subtle);
@@ -4772,6 +4876,10 @@
 
 .danger-confirm-input:focus {
   border-color: var(--red-border);
+}
+
+.danger-confirm-controls .settings-action-btn {
+  min-width: 76px;
 }
 
 /* Hide viewer menus when library is open */

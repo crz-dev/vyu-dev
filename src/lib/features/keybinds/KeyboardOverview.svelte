@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import type { KeybindAction } from "$lib/features/keybinds/keybindTypes";
   import { formatKey } from "$lib/features/keybinds/keybindUtils";
@@ -96,34 +97,79 @@
     ],
   ];
 
-  const counts = $derived.by(() => {
-    const map = new Map<string, number>();
+  const keyActions = $derived.by(() => {
+    const map = new Map<string, KeybindAction[]>();
     for (const action of actions) {
       const binding = keybindStore.bindingFor(action.id);
       if (!binding) continue;
-      map.set(binding.key, (map.get(binding.key) ?? 0) + 1);
+      const existing = map.get(binding.key);
+      if (existing) existing.push(action);
+      else map.set(binding.key, [action]);
     }
     return map;
   });
+
+  let tooltip = $state<{
+    labels: string[];
+    x: number;
+    top: number;
+  } | null>(null);
+  let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
 
   function keyLabel(cap: KeyCap): string {
     if (cap.label) return cap.label;
     return formatKey(cap.key);
   }
 
+  function showTooltip(e: MouseEvent | FocusEvent, key: string) {
+    if (document.documentElement.dataset.tooltips === "off") return;
+    const labels = (keyActions.get(key) ?? []).map((action) => action.label);
+    if (labels.length === 0) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = Math.min(
+      Math.max(rect.left + rect.width / 2, 110),
+      window.innerWidth - 110,
+    );
+    if (tooltipTimer) clearTimeout(tooltipTimer);
+    tooltipTimer = setTimeout(() => {
+      tooltip = { labels, x, top: rect.top - 7 };
+      tooltipTimer = null;
+    }, 400);
+  }
+
+  function hideTooltip() {
+    if (tooltipTimer) clearTimeout(tooltipTimer);
+    tooltipTimer = null;
+    tooltip = null;
+  }
+
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
+  }
+
   function handleKey(cap: KeyCap) {
     if (cap.modifier || cap.reserved) return;
-    const count = counts.get(cap.key) ?? 0;
+    const count = keyActions.get(cap.key)?.length ?? 0;
     if (count === 0) return;
+    hideTooltip();
     onSelectKey(cap.key);
   }
+
+  onDestroy(() => {
+    if (tooltipTimer) clearTimeout(tooltipTimer);
+  });
 </script>
 
 <div class="keyboard-overview" aria-label="Keyboard usage overview">
   {#each rows as row, rowIndex}
     <div class="keyboard-row" class:keyboard-row-offset={rowIndex === 1}>
       {#each row as cap}
-        {@const count = counts.get(cap.key) ?? 0}
+        {@const count = keyActions.get(cap.key)?.length ?? 0}
         {@const used = count > 0}
         {@const selected = selectedKey === cap.key}
         <button
@@ -135,8 +181,11 @@
           class:keycap-selected={selected}
           style="--keycap-width: {cap.width ?? 1}"
           disabled={!used || cap.modifier || cap.reserved}
-          title={used ? `${count} action${count === 1 ? "" : "s"}` : ""}
           onclick={() => handleKey(cap)}
+          onmouseenter={(e) => showTooltip(e, cap.key)}
+          onmouseleave={hideTooltip}
+          onfocus={(e) => showTooltip(e, cap.key)}
+          onblur={hideTooltip}
         >
           <span>{keyLabel(cap)}</span>
           {#if used && !cap.modifier && !cap.reserved}
@@ -147,3 +196,16 @@
     </div>
   {/each}
 </div>
+
+{#if tooltip}
+  <div
+    class="keycap-tooltip"
+    style="left: {tooltip.x}px; top: {tooltip.top}px"
+    role="tooltip"
+    use:portal
+  >
+    {#each tooltip.labels as label}
+      <span class="keycap-tooltip-item">- {label}</span>
+    {/each}
+  </div>
+{/if}

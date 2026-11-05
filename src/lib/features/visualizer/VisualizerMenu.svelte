@@ -2,6 +2,7 @@
   import { fly } from "svelte/transition";
   import { onMount } from "svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
   import {
     calculateAudioMetrics,
     createEmptyAudioMetrics,
@@ -150,7 +151,12 @@
         ctx = canvasEl.getContext("2d");
       }
 
-      if (ctx && canvasEl && timestamp - lastFrame >= 16.67) {
+      if (
+        ctx &&
+        canvasEl &&
+        timestamp - lastFrame >=
+          (systemPrefs.batterySaverActive ? 1000 / 30 : 16.67)
+      ) {
         const dt = lastFrame === 0 ? 0 : (timestamp - lastFrame) / 1000;
         lastFrame = timestamp;
 

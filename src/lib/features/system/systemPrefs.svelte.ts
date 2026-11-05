@@ -1,4 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import {
   clearLastFile as clearStoredLastFile,
   loadAlwaysOnTop,
@@ -124,6 +125,9 @@ function createSystemPrefs() {
     },
     get batterySaverThumbnails() {
       return batterySaverThumbnails;
+    },
+    get batterySaverActive() {
+      return batterySaverThumbnails && powerStatus.onBattery;
     },
     get checkUpdatesOnLaunch() {
       return checkUpdatesOnLaunch;

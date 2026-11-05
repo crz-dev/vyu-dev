@@ -75,7 +75,6 @@ import {
   getCached as sharedGetCached,
   setCached as sharedSetCached,
 } from "$lib/services/thumbnailCache";
-import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
@@ -286,7 +285,7 @@ function createLibrary() {
   }
 
   function thumbnailsPaused() {
-    return systemPrefs.batterySaverThumbnails && powerStatus.onBattery;
+    return systemPrefs.batterySaverActive;
   }
 
   function kick() {
