@@ -45,3 +45,210 @@ html[data-tooltips="off"] [data-tooltip]::after,
 html[data-tooltips="off"] .tooltip-ctrl::after {
   display: none !important;
 }
+
+/* ── Accessibility dialog preferences ── */
+
+/* Strong focus rings — override the global outline reset in app.css */
+html[data-a11y-focus="true"] :focus-visible {
+  outline: 2px solid var(--text-primary) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-a11y-focus="true"] .settings-nav-item:focus-visible,
+html[data-a11y-focus="true"] .pill-btn:focus-visible,
+html[data-a11y-focus="true"] .settings-action-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-primary);
+}
+
+/* Bold text */
+html[data-a11y-bold="true"]
+  :where(
+    button,
+    label,
+    .settings-label,
+    .settings-hint,
+    .settings-nav-item,
+    .settings-nav-description-text,
+    .settings-section-header,
+    .settings-group-label,
+    .app-dropdown-item,
+    .file-info,
+    .file-count,
+    .cheat-sheet-label,
+    .cheat-sheet-key
+  ) {
+  font-weight: 500;
+}
+
+html[data-a11y-bold="true"]
+  :where(
+    .settings-label,
+    .settings-section-header,
+    .settings-group-label,
+    .cheat-sheet-title
+  ) {
+  font-weight: 600;
+}
+
+/* Extra line and letter spacing for text-heavy UI */
+html[data-a11y-spacing="true"]
+  :where(
+    .settings-label,
+    .settings-hint,
+    .settings-nav-description-text,
+    .settings-search-empty-hint,
+    .app-dropdown-item,
+    .file-info,
+    .cheat-sheet-label,
+    .cheat-sheet-key
+  ) {
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+
+/* Reduced transparency — replace translucent surfaces with solid colors */
+html[data-a11y-opaque="true"] {
+  --bg-elevated: #1a1a1a;
+}
+
+html[data-a11y-opaque="true"]
+  :where(
+    .topbar,
+    .bottombar,
+    .thumbnail-bar,
+    .settings-nav,
+    .settings-header-bar,
+    .delete-dialog,
+    .app-dropdown-menu,
+    .edit-menu,
+    .context-menu,
+    .cheat-sheet,
+    .toast
+  ) {
+  background-color: var(--bg-secondary) !important;
+  backdrop-filter: none !important;
+}
+
+html[data-a11y-opaque="true"][data-theme="light"] {
+  --bg-elevated: #ffffff;
+}
+
+/* Larger click targets */
+html[data-a11y-large-targets="true"]
+  :where(
+    .settings-nav-item,
+    .pill-btn,
+    .settings-action-btn,
+    .app-dropdown-item,
+    .settings-search-clear,
+    .toggle-row,
+    .fs-btn,
+    .ctrl-btn,
+    .fs-ctrl-btn,
+    .fs-nav-btn
+  ) {
+  min-height: 32px;
+}
+
+html[data-a11y-large-targets="true"] .settings-nav-item {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+html[data-a11y-large-targets="true"] .toggle-track {
+  transform: scale(1.08);
+}
+
+/* Larger scrollbars */
+html[data-a11y-large-scrollbars="true"] ::-webkit-scrollbar {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+html[data-a11y-large-scrollbars="true"] ::-webkit-scrollbar-thumb {
+  border-radius: 7px;
+}
+
+/* Larger timeline */
+html[data-a11y-large-timeline="true"] .progress-bar,
+html[data-a11y-large-timeline="true"] .fs-progress {
+  height: 12px;
+}
+
+html[data-a11y-large-timeline="true"] .progress-playhead,
+html[data-a11y-large-timeline="true"] .fs-progress-playhead {
+  width: 18px;
+  height: 18px;
+}
+
+/* Larger video controls */
+html[data-a11y-large-controls="true"] .video-controls {
+  padding: 8px 16px 14px;
+}
+
+html[data-a11y-large-controls="true"] .video-controls .ctrl-btn,
+html[data-a11y-large-controls="true"] .video-controls .fs-btn,
+html[data-a11y-large-controls="true"] .fs-ctrl-btn {
+  min-width: 30px;
+  min-height: 30px;
+}
+
+html[data-a11y-large-controls="true"] .video-controls .progress-bar {
+  height: 9px;
+}
+
+/* Always show video controls */
+html[data-a11y-always-controls="true"] .video-wrapper .video-controls {
+  opacity: 1;
+}
+
+/* Reduced distractions — hide the thumbnail strip and decorative chrome */
+html[data-a11y-reduce-distractions="true"] .thumbnail-bar,
+html[data-a11y-reduce-distractions="true"] .file-count,
+html[data-a11y-reduce-distractions="true"] .file-info,
+html[data-a11y-reduce-distractions="true"] .fs-file-count-pill,
+html[data-a11y-reduce-distractions="true"] .border-sweep {
+  display: none !important;
+}
+
+/* Focus mode — hide playback chrome, keep the top bar as the exit path */
+html[data-a11y-focus-mode="true"] .bottombar,
+html[data-a11y-focus-mode="true"] .video-controls,
+html[data-a11y-focus-mode="true"] .thumbnail-bar,
+html[data-a11y-focus-mode="true"] .fs-controls,
+html[data-a11y-focus-mode="true"] .fs-nav-left,
+html[data-a11y-focus-mode="true"] .fs-nav-right,
+html[data-a11y-focus-mode="true"] .fs-file-count-pill {
+  display: none !important;
+}
+
+/* Visual play/pause alert */
+.a11y-visual-alert {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 3px solid var(--text-primary);
+  opacity: 0;
+  animation: a11y-visual-alert 0.65s ease-out;
+}
+
+.a11y-visual-alert.paused {
+  border-color: var(--text-secondary);
+}
+
+/* Keep the play/pause flash visible even when decorative motion is reduced */
+html[data-reduce-motion="true"] .a11y-visual-alert {
+  animation-duration: 0.65s !important;
+  animation-iteration-count: 1 !important;
+}
+
+@keyframes a11y-visual-alert {
+  0% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}

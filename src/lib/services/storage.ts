@@ -124,8 +124,8 @@ export function loadSkipDeleteConfirmation(): boolean {
   return localStorage.getItem("vyu-delete-no-ask") === "true";
 }
 
-export function saveSkipDeleteConfirmation(): void {
-  localStorage.setItem("vyu-delete-no-ask", "true");
+export function saveSkipDeleteConfirmation(enabled = true): void {
+  localStorage.setItem("vyu-delete-no-ask", String(enabled));
 }
 
 // ── Editor ──
@@ -1437,4 +1437,218 @@ export function loadDebugOverlay(): boolean {
 
 export function saveDebugOverlay(enabled: boolean): void {
   localStorage.setItem("vyu-debug-overlay", String(enabled));
+}
+
+// ── Accessibility ──
+
+function loadA11yBoolean(key: string, fallback = false): boolean {
+  const value = localStorage.getItem(`vyu-a11y-${key}`);
+  if (value === null) return fallback;
+  return value === "true";
+}
+
+function saveA11yBoolean(key: string, value: boolean): void {
+  localStorage.setItem(`vyu-a11y-${key}`, String(value));
+}
+
+export function loadA11yFocusRings(): boolean {
+  return loadA11yBoolean("focus-rings");
+}
+
+export function saveA11yFocusRings(enabled: boolean): void {
+  saveA11yBoolean("focus-rings", enabled);
+}
+
+export function loadA11yBoldText(): boolean {
+  return loadA11yBoolean("bold-text");
+}
+
+export function saveA11yBoldText(enabled: boolean): void {
+  saveA11yBoolean("bold-text", enabled);
+}
+
+export function loadA11yTextSpacing(): boolean {
+  return loadA11yBoolean("text-spacing");
+}
+
+export function saveA11yTextSpacing(enabled: boolean): void {
+  saveA11yBoolean("text-spacing", enabled);
+}
+
+export function loadA11yReduceTransparency(): boolean {
+  return loadA11yBoolean("reduce-transparency");
+}
+
+export function saveA11yReduceTransparency(enabled: boolean): void {
+  saveA11yBoolean("reduce-transparency", enabled);
+}
+
+export function loadA11yLargeControls(): boolean {
+  return loadA11yBoolean("large-controls");
+}
+
+export function saveA11yLargeControls(enabled: boolean): void {
+  saveA11yBoolean("large-controls", enabled);
+}
+
+export function loadA11yLargeTargets(): boolean {
+  return loadA11yBoolean("large-targets");
+}
+
+export function saveA11yLargeTargets(enabled: boolean): void {
+  saveA11yBoolean("large-targets", enabled);
+}
+
+export function loadA11yLargeTimeline(): boolean {
+  return loadA11yBoolean("large-timeline");
+}
+
+export function saveA11yLargeTimeline(enabled: boolean): void {
+  saveA11yBoolean("large-timeline", enabled);
+}
+
+export function loadA11yLargeScrollbars(): boolean {
+  return loadA11yBoolean("large-scrollbars");
+}
+
+export function saveA11yLargeScrollbars(enabled: boolean): void {
+  saveA11yBoolean("large-scrollbars", enabled);
+}
+
+export function loadA11yAlwaysShowControls(): boolean {
+  return loadA11yBoolean("always-show-controls");
+}
+
+export function saveA11yAlwaysShowControls(enabled: boolean): void {
+  saveA11yBoolean("always-show-controls", enabled);
+}
+
+export function loadA11yReducePanSensitivity(): boolean {
+  return loadA11yBoolean("reduce-pan-sensitivity");
+}
+
+export function saveA11yReducePanSensitivity(enabled: boolean): void {
+  saveA11yBoolean("reduce-pan-sensitivity", enabled);
+}
+
+export function loadA11yMonoAudio(): boolean {
+  return loadA11yBoolean("mono-audio");
+}
+
+export function saveA11yMonoAudio(enabled: boolean): void {
+  saveA11yBoolean("mono-audio", enabled);
+}
+
+export function loadA11yNormalizeVolume(): boolean {
+  return loadA11yBoolean("normalize-volume");
+}
+
+export function saveA11yNormalizeVolume(enabled: boolean): void {
+  saveA11yBoolean("normalize-volume", enabled);
+}
+
+export function loadA11yLimitPeaks(): boolean {
+  return loadA11yBoolean("limit-peaks");
+}
+
+export function saveA11yLimitPeaks(enabled: boolean): void {
+  saveA11yBoolean("limit-peaks", enabled);
+}
+
+export function loadA11yBoostDialogue(): boolean {
+  return loadA11yBoolean("boost-dialogue");
+}
+
+export function saveA11yBoostDialogue(enabled: boolean): void {
+  saveA11yBoolean("boost-dialogue", enabled);
+}
+
+export function loadA11yVisualAlerts(): boolean {
+  return loadA11yBoolean("visual-alerts");
+}
+
+export function saveA11yVisualAlerts(enabled: boolean): void {
+  saveA11yBoolean("visual-alerts", enabled);
+}
+
+export function loadA11yAudioCues(): boolean {
+  return loadA11yBoolean("audio-cues");
+}
+
+export function saveA11yAudioCues(enabled: boolean): void {
+  saveA11yBoolean("audio-cues", enabled);
+}
+
+export function loadA11yReduceDistractions(): boolean {
+  return loadA11yBoolean("reduce-distractions");
+}
+
+export function saveA11yReduceDistractions(enabled: boolean): void {
+  saveA11yBoolean("reduce-distractions", enabled);
+}
+
+export function loadA11yFocusMode(): boolean {
+  return loadA11yBoolean("focus-mode");
+}
+
+export function saveA11yFocusMode(enabled: boolean): void {
+  saveA11yBoolean("focus-mode", enabled);
+}
+
+export function loadA11ySimplifiedMenus(): boolean {
+  return loadA11yBoolean("simplified-menus");
+}
+
+export function saveA11ySimplifiedMenus(enabled: boolean): void {
+  saveA11yBoolean("simplified-menus", enabled);
+}
+
+export function loadA11yHideMediaDetails(): boolean {
+  return loadA11yBoolean("hide-media-details");
+}
+
+export function saveA11yHideMediaDetails(enabled: boolean): void {
+  saveA11yBoolean("hide-media-details", enabled);
+}
+
+const A11Y_VOLUME_LIMIT_MIN = 0.2;
+const A11Y_VOLUME_LIMIT_MAX = 1;
+
+export function loadA11yVolumeLimit(): number {
+  const raw = localStorage.getItem("vyu-a11y-volume-limit");
+  if (raw === null) return A11Y_VOLUME_LIMIT_MAX;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return A11Y_VOLUME_LIMIT_MAX;
+  const snapped = Math.round(value * 20) / 20;
+  return Math.min(
+    A11Y_VOLUME_LIMIT_MAX,
+    Math.max(A11Y_VOLUME_LIMIT_MIN, snapped),
+  );
+}
+
+export function saveA11yVolumeLimit(limit: number): void {
+  const snapped = Math.round(limit * 20) / 20;
+  localStorage.setItem(
+    "vyu-a11y-volume-limit",
+    String(
+      Math.min(A11Y_VOLUME_LIMIT_MAX, Math.max(A11Y_VOLUME_LIMIT_MIN, snapped)),
+    ),
+  );
+}
+
+export function loadA11yBalance(): number {
+  const raw = localStorage.getItem("vyu-a11y-balance");
+  if (raw === null) return 0;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 0;
+  const snapped = Math.round(value * 20) / 20;
+  return Math.min(1, Math.max(-1, snapped));
+}
+
+export function saveA11yBalance(balance: number): void {
+  const snapped = Math.round(balance * 20) / 20;
+  localStorage.setItem(
+    "vyu-a11y-balance",
+    String(Math.min(1, Math.max(-1, snapped))),
+  );
 }

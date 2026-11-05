@@ -4,6 +4,24 @@ const NUM_BANDS = BAND_FREQUENCIES.length;
 
 type StageMode = "mono" | "stereo" | "surround" | "eightD" | null;
 
+export interface AccessibilityAudioOptions {
+  volumeLimit: number;
+  monoAudio: boolean;
+  balance: number;
+  normalizeVolume: boolean;
+  limitPeaks: boolean;
+  boostDialogue: boolean;
+}
+
+const DEFAULT_ACCESSIBILITY_AUDIO: AccessibilityAudioOptions = {
+  volumeLimit: 1,
+  monoAudio: false,
+  balance: 0,
+  normalizeVolume: false,
+  limitPeaks: false,
+  boostDialogue: false,
+};
+
 class EqualizerEngine {
   private ctx: AudioContext | null = null;
   private source: MediaElementAudioSourceNode | null = null;
@@ -24,6 +42,17 @@ class EqualizerEngine {
   private stageGainNode: GainNode | null = null;
   private stageAnimFrame: number | null = null;
   private effectsOutput: AudioNode | null = null;
+  private a11yOptions: AccessibilityAudioOptions = {
+    ...DEFAULT_ACCESSIBILITY_AUDIO,
+  };
+  private a11yNodes: AudioNode[] = [];
+  private a11yStereoGain: GainNode | null = null;
+  private a11yMonoGain: GainNode | null = null;
+  private a11yPanner: StereoPannerNode | null = null;
+  private a11yNormalize: DynamicsCompressorNode | null = null;
+  private a11yLimiter: DynamicsCompressorNode | null = null;
+  private a11yDialogue: BiquadFilterNode | null = null;
+  private a11yOutputGain: GainNode | null = null;
 
   private pendingCleanup: ReturnType<typeof setTimeout> | null = null;
   private orphanedNodes: AudioNode[] = [];
@@ -179,6 +208,7 @@ class EqualizerEngine {
       ...(this.analyser ? [this.analyser] : []),
       ...(this.boostGain ? [this.boostGain] : []),
       ...this.stageNodes,
+      ...this.a11yNodes,
     ];
     this.filters = [];
     this.outputGain = null;
@@ -187,6 +217,8 @@ class EqualizerEngine {
     this.boostSource = null;
     this.stageNodes = [];
     this.stageMode = null;
+    this.a11yNodes = [];
+    this.clearAccessibilityRefs();
 
     this.source = null;
     this.sourceElement = null;
@@ -215,6 +247,7 @@ class EqualizerEngine {
 
   private cleanup(): void {
     this.teardownStage();
+    this.teardownAccessibilityChain();
     this.stageMode = null;
     for (const f of this.filters) {
       try {
@@ -325,6 +358,156 @@ class EqualizerEngine {
     this.applyStage();
   }
 
+  setAccessibilityAudio(options: AccessibilityAudioOptions): void {
+    this.a11yOptions = { ...options };
+    if (this.a11yOutputGain) {
+      this.applyAccessibilityParams();
+      return;
+    }
+    this.applyStage();
+  }
+
+  private teardownAccessibilityChain(): void {
+    for (const node of this.a11yNodes) {
+      try {
+        node.disconnect();
+      } catch {
+        /* disconnected */
+      }
+    }
+    this.a11yNodes = [];
+    this.clearAccessibilityRefs();
+  }
+
+  private clearAccessibilityRefs(): void {
+    this.a11yStereoGain = null;
+    this.a11yMonoGain = null;
+    this.a11yPanner = null;
+    this.a11yNormalize = null;
+    this.a11yLimiter = null;
+    this.a11yDialogue = null;
+    this.a11yOutputGain = null;
+  }
+
+  private buildAccessibilityChain(input: AudioNode): AudioNode {
+    this.teardownAccessibilityChain();
+    if (!this.ctx) return input;
+
+    const ctx = this.ctx;
+    const stereoGain = ctx.createGain();
+    const monoDownmix = ctx.createGain();
+    const monoGain = ctx.createGain();
+    const sum = ctx.createGain();
+    const panner = ctx.createStereoPanner();
+    const normalize = ctx.createDynamicsCompressor();
+    const limiter = ctx.createDynamicsCompressor();
+    const dialogue = ctx.createBiquadFilter();
+    const outputGain = ctx.createGain();
+
+    monoDownmix.channelCount = 1;
+    monoDownmix.channelCountMode = "explicit";
+    monoDownmix.channelInterpretation = "speakers";
+
+    stereoGain.gain.value = this.a11yOptions.monoAudio ? 0 : 1;
+    monoGain.gain.value = this.a11yOptions.monoAudio ? 1 : 0;
+    panner.pan.value = Math.min(1, Math.max(-1, this.a11yOptions.balance));
+    dialogue.type = "peaking";
+    dialogue.frequency.value = 2000;
+    dialogue.Q.value = 1;
+    dialogue.gain.value = this.a11yOptions.boostDialogue ? 4 : 0;
+    outputGain.gain.value = Math.min(
+      1,
+      Math.max(0.2, this.a11yOptions.volumeLimit),
+    );
+
+    input.connect(stereoGain);
+    stereoGain.connect(sum);
+
+    input.connect(monoDownmix);
+    monoDownmix.connect(monoGain);
+    monoGain.connect(sum);
+
+    sum.connect(panner);
+    panner.connect(normalize);
+    normalize.connect(dialogue);
+    dialogue.connect(limiter);
+    limiter.connect(outputGain);
+
+    this.a11yNodes = [
+      stereoGain,
+      monoDownmix,
+      monoGain,
+      sum,
+      panner,
+      normalize,
+      limiter,
+      dialogue,
+      outputGain,
+    ];
+    this.a11yStereoGain = stereoGain;
+    this.a11yMonoGain = monoGain;
+    this.a11yPanner = panner;
+    this.a11yNormalize = normalize;
+    this.a11yLimiter = limiter;
+    this.a11yDialogue = dialogue;
+    this.a11yOutputGain = outputGain;
+
+    this.applyAccessibilityParams();
+    return outputGain;
+  }
+
+  private applyAccessibilityParams(): void {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const ramp = (param: AudioParam, value: number) => {
+      param.cancelScheduledValues(now);
+      param.setValueAtTime(param.value, now);
+      param.linearRampToValueAtTime(value, now + 0.03);
+    };
+
+    if (this.a11yStereoGain) {
+      ramp(this.a11yStereoGain.gain, this.a11yOptions.monoAudio ? 0 : 1);
+    }
+    if (this.a11yMonoGain) {
+      ramp(this.a11yMonoGain.gain, this.a11yOptions.monoAudio ? 1 : 0);
+    }
+    if (this.a11yPanner) {
+      const balance = Math.min(1, Math.max(-1, this.a11yOptions.balance));
+      this.a11yPanner.pan.setTargetAtTime(balance, now, 0.02);
+    }
+
+    if (this.a11yNormalize) {
+      const enabled = this.a11yOptions.normalizeVolume;
+      this.a11yNormalize.threshold.value = enabled ? -24 : 0;
+      this.a11yNormalize.knee.value = enabled ? 12 : 0;
+      this.a11yNormalize.ratio.value = enabled ? 3 : 1;
+      this.a11yNormalize.attack.value = enabled ? 0.01 : 0.003;
+      this.a11yNormalize.release.value = 0.25;
+    }
+
+    if (this.a11yLimiter) {
+      const enabled = this.a11yOptions.limitPeaks;
+      this.a11yLimiter.threshold.value = enabled ? -6 : 0;
+      this.a11yLimiter.knee.value = 0;
+      this.a11yLimiter.ratio.value = enabled ? 20 : 1;
+      this.a11yLimiter.attack.value = enabled ? 0.002 : 0.003;
+      this.a11yLimiter.release.value = 0.1;
+    }
+
+    if (this.a11yDialogue) {
+      this.a11yDialogue.type = "peaking";
+      this.a11yDialogue.frequency.value = 2000;
+      this.a11yDialogue.Q.value = 1;
+      ramp(this.a11yDialogue.gain, this.a11yOptions.boostDialogue ? 4 : 0);
+    }
+
+    if (this.a11yOutputGain) {
+      const limit = Math.min(1, Math.max(0.2, this.a11yOptions.volumeLimit));
+      ramp(this.a11yOutputGain.gain, limit);
+    }
+  }
+
   private teardownStage(): void {
     if (this.stageAnimFrame !== null) {
       cancelAnimationFrame(this.stageAnimFrame);
@@ -386,7 +569,8 @@ class EqualizerEngine {
     }
 
     const source = this.effectsOutput ?? this.analyser;
-    const output = this.ensureBoost(source);
+    const boosted = this.ensureBoost(source);
+    const output = this.buildAccessibilityChain(boosted);
     const mode = this.stageMode;
     if (!mode || mode === "stereo") {
       output.connect(this.ctx.destination);
@@ -531,6 +715,7 @@ class EqualizerEngine {
       ...(this.analyser ? [this.analyser] : []),
       ...(this.boostGain ? [this.boostGain] : []),
       ...this.stageNodes,
+      ...this.a11yNodes,
     ];
     this.filters = [];
     this.outputGain = null;
@@ -539,6 +724,8 @@ class EqualizerEngine {
     this.boostSource = null;
     this.stageNodes = [];
     this.stageMode = null;
+    this.a11yNodes = [];
+    this.clearAccessibilityRefs();
 
     // Defer cleanup and context close so the audio thread can process the ramp
     const ctx = this.ctx;

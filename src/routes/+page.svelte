@@ -109,6 +109,8 @@
   } from "$lib/features/editing/editActions.svelte";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+  import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { playAudioCue } from "$lib/features/accessibility/audioCues";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";
   import { fxEngine } from "$lib/features/effects/effects-engine";
   import {
@@ -760,13 +762,28 @@
       "toggle-library": () => (menuStore.libraryOpen = !menuStore.libraryOpen),
       "show-shortcuts": keybindStore.toggleCheatSheet,
       "play-pause": () => {
-        if (isTimedMedia()) togglePlay();
+        if (!isTimedMedia()) return;
+        const wasPlaying = playing;
+        togglePlay();
+        playAudioCue(wasPlaying ? "pause" : "play");
       },
       fullscreen: toggleFullscreen,
-      "next-file": () => void navigate(1),
-      "previous-file": () => void navigate(-1),
-      "first-file": () => void navigateToEdge(true),
-      "last-file": () => void navigateToEdge(false),
+      "next-file": () => {
+        void navigate(1);
+        playAudioCue("navigate");
+      },
+      "previous-file": () => {
+        void navigate(-1);
+        playAudioCue("navigate");
+      },
+      "first-file": () => {
+        void navigateToEdge(true);
+        playAudioCue("navigate");
+      },
+      "last-file": () => {
+        void navigateToEdge(false);
+        playAudioCue("navigate");
+      },
       "seek-forward": () => {
         const el = getMediaEl();
         if (el && isVideoHover()) {
@@ -774,16 +791,20 @@
             el.currentTime + playbackPrefs.seekStep,
             el.duration,
           );
+          playAudioCue("seek");
         } else {
           void navigate(1);
+          playAudioCue("navigate");
         }
       },
       "seek-backward": () => {
         const el = getMediaEl();
         if (el && isVideoHover()) {
           el.currentTime = Math.max(el.currentTime - playbackPrefs.seekStep, 0);
+          playAudioCue("seek");
         } else {
           void navigate(-1);
+          playAudioCue("navigate");
         }
       },
       "volume-up": () => setVolume(volume + VOLUME_STEP),
@@ -1271,6 +1292,32 @@
     const boost = playbackPrefs.volumeBoost;
     eqEngine.setVolumeBoost(boost);
     untrack(() => backgroundAudio.setBoost(boost));
+  });
+
+  $effect(() => {
+    eqEngine.setAccessibilityAudio({
+      volumeLimit: accessibility.volumeLimit,
+      monoAudio: accessibility.monoAudio,
+      balance: accessibility.balance,
+      normalizeVolume: accessibility.normalizeVolume,
+      limitPeaks: accessibility.limitPeaks,
+      boostDialogue: accessibility.boostDialogue,
+    });
+  });
+
+  $effect(() => {
+    void accessibility.volumeLimit;
+    backgroundAudio.refreshVolume();
+  });
+
+  let prevPlayingForAlert = untrack(() => playing);
+  $effect(() => {
+    const current = playing;
+    if (current === prevPlayingForAlert) return;
+    prevPlayingForAlert = current;
+    if (accessibility.visualAlerts) {
+      accessibility.pulseVisualAlert(current ? "play" : "pause");
+    }
   });
 
   $effect(() => {

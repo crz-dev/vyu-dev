@@ -1,5 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { viewer } from "./viewer.svelte";
+import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
 export interface PanDragDeps {
   getIsVideo: () => boolean;
@@ -42,8 +43,13 @@ export function createPanDrag(deps: PanDragDeps) {
         }
         return;
       }
-      if (viewer.state.zoomLevel > viewer.state.baseZoomLevel)
-        viewer.setTranslation(dragStart.tx + dx, dragStart.ty + dy);
+      if (viewer.state.zoomLevel > viewer.state.baseZoomLevel) {
+        const sensitivity = accessibility.reducePanSensitivity ? 0.5 : 1;
+        viewer.setTranslation(
+          dragStart.tx + dx * sensitivity,
+          dragStart.ty + dy * sensitivity,
+        );
+      }
     }
     function onUp() {
       viewer.setDragging(false);

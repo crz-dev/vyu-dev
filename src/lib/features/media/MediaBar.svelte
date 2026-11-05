@@ -9,6 +9,7 @@
   import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -453,7 +454,7 @@
           · ...
         {/if}
       </span>
-    {:else}
+    {:else if !accessibility.hideMediaDetails}
       <span
         class="file-info tooltip-above"
         data-tooltip={isAudio

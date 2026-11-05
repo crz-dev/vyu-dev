@@ -98,7 +98,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Markup actions                                         | `features/markup/markupActions.ts`                                             |
 | Theme / typography                                     | `features/theme/theme.svelte.ts`                                               |
 | Interface scale, density, reduced motion, transparency | `features/theme/appearance.svelte.ts`                                          |
-| Accessibility                                          | `features/menus/accessibility.svelte.ts`                                       |
+| Accessibility                                          | `features/menus/accessibility.svelte.ts`, `features/accessibility/*`           |
 | Audio effects engine                                   | `features/effects/effects-engine.ts`                                           |
 | Equalizer                                              | `features/equalizer/*`                                                         |
 | Visualizer windows                                     | `features/visualizer/*`                                                        |

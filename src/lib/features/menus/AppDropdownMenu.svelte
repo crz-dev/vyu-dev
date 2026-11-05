@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { accessibility } from "$lib/features/menus/accessibility.svelte";
+
   let {
     visible,
     onClose,
@@ -108,28 +110,30 @@
       >
       Accessibility
     </button>
-    <button
-      class="app-dropdown-item"
-      onclick={() => {
-        onOpenFeedback();
-        onClose();
-      }}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><path
-          d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
-        /></svg
+    {#if !accessibility.simplifiedMenus}
+      <button
+        class="app-dropdown-item"
+        onclick={() => {
+          onOpenFeedback();
+          onClose();
+        }}
       >
-      Feedback
-    </button>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><path
+            d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
+          /></svg
+        >
+        Feedback
+      </button>
+    {/if}
     <button
       class="app-dropdown-item"
       onclick={() => {
@@ -152,31 +156,33 @@
       >
       Help
     </button>
-    <div class="app-dropdown-separator"></div>
-    <button
-      class="app-dropdown-item"
-      onclick={() => {
-        onOpenAbout();
-        onClose();
-      }}
-    >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><circle cx="12" cy="12" r="10" /><line
-          x1="12"
-          y1="16"
-          x2="12"
-          y2="12"
-        /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
+    {#if !accessibility.simplifiedMenus}
+      <div class="app-dropdown-separator"></div>
+      <button
+        class="app-dropdown-item"
+        onclick={() => {
+          onOpenAbout();
+          onClose();
+        }}
       >
-      About
-    </button>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><circle cx="12" cy="12" r="10" /><line
+            x1="12"
+            y1="16"
+            x2="12"
+            y2="12"
+          /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
+        >
+        About
+      </button>
+    {/if}
   </div>
 {/if}

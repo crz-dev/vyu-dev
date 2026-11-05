@@ -417,6 +417,43 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
   "factory reset": ["factory", "reset", "wipe", "erase", "defaults"],
   "delete ffmpeg": ["delete", "ffmpeg", "remove", "binary"],
   "uninstall vyu": ["uninstall", "remove", "app", "windows"],
+
+  "color blind mode": [
+    "colour",
+    "colorblind",
+    "protan",
+    "deutan",
+    "tritan",
+    "vision",
+    "daltonize",
+  ],
+  "reduce transparency": ["opaque", "solid", "blur", "glass", "transparent"],
+  "strong focus rings": ["keyboard", "outline", "focus", "accessible"],
+  "bold text": ["weight", "font", "thick", "readability"],
+  "text spacing": ["line", "letter", "spacing", "readability", "dyslexia"],
+  "viewer background": ["canvas", "background", "black", "gray", "theme"],
+  "larger viewer controls": ["player", "media", "controls", "bigger"],
+  "volume limit": ["hearing", "safe", "maximum", "loud", "cap"],
+  "mono audio": ["hearing", "channels", "stereo", "single", "deaf"],
+  "left / right balance": ["balance", "pan", "left", "right", "stereo"],
+  "volume normalization": ["loudness", "even", "compressor", "audio"],
+  "reduce loud sounds": ["limiter", "peaks", "hearing", "audio", "loud"],
+  "boost quiet dialogue": ["speech", "dialogue", "voice", "compressor"],
+  "visual sound alerts": ["deaf", "hearing", "flash", "notification", "sound"],
+  "audio cues": ["sound", "tone", "beep", "navigation", "feedback"],
+  "large click targets": ["motor", "targets", "buttons", "bigger", "hitbox"],
+  "larger scrollbars": ["motor", "scroll", "thumb", "size"],
+  "large timeline": ["motor", "seek", "progress", "bigger", "scrub"],
+  "always show controls": ["motor", "player", "controls", "persistent"],
+  "keyboard shortcut sheet": ["shortcuts", "keyboard", "cheat", "reference"],
+  "reduce pan sensitivity": ["motor", "drag", "pan", "sensitivity"],
+  "skip delete confirmations": ["danger", "delete", "prompt", "confirmation"],
+  "reduce distractions": ["focus", "declutter", "distraction", "cognitive"],
+  "focus mode": ["cognitive", "focus", "minimal", "chrome"],
+  "simplified menus": ["cognitive", "menu", "declutter", "simple"],
+  "hide media details": ["details", "metadata", "codec", "size", "cognitive"],
+  "pause on focus loss": ["focus", "unfocused", "pause", "background"],
+  "library privacy blur": ["privacy", "blur", "library", "secret"],
 };
 
 const SECTION_SEARCH_ALIASES: Record<string, string[]> = {
@@ -464,6 +501,7 @@ function buildMeta(entry: SettingsSearchEntry): SearchIndexMeta {
 export function buildSettingsIndex(
   root: HTMLElement,
   sections: SettingsSectionInfo[],
+  sectionPrefix = "settings",
 ): SettingsSearchResult[] {
   const entries: SettingsSearchEntry[] = [];
   const sectionIndex = new Map(
@@ -482,11 +520,14 @@ export function buildSettingsIndex(
     });
   }
 
+  const sectionIdPrefix = `${sectionPrefix}-section-`;
   let docOrder = 0;
   for (const sectionEl of root.querySelectorAll<HTMLElement>(
     ".settings-section",
   )) {
-    const sectionId = sectionEl.id.replace(/^settings-section-/, "");
+    const sectionId = sectionEl.id.startsWith(sectionIdPrefix)
+      ? sectionEl.id.slice(sectionIdPrefix.length)
+      : "";
     const section = sections.find((candidate) => candidate.id === sectionId);
     if (!section) continue;
     const baseOrder = (sectionIndex.get(sectionId) ?? 0) * 1000;
@@ -595,6 +636,7 @@ export function applySettingsSearchFilter(
   root: HTMLElement,
   results: SettingsSearchResult[],
   active = true,
+  sectionPrefix = "settings",
 ): void {
   for (const el of root.querySelectorAll(".settings-search-hidden")) {
     el.classList.remove("settings-search-hidden");
@@ -613,10 +655,13 @@ export function applySettingsSearchFilter(
       .map((entry) => rowKey(entry.sectionId, entry.label, entry.hint)),
   );
 
+  const sectionIdPrefix = `${sectionPrefix}-section-`;
   for (const sectionEl of root.querySelectorAll<HTMLElement>(
     ".settings-section",
   )) {
-    const sectionId = sectionEl.id.replace(/^settings-section-/, "");
+    const sectionId = sectionEl.id.startsWith(sectionIdPrefix)
+      ? sectionEl.id.slice(sectionIdPrefix.length)
+      : "";
     if (!matchedSections.has(sectionId)) {
       sectionEl.classList.add("settings-search-hidden");
       continue;

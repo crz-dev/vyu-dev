@@ -4,6 +4,7 @@ import {
   saveResumePoint as dbSaveResumePoint,
 } from "$lib/services/database";
 import { volumeToActual } from "$lib/features/media/playback.svelte";
+import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
 export interface BackgroundAudioStart {
   path: string;
@@ -35,10 +36,17 @@ function createBackgroundAudio() {
 
   function applyProps() {
     if (!element) return;
-    element.volume = Math.min(1, volumeToActual(volume) * (boost ? 2 : 1));
+    element.volume = Math.min(
+      1,
+      volumeToActual(volume) * (boost ? 2 : 1) * accessibility.volumeLimit,
+    );
     element.muted = muted;
     element.playbackRate = rate;
     element.loop = loop;
+  }
+
+  function refreshVolume() {
+    if (element) applyProps();
   }
 
   function attach(el: HTMLAudioElement | null) {
@@ -218,6 +226,7 @@ function createBackgroundAudio() {
     setVolume,
     setMuted,
     setBoost,
+    refreshVolume,
     setPlaying,
     handleEnded,
     savePosition,

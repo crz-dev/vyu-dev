@@ -18,12 +18,13 @@ export interface MultiDeleteActionsDeps {
 }
 
 function createDeleteStore() {
+  const skipConfirmations = loadSkipDeleteConfirmation();
   let deleteConfirm = $state(false);
   let deletePermanently = $state(false);
-  let deleteNoAsk = $state(false);
+  let deleteNoAsk = $state(skipConfirmations);
   let multiDeleteConfirm = $state(false);
   let multiDeletePermanently = $state(false);
-  let multiDeleteNoAsk = $state(false);
+  let multiDeleteNoAsk = $state(skipConfirmations);
   let multiDeletePaths = $state<string[]>([]);
 
   return {
