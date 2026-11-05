@@ -21,6 +21,7 @@ import {
 } from "$lib/shared/mediaKind";
 import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
 import { requestThumbnail } from "$lib/services/thumbnailCache";
+import { getPreloadedSize } from "$lib/services/imagePreload";
 import {
   AUDIO_EXTS,
   type LoopMode,
@@ -111,6 +112,12 @@ export function createNavigation(deps: NavigationDeps) {
       menuStore.editMenuVisible = false;
     },
     handleBeforeSwitch,
+    (path: string) => {
+      const size = getPreloadedSize(path);
+      if (!size) return;
+      const { width, height } = deps.getViewerContentSize();
+      viewer.fitToScreen(width, height, size.width, size.height);
+    },
   );
 
   function handleBeforeSwitch(_nextPath: string) {
@@ -128,6 +135,38 @@ export function createNavigation(deps: NavigationDeps) {
   let resumeAppliedPath = "";
   let switching = false;
   let switchTimer: ReturnType<typeof setTimeout> | undefined;
+  let thumbnailWarmGen = 0;
+
+  // Thumbnail generation is a full decode in Rust per file. Run it when the
+  // app is idle so it cannot compete with the first image decode.
+  function warmThumbnails(files: string[], center: number) {
+    const gen = ++thumbnailWarmGen;
+    const run = () => {
+      if (gen !== thumbnailWarmGen) return;
+      const count = Math.min(24, files.length);
+      const order: number[] = [center];
+      let l = center - 1;
+      let r = center + 1;
+      while (order.length < count && (l >= 0 || r < files.length)) {
+        if (l >= 0) order.push(l--);
+        if (r < files.length) order.push(r++);
+      }
+      for (const idx of order) {
+        if (idx < 0 || idx >= files.length) continue;
+        requestThumbnail(files[idx], 120);
+      }
+      // Warm library-sized thumbnails (fewer — first screen only)
+      const libCount = Math.min(8, order.length);
+      for (let i = 0; i < libCount; i++) {
+        requestThumbnail(files[order[i]], 256);
+      }
+    };
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(run, { timeout: 2000 });
+    } else {
+      setTimeout(run, 200);
+    }
+  }
 
   function clearSavedResume(path: string) {
     deleteResumePoint(path);
@@ -229,6 +268,7 @@ export function createNavigation(deps: NavigationDeps) {
     setCurrentIndex: deps.setCurrentIndex,
     loadFile: (path: string) => loadFile(path),
     closeFile: () => closeFile(),
+    onExternalChange: () => media.clearCaches(),
   });
 
   async function loadFile(path: string, refresh = false) {
@@ -253,25 +293,9 @@ export function createNavigation(deps: NavigationDeps) {
     const folder = getParentFolder(path);
     if (folder) folderWatcher.startWatching(folder);
     if (loadedIndex >= 0) {
-      media.prefetchAdjacent(deps.getFileList(), loadedIndex);
-      // Warm thumbnail cache center-outward while the bar transition plays
-      const files = deps.getFileList();
-      const count = Math.min(24, files.length);
-      const order: number[] = [loadedIndex];
-      let l = loadedIndex - 1;
-      let r = loadedIndex + 1;
-      while (order.length < count && (l >= 0 || r < files.length)) {
-        if (l >= 0) order.push(l--);
-        if (r < files.length) order.push(r++);
-      }
-      for (const idx of order) {
-        requestThumbnail(files[idx], 120);
-      }
-      // Warm library-sized thumbnails (fewer — first screen only)
-      const libCount = Math.min(8, order.length);
-      for (let i = 0; i < libCount; i++) {
-        requestThumbnail(files[order[i]], 256);
-      }
+      const files = [...deps.getFileList()];
+      media.prefetchAdjacent(files, loadedIndex);
+      warmThumbnails(files, loadedIndex);
     }
   }
 

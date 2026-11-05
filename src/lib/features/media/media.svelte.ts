@@ -26,6 +26,12 @@ import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 import { fxEngine } from "$lib/features/effects/effects-engine";
 import { library } from "$lib/features/library/library.svelte";
 import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+import {
+  preloadImage,
+  getPreloadedUrl,
+  clearPreloadedImages,
+  forgetPreloadedImage,
+} from "$lib/services/imagePreload";
 
 export interface MediaState {
   filePath: string;
@@ -58,7 +64,9 @@ export interface MediaState {
 }
 
 interface PrefetchEntry {
-  baseSrc?: string;
+  /** Versioned display URL, shared with the decoded-image preload. */
+  src?: string;
+  at?: number;
   meta?: {
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
@@ -68,6 +76,9 @@ interface PrefetchEntry {
 
 const prefetchCache = new Map<string, PrefetchEntry>();
 const MAX_PREFETCH = 10;
+// Prefetched URLs are reused for a short window; real content changes
+// (edit apply, folder change) invalidate them explicitly.
+const PREFETCH_TTL_MS = 5 * 60_000;
 // Unique URL per load so WebView media caches can't serve a previous version of the file.
 let srcNonce = Date.now();
 
@@ -84,10 +95,18 @@ export function createMedia(
   getLooping: () => boolean,
   onReset: (newPath?: string) => void,
   onBeforeSwitch: (nextPath: string) => void = () => {},
+  onSourceReady: (path: string) => void = () => {},
 ) {
   let loadingTimer: ReturnType<typeof setTimeout> | undefined;
   let finishLoadingCalled = false;
   let loadGen = 0;
+  // Whether the file currently on screen is an image. Used to avoid blanking
+  // the viewer when switching between two images.
+  let previousWasImage = false;
+  // Pixel preloads are held until the visible image has loaded, so background
+  // decoding cannot compete with the image the user is waiting for.
+  const pendingPixelPreloads: Array<{ path: string; src: string }> = [];
+  let preloadFlushTimer: ReturnType<typeof setTimeout> | undefined;
   const STAT_CACHE_MAX = 500;
   const statCache = new Map<
     string,
@@ -185,18 +204,36 @@ export function createMedia(
     }
   }
 
-  async function prefetchFile(path: string) {
+  function queuePixelPreload(path: string, src: string) {
+    if (pendingPixelPreloads.some((p) => p.path === path)) return;
+    pendingPixelPreloads.push({ path, src });
+    if (pendingPixelPreloads.length > 6) pendingPixelPreloads.shift();
+    clearTimeout(preloadFlushTimer);
+    preloadFlushTimer = setTimeout(flushPixelPreloads, 350);
+  }
+
+  function flushPixelPreloads() {
+    clearTimeout(preloadFlushTimer);
+    preloadFlushTimer = undefined;
+    if (pendingPixelPreloads.length === 0) return;
+    const queued = pendingPixelPreloads.splice(0);
+    for (const entry of queued) preloadImage(entry.path, entry.src);
+  }
+
+  async function prefetchFile(path: string, preloadPixels = true) {
     if (prefetchCache.has(path)) return;
     try {
-      const [baseSrc, metaResult] = await Promise.all([
-        prepareDisplayPath(path)
-          .then(convertFileSrc)
-          .catch(() => undefined),
+      const [displayPath, metaResult] = await Promise.all([
+        prepareDisplayPath(path).catch(() => undefined),
         getFileMetadataLight(path).catch(() => null),
       ]);
 
-      const entry: PrefetchEntry = {};
-      if (baseSrc) entry.baseSrc = baseSrc;
+      const entry: PrefetchEntry = { at: Date.now() };
+      if (displayPath) {
+        entry.src =
+          getPreloadedUrl(path) ??
+          `${convertFileSrc(displayPath)}?v=${++srcNonce}`;
+      }
       if (metaResult) {
         const timestamps: VideoMarker[] = [];
         const clipBoundaries: ClipBoundary[] = [];
@@ -224,6 +261,19 @@ export function createMedia(
       }
       prefetchCache.set(path, entry);
 
+      // Fetch and decode image pixels now so the next navigation can paint
+      // from the decoded-image cache instead of hitting disk. Only immediate
+      // neighbours are worth the memory; ±2 is metadata-only.
+      if (
+        preloadPixels &&
+        entry.src &&
+        !pathIsVideo(path) &&
+        !pathIsAudio(path) &&
+        !pathIsPdf(path)
+      ) {
+        queuePixelPreload(path, entry.src);
+      }
+
       // Pre-warm stat cache — displayFile checks this before IPC
       if (!statCache.has(path)) {
         try {
@@ -250,7 +300,7 @@ export function createMedia(
         const p = fileList[idx];
         if (isBrowserUnsupportedImage(p) || needsRemux(p)) continue;
       }
-      prefetchFile(fileList[idx]);
+      prefetchFile(fileList[idx], Math.abs(offset) === 1);
     }
   }
 
@@ -264,7 +314,13 @@ export function createMedia(
     // Consume prefetch cache if available
     const cached = prefetchCache.get(path);
     if (cached) prefetchCache.delete(path);
-    if (refresh) statCache.delete(path);
+    if (refresh) {
+      // The file changed on disk; drop every cached representation of it.
+      statCache.delete(path);
+      forgetPreloadedImage(path);
+      const queuedIdx = pendingPixelPreloads.findIndex((p) => p.path === path);
+      if (queuedIdx !== -1) pendingPixelPreloads.splice(queuedIdx, 1);
+    }
 
     onBeforeSwitch(path);
     releaseMediaResources();
@@ -272,6 +328,10 @@ export function createMedia(
     const isVideo = pathIsVideo(path);
     const isAudio = pathIsAudio(path);
     const isPdf = pathIsPdf(path);
+    const isImage = !isVideo && !isAudio && !isPdf;
+    // Keep the previous image on screen until the next one is ready. Only
+    // applies to image -> image switches; media kind changes still clear it.
+    const keepPreviousImage = isImage && previousWasImage;
 
     // Batch metadata fetch — use cached or fresh
     let timestamps: VideoMarker[] = [];
@@ -311,13 +371,12 @@ export function createMedia(
       }
     }
 
-    set({
+    const nextState: Partial<MediaState> = {
       filePath: path,
       fileName: getFileName(path),
       isVideo,
       isAudio,
       isPdf,
-      fileSrc: "",
       fileSize: "",
       fileSizeBytes: 0,
       fileDimensions: "",
@@ -326,8 +385,6 @@ export function createMedia(
       fileInfoLoading: true,
       imageRotation: 0,
       imageFlipped: false,
-      imageNaturalWidth: 0,
-      imageNaturalHeight: 0,
       rawCurrentSecs: 0,
       rawDurationSecs: 0,
       progress: 0,
@@ -339,22 +396,45 @@ export function createMedia(
         (resumePoint !== null && resumePoint < playbackPrefs.resumeThreshold)
           ? null
           : resumePoint,
-    });
+    };
+    if (!keepPreviousImage) {
+      nextState.fileSrc = "";
+      nextState.imageNaturalWidth = 0;
+      nextState.imageNaturalHeight = 0;
+    }
+    set(nextState);
+    previousWasImage = isImage;
 
     onReset(path);
 
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (gen !== loadGen) return false;
+    // Audio and video elements must be torn down and recreated between files.
+    // Their equalizer source node is bound to the element, so reusing the
+    // element leaves it disconnected from the audio graph (no sound). Yield a
+    // frame so the cleared `fileSrc` is committed first.
+    if (!isImage) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      if (gen !== loadGen) return false;
+    }
 
+    const cachedSrc =
+      !refresh &&
+      cached?.src &&
+      cached.at !== undefined &&
+      Date.now() - cached.at < PREFETCH_TTL_MS
+        ? cached.src
+        : null;
+    const preloadedSrc = refresh ? null : getPreloadedUrl(path);
     const src =
-      !refresh && cached?.baseSrc
-        ? cached.baseSrc
-        : convertFileSrc(await prepareDisplayPath(path));
-    const baseSrc = `${src}?v=${++srcNonce}`;
+      cachedSrc ??
+      preloadedSrc ??
+      `${convertFileSrc(await prepareDisplayPath(path))}?v=${++srcNonce}`;
     if (gen !== loadGen) return false;
     set({
-      fileSrc: baseSrc,
+      fileSrc: src,
     });
+    // Fit against the already-decoded dimensions so the first paint of a large
+    // photo is not laid out at 1:1 scale.
+    onSourceReady(path);
 
     try {
       let info = statCache.get(path);
@@ -438,6 +518,11 @@ export function createMedia(
     onBeforeSwitch("");
     clearTimeout(loadingTimer);
     finishLoadingCalled = false;
+    previousWasImage = false;
+    clearPreloadedImages();
+    pendingPixelPreloads.length = 0;
+    clearTimeout(preloadFlushTimer);
+    preloadFlushTimer = undefined;
     releaseMediaResources();
     statCache.clear();
     onReset();
@@ -485,6 +570,8 @@ export function createMedia(
       fileInfoLoading: false,
     });
     if (isLoadingFile) finishLoadingCb();
+    // The visible image is ready; now warm the neighbours.
+    flushPixelPreloads();
   }
 
   function onVideoLoad(
@@ -508,6 +595,15 @@ export function createMedia(
     if (isLoadingFile) finishLoadingCb();
   }
 
+  function clearCaches() {
+    prefetchCache.clear();
+    statCache.clear();
+    clearPreloadedImages();
+    pendingPixelPreloads.length = 0;
+    clearTimeout(preloadFlushTimer);
+    preloadFlushTimer = undefined;
+  }
+
   return {
     displayFile,
     loadFile,
@@ -518,5 +614,6 @@ export function createMedia(
     onVideoLoad,
     finishLoading,
     prefetchAdjacent,
+    clearCaches,
   };
 }

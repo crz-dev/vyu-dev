@@ -219,6 +219,60 @@
   let slideshowTransition = $derived(
     appearance.reducedMotion ? "none" : slideshow.transition,
   );
+
+  // A fitted copy of the outgoing image, shown while the next image decodes.
+  // Keeps the viewer from flashing its background between images.
+  let staleFrameSrc = $state("");
+  let staleFrameTimer: ReturnType<typeof setTimeout> | undefined;
+  let staleClearToken = 0;
+  // Plain trackers: the effect must not depend on its own writes.
+  let lastSeenSrc = "";
+  let lastSeenWasImage = false;
+
+  $effect.pre(() => {
+    const src = fileSrc;
+    const isImage = !!src && !isVideo && !isAudio && !isPdf;
+    // Slideshow transitions already keep the outgoing image on screen; a
+    // static copy would override the animation.
+    const animatingSlideshow =
+      slideshow.active && slideshowTransition !== "none";
+    if (src !== lastSeenSrc) {
+      if (lastSeenWasImage && isImage && lastSeenSrc && !animatingSlideshow) {
+        staleClearToken++;
+        staleFrameSrc = lastSeenSrc;
+        clearTimeout(staleFrameTimer);
+        // Safety net: if the new image never loads, stop covering the viewer.
+        staleFrameTimer = setTimeout(() => {
+          staleFrameSrc = "";
+        }, 4000);
+      } else if ((!isImage || animatingSlideshow) && staleFrameSrc) {
+        staleFrameSrc = "";
+      }
+      lastSeenSrc = src;
+    }
+    lastSeenWasImage = isImage;
+  });
+
+  function clearStaleFrame() {
+    if (!staleFrameSrc) return;
+    clearTimeout(staleFrameTimer);
+    const token = ++staleClearToken;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (token === staleClearToken) staleFrameSrc = "";
+      });
+    });
+  }
+
+  function handleImageLoad(e: Event) {
+    onImageLoad(e);
+    clearStaleFrame();
+  }
+
+  function handleImageError() {
+    corruption.onImageError();
+    clearStaleFrame();
+  }
 </script>
 
 <div class="content">
@@ -270,8 +324,8 @@
         {fileSrc}
         {fileName}
         bind:imageEl
-        {onImageLoad}
-        onImageError={corruption.onImageError}
+        onImageLoad={handleImageLoad}
+        onImageError={handleImageError}
         imageStyle={style.imageStyle}
         bind:cropContainerEl
         slideshowActive={slideshow.active}
@@ -408,6 +462,15 @@
           >open a file</span
         ></button
       >
+    {/if}
+    {#if staleFrameSrc}
+      <div
+        class="stale-frame"
+        class:upscale={viewer.state.isFullscreen}
+        aria-hidden="true"
+      >
+        <img src={staleFrameSrc} alt="" decoding="async" />
+      </div>
     {/if}
   </div>
   <div

@@ -213,6 +213,30 @@ main {
   box-sizing: border-box;
   position: relative;
 }
+/* Outgoing image held on screen until the next image has painted. */
+.stale-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: inherit;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
+}
+.stale-frame img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+.stale-frame.upscale img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .viewer:has(.pdf-viewer) {
   padding: 0;
 }

@@ -126,6 +126,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | localStorage preferences                  | `services/storage.ts`                        |
 | SQLite frontend wrappers / migration      | `services/database.ts`                       |
 | Shared in-memory thumbnail cache          | `services/thumbnailCache.ts`                 |
+| Decoded neighbouring-image cache          | `services/imagePreload.ts`                   |
 | Thumbnail generation indicator            | `components/ThumbnailGenToast.svelte`        |
 | Clipboard                                 | `services/clipboard.ts`                      |
 | Filename tooltip                          | `services/filenameTooltip.ts`                |

@@ -12,6 +12,8 @@ export function createFolderWatcher(opts: {
   setCurrentIndex: (v: number) => void;
   loadFile: (path: string) => Promise<void>;
   closeFile: () => void;
+  /** Called when the filesystem reports a real change in the watched folder. */
+  onExternalChange?: () => void;
 }) {
   let unwatchFn: (() => void) | null = null;
   let watchDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -43,6 +45,7 @@ export function createFolderWatcher(opts: {
         watchDebounce = setTimeout(() => {
           watchDebounce = null;
           if (gen !== watchGen) return;
+          opts.onExternalChange?.();
           onFolderChanged(folderPath);
         }, 300);
       },
