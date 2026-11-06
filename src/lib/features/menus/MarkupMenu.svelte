@@ -43,6 +43,20 @@
   let clearAllConfirmTimeout: ReturnType<typeof setTimeout> | null =
     $state(null);
   let menuWrapper = $state<HTMLElement | null>(null);
+  type MarkupSliderId =
+    | "highlightThickness"
+    | "highlightOpacity"
+    | "thickness"
+    | "opacity";
+  let hoveredSlider: MarkupSliderId | null = $state(null);
+
+  function handleSliderMouseEnter(slider: MarkupSliderId) {
+    hoveredSlider = slider;
+  }
+
+  function handleSliderMouseLeave(slider: MarkupSliderId) {
+    if (hoveredSlider === slider) hoveredSlider = null;
+  }
 
   function clampMenuPosition() {
     const menu = menuWrapper;
@@ -137,6 +151,7 @@
       markup.setPathMode(false);
       markup.textActive = false;
       markup.selectShape(null);
+      hoveredSlider = null;
     }
   });
 
@@ -1190,6 +1205,10 @@
                 aria-valuemax={40}
                 aria-valuenow={localHighlightThickness}
                 aria-label="Highlight thickness"
+                onmouseenter={() =>
+                  handleSliderMouseEnter("highlightThickness")}
+                onmouseleave={() =>
+                  handleSliderMouseLeave("highlightThickness")}
                 onpointerdown={handleHighlightThicknessPointerDown}
                 onpointermove={handleHighlightThicknessPointerMove}
                 onpointerup={handleHighlightThicknessPointerUp}
@@ -1231,12 +1250,14 @@
                   }}
                 ></div>
               </div>
-              <div
-                class="color-scrubber-tooltip"
-                style="left: {highlightThicknessScrubberPct}%"
-              >
-                <span>{localHighlightThickness}px</span>
-              </div>
+              {#if hoveredSlider === "highlightThickness" || isHighlightThicknessDragging}
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {highlightThicknessScrubberPct}%"
+                >
+                  <span>{localHighlightThickness}px</span>
+                </div>
+              {/if}
             </div>
           {/if}
 
@@ -1256,6 +1277,8 @@
                 aria-valuemax={0.8}
                 aria-valuenow={localHighlightOpacity}
                 aria-label="Highlight opacity"
+                onmouseenter={() => handleSliderMouseEnter("highlightOpacity")}
+                onmouseleave={() => handleSliderMouseLeave("highlightOpacity")}
                 onpointerdown={handleHighlightOpacityPointerDown}
                 onpointermove={handleHighlightOpacityPointerMove}
                 onpointerup={handleHighlightOpacityPointerUp}
@@ -1297,12 +1320,14 @@
                   }}
                 ></div>
               </div>
-              <div
-                class="color-scrubber-tooltip"
-                style="left: {highlightOpacityScrubberPct}%"
-              >
-                <span>{Math.round(localHighlightOpacity * 100)}%</span>
-              </div>
+              {#if hoveredSlider === "highlightOpacity" || isHighlightOpacityDragging}
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {highlightOpacityScrubberPct}%"
+                >
+                  <span>{Math.round(localHighlightOpacity * 100)}%</span>
+                </div>
+              {/if}
             </div>
           {/if}
         {/if}
@@ -1681,6 +1706,8 @@
                 aria-valuemax={20}
                 aria-valuenow={localThickness}
                 aria-label="Thickness"
+                onmouseenter={() => handleSliderMouseEnter("thickness")}
+                onmouseleave={() => handleSliderMouseLeave("thickness")}
                 onpointerdown={handleThicknessPointerDown}
                 onpointermove={handleThicknessPointerMove}
                 onpointerup={handleThicknessPointerUp}
@@ -1722,12 +1749,14 @@
                   }}
                 ></div>
               </div>
-              <div
-                class="color-scrubber-tooltip"
-                style="left: {thicknessScrubberPct}%"
-              >
-                <span>{localThickness}px</span>
-              </div>
+              {#if hoveredSlider === "thickness" || isThicknessDragging}
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {thicknessScrubberPct}%"
+                >
+                  <span>{localThickness}px</span>
+                </div>
+              {/if}
             </div>
           {/if}
 
@@ -1747,6 +1776,8 @@
                 aria-valuemax={1}
                 aria-valuenow={localOpacity}
                 aria-label="Opacity"
+                onmouseenter={() => handleSliderMouseEnter("opacity")}
+                onmouseleave={() => handleSliderMouseLeave("opacity")}
                 onpointerdown={handleOpacityPointerDown}
                 onpointermove={handleOpacityPointerMove}
                 onpointerup={handleOpacityPointerUp}
@@ -1788,12 +1819,14 @@
                   }}
                 ></div>
               </div>
-              <div
-                class="color-scrubber-tooltip"
-                style="left: {opacityScrubberPct}%"
-              >
-                <span>{Math.round(localOpacity * 100)}%</span>
-              </div>
+              {#if hoveredSlider === "opacity" || isOpacityDragging}
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {opacityScrubberPct}%"
+                >
+                  <span>{Math.round(localOpacity * 100)}%</span>
+                </div>
+              {/if}
             </div>
           {/if}
         {/if}

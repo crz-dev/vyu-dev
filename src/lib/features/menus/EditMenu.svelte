@@ -38,6 +38,7 @@
     $state(null);
   let rotateTrackEl: HTMLDivElement | null = $state(null);
   let isRotateDragging = $state(false);
+  let rotateSliderHovered = $state(false);
   let localRotationAngle = $state(0);
   let flipRowOpen = $state(false);
   let cropRowOpen = $state(false);
@@ -99,9 +100,11 @@
       resetConfirming = false;
       colorRowOpen = false;
       activeColorTool = null;
+      sliderHovered = false;
       pinned = false;
       rotateRowOpen = false;
       activeRotateTool = null;
+      rotateSliderHovered = false;
       flipRowOpen = false;
       cropRowOpen = false;
       activeCropTool = null;
@@ -348,14 +351,7 @@
   }
 
   const scrubberTooltipVisible = $derived(
-    activeColorTool !== null &&
-      (sliderHovered ||
-        (activeColorTool === "brightness" &&
-          editing.snapshot.brightness !== 1) ||
-        (activeColorTool === "contrast" && editing.snapshot.contrast !== 1) ||
-        (activeColorTool === "saturation" &&
-          editing.snapshot.saturation !== 1) ||
-        (activeColorTool === "hue" && editing.snapshot.hue !== 0)),
+    activeColorTool !== null && (sliderHovered || isDragging),
   );
 
   const scrubberPct = $derived.by(() => {
@@ -406,7 +402,7 @@
   const rotateScrubberPct = $derived(((localRotationAngle - -180) / 360) * 100);
 
   const rotateScrubberTooltipVisible = $derived(
-    activeRotateTool === "custom" && localRotationAngle !== 0,
+    activeRotateTool === "custom" && (rotateSliderHovered || isRotateDragging),
   );
 
   const rotateDisplayValue = $derived(
@@ -1121,6 +1117,8 @@
               onpointermove={handleRotateTrackPointerMove}
               onpointerup={handleRotateTrackPointerUp}
               onpointercancel={handleRotateTrackPointerUp}
+              onmouseenter={() => (rotateSliderHovered = true)}
+              onmouseleave={() => (rotateSliderHovered = false)}
             >
               <div
                 class="color-slider-fill"

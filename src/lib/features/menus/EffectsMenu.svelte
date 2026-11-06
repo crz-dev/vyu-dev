@@ -58,6 +58,7 @@
   // Tune slider (markup-style)
   let tuneTrackEl: HTMLDivElement | null = $state(null);
   let isTuneDragging = $state(false);
+  let isTuneHovered = $state(false);
 
   function getTuneRange() {
     if (activeTuneItem === "pitch") return { min: -12, max: 12 };
@@ -596,6 +597,8 @@
                 aria-valuemax={max}
                 aria-valuenow={val}
                 aria-label={label}
+                onmouseenter={() => (isTuneHovered = true)}
+                onmouseleave={() => (isTuneHovered = false)}
                 onpointerdown={handleTunePointerDown}
                 onpointermove={handleTunePointerMove}
                 onpointerup={handleTunePointerUp}
@@ -637,12 +640,14 @@
                   }}
                 ></div>
               </div>
-              <div
-                class="color-scrubber-tooltip"
-                style="left: {tuneScrubberPct}%"
-              >
-                <span>{display}</span>
-              </div>
+              {#if isTuneHovered || isTuneDragging}
+                <div
+                  class="color-scrubber-tooltip"
+                  style="left: {tuneScrubberPct}%"
+                >
+                  <span>{display}</span>
+                </div>
+              {/if}
             </div>
           {/if}
         {/if}
