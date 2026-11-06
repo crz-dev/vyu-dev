@@ -504,6 +504,7 @@ export function saveFont(f: "geist" | "satoshi" | "system"): void {
 export type DisplayDensity = "comfortable" | "compact";
 export type DarkVariant = "standard" | "oled";
 export type ViewerBackground = "theme" | "black" | "gray";
+export type FileTransition = "none" | "fade" | "slide";
 
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 2.25;
@@ -607,6 +608,15 @@ export function loadViewerBackground(): ViewerBackground {
 
 export function saveViewerBackground(background: ViewerBackground): void {
   localStorage.setItem("vyu-viewer-background", background);
+}
+
+export function loadFileTransition(): FileTransition {
+  const value = localStorage.getItem("vyu-file-transition");
+  return value === "fade" || value === "slide" ? value : "none";
+}
+
+export function saveFileTransition(transition: FileTransition): void {
+  localStorage.setItem("vyu-file-transition", transition);
 }
 
 // ── Playback ──

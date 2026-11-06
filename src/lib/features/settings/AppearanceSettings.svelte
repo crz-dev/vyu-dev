@@ -214,6 +214,31 @@
     </SettingsRow>
 
     <SettingsRow
+      label="File Skip Transition"
+      hint="Animate when moving to another file"
+    >
+      {#snippet control()}
+        <div class="pill-group pill-group-3">
+          <button
+            class="pill-btn"
+            class:active={appearance.fileTransition === "none"}
+            onclick={() => appearance.setFileTransition("none")}>None</button
+          >
+          <button
+            class="pill-btn"
+            class:active={appearance.fileTransition === "fade"}
+            onclick={() => appearance.setFileTransition("fade")}>Fade</button
+          >
+          <button
+            class="pill-btn"
+            class:active={appearance.fileTransition === "slide"}
+            onclick={() => appearance.setFileTransition("slide")}>Slide</button
+          >
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
       label="Auto-hide Cursor"
       hint="Hide the cursor when fullscreen controls fade"
     >

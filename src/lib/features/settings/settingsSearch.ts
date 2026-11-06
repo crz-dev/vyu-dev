@@ -69,6 +69,16 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "transitions",
   ],
   "high contrast": ["accessibility", "readability", "contrast", "visibility"],
+  "file skip transition": [
+    "file",
+    "skip",
+    "next",
+    "previous",
+    "transition",
+    "fade",
+    "slide",
+    "animation",
+  ],
   "transparency background": [
     "checkerboard",
     "transparent",

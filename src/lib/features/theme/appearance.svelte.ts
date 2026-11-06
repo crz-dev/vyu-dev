@@ -4,6 +4,7 @@ import {
   loadCheckerboard,
   loadCursorAutoHide,
   loadDensity,
+  loadFileTransition,
   loadHideDangerZone,
   loadHighContrast,
   loadReducedMotion,
@@ -14,6 +15,7 @@ import {
   saveCheckerboard,
   saveCursorAutoHide,
   saveDensity,
+  saveFileTransition,
   saveHideDangerZone,
   saveHighContrast,
   saveReducedMotion,
@@ -22,10 +24,11 @@ import {
   saveUiScale,
   saveViewerBackground,
   type DisplayDensity,
+  type FileTransition,
   type ViewerBackground,
 } from "$lib/services/storage";
 
-export type { DisplayDensity, ViewerBackground };
+export type { DisplayDensity, FileTransition, ViewerBackground };
 
 const UI_SCALE_MIN = 0.8;
 const UI_SCALE_MAX = 2.25;
@@ -46,6 +49,7 @@ function createAppearance() {
   let cursorAutoHide = $state(loadCursorAutoHide());
   let highContrast = $state(loadHighContrast());
   let viewerBackground = $state<ViewerBackground>(loadViewerBackground());
+  let fileTransition = $state<FileTransition>(loadFileTransition());
   let rememberLastTab = $state(loadRememberLastTab());
   let hideDangerZone = $state(loadHideDangerZone());
 
@@ -125,6 +129,11 @@ function createAppearance() {
     applyRootAttributes();
   }
 
+  function setFileTransition(transition: FileTransition) {
+    fileTransition = transition;
+    saveFileTransition(transition);
+  }
+
   function init() {
     applyRootAttributes();
     void applyZoom();
@@ -157,6 +166,9 @@ function createAppearance() {
     get viewerBackground() {
       return viewerBackground;
     },
+    get fileTransition() {
+      return fileTransition;
+    },
     get rememberLastTab() {
       return rememberLastTab;
     },
@@ -173,6 +185,7 @@ function createAppearance() {
     setRememberLastTab,
     setHideDangerZone,
     setViewerBackground,
+    setFileTransition,
     init,
   };
 }

@@ -229,6 +229,11 @@
   // Plain trackers: the effect must not depend on its own writes.
   let lastSeenSrc = "";
   let lastSeenWasImage = false;
+  let transitionInitialized = false;
+  let lastTransitionPath = "";
+  let lastTransitionSrc = "";
+  let pendingTransitionPath = "";
+  let fileTransitionAnimation: Animation | null = null;
 
   $effect.pre(() => {
     const src = fileSrc;
@@ -252,6 +257,60 @@
       lastSeenSrc = src;
     }
     lastSeenWasImage = isImage;
+  });
+
+  $effect(() => {
+    const path = filePath;
+    const src = fileSrc;
+    const transition = appearance.fileTransition;
+    const reducedMotion = appearance.reducedMotion;
+
+    if (!transitionInitialized) {
+      transitionInitialized = true;
+      lastTransitionPath = path;
+      lastTransitionSrc = src;
+      return;
+    }
+
+    if (path !== lastTransitionPath) {
+      pendingTransitionPath = lastTransitionPath && path ? path : "";
+      lastTransitionPath = path;
+    }
+    if (!src) {
+      lastTransitionSrc = "";
+      return;
+    }
+    if (src === lastTransitionSrc) return;
+
+    lastTransitionSrc = src;
+    if (pendingTransitionPath !== path) {
+      pendingTransitionPath = "";
+      return;
+    }
+    pendingTransitionPath = "";
+
+    if (transition === "none" || reducedMotion || slideshow.active) return;
+
+    const target = viewerEl?.querySelector<HTMLElement>(
+      ".media-container, .video-wrapper, .audio-wrapper, .pdf-viewer",
+    );
+    if (!target) return;
+
+    fileTransitionAnimation?.cancel();
+    fileTransitionAnimation = target.animate(
+      transition === "fade"
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [
+            { opacity: 0, translate: "24px 0" },
+            { opacity: 1, translate: "0 0" },
+          ],
+      { duration: 280, easing: "ease-out" },
+    );
+
+    return () => {
+      fileTransitionAnimation?.cancel();
+      fileTransitionAnimation = null;
+    };
   });
 
   function clearStaleFrame() {
