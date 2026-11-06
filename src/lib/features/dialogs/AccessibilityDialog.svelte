@@ -5,6 +5,8 @@
   import MotorSettings from "$lib/features/accessibility/MotorSettings.svelte";
   import CognitiveSettings from "$lib/features/accessibility/CognitiveSettings.svelte";
   import AppSettings from "$lib/features/accessibility/AppSettings.svelte";
+  import ProfileSettings from "$lib/features/profiles/ProfileSettings.svelte";
+  import ProfileFooter from "$lib/features/profiles/ProfileFooter.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
@@ -69,6 +71,7 @@
     { id: "hearing", label: "Hearing" },
     { id: "motor", label: "Motor" },
     { id: "cognitive", label: "Cognitive" },
+    { id: "profiles", label: "Profiles" },
     { id: "settings", label: "Settings" },
   ];
 
@@ -77,6 +80,7 @@
     hearing: "Output level, audio processing and feedback cues.",
     motor: "Hit targets, timeline size and input safety.",
     cognitive: "Focus, distraction reduction and library privacy.",
+    profiles: "Per-profile library, switching and startup behavior.",
     settings: "Reset, Windows inheritance and menu behavior.",
   };
 
@@ -376,6 +380,24 @@
                     d="M12 6v6l4 2"
                   /></svg
                 >
+              {:else if sec.id === "profiles"}
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle
+                    cx="9"
+                    cy="7"
+                    r="4"
+                  /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path
+                    d="M16 3.13a4 4 0 010 7.75"
+                  /></svg
+                >
               {:else if sec.id === "settings"}
                 <svg
                   width="14"
@@ -457,8 +479,13 @@
           <HearingSettings flash={flashId === "hearing"} />
           <MotorSettings flash={flashId === "motor"} />
           <CognitiveSettings flash={flashId === "cognitive"} />
+          <ProfileSettings flash={flashId === "profiles"} />
           <AppSettings flash={flashId === "settings"} />
         </div>
+      </div>
+
+      <div class="delete-actions">
+        <ProfileFooter />
       </div>
     </div>
   </div>

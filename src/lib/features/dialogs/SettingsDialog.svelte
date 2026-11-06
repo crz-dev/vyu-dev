@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
-  import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import DangerSettings from "$lib/features/danger/DangerSettings.svelte";
   import DebugSettings from "$lib/features/debug/DebugSettings.svelte";
   import type { DebugFileInfo } from "$lib/features/debug/debugTypes";
@@ -10,16 +9,9 @@
   import ProcessSettings from "$lib/features/settings/ProcessSettings.svelte";
   import LibrarySettings from "$lib/features/settings/LibrarySettings.svelte";
   import SystemSettings from "$lib/features/system/SystemSettings.svelte";
-  import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
   import KeybindsSettings from "$lib/features/keybinds/KeybindsSettings.svelte";
-  import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
-  import { theme as themeStore } from "$lib/features/theme/theme.svelte";
-  import { font as fontStore } from "$lib/features/theme/font.svelte";
+  import ProfileFooter from "$lib/features/profiles/ProfileFooter.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
-  import { library } from "$lib/features/library/library.svelte";
-  import { editing } from "$lib/features/editing/editing.svelte";
-  import { loopModeStore } from "$lib/features/media/loopMode.svelte";
-  import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import {
     applySettingsSearchFilter,
     buildSettingsIndex,
@@ -233,115 +225,6 @@
     }
     activeSection = current;
   }
-
-  const autoSaveMarkers = true;
-
-  function exportSettings() {
-    const data = {
-      theme: themeStore.mode,
-      darkVariant: themeStore.darkVariant,
-      font: fontStore.family,
-      uiScale: appearance.uiScale,
-      density: appearance.density,
-      reducedMotion: appearance.reducedMotion,
-      rememberLastTab: appearance.rememberLastTab,
-      hideDangerZone: appearance.hideDangerZone,
-      checkerboard: appearance.checkerboard,
-      resumeMode: playbackPrefs.resumeMode,
-      resumeThreshold: playbackPrefs.resumeThreshold,
-      endAction: loopModeStore.loopMode,
-      autoplay: playbackPrefs.autoplay,
-      rememberSpeed: playbackPrefs.rememberSpeed,
-      rememberVolume: playbackPrefs.rememberVolume,
-      defaultSpeed: playbackPrefs.defaultSpeed,
-      defaultVolume: playbackPrefs.defaultVolume,
-      volumeBoost: playbackPrefs.volumeBoost,
-      seekStep: playbackPrefs.seekStep,
-      keepAudio: playbackPrefs.keepAudio,
-      autoSaveMarkers,
-      backupMode: editing.backupMode,
-      exportQuality: editing.exportQuality,
-      imageOutputDir: editing.imageOutputDir,
-      videoOutputDir: editing.videoOutputDir,
-      imageFormat: editing.imageFormat,
-      videoFormat: editing.videoFormat,
-      imageQuality: editing.imageQuality,
-      keepImageOriginalDate: editing.keepImageOriginalDate,
-      keepVideoOriginalDate: editing.keepVideoOriginalDate,
-      autoOpenImageExport: editing.autoOpenImageExport,
-      autoOpenVideoExport: editing.autoOpenVideoExport,
-      rememberEdits: editing.rememberEdits,
-      backupDir: editing.backupDir,
-      compareEnabled: editing.compareEnabled,
-      processQuality: conversionPrefs.quality,
-      processDeleteOriginal: conversionPrefs.deleteOriginal,
-      processAudioBitrate: conversionPrefs.audioBitrate,
-      processOverwrite: conversionPrefs.overwriteExisting,
-      processGpu: conversionPrefs.gpuEncoding,
-      processHardwareEncoder: conversionPrefs.hardwareEncoder,
-      processAutoOpen: conversionPrefs.autoOpenConverted,
-      processPreserveMetadata: conversionPrefs.preserveMetadata,
-      processCoverArt: conversionPrefs.coverArtMode,
-      reopenLastFile: systemPrefs.reopenLastFile,
-      alwaysOnTop: systemPrefs.alwaysOnTop,
-      keepAwake: systemPrefs.keepAwake,
-      pauseOnFocusLoss: systemPrefs.pauseOnFocusLoss,
-      batterySaverThumbnails: systemPrefs.batterySaverThumbnails,
-      externalApps: systemPrefs.externalApps,
-      keybinds: keybindStore.exportConfig(),
-      libraryViewMode: library.viewMode,
-      libraryDensity: library.density,
-      libraryThumbnailSize: library.thumbnailSize,
-      libraryDividers: library.dividersOn,
-      libraryNames: library.namesOn,
-      libraryFileFilters: library.fileFilters,
-      libraryRecentFilesLimit: library.recentFilesLimit,
-      libraryRecentsDisabled: library.recentsDisabled,
-      libraryRecentRetentionDays: library.recentRetentionDays,
-      libraryShowFolders: library.showFolders,
-      libraryShowThumbnails: library.showThumbnails,
-      libraryCollectionCovers: library.showCollectionCovers,
-      libraryPrivacyMode: library.privacyMode,
-      libraryPrivacyBlur: library.privacyBlur,
-      libraryPrivacyHideNames: library.privacyHideNames,
-      libraryPrivacyRevealHover: library.privacyRevealHover,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "vyu-settings.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  let profileMenuOpen = $state(false);
-  let profileNameInput = $state("");
-  let profiles = $state<string[]>(["Default"]);
-  let activeProfile = $state("Default");
-  let profileBtnEl = $state<HTMLButtonElement | null>(null);
-  let profileDropdownStyle = $state("");
-
-  function openProfileMenu() {
-    if (profileBtnEl) {
-      const rect = profileBtnEl.getBoundingClientRect();
-      const dropdownWidth = 176;
-      const left = Math.max(8, rect.left - dropdownWidth - 8);
-      const bottom = window.innerHeight - rect.top + -46;
-      profileDropdownStyle = `position: fixed; left: ${left}px; bottom: ${bottom}px;`;
-    }
-    profileMenuOpen = true;
-  }
-
-  function toggleProfileMenu() {
-    if (profileMenuOpen) {
-      profileMenuOpen = false;
-    } else {
-      openProfileMenu();
-    }
-  }
 </script>
 
 {#if settingsOpen}
@@ -349,123 +232,9 @@
     class="delete-overlay"
     role="presentation"
     onmousedown={(e) => {
-      const target = e.target as HTMLElement;
-      if (
-        profileMenuOpen &&
-        !target.closest(".profile-dropdown") &&
-        !target.closest(".profile-btn-wrap")
-      ) {
-        profileMenuOpen = false;
-      }
       if (e.target === e.currentTarget) closeSettings();
     }}
   >
-    {#if profileMenuOpen}
-      <div class="profile-dropdown" style={profileDropdownStyle}>
-        <div class="profile-dropdown-header">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle
-              cx="12"
-              cy="7"
-              r="4"
-            /></svg
-          >
-          <span>Select Profile</span>
-        </div>
-        <div class="profile-dropdown-separator"></div>
-        {#each profiles as p}
-          <button
-            class="profile-dropdown-item"
-            class:active={activeProfile === p}
-            onclick={() => {
-              activeProfile = p;
-              profileMenuOpen = false;
-            }}
-          >
-            {#if activeProfile === p}
-              <svg
-                class="profile-check"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><polyline points="20 6 9 17 4 12" /></svg
-              >
-            {:else}
-              <svg
-                class="profile-check"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"><circle cx="12" cy="12" r="3" /></svg
-              >
-            {/if}
-            {p}
-          </button>
-        {/each}
-        <div class="profile-dropdown-separator"></div>
-        <input
-          class="profile-dropdown-input"
-          bind:value={profileNameInput}
-          placeholder="New profile name"
-          onkeydown={(e) => {
-            if (e.key === "Enter") {
-              if (profileNameInput.trim()) {
-                profiles = [...profiles, profileNameInput.trim()];
-                activeProfile = profileNameInput.trim();
-                profileNameInput = "";
-                profileMenuOpen = false;
-              }
-            }
-          }}
-        />
-        <button
-          class="profile-dropdown-item save"
-          onclick={() => {
-            if (profileNameInput.trim()) {
-              profiles = [...profiles, profileNameInput.trim()];
-              activeProfile = profileNameInput.trim();
-              profileNameInput = "";
-              profileMenuOpen = false;
-            }
-          }}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><line x1="12" y1="5" x2="12" y2="19" /><line
-              x1="5"
-              y1="12"
-              x2="19"
-              y2="12"
-            /></svg
-          >
-          Save current
-        </button>
-      </div>
-    {/if}
     <div class="delete-dialog settings-dialog" role="dialog" aria-modal="true">
       <div class="settings-header-bar">
         <p class="delete-title">
@@ -786,66 +555,7 @@
       </div>
 
       <div class="delete-actions">
-        <div class="settings-footer-left">
-          <div class="profile-btn-wrap">
-            <button
-              class="settings-action-btn"
-              bind:this={profileBtnEl}
-              onclick={toggleProfileMenu}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle
-                  cx="12"
-                  cy="7"
-                  r="4"
-                /></svg
-              >
-              Profile
-            </button>
-          </div>
-        </div>
-        <div class="settings-footer-left">
-          <button class="settings-action-btn">
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-                points="7 10 12 15 17 10"
-              /><line x1="12" y1="15" x2="12" y2="3" /></svg
-            >
-            Import Settings
-          </button>
-          <button class="settings-action-btn" onclick={exportSettings}>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-                points="7 10 12 15 17 10"
-              /><line x1="12" y1="15" x2="12" y2="3" /></svg
-            >
-            Export Settings
-          </button>
-        </div>
+        <ProfileFooter />
       </div>
     </div>
   </div>

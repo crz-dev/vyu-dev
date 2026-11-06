@@ -44,6 +44,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
 | Clips                           | `features/media/clips.svelte.ts`, `commands/clips.rs`                                                  |
 | Library                         | `features/library/*`                                                                                   |
+| Profiles / settings transfer    | `features/profiles/*`, `services/storage.ts`                                                           |
 | File open / delete / navigation | `features/file-actions/*`, `features/navigation/*`, `commands/file_ops.rs`                             |
 | Persistence                     | `services/storage.ts` (prefs), `services/database.ts` (SQLite), `src-tauri/src/database/*`             |
 | Thumbnails / display            | `commands/thumbnail.rs`, `commands/display.rs`, `services/thumbnailCache.ts`                           |
@@ -106,6 +107,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Clipboard paste intake                                 | `features/file-actions/paste.ts`                                               |
 | Navigation / sort / folder watcher                     | `features/navigation/*`                                                        |
 | Library view                                           | `features/library/*`                                                           |
+| Profiles, switching, settings import/export            | `features/profiles/*`, `services/storage.ts`                                   |
 | Library section grouping                               | `features/library/sections.ts`                                                 |
 | Window controls                                        | `features/menus/windowControls.ts`                                             |
 | Context menu state                                     | `features/menus/contextMenu.svelte.ts`                                         |
@@ -197,6 +199,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 - Legacy/fallback per-file keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
 - SQLite is primary after migration (`migrateFromLocalStorage`). User updates to resume position, EQ settings, and CD color are still dual-written to localStorage as fallback. Timestamps and clips use SQLite; their localStorage values are read only when the DB row is missing or the query fails.
 - Do not add new per-file localStorage keys; use SQLite.
+- Profiles: live `vyu-*` keys are the active profile. Inactive profiles are snapshots in `vyu-profiles-registry-v1`; switching captures the live keys, applies the target snapshot, and reloads. Device/window-level keys stay shared. Profile-specific library and universal accessibility control whether library and accessibility keys are scoped per profile; per-file SQLite metadata remains global.
 
 **Other runtime paths**
 
@@ -262,5 +265,6 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Safe-mode restart reuses `--restart-delay`                            | The single-instance release must finish before the new process starts.              |
 | Danger Zone actions never delete user media                           | Destructive settings clear Vyu data, caches, backups or installation files only.    |
 | Global marker clears update the DB and current in-memory stores       | Avoids stale timestamps/clips after clearing every file.                            |
+| Profile switching captures live `vyu-*` keys and reloads              | Guarantees every settings store reinitializes from the target profile.              |
 | Factory Reset clears the database and reinitializes preferences       | Leaves media files on disk untouched.                                               |
 | Bundled FFmpeg removal requires restart or reinstall                  | The startup-resolved binary path and PATH fallback are not re-evaluated at runtime. |

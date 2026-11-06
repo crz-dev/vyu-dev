@@ -1684,3 +1684,408 @@ export function saveA11yBalance(balance: number): void {
     String(Math.min(1, Math.max(-1, snapped))),
   );
 }
+
+// ── Profiles ──
+
+export type ProfileIcon =
+  | "user"
+  | "star"
+  | "heart"
+  | "briefcase"
+  | "book"
+  | "music"
+  | "film";
+
+export interface ProfileRecord {
+  id: string;
+  name: string;
+  color: string;
+  icon: ProfileIcon;
+  createdAt: number;
+  updatedAt: number;
+  settings: Record<string, string>;
+}
+
+export interface ProfilePreferences {
+  libraryIsolation: boolean;
+  universalAccessibility: boolean;
+  rememberLast: boolean;
+  startupProfileId: string | null;
+  confirmSwitch: boolean;
+}
+
+export interface ProfileRegistry {
+  version: 2;
+  activeId: string;
+  profiles: ProfileRecord[];
+  preferences: ProfilePreferences;
+}
+
+export const PROFILE_REGISTRY_KEY = "vyu-profiles-registry-v1";
+export const DEFAULT_PROFILE_ID = "default";
+
+export const PROFILE_COLORS = [
+  "#a855f7",
+  "#3b82f6",
+  "#22c55e",
+  "#eab308",
+  "#f97316",
+  "#ef4444",
+  "#ec4899",
+  "#94a3b8",
+] as const;
+
+export const PROFILE_ICONS: readonly ProfileIcon[] = [
+  "user",
+  "star",
+  "heart",
+  "briefcase",
+  "book",
+  "music",
+  "film",
+];
+
+// Device- and window-level settings stay shared so profiles do not move
+// windows, overwrite external app paths, or change GPU behavior.
+const PROFILE_SHARED_KEYS = new Set([
+  "vyu-system-always-on-top",
+  "vyu-system-keep-awake",
+  "vyu-system-check-updates-on-launch",
+  "vyu-system-battery-saver-thumbnails",
+  "vyu-system-vlc-path",
+  "vyu-system-spotify-path",
+  "vyu-system-paint-path",
+  "vyu-process-gpu",
+  "vyu-process-hardware-encoder",
+  "vyu-debug-overlay",
+]);
+
+// Library content and layout can be shared across profiles when
+// profile-specific libraries are disabled.
+const PROFILE_LIBRARY_PREFIXES = ["vyu-library-", "vyu-recent-"];
+const PROFILE_LIBRARY_KEYS = new Set([
+  "vyu-collections",
+  "vyu-favorites",
+  "vyu-collection-covers",
+  "vyu-view-mode",
+  "vyu-view-density",
+  "vyu-sort-mode",
+  "vyu-sort-desc",
+  "vyu-show-folders",
+  "vyu-show-thumbnails",
+  "vyu-dividers-on",
+  "vyu-names-on",
+  "vyu-privacy-mode",
+  "vyu-privacy-blur",
+  "vyu-privacy-hide-names",
+  "vyu-privacy-reveal-hover",
+  "vyu-system-last-file",
+]);
+
+function isLibrarySettingsKey(key: string): boolean {
+  return (
+    PROFILE_LIBRARY_KEYS.has(key) ||
+    PROFILE_LIBRARY_PREFIXES.some((prefix) => key.startsWith(prefix))
+  );
+}
+
+const PROFILE_ACCESSIBILITY_PREFIXES = ["vyu-a11y-"];
+const PROFILE_ACCESSIBILITY_KEYS = new Set([
+  "vyu-colorblind-mode",
+  "vyu-high-contrast",
+  "vyu-reduced-motion",
+  "vyu-ui-scale",
+  "vyu-show-tooltips",
+  "vyu-viewer-background",
+  "vyu-privacy-mode",
+  "vyu-privacy-blur",
+  "vyu-privacy-hide-names",
+  "vyu-privacy-reveal-hover",
+  "vyu-recents-disabled",
+  "vyu-show-thumbnails",
+  "vyu-system-pause-on-focus-loss",
+  "vyu-seek-step",
+  "vyu-delete-no-ask",
+]);
+
+function isAccessibilitySettingsKey(key: string): boolean {
+  return (
+    PROFILE_ACCESSIBILITY_KEYS.has(key) ||
+    PROFILE_ACCESSIBILITY_PREFIXES.some((prefix) => key.startsWith(prefix))
+  );
+}
+
+function isProfileSettingsKey(
+  key: string,
+  libraryIsolation: boolean,
+  universalAccessibility = false,
+): boolean {
+  if (!key.startsWith("vyu-")) return false;
+  if (key.startsWith("vyu-profiles-")) return false;
+  if (PER_FILE_PREFIXES.some((prefix) => key.startsWith(prefix))) return false;
+  if (key === "vyu-edit-session") return false;
+  if (PROFILE_SHARED_KEYS.has(key)) return false;
+  if (universalAccessibility && isAccessibilitySettingsKey(key)) return false;
+  if (!libraryIsolation && isLibrarySettingsKey(key)) return false;
+  return true;
+}
+
+function createDefaultProfile(): ProfileRecord {
+  const now = Date.now();
+  return {
+    id: DEFAULT_PROFILE_ID,
+    name: "Default",
+    color: PROFILE_COLORS[0],
+    icon: "user",
+    createdAt: now,
+    updatedAt: now,
+    settings: {},
+  };
+}
+
+function createDefaultPreferences(): ProfilePreferences {
+  return {
+    libraryIsolation: false,
+    universalAccessibility: false,
+    rememberLast: true,
+    startupProfileId: null,
+    confirmSwitch: false,
+  };
+}
+
+function createDefaultRegistry(): ProfileRegistry {
+  return {
+    version: 2,
+    activeId: DEFAULT_PROFILE_ID,
+    profiles: [createDefaultProfile()],
+    preferences: createDefaultPreferences(),
+  };
+}
+
+function normalizeProfileSettings(raw: unknown): Record<string, string> {
+  const settings: Record<string, string> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return settings;
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value === "string" && isProfileSettingsKey(key, true)) {
+      settings[key] = value;
+    }
+  }
+  return settings;
+}
+
+function profileName(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, 32) : fallback;
+}
+
+function profileColor(value: unknown, fallback: string): string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)
+    ? value
+    : fallback;
+}
+
+function profileIcon(value: unknown): ProfileIcon {
+  return typeof value === "string" &&
+    PROFILE_ICONS.includes(value as ProfileIcon)
+    ? (value as ProfileIcon)
+    : "user";
+}
+
+export function loadProfileRegistry(): ProfileRegistry {
+  const raw = localStorage.getItem(PROFILE_REGISTRY_KEY);
+  if (!raw) return createDefaultRegistry();
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return createDefaultRegistry();
+    }
+
+    const seen = new Set<string>();
+    const profiles: ProfileRecord[] = [];
+    const rawProfiles = Array.isArray(parsed.profiles) ? parsed.profiles : [];
+
+    for (const item of rawProfiles) {
+      if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+      const record = item as Record<string, unknown>;
+      if (typeof record.id !== "string" || !record.id || seen.has(record.id)) {
+        continue;
+      }
+      seen.add(record.id);
+      const now = Date.now();
+      profiles.push({
+        id: record.id,
+        name: profileName(record.name, "Profile"),
+        color: profileColor(
+          record.color,
+          PROFILE_COLORS[profiles.length % PROFILE_COLORS.length],
+        ),
+        icon: profileIcon(record.icon),
+        createdAt:
+          typeof record.createdAt === "number" ? record.createdAt : now,
+        updatedAt:
+          typeof record.updatedAt === "number" ? record.updatedAt : now,
+        settings: normalizeProfileSettings(record.settings),
+      });
+    }
+
+    if (profiles.length === 0) profiles.push(createDefaultProfile());
+
+    const activeId =
+      typeof parsed.activeId === "string" &&
+      profiles.some((profile) => profile.id === parsed.activeId)
+        ? parsed.activeId
+        : profiles[0].id;
+
+    const rawPreferences =
+      parsed.preferences &&
+      typeof parsed.preferences === "object" &&
+      !Array.isArray(parsed.preferences)
+        ? (parsed.preferences as Record<string, unknown>)
+        : {};
+
+    const version = typeof parsed.version === "number" ? parsed.version : 1;
+
+    const startupProfileId =
+      typeof rawPreferences.startupProfileId === "string" &&
+      profiles.some((profile) => profile.id === rawPreferences.startupProfileId)
+        ? rawPreferences.startupProfileId
+        : null;
+
+    return {
+      version: 2,
+      activeId,
+      profiles,
+      preferences: {
+        libraryIsolation:
+          version < 2
+            ? false
+            : typeof rawPreferences.libraryIsolation === "boolean"
+              ? rawPreferences.libraryIsolation
+              : false,
+        universalAccessibility:
+          typeof rawPreferences.universalAccessibility === "boolean"
+            ? rawPreferences.universalAccessibility
+            : false,
+        rememberLast:
+          typeof rawPreferences.rememberLast === "boolean"
+            ? rawPreferences.rememberLast
+            : true,
+        startupProfileId,
+        confirmSwitch: rawPreferences.confirmSwitch === true,
+      },
+    };
+  } catch {
+    return createDefaultRegistry();
+  }
+}
+
+export function saveProfileRegistry(registry: ProfileRegistry): boolean {
+  try {
+    localStorage.setItem(PROFILE_REGISTRY_KEY, JSON.stringify(registry));
+    return true;
+  } catch (error) {
+    console.error("Failed to save profiles:", error);
+    return false;
+  }
+}
+
+export function collectProfileSettings(
+  libraryIsolation: boolean,
+  universalAccessibility = false,
+): Record<string, string> {
+  const settings: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (
+      !key ||
+      !isProfileSettingsKey(key, libraryIsolation, universalAccessibility)
+    ) {
+      continue;
+    }
+    const value = localStorage.getItem(key);
+    if (value !== null) settings[key] = value;
+  }
+  return settings;
+}
+
+export function collectLibrarySettings(): Record<string, string> {
+  const settings: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !isLibrarySettingsKey(key)) continue;
+    const value = localStorage.getItem(key);
+    if (value !== null) settings[key] = value;
+  }
+  return settings;
+}
+
+export function collectAccessibilitySettings(): Record<string, string> {
+  const settings: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !isAccessibilitySettingsKey(key)) continue;
+    const value = localStorage.getItem(key);
+    if (value !== null) settings[key] = value;
+  }
+  return settings;
+}
+
+export function replaceProfileSettings(
+  settings: Record<string, string>,
+  libraryIsolation: boolean,
+  universalAccessibility = false,
+): void {
+  const keys: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (
+      key &&
+      isProfileSettingsKey(key, libraryIsolation, universalAccessibility)
+    ) {
+      keys.push(key);
+    }
+  }
+  for (const key of keys) localStorage.removeItem(key);
+  for (const [key, value] of Object.entries(settings)) {
+    if (isProfileSettingsKey(key, libraryIsolation, universalAccessibility)) {
+      localStorage.setItem(key, value);
+    }
+  }
+}
+
+export function sanitizeProfileSettings(raw: unknown): Record<string, string> {
+  return normalizeProfileSettings(raw);
+}
+
+export function applyStartupProfilePreference(): ProfileRegistry {
+  const registry = loadProfileRegistry();
+  if (registry.preferences.rememberLast) return registry;
+
+  const targetId = registry.preferences.startupProfileId;
+  if (!targetId || targetId === registry.activeId) return registry;
+
+  const target = registry.profiles.find((profile) => profile.id === targetId);
+  if (!target) return registry;
+
+  const active = registry.profiles.find(
+    (profile) => profile.id === registry.activeId,
+  );
+  if (active) {
+    active.settings = collectProfileSettings(
+      registry.preferences.libraryIsolation,
+      registry.preferences.universalAccessibility,
+    );
+    active.updatedAt = Date.now();
+  }
+
+  replaceProfileSettings(
+    target.settings,
+    registry.preferences.libraryIsolation,
+    registry.preferences.universalAccessibility,
+  );
+  registry.activeId = target.id;
+  saveProfileRegistry(registry);
+  return registry;
+}
