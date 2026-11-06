@@ -1649,7 +1649,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-width: 150px;
+  min-width: 204px;
   z-index: 9999;
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.7),
@@ -1681,17 +1681,19 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   cursor: default;
 }
 .ts-drop-split {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
 }
 .ts-drop-half {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   padding: 5px 6px;
   min-height: 28px;
+  width: 100%;
+  min-width: 0;
   border-radius: 6px;
   border: 0.5px solid transparent;
   font-size: 11px;
@@ -1710,7 +1712,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 .ts-drop-half:last-child {
   border-radius: 0 6px 6px 0;
-  border-left: 0.5px solid var(--blue-light-border-subtle);
 }
 .ts-drop-yellow {
   background: var(--yellow-bg);
@@ -1861,7 +1862,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-width: 170px;
+  min-width: 194px;
   z-index: 9999;
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.7),
@@ -1894,7 +1895,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 .loop-drop-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 3px;
 }
 .loop-drop-btn {
@@ -1903,7 +1904,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   justify-content: center;
   gap: 5px;
   padding: 3px 8px;
-  min-height: 24px;
+  min-height: 26px;
   border-radius: 6px;
   border: 0.5px solid transparent;
   font-size: 11px;
