@@ -152,7 +152,12 @@
             </svg>
           {/if}
         </span>
-        <span class="track-menu-option-title">Off</span>
+        <span class="track-menu-option-copy">
+          <span class="track-menu-option-title">Off</span>
+          {#if tracks.length === 0 && sidecars.length === 0 && !error}
+            <span class="track-menu-option-detail">No subtitle track</span>
+          {/if}
+        </span>
       </button>
 
       {#each tracks as track, i (track.index)}
@@ -210,8 +215,6 @@
 
     {#if catalogLoading}
       <div class="track-menu-message" role="status">Reading tracks…</div>
-    {:else if tracks.length === 0 && sidecars.length === 0 && !error}
-      <div class="track-menu-message">No subtitle tracks found</div>
     {/if}
     {#if error}
       <div class="track-menu-error" role="status">{error}</div>
@@ -375,7 +378,21 @@
           <div class="track-menu-card">
             {#if sidecars.length === 0}
               <div class="track-menu-subpanel-empty">
-                No nearby subtitle files
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m6 6 12 12M18 6 6 18"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <span>No nearby subtitle files</span>
               </div>
             {:else}
               <div class="track-menu-subpanel-list">

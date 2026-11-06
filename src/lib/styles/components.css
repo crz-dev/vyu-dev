@@ -2026,6 +2026,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   cursor: pointer;
   font-family: var(--font-family);
   font-size: 10.5px;
+  line-height: normal;
   box-sizing: border-box;
   transition:
     background 0.15s,
@@ -2254,10 +2255,20 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   gap: 2px;
 }
 .track-menu-subpanel-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 1px 0;
   color: var(--text-muted);
   font-family: var(--font-family);
   font-size: 10px;
+  line-height: normal;
+  text-align: center;
+}
+.track-menu-subpanel-empty svg {
+  flex: 0 0 auto;
+  color: var(--text-dim);
 }
 .track-menu-small-button:disabled,
 .track-menu-reset:disabled {

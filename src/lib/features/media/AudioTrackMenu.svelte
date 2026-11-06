@@ -50,7 +50,7 @@
     aria-label="Audio tracks"
   >
     <div class="track-menu-heading">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <path
           d="M5 10v4M9 7v10M15 7v10M19 10v4"
           stroke="currentColor"
@@ -59,7 +59,7 @@
         />
       </svg>
       <span>Audio track</span>
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <path
           d="M5 10v4M9 7v10M15 7v10M19 10v4"
           stroke="currentColor"
@@ -81,7 +81,6 @@
             class="track-menu-option selected track-menu-option-static"
             role="presentation"
           >
-            <span class="track-menu-option-title">No audio track found</span>
             <span class="track-menu-check" aria-hidden="true">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <path
@@ -92,6 +91,10 @@
                   stroke-linejoin="round"
                 />
               </svg>
+            </span>
+            <span class="track-menu-option-copy">
+              <span class="track-menu-option-title">Off</span>
+              <span class="track-menu-option-detail">No audio track</span>
             </span>
           </div>
         {:else}
