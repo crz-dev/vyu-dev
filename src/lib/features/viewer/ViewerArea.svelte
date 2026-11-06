@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import ImageView from "./ImageView.svelte";
   import VideoView from "./VideoView.svelte";
   import PDFView from "./PDFView.svelte";
@@ -282,11 +283,14 @@
     onmouseleave={() => (hoverZone = "none")}
     role="presentation"
   >
-    <button
-      class="nav-btn"
-      onclick={() => navigate(-1)}
-      aria-label="previous file">‹</button
-    >
+    {#if fileSrc}
+      <button
+        class="nav-btn"
+        transition:fly={{ x: -24, duration: 220 }}
+        onclick={() => navigate(-1)}
+        aria-label="previous file">‹</button
+      >
+    {/if}
   </div>
   <div
     class="viewer"
@@ -458,9 +462,13 @@
       />
     {:else}
       <button class="empty" onclick={openFileDialog}
-        ><span class="empty-icon">+</span><span class="empty-text"
-          >open a file</span
-        ></button
+        ><span class="empty-icon-frame" aria-hidden="true"
+          ><svg class="empty-diamond" viewBox="0 0 32 32" aria-hidden="true"
+            ><path
+              d="M14.6 2.4Q16 1 17.4 2.4L29.6 14.6Q31 16 29.6 17.4L17.4 29.6Q16 31 14.6 29.6L2.4 17.4Q1 16 2.4 14.6Z"
+            /></svg
+          ><span class="empty-icon">+</span></span
+        ><span class="empty-text">open a file</span></button
       >
     {/if}
     {#if staleFrameSrc}
@@ -479,9 +487,14 @@
     onmouseleave={() => (hoverZone = "none")}
     role="presentation"
   >
-    <button class="nav-btn" onclick={() => navigate(1)} aria-label="next file"
-      >›</button
-    >
+    {#if fileSrc}
+      <button
+        class="nav-btn"
+        transition:fly={{ x: 24, duration: 220 }}
+        onclick={() => navigate(1)}
+        aria-label="next file">›</button
+      >
+    {/if}
   </div>
 </div>
 

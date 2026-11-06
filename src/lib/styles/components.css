@@ -1388,6 +1388,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .thumbnail-item:hover {
   opacity: 1;
   border-color: var(--text-dim);
+  transform: scale(1.02);
 }
 
 .thumbnail-item.active {

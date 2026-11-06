@@ -756,6 +756,7 @@
     {fileInfoLoading}
     {fileName}
     {fileSrc}
+    onOpenProperties={ctxProperties}
     {zoomLevel}
     {zoomLocked}
     {adjustZoom}

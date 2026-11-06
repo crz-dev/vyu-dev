@@ -101,6 +101,7 @@
     fileInfoLoading,
     fileName,
     fileSrc,
+    onOpenProperties,
     zoomLevel,
     zoomLocked,
     toggleZoomLock,
@@ -164,6 +165,7 @@
     fileInfoLoading: boolean;
     fileName: string;
     fileSrc: string;
+    onOpenProperties: () => void;
     zoomLevel: number;
     zoomLocked: boolean;
     toggleZoomLock?: () => void;
@@ -312,6 +314,7 @@
   }
 
   $effect(() => {
+    if (!fileSrc) zoomMenuVisible = false;
     return () => stopZoomRepeat();
   });
 
@@ -395,19 +398,22 @@
           onClose={closeSlideshowMenu}
         />
       </div>
-      <button
-        bind:this={fileCountEl}
-        class="file-count tooltip-above"
-        class:active={thumbnailBarVisible}
-        class:menu-active={thumbnailBarVisible || sortMenuVisible}
-        class:tooltip-hidden={!filePositionTooltipVisible}
-        data-tooltip="File position"
-        onclick={toggleFilePositionBar}
-        onmouseenter={handleFilePositionMouseEnter}
-        oncontextmenu={handleFileCountContext}
-      >
-        {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
-      </button>
+      {#if fileSrc}
+        <button
+          bind:this={fileCountEl}
+          class="file-count tooltip-above"
+          transition:fly={{ y: 10, duration: 180 }}
+          class:active={thumbnailBarVisible}
+          class:menu-active={thumbnailBarVisible || sortMenuVisible}
+          class:tooltip-hidden={!filePositionTooltipVisible}
+          data-tooltip="File position"
+          onclick={toggleFilePositionBar}
+          onmouseenter={handleFilePositionMouseEnter}
+          oncontextmenu={handleFileCountContext}
+        >
+          {fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "—"}
+        </button>
+      {/if}
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
@@ -455,22 +461,27 @@
         {/if}
       </span>
     {:else if !accessibility.hideMediaDetails}
-      <span
-        class="file-info tooltip-above"
-        data-tooltip={isAudio
-          ? "Duration · Bitrate · File size"
-          : "Resolution · File size"}
-      >
-        {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
-          {durationDisplay} · {audioBitrateDisplay} · {fileSize}
-        {:else if fileDimensions && fileSize}
-          {fileDimensions} · {fileSize}
-        {:else if !fileInfoLoading && fileName !== "no file open"}
-          {fileName}
-        {:else if !fileSrc}
-          no file open
-        {/if}
-      </span>
+      {#if fileSrc}
+        <button
+          class="file-info file-info-button tooltip-above"
+          data-tooltip={isAudio
+            ? "Duration · Bitrate · File size · View properties"
+            : "Resolution · File size · View properties"}
+          onclick={onOpenProperties}
+          aria-label="Open file properties"
+          aria-haspopup="dialog"
+        >
+          {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
+            {durationDisplay} · {audioBitrateDisplay} · {fileSize}
+          {:else if fileDimensions && fileSize}
+            {fileDimensions} · {fileSize}
+          {:else if !fileInfoLoading && fileName !== "no file open"}
+            {fileName}
+          {/if}
+        </button>
+      {:else}
+        <span class="file-info">no file open</span>
+      {/if}
     {/if}
   </div>
   <div class="bottombar-right">
@@ -484,8 +495,8 @@
           {muted ? "Muted" : `${Math.round(volume * 100)}%`}
         </span>
       {/if}
-      {#if !isAudio}
-        <div class="zoom-control">
+      {#if !isAudio && fileSrc}
+        <div class="zoom-control" transition:fly={{ y: 10, duration: 180 }}>
           <button
             class="zoom tooltip-above"
             class:menu-active={zoomMenuVisible}

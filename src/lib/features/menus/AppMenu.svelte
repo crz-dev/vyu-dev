@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { invokeRenameFile } from "$lib/features/media/api";
   import { showToast } from "$lib/components/toast.svelte";
   import { getFileName } from "$lib/services/files";
@@ -280,58 +281,63 @@
     {/if}
   {/if}
   {#if !libraryOpen && fileSrc}
-    <span class="divider">/</span>
-    <button
-      class="folder-btn close-file-btn tooltip-below"
-      data-tooltip={`Close file${shortcutSuffix("close-file")}`}
-      onclick={closeFile}
-      aria-label="close file"
+    <div
+      class="file-actions"
+      transition:fly={{ y: -8, duration: 180, opacity: 0.12 }}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M3 10h13a4 4 0 010 8H7"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-        <path
-          d="M7 6l-4 4 4 4"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-    <span class="divider">/</span>
-    <button
-      class="folder-btn open-file-btn tooltip-below"
-      data-tooltip={`Open file${shortcutSuffix("open-file")}`}
-      onclick={openFileDialog}
-      aria-label="open file"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <line
-          x1="12"
-          y1="5"
-          x2="12"
-          y2="19"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-        <line
-          x1="5"
-          y1="12"
-          x2="19"
-          y2="12"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        />
-      </svg>
-    </button>
+      <span class="divider">/</span>
+      <button
+        class="folder-btn close-file-btn tooltip-below"
+        data-tooltip={`Close file${shortcutSuffix("close-file")}`}
+        onclick={closeFile}
+        aria-label="close file"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M3 10h13a4 4 0 010 8H7"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M7 6l-4 4 4 4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <span class="divider">/</span>
+      <button
+        class="folder-btn open-file-btn tooltip-below"
+        data-tooltip={`Open file${shortcutSuffix("open-file")}`}
+        onclick={openFileDialog}
+        aria-label="open file"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <line
+            x1="12"
+            y1="5"
+            x2="12"
+            y2="19"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+          <line
+            x1="5"
+            y1="12"
+            x2="19"
+            y2="12"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </div>
   {/if}
   <div class="window-controls">
     <button
@@ -356,6 +362,12 @@
 </div>
 
 <style>
+  .file-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .back-btn {
     color: var(--text-primary);
     margin-left: -4px;
