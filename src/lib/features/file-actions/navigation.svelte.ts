@@ -122,6 +122,10 @@ export function createNavigation(deps: NavigationDeps) {
 
   function handleBeforeSwitch(_nextPath: string) {
     saveCurrentPosition();
+    if (resumeToast && resumeToast.path !== _nextPath) {
+      dismissToast(resumeToast.id);
+      resumeToast = undefined;
+    }
     switching = true;
     if (switchTimer) clearTimeout(switchTimer);
     switchTimer = setTimeout(() => {
@@ -133,6 +137,7 @@ export function createNavigation(deps: NavigationDeps) {
   }
 
   let resumeAppliedPath = "";
+  let resumeToast: { id: number; path: string } | undefined;
   let switching = false;
   let switchTimer: ReturnType<typeof setTimeout> | undefined;
   let thumbnailWarmGen = 0;
@@ -210,9 +215,9 @@ export function createNavigation(deps: NavigationDeps) {
 
     if (playbackPrefs.resumeMode === "always") {
       el.currentTime = point;
-      showToast({
+      const id = showToast({
         message: `Resumed from ${formatTime(point)}`,
-        color: "blue",
+        color: "grey",
         duration: 4500,
         actions: [
           {
@@ -226,12 +231,13 @@ export function createNavigation(deps: NavigationDeps) {
           },
         ],
       });
+      resumeToast = { id, path };
       return;
     }
 
     const id = showToast({
       message: `Resume from ${formatTime(point)}?`,
-      color: "blue",
+      color: "grey",
       duration: 12000,
       actions: [
         {
@@ -256,6 +262,7 @@ export function createNavigation(deps: NavigationDeps) {
         },
       ],
     });
+    resumeToast = { id, path };
   }
 
   const folderWatcher = createFolderWatcher({

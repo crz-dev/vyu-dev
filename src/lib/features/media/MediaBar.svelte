@@ -465,8 +465,8 @@
         <button
           class="file-info file-info-button tooltip-above"
           data-tooltip={isAudio
-            ? "Duration · Bitrate · File size · View properties"
-            : "Resolution · File size · View properties"}
+            ? "Duration · Bitrate · File size"
+            : "Resolution · File size"}
           onclick={onOpenProperties}
           aria-label="Open file properties"
           aria-haspopup="dialog"
