@@ -2334,18 +2334,43 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
 }
-.video-inner video::cue {
-  color: white;
-  background-color: rgba(0, 0, 0, 0.68);
+.subtitle-overlay {
+  position: fixed;
+  z-index: 150;
+  overflow: hidden;
+  pointer-events: none;
 }
-.video-inner video.subtitle-size-small::cue {
-  font-size: 85%;
+.subtitle-block {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  width: max-content;
+  max-width: 90%;
+  padding: 0.18em 0.5em;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.68);
+  color: #fff;
+  font-family: var(--font-family);
+  line-height: 1.35;
+  text-align: center;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  user-select: none;
+  transition: background 0.15s ease;
 }
-.video-inner video.subtitle-size-default::cue {
-  font-size: 100%;
+.subtitle-block.draggable {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
 }
-.video-inner video.subtitle-size-large::cue {
-  font-size: 130%;
+.subtitle-block.draggable:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+.subtitle-block.dragging {
+  cursor: grabbing;
+}
+main.menu-open .subtitle-overlay {
+  visibility: hidden;
 }
 .loop-btn.loop-menu-open {
   color: var(--text-primary);

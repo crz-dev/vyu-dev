@@ -2,6 +2,7 @@
   import CropOverlay from "$lib/features/editing/CropOverlay.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
   import Controls from "$lib/components/Controls.svelte";
+  import SubtitleOverlay from "$lib/features/viewer/SubtitleOverlay.svelte";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
 
@@ -53,39 +54,13 @@
 
   let videoInnerEl = $state<HTMLDivElement | null>(null);
   let subtitleTrackEl = $state<HTMLTrackElement | null>(null);
-  const cueTimes = new WeakMap<VTTCue, { start: number; end: number }>();
-
-  function applySubtitleTiming() {
-    const cues = subtitleTrackEl?.track.cues;
-    if (!cues) return;
-    const offset = tracks.subtitleDelayMs / 1000;
-    for (let i = 0; i < cues.length; i++) {
-      const cue = cues[i];
-      if (!(cue instanceof VTTCue)) continue;
-      let original = cueTimes.get(cue);
-      if (!original) {
-        original = { start: cue.startTime, end: cue.endTime };
-        cueTimes.set(cue, original);
-      }
-      cue.line = -3;
-      cue.lineAlign = "end";
-      cue.position = 50;
-      cue.positionAlign = "center";
-      cue.align = "center";
-      cue.startTime = Math.max(0, original.start + offset);
-      cue.endTime = Math.max(cue.startTime + 0.01, original.end + offset);
-    }
-  }
 
   function handleSubtitleLoad() {
-    if (subtitleTrackEl) subtitleTrackEl.track.mode = "showing";
-    applySubtitleTiming();
+    if (subtitleTrackEl) subtitleTrackEl.track.mode = "hidden";
   }
 
   $effect(() => {
-    void tracks.subtitleDelayMs;
-    void tracks.subtitleSrc;
-    applySubtitleTiming();
+    if (subtitleTrackEl) subtitleTrackEl.track.mode = "hidden";
   });
 </script>
 
@@ -110,9 +85,6 @@
         <video
           bind:this={videoEl}
           src={tracks.activeVideoSrc || fileSrc}
-          class:subtitle-size-small={tracks.subtitleSize === "small"}
-          class:subtitle-size-default={tracks.subtitleSize === "default"}
-          class:subtitle-size-large={tracks.subtitleSize === "large"}
           crossorigin="anonymous"
           preload="metadata"
           autoplay={playbackPrefs.autoplay || slideshowActive}
@@ -146,3 +118,13 @@
     <Controls fullscreen={false} {timelineProps} {playbackProps} />
   </div>
 </div>
+
+<SubtitleOverlay
+  {videoEl}
+  trackEl={subtitleTrackEl}
+  delayMs={tracks.subtitleDelayMs}
+  size={tracks.subtitleSize}
+  resetKey={fileSrc}
+  videoHovered={hoverZone === "video"}
+  interactive={!drawActive}
+/>
