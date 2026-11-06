@@ -5,6 +5,8 @@ import {
   loadKeepAudio,
   loadRememberSpeed,
   loadRememberVolume,
+  loadRelativeSeek,
+  loadRelativeSeekStep,
   loadResumeMode,
   loadResumeThreshold,
   loadSeekStep,
@@ -15,6 +17,8 @@ import {
   saveKeepAudio,
   saveRememberSpeed,
   saveRememberVolume,
+  saveRelativeSeek,
+  saveRelativeSeekStep,
   saveResumeMode,
   saveResumeThreshold,
   saveSeekStep,
@@ -48,6 +52,8 @@ function createPlaybackPrefs() {
   let defaultVolume = $state(clampVolume(loadDefaultVolume()));
   let volumeBoost = $state(loadVolumeBoost());
   let seekStep = $state(loadSeekStep());
+  let relativeSeek = $state(loadRelativeSeek());
+  let relativeSeekStep = $state(loadRelativeSeekStep());
   let keepAudio = $state(loadKeepAudio());
 
   function setResumeMode(mode: ResumeMode) {
@@ -95,6 +101,16 @@ function createPlaybackPrefs() {
     saveSeekStep(seconds);
   }
 
+  function setRelativeSeek(enabled: boolean) {
+    relativeSeek = enabled;
+    saveRelativeSeek(enabled);
+  }
+
+  function setRelativeSeekStep(percent: number) {
+    relativeSeekStep = Math.min(100, Math.max(1, Math.round(percent)));
+    saveRelativeSeekStep(relativeSeekStep);
+  }
+
   function setKeepAudio(enabled: boolean) {
     keepAudio = enabled;
     saveKeepAudio(enabled);
@@ -128,6 +144,12 @@ function createPlaybackPrefs() {
     get seekStep() {
       return seekStep;
     },
+    get relativeSeek() {
+      return relativeSeek;
+    },
+    get relativeSeekStep() {
+      return relativeSeekStep;
+    },
     get keepAudio() {
       return keepAudio;
     },
@@ -140,6 +162,8 @@ function createPlaybackPrefs() {
     setDefaultVolume,
     setVolumeBoost,
     setSeekStep,
+    setRelativeSeek,
+    setRelativeSeekStep,
     setKeepAudio,
   };
 }

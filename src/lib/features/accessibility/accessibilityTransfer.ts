@@ -57,6 +57,8 @@ export function exportAccessibilitySettings(): AccessibilityExport {
     showThumbnails: library.showThumbnails,
     pauseOnFocusLoss: systemPrefs.pauseOnFocusLoss,
     seekStep: playbackPrefs.seekStep,
+    relativeSeek: playbackPrefs.relativeSeek,
+    relativeSeekStep: playbackPrefs.relativeSeekStep,
     skipDeleteConfirmations:
       deleteStore.deleteNoAsk || deleteStore.multiDeleteNoAsk,
   };
@@ -155,6 +157,15 @@ export function applyAccessibilityImport(raw: unknown): void {
 
   if (typeof data.seekStep === "number" && Number.isFinite(data.seekStep)) {
     playbackPrefs.setSeekStep(Math.min(60, Math.max(1, data.seekStep)));
+  }
+  setBoolean(data, "relativeSeek", playbackPrefs.setRelativeSeek);
+  if (
+    typeof data.relativeSeekStep === "number" &&
+    Number.isFinite(data.relativeSeekStep)
+  ) {
+    playbackPrefs.setRelativeSeekStep(
+      Math.min(100, Math.max(1, data.relativeSeekStep)),
+    );
   }
 
   if (typeof data.skipDeleteConfirmations === "boolean") {

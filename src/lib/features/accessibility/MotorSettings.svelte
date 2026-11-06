@@ -10,9 +10,13 @@
   let { flash = false }: { flash?: boolean } = $props();
 
   let seekPreview = $state(playbackPrefs.seekStep);
+  let relativeSeekPreview = $state(playbackPrefs.relativeSeekStep);
 
   $effect(() => {
     seekPreview = playbackPrefs.seekStep;
+  });
+  $effect(() => {
+    relativeSeekPreview = playbackPrefs.relativeSeekStep;
   });
 
   function setSkipDeleteConfirmations(enabled: boolean) {
@@ -108,22 +112,38 @@
   <SettingsGroup label="Playback Control" icon="play">
     <SettingsRow
       label="Seek Step"
-      hint="Seconds moved when seeking with the keyboard"
+      hint={playbackPrefs.relativeSeek
+        ? "Percentage of media duration moved by keyboard seeks"
+        : "Seconds moved when seeking with the keyboard"}
     >
       {#snippet control()}
         <div class="settings-slider-control">
           <input
             type="range"
             min="1"
-            max="60"
+            max={playbackPrefs.relativeSeek ? 100 : 60}
             step="1"
             aria-label="Seek step"
-            value={seekPreview}
-            oninput={(e) => (seekPreview = Number(e.currentTarget.value))}
-            onchange={(e) =>
-              playbackPrefs.setSeekStep(Number(e.currentTarget.value))}
+            value={playbackPrefs.relativeSeek
+              ? relativeSeekPreview
+              : seekPreview}
+            oninput={(e) => {
+              const value = Number(e.currentTarget.value);
+              if (playbackPrefs.relativeSeek) relativeSeekPreview = value;
+              else seekPreview = value;
+            }}
+            onchange={(e) => {
+              const value = Number(e.currentTarget.value);
+              if (playbackPrefs.relativeSeek)
+                playbackPrefs.setRelativeSeekStep(value);
+              else playbackPrefs.setSeekStep(value);
+            }}
           />
-          <span class="settings-slider-value">{seekPreview}s</span>
+          <span class="settings-slider-value">
+            {playbackPrefs.relativeSeek
+              ? `${relativeSeekPreview}%`
+              : `${seekPreview}s`}
+          </span>
         </div>
       {/snippet}
     </SettingsRow>

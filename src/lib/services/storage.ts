@@ -703,6 +703,26 @@ export function saveSeekStep(seconds: number): void {
   localStorage.setItem("vyu-seek-step", String(seconds));
 }
 
+export function loadRelativeSeek(): boolean {
+  return localStorage.getItem("vyu-relative-seek") === "true";
+}
+
+export function saveRelativeSeek(enabled: boolean): void {
+  localStorage.setItem("vyu-relative-seek", String(enabled));
+}
+
+export function loadRelativeSeekStep(): number {
+  const raw = localStorage.getItem("vyu-relative-seek-step");
+  if (raw === null) return 5;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 5;
+  return Math.min(100, Math.max(1, Math.round(value)));
+}
+
+export function saveRelativeSeekStep(percent: number): void {
+  localStorage.setItem("vyu-relative-seek-step", String(percent));
+}
+
 export function loadKeepAudio(): boolean {
   return localStorage.getItem("vyu-keep-audio") === "true";
 }
@@ -1805,6 +1825,8 @@ const PROFILE_ACCESSIBILITY_KEYS = new Set([
   "vyu-show-thumbnails",
   "vyu-system-pause-on-focus-loss",
   "vyu-seek-step",
+  "vyu-relative-seek",
+  "vyu-relative-seek-step",
   "vyu-delete-no-ask",
 ]);
 

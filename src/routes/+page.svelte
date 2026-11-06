@@ -696,10 +696,22 @@
     return (isVideo || isAudio) && !isGifVideo;
   }
 
-  function isVideoHover(): boolean {
+  function shouldSeekMedia(): boolean {
     return (
-      isTimedMedia() && (hoverZone === "video" || viewer.state.isFullscreen)
+      isTimedMedia() &&
+      (isAudio || hoverZone === "video" || viewer.state.isFullscreen)
     );
+  }
+
+  function seekDistance(el: HTMLMediaElement): number {
+    if (
+      playbackPrefs.relativeSeek &&
+      Number.isFinite(el.duration) &&
+      el.duration > 0
+    ) {
+      return (el.duration * playbackPrefs.relativeSeekStep) / 100;
+    }
+    return playbackPrefs.seekStep;
   }
 
   function compareAvailable(): boolean {
@@ -791,10 +803,13 @@
       },
       "seek-forward": () => {
         const el = getMediaEl();
-        if (el && isVideoHover()) {
+        if (el && shouldSeekMedia()) {
+          const duration = Number.isFinite(el.duration)
+            ? el.duration
+            : Number.POSITIVE_INFINITY;
           el.currentTime = Math.min(
-            el.currentTime + playbackPrefs.seekStep,
-            el.duration,
+            el.currentTime + seekDistance(el),
+            duration,
           );
           playAudioCue("seek");
         } else {
@@ -804,8 +819,8 @@
       },
       "seek-backward": () => {
         const el = getMediaEl();
-        if (el && isVideoHover()) {
-          el.currentTime = Math.max(el.currentTime - playbackPrefs.seekStep, 0);
+        if (el && shouldSeekMedia()) {
+          el.currentTime = Math.max(el.currentTime - seekDistance(el), 0);
           playAudioCue("seek");
         } else {
           void navigate(-1);

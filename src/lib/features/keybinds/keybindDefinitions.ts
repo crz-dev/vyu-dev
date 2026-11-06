@@ -137,7 +137,7 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     id: "seek-forward",
     label: "Seek / navigate forward",
     description:
-      "Seek forward when video is hovered or fullscreen; otherwise open the next file",
+      "Seek audio or a hovered/fullscreen video; otherwise open the next file",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowRight"),
@@ -148,7 +148,7 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     id: "seek-backward",
     label: "Seek / navigate backward",
     description:
-      "Seek backward when video is hovered or fullscreen; otherwise open the previous file",
+      "Seek audio or a hovered/fullscreen video; otherwise open the previous file",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowLeft"),
