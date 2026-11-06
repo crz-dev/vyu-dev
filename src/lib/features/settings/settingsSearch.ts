@@ -88,7 +88,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "alpha channel",
   ],
   "auto-hide cursor": ["mouse", "pointer", "cursor", "fullscreen", "idle"],
-  "show tooltips": ["tooltip", "tooltips", "hints", "hover", "help"],
 
   "resume playback": [
     "continue",
@@ -166,13 +165,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
   "timer length": ["sleep", "timer", "duration", "minutes", "length"],
 
   "remember unapplied edits": ["save", "drafts", "edits", "undo", "remember"],
-  "compare with original": [
-    "compare",
-    "original",
-    "before",
-    "after",
-    "preview",
-  ],
   "confirm before applying": ["confirm", "apply", "warning", "prompt", "save"],
   "confirm close while editing": [
     "confirm",
@@ -278,15 +270,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "export",
     "trash",
   ],
-  "audio bitrate": [
-    "audio",
-    "sound",
-    "bitrate",
-    "quality",
-    "mp3",
-    "aac",
-    "compression",
-  ],
   "cover art": ["cover", "art", "album", "artwork", "metadata", "thumbnail"],
   "preserve metadata": ["metadata", "tags", "exif", "preserve", "keep"],
   "gpu encoding": [
@@ -299,15 +282,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "intel",
     "fast",
   ],
-  "hardware encoder": [
-    "gpu",
-    "hardware",
-    "encoder",
-    "codec",
-    "nvidia",
-    "amd",
-    "intel",
-  ],
   ffmpeg: ["ffmpeg", "binary", "tool", "encoder", "toolchain"],
 
   "thumbnail size": [
@@ -318,8 +292,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "image",
     "resolution",
   ],
-  "section dividers": ["section", "dividers", "separators", "lines", "grid"],
-  "show file names": ["name", "names", "filename", "label", "text", "files"],
   "visible file types": [
     "file",
     "types",
@@ -340,13 +312,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "images",
     "show",
     "hide",
-  ],
-  "show collection covers": [
-    "collection",
-    "cover",
-    "album",
-    "folder",
-    "covers",
   ],
   "record recents": ["recent", "recents", "history", "record", "remember"],
   "recent files limit": ["recent", "history", "limit", "count", "number"],

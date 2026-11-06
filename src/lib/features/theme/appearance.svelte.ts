@@ -9,7 +9,6 @@ import {
   loadHighContrast,
   loadReducedMotion,
   loadRememberLastTab,
-  loadShowTooltips,
   loadUiScale,
   loadViewerBackground,
   saveCheckerboard,
@@ -20,7 +19,6 @@ import {
   saveHighContrast,
   saveReducedMotion,
   saveRememberLastTab,
-  saveShowTooltips,
   saveUiScale,
   saveViewerBackground,
   type DisplayDensity,
@@ -45,7 +43,7 @@ function createAppearance() {
   let density = $state<DisplayDensity>(loadDensity());
   let reducedMotion = $state(loadReducedMotion());
   let checkerboard = $state(loadCheckerboard());
-  let showTooltips = $state(loadShowTooltips());
+  const showTooltips = true;
   let cursorAutoHide = $state(loadCursorAutoHide());
   let highContrast = $state(loadHighContrast());
   let viewerBackground = $state<ViewerBackground>(loadViewerBackground());
@@ -59,7 +57,7 @@ function createAppearance() {
     root.dataset.density = density;
     root.dataset.transparency = checkerboard ? "checkerboard" : "solid";
     root.dataset.reduceMotion = reducedMotion ? "true" : "false";
-    root.dataset.tooltips = showTooltips ? "on" : "off";
+    root.dataset.tooltips = "on";
     root.dataset.highContrast = highContrast ? "true" : "false";
     root.dataset.viewerBg = viewerBackground;
   }
@@ -93,12 +91,6 @@ function createAppearance() {
   function setCheckerboard(enabled: boolean) {
     checkerboard = enabled;
     saveCheckerboard(enabled);
-    applyRootAttributes();
-  }
-
-  function setShowTooltips(enabled: boolean) {
-    showTooltips = enabled;
-    saveShowTooltips(enabled);
     applyRootAttributes();
   }
 
@@ -179,7 +171,6 @@ function createAppearance() {
     setDensity,
     setReducedMotion,
     setCheckerboard,
-    setShowTooltips,
     setCursorAutoHide,
     setHighContrast,
     setRememberLastTab,

@@ -127,7 +127,6 @@ export function applyAccessibilityImport(raw: unknown): void {
 
   setBoolean(data, "highContrast", appearance.setHighContrast);
   setBoolean(data, "reducedMotion", appearance.setReducedMotion);
-  setBoolean(data, "showTooltips", appearance.setShowTooltips);
 
   if (typeof data.uiScale === "number") {
     appearance.setUiScale(data.uiScale);
@@ -195,7 +194,6 @@ export function resetAccessibilitySection(section: AccessibilitySection): void {
       appearance.setHighContrast(false);
       appearance.setReducedMotion(false);
       appearance.setUiScale(1);
-      appearance.setShowTooltips(true);
       appearance.setViewerBackground("theme");
       break;
     case "hearing":

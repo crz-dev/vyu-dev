@@ -114,42 +114,6 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Section Dividers"
-      hint="Group files by name, type, size or date"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={library.dividersOn}
-            onchange={(e) => library.setDividersOn(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={library.dividersOn}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Show File Names"
-      hint="Display filename labels in library views"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={library.namesOn}
-            onchange={(e) => library.setNamesOn(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={library.namesOn}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
       label="Visible File Types"
       hint="At least one type stays visible"
     >
@@ -199,28 +163,6 @@
             onchange={(e) => library.setShowThumbnails(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={library.showThumbnails}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label="Show Collection Covers"
-      hint={library.showThumbnails
-        ? "Preview the first item in each collection"
-        : "Requires Show Thumbnails"}
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={library.showCollectionCovers}
-            disabled={!library.showThumbnails}
-            onchange={(e) =>
-              library.setShowCollectionCovers(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={library.showCollectionCovers}
             ><span class="toggle-thumb"></span></span
           >
         </label>

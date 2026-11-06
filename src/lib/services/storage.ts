@@ -63,7 +63,6 @@ export type EditImageQualityKey = "original" | "jpg" | "webp";
 export type EditVideoFormat = "original" | "mp4" | "webm" | "mkv";
 export type ProcessQuality = "fast" | "balanced" | "quality" | "lossless";
 export type CoverArtMode = "cover" | "waveform";
-export type HardwareEncoder = "auto" | "h264_nvenc" | "h264_qsv" | "h264_amf";
 export type EditBackupMode = "off" | "ask" | "always";
 export type EditMediaKind = "image" | "video";
 
@@ -246,14 +245,6 @@ export function saveEditAutoOpenExport(
   enabled: boolean,
 ): void {
   localStorage.setItem(editMediaKey("auto-open-export", kind), String(enabled));
-}
-
-export function loadEditCompareEnabled(): boolean {
-  return localStorage.getItem("vyu-edit-compare-enabled") !== "false";
-}
-
-export function saveEditCompareEnabled(enabled: boolean): void {
-  localStorage.setItem("vyu-edit-compare-enabled", String(enabled));
 }
 
 export function loadEditRememberSession(): boolean {
@@ -560,14 +551,6 @@ export function saveDarkVariant(variant: DarkVariant): void {
   localStorage.setItem("vyu-dark-variant", variant);
 }
 
-export function loadShowTooltips(): boolean {
-  return localStorage.getItem("vyu-show-tooltips") !== "false";
-}
-
-export function saveShowTooltips(enabled: boolean): void {
-  localStorage.setItem("vyu-show-tooltips", String(enabled));
-}
-
 export function loadCursorAutoHide(): boolean {
   return localStorage.getItem("vyu-cursor-auto-hide") !== "false";
 }
@@ -840,22 +823,6 @@ export function saveProcessKeepOriginalDate(enabled: boolean): void {
   localStorage.setItem("vyu-process-keep-original-date", String(enabled));
 }
 
-export function loadProcessAudioBitrate(): number {
-  const value = Number(localStorage.getItem("vyu-process-audio-bitrate"));
-  return isAudioBitrate(value) ? value : 192;
-}
-
-export function saveProcessAudioBitrate(bitrate: number): void {
-  const value = isAudioBitrate(bitrate) ? bitrate : 192;
-  localStorage.setItem("vyu-process-audio-bitrate", String(value));
-}
-
-function isAudioBitrate(value: number): boolean {
-  return (
-    Number.isFinite(value) && value >= 64 && value <= 320 && value % 64 === 0
-  );
-}
-
 export function loadProcessOverwrite(): boolean {
   return localStorage.getItem("vyu-process-overwrite") === "true";
 }
@@ -895,18 +862,6 @@ export function loadProcessCoverArtMode(): CoverArtMode {
 
 export function saveProcessCoverArtMode(mode: CoverArtMode): void {
   localStorage.setItem("vyu-process-cover-art", mode);
-}
-
-export function loadProcessHardwareEncoder(): HardwareEncoder {
-  const value = localStorage.getItem("vyu-process-hardware-encoder");
-  if (value === "h264_nvenc" || value === "h264_qsv" || value === "h264_amf") {
-    return value;
-  }
-  return "auto";
-}
-
-export function saveProcessHardwareEncoder(encoder: HardwareEncoder): void {
-  localStorage.setItem("vyu-process-hardware-encoder", encoder);
 }
 
 // ── Markup custom colors ──
@@ -1192,16 +1147,6 @@ export function loadLibraryThumbnailSize(): number {
 
 export function saveLibraryThumbnailSize(size: number): void {
   localStorage.setItem("vyu-library-thumbnail-size", String(size));
-}
-
-export function loadCollectionCovers(): boolean {
-  const v = localStorage.getItem("vyu-collection-covers");
-  if (v === null) return true;
-  return v === "true";
-}
-
-export function saveCollectionCovers(enabled: boolean): void {
-  localStorage.setItem("vyu-collection-covers", String(enabled));
 }
 
 // ── Collections ──
@@ -1786,7 +1731,6 @@ const PROFILE_SHARED_KEYS = new Set([
   "vyu-system-spotify-path",
   "vyu-system-paint-path",
   "vyu-process-gpu",
-  "vyu-process-hardware-encoder",
   "vyu-debug-overlay",
 ]);
 
@@ -1825,7 +1769,6 @@ const PROFILE_ACCESSIBILITY_KEYS = new Set([
   "vyu-high-contrast",
   "vyu-reduced-motion",
   "vyu-ui-scale",
-  "vyu-show-tooltips",
   "vyu-viewer-background",
   "vyu-privacy-mode",
   "vyu-privacy-blur",

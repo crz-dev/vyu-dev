@@ -211,11 +211,9 @@
 
   function conversionOptions() {
     return {
-      audioBitrate: conversionPrefs.audioBitrate,
       preserveMetadata: conversionPrefs.preserveMetadata,
       overwrite: conversionPrefs.overwriteExisting,
       gpuEncoding: conversionPrefs.gpuEncoding,
-      hardwareEncoder: conversionPrefs.hardwareEncoder,
       coverArtMode: conversionPrefs.coverArtMode,
       preset: conversionPreset(),
     };

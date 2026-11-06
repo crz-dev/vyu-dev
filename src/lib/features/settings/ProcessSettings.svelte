@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import { open } from "@tauri-apps/plugin-dialog";
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
@@ -8,9 +7,7 @@
     type FfmpegInfo,
   } from "$lib/features/media/api";
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
-  import { appearance } from "$lib/features/theme/appearance.svelte";
   import { settingsSearchState } from "$lib/features/settings/settingsSearchState.svelte";
-  import type { HardwareEncoder } from "$lib/services/storage";
 
   let { flash = false }: { flash?: boolean } = $props();
 
@@ -25,7 +22,6 @@
   let qualityPreview = $state(
     Math.max(0, exportQualityLevels.indexOf(conversionPrefs.quality)),
   );
-  let audioBitratePreview = $state(conversionPrefs.audioBitrate);
   let ffmpegInfo = $state<FfmpegInfo | null>(null);
   let ffmpegLoading = $state(false);
 
@@ -42,10 +38,6 @@
       0,
       exportQualityLevels.indexOf(conversionPrefs.quality),
     );
-  });
-
-  $effect(() => {
-    audioBitratePreview = conversionPrefs.audioBitrate;
   });
 
   async function loadFfmpegInfo() {
@@ -253,28 +245,6 @@
   </SettingsGroup>
 
   <SettingsGroup label="Advanced" icon="cpu">
-    <SettingsRow label="Audio Bitrate" hint="Bitrate for lossy audio outputs">
-      {#snippet control()}
-        <div class="settings-slider-control">
-          <input
-            type="range"
-            min="64"
-            max="320"
-            step="64"
-            aria-label="Audio bitrate"
-            value={audioBitratePreview}
-            oninput={(e) =>
-              (audioBitratePreview = Number(e.currentTarget.value))}
-            onchange={(e) =>
-              conversionPrefs.setAudioBitrate(Number(e.currentTarget.value))}
-          />
-          <span class="settings-slider-value" style="min-width: 60px"
-            >{audioBitratePreview} kbps</span
-          >
-        </div>
-      {/snippet}
-    </SettingsRow>
-
     <SettingsRow
       label="Cover Art"
       hint="Background for audio-to-video conversion"
@@ -320,7 +290,7 @@
       label="GPU Encoding"
       hint={!ffmpegLoading && ffmpegInfo && detectedEncoders.length === 0
         ? "No hardware H.264 encoder detected"
-        : "Use hardware H.264 when available"}
+        : "Automatically choose a hardware H.264 encoder when available"}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -340,43 +310,6 @@
         </label>
       {/snippet}
     </SettingsRow>
-
-    {#if detectedEncoders.length > 0 && (conversionPrefs.gpuEncoding || settingsSearchState.active)}
-      <div
-        class="settings-row settings-subrow"
-        data-settings-label="Hardware Encoder"
-        data-settings-hint="Which detected encoder to prefer"
-        transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
-      >
-        <div class="settings-label-col">
-          <div class="settings-label-text">
-            <span class="settings-label">Hardware Encoder</span>
-            <span class="settings-hint">Which detected encoder to prefer</span>
-          </div>
-        </div>
-        <div class="settings-control">
-          <div class="pill-group pill-group-4">
-            <button
-              class="pill-btn"
-              class:active={conversionPrefs.hardwareEncoder === "auto" ||
-                !detectedEncoders.includes(conversionPrefs.hardwareEncoder)}
-              onclick={() => conversionPrefs.setHardwareEncoder("auto")}
-              >Auto</button
-            >
-            {#each detectedEncoders as encoder}
-              <button
-                class="pill-btn"
-                class:active={conversionPrefs.hardwareEncoder === encoder}
-                onclick={() =>
-                  conversionPrefs.setHardwareEncoder(
-                    encoder as HardwareEncoder,
-                  )}>{encoderLabel(encoder)}</button
-              >
-            {/each}
-          </div>
-        </div>
-      </div>
-    {/if}
 
     <SettingsRow label="FFmpeg" hint={ffmpegStatus()}>
       {#snippet control()}

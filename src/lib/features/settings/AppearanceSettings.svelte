@@ -156,41 +156,6 @@
         </div>
       {/snippet}
     </SettingsRow>
-
-    <SettingsRow
-      label="Reduced Motion"
-      hint="Minimize animations and transitions"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.reducedMotion}
-            onchange={(e) =>
-              appearance.setReducedMotion(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={appearance.reducedMotion}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow label="High Contrast" hint="Stronger text and border contrast">
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.highContrast}
-            onchange={(e) =>
-              appearance.setHighContrast(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={appearance.highContrast}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
   </SettingsGroup>
 
   <SettingsGroup label="Viewer" icon="eye">
@@ -251,22 +216,6 @@
               appearance.setCursorAutoHide(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={appearance.cursorAutoHide}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow label="Show Tooltips" hint="Hover hints on controls">
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={appearance.showTooltips}
-            onchange={(e) =>
-              appearance.setShowTooltips(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={appearance.showTooltips}
             ><span class="toggle-thumb"></span></span
           >
         </label>

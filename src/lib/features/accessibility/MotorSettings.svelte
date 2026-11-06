@@ -2,22 +2,11 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
-  import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { deleteStore } from "$lib/features/file-actions/deleteFile.svelte";
   import { saveSkipDeleteConfirmation } from "$lib/services/storage";
 
   let { flash = false }: { flash?: boolean } = $props();
-
-  let seekPreview = $state(playbackPrefs.seekStep);
-  let relativeSeekPreview = $state(playbackPrefs.relativeSeekStep);
-
-  $effect(() => {
-    seekPreview = playbackPrefs.seekStep;
-  });
-  $effect(() => {
-    relativeSeekPreview = playbackPrefs.relativeSeekStep;
-  });
 
   function setSkipDeleteConfirmations(enabled: boolean) {
     deleteStore.deleteNoAsk = enabled;
@@ -110,44 +99,6 @@
   </SettingsGroup>
 
   <SettingsGroup label="Playback Control" icon="play">
-    <SettingsRow
-      label="Seek Step"
-      hint={playbackPrefs.relativeSeek
-        ? "Percentage of media duration moved by keyboard seeks"
-        : "Seconds moved when seeking with the keyboard"}
-    >
-      {#snippet control()}
-        <div class="settings-slider-control">
-          <input
-            type="range"
-            min="1"
-            max={playbackPrefs.relativeSeek ? 100 : 60}
-            step="1"
-            aria-label="Seek step"
-            value={playbackPrefs.relativeSeek
-              ? relativeSeekPreview
-              : seekPreview}
-            oninput={(e) => {
-              const value = Number(e.currentTarget.value);
-              if (playbackPrefs.relativeSeek) relativeSeekPreview = value;
-              else seekPreview = value;
-            }}
-            onchange={(e) => {
-              const value = Number(e.currentTarget.value);
-              if (playbackPrefs.relativeSeek)
-                playbackPrefs.setRelativeSeekStep(value);
-              else playbackPrefs.setSeekStep(value);
-            }}
-          />
-          <span class="settings-slider-value">
-            {playbackPrefs.relativeSeek
-              ? `${relativeSeekPreview}%`
-              : `${seekPreview}s`}
-          </span>
-        </div>
-      {/snippet}
-    </SettingsRow>
-
     <SettingsRow
       label="Always Show Controls"
       hint="Keep video playback controls visible"

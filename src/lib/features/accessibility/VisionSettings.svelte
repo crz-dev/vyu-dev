@@ -7,12 +7,6 @@
 
   let { flash = false }: { flash?: boolean } = $props();
 
-  let scalePreview = $state(Math.round(appearance.uiScale * 100));
-
-  $effect(() => {
-    scalePreview = Math.round(appearance.uiScale * 100);
-  });
-
   function setViewerBackground(background: ViewerBackground) {
     appearance.setViewerBackground(background);
   }
@@ -128,25 +122,6 @@
   </SettingsGroup>
 
   <SettingsGroup label="Text & Focus" icon="display">
-    <SettingsRow label="Interface Scale" hint="Size of text and controls">
-      {#snippet control()}
-        <div class="settings-slider-control">
-          <input
-            type="range"
-            min="80"
-            max="225"
-            step="5"
-            aria-label="Interface scale"
-            value={scalePreview}
-            oninput={(e) => (scalePreview = Number(e.currentTarget.value))}
-            onchange={(e) =>
-              appearance.setUiScale(Number(e.currentTarget.value) / 100)}
-          />
-          <span class="settings-slider-value">{scalePreview}%</span>
-        </div>
-      {/snippet}
-    </SettingsRow>
-
     <SettingsRow label="Bold Text" hint="Use a heavier weight across the UI">
       {#snippet control()}
         <label class="toggle-row">
@@ -194,23 +169,6 @@
               accessibility.setFocusRings(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={accessibility.focusRings}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow label="Show Tooltips" hint="Hover hints on controls">
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            aria-label="Show Tooltips"
-            checked={appearance.showTooltips}
-            onchange={(e) =>
-              appearance.setShowTooltips(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={appearance.showTooltips}
             ><span class="toggle-thumb"></span></span
           >
         </label>

@@ -295,11 +295,9 @@ export async function invokeExportCroppedMedia(
 // ── Conversion ──
 
 export interface ConversionOptions {
-  audioBitrate?: number;
   preserveMetadata?: boolean;
   overwrite?: boolean;
   gpuEncoding?: boolean;
-  hardwareEncoder?: string;
   coverArtMode?: string;
   preset?: string;
 }
@@ -326,11 +324,11 @@ export async function invokeConvertMedia(
     format,
     preset,
     customOutput: customOutput ?? null,
-    audioBitrate: options.audioBitrate ?? 192,
+    audioBitrate: 192,
     preserveMetadata: options.preserveMetadata ?? true,
     overwrite: options.overwrite ?? false,
     gpuEncoding: options.gpuEncoding ?? false,
-    hardwareEncoder: options.hardwareEncoder ?? "auto",
+    hardwareEncoder: "auto",
   });
 }
 
@@ -344,7 +342,7 @@ export async function invokeConvertAudioToWaveformVideo(
     path,
     outputDir,
     customOutput: customOutput ?? null,
-    audioBitrate: options.audioBitrate ?? 192,
+    audioBitrate: 192,
     overwrite: options.overwrite ?? false,
     coverArtMode: options.coverArtMode ?? "auto",
     preset: options.preset ?? "Balanced",
@@ -941,7 +939,6 @@ export async function invokeExportEditedMedia(
   height: number,
   quality: string,
   gpuEncoding: boolean,
-  hardwareEncoder = "auto",
 ): Promise<void> {
   return invoke("export_edited_media", {
     path,
@@ -961,7 +958,7 @@ export async function invokeExportEditedMedia(
     height,
     quality,
     gpuEncoding,
-    hardwareEncoder,
+    hardwareEncoder: "auto",
   });
 }
 

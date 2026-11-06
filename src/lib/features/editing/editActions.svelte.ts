@@ -317,7 +317,6 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoHeight,
           editing.exportQuality,
           conversionPrefs.gpuEncoding,
-          conversionPrefs.hardwareEncoder,
         );
       } else if (pngOverride) {
         const pngPath = filePath.replace(/\.\w+$/, ".png");
@@ -441,7 +440,6 @@ export function createEditActions(deps: EditActionsDeps) {
           videoEl.videoHeight,
           editing.exportQuality,
           conversionPrefs.gpuEncoding,
-          conversionPrefs.hardwareEncoder,
         );
       } else {
         await exportEditedImage(filePath, s, outputPath, quality);

@@ -56,8 +56,6 @@ import {
   savePrivacyRevealHover,
   loadLibraryThumbnailSize,
   saveLibraryThumbnailSize,
-  loadCollectionCovers,
-  saveCollectionCovers,
 } from "$lib/services/storage";
 import type {
   CollectionItem,
@@ -170,7 +168,6 @@ function createLibrary() {
 
   let fileFilters = $state<LibraryFileFilters>(loadLibraryFileFilters());
   let thumbnailSize = $state(loadLibraryThumbnailSize());
-  let showCollectionCovers = $state(loadCollectionCovers());
 
   let selectedPaths = $state<Record<string, boolean>>({});
   let collectMode = $state(false);
@@ -517,11 +514,6 @@ function createLibrary() {
     pendingSet.clear();
     pendingOrder = [];
     updateGenerating();
-  }
-
-  function setShowCollectionCovers(enabled: boolean) {
-    showCollectionCovers = enabled;
-    saveCollectionCovers(enabled);
   }
 
   function setDensity(v: number) {
@@ -900,9 +892,8 @@ function createLibrary() {
     },
     setThumbnailSize,
     get showCollectionCovers() {
-      return showCollectionCovers;
+      return true;
     },
-    setShowCollectionCovers,
     get viewMode() {
       return viewMode;
     },

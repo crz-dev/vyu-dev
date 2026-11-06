@@ -119,24 +119,6 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Compare with Original"
-      hint="Hold C while editing to preview the original"
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={editing.compareEnabled}
-            onchange={(e) => editing.setCompareEnabled(e.currentTarget.checked)}
-          />
-          <span class="toggle-track" class:on={editing.compareEnabled}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
       label="Confirm Before Applying"
       hint="Ask before writing edits to the file"
     >

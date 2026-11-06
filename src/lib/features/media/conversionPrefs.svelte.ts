@@ -1,22 +1,18 @@
 import {
-  loadProcessAudioBitrate,
   loadProcessAutoOpen,
   loadProcessCoverArtMode,
   loadProcessDeleteOriginal,
   loadProcessGpuEncoding,
-  loadProcessHardwareEncoder,
   loadProcessKeepOriginalDate,
   loadProcessOpenOutputFolder,
   loadProcessOutputDir,
   loadProcessOverwrite,
   loadProcessPreserveMetadata,
   loadProcessQuality,
-  saveProcessAudioBitrate,
   saveProcessAutoOpen,
   saveProcessCoverArtMode,
   saveProcessDeleteOriginal,
   saveProcessGpuEncoding,
-  saveProcessHardwareEncoder,
   saveProcessKeepOriginalDate,
   saveProcessOpenOutputFolder,
   saveProcessOutputDir,
@@ -24,17 +20,14 @@ import {
   saveProcessPreserveMetadata,
   saveProcessQuality,
   type CoverArtMode,
-  type HardwareEncoder,
   type ProcessQuality,
 } from "$lib/services/storage";
 
 function createConversionPrefs() {
   let quality = $state<ProcessQuality>(loadProcessQuality());
   let deleteOriginal = $state(loadProcessDeleteOriginal());
-  let audioBitrate = $state(loadProcessAudioBitrate());
   let overwriteExisting = $state(loadProcessOverwrite());
   let gpuEncoding = $state(loadProcessGpuEncoding());
-  let hardwareEncoder = $state<HardwareEncoder>(loadProcessHardwareEncoder());
   let autoOpenConverted = $state(loadProcessAutoOpen());
   let preserveMetadata = $state(loadProcessPreserveMetadata());
   let coverArtMode = $state<CoverArtMode>(loadProcessCoverArtMode());
@@ -52,11 +45,6 @@ function createConversionPrefs() {
     saveProcessDeleteOriginal(enabled);
   }
 
-  function setAudioBitrate(bitrate: number) {
-    audioBitrate = bitrate;
-    saveProcessAudioBitrate(bitrate);
-  }
-
   function setOverwriteExisting(enabled: boolean) {
     overwriteExisting = enabled;
     saveProcessOverwrite(enabled);
@@ -65,11 +53,6 @@ function createConversionPrefs() {
   function setGpuEncoding(enabled: boolean) {
     gpuEncoding = enabled;
     saveProcessGpuEncoding(enabled);
-  }
-
-  function setHardwareEncoder(encoder: HardwareEncoder) {
-    hardwareEncoder = encoder;
-    saveProcessHardwareEncoder(encoder);
   }
 
   function setAutoOpenConverted(enabled: boolean) {
@@ -109,17 +92,11 @@ function createConversionPrefs() {
     get deleteOriginal() {
       return deleteOriginal;
     },
-    get audioBitrate() {
-      return audioBitrate;
-    },
     get overwriteExisting() {
       return overwriteExisting;
     },
     get gpuEncoding() {
       return gpuEncoding;
-    },
-    get hardwareEncoder() {
-      return hardwareEncoder;
     },
     get autoOpenConverted() {
       return autoOpenConverted;
@@ -141,10 +118,8 @@ function createConversionPrefs() {
     },
     setQuality,
     setDeleteOriginal,
-    setAudioBitrate,
     setOverwriteExisting,
     setGpuEncoding,
-    setHardwareEncoder,
     setAutoOpenConverted,
     setPreserveMetadata,
     setCoverArtMode,

@@ -716,7 +716,6 @@
 
   function compareAvailable(): boolean {
     return (
-      editing.compareEnabled &&
       !editing.cropMode &&
       (editing.getHasEdits() || editing.getCropBounds() !== null)
     );
