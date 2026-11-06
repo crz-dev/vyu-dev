@@ -4,6 +4,7 @@ import type {
   MediaProperties,
   ClipJobResult,
   BatchStatItem,
+  MediaTrackCatalog,
 } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
 import { arrayBufferToBase64 } from "$lib/shared/base64";
@@ -190,6 +191,36 @@ export async function invokeGetMediaProperties(
   path: string,
 ): Promise<MediaProperties> {
   return invoke("get_media_properties", { path });
+}
+
+export async function invokeGetMediaTracks(
+  path: string,
+): Promise<MediaTrackCatalog> {
+  return invoke("get_media_tracks", { path });
+}
+
+export async function invokePrepareAudioTrack(
+  path: string,
+  streamIndex: number,
+): Promise<string> {
+  return invoke("prepare_audio_track", { path, streamIndex });
+}
+
+export async function invokeReleaseAudioTrack(path: string): Promise<void> {
+  return invoke("release_audio_track", { path });
+}
+
+export async function invokePrepareSubtitleTrack(
+  path: string,
+  streamIndex: number,
+): Promise<string> {
+  return invoke("prepare_subtitle_track", { path, streamIndex });
+}
+
+export async function invokePrepareExternalSubtitle(
+  path: string,
+): Promise<string> {
+  return invoke("prepare_external_subtitle", { path });
 }
 
 // ── FFmpeg ──

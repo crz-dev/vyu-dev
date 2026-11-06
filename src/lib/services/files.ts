@@ -9,6 +9,7 @@ import {
 } from "$lib/shared/constants";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
+import type { SubtitleSidecar } from "$lib/shared/types";
 
 const FOLDER_CACHE_MAX = 50;
 const folderCache = new Map<string, string[]>();
@@ -127,6 +128,38 @@ export async function readMediaFilesInFolder(
   folderPrefixIndex.get(folder)!.add(key);
   evictOldestFolder();
   return sorted;
+}
+
+export async function findSubtitleSidecars(
+  mediaPath: string,
+): Promise<SubtitleSidecar[]> {
+  const folder = getParentFolder(mediaPath);
+  const fileName = getFileName(mediaPath);
+  const lastDot = fileName.lastIndexOf(".");
+  if (!folder || lastDot <= 0) return [];
+
+  const mediaStem = fileName.slice(0, lastDot).toLowerCase();
+  const entries = await readDir(folder);
+  const sep = detectSep(folder);
+  return entries
+    .flatMap((entry) => {
+      const name = entry.name;
+      if (!name || entry.isDirectory) return [];
+      const ext = getFileExt(name);
+      if (ext !== "srt" && ext !== "vtt") return [];
+      const subtitleStem = name.slice(0, name.lastIndexOf("."));
+      const normalizedStem = subtitleStem.toLowerCase();
+      if (
+        normalizedStem !== mediaStem &&
+        !normalizedStem.startsWith(`${mediaStem}.`)
+      ) {
+        return [];
+      }
+      return [{ path: `${folder}${sep}${name}`, name }];
+    })
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
 }
 
 // Bypass cache rescan

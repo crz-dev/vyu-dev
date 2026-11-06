@@ -1,6 +1,7 @@
 // Derived prop objects for child components (extracted from +page.svelte)
 import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
 import type { LoopMode } from "$lib/shared/constants";
+import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
 
 export interface TimelineProps {
   progress: number;
@@ -120,6 +121,8 @@ export interface PlaybackProps {
   timerTooltip: string;
   toggleFullscreen: () => void;
   onTsMenuChange: (open: boolean) => void;
+  tracks: TrackSelectionStore;
+  onLoadSubtitle: () => Promise<void>;
   volumeSliderMode: boolean;
   speedSliderMode: boolean;
   volumeSliderValue: number;

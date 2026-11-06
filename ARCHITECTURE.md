@@ -41,6 +41,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Danger Zone / destructive ops   | `features/danger/*`, `commands/system.rs`, `commands/database.rs`                                      |
 | Share, save-as, conversion      | `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/conversion.rs` |
 | Playback / media bar            | `features/media/playback*.ts`, `features/media/MediaBar.svelte`, `features/media/media.svelte.ts`      |
+| Audio/subtitle track selection  | `features/media/tracks.svelte.ts`, `features/media/PlaybackControls.svelte`, `commands/tracks.rs`      |
 | Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
 | Clips                           | `features/media/clips.svelte.ts`, `commands/clips.rs`                                                  |
 | Library                         | `features/library/*`                                                                                   |
@@ -75,6 +76,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Rotation, flip, brightness, crop, export               | `features/editing/editing.svelte.ts`                                           |
 | Edit/export orchestration                              | `features/editing/editActions.svelte.ts`                                       |
 | Playback                                               | `features/media/playback.svelte.ts`                                            |
+| Audio/subtitle track discovery and selection           | `features/media/tracks.svelte.ts`                                              |
 | Playback preferences                                   | `features/media/playbackPrefs.svelte.ts`                                       |
 | Process / conversion preferences                       | `features/media/conversionPrefs.svelte.ts`                                     |
 | Sleep timer                                            | `features/media/sleepTimer.svelte.ts`                                          |
@@ -153,6 +155,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Window state persistence           | `state::window`                                                          |
 | Thumbnail generation, cache, dedup | `commands/thumbnail.rs`                                                  |
 | Display cache / cover art          | `commands/display.rs`                                                    |
+| Audio/subtitle track processing    | `commands/tracks.rs`                                                     |
 | File operations / batch stat       | `commands/file_ops.rs`                                                   |
 | Media conversion                   | `commands/conversion.rs`                                                 |
 | Editing / export / backups         | `commands/editing.rs`                                                    |
@@ -246,6 +249,10 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Batch stat processes paths in chunks of 8                             | Limits work per blocking task; overall concurrency is not capped at 8.              |
 | Thumbnail cache evicted at a configurable soft limit (500 MB default) | Prevents unbounded disk usage while letting users trade cache size for speed.       |
 | Display cache evicted at 2 GB soft limit                              | Prevents unbounded disk usage.                                                      |
+| Prepared audio and WebVTT track files use the display cache           | Shares the existing cache and eviction policy.                                       |
+| Active audio-track variants are pinned in the display cache           | Avoids interrupting playback; a large active variant may exceed the soft limit.      |
+| Audio track switching remuxes a cached single-audio rendition         | WebView playback does not expose reliable embedded audio-track selection.           |
+| Embedded text subtitles are extracted as WebVTT                       | Native `<track>` renders them; bitmap subtitles are not supported.                  |
 | Temp paths are unique per operation                                   | Prevents concurrent-operation conflicts.                                            |
 | Cross-volume rename uses copy+delete fallback                         | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
 | JPEG scale-down via `jpeg-decoder`, not `image`                       | `image` uses `zune-jpeg`, which lacks IDCT scaling.                                 |

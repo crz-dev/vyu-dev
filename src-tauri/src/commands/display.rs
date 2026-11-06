@@ -1,6 +1,8 @@
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, OnceLock};
 use tauri::Manager;
 
 use crate::constants::{
@@ -12,6 +14,37 @@ use crate::util::{check_cache, ffmpeg_command, hash_path_xxh3};
 const DISPLAY_CACHE_MAX: u64 = 2 * 1024 * 1024 * 1024;
 const EVICTION_MARGIN: u64 = 50 * 1024 * 1024;
 static DISPLAY_CACHE_USED: AtomicU64 = AtomicU64::new(0);
+static PINNED_DISPLAY_FILES: OnceLock<Mutex<HashSet<PathBuf>>> = OnceLock::new();
+
+fn pinned_display_files() -> &'static Mutex<HashSet<PathBuf>> {
+    PINNED_DISPLAY_FILES.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn is_display_file_pinned(path: &Path) -> bool {
+    pinned_display_files()
+        .lock()
+        .map(|files| files.contains(path))
+        .unwrap_or(false)
+}
+
+pub(crate) fn pin_display_cache_file(path: &Path) {
+    if let Ok(mut files) = pinned_display_files().lock() {
+        files.insert(path.to_path_buf());
+    }
+}
+
+pub(crate) fn unpin_display_cache_file(path: &Path) {
+    if let Ok(mut files) = pinned_display_files().lock() {
+        files.remove(path);
+    }
+    if let Some(parent) = path.parent() {
+        let size = compute_display_cache_size(parent);
+        DISPLAY_CACHE_USED.store(size, Ordering::Relaxed);
+        if size > DISPLAY_CACHE_MAX {
+            try_evict_display_cache(parent);
+        }
+    }
+}
 
 pub(crate) fn cover_art_cache_dir(app: &tauri::AppHandle) -> PathBuf {
     let dir = app
@@ -35,23 +68,29 @@ pub(crate) fn display_cache_dir(app: &tauri::AppHandle) -> PathBuf {
 
 pub(crate) fn clear_display_caches(app: &tauri::AppHandle) -> u64 {
     let mut freed = 0u64;
-    for dir in [display_cache_dir(app), cover_art_cache_dir(app)] {
+    let display_dir = display_cache_dir(app);
+    for dir in [display_dir.clone(), cover_art_cache_dir(app)] {
         let Ok(entries) = fs::read_dir(dir) else {
             continue;
         };
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_file() {
+                if path.parent() == Some(display_dir.as_path())
+                    && is_display_file_pinned(&path)
+                {
+                    continue;
+                }
                 freed += entry.metadata().map(|m| m.len()).unwrap_or(0);
                 let _ = fs::remove_file(&path);
             }
         }
     }
-    DISPLAY_CACHE_USED.store(0, Ordering::Relaxed);
+    DISPLAY_CACHE_USED.store(compute_display_cache_size(&display_dir), Ordering::Relaxed);
     freed
 }
 
-fn record_display_cache_write(written_bytes: u64, cache_dir: &Path) {
+pub(crate) fn record_display_cache_write(written_bytes: u64, cache_dir: &Path) {
     let prev = DISPLAY_CACHE_USED.fetch_add(written_bytes, Ordering::AcqRel);
     let new_val = prev.wrapping_add(written_bytes);
     if new_val > DISPLAY_CACHE_MAX + EVICTION_MARGIN {
@@ -77,7 +116,7 @@ fn compute_display_cache_size(cache_dir: &Path) -> u64 {
             .extension()
             .map(|e| e.to_os_string())
             .unwrap_or_default();
-        if ext == "jpg" || ext == "mp4" || ext == "png" {
+        if ext == "jpg" || ext == "mp4" || ext == "webm" || ext == "png" || ext == "vtt" {
             total += entry.metadata().map(|m| m.len()).unwrap_or(0);
         }
     }
@@ -90,14 +129,20 @@ fn try_evict_display_cache(cache_dir: &Path) {
     };
     let mut cached_entries: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
     let mut total: u64 = 0;
+    let pinned = pinned_display_files()
+        .lock()
+        .map(|files| files.clone())
+        .unwrap_or_default();
     for entry in entries.flatten() {
         let p = entry.path();
         let ext = p.extension().map(|e| e.to_os_string()).unwrap_or_default();
-        if ext == "jpg" || ext == "mp4" || ext == "png" {
+        if ext == "jpg" || ext == "mp4" || ext == "webm" || ext == "png" || ext == "vtt" {
             if let Ok(meta) = entry.metadata() {
                 total += meta.len();
-                if let Ok(mtime) = meta.modified() {
-                    cached_entries.push((p, mtime));
+                if !pinned.contains(&p) {
+                    if let Ok(mtime) = meta.modified() {
+                        cached_entries.push((p, mtime));
+                    }
                 }
             }
         }
@@ -118,7 +163,7 @@ fn try_evict_display_cache(cache_dir: &Path) {
         }
         let _ = fs::remove_file(path);
     }
-    DISPLAY_CACHE_USED.fetch_sub(freed, Ordering::Relaxed);
+    DISPLAY_CACHE_USED.store(total.saturating_sub(freed), Ordering::Relaxed);
 }
 
 /// Decode unsupported image

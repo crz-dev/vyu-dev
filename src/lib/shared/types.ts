@@ -42,6 +42,28 @@ export interface MediaProperties {
   frame_rate?: string;
 }
 
+export interface MediaTrack {
+  index: number;
+  kind: "audio" | "subtitle";
+  codec: string | null;
+  language: string | null;
+  title: string | null;
+  channels: number | null;
+  channelLayout: string | null;
+  isDefault: boolean;
+  supported: boolean;
+}
+
+export interface MediaTrackCatalog {
+  audio: MediaTrack[];
+  subtitles: MediaTrack[];
+}
+
+export interface SubtitleSidecar {
+  path: string;
+  name: string;
+}
+
 export interface BatchStatItem {
   path: string;
   size: number;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { open } from "@tauri-apps/plugin-dialog";
   import {
     createPlaybackUI,
     formatTime,
@@ -69,6 +70,7 @@
   import { markup } from "$lib/features/markup/markup.svelte";
 
   import { showToast } from "$lib/components/toast.svelte";
+  import { createTrackSelection } from "$lib/features/media/tracks.svelte";
   import Shell from "$lib/components/Shell.svelte";
   import NowPlayingPill from "$lib/components/NowPlayingPill.svelte";
   import { createContextActionFns } from "$lib/features/actions/contextActionWrappers";
@@ -208,6 +210,35 @@
   const style = createViewerStyle();
   const pdf = createPdf();
   const isGifVideo = $derived(isVideo && getFileExt(filePath) === "gif");
+  const trackSelection = createTrackSelection(() => videoEl);
+  let previousTrackPath = "";
+
+  $effect(() => {
+    const path = isVideo && !isGifVideo ? filePath : "";
+    if (path === previousTrackPath) return;
+    previousTrackPath = path;
+    menuStore.audioTrackMenuOpen = false;
+    menuStore.subtitleMenuOpen = false;
+    if (path) void trackSelection.loadFile(path);
+    else trackSelection.reset();
+  });
+
+  async function pickSubtitleFile() {
+    try {
+      const path = await open({
+        multiple: false,
+        filters: [{ name: "Subtitle files", extensions: ["srt", "vtt"] }],
+      });
+      if (typeof path === "string")
+        await trackSelection.loadExternalSubtitle(path);
+    } catch (error) {
+      showToast({
+        message: `Could not open subtitle file: ${String(error)}`,
+        color: "red",
+      });
+    }
+  }
+
   const clips = createClips({
     getFilePath: () => filePath,
     getRawDurationSecs: () => rawDurationSecs,
@@ -528,6 +559,8 @@
       timerTooltip,
       toggleFullscreen,
       onTsMenuChange: (v: boolean) => (menuStore.tsMenuOpen = v),
+      tracks: trackSelection,
+      onLoadSubtitle: pickSubtitleFile,
       volumeSliderMode: playbackUI.volumeSliderMode || volumeSliderMode,
       speedSliderMode: playbackUI.speedSliderMode || speedSliderMode,
       volumeSliderValue: playbackUI.volumeSliderValue,
@@ -624,6 +657,12 @@
     folderWatcher,
     media,
   } = navigation;
+
+  function handleVideoLoad() {
+    onVideoLoad();
+    trackSelection.restorePlaybackAfterSourceLoad(videoEl);
+  }
+
   slideshow.bind(
     () => fileList,
     () => currentIndex,
@@ -1213,6 +1252,7 @@
     markup.cleanup();
     fxEngine.destroy();
     eqEngine.destroy();
+    await trackSelection.releaseAllAudioVariants();
     try {
       await invokeCleanupTempFolder();
     } catch (e) {
@@ -1618,6 +1658,7 @@
       {discScrubStore}
       {loopModeStore}
       {playbackUI}
+      tracks={trackSelection}
       {pickAudioFile}
       {currentIndex}
       {fileList}
@@ -1647,7 +1688,7 @@
       {toggleFullscreen}
       {fsPillEl}
       {onImageLoad}
-      {onVideoLoad}
+      onVideoLoad={handleVideoLoad}
       {onAudioLoad}
       {onMediaEnded}
       {timelineProps}

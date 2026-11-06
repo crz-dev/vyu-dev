@@ -26,7 +26,7 @@ Zoom to pixel level, pan, rotate, and flip. Adjust brightness, contrast, saturat
 
 <kbd>MP4</kbd> <kbd>WebM</kbd> <kbd>MKV</kbd> <kbd>AVI</kbd> <kbd>MOV</kbd> <kbd>WMV</kbd> <kbd>MPEG</kbd> <kbd>M4V</kbd> <kbd>TS</kbd> <kbd>M2TS</kbd>
 
-Timeline with labelled markers, A-B loop, and clip boundaries. Extract clips separately or merged. Play at 0.1x–3x, step frame by frame, or copy the current frame. Resume with an optional prompt and threshold, configurable seek steps, and a sleep timer. Apply rotation, flip, brightness, contrast, saturation, and hue; crop and export.
+Timeline with labelled markers, A-B loop, and clip boundaries. Extract clips separately or merged. Play at 0.1x–3x, step frame by frame, or copy the current frame. Choose embedded audio tracks and text subtitles, or load matching and external SRT/WebVTT subtitles; adjust subtitle timing and size. Resume with an optional prompt and threshold, configurable seek steps, and a sleep timer. Apply rotation, flip, brightness, contrast, saturation, and hue; crop and export.
 
 ### Audio
 

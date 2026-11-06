@@ -20,6 +20,27 @@ pub struct MediaProperties {
     pub frame_rate: Option<String>,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaTrack {
+    pub index: usize,
+    pub kind: String,
+    pub codec: Option<String>,
+    pub language: Option<String>,
+    pub title: Option<String>,
+    pub channels: Option<u64>,
+    pub channel_layout: Option<String>,
+    pub is_default: bool,
+    pub supported: bool,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaTrackCatalog {
+    pub audio: Vec<MediaTrack>,
+    pub subtitles: Vec<MediaTrack>,
+}
+
 #[derive(serde::Deserialize, Clone)]
 pub struct ClipSegment {
     pub start: f64,

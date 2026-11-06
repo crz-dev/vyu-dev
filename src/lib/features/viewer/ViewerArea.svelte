@@ -21,6 +21,7 @@
   import type { DiscScrubStore } from "$lib/features/media/scrubbing.svelte";
   import type { LoopModeStoreType } from "$lib/features/media/loopMode.svelte";
   import type { PlaybackUIStore } from "$lib/features/media/playback.svelte";
+  import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
   import type { ClipsStore } from "$lib/features/media/clips.svelte";
   import type { PdfStore } from "$lib/features/viewer/pdf.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -50,6 +51,7 @@
     discScrubStore,
     loopModeStore,
     playbackUI,
+    tracks,
     pickAudioFile,
     currentIndex,
     fileList,
@@ -145,6 +147,7 @@
     discScrubStore: DiscScrubStore;
     loopModeStore: LoopModeStoreType;
     playbackUI: PlaybackUIStore;
+    tracks: TrackSelectionStore;
     clips: ClipsStore;
     pickAudioFile: () => void;
     currentIndex: number;
@@ -398,9 +401,12 @@
     {:else if fileSrc && isVideo}
       <VideoView
         {fileSrc}
+        {tracks}
         bind:videoEl
         {onVideoLoad}
-        onVideoError={() => corruption.onVideoError(videoEl)}
+        onVideoError={() => {
+          if (!tracks.onVideoSourceError()) corruption.onVideoError(videoEl);
+        }}
         {onMediaEnded}
         bind:cropContainerEl
         drawActive={markup.drawActive}

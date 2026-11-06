@@ -11,6 +11,7 @@ pub mod file_ops;
 pub mod integrity;
 pub mod system;
 pub mod thumbnail;
+pub mod tracks;
 pub use database::*;
 pub use system::*;
 
@@ -25,3 +26,4 @@ pub use external_apps::*;
 pub use file_ops::*;
 pub use integrity::*;
 pub use thumbnail::*;
+pub use tracks::*;

@@ -13,6 +13,8 @@ function createMenuVisibilityStore() {
   let libraryOpen = $state(false);
   let tsMenuOpen = $state(false);
   let loopMenuOpen = $state(false);
+  let audioTrackMenuOpen = $state(false);
+  let subtitleMenuOpen = $state(false);
 
   // Saved state for viewer menus when library is open
   let savedViewerMenus: {
@@ -108,6 +110,18 @@ function createMenuVisibilityStore() {
     set loopMenuOpen(v: boolean) {
       loopMenuOpen = v;
     },
+    get audioTrackMenuOpen() {
+      return audioTrackMenuOpen;
+    },
+    set audioTrackMenuOpen(v: boolean) {
+      audioTrackMenuOpen = v;
+    },
+    get subtitleMenuOpen() {
+      return subtitleMenuOpen;
+    },
+    set subtitleMenuOpen(v: boolean) {
+      subtitleMenuOpen = v;
+    },
     get isAnyOpen() {
       return !!(
         editMenuVisible ||
@@ -122,10 +136,14 @@ function createMenuVisibilityStore() {
         aboutOpen ||
         feedbackOpen ||
         libraryOpen ||
-        tsMenuOpen
+        tsMenuOpen ||
+        audioTrackMenuOpen ||
+        subtitleMenuOpen
       );
     },
     saveViewerMenus() {
+      audioTrackMenuOpen = false;
+      subtitleMenuOpen = false;
       savedViewerMenus = {
         editMenuVisible,
         markupMenuVisible,

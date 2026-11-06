@@ -2,9 +2,13 @@
   import { fly } from "svelte/transition";
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
+  import AudioTrackMenu from "$lib/features/media/AudioTrackMenu.svelte";
+  import SubtitleMenu from "$lib/features/media/SubtitleMenu.svelte";
   import { nearestSpeedStepIndex } from "$lib/features/media/playback.svelte";
   import type { LoopMode } from "$lib/shared/constants";
+  import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -54,6 +58,8 @@
     timerTooltip,
     toggleFullscreen,
     onTsMenuChange,
+    tracks,
+    onLoadSubtitle,
     volumeSliderMode,
     speedSliderMode,
     volumeSliderValue,
@@ -113,6 +119,8 @@
     timerTooltip: string;
     toggleFullscreen: () => void;
     onTsMenuChange?: (open: boolean) => void;
+    tracks: TrackSelectionStore;
+    onLoadSubtitle: () => Promise<void>;
     volumeSliderMode: boolean;
     speedSliderMode: boolean;
     volumeSliderValue: number;
@@ -132,6 +140,8 @@
   } = $props();
   let tsMenuOpen = $state(false);
   let loopMenuOpen = $state(false);
+  let audioTrackButton = $state<HTMLButtonElement | null>(null);
+  let subtitleTrackButton = $state<HTMLButtonElement | null>(null);
   let volumeTrackEl: HTMLDivElement | null = $state(null);
   let speedTrackEl: HTMLDivElement | null = $state(null);
 
@@ -144,6 +154,29 @@
   }
   function closeTsDropdown() {
     tsMenuOpen = false;
+  }
+
+  function closeTrackMenus(returnFocus = false) {
+    const activeButton = menuStore.audioTrackMenuOpen
+      ? audioTrackButton
+      : subtitleTrackButton;
+    menuStore.audioTrackMenuOpen = false;
+    menuStore.subtitleMenuOpen = false;
+    if (returnFocus) requestAnimationFrame(() => activeButton?.focus());
+  }
+
+  function handleWindowMouseDown(e: MouseEvent) {
+    if (!(e.target instanceof Element)) return;
+    if (e.target.closest(".track-control-anchor")) return;
+    closeTrackMenus();
+  }
+
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (e.key !== "Escape") return;
+    if (!menuStore.audioTrackMenuOpen && !menuStore.subtitleMenuOpen) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeTrackMenus(true);
   }
 
   function handleVolumeRightClick(e: MouseEvent) {
@@ -363,6 +396,57 @@
         {isAudio}
       />
     </div>
+    {#if !isAudio && !isGifVideo}
+      <div class="track-control-anchor audio-track-anchor">
+        <button
+          type="button"
+          bind:this={audioTrackButton}
+          class="ctrl-btn track-control-btn tooltip-ctrl"
+          class:menu-active={menuStore.audioTrackMenuOpen}
+          data-tooltip="Audio track"
+          aria-label="Audio track"
+          aria-haspopup="menu"
+          aria-expanded={menuStore.audioTrackMenuOpen}
+          onclick={() => {
+            closeLoopDropdown();
+            closeTsDropdown();
+            menuStore.subtitleMenuOpen = false;
+            menuStore.audioTrackMenuOpen = !menuStore.audioTrackMenuOpen;
+          }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 9v6h4l5 4V5L8 9H4Z"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M17 9a5 5 0 0 1 0 6M19.5 6.5a8.5 8.5 0 0 1 0 11"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <AudioTrackMenu
+          open={menuStore.audioTrackMenuOpen}
+          onClose={() => closeTrackMenus(true)}
+          tracks={tracks.audioTracks}
+          selectedIndex={tracks.selectedAudioTrackIndex}
+          loading={tracks.loadingAudioTrack}
+          catalogLoading={tracks.loadingTracks}
+          error={tracks.trackError}
+          onSelect={tracks.selectAudioTrack}
+        />
+      </div>
+    {/if}
     <div
       class="volume-control"
       class:audio-off={muted || volume === 0}
@@ -633,6 +717,45 @@
         </div>
       {/if}
     </div>
+    {#if !isAudio && !isGifVideo}
+      <div class="track-control-anchor subtitle-track-anchor">
+        <button
+          type="button"
+          bind:this={subtitleTrackButton}
+          class="ctrl-btn track-control-btn subtitle-track-btn tooltip-ctrl"
+          class:menu-active={menuStore.subtitleMenuOpen}
+          class:active={tracks.selectedSubtitleId !== "off"}
+          data-tooltip="Subtitles"
+          aria-label="Subtitles"
+          aria-haspopup="menu"
+          aria-expanded={menuStore.subtitleMenuOpen}
+          onclick={() => {
+            closeLoopDropdown();
+            closeTsDropdown();
+            menuStore.audioTrackMenuOpen = false;
+            menuStore.subtitleMenuOpen = !menuStore.subtitleMenuOpen;
+          }}
+        >
+          <span aria-hidden="true">CC</span>
+        </button>
+        <SubtitleMenu
+          open={menuStore.subtitleMenuOpen}
+          onClose={() => closeTrackMenus(true)}
+          tracks={tracks.subtitleTracks}
+          sidecars={tracks.sidecars}
+          selectedId={tracks.selectedSubtitleId}
+          loading={tracks.loadingSubtitle}
+          catalogLoading={tracks.loadingTracks}
+          error={tracks.subtitleError || tracks.trackError}
+          delayMs={tracks.subtitleDelayMs}
+          size={tracks.subtitleSize}
+          onSelect={tracks.selectSubtitle}
+          {onLoadSubtitle}
+          onAdjustDelay={tracks.adjustSubtitleDelay}
+          onSetSize={tracks.setSubtitleSize}
+        />
+      </div>
+    {/if}
     <div class="ts-menu-anchor" style="position:relative;">
       <button
         class="ctrl-btn add-ts-btn tooltip-ctrl"
@@ -905,6 +1028,57 @@
         {isAudio}
       />
     </div>
+    {#if !isAudio && !isGifVideo}
+      <div class="track-control-anchor audio-track-anchor">
+        <button
+          type="button"
+          bind:this={audioTrackButton}
+          class="fs-ctrl-btn track-control-btn tooltip-ctrl"
+          class:menu-active={menuStore.audioTrackMenuOpen}
+          data-tooltip="Audio track"
+          aria-label="Audio track"
+          aria-haspopup="menu"
+          aria-expanded={menuStore.audioTrackMenuOpen}
+          onclick={() => {
+            closeLoopDropdown();
+            closeTsDropdown();
+            menuStore.subtitleMenuOpen = false;
+            menuStore.audioTrackMenuOpen = !menuStore.audioTrackMenuOpen;
+          }}
+        >
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 9v6h4l5 4V5L8 9H4Z"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M17 9a5 5 0 0 1 0 6M19.5 6.5a8.5 8.5 0 0 1 0 11"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <AudioTrackMenu
+          open={menuStore.audioTrackMenuOpen}
+          onClose={() => closeTrackMenus(true)}
+          tracks={tracks.audioTracks}
+          selectedIndex={tracks.selectedAudioTrackIndex}
+          loading={tracks.loadingAudioTrack}
+          catalogLoading={tracks.loadingTracks}
+          error={tracks.trackError}
+          onSelect={tracks.selectAudioTrack}
+        />
+      </div>
+    {/if}
     <div
       class="volume-control"
       class:audio-off={muted || volume === 0}
@@ -1175,6 +1349,45 @@
         </div>
       {/if}
     </div>
+    {#if !isAudio && !isGifVideo}
+      <div class="track-control-anchor subtitle-track-anchor">
+        <button
+          type="button"
+          bind:this={subtitleTrackButton}
+          class="fs-ctrl-btn track-control-btn subtitle-track-btn tooltip-ctrl"
+          class:menu-active={menuStore.subtitleMenuOpen}
+          class:active={tracks.selectedSubtitleId !== "off"}
+          data-tooltip="Subtitles"
+          aria-label="Subtitles"
+          aria-haspopup="menu"
+          aria-expanded={menuStore.subtitleMenuOpen}
+          onclick={() => {
+            closeLoopDropdown();
+            closeTsDropdown();
+            menuStore.audioTrackMenuOpen = false;
+            menuStore.subtitleMenuOpen = !menuStore.subtitleMenuOpen;
+          }}
+        >
+          <span aria-hidden="true">CC</span>
+        </button>
+        <SubtitleMenu
+          open={menuStore.subtitleMenuOpen}
+          onClose={() => closeTrackMenus(true)}
+          tracks={tracks.subtitleTracks}
+          sidecars={tracks.sidecars}
+          selectedId={tracks.selectedSubtitleId}
+          loading={tracks.loadingSubtitle}
+          catalogLoading={tracks.loadingTracks}
+          error={tracks.subtitleError || tracks.trackError}
+          delayMs={tracks.subtitleDelayMs}
+          size={tracks.subtitleSize}
+          onSelect={tracks.selectSubtitle}
+          {onLoadSubtitle}
+          onAdjustDelay={tracks.adjustSubtitleDelay}
+          onSetSize={tracks.setSubtitleSize}
+        />
+      </div>
+    {/if}
     <div class="ts-menu-anchor" style="position:relative;">
       <button
         class="fs-ctrl-btn add-ts-btn tooltip-ctrl"
@@ -1301,4 +1514,7 @@
   {/if}
 {/if}
 
-<svelte:window />
+<svelte:window
+  onmousedown={handleWindowMouseDown}
+  onkeydown={handleWindowKeydown}
+/>
