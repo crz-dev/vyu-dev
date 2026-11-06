@@ -67,6 +67,11 @@
         original = { start: cue.startTime, end: cue.endTime };
         cueTimes.set(cue, original);
       }
+      cue.line = -3;
+      cue.lineAlign = "end";
+      cue.position = 50;
+      cue.positionAlign = "center";
+      cue.align = "center";
       cue.startTime = Math.max(0, original.start + offset);
       cue.endTime = Math.max(cue.startTime + 0.01, original.end + offset);
     }
