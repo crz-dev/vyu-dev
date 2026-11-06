@@ -324,6 +324,7 @@
   font-size: 13px;
   color: var(--text-secondary);
   font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
   background: none;
   border: none;
   cursor: pointer;
@@ -371,13 +372,18 @@
 .volume-diamonds {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  padding: 4px 5px;
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   animation: volumeBarIn 0.2s ease forwards;
   cursor: pointer;
 }
 .volume-diamond {
-  width: 13px;
-  height: 13px;
+  width: 11px;
+  height: 11px;
   background: none;
   border: 1px solid var(--text-muted);
   transform: rotate(45deg);
@@ -691,6 +697,7 @@
   font-size: 16px;
   color: var(--text-secondary);
   font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
   background: none;
   border: none;
   cursor: pointer;
@@ -1160,14 +1167,19 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
+  padding: 4px 5px;
+  background: var(--bg-elevated);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   animation: speedBarIn 0.2s ease forwards;
   cursor: pointer;
   order: -1;
 }
 .speed-diamond {
-  width: 13px;
-  height: 13px;
+  width: 11px;
+  height: 11px;
   background: none;
   border: 1px solid var(--text-muted);
   transform: rotate(45deg);
@@ -3369,15 +3381,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   width: 100px;
   margin: 0 4px;
 }
-.audio-modern-controls-row .volume-diamond,
-.audio-modern-controls-row .speed-diamond {
-  width: 10px;
-  height: 10px;
-}
-.audio-modern-controls-row .volume-diamonds,
-.audio-modern-controls-row .speed-diamonds {
-  gap: 3px;
-}
 .audio-transport-cards-container {
   display: flex;
   align-items: center;
@@ -3502,7 +3505,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 110px;
+  min-height: 102px;
   width: 28px;
   z-index: 50;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
@@ -3520,25 +3523,13 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .retro-diamonds-wrapper .volume-diamonds,
 .retro-diamonds-wrapper .speed-diamonds {
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  background: var(--bg-elevated);
-  border: 0.5px solid var(--bg-border);
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-}
-
-.retro-diamonds-wrapper .volume-diamond,
-.retro-diamonds-wrapper .speed-diamond {
-  width: 11px;
-  height: 11px;
+  flex-direction: column-reverse;
 }
 
 .retro-slider-track-vertical {
   position: relative;
   width: 4px;
-  height: 90px;
+  height: 84px;
   cursor: pointer;
   touch-action: none;
   flex-shrink: 0;

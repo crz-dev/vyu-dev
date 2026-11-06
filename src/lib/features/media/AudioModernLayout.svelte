@@ -10,6 +10,7 @@
   import { showToast } from "$lib/components/toast.svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { nearestSpeedStepIndex } from "$lib/features/media/playback.svelte";
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -453,7 +454,7 @@
             <div
               class="playback-slider-track"
               class:muted={muted || volume === 0}
-              transition:fly={{ x: -8, duration: 150, opacity: 0 }}
+              in:fly={{ x: -8, duration: 150, opacity: 0 }}
               bind:this={volumeTrackEl}
               role="slider"
               tabindex="0"
@@ -671,7 +672,7 @@
           {#if playbackUI.speedSliderMode && (playbackUI.speedHovered || playbackUI.speedDragging)}
             <div
               class="playback-slider-track"
-              transition:fly={{ x: 8, duration: 150, opacity: 0 }}
+              in:fly={{ x: 8, duration: 150, opacity: 0 }}
               bind:this={speedTrackEl}
               role="slider"
               tabindex="0"
@@ -725,7 +726,7 @@
               role="presentation"
             >
               {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-                {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
+                {@const selectedIdx = nearestSpeedStepIndex(
                   playbackUI.playbackSpeed,
                 )}
                 {@const dist = Math.abs(i - selectedIdx)}

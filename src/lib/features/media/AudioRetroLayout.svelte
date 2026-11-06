@@ -10,6 +10,7 @@
   import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
   import { showToast } from "$lib/components/toast.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { nearestSpeedStepIndex } from "$lib/features/media/playback.svelte";
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -422,7 +423,7 @@
                 <div
                   class="retro-slider-container"
                   class:muted={muted || volume === 0}
-                  transition:fly={{ y: 12, duration: 150, opacity: 0 }}
+                  in:fly={{ y: 12, duration: 150, opacity: 0 }}
                   role="presentation"
                   onmouseenter={() => playbackUI.showVolumeOverlay()}
                 >
@@ -483,7 +484,7 @@
               {:else if playbackUI.volumeHovered || playbackUI.volumeDragging}
                 <div
                   class="retro-diamonds-wrapper"
-                  transition:fly={{ y: 12, duration: 150, opacity: 0 }}
+                  in:fly={{ y: 12, duration: 150, opacity: 0 }}
                 >
                   <div
                     class="volume-diamonds"
@@ -580,7 +581,7 @@
               {#if playbackUI.speedSliderMode && (playbackUI.speedHovered || playbackUI.speedDragging)}
                 <div
                   class="retro-slider-container"
-                  transition:fly={{ y: 12, duration: 150, opacity: 0 }}
+                  in:fly={{ y: 12, duration: 150, opacity: 0 }}
                   role="presentation"
                   onmouseenter={() => playbackUI.showSpeedOverlay()}
                 >
@@ -637,7 +638,7 @@
               {:else if playbackUI.speedHovered || playbackUI.speedDragging}
                 <div
                   class="retro-diamonds-wrapper"
-                  transition:fly={{ y: 12, duration: 150, opacity: 0 }}
+                  in:fly={{ y: 12, duration: 150, opacity: 0 }}
                 >
                   <div
                     class="speed-diamonds"
@@ -647,9 +648,9 @@
                     role="presentation"
                   >
                     {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-                      {@const selectedIdx = [
-                        0.25, 0.5, 0.75, 1, 1.25, 2, 3,
-                      ].indexOf(playbackUI.playbackSpeed)}
+                      {@const selectedIdx = nearestSpeedStepIndex(
+                        playbackUI.playbackSpeed,
+                      )}
                       {@const dist = Math.abs(i - selectedIdx)}
                       <button
                         class="speed-diamond"

@@ -2,6 +2,16 @@ import { VOLUME_SEGMENTS } from "$lib/shared/constants";
 
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 2, 3];
 
+export function nearestSpeedStepIndex(speed: number): number {
+  return SPEED_STEPS.reduce(
+    (nearestIndex, step, index) =>
+      Math.abs(step - speed) < Math.abs(SPEED_STEPS[nearestIndex] - speed)
+        ? index
+        : nearestIndex,
+    0,
+  );
+}
+
 export function volumeToActual(v: number): number {
   return 0.75 * Math.pow(v, 1.5);
 }
@@ -118,20 +128,19 @@ export function createPlaybackUI(
     const containerRect = container.getBoundingClientRect();
     const diamonds = container.querySelectorAll(".volume-diamond");
     if (diamonds.length === 0) return;
-    const first = diamonds[0].getBoundingClientRect();
-    const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-    const ratio = getVolume();
+    const selectedIndex = Math.max(
+      0,
+      Math.min(
+        diamonds.length - 1,
+        Math.round(getVolume() * diamonds.length) - 1,
+      ),
+    );
+    const selected = diamonds[selectedIndex].getBoundingClientRect();
     if (vertical) {
-      volumeTooltipY =
-        first.top +
-        first.height / 2 +
-        ratio * (last.top + last.height / 2 - first.top - first.height / 2);
+      volumeTooltipY = selected.top + selected.height / 2;
       volumeTooltipX = containerRect.right;
     } else {
-      volumeTooltipX =
-        first.left +
-        first.width / 2 +
-        ratio * (last.left + last.width / 2 - first.left - first.width / 2);
+      volumeTooltipX = selected.left + selected.width / 2;
       volumeTooltipY = containerRect.top;
     }
     volumeTooltipVisible = true;
@@ -163,32 +172,40 @@ export function createPlaybackUI(
 
     const firstRect = diamonds[0].getBoundingClientRect();
     const lastRect = diamonds[diamonds.length - 1].getBoundingClientRect();
+    let frameId: number | null = null;
+    let pendingX = e.clientX;
+    let pendingY = e.clientY;
 
     function dragTo(clientX: number, clientY: number) {
-      const first = firstRect;
-      const last = lastRect;
-      let ratio: number;
+      const ratio = vertical
+        ? Math.max(
+            0,
+            Math.min(
+              1,
+              (firstRect.bottom - clientY) / (firstRect.bottom - lastRect.top),
+            ),
+          )
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              (clientX - firstRect.left) / (lastRect.right - firstRect.left),
+            ),
+          );
+      setVolumeOnMedia(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
+      const selectedIndex = Math.max(
+        0,
+        Math.min(
+          diamonds.length - 1,
+          Math.round(getVolume() * diamonds.length) - 1,
+        ),
+      );
+      const selected = diamonds[selectedIndex].getBoundingClientRect();
       if (vertical) {
-        const firstCenter = first.top + first.height / 2;
-        const lastCenter = last.top + last.height / 2;
-        ratio = Math.max(
-          0,
-          Math.min(1, (clientY - first.top) / (last.bottom - first.top)),
-        );
-        setVolumeOnMedia(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
-        const valRatio = getVolume();
-        volumeTooltipY = firstCenter + valRatio * (lastCenter - firstCenter);
+        volumeTooltipY = selected.top + selected.height / 2;
         volumeTooltipX = containerRect.right;
       } else {
-        const firstCenter = first.left + first.width / 2;
-        const lastCenter = last.left + last.width / 2;
-        ratio = Math.max(
-          0,
-          Math.min(1, (clientX - first.left) / (last.right - first.left)),
-        );
-        setVolumeOnMedia(Math.ceil(ratio * VOLUME_SEGMENTS) / VOLUME_SEGMENTS);
-        const valRatio = getVolume();
-        volumeTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
+        volumeTooltipX = selected.left + selected.width / 2;
         volumeTooltipY = containerRect.top;
       }
       volumeTooltipVisible = true;
@@ -197,9 +214,18 @@ export function createPlaybackUI(
     dragTo(e.clientX, e.clientY);
 
     function onMouseMove(ev: MouseEvent) {
-      dragTo(ev.clientX, ev.clientY);
+      pendingX = ev.clientX;
+      pendingY = ev.clientY;
+      if (frameId !== null) return;
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        dragTo(pendingX, pendingY);
+      });
     }
-    function onMouseUp() {
+    function onMouseUp(ev: MouseEvent) {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      frameId = null;
+      dragTo(ev.clientX, ev.clientY);
       cleanupWindowListeners();
       volumeDragging = false;
       volumeTooltipVisible = false;
@@ -246,22 +272,13 @@ export function createPlaybackUI(
     const containerRect = container.getBoundingClientRect();
     const diamonds = container.querySelectorAll(".speed-diamond");
     if (diamonds.length === 0) return;
-    const first = diamonds[0].getBoundingClientRect();
-    const last = diamonds[diamonds.length - 1].getBoundingClientRect();
-    const steps = SPEED_STEPS;
-    const idx = steps.indexOf(playbackSpeed);
-    const ratio = idx / (steps.length - 1);
+    const selected =
+      diamonds[nearestSpeedStepIndex(playbackSpeed)].getBoundingClientRect();
     if (vertical) {
-      speedTooltipY =
-        first.top +
-        first.height / 2 +
-        ratio * (last.top + last.height / 2 - first.top - first.height / 2);
+      speedTooltipY = selected.top + selected.height / 2;
       speedTooltipX = containerRect.right;
     } else {
-      speedTooltipX =
-        first.left +
-        first.width / 2 +
-        ratio * (last.left + last.width / 2 - first.left - first.width / 2);
+      speedTooltipX = selected.left + selected.width / 2;
       speedTooltipY = containerRect.top;
     }
     speedTooltipVisible = true;
@@ -279,37 +296,35 @@ export function createPlaybackUI(
 
     const firstRect = diamonds[0].getBoundingClientRect();
     const lastRect = diamonds[diamonds.length - 1].getBoundingClientRect();
+    let frameId: number | null = null;
+    let pendingX = e.clientX;
+    let pendingY = e.clientY;
 
     function dragTo(clientX: number, clientY: number) {
-      const first = firstRect;
-      const last = lastRect;
       const steps = SPEED_STEPS;
-      let ratio: number;
+      const ratio = vertical
+        ? Math.max(
+            0,
+            Math.min(
+              1,
+              (firstRect.bottom - clientY) / (firstRect.bottom - lastRect.top),
+            ),
+          )
+        : Math.max(
+            0,
+            Math.min(
+              1,
+              (clientX - firstRect.left) / (lastRect.right - firstRect.left),
+            ),
+          );
+      const idx = Math.round(ratio * (steps.length - 1));
+      setPlaybackSpeed(steps[idx]);
+      const selected = diamonds[idx].getBoundingClientRect();
       if (vertical) {
-        const firstCenter = first.top + first.height / 2;
-        const lastCenter = last.top + last.height / 2;
-        ratio = Math.max(
-          0,
-          Math.min(1, (clientY - first.top) / (last.bottom - first.top)),
-        );
-        const idx = Math.round(ratio * (steps.length - 1));
-        setPlaybackSpeed(steps[idx]);
-        const currentIdx = steps.indexOf(playbackSpeed);
-        const valRatio = currentIdx / (steps.length - 1);
-        speedTooltipY = firstCenter + valRatio * (lastCenter - firstCenter);
+        speedTooltipY = selected.top + selected.height / 2;
         speedTooltipX = containerRect.right;
       } else {
-        const firstCenter = first.left + first.width / 2;
-        const lastCenter = last.left + last.width / 2;
-        ratio = Math.max(
-          0,
-          Math.min(1, (clientX - first.left) / (last.right - first.left)),
-        );
-        const idx = Math.round(ratio * (steps.length - 1));
-        setPlaybackSpeed(steps[idx]);
-        const currentIdx = steps.indexOf(playbackSpeed);
-        const valRatio = currentIdx / (steps.length - 1);
-        speedTooltipX = firstCenter + valRatio * (lastCenter - firstCenter);
+        speedTooltipX = selected.left + selected.width / 2;
         speedTooltipY = containerRect.top;
       }
       speedTooltipVisible = true;
@@ -318,10 +333,19 @@ export function createPlaybackUI(
     dragTo(e.clientX, e.clientY);
 
     function onMouseMove(ev: MouseEvent) {
-      dragTo(ev.clientX, ev.clientY);
+      pendingX = ev.clientX;
+      pendingY = ev.clientY;
+      if (frameId !== null) return;
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        dragTo(pendingX, pendingY);
+      });
     }
 
-    function onMouseUp() {
+    function onMouseUp(ev: MouseEvent) {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      frameId = null;
+      dragTo(ev.clientX, ev.clientY);
       cleanupWindowListeners();
       speedDragging = false;
       speedTooltipVisible = false;
@@ -338,10 +362,7 @@ export function createPlaybackUI(
   function handleSpeedScroll(e: WheelEvent) {
     e.preventDefault();
     const steps = SPEED_STEPS;
-    const cur = steps.reduce((a, b) =>
-      Math.abs(b - playbackSpeed) < Math.abs(a - playbackSpeed) ? b : a,
-    );
-    const idx = steps.indexOf(cur);
+    const idx = nearestSpeedStepIndex(playbackSpeed);
     const next =
       e.deltaY > 0 ? Math.max(0, idx - 1) : Math.min(steps.length - 1, idx + 1);
     setPlaybackSpeed(steps[next]);
@@ -388,7 +409,7 @@ export function createPlaybackUI(
       volumeTooltipY = rect.bottom - volumeSliderValue * rect.height + 22;
     } else {
       volumeTooltipVertical = false;
-      volumeTooltipX = rect.left + volumeSliderValue * rect.width + 7;
+      volumeTooltipX = rect.left + volumeSliderValue * rect.width;
       volumeTooltipY = rect.top;
     }
     volumeTooltipVisible = true;
@@ -408,7 +429,7 @@ export function createPlaybackUI(
       speedTooltipY = rect.bottom - speedSliderValue * rect.height + 22;
     } else {
       speedTooltipVertical = false;
-      speedTooltipX = rect.left + speedSliderValue * rect.width + 7;
+      speedTooltipX = rect.left + speedSliderValue * rect.width;
       speedTooltipY = rect.top;
     }
     speedTooltipVisible = true;
@@ -436,6 +457,9 @@ export function createPlaybackUI(
     e.preventDefault();
     track.setPointerCapture(e.pointerId);
     volumeDragging = true;
+    let frameId: number | null = null;
+    let pendingX = e.clientX;
+    let pendingY = e.clientY;
 
     volumeTooltipVisible = true;
 
@@ -446,11 +470,11 @@ export function createPlaybackUI(
         volumeTooltipVertical = true;
         pct = Math.max(0, Math.min(1, (rect.bottom - clientY) / rect.height));
         volumeTooltipX = rect.right + 8;
-        volumeTooltipY = rect.bottom - volumeSliderValue * rect.height + 22;
+        volumeTooltipY = rect.bottom - pct * rect.height + 22;
       } else {
         volumeTooltipVertical = false;
         pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        volumeTooltipX = rect.left + volumeSliderValue * rect.width + 7;
+        volumeTooltipX = rect.left + pct * rect.width;
         volumeTooltipY = rect.top;
       }
       handleVolumeSliderChange(pct);
@@ -459,9 +483,18 @@ export function createPlaybackUI(
     update(e.clientX, e.clientY);
 
     function onMove(ev: PointerEvent) {
-      update(ev.clientX, ev.clientY);
+      pendingX = ev.clientX;
+      pendingY = ev.clientY;
+      if (frameId !== null) return;
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        update(pendingX, pendingY);
+      });
     }
     function onUp(ev: PointerEvent) {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      frameId = null;
+      update(ev.clientX, ev.clientY);
       track.releasePointerCapture(ev.pointerId);
       track.removeEventListener("pointermove", onMove);
       track.removeEventListener("pointerup", onUp);
@@ -481,6 +514,9 @@ export function createPlaybackUI(
     e.preventDefault();
     track.setPointerCapture(e.pointerId);
     speedDragging = true;
+    let frameId: number | null = null;
+    let pendingX = e.clientX;
+    let pendingY = e.clientY;
 
     speedTooltipVisible = true;
 
@@ -491,11 +527,11 @@ export function createPlaybackUI(
         speedTooltipVertical = true;
         pct = Math.max(0, Math.min(1, (rect.bottom - clientY) / rect.height));
         speedTooltipX = rect.right + 8;
-        speedTooltipY = rect.bottom - speedSliderValue * rect.height + 22;
+        speedTooltipY = rect.bottom - pct * rect.height + 22;
       } else {
         speedTooltipVertical = false;
         pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        speedTooltipX = rect.left + speedSliderValue * rect.width + 7;
+        speedTooltipX = rect.left + pct * rect.width;
         speedTooltipY = rect.top;
       }
       handleSpeedSliderChange(pct);
@@ -504,9 +540,18 @@ export function createPlaybackUI(
     update(e.clientX, e.clientY);
 
     function onMove(ev: PointerEvent) {
-      update(ev.clientX, ev.clientY);
+      pendingX = ev.clientX;
+      pendingY = ev.clientY;
+      if (frameId !== null) return;
+      frameId = requestAnimationFrame(() => {
+        frameId = null;
+        update(pendingX, pendingY);
+      });
     }
     function onUp(ev: PointerEvent) {
+      if (frameId !== null) cancelAnimationFrame(frameId);
+      frameId = null;
+      update(ev.clientX, ev.clientY);
       track.releasePointerCapture(ev.pointerId);
       track.removeEventListener("pointermove", onMove);
       track.removeEventListener("pointerup", onUp);

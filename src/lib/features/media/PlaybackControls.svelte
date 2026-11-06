@@ -2,6 +2,7 @@
   import { fly } from "svelte/transition";
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
+  import { nearestSpeedStepIndex } from "$lib/features/media/playback.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
 
@@ -429,8 +430,7 @@
         <div
           class="playback-slider-track"
           class:muted={muted || volume === 0}
-          style="width: 140px;"
-          transition:fly={{ x: -8, duration: 150, opacity: 0 }}
+          in:fly={{ x: -8, duration: 150, opacity: 0 }}
           bind:this={volumeTrackEl}
           role="slider"
           tabindex="0"
@@ -567,7 +567,7 @@
       {#if speedSliderMode && (speedHovered || speedDragging)}
         <div
           class="playback-slider-track"
-          transition:fly={{ x: 8, duration: 150, opacity: 0 }}
+          in:fly={{ x: 8, duration: 150, opacity: 0 }}
           bind:this={speedTrackEl}
           role="slider"
           tabindex="0"
@@ -617,9 +617,7 @@
           role="presentation"
         >
           {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
-              playbackSpeed,
-            )}
+            {@const selectedIdx = nearestSpeedStepIndex(playbackSpeed)}
             {@const dist = Math.abs(i - selectedIdx)}
             <button
               class="speed-diamond"
@@ -974,8 +972,7 @@
         <div
           class="playback-slider-track"
           class:muted={muted || volume === 0}
-          style="width: 140px;"
-          transition:fly={{ x: -8, duration: 150, opacity: 0 }}
+          in:fly={{ x: -8, duration: 150, opacity: 0 }}
           bind:this={volumeTrackEl}
           role="slider"
           tabindex="0"
@@ -1112,7 +1109,7 @@
       {#if speedSliderMode && (speedHovered || speedDragging)}
         <div
           class="playback-slider-track"
-          transition:fly={{ x: 8, duration: 150, opacity: 0 }}
+          in:fly={{ x: 8, duration: 150, opacity: 0 }}
           bind:this={speedTrackEl}
           role="slider"
           tabindex="0"
@@ -1162,9 +1159,7 @@
           role="presentation"
         >
           {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
-            {@const selectedIdx = [0.25, 0.5, 0.75, 1, 1.25, 2, 3].indexOf(
-              playbackSpeed,
-            )}
+            {@const selectedIdx = nearestSpeedStepIndex(playbackSpeed)}
             {@const dist = Math.abs(i - selectedIdx)}
             <button
               class="speed-diamond"
