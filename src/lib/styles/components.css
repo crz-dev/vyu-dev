@@ -2216,27 +2216,14 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   opacity: 0.4;
   cursor: default;
 }
-@keyframes trackSubpanelIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 .track-menu-subpanel {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-height: 74px;
   padding: 6px;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.035);
   border: 0.5px solid var(--bg-elevated);
   border-radius: 6px;
-  animation: trackSubpanelIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
 }
 .track-menu-card {
   display: flex;

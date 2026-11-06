@@ -1,5 +1,6 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
+  import { slide } from "svelte/transition";
   import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
   import type { SubtitleSize } from "$lib/features/media/tracks.svelte";
 
@@ -309,134 +310,132 @@
       </button>
     </div>
 
-    {#if settingsPanel === "timing"}
-      <div class="track-menu-subpanel">
-        <div class="track-menu-setting">
-          <div class="track-menu-setting-head">
-            <span class="track-menu-setting-label">Timing</span>
-            <button
-              type="button"
-              class="track-menu-reset"
-              disabled={selectedId === "off" || delayMs === 0 || loading}
-              onclick={() => onAdjustDelay(-delayMs)}>Reset</button
-            >
-          </div>
-          <div class="track-menu-card">
-            <div class="track-menu-stepper">
+    {#if settingsPanel}
+      <div class="track-menu-subpanel" transition:slide={{ duration: 180 }}>
+        {#if settingsPanel === "timing"}
+          <div class="track-menu-setting">
+            <div class="track-menu-setting-head">
+              <span class="track-menu-setting-label">Timing</span>
               <button
                 type="button"
-                class="track-menu-small-button"
-                aria-label="Bring subtitles earlier by 0.25 seconds"
-                disabled={selectedId === "off" || loading}
-                onclick={() => onAdjustDelay(-250)}>−0.25</button
-              >
-              <span class="track-menu-delay">{delayLabel()}</span>
-              <button
-                type="button"
-                class="track-menu-small-button"
-                aria-label="Delay subtitles by 0.25 seconds"
-                disabled={selectedId === "off" || loading}
-                onclick={() => onAdjustDelay(250)}>+0.25</button
+                class="track-menu-reset"
+                disabled={selectedId === "off" || delayMs === 0 || loading}
+                onclick={() => onAdjustDelay(-delayMs)}>Reset</button
               >
             </div>
-          </div>
-        </div>
-      </div>
-    {:else if settingsPanel === "size"}
-      <div class="track-menu-subpanel">
-        <div class="track-menu-setting">
-          <div class="track-menu-setting-head">
-            <span class="track-menu-setting-label">Text size</span>
-          </div>
-          <div class="track-menu-card">
-            <div class="track-menu-stepper">
-              <button
-                type="button"
-                class="track-menu-small-button"
-                aria-label="Decrease subtitle text size"
-                disabled={size === "small"}
-                onclick={() => stepSize(-1)}>−</button
-              >
-              <span class="track-menu-delay">{sizeLabel()}</span>
-              <button
-                type="button"
-                class="track-menu-small-button"
-                aria-label="Increase subtitle text size"
-                disabled={size === "large"}
-                onclick={() => stepSize(1)}>+</button
-              >
-            </div>
-          </div>
-        </div>
-      </div>
-    {:else if settingsPanel === "nearby"}
-      <div class="track-menu-subpanel">
-        <div class="track-menu-setting">
-          <div class="track-menu-setting-head">
-            <span class="track-menu-setting-label">Nearby files</span>
-          </div>
-          <div class="track-menu-card">
-            {#if sidecars.length === 0}
-              <div class="track-menu-subpanel-empty">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
+            <div class="track-menu-card">
+              <div class="track-menu-stepper">
+                <button
+                  type="button"
+                  class="track-menu-small-button"
+                  aria-label="Bring subtitles earlier by 0.25 seconds"
+                  disabled={selectedId === "off" || loading}
+                  onclick={() => onAdjustDelay(-250)}>−0.25</button
                 >
-                  <path
-                    d="m6 6 12 12M18 6 6 18"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                <span>No nearby subtitle files</span>
+                <span class="track-menu-delay">{delayLabel()}</span>
+                <button
+                  type="button"
+                  class="track-menu-small-button"
+                  aria-label="Delay subtitles by 0.25 seconds"
+                  disabled={selectedId === "off" || loading}
+                  onclick={() => onAdjustDelay(250)}>+0.25</button
+                >
               </div>
-            {:else}
-              <div class="track-menu-subpanel-list">
-                {#each sidecars as sidecar (sidecar.path)}
-                  <button
-                    type="button"
-                    class="track-menu-option"
-                    class:selected={selectedId === `sidecar:${sidecar.path}`}
-                    class:loading={pendingId === `sidecar:${sidecar.path}`}
-                    role="menuitemradio"
-                    aria-checked={selectedId === `sidecar:${sidecar.path}`}
-                    aria-busy={pendingId === `sidecar:${sidecar.path}`}
-                    disabled={loading}
-                    onclick={() => void select(`sidecar:${sidecar.path}`)}
-                  >
-                    <span class="track-menu-check" aria-hidden="true">
-                      {#if selectedId === `sidecar:${sidecar.path}`}
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 16 16"
-                          fill="none"
-                        >
-                          <path
-                            d="m3 8 3.2 3.2L13 4.8"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                          />
-                        </svg>
-                      {/if}
-                    </span>
-                    <Marquee
-                      text={sidecar.name}
-                      scrollOnHover
-                      class="track-menu-marquee"
-                    />
-                  </button>
-                {/each}
-              </div>
-            {/if}
+            </div>
           </div>
-        </div>
+        {:else if settingsPanel === "size"}
+          <div class="track-menu-setting">
+            <div class="track-menu-setting-head">
+              <span class="track-menu-setting-label">Text size</span>
+            </div>
+            <div class="track-menu-card">
+              <div class="track-menu-stepper">
+                <button
+                  type="button"
+                  class="track-menu-small-button"
+                  aria-label="Decrease subtitle text size"
+                  disabled={size === "small"}
+                  onclick={() => stepSize(-1)}>−</button
+                >
+                <span class="track-menu-delay">{sizeLabel()}</span>
+                <button
+                  type="button"
+                  class="track-menu-small-button"
+                  aria-label="Increase subtitle text size"
+                  disabled={size === "large"}
+                  onclick={() => stepSize(1)}>+</button
+                >
+              </div>
+            </div>
+          </div>
+        {:else}
+          <div class="track-menu-setting">
+            <div class="track-menu-setting-head">
+              <span class="track-menu-setting-label">Nearby files</span>
+            </div>
+            <div class="track-menu-card">
+              {#if sidecars.length === 0}
+                <div class="track-menu-subpanel-empty">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="m6 6 12 12M18 6 6 18"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  <span>No nearby subtitle files</span>
+                </div>
+              {:else}
+                <div class="track-menu-subpanel-list">
+                  {#each sidecars as sidecar (sidecar.path)}
+                    <button
+                      type="button"
+                      class="track-menu-option"
+                      class:selected={selectedId === `sidecar:${sidecar.path}`}
+                      class:loading={pendingId === `sidecar:${sidecar.path}`}
+                      role="menuitemradio"
+                      aria-checked={selectedId === `sidecar:${sidecar.path}`}
+                      aria-busy={pendingId === `sidecar:${sidecar.path}`}
+                      disabled={loading}
+                      onclick={() => void select(`sidecar:${sidecar.path}`)}
+                    >
+                      <span class="track-menu-check" aria-hidden="true">
+                        {#if selectedId === `sidecar:${sidecar.path}`}
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <path
+                              d="m3 8 3.2 3.2L13 4.8"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            />
+                          </svg>
+                        {/if}
+                      </span>
+                      <Marquee
+                        text={sidecar.name}
+                        scrollOnHover
+                        class="track-menu-marquee"
+                      />
+                    </button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
