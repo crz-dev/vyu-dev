@@ -401,7 +401,7 @@
         <button
           type="button"
           bind:this={audioTrackButton}
-          class="ctrl-btn track-control-btn tooltip-ctrl"
+          class="ctrl-btn track-control-btn audio-track-btn tooltip-ctrl"
           class:menu-active={menuStore.audioTrackMenuOpen}
           data-tooltip="Audio track"
           aria-label="Audio track"
@@ -431,7 +431,6 @@
         </button>
         <AudioTrackMenu
           open={menuStore.audioTrackMenuOpen}
-          onClose={() => closeTrackMenus(true)}
           tracks={tracks.audioTracks}
           selectedIndex={tracks.selectedAudioTrackIndex}
           loading={tracks.loadingAudioTrack}
@@ -1049,7 +1048,7 @@
         <button
           type="button"
           bind:this={audioTrackButton}
-          class="fs-ctrl-btn track-control-btn tooltip-ctrl"
+          class="fs-ctrl-btn track-control-btn audio-track-btn tooltip-ctrl"
           class:menu-active={menuStore.audioTrackMenuOpen}
           data-tooltip="Audio track"
           aria-label="Audio track"
@@ -1079,7 +1078,6 @@
         </button>
         <AudioTrackMenu
           open={menuStore.audioTrackMenuOpen}
-          onClose={() => closeTrackMenus(true)}
           tracks={tracks.audioTracks}
           selectedIndex={tracks.selectedAudioTrackIndex}
           loading={tracks.loadingAudioTrack}

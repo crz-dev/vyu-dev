@@ -43,14 +43,18 @@
     measureWidth;
     requestAnimationFrame(measure);
   });
+
+  function handleMouseEnter() {
+    if (!scrollOnHover) return;
+    measure();
+    isHovering = true;
+  }
 </script>
 
 <div
   class="marquee-wrapper {className}"
   bind:this={containerEl}
-  onmouseenter={() => {
-    if (scrollOnHover) isHovering = true;
-  }}
+  onmouseenter={handleMouseEnter}
   onmouseleave={() => {
     if (scrollOnHover) isHovering = false;
   }}

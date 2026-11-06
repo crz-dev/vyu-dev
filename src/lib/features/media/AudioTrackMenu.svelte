@@ -4,7 +4,6 @@
 
   let {
     open,
-    onClose,
     tracks,
     selectedIndex,
     loading,
@@ -13,7 +12,6 @@
     onSelect,
   }: {
     open: boolean;
-    onClose: () => void;
     tracks: MediaTrack[];
     selectedIndex: number | null;
     loading: boolean;
@@ -42,7 +40,6 @@
 
   async function select(index: number) {
     await onSelect(index);
-    if (!loading) onClose();
   }
 </script>
 
@@ -84,6 +81,7 @@
             class="track-menu-option selected track-menu-option-static"
             role="presentation"
           >
+            <span class="track-menu-option-title">No audio track found</span>
             <span class="track-menu-check" aria-hidden="true">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <path
@@ -95,7 +93,6 @@
                 />
               </svg>
             </span>
-            <span class="track-menu-option-title">No audio track</span>
           </div>
         {:else}
           {#each tracks as track, i (track.index)}
