@@ -7,7 +7,9 @@ import {
   loadA11yBoostDialogue,
   loadA11yFocusMode,
   loadA11yFocusRings,
+  loadA11yGrayscale,
   loadA11yHideMediaDetails,
+  loadA11yInheritWindows,
   loadA11yLargeControls,
   loadA11yLargeScrollbars,
   loadA11yLargeTargets,
@@ -30,7 +32,9 @@ import {
   saveA11yBoostDialogue,
   saveA11yFocusMode,
   saveA11yFocusRings,
+  saveA11yGrayscale,
   saveA11yHideMediaDetails,
+  saveA11yInheritWindows,
   saveA11yLargeControls,
   saveA11yLargeScrollbars,
   saveA11yLargeTargets,
@@ -47,6 +51,8 @@ import {
   saveA11yVolumeLimit,
   saveColorBlindMode,
 } from "$lib/services/storage";
+import { invokeGetWindowsAccessibility } from "$lib/features/accessibility/api";
+import { appearance } from "$lib/features/theme/appearance.svelte";
 
 export type ColorBlindMode =
   | "none"
@@ -94,6 +100,8 @@ function createAccessibility() {
   let focusMode = $state(loadA11yFocusMode());
   let simplifiedMenus = $state(loadA11ySimplifiedMenus());
   let hideMediaDetails = $state(loadA11yHideMediaDetails());
+  let grayscale = $state(loadA11yGrayscale());
+  let inheritWindows = $state(loadA11yInheritWindows());
 
   let visualAlertTick = $state(0);
   let visualAlertKind = $state<VisualAlertKind>("play");
@@ -110,6 +118,7 @@ function createAccessibility() {
     root.dataset.a11yLargeTimeline = largeTimeline ? "true" : "false";
     root.dataset.a11yLargeScrollbars = largeScrollbars ? "true" : "false";
     root.dataset.a11yAlwaysControls = alwaysShowControls ? "true" : "false";
+    root.dataset.a11yGrayscale = grayscale ? "true" : "false";
     root.dataset.a11yReduceDistractions = reduceDistractions ? "true" : "false";
     root.dataset.a11yFocusMode = focusMode ? "true" : "false";
   }
@@ -240,9 +249,67 @@ function createAccessibility() {
     saveA11yHideMediaDetails(enabled);
   }
 
+  function setGrayscale(enabled: boolean) {
+    grayscale = enabled;
+    saveA11yGrayscale(enabled);
+    applyRootAttributes();
+  }
+
+  function setInheritWindows(enabled: boolean) {
+    inheritWindows = enabled;
+    saveA11yInheritWindows(enabled);
+    if (enabled) void syncInheritedWindowsSettings();
+  }
+
+  async function syncInheritedWindowsSettings() {
+    if (!inheritWindows || typeof window === "undefined") return;
+    const forcedColors = window.matchMedia("(forced-colors: active)").matches;
+    const prefersContrast = window.matchMedia(
+      "(prefers-contrast: more)",
+    ).matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    appearance.setHighContrast(forcedColors || prefersContrast);
+    appearance.setReducedMotion(prefersReducedMotion);
+
+    try {
+      const windows = await invokeGetWindowsAccessibility();
+      if (windows.highContrast) appearance.setHighContrast(true);
+      if (windows.textScaleFactor > 0) {
+        appearance.setUiScale(windows.textScaleFactor / 100);
+      }
+    } catch {
+      // Media queries still cover contrast and motion when the registry read fails.
+    }
+  }
+
   function pulseVisualAlert(kind: VisualAlertKind) {
     visualAlertKind = kind;
     visualAlertTick += 1;
+  }
+
+  if (typeof window !== "undefined") {
+    const forcedColors = window.matchMedia("(forced-colors: active)");
+    const prefersContrast = window.matchMedia("(prefers-contrast: more)");
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const syncMediaQueries = () => {
+      if (!inheritWindows) return;
+      appearance.setHighContrast(
+        forcedColors.matches || prefersContrast.matches,
+      );
+      appearance.setReducedMotion(prefersReducedMotion.matches);
+    };
+    forcedColors.addEventListener("change", syncMediaQueries);
+    prefersContrast.addEventListener("change", syncMediaQueries);
+    prefersReducedMotion.addEventListener("change", syncMediaQueries);
+    window.addEventListener("focus", () => {
+      if (inheritWindows) void syncInheritedWindowsSettings();
+    });
+    if (inheritWindows) void syncInheritedWindowsSettings();
   }
 
   function reset() {
@@ -269,6 +336,8 @@ function createAccessibility() {
     setFocusMode(false);
     setSimplifiedMenus(false);
     setHideMediaDetails(false);
+    setGrayscale(false);
+    setInheritWindows(false);
     applyRootAttributes();
   }
 
@@ -344,6 +413,12 @@ function createAccessibility() {
     get hideMediaDetails() {
       return hideMediaDetails;
     },
+    get grayscale() {
+      return grayscale;
+    },
+    get inheritWindows() {
+      return inheritWindows;
+    },
     get visualAlertTick() {
       return visualAlertTick;
     },
@@ -373,6 +448,9 @@ function createAccessibility() {
     setFocusMode,
     setSimplifiedMenus,
     setHideMediaDetails,
+    setGrayscale,
+    setInheritWindows,
+    syncInheritedWindowsSettings,
     pulseVisualAlert,
     reset,
     applyRootAttributes,

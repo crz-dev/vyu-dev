@@ -60,6 +60,17 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     allowRepeat: false,
     behavior: "tap",
   },
+  {
+    id: "reset-accessibility",
+    label: "Emergency reset accessibility",
+    description:
+      "Reset all accessibility settings; unbound by default and works with dialogs open",
+    category: "app",
+    context: "global",
+    defaultBinding: null,
+    allowRepeat: false,
+    behavior: "tap",
+  },
 
   // Viewer
   {

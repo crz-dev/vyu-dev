@@ -454,6 +454,23 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
   "hide media details": ["details", "metadata", "codec", "size", "cognitive"],
   "pause on focus loss": ["focus", "unfocused", "pause", "background"],
   "library privacy blur": ["privacy", "blur", "library", "secret"],
+  grayscale: ["gray", "grey", "monochrome", "color", "colour", "vision"],
+  "inherit windows settings": [
+    "windows",
+    "system",
+    "text",
+    "scale",
+    "contrast",
+    "animations",
+  ],
+  "remember last tab": [
+    "settings",
+    "accessibility",
+    "dialog",
+    "tab",
+    "remember",
+  ],
+  "hide danger zone": ["danger", "settings", "hide", "section", "zone"],
 };
 
 const SECTION_SEARCH_ALIASES: Record<string, string[]> = {

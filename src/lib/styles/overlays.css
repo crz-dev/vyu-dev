@@ -2885,6 +2885,43 @@
   background: #ec4899;
 }
 
+/* Accessibility nav highlight - Grey/White (Settings) */
+.settings-nav-item[data-section="settings"].active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+.settings-nav-item[data-section="settings"].active::before {
+  background: var(--text-muted);
+}
+
+/* Accessibility header colors - Grey/White (Settings) */
+#accessibility-section-settings .settings-section-header {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-mid);
+}
+#accessibility-section-settings .settings-section-header svg {
+  color: var(--text-mid);
+}
+
+/* Accessibility controls - Grey/White (Settings) */
+#accessibility-section-settings .pill-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+#accessibility-section-settings .toggle-track.on {
+  background: var(--text-muted);
+}
+
+#accessibility-section-settings .settings-action-btn {
+  color: var(--text-secondary);
+}
+
+#accessibility-section-settings .settings-action-btn:hover {
+  color: var(--text-primary);
+}
+
 /* Accessibility dialog footer buttons match close button */
 .accessibility-dialog .delete-actions .settings-action-btn {
   padding: 7px 16px;

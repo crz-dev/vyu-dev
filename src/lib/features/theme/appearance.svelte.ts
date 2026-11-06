@@ -4,16 +4,20 @@ import {
   loadCheckerboard,
   loadCursorAutoHide,
   loadDensity,
+  loadHideDangerZone,
   loadHighContrast,
   loadReducedMotion,
+  loadRememberLastTab,
   loadShowTooltips,
   loadUiScale,
   loadViewerBackground,
   saveCheckerboard,
   saveCursorAutoHide,
   saveDensity,
+  saveHideDangerZone,
   saveHighContrast,
   saveReducedMotion,
+  saveRememberLastTab,
   saveShowTooltips,
   saveUiScale,
   saveViewerBackground,
@@ -24,7 +28,7 @@ import {
 export type { DisplayDensity, ViewerBackground };
 
 const UI_SCALE_MIN = 0.8;
-const UI_SCALE_MAX = 1.5;
+const UI_SCALE_MAX = 2.25;
 
 function clampUiScale(scale: number): number {
   const percent = Math.round((scale * 100) / 5) * 5;
@@ -42,6 +46,8 @@ function createAppearance() {
   let cursorAutoHide = $state(loadCursorAutoHide());
   let highContrast = $state(loadHighContrast());
   let viewerBackground = $state<ViewerBackground>(loadViewerBackground());
+  let rememberLastTab = $state(loadRememberLastTab());
+  let hideDangerZone = $state(loadHideDangerZone());
 
   function applyRootAttributes() {
     if (typeof document === "undefined") return;
@@ -103,6 +109,16 @@ function createAppearance() {
     applyRootAttributes();
   }
 
+  function setRememberLastTab(enabled: boolean) {
+    rememberLastTab = enabled;
+    saveRememberLastTab(enabled);
+  }
+
+  function setHideDangerZone(enabled: boolean) {
+    hideDangerZone = enabled;
+    saveHideDangerZone(enabled);
+  }
+
   function setViewerBackground(background: ViewerBackground) {
     viewerBackground = background;
     saveViewerBackground(background);
@@ -141,6 +157,12 @@ function createAppearance() {
     get viewerBackground() {
       return viewerBackground;
     },
+    get rememberLastTab() {
+      return rememberLastTab;
+    },
+    get hideDangerZone() {
+      return hideDangerZone;
+    },
     setUiScale,
     setDensity,
     setReducedMotion,
@@ -148,6 +170,8 @@ function createAppearance() {
     setShowTooltips,
     setCursorAutoHide,
     setHighContrast,
+    setRememberLastTab,
+    setHideDangerZone,
     setViewerBackground,
     init,
   };

@@ -50,7 +50,11 @@
     toggleClipDeleteOriginal: () => void;
   } = $props();
 
-  let activeSection = $state(loadLastDialogSection("settings") || "appearance");
+  let activeSection = $state(
+    appearance.rememberLastTab
+      ? loadLastDialogSection("settings") || "appearance"
+      : "appearance",
+  );
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
   let isScrolling = $state(false);
@@ -65,7 +69,9 @@
   });
 
   $effect(() => {
-    saveLastDialogSection("settings", activeSection);
+    if (appearance.rememberLastTab) {
+      saveLastDialogSection("settings", activeSection);
+    }
   });
 
   $effect(() => {
@@ -79,17 +85,21 @@
     }
   });
 
-  const sections = [
-    { id: "appearance", label: "Appearance" },
-    { id: "playback", label: "Playback" },
-    { id: "editor", label: "Editor" },
-    { id: "process", label: "Conversion" },
-    { id: "library", label: "Library" },
-    { id: "system", label: "System" },
-    { id: "keybinds", label: "Keybinds" },
-    { id: "debug", label: "Debug" },
-    { id: "danger-zone", label: "Danger Zone" },
-  ];
+  const sections = $derived(
+    [
+      { id: "appearance", label: "Appearance" },
+      { id: "playback", label: "Playback" },
+      { id: "editor", label: "Editor" },
+      { id: "process", label: "Conversion" },
+      { id: "library", label: "Library" },
+      { id: "system", label: "System" },
+      { id: "keybinds", label: "Keybinds" },
+      { id: "debug", label: "Debug" },
+      { id: "danger-zone", label: "Danger Zone" },
+    ].filter(
+      (section) => !(section.id === "danger-zone" && appearance.hideDangerZone),
+    ),
+  );
 
   const sectionDescriptions: Record<string, string> = {
     appearance: "Theme, typography and viewer presentation.",
@@ -105,11 +115,19 @@
 
   const searchActive = $derived(searchQuery.trim() !== "");
 
-  const searchSections = sections.map((section) => ({
-    id: section.id,
-    label: section.label,
-    description: sectionDescriptions[section.id],
-  }));
+  const searchSections = $derived(
+    sections.map((section) => ({
+      id: section.id,
+      label: section.label,
+      description: sectionDescriptions[section.id],
+    })),
+  );
+
+  $effect(() => {
+    if (!sections.some((section) => section.id === activeSection)) {
+      activeSection = sections[0]?.id ?? "appearance";
+    }
+  });
 
   $effect(() => {
     const query = searchQuery.trim();
@@ -226,6 +244,8 @@
       uiScale: appearance.uiScale,
       density: appearance.density,
       reducedMotion: appearance.reducedMotion,
+      rememberLastTab: appearance.rememberLastTab,
+      hideDangerZone: appearance.hideDangerZone,
       checkerboard: appearance.checkerboard,
       resumeMode: playbackPrefs.resumeMode,
       resumeThreshold: playbackPrefs.resumeThreshold,
@@ -753,13 +773,15 @@
           <DebugSettings flash={flashId === "debug"} {fileInfo} />
 
           <!-- Danger Zone -->
-          <DangerSettings
-            flash={flashId === "danger-zone"}
-            {clearTimestamps}
-            {clearClips}
-            {clipDeleteOriginal}
-            {toggleClipDeleteOriginal}
-          />
+          {#if !appearance.hideDangerZone}
+            <DangerSettings
+              flash={flashId === "danger-zone"}
+              {clearTimestamps}
+              {clearClips}
+              {clipDeleteOriginal}
+              {toggleClipDeleteOriginal}
+            />
+          {/if}
         </div>
       </div>
 

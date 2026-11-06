@@ -32,6 +32,15 @@ export function createKeybindHandler(deps: KeybindActions) {
   function handleKeydown(e: KeyboardEvent) {
     if (keybindStore.isRecording) return;
     if (e.defaultPrevented) return;
+
+    // The emergency reset must work even when a dialog is open or a huge
+    // interface scale makes the normal controls hard to reach.
+    if (keybindStore.matches("reset-accessibility", e)) {
+      e.preventDefault();
+      if (!e.repeat) deps.actions["reset-accessibility"]?.();
+      return;
+    }
+
     if (isTypingTarget(e.target)) return;
 
     if (keybindStore.cheatSheetOpen) {

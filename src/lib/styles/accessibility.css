@@ -48,6 +48,11 @@ html[data-tooltips="off"] .tooltip-ctrl::after {
 
 /* ── Accessibility dialog preferences ── */
 
+/* Grayscale — remove color from the whole app shell */
+html[data-a11y-grayscale="true"] main {
+  filter: grayscale(1);
+}
+
 /* Strong focus rings — override the global outline reset in app.css */
 html[data-a11y-focus="true"] :focus-visible {
   outline: 2px solid var(--text-primary) !important;

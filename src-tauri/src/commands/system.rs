@@ -54,6 +54,13 @@ pub struct PowerStatus {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WindowsAccessibility {
+    pub text_scale_factor: u32,
+    pub high_contrast: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CacheStats {
     pub thumbnails: u64,
     pub displays: u64,
@@ -108,6 +115,38 @@ pub fn get_runtime_info() -> RuntimeInfo {
         exe_path: current_exe_path().unwrap_or_default(),
         args: std::env::args().collect(),
         safe_mode: crate::state::system::safe_mode_enabled(),
+    }
+}
+
+#[tauri::command]
+pub fn get_windows_accessibility() -> WindowsAccessibility {
+    #[cfg(target_os = "windows")]
+    {
+        let text_scale_factor = read_reg_dword(
+            r"Software\Microsoft\Accessibility",
+            "TextScaleFactor",
+        )
+        .unwrap_or(100)
+        .clamp(100, 225);
+        let high_contrast = read_reg_dword(
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+            "HighContrast",
+        )
+        .unwrap_or(0)
+            != 0;
+
+        return WindowsAccessibility {
+            text_scale_factor,
+            high_contrast,
+        };
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        WindowsAccessibility {
+            text_scale_factor: 100,
+            high_contrast: false,
+        }
     }
 }
 
@@ -700,6 +739,34 @@ fn context_key_exists(kind: &str) -> bool {
         true
     } else {
         false
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn read_reg_dword(subkey: &str, value: &str) -> Option<u32> {
+    use windows::Win32::System::Registry::{
+        RegGetValueW, HKEY_CURRENT_USER, RRF_RT_REG_DWORD,
+    };
+
+    let subkey_wide = windows::core::HSTRING::from(subkey);
+    let value_wide = windows::core::HSTRING::from(value);
+    let mut data: u32 = 0;
+    let mut size = std::mem::size_of::<u32>() as u32;
+    let status = unsafe {
+        RegGetValueW(
+            HKEY_CURRENT_USER,
+            &subkey_wide,
+            &value_wide,
+            RRF_RT_REG_DWORD,
+            None,
+            Some(&mut data as *mut u32 as *mut core::ffi::c_void),
+            Some(&mut size),
+        )
+    };
+    if status.0 == 0 {
+        Some(data)
+    } else {
+        None
     }
 }
 

@@ -89,6 +89,23 @@
       {/snippet}
     </SettingsRow>
 
+    <SettingsRow label="Grayscale" hint="Remove all color from the app">
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            aria-label="Grayscale"
+            checked={accessibility.grayscale}
+            onchange={(e) =>
+              accessibility.setGrayscale(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={accessibility.grayscale}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+
     <SettingsRow
       label="Reduce Transparency"
       hint="Use solid surfaces instead of translucent panels"
@@ -117,7 +134,7 @@
           <input
             type="range"
             min="80"
-            max="150"
+            max="225"
             step="5"
             aria-label="Interface scale"
             value={scalePreview}

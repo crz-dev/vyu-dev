@@ -111,6 +111,7 @@
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { playAudioCue } from "$lib/features/accessibility/audioCues";
+  import { resetAccessibilitySettings } from "$lib/features/accessibility/accessibilityTransfer";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";
   import { fxEngine } from "$lib/features/effects/effects-engine";
   import {
@@ -761,6 +762,10 @@
       "close-file": closeFile,
       "toggle-library": () => (menuStore.libraryOpen = !menuStore.libraryOpen),
       "show-shortcuts": keybindStore.toggleCheatSheet,
+      "reset-accessibility": () => {
+        resetAccessibilitySettings();
+        showToast({ message: "Accessibility settings reset", color: "green" });
+      },
       "play-pause": () => {
         if (!isTimedMedia()) return;
         const wasPlaying = playing;

@@ -146,6 +146,7 @@ pub fn run() {
             get_system_config,
             get_system_restart_status,
             get_runtime_info,
+            get_windows_accessibility,
             set_hardware_acceleration,
             set_single_instance,
             set_launch_minimized,

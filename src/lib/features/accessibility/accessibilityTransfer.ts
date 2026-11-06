@@ -43,6 +43,8 @@ export function exportAccessibilitySettings(): AccessibilityExport {
     focusMode: accessibility.focusMode,
     simplifiedMenus: accessibility.simplifiedMenus,
     hideMediaDetails: accessibility.hideMediaDetails,
+    grayscale: accessibility.grayscale,
+    inheritWindows: accessibility.inheritWindows,
     highContrast: appearance.highContrast,
     reducedMotion: appearance.reducedMotion,
     uiScale: appearance.uiScale,
@@ -111,6 +113,8 @@ export function applyAccessibilityImport(raw: unknown): void {
   setBoolean(data, "focusMode", accessibility.setFocusMode);
   setBoolean(data, "simplifiedMenus", accessibility.setSimplifiedMenus);
   setBoolean(data, "hideMediaDetails", accessibility.setHideMediaDetails);
+  setBoolean(data, "grayscale", accessibility.setGrayscale);
+  setBoolean(data, "inheritWindows", accessibility.setInheritWindows);
 
   if (typeof data.volumeLimit === "number") {
     accessibility.setVolumeLimit(data.volumeLimit);
@@ -164,21 +168,63 @@ function setSkipDeleteConfirmations(enabled: boolean): void {
   saveSkipDeleteConfirmation(enabled);
 }
 
+export type AccessibilitySection = "vision" | "hearing" | "motor" | "cognitive";
+
+export function resetAccessibilitySection(section: AccessibilitySection): void {
+  switch (section) {
+    case "vision":
+      accessibility.setColorBlindMode("none");
+      accessibility.setFocusRings(false);
+      accessibility.setBoldText(false);
+      accessibility.setTextSpacing(false);
+      accessibility.setReduceTransparency(false);
+      accessibility.setLargeControls(false);
+      accessibility.setGrayscale(false);
+      accessibility.setInheritWindows(false);
+      appearance.setHighContrast(false);
+      appearance.setReducedMotion(false);
+      appearance.setUiScale(1);
+      appearance.setShowTooltips(true);
+      appearance.setViewerBackground("theme");
+      break;
+    case "hearing":
+      accessibility.setVolumeLimit(1);
+      accessibility.setMonoAudio(false);
+      accessibility.setBalance(0);
+      accessibility.setNormalizeVolume(false);
+      accessibility.setLimitPeaks(false);
+      accessibility.setBoostDialogue(false);
+      accessibility.setVisualAlerts(false);
+      accessibility.setAudioCues(false);
+      break;
+    case "motor":
+      accessibility.setLargeTargets(false);
+      accessibility.setLargeScrollbars(false);
+      accessibility.setLargeTimeline(false);
+      accessibility.setAlwaysShowControls(false);
+      accessibility.setReducePanSensitivity(false);
+      playbackPrefs.setSeekStep(5);
+      setSkipDeleteConfirmations(false);
+      break;
+    case "cognitive":
+      accessibility.setReduceDistractions(false);
+      accessibility.setFocusMode(false);
+      accessibility.setHideMediaDetails(false);
+      accessibility.setSimplifiedMenus(false);
+      library.setPrivacyMode(false);
+      library.setPrivacyBlur(12);
+      library.setPrivacyHideNames(false);
+      library.setRecentsDisabled(false);
+      library.setShowThumbnails(true);
+      systemPrefs.setPauseOnFocusLoss(false);
+      break;
+  }
+}
+
 export function resetAccessibilitySettings(): void {
   accessibility.reset();
-  appearance.setHighContrast(false);
-  appearance.setReducedMotion(false);
-  appearance.setUiScale(1);
-  appearance.setShowTooltips(true);
-  appearance.setViewerBackground("theme");
-
-  library.setPrivacyMode(false);
-  library.setPrivacyBlur(12);
-  library.setPrivacyHideNames(false);
-  library.setRecentsDisabled(false);
-  library.setShowThumbnails(true);
-
-  systemPrefs.setPauseOnFocusLoss(false);
-  playbackPrefs.setSeekStep(5);
-  setSkipDeleteConfirmations(false);
+  resetAccessibilitySection("vision");
+  resetAccessibilitySection("hearing");
+  resetAccessibilitySection("motor");
+  resetAccessibilitySection("cognitive");
 }

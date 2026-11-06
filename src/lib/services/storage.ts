@@ -506,7 +506,7 @@ export type DarkVariant = "standard" | "oled";
 export type ViewerBackground = "theme" | "black" | "gray";
 
 const UI_SCALE_MIN = 0.8;
-const UI_SCALE_MAX = 1.5;
+const UI_SCALE_MAX = 2.25;
 
 export function loadUiScale(): number {
   const raw = localStorage.getItem("vyu-ui-scale");
@@ -581,6 +581,22 @@ export function loadHighContrast(): boolean {
 
 export function saveHighContrast(enabled: boolean): void {
   localStorage.setItem("vyu-high-contrast", String(enabled));
+}
+
+export function loadRememberLastTab(): boolean {
+  return localStorage.getItem("vyu-remember-last-tab") !== "false";
+}
+
+export function saveRememberLastTab(enabled: boolean): void {
+  localStorage.setItem("vyu-remember-last-tab", String(enabled));
+}
+
+export function loadHideDangerZone(): boolean {
+  return localStorage.getItem("vyu-hide-danger-zone") === "true";
+}
+
+export function saveHideDangerZone(enabled: boolean): void {
+  localStorage.setItem("vyu-hide-danger-zone", String(enabled));
 }
 
 export function loadViewerBackground(): ViewerBackground {
@@ -1609,6 +1625,22 @@ export function loadA11yHideMediaDetails(): boolean {
 
 export function saveA11yHideMediaDetails(enabled: boolean): void {
   saveA11yBoolean("hide-media-details", enabled);
+}
+
+export function loadA11yGrayscale(): boolean {
+  return loadA11yBoolean("grayscale");
+}
+
+export function saveA11yGrayscale(enabled: boolean): void {
+  saveA11yBoolean("grayscale", enabled);
+}
+
+export function loadA11yInheritWindows(): boolean {
+  return loadA11yBoolean("inherit-windows");
+}
+
+export function saveA11yInheritWindows(enabled: boolean): void {
+  saveA11yBoolean("inherit-windows", enabled);
 }
 
 const A11Y_VOLUME_LIMIT_MIN = 0.2;

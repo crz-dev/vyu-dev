@@ -126,7 +126,7 @@
           <input
             type="range"
             min="80"
-            max="150"
+            max="225"
             step="5"
             aria-label="Interface scale"
             value={scalePreview}
