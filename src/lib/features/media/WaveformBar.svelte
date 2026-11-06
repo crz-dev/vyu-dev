@@ -132,7 +132,7 @@
     const barWidth = w / peaks.length;
     const midY = h / 2;
 
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    ctx.fillStyle = waveformColor("--waveform-bar", "rgba(255, 255, 255, 0.3)");
     for (let i = 0; i < peaks.length; i++) {
       const amp = peaks[i] * midY;
       const x = i * barWidth;
@@ -142,6 +142,11 @@
     bgCanvas = offscreen;
     bgW = w;
     bgH = h;
+  }
+
+  function waveformColor(name: string, fallback: string): string {
+    if (!canvasEl) return fallback;
+    return getComputedStyle(canvasEl).getPropertyValue(name).trim() || fallback;
   }
 
   function draw() {
@@ -183,7 +188,7 @@
       ctx.beginPath();
       ctx.rect(0, 0, clipX, h);
       ctx.clip();
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = waveformColor("--waveform-bar-played", "#ffffff");
       for (let i = 0; i < peaks.length; i++) {
         const amp = peaks[i] * midY;
         const x = i * barWidth;
@@ -205,6 +210,19 @@
     peaks;
     progress;
     requestAnimationFrame(draw);
+  });
+
+  // Canvas colors are sampled from CSS, so redraw when the theme changes.
+  $effect(() => {
+    const observer = new MutationObserver(() => {
+      bgCanvas = null;
+      draw();
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
   });
 
   $effect(() => {
@@ -434,11 +452,17 @@
 
 <style>
   .audio-waveform-bar {
+    --waveform-bar: rgba(255, 255, 255, 0.3);
+    --waveform-bar-played: #ffffff;
     position: relative;
     flex: 1;
     cursor: pointer;
     overflow: hidden;
     border-radius: 2px;
+  }
+  :global([data-theme="light"]) .audio-waveform-bar {
+    --waveform-bar: rgba(0, 0, 0, 0.22);
+    --waveform-bar-played: var(--text-primary);
   }
   .audio-marker {
     position: absolute;
@@ -491,8 +515,8 @@
     top: 0;
     bottom: 0;
     background: var(--blue-bg-strong);
-    border-left: 1px solid rgba(147, 197, 253, 0.9);
-    border-right: 1px solid rgba(147, 197, 253, 0.9);
+    border-left: 1px solid var(--blue-lighter);
+    border-right: 1px solid var(--blue-lighter);
     pointer-events: none;
     z-index: 0;
   }

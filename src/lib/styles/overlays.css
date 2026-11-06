@@ -84,7 +84,7 @@
   height: 11px;
 }
 .ctx-close:hover {
-  color: #ef4444;
+  color: var(--red);
   background: var(--red-bg-faint);
 }
 .ctx-pin {
@@ -517,7 +517,7 @@
 }
 .corruption-error {
   font-size: 11px;
-  color: #ef4444;
+  color: var(--red);
   font-family: var(--font-family);
   margin: 0;
 }
@@ -882,7 +882,7 @@
   animation: spin 0.8s linear infinite;
 }
 .pdf-error {
-  color: #ef4444;
+  color: var(--red);
   font-size: 13px;
   font-family: var(--font-family);
   padding: 24px;
@@ -2017,7 +2017,7 @@
 .settings-nav-item[data-section="process"].active,
 .settings-nav-item[data-section="integration"].active {
   background: var(--blue-bg-faint);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 .settings-nav-item[data-section="editor"].active::before,
 .settings-nav-item[data-section="process"].active::before,
@@ -2542,7 +2542,7 @@
 .settings-action-btn.blue:hover {
   background: var(--blue-bg-hover);
   border-color: var(--blue-light-border);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 
 .settings-action-btn.yellow {
@@ -5333,4 +5333,130 @@
 .library-mode .equalizer-wrapper,
 .library-mode .slideshow-menu {
   display: none !important;
+}
+
+/* ── Light theme fills ─────────────────────────────── */
+/* White-alpha fills disappear on light surfaces; use dark alpha instead. */
+[data-theme="light"] .ctx-drag:hover,
+[data-theme="light"] .settings-nav-description,
+[data-theme="light"] .settings-section::before,
+[data-theme="light"] .profile-menu-row:hover,
+[data-theme="light"] .profile-icon-btn:hover,
+[data-theme="light"] .profile-menu-new:hover,
+[data-theme="light"] .profile-menu-more.active {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .settings-nav-description-text {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .settings-nav-item:hover:not(.active),
+[data-theme="light"] .settings-row:hover,
+[data-theme="light"] .settings-card > .settings-row:hover,
+[data-theme="light"] .keybind-category-toggle:hover,
+[data-theme="light"] .help-tab-btn:hover:not(.active),
+[data-theme="light"] .pill-btn:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] :where(.settings-action-btn) {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] :where(.settings-action-btn:hover) {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .profile-editor-save {
+  border-color: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .profile-editor-save:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .toggle-thumb {
+  background: #ffffff;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .profile-menu ::selection {
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--text-primary);
+}
+
+/* Category accents are hardcoded light shades for dark surfaces. */
+[data-theme="light"] .settings-nav-item[data-section="vision"].active,
+[data-theme="light"] #accessibility-section-vision .settings-section-header,
+[data-theme="light"] #accessibility-section-vision .settings-section-header svg,
+[data-theme="light"] #accessibility-section-vision .pill-btn.active {
+  color: #3f6212;
+}
+
+[data-theme="light"] .settings-nav-item[data-section="hearing"].active,
+[data-theme="light"] #accessibility-section-hearing .settings-section-header,
+[data-theme="light"]
+  #accessibility-section-hearing
+  .settings-section-header
+  svg,
+[data-theme="light"] #accessibility-section-hearing .pill-btn.active {
+  color: #155e75;
+}
+
+[data-theme="light"] .settings-nav-item[data-section="motor"].active,
+[data-theme="light"] #accessibility-section-motor .settings-section-header,
+[data-theme="light"] #accessibility-section-motor .settings-section-header svg,
+[data-theme="light"] #accessibility-section-motor .pill-btn.active {
+  color: #9a3412;
+}
+
+[data-theme="light"] .settings-nav-item[data-section="cognitive"].active,
+[data-theme="light"] #accessibility-section-cognitive .settings-section-header,
+[data-theme="light"]
+  #accessibility-section-cognitive
+  .settings-section-header
+  svg,
+[data-theme="light"] #accessibility-section-cognitive .pill-btn.active {
+  color: #9d174d;
+}
+
+[data-theme="light"] .settings-nav-item[data-section="profiles"].active,
+[data-theme="light"] #accessibility-section-profiles .settings-section-header,
+[data-theme="light"]
+  #accessibility-section-profiles
+  .settings-section-header
+  svg,
+[data-theme="light"] #accessibility-section-profiles .pill-btn.active {
+  color: #6b21a8;
+}
+
+[data-theme="light"] .feedback-section-header.grey,
+[data-theme="light"] .feedback-section-header.grey svg {
+  color: #4b5563;
+}
+
+[data-theme="light"] .feedback-os-btn.active {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .toast-grey .toast-actions {
+  border-left-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .toast-grey .toast-action-default,
+[data-theme="light"] .toast-grey .toast-action-accent {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="light"] .toast-grey .toast-progress {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .about-credits-sep {
+  color: var(--text-dim);
 }

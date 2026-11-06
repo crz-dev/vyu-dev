@@ -802,7 +802,7 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   font-family: var(--font-family);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #ffffff;
   background: rgba(0, 0, 0, 0.5);
   padding: 4px 10px;
   border-radius: 4px;
@@ -861,4 +861,37 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   letter-spacing: 0.5px;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+/* ── Light theme fills ─────────────────────────────── */
+/* White-alpha fills disappear on light surfaces; use dark alpha instead. */
+[data-theme="light"] .filename-input {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .sort-menu-item:hover,
+[data-theme="light"] .sort-menu-item.active,
+[data-theme="light"] .list-divider-row {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .topbar,
+[data-theme="light"] .bottombar {
+  background: #dcdee3;
+  border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .empty {
+  background: var(--bg-elevated);
+  border-color: var(--border-subtle);
+}
+
+[data-theme="light"] .wc-btn.close:hover {
+  background: var(--red-bg-default);
+  color: var(--red);
+}
+
+/* Filename labels sit on a dark scrim over thumbnails in both themes. */
+.file-name-label {
+  color: #ffffff;
 }

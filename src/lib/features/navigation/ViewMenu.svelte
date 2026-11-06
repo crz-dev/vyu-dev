@@ -210,7 +210,7 @@
     transform: translateY(-50%);
     height: 4px;
     border-radius: 2px;
-    background: #333333;
+    background: var(--bg-border);
     pointer-events: none;
     z-index: 0;
   }

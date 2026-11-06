@@ -745,7 +745,7 @@
   width: 100%;
   border: 0.5px solid var(--blue-light-border);
   background: var(--blue-bg-hover);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
   border-radius: 7px;
   font-family: var(--font-family);
   font-size: 11px;
@@ -1105,7 +1105,7 @@
   opacity: 1;
   background: var(--blue-bg-default);
   border-color: var(--blue-light-border);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 
 .slideshow-scrubber-tooltip {
@@ -1230,7 +1230,7 @@
   transform: translateY(-50%);
   height: 4px;
   border-radius: 2px;
-  background: #333333;
+  background: var(--bg-border);
   pointer-events: none;
   z-index: 0;
 }
@@ -1459,7 +1459,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-primary);
+  color: #ffffff;
   pointer-events: none;
 }
 
@@ -2035,7 +2035,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .edit-menu-btn.blue {
   background: var(--blue-bg-default);
   border-color: var(--blue-light-border);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
   opacity: 1;
 }
 .edit-menu-btn.blue:hover {
@@ -2044,7 +2044,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .edit-menu-btn.blue.active {
   background: var(--blue-bg-strong);
   border-color: var(--blue-light-border-strong);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 .edit-menu-btn.yellow {
   background: var(--yellow-bg-default);
@@ -2161,7 +2161,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .edit-menu-btn.white.active {
   background: var(--blue-bg-hover);
   border-color: var(--blue-light-border-strong);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 
 @keyframes btnFlash {
@@ -2327,7 +2327,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border-radius: 7px;
   border: 0.5px solid var(--blue-light-border);
   background: var(--blue-bg-default);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
   font-family: var(--font-family);
   font-size: 11px;
   cursor: pointer;
@@ -2400,7 +2400,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .text-font-item.active {
   background: var(--blue-bg-default);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 
 .text-font-separator {
@@ -2456,7 +2456,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .text-bg-color-btn.active {
   background: var(--blue-bg-strong);
   border-color: var(--blue-light-border-strong);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 
 /* Text submenu: font labels */
@@ -2479,7 +2479,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border-radius: 5px;
   border: 0.5px solid var(--blue-light-border);
   background: var(--blue-bg-default);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -2496,7 +2496,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border-radius: 5px;
   border: 0.5px solid var(--blue-light-border);
   background: var(--blue-bg-default);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
   font-family: var(--font-family);
   font-size: 11px;
   text-align: center;
@@ -2596,7 +2596,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 .edit-action-btn.blue {
   background: var(--blue-bg-default);
   border-color: var(--blue-light-border);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
   opacity: 1;
 }
 
@@ -3552,7 +3552,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform: translateX(-50%);
   width: 4px;
   border-radius: 2px;
-  background: #333333;
+  background: var(--bg-border);
   pointer-events: none;
   z-index: 0;
 }
@@ -3964,7 +3964,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .eq-preset-item.active {
   background: var(--blue-bg-default);
-  color: #bfdbfe;
+  color: var(--blue-lighter);
 }
 
 .eq-preset-separator {
@@ -4074,7 +4074,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform: translateX(-50%);
   width: 4px;
   border-radius: 2px;
-  background: #282828;
+  background: var(--bg-border);
   pointer-events: none;
   z-index: 0;
 }
@@ -4193,7 +4193,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform: translateY(-50%);
   height: 4px;
   border-radius: 2px;
-  background: #282828;
+  background: var(--bg-border);
   pointer-events: none;
   z-index: 0;
 }
@@ -4340,4 +4340,78 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 :root[data-density="compact"] .list-row {
   height: 26px;
+}
+
+/* ── Light theme fills ─────────────────────────────── */
+/* White-alpha fills disappear on light surfaces; use dark alpha instead. */
+[data-theme="light"] .app-dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] :where(.edit-menu-btn),
+[data-theme="light"] :where(.clip-toggle-btn),
+[data-theme="light"] :where(.slideshow-toggle-btn),
+[data-theme="light"] :where(.edit-action-btn) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .edit-menu-btn.grey {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="light"] .edit-menu-btn.grey:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .edit-menu-btn.grey.active {
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .edit-menu-btn.white {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .edit-menu-btn.white:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .edit-menu-btn.white.inactive {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .ts-drop-menu,
+[data-theme="light"] .loop-drop-menu {
+  border-color: var(--bg-border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .ts-drop-no-markers,
+[data-theme="light"] .loop-drop-btn {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .loop-drop-btn:hover,
+[data-theme="light"] .loop-btn.loop-menu-open,
+[data-theme="light"] .add-ts-btn.ts-menu-open,
+[data-theme="light"] .edit-menu-back-btn:hover,
+[data-theme="light"] .text-font-item:hover,
+[data-theme="light"] .text-bg-color-btn:hover,
+[data-theme="light"] .audio-customize-btn:hover,
+[data-theme="light"] .audio-transport-btn:hover,
+[data-theme="light"] .retro-transport-btn:hover,
+[data-theme="light"] .retro-controls-row .retro-slider-btn:hover,
+[data-theme="light"] .eq-bypass-btn:hover,
+[data-theme="light"] .eq-preset-btn:hover,
+[data-theme="light"] .eq-preset-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .loop-drop-btn.active {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.16);
 }

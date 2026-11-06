@@ -4724,6 +4724,10 @@
     z-index: 2;
   }
 
+  :global([data-theme="light"]) .library-collection-remove {
+    color: #d4d4d8;
+  }
+
   .library-collection-card:hover .library-collection-remove {
     opacity: 1;
   }
@@ -5069,7 +5073,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-primary, #fff);
+    color: #fff;
     pointer-events: none;
     transition: bottom 190ms cubic-bezier(0.22, 0.9, 0.3, 1);
   }
@@ -5103,7 +5107,7 @@
       opacity 0.1s;
     cursor: pointer;
     z-index: 2;
-    color: var(--text-primary, #fff);
+    color: #fff;
   }
 
   .library-checkbox:hover {
@@ -5208,6 +5212,14 @@
     background: rgba(255, 255, 255, 0.06);
   }
 
+  :global([data-theme="light"]) .list-row.active {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  :global([data-theme="light"]) .list-row.even {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
   .list-row.selected {
     background: var(--yellow-bg-subtle, rgba(245, 197, 24, 0.08));
   }
@@ -5263,6 +5275,14 @@
   .list-checkbox.indeterminate {
     background: var(--yellow, #f5c518);
     border-color: var(--yellow, #f5c518);
+  }
+
+  /* Selection ticks use black ink, so keep the fill bright in light theme. */
+  :global([data-theme="light"]) .library-checkbox.checked,
+  :global([data-theme="light"]) .list-checkbox.checked,
+  :global([data-theme="light"]) .list-checkbox.indeterminate {
+    background: #f5c518;
+    border-color: #f5c518;
   }
 
   .list-checkbox-header {
