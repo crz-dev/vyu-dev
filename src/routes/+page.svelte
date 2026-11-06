@@ -1118,6 +1118,7 @@
     showValue,
     muted,
     volume,
+    setVolume,
     propertiesOpen,
     shareOpen,
     fileCreated,

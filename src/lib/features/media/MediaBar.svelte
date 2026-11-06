@@ -110,6 +110,7 @@
     isAudio,
     volume = 1,
     muted = false,
+    setVolume,
     isPdf = false,
     pdfScale = 1,
     pdfFitScale = 1,
@@ -174,6 +175,7 @@
     isAudio: boolean;
     volume?: number;
     muted?: boolean;
+    setVolume: (volume: number) => void;
     isPdf?: boolean;
     pdfScale?: number;
     pdfFitScale?: number;
@@ -251,6 +253,10 @@
   let zoomTooltipVisible = $state(true);
   let zoomRepeatDelay: ReturnType<typeof setTimeout> | null = null;
   let zoomRepeatInterval: ReturnType<typeof setInterval> | null = null;
+  let volumeMenuVisible = $state(false);
+  let volumeTooltipVisible = $state(true);
+  let volumeRepeatDelay: ReturnType<typeof setTimeout> | null = null;
+  let volumeRepeatInterval: ReturnType<typeof setInterval> | null = null;
 
   function adjustZoomBy(delta: number) {
     if (isPdf) {
@@ -275,6 +281,19 @@
 
   function handleZoomMouseEnter() {
     zoomTooltipVisible = true;
+  }
+
+  function adjustVolumeBy(delta: number) {
+    setVolume(volume + delta / 100);
+  }
+
+  function toggleVolumeMenu() {
+    volumeMenuVisible = !volumeMenuVisible;
+    if (volumeMenuVisible) volumeTooltipVisible = false;
+  }
+
+  function handleVolumeMouseEnter() {
+    volumeTooltipVisible = true;
   }
 
   function toggleFilePositionBar() {
@@ -313,9 +332,44 @@
     if (e.detail === 0) adjustZoomBy(delta);
   }
 
+  function stopVolumeRepeat() {
+    if (volumeRepeatDelay) clearTimeout(volumeRepeatDelay);
+    if (volumeRepeatInterval) clearInterval(volumeRepeatInterval);
+    volumeRepeatDelay = null;
+    volumeRepeatInterval = null;
+    window.removeEventListener("pointerup", stopVolumeRepeat);
+    window.removeEventListener("pointercancel", stopVolumeRepeat);
+    window.removeEventListener("blur", stopVolumeRepeat);
+  }
+
+  function startVolumeRepeat(delta: number) {
+    stopVolumeRepeat();
+    adjustVolumeBy(delta);
+    volumeRepeatDelay = setTimeout(() => {
+      volumeRepeatDelay = null;
+      volumeRepeatInterval = setInterval(() => adjustVolumeBy(delta), 40);
+    }, 250);
+    window.addEventListener("pointerup", stopVolumeRepeat);
+    window.addEventListener("pointercancel", stopVolumeRepeat);
+    window.addEventListener("blur", stopVolumeRepeat);
+  }
+
+  function handleVolumePointerDown(delta: number, e: PointerEvent) {
+    (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId);
+    startVolumeRepeat(delta);
+  }
+
+  function handleVolumeClick(delta: number, e: MouseEvent) {
+    if (e.detail === 0) adjustVolumeBy(delta);
+  }
+
   $effect(() => {
     if (!fileSrc) zoomMenuVisible = false;
-    return () => stopZoomRepeat();
+    if (!fileSrc || !isAudio) volumeMenuVisible = false;
+    return () => {
+      stopZoomRepeat();
+      stopVolumeRepeat();
+    };
   });
 
   function handleFileCountContext(e: MouseEvent) {
@@ -487,13 +541,42 @@
   <div class="bottombar-right">
     <div class="icon-slot viewer-right" class:hidden={libraryOpen}>
       {#if isAudio}
-        <span
-          class="audio-volume tooltip-above"
-          data-tooltip="Current volume"
-          aria-label="Current volume"
-        >
-          {muted ? "Muted" : `${Math.round(volume * 100)}%`}
-        </span>
+        <div class="zoom-control" transition:fly={{ y: 10, duration: 180 }}>
+          <button
+            class="zoom audio-volume tooltip-above"
+            class:menu-active={volumeMenuVisible}
+            class:tooltip-hidden={!volumeTooltipVisible}
+            data-tooltip="Current volume"
+            onclick={toggleVolumeMenu}
+            onmouseenter={handleVolumeMouseEnter}
+            aria-expanded={volumeMenuVisible}
+            aria-label="Volume controls"
+          >
+            {muted ? "Muted" : `${Math.round(volume * 100)}%`}
+          </button>
+          {#if volumeMenuVisible}
+            <div class="zoom-menu-clip">
+              <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
+                <button
+                  class="zoom-menu-btn"
+                  onpointerdown={(e) => handleVolumePointerDown(-1, e)}
+                  onpointerup={stopVolumeRepeat}
+                  onpointercancel={stopVolumeRepeat}
+                  onclick={(e) => handleVolumeClick(-1, e)}
+                  aria-label="Decrease volume">−</button
+                >
+                <button
+                  class="zoom-menu-btn"
+                  onpointerdown={(e) => handleVolumePointerDown(1, e)}
+                  onpointerup={stopVolumeRepeat}
+                  onpointercancel={stopVolumeRepeat}
+                  onclick={(e) => handleVolumeClick(1, e)}
+                  aria-label="Increase volume">+</button
+                >
+              </div>
+            </div>
+          {/if}
+        </div>
       {/if}
       {#if !isAudio && fileSrc}
         <div class="zoom-control" transition:fly={{ y: 10, duration: 180 }}>

@@ -182,6 +182,7 @@
     playbackSpeed,
     muted,
     volume,
+    setVolume,
     timestamps,
     clipBoundaries,
     resumePoint,
@@ -374,6 +375,7 @@
     playbackSpeed: number;
     muted: boolean;
     volume: number;
+    setVolume: (volume: number) => void;
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
     resumePoint: number | null;
@@ -766,6 +768,7 @@
     {isAudio}
     {volume}
     {muted}
+    {setVolume}
     {isPdf}
     {pdfScale}
     {pdfFitScale}
