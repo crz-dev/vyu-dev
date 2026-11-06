@@ -72,7 +72,7 @@
     { id: "motor", label: "Motor" },
     { id: "cognitive", label: "Cognitive" },
     { id: "profiles", label: "Profiles" },
-    { id: "settings", label: "Settings" },
+    { id: "settings", label: "Preferences" },
   ];
 
   const sectionDescriptions: Record<string, string> = {

@@ -43,7 +43,7 @@
         d="M3.51 15a9 9 0 102.13-9.36L1 10"
       /></svg
     >
-    Settings
+    Preferences
   </p>
 
   <SettingsGroup label="Reset" icon="refresh">
