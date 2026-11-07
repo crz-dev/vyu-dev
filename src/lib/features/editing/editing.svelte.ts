@@ -272,13 +272,11 @@ function createEditingStore() {
   }
 
   async function backupOriginal(path: string, enabled: boolean) {
-    if (!enabled || !path) return;
-    try {
-      await invokeBackupFile(path, backupDir || undefined);
-      hasBackup = true;
-    } catch (e) {
-      console.error("backup_file failed (non-fatal):", e);
-    }
+    if (!enabled) return;
+    if (!path) throw new Error("Cannot back up a file without a source path");
+
+    await invokeBackupFile(path, backupDir || undefined);
+    hasBackup = true;
   }
 
   async function restoreOriginal(): Promise<boolean> {
