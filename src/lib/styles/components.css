@@ -1825,9 +1825,13 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   pointer-events: none;
   box-sizing: border-box;
 }
-.add-ts-btn.ts-menu-open {
+.add-ts-btn.ts-menu-open,
+.add-ts-btn.ts-menu-open:hover,
+.loop-btn.loop-menu-open,
+.loop-btn.loop-menu-open:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
+  background: none;
+  transform: translateY(-1px);
 }
 .ts-drop-arrow-icon .diamond-shape,
 .ts-drop-arrow-icon .x-shape {
@@ -1957,10 +1961,23 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   width: 22px;
   height: 22px;
 }
-.track-control-btn.active,
-.track-control-btn.menu-active {
+.track-control-btn.active {
   color: var(--text-primary);
   background: var(--bg-elevated);
+}
+.track-control-btn.menu-active,
+.track-control-btn.menu-active:hover {
+  color: var(--text-primary);
+  background: none;
+  transform: translateY(-1px);
+}
+.track-control-btn,
+.loop-btn,
+.add-ts-btn {
+  transition:
+    background 0.15s,
+    color 0.15s,
+    transform 0.15s ease;
 }
 .track-menu {
   position: absolute;
@@ -2374,10 +2391,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 }
 main.menu-open .subtitle-overlay {
   visibility: hidden;
-}
-.loop-btn.loop-menu-open {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .edit-menu-wrapper {
@@ -4868,8 +4881,6 @@ main.menu-open .subtitle-overlay {
 }
 
 [data-theme="light"] .loop-drop-btn:hover,
-[data-theme="light"] .loop-btn.loop-menu-open,
-[data-theme="light"] .add-ts-btn.ts-menu-open,
 [data-theme="light"] .edit-menu-back-btn:hover,
 [data-theme="light"] .text-font-item:hover,
 [data-theme="light"] .text-bg-color-btn:hover,
