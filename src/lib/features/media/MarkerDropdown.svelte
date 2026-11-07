@@ -75,188 +75,190 @@
         />
       </svg>
     </div>
-    {#if hasAnyMarkers}
-      {#if !deleteConfirm}
+    <div class="edit-menu-card">
+      {#if hasAnyMarkers}
+        {#if !deleteConfirm}
+          <button
+            class="ts-drop-item ts-drop-red"
+            style={animStyle(1)}
+            onclick={requestDelete}
+            role="menuitem"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+            Delete Markers
+          </button>
+        {:else}
+          <button
+            class="ts-drop-item ts-drop-red-confirm"
+            style={animStyle(1)}
+            onclick={confirmDelete}
+            role="menuitem"
+          >
+            Confirm Delete
+          </button>
+        {/if}
+      {/if}
+      <div class="ts-drop-split">
         <button
-          class="ts-drop-item ts-drop-red"
-          style={animStyle(1)}
-          onclick={requestDelete}
+          class="ts-drop-half ts-drop-green"
+          style={animStyle(2)}
+          onclick={addLoopStart}
           role="menuitem"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-            <polyline
-              points="3 6 5 6 21 6"
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
               stroke="currentColor"
               stroke-width="2"
-              stroke-linecap="round"
+            />
+            <text
+              x="12"
+              y="12"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-size="13"
+              font-weight="700"
+              fill="currentColor"
+              font-family="var(--font-family)">A</text
+            >
+          </svg>
+          Loop start
+        </button>
+        <button
+          class="ts-drop-half ts-drop-green"
+          style={animStyle(2)}
+          onclick={addLoopEnd}
+          role="menuitem"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="9"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <text
+              x="12"
+              y="12"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-size="13"
+              font-weight="700"
+              fill="currentColor"
+              font-family="var(--font-family)">B</text
+            >
+          </svg>
+          Loop end
+        </button>
+      </div>
+      <div class="ts-drop-split">
+        <button
+          class="ts-drop-half ts-drop-blue"
+          style={animStyle(3)}
+          onclick={addClipStart}
+          role="menuitem"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="7"
+              cy="8"
+              r="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <circle
+              cx="7"
+              cy="15.8"
+              r="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
             />
             <path
-              d="M19 6l-1 14H6L5 6"
+              d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
               stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-            <path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-            <path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
+              stroke-width="1.8"
             />
           </svg>
-          Delete Markers
+          Clip start
         </button>
-      {:else}
         <button
-          class="ts-drop-item ts-drop-red-confirm"
-          style={animStyle(1)}
-          onclick={confirmDelete}
+          class="ts-drop-half ts-drop-blue"
+          style={animStyle(3)}
+          onclick={addClipEnd}
           role="menuitem"
         >
-          Confirm Delete
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="17"
+              cy="8"
+              r="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <circle
+              cx="17"
+              cy="15.8"
+              r="2.2"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+            <path
+              d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
+              stroke="currentColor"
+              stroke-width="1.8"
+            />
+          </svg>
+          Clip end
         </button>
-      {/if}
-    {/if}
-    <div class="ts-drop-split">
+      </div>
       <button
-        class="ts-drop-half ts-drop-green"
-        style={animStyle(2)}
-        onclick={addLoopStart}
+        class="ts-drop-item ts-drop-yellow"
+        style={animStyle(4)}
+        onclick={handleAddTimestamp}
         role="menuitem"
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
-            stroke="currentColor"
-            stroke-width="2"
-          />
-          <text
-            x="12"
-            y="12"
-            text-anchor="middle"
-            dominant-baseline="central"
-            font-size="13"
-            font-weight="700"
-            fill="currentColor"
-            font-family="var(--font-family)">A</text
-          >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
         </svg>
-        Loop start
-      </button>
-      <button
-        class="ts-drop-half ts-drop-green"
-        style={animStyle(2)}
-        onclick={addLoopEnd}
-        role="menuitem"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="12"
-            cy="12"
-            r="9"
-            stroke="currentColor"
-            stroke-width="2"
-          />
-          <text
-            x="12"
-            y="12"
-            text-anchor="middle"
-            dominant-baseline="central"
-            font-size="13"
-            font-weight="700"
-            fill="currentColor"
-            font-family="var(--font-family)">B</text
-          >
-        </svg>
-        Loop end
+        Add Timestamp
       </button>
     </div>
-    <div class="ts-drop-split">
-      <button
-        class="ts-drop-half ts-drop-blue"
-        style={animStyle(3)}
-        onclick={addClipStart}
-        role="menuitem"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="7"
-            cy="8"
-            r="2.2"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-          <circle
-            cx="7"
-            cy="15.8"
-            r="2.2"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-          <path
-            d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-        </svg>
-        Clip start
-      </button>
-      <button
-        class="ts-drop-half ts-drop-blue"
-        style={animStyle(3)}
-        onclick={addClipEnd}
-        role="menuitem"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-          <circle
-            cx="17"
-            cy="8"
-            r="2.2"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-          <circle
-            cx="17"
-            cy="15.8"
-            r="2.2"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-          <path
-            d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
-            stroke="currentColor"
-            stroke-width="1.8"
-          />
-        </svg>
-        Clip end
-      </button>
-    </div>
-    <button
-      class="ts-drop-item ts-drop-yellow"
-      style={animStyle(4)}
-      onclick={handleAddTimestamp}
-      role="menuitem"
-    >
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
-      </svg>
-      Add Timestamp
-    </button>
   </div>
 {/if}

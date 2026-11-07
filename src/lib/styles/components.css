@@ -1974,6 +1974,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   max-height: min(50vh, 340px);
   padding: 4px;
   overflow: auto;
+  scrollbar-width: none;
   box-sizing: border-box;
   color: var(--text-primary);
   background: var(--bg-secondary);
@@ -1985,6 +1986,9 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   transform: translateX(-50%);
   transform-origin: bottom center;
   animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+.track-menu::-webkit-scrollbar {
+  display: none;
 }
 .subtitle-menu {
   width: min(212px, calc(100vw - 20px));

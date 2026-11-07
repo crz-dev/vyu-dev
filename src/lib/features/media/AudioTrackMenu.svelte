@@ -1,5 +1,6 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
+  import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
   import type { MediaTrack } from "$lib/shared/types";
 
   let {
@@ -41,6 +42,14 @@
   async function select(index: number) {
     await onSelect(index);
   }
+
+  function animStyle(index: number): string {
+    const delay =
+      TS_DROP_ANIM_DELAYS_MS[
+        Math.min(index, TS_DROP_ANIM_DELAYS_MS.length - 1)
+      ];
+    return `animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: ${delay}ms`;
+  }
 </script>
 
 {#if open}
@@ -49,7 +58,7 @@
     role="menu"
     aria-label="Audio tracks"
   >
-    <div class="track-menu-heading">
+    <div class="track-menu-heading" style={animStyle(0)}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <path
           d="M5 10v4M9 7v10M15 7v10M19 10v4"
@@ -69,73 +78,83 @@
       </svg>
     </div>
     {#if loading}
-      <div class="track-menu-message" role="status">Preparing track…</div>
+      <div class="track-menu-message" style={animStyle(1)} role="status">
+        Preparing track…
+      </div>
     {:else if catalogLoading}
-      <div class="track-menu-message" role="status">Reading tracks…</div>
+      <div class="track-menu-message" style={animStyle(1)} role="status">
+        Reading tracks…
+      </div>
     {:else if error}
-      <div class="track-menu-error" role="status">{error}</div>
+      <div class="track-menu-error" style={animStyle(1)} role="status">
+        {error}
+      </div>
     {:else}
-      <div class="track-menu-options">
-        {#if tracks.length === 0}
-          <div
-            class="track-menu-option selected track-menu-option-static"
-            role="presentation"
-          >
-            <span class="track-menu-check" aria-hidden="true">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <path
-                  d="m3 8 3.2 3.2L13 4.8"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            <span class="track-menu-option-copy">
-              <span class="track-menu-option-title">Off</span>
-              <span class="track-menu-option-detail">No audio track</span>
-            </span>
-          </div>
-        {:else}
-          {#each tracks as track, i (track.index)}
-            <button
-              type="button"
-              class="track-menu-option"
-              class:selected={selectedIndex === track.index}
-              role="menuitemradio"
-              aria-checked={selectedIndex === track.index}
-              disabled={loading}
-              onclick={() => void select(track.index)}
+      <div class="edit-menu-card" style={animStyle(1)}>
+        <div class="track-menu-options">
+          {#if tracks.length === 0}
+            <div
+              class="track-menu-option selected track-menu-option-static"
+              role="presentation"
+              style={animStyle(2)}
             >
               <span class="track-menu-check" aria-hidden="true">
-                {#if selectedIndex === track.index}
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                    <path
-                      d="m3 8 3.2 3.2L13 4.8"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                {/if}
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="m3 8 3.2 3.2L13 4.8"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </span>
               <span class="track-menu-option-copy">
-                <Marquee
-                  text={trackTitle(track, i)}
-                  scrollOnHover
-                  class="track-menu-marquee"
-                />
-                {#if trackDetails(track)}
-                  <span class="track-menu-option-detail"
-                    >{trackDetails(track)}</span
-                  >
-                {/if}
+                <span class="track-menu-option-title">Off</span>
+                <span class="track-menu-option-detail">No audio track</span>
               </span>
-            </button>
-          {/each}
-        {/if}
+            </div>
+          {:else}
+            {#each tracks as track, i (track.index)}
+              <button
+                type="button"
+                class="track-menu-option"
+                style={animStyle(i + 2)}
+                class:selected={selectedIndex === track.index}
+                role="menuitemradio"
+                aria-checked={selectedIndex === track.index}
+                disabled={loading}
+                onclick={() => void select(track.index)}
+              >
+                <span class="track-menu-check" aria-hidden="true">
+                  {#if selectedIndex === track.index}
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="m3 8 3.2 3.2L13 4.8"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  {/if}
+                </span>
+                <span class="track-menu-option-copy">
+                  <Marquee
+                    text={trackTitle(track, i)}
+                    scrollOnHover
+                    class="track-menu-marquee"
+                  />
+                  {#if trackDetails(track)}
+                    <span class="track-menu-option-detail"
+                      >{trackDetails(track)}</span
+                    >
+                  {/if}
+                </span>
+              </button>
+            {/each}
+          {/if}
+        </div>
       </div>
     {/if}
   </div>

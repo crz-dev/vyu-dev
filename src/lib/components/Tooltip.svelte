@@ -113,179 +113,181 @@
       class:blue={isSegmentMenu}
       style="left: {tsEditMenu.x}px; top: {tsEditMenu.y}px;"
     >
-      <div class="ts-edit-menu-top">
-        <input
-          class="ts-title-input"
-          type="text"
-          maxlength="100"
-          placeholder="Add title"
-          aria-label="Marker title"
-          value={currentTitle}
-          oninput={(e) =>
-            updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
-          onkeydown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              closeTimestampEditor();
-            }
-            if (e.key === "Enter") {
-              e.preventDefault();
-              closeTimestampEditor();
-            }
-          }}
-        />
-        {#if !isSegmentMenu}
+      <div class="edit-menu-card">
+        <div class="ts-edit-menu-top">
+          <input
+            class="ts-title-input"
+            type="text"
+            maxlength="100"
+            placeholder="Add title"
+            aria-label="Marker title"
+            value={currentTitle}
+            oninput={(e) =>
+              updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
+            onkeydown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                closeTimestampEditor();
+              }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                closeTimestampEditor();
+              }
+            }}
+          />
+          {#if !isSegmentMenu}
+            <button
+              class="ts-delete-btn tooltip-ctrl"
+              data-tooltip="Delete Marker"
+              onclick={(e) => {
+                e.stopPropagation();
+                onEditorDeleteTimestamp();
+              }}
+              aria-label="Delete timestamp"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <polyline
+                  points="3 6 5 6 21 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M19 6l-1 14H6L5 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M10 11v6M14 11v6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M9 6V4h6v2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          {:else}
+            <button
+              class="ts-delete-btn tooltip-ctrl"
+              data-tooltip="Delete Marker"
+              onclick={(e) => {
+                e.stopPropagation();
+                onEditorDeleteSegment();
+              }}
+              aria-label="Delete clip marker"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <polyline
+                  points="3 6 5 6 21 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M19 6l-1 14H6L5 6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M10 11v6M14 11v6"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M9 6V4h6v2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          {/if}
+        </div>
+        <div
+          class="ts-scissor-split"
+          class:segment-toggle={isSegmentMenu}
+          role="group"
+          aria-label="segment type"
+        >
           <button
-            class="ts-delete-btn tooltip-ctrl"
-            data-tooltip="Delete Marker"
+            class="ts-split-btn left tooltip-ctrl"
+            class:is-active={isSegmentMenu
+              ? editingSegment?.kind === "start"
+              : false}
+            class:is-inactive={isSegmentMenu
+              ? editingSegment?.kind !== "start"
+              : false}
+            data-tooltip="Clip start"
             onclick={(e) => {
               e.stopPropagation();
-              onEditorDeleteTimestamp();
+              onEditorScissor("start");
             }}
-            aria-label="Delete timestamp"
+            aria-label="Clip start"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <polyline
-                points="3 6 5 6 21 6"
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="7"
+                cy="8"
+                r="2.2"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M19 6l-1 14H6L5 6"
+                stroke-width="1.8"
+              /><circle
+                cx="7"
+                cy="15.8"
+                r="2.2"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M10 11v6M14 11v6"
+                stroke-width="1.8"
+              /><path
+                d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M9 6V4h6v2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-            </svg>
+                stroke-width="1.8"
+              /></svg
+            >
           </button>
-        {:else}
           <button
-            class="ts-delete-btn tooltip-ctrl"
-            data-tooltip="Delete Marker"
+            class="ts-split-btn right tooltip-ctrl"
+            class:is-active={isSegmentMenu
+              ? editingSegment?.kind === "end"
+              : false}
+            class:is-inactive={isSegmentMenu
+              ? editingSegment?.kind !== "end"
+              : false}
+            data-tooltip="Clip end"
             onclick={(e) => {
               e.stopPropagation();
-              onEditorDeleteSegment();
+              onEditorScissor("end");
             }}
-            aria-label="Delete clip marker"
+            aria-label="Clip end"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <polyline
-                points="3 6 5 6 21 6"
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="17"
+                cy="8"
+                r="2.2"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M19 6l-1 14H6L5 6"
+                stroke-width="1.8"
+              /><circle
+                cx="17"
+                cy="15.8"
+                r="2.2"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M10 11v6M14 11v6"
+                stroke-width="1.8"
+              /><path
+                d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
                 stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M9 6V4h6v2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-            </svg>
+                stroke-width="1.8"
+              /></svg
+            >
           </button>
-        {/if}
-      </div>
-      <div
-        class="ts-scissor-split"
-        class:segment-toggle={isSegmentMenu}
-        role="group"
-        aria-label="segment type"
-      >
-        <button
-          class="ts-split-btn left tooltip-ctrl"
-          class:is-active={isSegmentMenu
-            ? editingSegment?.kind === "start"
-            : false}
-          class:is-inactive={isSegmentMenu
-            ? editingSegment?.kind !== "start"
-            : false}
-          data-tooltip="Clip start"
-          onclick={(e) => {
-            e.stopPropagation();
-            onEditorScissor("start");
-          }}
-          aria-label="Clip start"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="7"
-              cy="8"
-              r="2.2"
-              stroke="currentColor"
-              stroke-width="1.8"
-            /><circle
-              cx="7"
-              cy="15.8"
-              r="2.2"
-              stroke="currentColor"
-              stroke-width="1.8"
-            /><path
-              d="M9.5 9.6L19 5.2M9.5 14.2L19 19"
-              stroke="currentColor"
-              stroke-width="1.8"
-            /></svg
-          >
-        </button>
-        <button
-          class="ts-split-btn right tooltip-ctrl"
-          class:is-active={isSegmentMenu
-            ? editingSegment?.kind === "end"
-            : false}
-          class:is-inactive={isSegmentMenu
-            ? editingSegment?.kind !== "end"
-            : false}
-          data-tooltip="Clip end"
-          onclick={(e) => {
-            e.stopPropagation();
-            onEditorScissor("end");
-          }}
-          aria-label="Clip end"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="17"
-              cy="8"
-              r="2.2"
-              stroke="currentColor"
-              stroke-width="1.8"
-            /><circle
-              cx="17"
-              cy="15.8"
-              r="2.2"
-              stroke="currentColor"
-              stroke-width="1.8"
-            /><path
-              d="M14.5 9.6L5 5.2M14.5 14.2L5 19"
-              stroke="currentColor"
-              stroke-width="1.8"
-            /></svg
-          >
-        </button>
+        </div>
       </div>
     </div>
   {/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
   import { slide } from "svelte/transition";
+  import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
   import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
   import type { SubtitleSize } from "$lib/features/media/tracks.svelte";
 
@@ -89,11 +90,19 @@
     await onLoadSubtitle();
     if (!loading) onClose();
   }
+
+  function animStyle(index: number): string {
+    const delay =
+      TS_DROP_ANIM_DELAYS_MS[
+        Math.min(index, TS_DROP_ANIM_DELAYS_MS.length - 1)
+      ];
+    return `animation: tsDropItemPopIn 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards; animation-delay: ${delay}ms`;
+  }
 </script>
 
 {#if open}
   <div class="track-menu subtitle-menu" role="menu" aria-label="Subtitles">
-    <div class="track-menu-heading">
+    <div class="track-menu-heading" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <rect
           x="3"
@@ -130,52 +139,20 @@
         />
       </svg>
     </div>
-    <div class="track-menu-options">
-      <button
-        type="button"
-        class="track-menu-option"
-        class:selected={selectedId === "off"}
-        role="menuitemradio"
-        aria-checked={selectedId === "off"}
-        disabled={loading}
-        onclick={() => void select("off")}
-      >
-        <span class="track-menu-check" aria-hidden="true">
-          {#if selectedId === "off"}
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-              <path
-                d="m3 8 3.2 3.2L13 4.8"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          {/if}
-        </span>
-        <span class="track-menu-option-copy">
-          <span class="track-menu-option-title">Off</span>
-          {#if tracks.length === 0 && sidecars.length === 0 && !error}
-            <span class="track-menu-option-detail">No subtitle track</span>
-          {/if}
-        </span>
-      </button>
-
-      {#each tracks as track, i (track.index)}
+    <div class="edit-menu-card" style={animStyle(1)}>
+      <div class="track-menu-options">
         <button
           type="button"
           class="track-menu-option"
-          class:selected={selectedId === `embedded:${track.index}`}
-          class:loading={pendingId === `embedded:${track.index}`}
-          class:unsupported={!track.supported}
+          class:selected={selectedId === "off"}
           role="menuitemradio"
-          aria-checked={selectedId === `embedded:${track.index}`}
-          aria-busy={pendingId === `embedded:${track.index}`}
-          disabled={loading || !track.supported}
-          onclick={() => void select(`embedded:${track.index}`)}
+          aria-checked={selectedId === "off"}
+          disabled={loading}
+          onclick={() => void select("off")}
+          style={animStyle(2)}
         >
           <span class="track-menu-check" aria-hidden="true">
-            {#if selectedId === `embedded:${track.index}`}
+            {#if selectedId === "off"}
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <path
                   d="m3 8 3.2 3.2L13 4.8"
@@ -188,41 +165,86 @@
             {/if}
           </span>
           <span class="track-menu-option-copy">
-            <Marquee
-              text={trackTitle(track, i)}
-              scrollOnHover
-              class="track-menu-marquee"
-            />
-            {#if !track.supported}
-              <span class="track-menu-option-detail"
-                >Image subtitles unavailable</span
-              >
-            {:else if track.codec || (track.title && track.language)}
-              <span class="track-menu-option-detail">
-                {[
-                  track.title && track.language
-                    ? track.language.toUpperCase()
-                    : "",
-                  track.codec?.toUpperCase() ?? "",
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
+            <span class="track-menu-option-title">Off</span>
+            {#if tracks.length === 0 && sidecars.length === 0 && !error}
+              <span class="track-menu-option-detail">No subtitle track</span>
             {/if}
           </span>
         </button>
-      {/each}
+
+        {#each tracks as track, i (track.index)}
+          <button
+            type="button"
+            class="track-menu-option"
+            class:selected={selectedId === `embedded:${track.index}`}
+            class:loading={pendingId === `embedded:${track.index}`}
+            class:unsupported={!track.supported}
+            role="menuitemradio"
+            aria-checked={selectedId === `embedded:${track.index}`}
+            aria-busy={pendingId === `embedded:${track.index}`}
+            disabled={loading || !track.supported}
+            onclick={() => void select(`embedded:${track.index}`)}
+            style={animStyle(i + 3)}
+          >
+            <span class="track-menu-check" aria-hidden="true">
+              {#if selectedId === `embedded:${track.index}`}
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="m3 8 3.2 3.2L13 4.8"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              {/if}
+            </span>
+            <span class="track-menu-option-copy">
+              <Marquee
+                text={trackTitle(track, i)}
+                scrollOnHover
+                class="track-menu-marquee"
+              />
+              {#if !track.supported}
+                <span class="track-menu-option-detail"
+                  >Image subtitles unavailable</span
+                >
+              {:else if track.codec || (track.title && track.language)}
+                <span class="track-menu-option-detail">
+                  {[
+                    track.title && track.language
+                      ? track.language.toUpperCase()
+                      : "",
+                    track.codec?.toUpperCase() ?? "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              {/if}
+            </span>
+          </button>
+        {/each}
+      </div>
     </div>
 
     {#if catalogLoading}
-      <div class="track-menu-message" role="status">Reading tracks…</div>
+      <div class="track-menu-message" style={animStyle(1)} role="status">
+        Reading tracks…
+      </div>
     {/if}
     {#if error}
-      <div class="track-menu-error" role="status">{error}</div>
+      <div class="track-menu-error" style={animStyle(1)} role="status">
+        {error}
+      </div>
     {/if}
 
-    <div class="track-menu-divider"></div>
-    <div class="track-menu-actions" role="group" aria-label="Subtitle options">
+    <div class="track-menu-divider" style={animStyle(tracks.length + 3)}></div>
+    <div
+      class="track-menu-actions"
+      role="group"
+      aria-label="Subtitle options"
+      style={animStyle(tracks.length + 3)}
+    >
       <button
         type="button"
         class="track-menu-icon-btn tooltip-ctrl"
