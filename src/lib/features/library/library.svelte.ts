@@ -82,6 +82,25 @@ const MAX_CONCURRENT = 2;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const THUMBNAIL_SIZES: readonly number[] = [128, 256, 512];
 const RECENT_RETENTION_DAYS: readonly number[] = [0, 7, 30, 90];
+const INVALID_COLLECTION_NAME_CHARS = /[<>:"\/\\|?*\u0000-\u001f\u007f-\u009f]/;
+const RESERVED_COLLECTION_DEVICE_NAME =
+  /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+
+function isValidCollectionName(name: string): boolean {
+  const trimmed = name.trim();
+  if (
+    !trimmed ||
+    trimmed === "." ||
+    trimmed === ".." ||
+    trimmed.endsWith(".") ||
+    INVALID_COLLECTION_NAME_CHARS.test(trimmed)
+  ) {
+    return false;
+  }
+
+  const deviceName = trimmed.split(".")[0].replace(/[ .]+$/, "");
+  return !RESERVED_COLLECTION_DEVICE_NAME.test(deviceName);
+}
 
 function clampPrivacyBlur(value: number): number {
   return Math.max(4, Math.min(32, Math.round(value / 2) * 2));
@@ -605,12 +624,15 @@ function createLibrary() {
     saveCollections(collections);
   }
 
-  async function createCustomCollection(name: string, thumbnailPath?: string) {
+  async function createCustomCollection(
+    name: string,
+    thumbnailPath?: string,
+  ): Promise<boolean> {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!isValidCollectionName(trimmed)) return false;
     try {
       const path = await invokeCreateCollectionFolder(trimmed);
-      if (collections.some((c) => c.path === path)) return;
+      if (collections.some((c) => samePath(c.path, path))) return true;
       collections = [
         ...collections,
         {
@@ -622,23 +644,26 @@ function createLibrary() {
         },
       ];
       saveCollections(collections);
-    } catch (err) {
-      console.error("Failed to create collection:", err);
+      return true;
+    } catch {
+      return false;
     }
   }
 
-  async function removeCollection(path: string) {
+  async function removeCollection(path: string): Promise<boolean> {
     const col = collections.find((c) => c.path === path);
+    if (!col) return false;
     if (col?.type === "custom") {
       try {
         await invokeDeleteCollectionFolder(path);
-      } catch (err) {
-        console.error("Failed to delete collection folder:", err);
+      } catch {
+        return false;
       }
     }
     collections = collections.filter((c) => c.path !== path);
     saveCollections(collections);
     if (activeCollectionPath === path) activeCollectionPath = null;
+    return true;
   }
 
   async function renameCollection(
@@ -646,7 +671,7 @@ function createLibrary() {
     newName: string,
   ): Promise<string | null> {
     const trimmed = newName.trim();
-    if (!trimmed) return null;
+    if (!isValidCollectionName(trimmed)) return null;
     const col = collections.find((c) => c.path === path);
     if (!col) return null;
     const parent = getParentFolder(path);
@@ -661,8 +686,7 @@ function createLibrary() {
     if (newPath === path) return null;
     try {
       await invokeRenameFile(path, newPath);
-    } catch (err) {
-      console.error("Failed to rename collection folder:", err);
+    } catch {
       return null;
     }
     try {
@@ -959,6 +983,7 @@ function createLibrary() {
     get collections() {
       return collections;
     },
+    isValidCollectionName,
     addCollection,
     createCustomCollection,
     removeCollection,

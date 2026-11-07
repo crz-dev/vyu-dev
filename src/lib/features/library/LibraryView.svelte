@@ -801,12 +801,27 @@
       triggerNameError();
       return;
     }
+    if (!library.isValidCollectionName(name)) {
+      triggerNameError();
+      showToast({
+        message: t("library.dialog.invalidCollectionName"),
+        color: "red",
+      });
+      return;
+    }
     clearNameError();
-    showAddCollectionDialog = false;
-    await library.createCustomCollection(
+    const created = await library.createCustomCollection(
       name,
       newCollectionThumbnail ?? undefined,
     );
+    if (!created) {
+      showToast({
+        message: t("library.toasts.collectionCreateFailed"),
+        color: "red",
+      });
+      return;
+    }
+    showAddCollectionDialog = false;
     newCollectionName = "";
     newCollectionThumbnail = null;
   }
@@ -823,7 +838,13 @@
     if (!collectionToDelete) return;
     const path = collectionToDelete;
     collectionToDelete = null;
-    await library.removeCollection(path);
+    const removed = await library.removeCollection(path);
+    if (!removed) {
+      showToast({
+        message: t("library.toasts.collectionDeleteFailed"),
+        color: "red",
+      });
+    }
   }
 
   async function addFilesToCollection() {
@@ -864,11 +885,25 @@
   async function confirmRename() {
     if (!renamingPath) return;
     const path = renamingPath;
-    const nextName = renameValue;
+    const nextName = renameValue.trim();
     renamingPath = null;
     if (nextName === renameOriginal) return;
+    if (!library.isValidCollectionName(nextName)) {
+      showToast({
+        message: t("library.dialog.invalidCollectionName"),
+        color: "red",
+      });
+      return;
+    }
     const newPath = await library.renameCollection(path, nextName);
-    if (newPath) await onFolderMoved?.(path, newPath);
+    if (newPath) {
+      await onFolderMoved?.(path, newPath);
+    } else {
+      showToast({
+        message: t("library.toasts.collectionRenameFailed"),
+        color: "red",
+      });
+    }
   }
 
   function cancelRename() {
