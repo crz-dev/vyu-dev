@@ -1,6 +1,9 @@
 <script lang="ts">
   import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -23,6 +26,16 @@
     modes?: ReadonlyArray<{ value: string; label: string }>;
     separatorIndex?: number;
   } = $props();
+
+  const SORT_LABELS: Record<string, string> = {
+    name: "menus.sort.name",
+    "date-modified": "menus.sort.date-modified",
+    size: "menus.sort.size",
+    type: "menus.sort.type",
+    "date-opened": "menus.sort.date-opened",
+    "date-created": "menus.sort.date-created",
+    "date-favorited": "menus.sort.date-favorited",
+  };
 
   const SORT_ICONS: Record<string, string> = {
     name: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>`,
@@ -51,7 +64,7 @@
 {#if visible}
   <div class="sort-menu" style="left: {x + 62}px; bottom: {y + 4}px;">
     <div class="sort-menu-header">
-      <span class="sort-menu-title">Sort files by</span>
+      <span class="sort-menu-title">{t("menus.sort.title")}</span>
     </div>
     <div class="sort-menu-separator"></div>
     {#each modes as option, i (option.value)}
@@ -65,7 +78,11 @@
           )}
       >
         {@html SORT_ICONS[option.value] || SORT_ICONS.name}
-        <span class="sort-menu-label">{option.label}</span>
+        <span class="sort-menu-label"
+          >{SORT_LABELS[option.value]
+            ? t(SORT_LABELS[option.value])
+            : option.label}</span
+        >
       </button>
       {#if i === separatorIndex}
         <div class="sort-menu-separator"></div>
@@ -90,7 +107,9 @@
         <path d="M12 5v14M5 12l7-7 7 7" />
       </svg>
       <span class="sort-menu-label"
-        >{sortDesc ? "Descending" : "Ascending"}</span
+        >{sortDesc
+          ? t("menus.sort.descending")
+          : t("menus.sort.ascending")}</span
       >
     </button>
   </div>

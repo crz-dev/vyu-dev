@@ -3,6 +3,7 @@
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import type { KeybindAction } from "$lib/features/keybinds/keybindTypes";
   import { formatKey } from "$lib/features/keybinds/keybindUtils";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
     actions,
@@ -123,7 +124,9 @@
 
   function showTooltip(e: MouseEvent | FocusEvent, key: string) {
     if (document.documentElement.dataset.tooltips === "off") return;
-    const labels = (keyActions.get(key) ?? []).map((action) => action.label);
+    const labels = (keyActions.get(key) ?? []).map((action) =>
+      locale.t(action.label),
+    );
     if (labels.length === 0) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const x = Math.min(
@@ -165,7 +168,10 @@
   });
 </script>
 
-<div class="keyboard-overview" aria-label="Keyboard usage overview">
+<div
+  class="keyboard-overview"
+  aria-label={locale.t("settings.keybinds.overview.aria")}
+>
   {#each rows as row, rowIndex}
     <div class="keyboard-row" class:keyboard-row-offset={rowIndex === 1}>
       {#each row as cap}

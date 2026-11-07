@@ -11,9 +11,12 @@
     PROFILE_ICONS,
     type ProfileRecord,
   } from "$lib/services/storage";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { anchor, onclose }: { anchor: HTMLElement | null; onclose: () => void } =
     $props();
+
+  const t = locale.t;
 
   let rootEl = $state<HTMLDivElement | null>(null);
   let position = $state("left:-9999px;bottom:0;");
@@ -155,12 +158,18 @@
       const file = await importProfileFile();
       if (!file) return;
       if (profile.id === profiles.activeId) {
-        showToast({ message: "Settings imported", color: "green" });
+        showToast({
+          message: t("settings.profiles.toast.imported"),
+          color: "green",
+        });
       }
       profiles.importInto(profile.id, file.settings);
       expandedId = null;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to import settings";
+      error =
+        e instanceof Error
+          ? e.message
+          : t("settings.profiles.toast.importFailed");
     } finally {
       busy = false;
     }
@@ -173,7 +182,7 @@
   bind:this={rootEl}
   use:portal
   role="menu"
-  aria-label="Profiles"
+  aria-label={t("settings.profiles.menu.aria")}
 >
   <div class="profile-menu-header">
     <span class="profile-menu-title">
@@ -194,7 +203,7 @@
           d="M16 3.13a4 4 0 010 7.75"
         /></svg
       >
-      Profiles
+      {t("settings.profiles.header")}
     </span>
     <span class="profile-menu-count">{profiles.list.length}</span>
   </div>
@@ -224,7 +233,9 @@
         <button
           class="profile-menu-more"
           class:active={expandedId === profile.id}
-          aria-label={`Edit ${profile.name}`}
+          aria-label={t("settings.profiles.menu.edit", {
+            name: profile.name,
+          })}
           aria-expanded={expandedId === profile.id}
           onclick={() => toggleEditor(profile)}
         >
@@ -269,13 +280,15 @@
           style={profileColorVars(profile)}
           transition:slide={{ duration: appearance.reducedMotion ? 0 : 140 }}
         >
-          <p class="profile-editor-label">Name</p>
+          <p class="profile-editor-label">
+            {t("settings.profiles.menu.name")}
+          </p>
           <div class="profile-editor-name">
             <input
               class="profile-menu-input"
               bind:this={renameInput}
               bind:value={renameValue}
-              aria-label="Profile name"
+              aria-label={t("settings.profiles.menu.name.aria")}
               maxlength="32"
               onkeydown={(e) => {
                 if (e.key === "Enter") {
@@ -291,31 +304,40 @@
             />
             <button
               class="profile-editor-save"
-              onclick={() => saveName(profile.id)}>Save</button
+              onclick={() => saveName(profile.id)}
+              >{t("settings.profiles.menu.save")}</button
             >
           </div>
 
-          <p class="profile-editor-label">Color</p>
+          <p class="profile-editor-label">
+            {t("settings.profiles.menu.color")}
+          </p>
           <div class="profile-swatches">
             {#each PROFILE_COLORS as color}
               <button
                 class="profile-swatch"
                 class:active={profile.color === color}
                 style={`--swatch-color:${color}`}
-                aria-label={`Use ${color}`}
+                aria-label={t("settings.profiles.menu.color.use", {
+                  color,
+                })}
                 aria-pressed={profile.color === color}
                 onclick={() => profiles.setColor(profile.id, color)}
               ></button>
             {/each}
           </div>
 
-          <p class="profile-editor-label">Icon</p>
+          <p class="profile-editor-label">
+            {t("settings.profiles.menu.icon")}
+          </p>
           <div class="profile-icon-grid">
             {#each PROFILE_ICONS as icon}
               <button
                 class="profile-icon-btn"
                 class:active={profile.icon === icon}
-                aria-label={`Use ${icon} icon`}
+                aria-label={t("settings.profiles.menu.icon.use", {
+                  icon,
+                })}
                 aria-pressed={profile.icon === icon}
                 onclick={() => profiles.setIcon(profile.id, icon)}
               >
@@ -329,12 +351,13 @@
               class="profile-editor-btn"
               disabled={busy}
               onclick={() => void importIntoProfile(profile)}
-              >Import settings…</button
+              >{t("settings.profiles.menu.import")}</button
             >
             <button
               class="profile-editor-btn danger"
               disabled={busy || profiles.list.length <= 1}
-              onclick={() => void removeProfile(profile)}>Delete</button
+              onclick={() => void removeProfile(profile)}
+              >{t("settings.profiles.menu.delete")}</button
             >
           </div>
         </div>
@@ -355,8 +378,8 @@
           class="profile-menu-input"
           bind:this={newNameInput}
           bind:value={newName}
-          placeholder="Profile name"
-          aria-label="New profile name"
+          placeholder={t("settings.profiles.menu.newPlaceholder")}
+          aria-label={t("settings.profiles.menu.newAria")}
           maxlength="32"
           onkeydown={(e) => {
             if (e.key === "Escape") {
@@ -368,7 +391,9 @@
             }
           }}
         />
-        <button class="profile-editor-save" type="submit">Add</button>
+        <button class="profile-editor-save" type="submit">
+          {t("settings.profiles.menu.add")}
+        </button>
       </form>
     {:else}
       <button class="profile-menu-new" onclick={startCreating}>
@@ -388,7 +413,7 @@
             y2="12"
           /></svg
         >
-        New profile
+        {t("settings.profiles.menu.new")}
       </button>
     {/if}
     {#if error}

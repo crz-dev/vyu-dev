@@ -1,5 +1,8 @@
 <script lang="ts">
   import type { ClipBoundary, ClipPair, VideoMarker } from "$lib/shared/types";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     fullscreen = false,
@@ -148,7 +151,7 @@
   onmouseleave={handleBarMouseLeave}
   oncontextmenu={(e) => e.preventDefault()}
   role="slider"
-  aria-label="video scrubber"
+  aria-label={t("shell.timeline.scrubber")}
   aria-valuenow={progress}
   aria-valuemin={0}
   aria-valuemax={100}
@@ -182,7 +185,7 @@
   {#if abLoopRegion}
     <div
       role="region"
-      aria-label="AB Loop region"
+      aria-label={t("shell.timeline.abLoop")}
       class="{abRangeClass} tooltip-above"
       style="left: {getTimestampPct(
         abLoopRegion.start,
@@ -193,7 +196,7 @@
         e.stopPropagation();
         clearABLoop();
       }}
-      data-tooltip="AB Loop — right-click to clear"
+      data-tooltip={t("shell.timeline.abLoopHint")}
     ></div>
   {/if}
   {#if loopStart !== null}
@@ -228,7 +231,9 @@
           seekToTimestamp(loopStart!);
         }
       }}
-      aria-label="Loop start A at {formatTime(loopStart!)}"
+      aria-label={t("shell.timeline.loopStart", {
+        time: formatTime(loopStart!),
+      })}
     ></div>
   {/if}
   {#if loopEnd !== null}
@@ -262,7 +267,7 @@
           seekToTimestamp(loopEnd!);
         }
       }}
-      aria-label="Loop end B at {formatTime(loopEnd!)}"
+      aria-label={t("shell.timeline.loopEnd", { time: formatTime(loopEnd!) })}
     ></div>
   {/if}
   {#if showResumeMarker}
@@ -290,7 +295,9 @@
           seekToResumePoint();
         }
       }}
-      aria-label="Resume at {formatTime(resumePoint!)}"
+      aria-label={t("shell.timeline.resume", {
+        time: formatTime(resumePoint!),
+      })}
     ></div>
   {/if}
   {#each clipBoundaries as marker (marker.id)}
@@ -322,9 +329,23 @@
           seekToTimestamp(marker.time);
         }
       }}
-      aria-label={marker.title
-        ? `${marker.kind} clip marker ${marker.title} at ${formatTime(marker.time)}`
-        : `${marker.kind} clip marker at ${formatTime(marker.time)}`}
+      aria-label={marker.kind === "start"
+        ? marker.title
+          ? t("shell.timeline.clipMarkerStartTitled", {
+              title: marker.title,
+              time: formatTime(marker.time),
+            })
+          : t("shell.timeline.clipMarkerStartAt", {
+              time: formatTime(marker.time),
+            })
+        : marker.title
+          ? t("shell.timeline.clipMarkerEndTitled", {
+              title: marker.title,
+              time: formatTime(marker.time),
+            })
+          : t("shell.timeline.clipMarkerEndAt", {
+              time: formatTime(marker.time),
+            })}
     ></div>
   {/each}
   {#each timestamps as ts (ts.id)}
@@ -356,9 +377,12 @@
       onmouseleave={() => {
         if (!tsEditMenuVisible) hideTsTooltip();
       }}
-      aria-label="timestamp {ts.title
-        ? `${ts.title} at ${formatTime(ts.time)}`
-        : formatTime(ts.time)}"
+      aria-label={ts.title
+        ? t("shell.timeline.timestampTitled", {
+            title: ts.title,
+            time: formatTime(ts.time),
+          })
+        : t("shell.timeline.timestampAt", { time: formatTime(ts.time) })}
     ></div>
   {/each}
 </div>

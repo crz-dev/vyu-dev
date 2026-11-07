@@ -9,6 +9,7 @@ import {
 import { findSubtitleSidecars, getFileName } from "$lib/services/files";
 import { showToast } from "$lib/components/toast.svelte";
 import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export type SubtitleSize = "small" | "default" | "large";
 
@@ -155,7 +156,7 @@ export function createTrackSelection(
       }
     } catch {
       if (generation === loadGeneration) {
-        trackError = "Track information is unavailable";
+        trackError = locale.t("media.tracks.unavailable");
         loadingTracks = false;
       }
     }
@@ -214,7 +215,9 @@ export function createTrackSelection(
     } catch (error) {
       if (generation === loadGeneration) {
         showToast({
-          message: `Could not switch audio track: ${String(error)}`,
+          message: locale.t("media.tracks.switchError", {
+            error: String(error),
+          }),
           color: "red",
         });
       }
@@ -280,7 +283,7 @@ export function createTrackSelection(
       : "";
     loadingAudioTrack = false;
     showToast({
-      message: "Could not switch audio track; kept the previous track",
+      message: locale.t("media.tracks.switchKeptPrevious"),
       color: "red",
     });
     finishAudioSourceChange();
@@ -329,7 +332,10 @@ export function createTrackSelection(
         const track = subtitleTracks.find((item) => item.index === index);
         if (!track || !track.supported || !filePath) return;
         outputPath = await invokePrepareSubtitleTrack(filePath, index);
-        label = track.title || track.language || `Subtitle ${index + 1}`;
+        label =
+          track.title ||
+          track.language ||
+          locale.t("media.subtitles.subtitleN", { n: index + 1 });
       } else if (id.startsWith("sidecar:")) {
         const path = id.slice("sidecar:".length);
         const sidecar = sidecars.find((item) => item.path === path);
@@ -351,7 +357,9 @@ export function createTrackSelection(
         subtitleError = String(error);
         if (notifyOnError) {
           showToast({
-            message: `Could not load subtitles: ${String(error)}`,
+            message: locale.t("media.subtitles.loadError", {
+              error: String(error),
+            }),
             color: "red",
           });
         }

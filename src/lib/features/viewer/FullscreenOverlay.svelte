@@ -4,6 +4,9 @@
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
   import type { SortMode } from "$lib/shared/constants";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -161,7 +164,7 @@
         class="fs-file-count-pill tooltip-above"
         class:slideshow-active={slideshowActive}
         class:menu-active={sortMenuVisible}
-        data-tooltip="File position"
+        data-tooltip={t("shell.viewer.filePosition")}
         onclick={toggleThumbnailBar}
         oncontextmenu={handleFsPillContext}
         style="position: fixed; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible
@@ -255,7 +258,7 @@
           class="fs-file-count-pill tooltip-above"
           class:slideshow-active={slideshowActive}
           class:menu-active={sortMenuVisible}
-          data-tooltip="File position"
+          data-tooltip={t("shell.viewer.filePosition")}
           onclick={toggleThumbnailBar}
           oncontextmenu={handleFsPillContext}
         >

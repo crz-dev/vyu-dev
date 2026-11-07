@@ -12,6 +12,7 @@ import {
   type ProfileRecord,
   type ProfileRegistry,
 } from "$lib/services/storage";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 const NAME_MAX = 32;
 
@@ -28,7 +29,10 @@ function createProfiles() {
 
   function persist(): boolean {
     if (saveProfileRegistry(registry)) return true;
-    showToast({ message: "Could not save profiles", color: "red" });
+    showToast({
+      message: locale.t("settings.profiles.error.saveProfiles"),
+      color: "red",
+    });
     return false;
   }
 
@@ -41,14 +45,16 @@ function createProfiles() {
 
   function validateName(name: string, exceptId?: string): string | null {
     const trimmed = name.trim();
-    if (!trimmed) return "Enter a profile name";
-    if (trimmed.length > NAME_MAX) return `Use ${NAME_MAX} characters or fewer`;
+    if (!trimmed) return locale.t("settings.profiles.error.nameRequired");
+    if (trimmed.length > NAME_MAX) {
+      return locale.tp("settings.profiles.error.nameTooLong", NAME_MAX);
+    }
     const duplicate = registry.profiles.some(
       (profile) =>
         profile.id !== exceptId &&
         profile.name.toLowerCase() === trimmed.toLowerCase(),
     );
-    return duplicate ? "That profile name is already used" : null;
+    return duplicate ? locale.t("settings.profiles.error.nameTaken") : null;
   }
 
   function reloadNow(): void {
@@ -65,10 +71,13 @@ function createProfiles() {
     if (!target) return;
 
     if (!options.skipConfirm && registry.preferences.confirmSwitch) {
-      const ok = await confirm(`Switch to "${target.name}"?`, {
-        title: "Switch Profile",
-        kind: "info",
-      });
+      const ok = await confirm(
+        locale.t("settings.profiles.confirm.switch", { name: target.name }),
+        {
+          title: locale.t("settings.profiles.confirm.switch.title"),
+          kind: "info",
+        },
+      );
       if (!ok) return;
     }
 
@@ -112,7 +121,7 @@ function createProfiles() {
     registry.profiles.push(profile);
     if (!persist()) {
       registry.profiles.pop();
-      return "Could not create profile";
+      return locale.t("settings.profiles.error.create");
     }
 
     void select(profile.id, { skipConfirm: true });
@@ -121,24 +130,29 @@ function createProfiles() {
 
   function rename(id: string, name: string): string | null {
     const profile = registry.profiles.find((item) => item.id === id);
-    if (!profile) return "Profile not found";
+    if (!profile) return locale.t("settings.profiles.error.notFound");
     const error = validateName(name, id);
     if (error) return error;
 
     profile.name = name.trim();
     profile.updatedAt = Date.now();
-    return persist() ? null : "Could not save profile";
+    return persist() ? null : locale.t("settings.profiles.error.saveProfile");
   }
 
   async function remove(id: string): Promise<string | null> {
-    if (registry.profiles.length <= 1) return "Keep at least one profile";
+    if (registry.profiles.length <= 1) {
+      return locale.t("settings.profiles.error.keepOne");
+    }
     const profile = registry.profiles.find((item) => item.id === id);
-    if (!profile) return "Profile not found";
+    if (!profile) return locale.t("settings.profiles.error.notFound");
 
-    const ok = await confirm(`Delete "${profile.name}"?`, {
-      title: "Delete Profile",
-      kind: "warning",
-    });
+    const ok = await confirm(
+      locale.t("settings.profiles.confirm.delete", { name: profile.name }),
+      {
+        title: locale.t("settings.profiles.confirm.delete.title"),
+        kind: "warning",
+      },
+    );
     if (!ok) return null;
 
     const wasActive = registry.activeId === id;
@@ -148,8 +162,13 @@ function createProfiles() {
     }
 
     if (!wasActive) {
-      if (!persist()) return "Could not save profiles";
-      showToast({ message: `Deleted "${profile.name}"`, color: "green" });
+      if (!persist()) return locale.t("settings.profiles.error.saveProfiles");
+      showToast({
+        message: locale.t("settings.profiles.toast.deleted", {
+          name: profile.name,
+        }),
+        color: "green",
+      });
       return null;
     }
 
@@ -157,7 +176,7 @@ function createProfiles() {
       registry.profiles.find((item) => item.id === "default") ??
       registry.profiles[0];
     registry.activeId = fallback.id;
-    if (!persist()) return "Could not save profiles";
+    if (!persist()) return locale.t("settings.profiles.error.saveProfiles");
 
     replaceProfileSettings(
       fallback.settings,
@@ -277,13 +296,21 @@ function createProfiles() {
 
     const profile = registry.profiles.find((item) => item.id === id);
     if (!profile) {
-      showToast({ message: "Profile not found", color: "red" });
+      showToast({
+        message: locale.t("settings.profiles.error.notFound"),
+        color: "red",
+      });
       return;
     }
     profile.settings = { ...settings };
     profile.updatedAt = Date.now();
     if (persist()) {
-      showToast({ message: `Imported into "${profile.name}"`, color: "green" });
+      showToast({
+        message: locale.t("settings.profiles.toast.importedInto", {
+          name: profile.name,
+        }),
+        color: "green",
+      });
     }
   }
 

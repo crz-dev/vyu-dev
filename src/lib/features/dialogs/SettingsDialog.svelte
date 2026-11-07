@@ -11,6 +11,7 @@
   import SystemSettings from "$lib/features/system/SystemSettings.svelte";
   import KeybindsSettings from "$lib/features/keybinds/KeybindsSettings.svelte";
   import ProfileFooter from "$lib/features/profiles/ProfileFooter.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     applySettingsSearchFilter,
@@ -41,6 +42,8 @@
     clipDeleteOriginal: boolean;
     toggleClipDeleteOriginal: () => void;
   } = $props();
+
+  const t = locale.t;
 
   let activeSection = $state(
     appearance.rememberLastTab
@@ -79,31 +82,31 @@
 
   const sections = $derived(
     [
-      { id: "appearance", label: "Appearance" },
-      { id: "playback", label: "Playback" },
-      { id: "editor", label: "Editor" },
-      { id: "process", label: "Conversion" },
-      { id: "library", label: "Library" },
-      { id: "system", label: "System" },
-      { id: "keybinds", label: "Keybinds" },
-      { id: "debug", label: "Debug" },
-      { id: "danger-zone", label: "Danger Zone" },
+      { id: "appearance", label: t("settings.sections.appearance") },
+      { id: "playback", label: t("settings.sections.playback") },
+      { id: "editor", label: t("settings.sections.editor") },
+      { id: "process", label: t("settings.sections.process") },
+      { id: "library", label: t("settings.sections.library") },
+      { id: "system", label: t("settings.sections.system") },
+      { id: "keybinds", label: t("settings.sections.keybinds") },
+      { id: "debug", label: t("settings.sections.debug") },
+      { id: "danger-zone", label: t("settings.sections.danger") },
     ].filter(
       (section) => !(section.id === "danger-zone" && appearance.hideDangerZone),
     ),
   );
 
-  const sectionDescriptions: Record<string, string> = {
-    appearance: "Theme, typography and viewer presentation.",
-    playback: "Resume, audio, speed and end-of-file behavior.",
-    editor: "Editing safety and image/video export defaults.",
-    process: "Quality, output and hardware for conversions.",
-    library: "Layout, content, history and privacy.",
-    system: "Window, startup, storage and updates.",
-    keybinds: "View and customize keyboard shortcuts.",
-    debug: "Diagnostics, developer tools and maintenance.",
-    "danger-zone": "Destructive actions that cannot be undone.",
-  };
+  const sectionDescriptions = $derived<Record<string, string>>({
+    appearance: t("settings.sections.appearance.desc"),
+    playback: t("settings.sections.playback.desc"),
+    editor: t("settings.sections.editor.desc"),
+    process: t("settings.sections.process.desc"),
+    library: t("settings.sections.library.desc"),
+    system: t("settings.sections.system.desc"),
+    keybinds: t("settings.sections.keybinds.desc"),
+    debug: t("settings.sections.debug.desc"),
+    "danger-zone": t("settings.sections.danger.desc"),
+  });
 
   const searchActive = $derived(searchQuery.trim() !== "");
 
@@ -252,9 +255,9 @@
               d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
             /></svg
           >
-          Settings
+          {t("settings.dialog.title")}
         </p>
-        <p class="delete-subtitle">Configure your media viewer experience</p>
+        <p class="delete-subtitle">{t("settings.dialog.subtitle")}</p>
         <div class="settings-search-field">
           <svg
             class="settings-search-icon"
@@ -276,8 +279,8 @@
           <input
             class="settings-search-input"
             type="search"
-            placeholder="Search settings"
-            aria-label="Search settings"
+            placeholder={t("settings.dialog.search.placeholder")}
+            aria-label={t("settings.dialog.search.aria")}
             value={searchQuery}
             oninput={(e) => setSearchQuery(e.currentTarget.value)}
             onkeydown={(e) => {
@@ -292,7 +295,7 @@
             <button
               class="settings-search-clear"
               type="button"
-              aria-label="Clear search"
+              aria-label={t("settings.dialog.search.clear")}
               onclick={() => void clearSearch()}
             >
               <svg
@@ -311,7 +314,7 @@
         <button
           class="dialog-close-x"
           onclick={closeSettings}
-          aria-label="Close"
+          aria-label={t("settings.dialog.close")}
         >
           <svg
             viewBox="0 0 24 24"
@@ -519,9 +522,11 @@
                   y2="16.65"
                 /></svg
               >
-              <p class="settings-search-empty-title">No settings found</p>
+              <p class="settings-search-empty-title">
+                {t("settings.dialog.empty.title")}
+              </p>
               <p class="settings-search-empty-hint">
-                Try “theme”, “volume”, or “shortcuts”.
+                {t("settings.dialog.empty.hint")}
               </p>
             </div>
           {/if}

@@ -14,8 +14,11 @@
   } from "$lib/features/keybinds/keybindUtils";
   import KeyboardOverview from "$lib/features/keybinds/KeyboardOverview.svelte";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   type ContextFilter = "all" | "viewer" | "library" | "pdf";
 
@@ -53,10 +56,10 @@
       }
       if (query) {
         const haystack = [
-          action.label,
-          action.description,
+          t(action.label),
+          t(action.description),
           keybindStore.label(action.id),
-          KEYBIND_CONTEXT_LABELS[action.context],
+          t(KEYBIND_CONTEXT_LABELS[action.context]),
         ]
           .join(" ")
           .toLowerCase()
@@ -119,7 +122,10 @@
     }
     resetAllConfirming = false;
     keybindStore.resetAll();
-    showToast({ message: "Shortcuts restored to defaults", color: "green" });
+    showToast({
+      message: t("settings.keybinds.toast.resetAll"),
+      color: "green",
+    });
   }
 
   function toggleCategory(category: string) {
@@ -137,11 +143,11 @@
     return filtersActive || !!expandedCategories[category];
   }
 
-  const contextFilters: { id: ContextFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "viewer", label: "Viewer" },
-    { id: "library", label: "Library" },
-    { id: "pdf", label: "PDF" },
+  const contextFilters: { id: ContextFilter; labelKey: string }[] = [
+    { id: "all", labelKey: "settings.keybinds.filter.all" },
+    { id: "viewer", labelKey: "settings.keybinds.filter.viewer" },
+    { id: "library", labelKey: "settings.keybinds.filter.library" },
+    { id: "pdf", labelKey: "settings.keybinds.filter.pdf" },
   ];
 
   const categoryIcons: Record<string, string> = {
@@ -170,14 +176,14 @@
         d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"
       /></svg
     >
-    Keybinds
+    {t("settings.sections.keybinds")}
   </p>
 
   <p class="settings-group-label">
     <span class="settings-group-icon">
       <SettingsGroupIcon name="keyboard" />
     </span>
-    Overview
+    {t("settings.keybinds.overview")}
   </p>
   <KeyboardOverview
     actions={contextActions}
@@ -189,8 +195,8 @@
     <span class="settings-group-icon">
       <SettingsGroupIcon name="pencil" />
     </span>
-    Rebind
-    <span class="keybind-group-hint">Esc cancels, backspace unbinds</span>
+    {t("settings.keybinds.rebind")}
+    <span class="keybind-group-hint">{t("settings.keybinds.rebind.hint")}</span>
   </p>
 
   <div class="settings-card has-child keybind-filter-card">
@@ -216,9 +222,9 @@
         <input
           class="keybind-search-input"
           type="search"
-          placeholder="Search actions"
+          placeholder={t("settings.keybinds.search.placeholder")}
           bind:value={search}
-          aria-label="Search keybindings"
+          aria-label={t("settings.keybinds.search.aria")}
         />
       </div>
       <label class="toggle-row keybind-unbound-toggle">
@@ -226,7 +232,7 @@
         <span class="toggle-track" class:on={unboundOnly}
           ><span class="toggle-thumb"></span></span
         >
-        <span class="settings-hint">Unbound</span>
+        <span class="settings-hint">{t("settings.keybinds.unbound")}</span>
       </label>
     </div>
     <div class="keybind-filter-pills">
@@ -235,7 +241,8 @@
           <button
             class="pill-btn"
             class:active={contextFilter === filter.id}
-            onclick={() => (contextFilter = filter.id)}>{filter.label}</button
+            onclick={() => (contextFilter = filter.id)}
+            >{t(filter.labelKey)}</button
           >
         {/each}
       </div>
@@ -245,18 +252,20 @@
   {#if selectedKey}
     <div class="settings-row keybind-filter-chip-row">
       <span class="settings-hint"
-        >Showing shortcuts using
-        <strong>{formatKey(selectedKey)}</strong></span
+        >{t("settings.keybinds.showing.prefix")}
+        <strong>{formatKey(selectedKey)}</strong>{t(
+          "settings.keybinds.showing.suffix",
+        )}</span
       >
       <button class="settings-action-btn" onclick={() => (selectedKey = null)}
-        >Clear</button
+        >{t("settings.keybinds.clear")}</button
       >
     </div>
   {/if}
 
   {#if groupedActions.length === 0}
     <div class="settings-row keybind-empty-row">
-      <span class="settings-hint">No shortcuts match these filters.</span>
+      <span class="settings-hint">{t("settings.keybinds.empty")}</span>
     </div>
   {:else}
     {#each groupedActions as group}
@@ -270,7 +279,7 @@
             name={categoryIcons[group.category] ?? "keyboard"}
           />
         </span>
-        {KEYBIND_CATEGORY_LABELS[group.category]}
+        {t(KEYBIND_CATEGORY_LABELS[group.category])}
         <span class="keybind-category-count">{group.actions.length}</span>
         <svg
           class="settings-group-chevron"
@@ -294,11 +303,11 @@
             <div class="settings-row keybind-row">
               <div class="settings-label-col">
                 <div class="settings-label-text">
-                  <span class="settings-label">{action.label}</span>
+                  <span class="settings-label">{t(action.label)}</span>
                   <span class="settings-hint">
-                    {action.description} · {KEYBIND_CONTEXT_LABELS[
-                      action.context
-                    ]}
+                    {t(action.description)} · {t(
+                      KEYBIND_CONTEXT_LABELS[action.context],
+                    )}
                   </span>
                   {#if recording && keybindStore.recordingError}
                     <span class="keybind-conflict"
@@ -312,21 +321,31 @@
                   class="help-kbd-btn keybind-key-btn"
                   class:keybind-recording={recording}
                   aria-pressed={recording}
-                  aria-label={`Change ${action.label} shortcut`}
+                  aria-label={t("settings.keybinds.action.change", {
+                    action: t(action.label),
+                  })}
                   title={custom
-                    ? `Default: ${formatBinding(action.defaultBinding)}`
-                    : "Click to change"}
+                    ? t("settings.keybinds.default", {
+                        binding: formatBinding(action.defaultBinding),
+                      })
+                    : t("settings.keybinds.clickToChange")}
                   onclick={(e) => startRecording(action.id, e.currentTarget)}
                   onkeydown={(e) => handleRecordKey(e, action.id)}
                   onblur={() => handleRecordBlur(action.id)}
                 >
-                  {recording ? "Press keys…" : label || "Unbound"}
+                  {recording
+                    ? t("settings.keybinds.recording")
+                    : label || t("settings.keybinds.unbound")}
                 </button>
                 {#if custom}
                   <button
                     class="settings-action-btn keybind-reset-btn"
-                    title={`Reset ${action.label}`}
-                    aria-label={`Reset ${action.label}`}
+                    title={t("settings.keybinds.action.reset", {
+                      action: t(action.label),
+                    })}
+                    aria-label={t("settings.keybinds.action.reset", {
+                      action: t(action.label),
+                    })}
                     onclick={() => handleReset(action.id)}
                   >
                     <svg
@@ -356,7 +375,9 @@
     <div class="settings-row keybind-reset-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
-          <span class="settings-hint">Restore all shortcuts to defaults</span>
+          <span class="settings-hint"
+            >{t("settings.keybinds.resetAll.hint")}</span
+          >
         </div>
       </div>
       <div class="settings-control">
@@ -374,7 +395,9 @@
               d="M3.51 15a9 9 0 102.13-9.36L1 10"
             /></svg
           >
-          {resetAllConfirming ? "Confirm?" : "Reset"}
+          {resetAllConfirming
+            ? t("settings.keybinds.resetAll.confirm")
+            : t("settings.keybinds.resetAll.button")}
         </button>
       </div>
     </div>

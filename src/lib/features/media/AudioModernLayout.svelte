@@ -11,6 +11,9 @@
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { nearestSpeedStepIndex } from "$lib/features/media/playback.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -168,7 +171,7 @@
     clearAllSegments();
     removeResumePoint();
     clearLoopMarkers();
-    showToast({ message: "Markers cleared", color: "yellow" });
+    showToast({ message: t("media.audio.markersCleared"), color: "yellow" });
   }
 
   function handleVolumeRightClick(e: MouseEvent) {
@@ -212,7 +215,7 @@
     class="audio-info-time tooltip-ctrl"
     data-tooltip={timerTooltip}
     onclick={toggleTimer}
-    aria-label="toggle timer mode"
+    aria-label={t("media.playback.toggleTimerAria")}
   >
     {currentTimeDisplay()}
   </button>
@@ -230,7 +233,7 @@
     class="audio-info-time tooltip-ctrl"
     data-tooltip={timerTooltip}
     onclick={toggleTimer}
-    aria-label="toggle timer mode"
+    aria-label={t("media.playback.toggleTimerAria")}
   >
     {durationDisplay}
   </button>
@@ -262,16 +265,16 @@
             data-tooltip={loopMenuOpen
               ? undefined
               : loopMode === "loop"
-                ? "Loop"
+                ? t("media.loop.mode.loop")
                 : loopMode === "stop"
-                  ? "Stop at end"
+                  ? t("media.loop.stopAtEnd")
                   : loopMode === "next"
-                    ? "Play next"
+                    ? t("media.loop.mode.next")
                     : loopMode === "shuffle-songs"
-                      ? "Shuffle songs"
-                      : "Shuffle"}
+                      ? t("media.loop.mode.shuffleSongs")
+                      : t("media.loop.mode.shuffle")}
             onclick={() => onLoopMenuChange(!loopMenuOpen)}
-            aria-label="loop mode menu"
+            aria-label={t("media.loop.menuAria")}
           >
             {#if loopMode === "loop"}
               <svg
@@ -398,9 +401,11 @@
           <button
             class="ctrl-btn volume-btn tooltip-ctrl"
             class:active={!(muted || volume === 0)}
-            data-tooltip={`${muted || volume === 0 ? "Unmute" : "Mute"}${shortcutSuffix("mute")}`}
+            data-tooltip={`${muted || volume === 0 ? t("media.playback.unmute") : t("media.playback.mute")}${shortcutSuffix("mute")}`}
             onclick={toggleMute}
-            aria-label={muted ? "unmute" : "mute"}
+            aria-label={muted
+              ? t("media.playback.unmuteAria")
+              : t("media.playback.muteAria")}
             oncontextmenu={handleVolumeRightClick}
           >
             {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
@@ -461,7 +466,7 @@
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(playbackUI.volumeSliderValue * 100)}
-              aria-label="Volume slider"
+              aria-label={t("media.playback.volumeSlider")}
               onpointerdown={(e) => {
                 if (volumeTrackEl)
                   playbackUI.startVolumeSliderDrag(e, volumeTrackEl);
@@ -492,7 +497,7 @@
                   }}
                   role="button"
                   tabindex="0"
-                  aria-label="Set volume to {pct}%"
+                  aria-label={t("media.playback.setVolumeTo", { percent: pct })}
                 ></div>
               {/each}
               <div
@@ -514,9 +519,9 @@
                   class:muted-diamond={muted}
                   style="--i: {i}"
                   onclick={() => setVolume((i + 1) / volumeSegments)}
-                  aria-label="set volume {Math.round(
-                    ((i + 1) / volumeSegments) * 100,
-                  )}%"
+                  aria-label={t("media.playback.setVolume", {
+                    percent: Math.round(((i + 1) / volumeSegments) * 100),
+                  })}
                 ></button>
               {/each}
             </div>
@@ -528,9 +533,9 @@
       <div class="audio-transport-card">
         <button
           class="audio-transport-btn tooltip-ctrl"
-          data-tooltip="Previous track"
+          data-tooltip={t("media.track.previous")}
           onclick={handlePrevClick}
-          aria-label="Previous track"
+          aria-label={t("media.track.previous")}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M6 4v16M18 4l-12 8 12 8V4z" />
@@ -540,9 +545,11 @@
       <div class="audio-transport-card">
         <button
           class="audio-transport-btn is-playpause tooltip-ctrl"
-          data-tooltip={`${playing ? "Pause track" : "Play track"}${shortcutSuffix("play-pause")}`}
+          data-tooltip={`${playing ? t("media.track.pause") : t("media.track.play")}${shortcutSuffix("play-pause")}`}
           onclick={togglePlay}
-          aria-label={playing ? "Pause" : "Play"}
+          aria-label={playing
+            ? t("media.playback.pause")
+            : t("media.playback.play")}
         >
           {#key playing}
             {#if playing}
@@ -587,9 +594,9 @@
       <div class="audio-transport-card">
         <button
           class="audio-transport-btn tooltip-ctrl"
-          data-tooltip="Next track"
+          data-tooltip={t("media.track.next")}
           onclick={handleNextClick}
-          aria-label="Next track"
+          aria-label={t("media.track.next")}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
             <path d="M6 4l12 8-12 8V4zM18 4v16" />
@@ -610,8 +617,8 @@
           <button
             class="ctrl-btn speed-btn tooltip-ctrl"
             class:active={playbackUI.playbackSpeed !== 1}
-            data-tooltip="Playback speed"
-            aria-label="playback speed"
+            data-tooltip={t("media.playback.speed")}
+            aria-label={t("media.playback.speedAria")}
             onclick={() => playbackUI.setPlaybackSpeed(1)}
             oncontextmenu={handleSpeedRightClick}
           >
@@ -679,7 +686,7 @@
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(playbackUI.speedSliderValue * 100)}
-              aria-label="Playback speed slider"
+              aria-label={t("media.playback.speedSlider")}
               onpointerdown={(e) => {
                 if (speedTrackEl)
                   playbackUI.startSpeedSliderDrag(e, speedTrackEl);
@@ -710,7 +717,9 @@
                   }}
                   role="button"
                   tabindex="0"
-                  aria-label="Set speed to {marker.step}x"
+                  aria-label={t("media.playback.setSpeedTo", {
+                    speed: marker.step,
+                  })}
                 ></div>
               {/each}
               <div
@@ -738,7 +747,7 @@
                   class:hidden={dist >= 3}
                   style="--i: {6 - i}"
                   onclick={() => playbackUI.setPlaybackSpeed(step)}
-                  aria-label="set speed {step}x"
+                  aria-label={t("media.playback.setSpeed", { speed: step })}
                 ></button>
               {/each}
             </div>
@@ -747,11 +756,11 @@
         <div class="ts-menu-anchor" style="position:relative;">
           <button
             class="ctrl-btn add-ts-btn tooltip-ctrl"
-            data-tooltip="Marker menu"
+            data-tooltip={t("media.playback.markerMenu")}
             class:ts-menu-open={tsMenuOpen}
             class:menu-active={tsMenuOpen}
             onclick={() => onTsMenuChange(!tsMenuOpen)}
-            aria-label="markers menu"
+            aria-label={t("media.playback.markerMenuAria")}
           >
             <svg
               class="ts-drop-arrow-icon"

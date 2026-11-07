@@ -8,6 +8,7 @@ import { getFileExt, getParentFolder } from "$lib/services/files";
 import { editing } from "$lib/features/editing/editing.svelte";
 import { markup } from "./markup.svelte";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface MarkupActionsDeps {
   getFilePath: () => string;
@@ -45,13 +46,18 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
       deps.folderWatcher.startWatching(
         getParentFolder(deps.getFilePath()) || "",
       );
-      showToast({ message: "Markup applied", color: "green" });
+      showToast({
+        message: locale.t("editing.markup.toast.applied"),
+        color: "green",
+      });
     } catch (err) {
       deps.folderWatcher.startWatching(
         getParentFolder(deps.getFilePath()) || "",
       );
       const message =
-        err instanceof Error ? err.message : "Failed to apply markup";
+        err instanceof Error
+          ? err.message
+          : locale.t("editing.markup.toast.applyFailed");
       showToast({ message, color: "red" });
     }
   }
@@ -74,13 +80,18 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
       deps.folderWatcher.startWatching(
         getParentFolder(deps.getFilePath()) || "",
       );
-      showToast({ message: "Markup applied", color: "green" });
+      showToast({
+        message: locale.t("editing.markup.toast.applied"),
+        color: "green",
+      });
     } catch (err) {
       deps.folderWatcher.startWatching(
         getParentFolder(deps.getFilePath()) || "",
       );
       const message =
-        err instanceof Error ? err.message : "Failed to apply markup";
+        err instanceof Error
+          ? err.message
+          : locale.t("editing.markup.toast.applyFailed");
       showToast({ message, color: "red" });
     }
   }
@@ -97,7 +108,9 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
         deps.getFileName().replace(/\.[^.]+$/, "") + "_marked." + ext;
       const outputPath = await save({
         defaultPath: defaultName,
-        filters: [{ name: "Image", extensions: [ext] }],
+        filters: [
+          { name: locale.t("editing.filter.image"), extensions: [ext] },
+        ],
       });
       if (!outputPath) return;
       await renderMarkupOnImage(
@@ -107,10 +120,15 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
         markup.displayWidth,
         markup.displayHeight,
       );
-      showToast({ message: "Markup exported", color: "green" });
+      showToast({
+        message: locale.t("editing.markup.toast.exported"),
+        color: "green",
+      });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to export markup";
+        err instanceof Error
+          ? err.message
+          : locale.t("editing.markup.toast.exportFailed");
       showToast({ message, color: "red" });
     }
   }
@@ -118,14 +136,19 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
   async function exportPdfPageMarkup() {
     const pageCanvas = deps.getPdfPageCanvas?.();
     if (!pageCanvas) {
-      showToast({ message: "No PDF page to export", color: "red" });
+      showToast({
+        message: locale.t("editing.markup.toast.noPdfPage"),
+        color: "red",
+      });
       return;
     }
     const outputPath = await save({
       defaultPath:
         deps.getFileName().replace(/\.[^.]+$/, "") +
         `_p${markup.currentPage}.png`,
-      filters: [{ name: "Image", extensions: ["png"] }],
+      filters: [
+        { name: locale.t("editing.filter.image"), extensions: ["png"] },
+      ],
     });
     if (!outputPath) return;
 
@@ -137,10 +160,15 @@ export function createMarkupActions(deps: MarkupActionsDeps) {
         markup.displayWidth,
         markup.displayHeight,
       );
-      showToast({ message: "Markup exported", color: "green" });
+      showToast({
+        message: locale.t("editing.markup.toast.exported"),
+        color: "green",
+      });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to export markup";
+        err instanceof Error
+          ? err.message
+          : locale.t("editing.markup.toast.exportFailed");
       showToast({ message, color: "red" });
     }
   }

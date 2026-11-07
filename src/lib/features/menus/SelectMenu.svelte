@@ -8,6 +8,10 @@
   import { invokeRenameFile } from "$lib/features/media/api";
   import { showToast } from "$lib/components/toast.svelte";
   import { getFileName } from "$lib/services/files";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   let {
     visible,
@@ -63,13 +67,13 @@
     }
     if (successCount > 0) {
       showToast({
-        message: `${successCount} file${successCount === 1 ? "" : "s"} moved`,
+        message: tp("menus.select.moved", successCount),
         color: "blue",
       });
     }
     if (failCount > 0) {
       showToast({
-        message: `Failed to move ${failCount} file${failCount === 1 ? "" : "s"}`,
+        message: tp("menus.select.moveFailed", failCount),
         color: "red",
       });
     }
@@ -88,7 +92,7 @@
     if (paths.every((p) => library.isFavorite(p))) {
       for (const p of paths) library.removeFavorite(p);
       showToast({
-        message: `Removed ${paths.length === 1 ? "file" : `${paths.length} files`} from favorites`,
+        message: tp("menus.select.removedFavorites", paths.length),
         color: "yellow",
       });
     } else {
@@ -97,7 +101,7 @@
         library.addFavorite(p);
       }
       showToast({
-        message: `Added ${paths.length === 1 ? "file" : `${paths.length} files`} to favorites`,
+        message: tp("menus.select.addedFavorites", paths.length),
         color: "yellow",
       });
     }
@@ -128,7 +132,7 @@
     class="ctx-drag"
     role="button"
     tabindex="0"
-    aria-label="Drag to move"
+    aria-label={t("menus.common.dragToMove")}
     onmousedown={(e) => {
       e.preventDefault();
       onMoved?.();
@@ -173,8 +177,8 @@
             }}
             onmousedown={(e) => e.stopPropagation()}
             aria-label={library.deleteOriginalAfterCopy
-              ? "Delete original"
-              : "Copy original"}
+              ? t("menus.select.deleteOriginal")
+              : t("menus.select.copyOriginal")}
           >
             <span class="toggle-track">
               <span class="toggle-knob"></span>
@@ -182,8 +186,8 @@
           </button>
           <span class="toggle-tooltip"
             >{library.deleteOriginalAfterCopy
-              ? "Delete original"
-              : "Copy original"}</span
+              ? t("menus.select.deleteOriginal")
+              : t("menus.select.copyOriginal")}</span
           >
         </div>
       {:else}
@@ -194,9 +198,9 @@
             onSelectAll?.();
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label="Select all files"
+          aria-label={t("menus.select.selectAllAria")}
         >
-          Select all
+          {t("menus.select.selectAll")}
         </button>
       {/if}
     </div>
@@ -207,12 +211,13 @@
         <span class="ctx-dot"></span>
       </span>
       {#if library.collectMode && selectedCount === 1}
-        <span>{getFileName(getPaths()[0])} selected</span>
-      {:else}
         <span
-          >{selectedCount}
-          {selectedCount === 1 ? "file" : "files"} selected</span
+          >{t("menus.select.selectedFile", {
+            name: getFileName(getPaths()[0]),
+          })}</span
         >
+      {:else}
+        <span>{tp("menus.select.selected", selectedCount)}</span>
       {/if}
       <span class="ctx-dots">
         <span class="ctx-dot"></span>
@@ -222,13 +227,13 @@
     </span>
     <button
       class="ctx-close tooltip-below"
-      data-tooltip="Close"
+      data-tooltip={t("menus.common.close")}
       onclick={(e) => {
         e.stopPropagation();
         handleClose();
       }}
       onmousedown={(e) => e.stopPropagation()}
-      aria-label="Close"
+      aria-label={t("menus.common.close")}
     >
       <svg
         width="9"
@@ -246,7 +251,7 @@
   {#if library.collectMode}
     <div class="edit-menu-card">
       <div class="collect-prompt">
-        Choose or create a collection to copy selected files into.
+        {t("menus.select.collectPrompt")}
       </div>
     </div>
   {:else}
@@ -266,7 +271,7 @@
             <path d="M22 2 11 13" />
             <path d="M22 2 15 22 11 13 2 9 22 2" />
           </svg>
-          <span>Move to</span>
+          <span>{t("menus.select.moveTo")}</span>
         </button>
         <button class="edit-menu-btn blue sub" onclick={activateCollectMode}>
           <svg
@@ -285,7 +290,7 @@
             <line x1="12" y1="11" x2="12" y2="17" />
             <line x1="9" y1="14" x2="15" y2="14" />
           </svg>
-          <span>Collect</span>
+          <span>{t("menus.select.collect")}</span>
         </button>
         <button class="edit-menu-btn yellow sub" onclick={toggleFavorite}>
           <svg
@@ -302,7 +307,11 @@
               points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
             />
           </svg>
-          <span>{allFavorited ? "Unfavorite" : "Favorite"}</span>
+          <span
+            >{allFavorited
+              ? t("menus.select.unfavorite")
+              : t("menus.select.favorite")}</span
+          >
         </button>
         <button class="edit-menu-btn red sub" onclick={deleteFiles}>
           <svg
@@ -320,7 +329,7 @@
               d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
             />
           </svg>
-          <span>Delete</span>
+          <span>{t("menus.select.delete")}</span>
         </button>
       </div>
     </div>

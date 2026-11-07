@@ -4,9 +4,12 @@
     saveLastDialogSection,
   } from "$lib/services/storage";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   function shortcut(id: string): string {
-    return keybindStore.label(id) || "Unbound";
+    return keybindStore.label(id) || t("dialogs.help.unbound");
   }
 
   let {
@@ -40,11 +43,14 @@
   });
 
   const sections = [
-    { id: "quick-start", label: "Quick start" },
-    { id: "faq", label: "FAQ" },
-    { id: "tips", label: "Tips" },
-    { id: "troubleshooting", label: "Troubleshooting" },
-    { id: "changelog", label: "Changelog" },
+    { id: "quick-start", labelKey: "dialogs.help.nav.quickStart" },
+    { id: "faq", labelKey: "dialogs.help.nav.faq" },
+    { id: "tips", labelKey: "dialogs.help.nav.tips" },
+    {
+      id: "troubleshooting",
+      labelKey: "dialogs.help.nav.troubleshooting",
+    },
+    { id: "changelog", labelKey: "dialogs.help.nav.changelog" },
   ];
 
   function scrollToSection(id: string) {
@@ -116,10 +122,14 @@
               d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"
             /><line x1="12" y1="17" x2="12.01" y2="17" /></svg
           >
-          Help
+          {t("dialogs.help.title")}
         </p>
-        <p class="delete-subtitle">Learn how to use vyu</p>
-        <button class="dialog-close-x" onclick={closeHelp} aria-label="Close">
+        <p class="delete-subtitle">{t("dialogs.help.subtitle")}</p>
+        <button
+          class="dialog-close-x"
+          onclick={closeHelp}
+          aria-label={t("dialogs.help.close")}
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -215,7 +225,7 @@
                 /></svg
               >
             {/if}
-            {sec.label}
+            {t(sec.labelKey)}
           </button>
         {/each}
       </div>
@@ -242,37 +252,44 @@
               stroke-linejoin="round"
               ><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg
             >
-            Quick start
+            {t("dialogs.help.nav.quickStart")}
           </p>
           <div class="settings-row help-text-row">
             <div class="help-text">
               <p>
-                <strong>Open a file</strong> — Click the folder icon in the top
-                bar or press
-                <span class="help-kbd-inline">{shortcut("open-file")}</span>.
+                <strong>{t("dialogs.help.quickStart.openFile.title")}</strong>
+                — {t("dialogs.help.quickStart.openFile.body")}
+                <span class="help-kbd-inline">{shortcut("open-file")}</span>{t(
+                  "dialogs.help.punct.period",
+                )}
               </p>
               <p>
-                <strong>Navigate</strong> — Use the arrow buttons or keyboard shortcuts
-                to move between files in the same folder.
+                <strong>{t("dialogs.help.quickStart.navigate.title")}</strong>
+                — {t("dialogs.help.quickStart.navigate.body")}
               </p>
               <p>
-                <strong>Fullscreen</strong> — Double-click the viewer or press
-                <span class="help-kbd-inline">{shortcut("fullscreen")}</span>.
+                <strong>{t("dialogs.help.quickStart.fullscreen.title")}</strong>
+                — {t("dialogs.help.quickStart.fullscreen.body")}
+                <span class="help-kbd-inline">{shortcut("fullscreen")}</span>{t(
+                  "dialogs.help.punct.period",
+                )}
               </p>
               <p>
-                <strong>Zoom & Pan</strong> — Scroll to zoom, click and drag to pan
-                when zoomed in.
+                <strong>{t("dialogs.help.quickStart.zoom.title")}</strong>
+                — {t("dialogs.help.quickStart.zoom.body")}
               </p>
               <p>
-                <strong>Compare with original</strong> — Hold
-                <span class="help-kbd-inline">{shortcut("compare")}</span> while editing
-                to preview the original.
+                <strong>{t("dialogs.help.quickStart.compare.title")}</strong>
+                — {t("dialogs.help.quickStart.compare.before")}
+                <span class="help-kbd-inline">{shortcut("compare")}</span>
+                {t("dialogs.help.quickStart.compare.after")}
               </p>
               <p>
-                <strong>All shortcuts</strong> — Press
+                <strong>{t("dialogs.help.quickStart.shortcuts.title")}</strong>
+                — {t("dialogs.help.quickStart.shortcuts.body")}
                 <span class="help-kbd-inline">{shortcut("show-shortcuts")}</span
                 >
-                to open the shortcut cheat sheet.
+                {t("dialogs.help.quickStart.shortcuts.after")}
               </p>
             </div>
           </div>
@@ -297,30 +314,38 @@
                 d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"
               /><line x1="12" y1="17" x2="12.01" y2="17" /></svg
             >
-            FAQ
+            {t("dialogs.help.nav.faq")}
           </p>
           <div class="settings-row help-text-row">
             <div class="help-text">
               <p>
-                <strong>Is this app private?</strong> — Yes, vyu is open source. Your
-                files stay on your device and are never uploaded anywhere.
+                <strong>{t("dialogs.help.faq.private.title")}</strong> — {t(
+                  "dialogs.help.faq.private.body",
+                )}
               </p>
               <p>
-                <strong>Does the app work offline?</strong> — Yes, no internet connection
-                is required. We do not collect analytics or telemetry.
+                <strong>{t("dialogs.help.faq.offline.title")}</strong> — {t(
+                  "dialogs.help.faq.offline.body",
+                )}
               </p>
               <p>
-                <strong>How do I change the UI?</strong> — Visit Settings
-                <span class="help-kbd-inline">Appearance</span> to change the theme,
-                font, interface scale, density, and reduced motion.
+                <strong>{t("dialogs.help.faq.changeUi.title")}</strong> — {t(
+                  "dialogs.help.faq.changeUi.before",
+                )}
+                <span class="help-kbd-inline"
+                  >{t("dialogs.help.faq.changeUi.appearance")}</span
+                >
+                {t("dialogs.help.faq.changeUi.after")}
               </p>
               <p>
-                <strong>Can I edit files?</strong> — Yes, use the Edit menu to crop,
-                rotate, flip, and adjust colors. Use Markup to annotate.
+                <strong>{t("dialogs.help.faq.canEdit.title")}</strong> — {t(
+                  "dialogs.help.faq.canEdit.body",
+                )}
               </p>
               <p>
-                <strong>Where are converted files saved?</strong> — You pick the location.
-                Vyu never saves files without asking you first.
+                <strong>{t("dialogs.help.faq.converted.title")}</strong> — {t(
+                  "dialogs.help.faq.converted.body",
+                )}
               </p>
             </div>
           </div>
@@ -345,30 +370,36 @@
                 d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
               /></svg
             >
-            Tips
+            {t("dialogs.help.nav.tips")}
           </p>
           <div class="settings-row help-text-row">
             <div class="help-text">
               <p>
-                <strong>Slideshow mode</strong> — Enable automatic playback through
-                a folder with custom timing.
+                <strong>{t("dialogs.help.tips.slideshow.title")}</strong> — {t(
+                  "dialogs.help.tips.slideshow.body",
+                )}
               </p>
               <p>
-                <strong>Timestamps</strong> — Press
+                <strong>{t("dialogs.help.tips.timestamps.title")}</strong> — {t(
+                  "dialogs.help.tips.timestamps.body",
+                )}
                 <span class="help-kbd-inline">{shortcut("add-marker")}</span>
-                while a video is playing to mark a moment.
+                {t("dialogs.help.tips.timestamps.after")}
               </p>
               <p>
-                <strong>Crop tool</strong> — Enter crop mode in the Edit menu to export
-                a cropped region.
+                <strong>{t("dialogs.help.tips.crop.title")}</strong> — {t(
+                  "dialogs.help.tips.crop.body",
+                )}
               </p>
               <p>
-                <strong>Drag & drop</strong> — Drop a file directly onto the window
-                to open it instantly.
+                <strong>{t("dialogs.help.tips.drag.title")}</strong> — {t(
+                  "dialogs.help.tips.drag.body",
+                )}
               </p>
               <p>
-                <strong>Clipboard paste</strong> — Paste an image from your clipboard
-                to view it without saving.
+                <strong>{t("dialogs.help.tips.clipboard.title")}</strong> — {t(
+                  "dialogs.help.tips.clipboard.body",
+                )}
               </p>
             </div>
           </div>
@@ -396,31 +427,36 @@
                 y2="12"
               /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
             >
-            Troubleshooting
+            {t("dialogs.help.nav.troubleshooting")}
           </p>
           <div class="settings-row help-text-row">
             <div class="help-text">
               <p>
-                <strong>Video won't play?</strong> — Make sure the file is a supported
-                format (MP4, MKV, WebM, MOV).
+                <strong>{t("dialogs.help.troubleshooting.video.title")}</strong>
+                — {t("dialogs.help.troubleshooting.video.body")}
               </p>
               <p>
-                <strong>No audio?</strong> — Check that the volume is up and the file
-                contains an audio track.
+                <strong>{t("dialogs.help.troubleshooting.audio.title")}</strong>
+                — {t("dialogs.help.troubleshooting.audio.body")}
               </p>
               <p>
-                <strong>FFmpeg missing?</strong> — Install FFmpeg via the prompt in
-                Properties menu for advanced features.
+                <strong>{t("dialogs.help.troubleshooting.ffmpeg.title")}</strong
+                >
+                — {t("dialogs.help.troubleshooting.ffmpeg.body")}
               </p>
               <p>
-                <strong>Performance issues?</strong> — Try disabling hardware
-                acceleration in Settings > System and restarting. If the window
-                fails to start, launch vyu with <code>--safe-mode</code> to force
-                GPU rendering on.
+                <strong
+                  >{t("dialogs.help.troubleshooting.performance.title")}</strong
+                >
+                — {t("dialogs.help.troubleshooting.performance.body")}
+                <code>--safe-mode</code>
+                {t("dialogs.help.troubleshooting.performance.after")}
               </p>
               <p>
-                <strong>Shortcuts not working?</strong> — Make sure you are not focused
-                on a text field or menu.
+                <strong
+                  >{t("dialogs.help.troubleshooting.shortcuts.title")}</strong
+                >
+                — {t("dialogs.help.troubleshooting.shortcuts.body")}
               </p>
             </div>
           </div>
@@ -447,13 +483,14 @@
                 d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
               /></svg
             >
-            Changelog
+            {t("dialogs.help.nav.changelog")}
           </p>
           <div class="settings-row help-text-row">
             <div class="help-text">
               <p>
-                <strong>Stay updated</strong> — Check back here for the latest changes,
-                improvements, and fixes in each release.
+                <strong>{t("dialogs.help.changelog.title")}</strong> — {t(
+                  "dialogs.help.changelog.body",
+                )}
               </p>
             </div>
           </div>
@@ -476,7 +513,7 @@
                 points="12 6 12 12 16 14"
               /></svg
             >
-            Check for updates
+            {t("dialogs.help.footer.checkUpdates")}
           </button>
         </div>
         <button class="settings-action-btn" onclick={closeHelp}>
@@ -493,7 +530,7 @@
               d="M3 3v5h5"
             /></svg
           >
-          Restart tutorial
+          {t("dialogs.help.footer.restartTutorial")}
         </button>
       </div>
     </div>

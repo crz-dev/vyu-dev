@@ -8,6 +8,9 @@
   import { saveAudioLayoutMode, saveCdColor } from "$lib/services/storage";
   import { saveCdColor as dbSaveCdColor } from "$lib/services/database";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     fileSrc,
@@ -203,15 +206,15 @@
     <button
       class="audio-customize-btn tooltip-ctrl"
       data-tooltip={audioLayoutMode === "retro"
-        ? "Swap to Cassette"
-        : "Swap to Vinyl"}
+        ? t("media.audio.swap.toCassette")
+        : t("media.audio.swap.toVinyl")}
       onclick={() => {
         audioLayoutMode = audioLayoutMode === "retro" ? "modern" : "retro";
         saveAudioLayoutMode(audioLayoutMode);
       }}
       aria-label={audioLayoutMode === "retro"
-        ? "Swap to cassette layout"
-        : "Swap to vinyl layout"}
+        ? t("media.audio.swap.toCassetteAria")
+        : t("media.audio.swap.toVinylAria")}
     >
       <svg
         width="15"

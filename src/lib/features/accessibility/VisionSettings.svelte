@@ -4,8 +4,11 @@
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import type { ViewerBackground } from "$lib/features/theme/appearance.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   function setViewerBackground(background: ViewerBackground) {
     appearance.setViewerBackground(background);
@@ -29,49 +32,56 @@
         r="3"
       /></svg
     >
-    Vision
+    {t("settings.accessibility.section.vision")}
   </p>
 
-  <SettingsGroup label="Color & Contrast" icon="eye">
+  <SettingsGroup
+    label={t("settings.accessibility.vision.group.color")}
+    icon="eye"
+  >
     <SettingsRow
-      label="Color Blind Mode"
-      hint="Shift colors to improve distinction"
+      label={t("settings.accessibility.vision.colorBlind.label")}
+      hint={t("settings.accessibility.vision.colorBlind.hint")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-4">
           <button
             class="pill-btn"
             class:active={accessibility.colorBlindMode === "none"}
-            onclick={() => accessibility.setColorBlindMode("none")}>None</button
+            onclick={() => accessibility.setColorBlindMode("none")}
+            >{t("settings.accessibility.vision.colorBlind.none")}</button
           >
           <button
             class="pill-btn"
             class:active={accessibility.colorBlindMode === "protanopia"}
             onclick={() => accessibility.setColorBlindMode("protanopia")}
-            >Protan</button
+            >{t("settings.accessibility.vision.colorBlind.protan")}</button
           >
           <button
             class="pill-btn"
             class:active={accessibility.colorBlindMode === "deuteranopia"}
             onclick={() => accessibility.setColorBlindMode("deuteranopia")}
-            >Deuter</button
+            >{t("settings.accessibility.vision.colorBlind.deuter")}</button
           >
           <button
             class="pill-btn"
             class:active={accessibility.colorBlindMode === "tritanopia"}
             onclick={() => accessibility.setColorBlindMode("tritanopia")}
-            >Tritan</button
+            >{t("settings.accessibility.vision.colorBlind.tritan")}</button
           >
         </div>
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="High Contrast" hint="Maximize text and border contrast">
+    <SettingsRow
+      label={t("settings.accessibility.vision.highContrast.label")}
+      hint={t("settings.accessibility.vision.highContrast.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="High Contrast"
+            aria-label={t("settings.accessibility.vision.highContrast.aria")}
             checked={appearance.highContrast}
             onchange={(e) =>
               appearance.setHighContrast(e.currentTarget.checked)}
@@ -83,12 +93,15 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Grayscale" hint="Remove all color from the app">
+    <SettingsRow
+      label={t("settings.accessibility.vision.grayscale.label")}
+      hint={t("settings.accessibility.vision.grayscale.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Grayscale"
+            aria-label={t("settings.accessibility.vision.grayscale.aria")}
             checked={accessibility.grayscale}
             onchange={(e) =>
               accessibility.setGrayscale(e.currentTarget.checked)}
@@ -101,14 +114,16 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Reduce Transparency"
-      hint="Use solid surfaces instead of translucent panels"
+      label={t("settings.accessibility.vision.reduceTransparency.label")}
+      hint={t("settings.accessibility.vision.reduceTransparency.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Reduce Transparency"
+            aria-label={t(
+              "settings.accessibility.vision.reduceTransparency.aria",
+            )}
             checked={accessibility.reduceTransparency}
             onchange={(e) =>
               accessibility.setReduceTransparency(e.currentTarget.checked)}
@@ -121,13 +136,19 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Text & Focus" icon="display">
-    <SettingsRow label="Bold Text" hint="Use a heavier weight across the UI">
+  <SettingsGroup
+    label={t("settings.accessibility.vision.group.text")}
+    icon="display"
+  >
+    <SettingsRow
+      label={t("settings.accessibility.vision.boldText.label")}
+      hint={t("settings.accessibility.vision.boldText.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Bold Text"
+            aria-label={t("settings.accessibility.vision.boldText.aria")}
             checked={accessibility.boldText}
             onchange={(e) => accessibility.setBoldText(e.currentTarget.checked)}
           />
@@ -138,12 +159,15 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Text Spacing" hint="Add extra line and letter spacing">
+    <SettingsRow
+      label={t("settings.accessibility.vision.textSpacing.label")}
+      hint={t("settings.accessibility.vision.textSpacing.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Text Spacing"
+            aria-label={t("settings.accessibility.vision.textSpacing.aria")}
             checked={accessibility.textSpacing}
             onchange={(e) =>
               accessibility.setTextSpacing(e.currentTarget.checked)}
@@ -156,14 +180,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Strong Focus Rings"
-      hint="Show clear outlines on keyboard focus"
+      label={t("settings.accessibility.vision.focusRings.label")}
+      hint={t("settings.accessibility.vision.focusRings.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Strong Focus Rings"
+            aria-label={t("settings.accessibility.vision.focusRings.aria")}
             checked={accessibility.focusRings}
             onchange={(e) =>
               accessibility.setFocusRings(e.currentTarget.checked)}
@@ -176,16 +200,19 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Motion & Canvas" icon="image">
+  <SettingsGroup
+    label={t("settings.accessibility.vision.group.motion")}
+    icon="image"
+  >
     <SettingsRow
-      label="Reduce Motion"
-      hint="Minimize animations and transitions"
+      label={t("settings.accessibility.vision.reduceMotion.label")}
+      hint={t("settings.accessibility.vision.reduceMotion.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Reduce Motion"
+            aria-label={t("settings.accessibility.vision.reduceMotion.aria")}
             checked={appearance.reducedMotion}
             onchange={(e) =>
               appearance.setReducedMotion(e.currentTarget.checked)}
@@ -198,39 +225,42 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Viewer Background"
-      hint="Backdrop used behind images and video"
+      label={t("settings.accessibility.vision.viewerBackground.label")}
+      hint={t("settings.accessibility.vision.viewerBackground.hint")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-3">
           <button
             class="pill-btn"
             class:active={appearance.viewerBackground === "theme"}
-            onclick={() => setViewerBackground("theme")}>Theme</button
+            onclick={() => setViewerBackground("theme")}
+            >{t("settings.accessibility.vision.viewerBackground.theme")}</button
           >
           <button
             class="pill-btn"
             class:active={appearance.viewerBackground === "black"}
-            onclick={() => setViewerBackground("black")}>Black</button
+            onclick={() => setViewerBackground("black")}
+            >{t("settings.accessibility.vision.viewerBackground.black")}</button
           >
           <button
             class="pill-btn"
             class:active={appearance.viewerBackground === "gray"}
-            onclick={() => setViewerBackground("gray")}>Gray</button
+            onclick={() => setViewerBackground("gray")}
+            >{t("settings.accessibility.vision.viewerBackground.gray")}</button
           >
         </div>
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Larger Viewer Controls"
-      hint="Enlarge the controls shown over video"
+      label={t("settings.accessibility.vision.largeControls.label")}
+      hint={t("settings.accessibility.vision.largeControls.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Larger Viewer Controls"
+            aria-label={t("settings.accessibility.vision.largeControls.aria")}
             checked={accessibility.largeControls}
             onchange={(e) =>
               accessibility.setLargeControls(e.currentTarget.checked)}

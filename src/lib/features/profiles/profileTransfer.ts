@@ -8,6 +8,7 @@ import {
   type ProfileIcon,
   type ProfileRecord,
 } from "$lib/services/storage";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 const PROFILE_FILE_FORMAT = "vyu-profile";
 const PROFILE_FILE_VERSION = 1;
@@ -56,11 +57,11 @@ export function parseProfileFile(text: string): ProfileFile {
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error("This file is not valid JSON");
+    throw new Error(locale.t("settings.profiles.file.invalidJson"));
   }
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("This file is not a Vyu settings export");
+    throw new Error(locale.t("settings.profiles.file.notVyu"));
   }
 
   const raw = parsed as Record<string, unknown>;
@@ -68,20 +69,20 @@ export function parseProfileFile(text: string): ProfileFile {
     raw.format !== PROFILE_FILE_FORMAT ||
     raw.version !== PROFILE_FILE_VERSION
   ) {
-    throw new Error("This is not a supported Vyu settings file");
+    throw new Error(locale.t("settings.profiles.file.unsupported"));
   }
   if (
     !raw.settings ||
     typeof raw.settings !== "object" ||
     Array.isArray(raw.settings)
   ) {
-    throw new Error("The settings file is missing its settings");
+    throw new Error(locale.t("settings.profiles.file.missingSettings"));
   }
 
   return {
     format: PROFILE_FILE_FORMAT,
     version: PROFILE_FILE_VERSION,
-    name: profileName(raw.name, "Imported profile"),
+    name: profileName(raw.name, locale.t("settings.profiles.file.defaultName")),
     color: profileColor(raw.color, "#a855f7"),
     icon: profileIcon(raw.icon),
     exportedAt:
@@ -96,13 +97,15 @@ export async function importProfileFile(): Promise<ProfileFile | null> {
   const selected = await open({
     multiple: false,
     directory: false,
-    filters: [{ name: "Vyu settings", extensions: ["json"] }],
+    filters: [
+      { name: locale.t("settings.profiles.file.filter"), extensions: ["json"] },
+    ],
   });
   if (!selected || Array.isArray(selected)) return null;
 
   const bytes = await readFile(selected);
   if (bytes.byteLength > MAX_PROFILE_FILE_BYTES) {
-    throw new Error("That settings file is too large");
+    throw new Error(locale.t("settings.profiles.file.tooLarge"));
   }
 
   const text = new TextDecoder("utf-8").decode(bytes);
@@ -115,7 +118,9 @@ export async function exportProfileFile(
 ): Promise<boolean> {
   const path = await save({
     defaultPath: `vyu-settings-${profileSlug(profile.name)}.json`,
-    filters: [{ name: "Vyu settings", extensions: ["json"] }],
+    filters: [
+      { name: locale.t("settings.profiles.file.filter"), extensions: ["json"] },
+    ],
   });
   if (!path) return false;
 

@@ -35,6 +35,7 @@ import {
 } from "$lib/features/media/playback.svelte";
 import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
 import { showToast, dismissToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import { saveResumePoint, deleteResumePoint } from "$lib/services/storage";
 import {
   saveResumePoint as dbSaveResumePoint,
@@ -216,12 +217,14 @@ export function createNavigation(deps: NavigationDeps) {
     if (playbackPrefs.resumeMode === "always") {
       el.currentTime = point;
       const id = showToast({
-        message: `Resumed from ${formatTime(point)}`,
+        message: locale.t("shell.files.resumeToast", {
+          time: formatTime(point),
+        }),
         color: "grey",
         duration: 4500,
         actions: [
           {
-            label: "Start over",
+            label: locale.t("shell.files.startOver"),
             variant: "default",
             onClick: () => {
               if (deps.getFilePath() !== path) return;
@@ -236,12 +239,14 @@ export function createNavigation(deps: NavigationDeps) {
     }
 
     const id = showToast({
-      message: `Resume from ${formatTime(point)}?`,
+      message: locale.t("shell.files.resumePrompt", {
+        time: formatTime(point),
+      }),
       color: "grey",
       duration: 12000,
       actions: [
         {
-          label: "Resume",
+          label: locale.t("shell.files.resume"),
           variant: "green",
           onClick: () => {
             if (deps.getFilePath() !== path) return;
@@ -251,7 +256,7 @@ export function createNavigation(deps: NavigationDeps) {
           },
         },
         {
-          label: "Start over",
+          label: locale.t("shell.files.startOver"),
           variant: "default",
           onClick: () => {
             if (deps.getFilePath() !== path) return;

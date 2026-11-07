@@ -5,6 +5,9 @@
     KEYBIND_CATEGORY_LABELS,
     KEYBIND_CATEGORY_ORDER,
   } from "$lib/features/keybinds/keybindDefinitions";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   const groups = $derived.by(() =>
     KEYBIND_CATEGORY_ORDER.map((category) => ({
@@ -34,19 +37,23 @@
     >
       <div class="cheat-sheet-header">
         <div>
-          <p id="cheat-sheet-title" class="cheat-sheet-title">Shortcuts</p>
+          <p id="cheat-sheet-title" class="cheat-sheet-title">
+            {t("settings.keybinds.cheatSheet.title")}
+          </p>
           <p class="settings-hint">
-            Press
+            {t("settings.keybinds.cheatSheet.hint.prefix")}
             <span class="help-kbd-inline"
-              >{keybindStore.label("show-shortcuts") || "the shortcut"}</span
+              >{keybindStore.label("show-shortcuts") ||
+                t("settings.keybinds.cheatSheet.fallback")}</span
             >
-            again or Escape to close.
+            {t("settings.keybinds.cheatSheet.hint.suffix")}
           </p>
         </div>
         <button
           class="settings-action-btn"
           onclick={() => keybindStore.closeCheatSheet()}
-          aria-label="Close shortcuts">Close</button
+          aria-label={t("settings.keybinds.cheatSheet.closeAria")}
+          >{t("settings.keybinds.cheatSheet.close")}</button
         >
       </div>
 
@@ -54,12 +61,12 @@
         {#each groups as group}
           <div class="cheat-sheet-group">
             <p class="settings-group-label">
-              {KEYBIND_CATEGORY_LABELS[group.category]}
+              {t(KEYBIND_CATEGORY_LABELS[group.category])}
             </p>
             <div class="cheat-sheet-list">
               {#each group.actions as action}
                 <div class="cheat-sheet-row">
-                  <span class="cheat-sheet-label">{action.label}</span>
+                  <span class="cheat-sheet-label">{t(action.label)}</span>
                   <span class="cheat-sheet-key"
                     >{keybindStore.label(action.id)}</span
                   >
@@ -70,20 +77,26 @@
         {/each}
 
         <div class="cheat-sheet-group">
-          <p class="settings-group-label">Reserved</p>
+          <p class="settings-group-label">
+            {t("settings.keybinds.cheatSheet.reserved")}
+          </p>
           <div class="cheat-sheet-list">
             <div class="cheat-sheet-row">
-              <span class="cheat-sheet-label">Cancel / close dialogs</span>
+              <span class="cheat-sheet-label"
+                >{t("settings.keybinds.cheatSheet.cancel")}</span
+              >
               <span class="cheat-sheet-key">Esc</span>
             </div>
             <div class="cheat-sheet-row">
               <span class="cheat-sheet-label"
-                >Clear binding while recording</span
+                >{t("settings.keybinds.cheatSheet.clear")}</span
               >
               <span class="cheat-sheet-key">Backspace / Delete</span>
             </div>
             <div class="cheat-sheet-row">
-              <span class="cheat-sheet-label">System reserved</span>
+              <span class="cheat-sheet-label"
+                >{t("settings.keybinds.cheatSheet.system")}</span
+              >
               <span class="cheat-sheet-key"
                 >Alt+F4 · Alt+Tab · Ctrl+Alt+Del · F5 · Ctrl+R · Ctrl+Shift+I/J
                 · F12</span

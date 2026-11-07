@@ -1,6 +1,9 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { editing } from "$lib/features/editing/editing.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -420,6 +423,12 @@
     editing.getHasEdits() || editing.getCropBounds() !== null,
   );
   const canReset = $derived(hasEdits || editing.hasBackup);
+
+  function colorToolLabel(
+    tool: "brightness" | "contrast" | "saturation" | "hue",
+  ): string {
+    return t(`menus.edit.${tool}`);
+  }
 </script>
 
 {#if visible}
@@ -455,15 +464,15 @@
           }
         }}
         data-tooltip={resetConfirming
-          ? "Confirm restore"
+          ? t("menus.edit.confirmRestore")
           : hasEdits
-            ? "Reset"
-            : "Restore original"}
+            ? t("menus.common.reset")
+            : t("menus.edit.restoreOriginal")}
         aria-label={resetConfirming
-          ? "Confirm restore"
+          ? t("menus.edit.confirmRestore")
           : hasEdits
-            ? "Reset"
-            : "Restore original"}
+            ? t("menus.common.reset")
+            : t("menus.edit.restoreOriginal")}
       >
         {#if resetConfirming}
           <svg
@@ -480,7 +489,7 @@
             <path d="M12 16v0" />
             <path d="M12 8v4" />
           </svg>
-          <span class="edit-action-label">Confirm</span>
+          <span class="edit-action-label">{t("menus.common.confirm")}</span>
         {:else}
           <svg
             width="14"
@@ -498,7 +507,10 @@
             <line x1="10" y1="11" x2="10" y2="17" />
             <line x1="14" y1="11" x2="14" y2="17" />
           </svg>
-          <span class="edit-action-label">{hasEdits ? "Reset" : "Restore"}</span
+          <span class="edit-action-label"
+            >{hasEdits
+              ? t("menus.common.reset")
+              : t("menus.edit.restore")}</span
           >
         {/if}
       </button>
@@ -507,8 +519,8 @@
         class:inactive={!canUndo}
         disabled={!canUndo}
         onclick={onUndo}
-        data-tooltip="Undo"
-        aria-label="Undo"
+        data-tooltip={t("menus.common.undo")}
+        aria-label={t("menus.common.undo")}
       >
         <svg
           width="14"
@@ -523,7 +535,7 @@
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
           <path d="M3 3v5h5" />
         </svg>
-        <span class="edit-action-label">Undo</span>
+        <span class="edit-action-label">{t("menus.common.undo")}</span>
       </button>
     </div>
 
@@ -536,7 +548,7 @@
         class="ctx-drag"
         role="button"
         tabindex="0"
-        aria-label="Drag to move"
+        aria-label={t("menus.common.dragToMove")}
         onmousedown={(e) => {
           e.preventDefault();
           queueMicrotask(() => onMoved?.());
@@ -585,13 +597,15 @@
         <button
           class="ctx-pin tooltip-below"
           class:active={pinned}
-          data-tooltip={pinned ? "Unpin" : "Pin"}
+          data-tooltip={pinned
+            ? t("menus.common.unpin")
+            : t("menus.common.pin")}
           onclick={(e) => {
             e.stopPropagation();
             pinned = !pinned;
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label={pinned ? "Unpin" : "Pin"}
+          aria-label={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
         >
           <svg
             width="9"
@@ -614,7 +628,7 @@
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
           </span>
-          <span>Edit</span>
+          <span>{t("menus.edit.title")}</span>
           <span class="ctx-dots">
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
@@ -623,13 +637,13 @@
         </span>
         <button
           class="ctx-close tooltip-below"
-          data-tooltip="Close"
+          data-tooltip={t("menus.common.close")}
           onclick={(e) => {
             e.stopPropagation();
             onClose();
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label="Close"
+          aria-label={t("menus.common.close")}
         >
           <svg
             width="9"
@@ -666,7 +680,7 @@
               <path d="M6 2h12v20H6z" opacity="0.3" />
               <path d="M2 6h20M2 18h20M6 2v20M18 2v20" />
             </svg>
-            <span>Crop</span>
+            <span>{t("menus.edit.crop")}</span>
           </button>
           <button
             class="edit-menu-btn yellow"
@@ -705,7 +719,7 @@
               <path d="M3 22v-6h6" />
               <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
             </svg>
-            <span>Rotate</span>
+            <span>{t("menus.edit.rotate")}</span>
           </button>
           <button
             class="edit-menu-btn green"
@@ -743,7 +757,7 @@
               <path d="M16 7l4 5-4 5" />
               <path d="M8 7l-4 5 4 5" />
             </svg>
-            <span>Flip</span>
+            <span>{t("menus.edit.flip")}</span>
           </button>
           <button
             class="edit-menu-btn blue"
@@ -784,7 +798,7 @@
                 opacity="0.25"
               />
             </svg>
-            <span>Color</span>
+            <span>{t("menus.edit.color")}</span>
           </button>
         </div>
 
@@ -821,7 +835,7 @@
               class:active={activeCropTool === "custom"}
               onclick={() => selectCropTool("custom", null)}
             >
-              <span>Custom</span>
+              <span>{t("menus.edit.custom")}</span>
             </button>
           </div>
         {/if}
@@ -853,7 +867,7 @@
                   d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
                 />
               </svg>
-              <span>Brightness</span>
+              <span>{t("menus.edit.brightness")}</span>
             </button>
             <button
               class="edit-menu-btn grey sub"
@@ -877,7 +891,7 @@
                   opacity="0.3"
                 />
               </svg>
-              <span>Contrast</span>
+              <span>{t("menus.edit.contrast")}</span>
             </button>
             <button
               class="edit-menu-btn grey sub"
@@ -900,7 +914,7 @@
                   opacity="0.3"
                 />
               </svg>
-              <span>Saturation</span>
+              <span>{t("menus.edit.saturation")}</span>
             </button>
             <button
               class="edit-menu-btn grey sub"
@@ -922,7 +936,7 @@
                 <path d="M12 12l5-2" />
                 <path d="M12 12l1 5" />
               </svg>
-              <span>Hue</span>
+              <span>{t("menus.edit.hue")}</span>
             </button>
           </div>
         {/if}
@@ -948,9 +962,8 @@
                     ? localSaturation
                     : localBrightness}
               aria-label={activeColorTool
-                ? activeColorTool.charAt(0).toUpperCase() +
-                  activeColorTool.slice(1)
-                : "Color"}
+                ? colorToolLabel(activeColorTool)
+                : t("menus.edit.color")}
               onpointerdown={handleTrackPointerDown}
               onpointermove={handleTrackPointerMove}
               onpointerup={handleTrackPointerUp}
@@ -978,7 +991,12 @@
                   }}
                   role="button"
                   tabindex="0"
-                  aria-label="Set {activeColorTool} to {marker.val}"
+                  aria-label={t("menus.edit.setTool", {
+                    tool: activeColorTool
+                      ? colorToolLabel(activeColorTool)
+                      : t("menus.edit.color"),
+                    value: marker.val,
+                  })}
                 ></div>
               {/each}
               <div
@@ -986,7 +1004,7 @@
                 style="left: {scrubberPct}%"
                 role="button"
                 tabindex="0"
-                aria-label="Scrubber"
+                aria-label={t("menus.common.scrubber")}
                 onpointerdown={(e) => {
                   e.stopPropagation();
                   if (!trackEl) return;
@@ -1031,7 +1049,7 @@
                 <path d="M21 2v6h-6" />
                 <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
               </svg>
-              <span>90 Right</span>
+              <span>{t("menus.edit.rotate90Right")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -1051,7 +1069,7 @@
                 <path d="M3 2v6h6" />
                 <path d="M21 12a9 9 0 0 0-15-6.7L3 8" />
               </svg>
-              <span>90 Left</span>
+              <span>{t("menus.edit.rotate90Left")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -1073,7 +1091,7 @@
                 <path d="M3 22v-6h6" />
                 <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
               </svg>
-              <span>180 Full</span>
+              <span>{t("menus.edit.rotate180")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -1093,7 +1111,7 @@
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 6v6l4 2" />
               </svg>
-              <span>Custom</span>
+              <span>{t("menus.edit.custom")}</span>
             </button>
           </div>
         {/if}
@@ -1112,7 +1130,7 @@
               aria-valuemin="-180"
               aria-valuemax="180"
               aria-valuenow={localRotationAngle}
-              aria-label="Rotation angle"
+              aria-label={t("menus.edit.rotationAngle")}
               onpointerdown={handleRotateTrackPointerDown}
               onpointermove={handleRotateTrackPointerMove}
               onpointerup={handleRotateTrackPointerUp}
@@ -1145,7 +1163,9 @@
                   }}
                   role="button"
                   tabindex="0"
-                  aria-label="Set rotation to {marker.val}"
+                  aria-label={t("menus.edit.setRotation", {
+                    value: marker.val,
+                  })}
                 ></div>
               {/each}
               <div
@@ -1153,7 +1173,7 @@
                 style="left: {rotateScrubberPct}%"
                 role="button"
                 tabindex="0"
-                aria-label="Scrubber"
+                aria-label={t("menus.common.scrubber")}
                 onpointerdown={(e) => {
                   e.stopPropagation();
                   if (!rotateTrackEl) return;
@@ -1199,7 +1219,7 @@
                 <path d="M16 7l4 5-4 5" />
                 <path d="M8 7l-4 5 4 5" />
               </svg>
-              <span>Horizontally</span>
+              <span>{t("menus.edit.horizontal")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
@@ -1220,7 +1240,7 @@
                 <path d="M7 8l5-4 5 4" />
                 <path d="M7 16l5 4 5-4" />
               </svg>
-              <span>Vertically</span>
+              <span>{t("menus.edit.vertical")}</span>
             </button>
           </div>
         {/if}
@@ -1237,8 +1257,8 @@
         class="edit-action-btn yellow tooltip-ctrl"
         disabled={!hasEdits}
         onclick={onExport}
-        data-tooltip="Export"
-        aria-label="Export"
+        data-tooltip={t("menus.common.export")}
+        aria-label={t("menus.common.export")}
       >
         <svg
           width="14"
@@ -1254,14 +1274,14 @@
           <polyline points="17,8 12,3 7,8" />
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        <span class="edit-action-label">Export</span>
+        <span class="edit-action-label">{t("menus.common.export")}</span>
       </button>
       <button
         class="edit-action-btn green tooltip-ctrl"
         disabled={!hasEdits}
         onclick={onApply}
-        data-tooltip="Apply"
-        aria-label="Apply"
+        data-tooltip={t("menus.common.apply")}
+        aria-label={t("menus.common.apply")}
       >
         <svg
           width="14"
@@ -1275,7 +1295,7 @@
         >
           <path d="M20 6L9 17l-5-5" />
         </svg>
-        <span class="edit-action-label">Apply</span>
+        <span class="edit-action-label">{t("menus.common.apply")}</span>
       </button>
     </div>
   </div>

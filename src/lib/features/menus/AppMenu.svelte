@@ -6,6 +6,9 @@
   import AppDropdownMenu from "./AppDropdownMenu.svelte";
   import Marquee from "$lib/components/Marquee.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -95,7 +98,10 @@
 
     // Sanitize: reject names containing path separators or traversal
     if (/[/\\]/.test(newName) || newName === ".." || newName === ".") {
-      showToast({ message: "Invalid filename", color: "red" });
+      showToast({
+        message: t("menus.app.toast.invalidFilename"),
+        color: "red",
+      });
       return;
     }
 
@@ -105,16 +111,19 @@
 
     // Ensure the resolved path stays within the original directory
     if (!newPath.startsWith(dir + sep)) {
-      showToast({ message: "Invalid filename", color: "red" });
+      showToast({
+        message: t("menus.app.toast.invalidFilename"),
+        color: "red",
+      });
       return;
     }
 
     try {
       await invokeRenameFile(filePath, newPath);
       onRenamed(newPath);
-      showToast({ message: "File renamed", color: "green" });
+      showToast({ message: t("menus.app.toast.fileRenamed"), color: "green" });
     } catch (e) {
-      showToast({ message: "Rename failed", color: "red" });
+      showToast({ message: t("menus.app.toast.renameFailed"), color: "red" });
     }
   }
 
@@ -139,7 +148,10 @@
     if (!newName || newName === folderName || !folder) return;
 
     if (/[/\\]/.test(newName) || newName === ".." || newName === ".") {
-      showToast({ message: "Invalid folder name", color: "red" });
+      showToast({
+        message: t("menus.app.toast.invalidFolderName"),
+        color: "red",
+      });
       return;
     }
 
@@ -148,16 +160,22 @@
     const newFolderPath = `${parentDir}${sep}${newName}`;
 
     if (!newFolderPath.startsWith(parentDir + sep)) {
-      showToast({ message: "Invalid folder name", color: "red" });
+      showToast({
+        message: t("menus.app.toast.invalidFolderName"),
+        color: "red",
+      });
       return;
     }
 
     try {
       await invokeRenameFile(folder, newFolderPath);
       onFolderRenamed?.(newFolderPath);
-      showToast({ message: "Folder renamed", color: "green" });
+      showToast({
+        message: t("menus.app.toast.folderRenamed"),
+        color: "green",
+      });
     } catch (e) {
-      showToast({ message: "Rename failed", color: "red" });
+      showToast({ message: t("menus.app.toast.renameFailed"), color: "red" });
     }
   }
 
@@ -200,7 +218,7 @@
       class:active={dropdownVisible}
       class:menu-active={dropdownVisible}
       onclick={onToggleDropdown}
-      aria-label="Open app menu"
+      aria-label={t("menus.app.open")}
       data-tooltip="Vyu"
     >
       <img src="/favicon.png" alt="vyu" class="app-icon" />
@@ -222,9 +240,9 @@
     <span class="divider">/</span>
     <button
       class="folder-btn back-btn tooltip-below"
-      data-tooltip="Back to viewer"
+      data-tooltip={t("menus.app.backToViewer")}
       onclick={onCloseLibrary}
-      aria-label="Back to viewer"
+      aria-label={t("menus.app.backToViewer")}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path
@@ -263,7 +281,7 @@
           }
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label="Rename file"
+        aria-label={t("menus.app.renameFile")}
       />
     {:else}
       <button
@@ -271,7 +289,7 @@
         onmouseenter={showFilenameTooltip}
         onmouseleave={hideFilenameTooltip}
         onclick={fileSrc ? startEditing : undefined}
-        aria-label="Rename file"
+        aria-label={t("menus.app.renameFile")}
         ><Marquee
           text={fileName}
           scrollOnHover
@@ -288,9 +306,9 @@
       <span class="divider">/</span>
       <button
         class="folder-btn close-file-btn tooltip-below"
-        data-tooltip={`Close file${shortcutSuffix("close-file")}`}
+        data-tooltip={`${t("menus.app.closeFile")}${shortcutSuffix("close-file")}`}
         onclick={closeFile}
-        aria-label="close file"
+        aria-label={t("menus.app.closeFile")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <path
@@ -312,9 +330,9 @@
       <span class="divider">/</span>
       <button
         class="folder-btn open-file-btn tooltip-below"
-        data-tooltip={`Open file${shortcutSuffix("open-file")}`}
+        data-tooltip={`${t("menus.app.openFile")}${shortcutSuffix("open-file")}`}
         onclick={openFileDialog}
-        aria-label="open file"
+        aria-label={t("menus.app.openFile")}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <line
@@ -342,21 +360,21 @@
   <div class="window-controls">
     <button
       class="wc-btn tooltip-below"
-      data-tooltip="Minimize"
+      data-tooltip={t("menus.app.minimize")}
       onclick={minimizeWindow}
-      aria-label="minimize">−</button
+      aria-label={t("menus.app.minimize")}>−</button
     >
     <button
       class="wc-btn tooltip-below"
-      data-tooltip="Maximize"
+      data-tooltip={t("menus.app.maximize")}
       onclick={maximizeWindow}
-      aria-label="maximize">▢</button
+      aria-label={t("menus.app.maximize")}>▢</button
     >
     <button
       class="wc-btn close tooltip-below"
-      data-tooltip="Close"
+      data-tooltip={t("menus.app.close")}
       onclick={closeWindow}
-      aria-label="close">✕</button
+      aria-label={t("menus.app.close")}>✕</button
     >
   </div>
 </div>

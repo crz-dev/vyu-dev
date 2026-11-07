@@ -1,5 +1,8 @@
 <script lang="ts">
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     open,
@@ -64,7 +67,7 @@
           stroke-linejoin="round"
         />
       </svg>
-      <span>Markers</span>
+      <span>{t("media.markers.heading")}</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <polygon
           points="12,2 22,12 12,22 2,12"
@@ -110,7 +113,7 @@
                 stroke-linecap="round"
               />
             </svg>
-            Delete Markers
+            {t("media.markers.delete")}
           </button>
         {:else}
           <button
@@ -119,7 +122,7 @@
             onclick={confirmDelete}
             role="menuitem"
           >
-            Confirm Delete
+            {t("media.markers.confirmDelete")}
           </button>
         {/if}
       {/if}
@@ -149,7 +152,7 @@
               font-family="var(--font-family)">A</text
             >
           </svg>
-          Loop start
+          {t("media.markers.loopStart")}
         </button>
         <button
           class="ts-drop-half ts-drop-green"
@@ -176,7 +179,7 @@
               font-family="var(--font-family)">B</text
             >
           </svg>
-          Loop end
+          {t("media.markers.loopEnd")}
         </button>
       </div>
       <div class="ts-drop-split">
@@ -207,7 +210,7 @@
               stroke-width="1.8"
             />
           </svg>
-          Clip start
+          {t("media.markers.clipStart")}
         </button>
         <button
           class="ts-drop-half ts-drop-blue"
@@ -236,7 +239,7 @@
               stroke-width="1.8"
             />
           </svg>
-          Clip end
+          {t("media.markers.clipEnd")}
         </button>
       </div>
       <button
@@ -257,7 +260,7 @@
         >
           <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
         </svg>
-        Add Timestamp
+        {t("media.markers.addTimestamp")}
       </button>
     </div>
   </div>

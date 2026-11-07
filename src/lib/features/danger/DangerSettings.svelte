@@ -22,6 +22,7 @@
     invokeClearAllCaches,
     invokeResetSystemIntegrations,
   } from "$lib/features/system/api";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   type ActionId =
     | "markers"
@@ -54,6 +55,9 @@
     clipDeleteOriginal?: boolean;
     toggleClipDeleteOriginal?: () => void;
   } = $props();
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   let busy = $state<ActionId | null>(null);
   let pending = $state<ActionId | null>(null);
@@ -125,7 +129,9 @@
   }
 
   function buttonLabel(id: ActionId, label: string): string {
-    return pending === id && !CRITICAL_WORDS[id] ? "Confirm?" : label;
+    return pending === id && !CRITICAL_WORDS[id]
+      ? t("settings.danger.button.confirm")
+      : label;
   }
 
   function clearLocalPrefs() {
@@ -155,15 +161,15 @@
     if (mode !== "timestamps") clearClips();
     const noun =
       mode === "timestamps"
-        ? "timestamps"
+        ? t("settings.danger.noun.timestamps")
         : mode === "clips"
-          ? "clip boundaries"
-          : "markers";
+          ? t("settings.danger.noun.clips")
+          : t("settings.danger.noun.markers");
     showToast({
       message:
         count > 0
-          ? `Cleared ${noun} from ${count} file${count === 1 ? "" : "s"}`
-          : `No ${noun} to clear`,
+          ? tp("settings.danger.toast.cleared", count, { noun })
+          : t("settings.danger.toast.none", { noun }),
       color: count > 0 ? "green" : "yellow",
     });
   }
@@ -172,7 +178,10 @@
     const freed = await invokeClearBackups(editing.backupDir || undefined);
     editing.clearBackupState();
     showToast({
-      message: freed > 0 ? "File backups cleared" : "No file backups to clear",
+      message:
+        freed > 0
+          ? t("settings.danger.toast.backupsCleared")
+          : t("settings.danger.toast.backupsNone"),
       color: freed > 0 ? "green" : "yellow",
     });
   }
@@ -207,7 +216,7 @@
   async function deleteFfmpeg() {
     await invokeDeleteBundledFfmpeg();
     showToast({
-      message: "Bundled FFmpeg deleted · restart required",
+      message: t("settings.danger.toast.ffmpegDeleted"),
       color: "green",
     });
   }
@@ -215,24 +224,30 @@
   async function uninstall() {
     const result = await invokeRunUninstaller();
     if (!result.started) {
-      showToast({ message: "Opened Windows Apps settings", color: "blue" });
+      showToast({
+        message: t("settings.danger.toast.uninstallOpened"),
+        color: "blue",
+      });
     }
   }
 
   function fixRisk(id: RiskId) {
     if (id === "backups") {
       editing.setBackupMode("ask");
-      showToast({ message: "File backups enabled", color: "green" });
+      showToast({
+        message: t("settings.danger.toast.backupsEnabled"),
+        color: "green",
+      });
     } else if (id === "conversion") {
       conversionPrefs.setDeleteOriginal(false);
       showToast({
-        message: "Original files will be kept after conversion",
+        message: t("settings.danger.toast.conversionKept"),
         color: "green",
       });
     } else if (clipDeleteOriginal) {
       toggleClipDeleteOriginal();
       showToast({
-        message: "Original files will be kept after clip export",
+        message: t("settings.danger.toast.clipsKept"),
         color: "green",
       });
     }
@@ -251,7 +266,10 @@
           break;
         case "clean-temp":
           await invokeCleanupTempFolder();
-          showToast({ message: "Temporary files cleaned", color: "green" });
+          showToast({
+            message: t("settings.danger.toast.tempCleaned"),
+            color: "green",
+          });
           break;
         case "reset-settings":
           await resetAllSettings();
@@ -281,7 +299,9 @@
       transition:slide={{ duration: appearance.reducedMotion ? 0 : 160 }}
     >
       <span class="danger-confirm-label"
-        >Type <strong>{CRITICAL_WORDS[id]}</strong> to confirm</span
+        >{t("settings.danger.confirm.type.prefix")}
+        <strong>{CRITICAL_WORDS[id]}</strong>
+        {t("settings.danger.confirm.type.suffix")}</span
       >
       <div class="danger-confirm-controls">
         <input
@@ -297,10 +317,10 @@
         <button
           class="settings-action-btn red"
           disabled={busy !== null || !typedMatches(id)}
-          onclick={confirmTyped}>Confirm</button
+          onclick={confirmTyped}>{t("settings.danger.confirm.confirm")}</button
         >
         <button class="settings-action-btn" onclick={resetPending}
-          >Cancel</button
+          >{t("settings.danger.confirm.cancel")}</button
         >
       </div>
     </div>
@@ -327,7 +347,7 @@
         y2="17"
       /></svg
     >
-    Danger Zone
+    {t("settings.sections.danger")}
   </p>
   {#if !acknowledged}
     <div class="danger-warning">
@@ -349,16 +369,17 @@
           y2="17"
         /></svg
       >
-      <p class="danger-warning-title">These actions cannot be undone</p>
+      <p class="danger-warning-title">
+        {t("settings.danger.warning.title")}
+      </p>
       <p class="danger-warning-text">
-        Resetting settings, history, caches or backups is permanent. Media files
-        on your PC are never deleted from this panel.
+        {t("settings.danger.warning.text")}
       </p>
       <button
         class="settings-action-btn red"
         onclick={() => (acknowledged = true)}
       >
-        I understand
+        {t("settings.danger.warning.acknowledge")}
       </button>
     </div>
   {:else}
@@ -367,140 +388,162 @@
       transition:fade={{ duration: appearance.reducedMotion ? 0 : 180 }}
     >
       {#if hasActiveRisks}
-        <SettingsGroup label="Active Risks" icon="danger">
+        <SettingsGroup label={t("settings.danger.group.risks")} icon="danger">
           <SettingsRow
-            label="File backups are off"
-            hint="Edits may be applied without a saved original"
+            label={t("settings.danger.risk.backups.label")}
+            hint={t("settings.danger.risk.backups.hint")}
             open={editing.backupMode === "off"}
           >
             {#snippet control()}
               <button
                 class="settings-action-btn"
-                onclick={() => fixRisk("backups")}>Enable</button
+                onclick={() => fixRisk("backups")}
+                >{t("settings.danger.risk.backups.action")}</button
               >
             {/snippet}
           </SettingsRow>
 
           <SettingsRow
-            label="Delete original after conversion"
-            hint="Converting permanently removes the source file"
+            label={t("settings.danger.risk.conversion.label")}
+            hint={t("settings.danger.risk.conversion.hint")}
             open={conversionPrefs.deleteOriginal}
           >
             {#snippet control()}
               <button
                 class="settings-action-btn"
-                onclick={() => fixRisk("conversion")}>Disable</button
+                onclick={() => fixRisk("conversion")}
+                >{t("settings.danger.risk.conversion.action")}</button
               >
             {/snippet}
           </SettingsRow>
 
           <SettingsRow
-            label="Delete original after clip export"
-            hint="Clip export permanently removes the source file"
+            label={t("settings.danger.risk.clips.label")}
+            hint={t("settings.danger.risk.clips.hint")}
             open={clipDeleteOriginal}
           >
             {#snippet control()}
               <button
                 class="settings-action-btn"
-                onclick={() => fixRisk("clips")}>Disable</button
+                onclick={() => fixRisk("clips")}
+                >{t("settings.danger.risk.clips.action")}</button
               >
             {/snippet}
           </SettingsRow>
         </SettingsGroup>
       {/if}
 
-      <SettingsGroup label="App Data" icon="archive">
+      <SettingsGroup label={t("settings.danger.group.data")} icon="archive">
         <SettingsRow
-          label="Clear Markers"
-          hint="Remove timestamps and clip markers from all files"
+          label={t("settings.danger.clearMarkers.label")}
+          hint={t("settings.danger.clearMarkers.hint")}
         >
           {#snippet control()}
             <button
               class="settings-action-btn red"
               disabled={actionDisabled("markers")}
               onclick={() => requestAction("markers")}
-              >{buttonLabel("markers", "Clear")}</button
+              >{buttonLabel(
+                "markers",
+                t("settings.danger.button.clear"),
+              )}</button
             >
           {/snippet}
         </SettingsRow>
 
         <SettingsRow
-          label="Clear File Backups"
-          hint="Delete saved original copies"
+          label={t("settings.danger.clearBackups.label")}
+          hint={t("settings.danger.clearBackups.hint")}
         >
           {#snippet control()}
             <button
               class="settings-action-btn red"
               disabled={actionDisabled("backups")}
               onclick={() => requestAction("backups")}
-              >{buttonLabel("backups", "Clear")}</button
+              >{buttonLabel(
+                "backups",
+                t("settings.danger.button.clear"),
+              )}</button
             >
           {/snippet}
         </SettingsRow>
 
         <SettingsRow
-          label="Clear Temp Files"
-          hint="Remove temporary processing files"
+          label={t("settings.danger.clearTemp.label")}
+          hint={t("settings.danger.clearTemp.hint")}
         >
           {#snippet control()}
             <button
               class="settings-action-btn red"
               disabled={actionDisabled("clean-temp")}
               onclick={() => requestAction("clean-temp")}
-              >{buttonLabel("clean-temp", "Clear")}</button
+              >{buttonLabel(
+                "clean-temp",
+                t("settings.danger.button.clear"),
+              )}</button
             >
           {/snippet}
         </SettingsRow>
 
         <SettingsRow
-          label="Reset All Settings"
-          hint="Clear preferences and reset OS integration"
+          label={t("settings.danger.resetSettings.label")}
+          hint={t("settings.danger.resetSettings.hint")}
         >
           {#snippet control()}
             <button
               class="settings-action-btn red"
               disabled={actionDisabled("reset-settings")}
               onclick={() => requestAction("reset-settings")}
-              >{buttonLabel("reset-settings", "Reset")}</button
+              >{buttonLabel(
+                "reset-settings",
+                t("settings.danger.button.reset"),
+              )}</button
             >
           {/snippet}
         </SettingsRow>
         {@render typedConfirm("reset-settings")}
 
         <SettingsRow
-          label="Factory Reset"
-          hint="Clear settings, file history, caches, backups and temp files"
+          label={t("settings.danger.factoryReset.label")}
+          hint={t("settings.danger.factoryReset.hint")}
         >
           {#snippet control()}
             <button
               class="settings-action-btn red"
               disabled={actionDisabled("factory-reset")}
               onclick={() => requestAction("factory-reset")}
-              >{buttonLabel("factory-reset", "Reset")}</button
+              >{buttonLabel(
+                "factory-reset",
+                t("settings.danger.button.reset"),
+              )}</button
             >
           {/snippet}
         </SettingsRow>
         {@render typedConfirm("factory-reset")}
       </SettingsGroup>
 
-      <SettingsGroup label="Installation" icon="trash">
+      <SettingsGroup
+        label={t("settings.danger.group.installation")}
+        icon="trash"
+      >
         <SettingsRow
-          label="Delete FFmpeg"
-          hint="Remove bundled binaries; restart and reinstall to restore"
+          label={t("settings.danger.deleteFfmpeg.label")}
+          hint={t("settings.danger.deleteFfmpeg.hint")}
         >
           {#snippet control()}
             <button
               class="settings-action-btn red"
               disabled={actionDisabled("delete-ffmpeg")}
-              onclick={() => requestAction("delete-ffmpeg")}>Delete</button
+              onclick={() => requestAction("delete-ffmpeg")}
+              >{t("settings.danger.button.delete")}</button
             >
           {/snippet}
         </SettingsRow>
         {@render typedConfirm("delete-ffmpeg")}
 
         <SettingsRow
-          label="Uninstall Vyu"
-          hint="Run the Windows uninstaller or open Apps settings"
+          label={t("settings.danger.uninstall.label")}
+          hint={t("settings.danger.uninstall.hint")}
         >
           {#snippet control()}
             <button
@@ -526,7 +569,7 @@
                   y2="9"
                 /></svg
               >
-              {buttonLabel("uninstall", "Uninstall")}
+              {buttonLabel("uninstall", t("settings.danger.button.uninstall"))}
             </button>
           {/snippet}
         </SettingsRow>

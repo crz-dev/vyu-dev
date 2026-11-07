@@ -1,7 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { theme } from "$lib/features/theme/theme.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
   import "../app.css";
+
+  const t = locale.t;
 
   function reload() {
     window.location.reload();
@@ -9,19 +12,23 @@
 </script>
 
 <svelte:head>
-  <title>Vyu — Error</title>
+  <title>{t("common.error.windowTitle")}</title>
 </svelte:head>
 
 <div class="error-container">
   <div class="error-card">
-    <h1>Something went wrong</h1>
+    <h1>{t("common.error.title")}</h1>
     <p class="error-message">
-      {$page.status === 404 ? "Page not found" : "An unexpected error occurred"}
+      {$page.status === 404
+        ? t("common.error.notFound")
+        : t("common.error.unexpected")}
     </p>
     {#if $page.error}
       <p class="error-detail">{$page.error.message}</p>
     {/if}
-    <button class="error-reload" onclick={reload}>Reload app</button>
+    <button class="error-reload" onclick={reload}
+      >{t("common.error.reload")}</button
+    >
   </div>
 </div>
 

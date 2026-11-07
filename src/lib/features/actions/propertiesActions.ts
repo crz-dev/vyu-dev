@@ -6,6 +6,7 @@ import { invokeOpenDirectory } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import type { MediaProperties } from "$lib/shared/types";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import { library } from "$lib/features/library/library.svelte";
 
 export interface PropertiesFileSnapshot {
@@ -30,9 +31,15 @@ export function createPropertiesActions(deps: PropertiesActionsDeps) {
   async function propsCopyPath() {
     try {
       await copyPathToClipboard(deps.getFile().filePath);
-      showToast({ message: "Copied file path to clipboard", color: "yellow" });
+      showToast({
+        message: locale.t("shell.actions.copiedPath"),
+        color: "yellow",
+      });
     } catch {
-      showToast({ message: "Failed to copy file path", color: "red" });
+      showToast({
+        message: locale.t("shell.actions.copyPathFailed"),
+        color: "red",
+      });
     }
   }
 
@@ -61,20 +68,29 @@ export function createPropertiesActions(deps: PropertiesActionsDeps) {
         library.privacyMode,
       );
       showToast({
-        message: "Copied all properties to clipboard",
+        message: locale.t("shell.actions.copiedAll"),
         color: "yellow",
       });
     } catch {
-      showToast({ message: "Failed to copy properties", color: "red" });
+      showToast({
+        message: locale.t("shell.actions.copyAllFailed"),
+        color: "red",
+      });
     }
   }
 
   async function copyPropValue(value: string) {
     try {
       await navigator.clipboard.writeText(value);
-      showToast({ message: "Property copied to clipboard", color: "yellow" });
+      showToast({
+        message: locale.t("shell.actions.copiedProperty"),
+        color: "yellow",
+      });
     } catch {
-      showToast({ message: "Failed to copy property", color: "red" });
+      showToast({
+        message: locale.t("shell.actions.copyPropertyFailed"),
+        color: "red",
+      });
     }
   }
 

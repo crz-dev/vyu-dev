@@ -20,6 +20,7 @@
     loadLastDialogSection,
     saveLastDialogSection,
   } from "$lib/services/storage";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
     accessibilityOpen,
@@ -28,6 +29,8 @@
     accessibilityOpen: boolean;
     closeAccessibility: () => void;
   } = $props();
+
+  const t = locale.t;
 
   let activeSection = $state(
     appearance.rememberLastTab
@@ -66,31 +69,36 @@
     }
   });
 
-  const sections = [
-    { id: "vision", label: "Vision" },
-    { id: "hearing", label: "Hearing" },
-    { id: "motor", label: "Motor" },
-    { id: "cognitive", label: "Cognitive" },
-    { id: "profiles", label: "Profiles" },
-    { id: "settings", label: "Preferences" },
-  ];
+  const sections = $derived([
+    { id: "vision", label: t("dialogs.accessibility.sections.vision") },
+    { id: "hearing", label: t("dialogs.accessibility.sections.hearing") },
+    { id: "motor", label: t("dialogs.accessibility.sections.motor") },
+    {
+      id: "cognitive",
+      label: t("dialogs.accessibility.sections.cognitive"),
+    },
+    { id: "profiles", label: t("dialogs.accessibility.sections.profiles") },
+    { id: "settings", label: t("dialogs.accessibility.sections.settings") },
+  ]);
 
-  const sectionDescriptions: Record<string, string> = {
-    vision: "Color, contrast, text scale and motion.",
-    hearing: "Output level, audio processing and feedback cues.",
-    motor: "Hit targets, timeline size and input safety.",
-    cognitive: "Focus, distraction reduction and library privacy.",
-    profiles: "Per-profile library, switching and startup behavior.",
-    settings: "Reset, Windows inheritance and menu behavior.",
-  };
+  const sectionDescriptions = $derived<Record<string, string>>({
+    vision: t("dialogs.accessibility.sections.vision.desc"),
+    hearing: t("dialogs.accessibility.sections.hearing.desc"),
+    motor: t("dialogs.accessibility.sections.motor.desc"),
+    cognitive: t("dialogs.accessibility.sections.cognitive.desc"),
+    profiles: t("dialogs.accessibility.sections.profiles.desc"),
+    settings: t("dialogs.accessibility.sections.settings.desc"),
+  });
 
   const searchActive = $derived(searchQuery.trim() !== "");
 
-  const searchSections = sections.map((section) => ({
-    id: section.id,
-    label: section.label,
-    description: sectionDescriptions[section.id],
-  }));
+  const searchSections = $derived(
+    sections.map((section) => ({
+      id: section.id,
+      label: section.label,
+      description: sectionDescriptions[section.id],
+    })),
+  );
 
   $effect(() => {
     const query = searchQuery.trim();
@@ -233,9 +241,9 @@
               d="M21 16l-4-4"
             /></svg
           >
-          Accessibility
+          {t("dialogs.accessibility.title")}
         </p>
-        <p class="delete-subtitle">Customize how vyu works for you</p>
+        <p class="delete-subtitle">{t("dialogs.accessibility.subtitle")}</p>
         <div class="settings-search-field">
           <svg
             class="settings-search-icon"
@@ -257,8 +265,8 @@
           <input
             class="settings-search-input"
             type="search"
-            placeholder="Search accessibility"
-            aria-label="Search accessibility settings"
+            placeholder={t("dialogs.accessibility.search.placeholder")}
+            aria-label={t("dialogs.accessibility.search.aria")}
             value={searchQuery}
             oninput={(e) => setSearchQuery(e.currentTarget.value)}
             onkeydown={(e) => {
@@ -273,7 +281,7 @@
             <button
               class="settings-search-clear"
               type="button"
-              aria-label="Clear search"
+              aria-label={t("dialogs.accessibility.search.clear")}
               onclick={() => void clearSearch()}
             >
               <svg
@@ -292,7 +300,7 @@
         <button
           class="dialog-close-x"
           onclick={closeAccessibility}
-          aria-label="Close"
+          aria-label={t("dialogs.accessibility.close")}
         >
           <svg
             viewBox="0 0 24 24"
@@ -468,9 +476,11 @@
                   y2="16.65"
                 /></svg
               >
-              <p class="settings-search-empty-title">No settings found</p>
+              <p class="settings-search-empty-title">
+                {t("dialogs.accessibility.empty.title")}
+              </p>
               <p class="settings-search-empty-hint">
-                Try “focus”, “volume”, or “privacy”.
+                {t("dialogs.accessibility.empty.hint")}
               </p>
             </div>
           {/if}

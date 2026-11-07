@@ -5,6 +5,7 @@ import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
 import { deleteStore } from "$lib/features/file-actions/deleteFile.svelte";
 import { saveSkipDeleteConfirmation } from "$lib/services/storage";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 const COLOR_BLIND_MODES = [
   "none",
@@ -75,7 +76,7 @@ function setBoolean(
 
 export function applyAccessibilityImport(raw: unknown): void {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new Error("Invalid accessibility settings file");
+    throw new Error(locale.t("settings.accessibility.import.invalidFile"));
   }
   const data = raw as Record<string, unknown>;
 

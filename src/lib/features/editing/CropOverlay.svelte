@@ -1,11 +1,14 @@
 <script lang="ts">
   import { editing } from "$lib/features/editing/editing.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
     containerEl,
     mediaEl,
   }: { containerEl: HTMLElement | null; mediaEl: HTMLElement | null } =
     $props();
+
+  const t = locale.t;
 
   let dragging = $state<
     "tl" | "tr" | "bl" | "br" | "tm" | "bm" | "ml" | "mr" | "move" | null
@@ -294,7 +297,7 @@
       onmousedown={(e) => handleMouseDown(e, "move")}
       role="button"
       tabindex="0"
-      aria-label="Crop area"
+      aria-label={t("editing.crop.area")}
     >
       <div class="crop-grid">
         <div class="crop-grid-line h1"></div>
@@ -307,7 +310,7 @@
         onmousedown={(e) => handleMouseDown(e, "tl")}
         role="button"
         tabindex="0"
-        aria-label="Top-left corner"
+        aria-label={t("editing.crop.corner.topLeft")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -316,7 +319,7 @@
         onmousedown={(e) => handleMouseDown(e, "tr")}
         role="button"
         tabindex="0"
-        aria-label="Top-right corner"
+        aria-label={t("editing.crop.corner.topRight")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -325,7 +328,7 @@
         onmousedown={(e) => handleMouseDown(e, "bl")}
         role="button"
         tabindex="0"
-        aria-label="Bottom-left corner"
+        aria-label={t("editing.crop.corner.bottomLeft")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -334,7 +337,7 @@
         onmousedown={(e) => handleMouseDown(e, "br")}
         role="button"
         tabindex="0"
-        aria-label="Bottom-right corner"
+        aria-label={t("editing.crop.corner.bottomRight")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -343,7 +346,7 @@
         onmousedown={(e) => handleMouseDown(e, "tm")}
         role="button"
         tabindex="0"
-        aria-label="Top edge"
+        aria-label={t("editing.crop.edge.top")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -352,7 +355,7 @@
         onmousedown={(e) => handleMouseDown(e, "bm")}
         role="button"
         tabindex="0"
-        aria-label="Bottom edge"
+        aria-label={t("editing.crop.edge.bottom")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -361,7 +364,7 @@
         onmousedown={(e) => handleMouseDown(e, "ml")}
         role="button"
         tabindex="0"
-        aria-label="Left edge"
+        aria-label={t("editing.crop.edge.left")}
       >
         <div class="crop-handle-diamond"></div>
       </div>
@@ -370,7 +373,7 @@
         onmousedown={(e) => handleMouseDown(e, "mr")}
         role="button"
         tabindex="0"
-        aria-label="Right edge"
+        aria-label={t("editing.crop.edge.right")}
       >
         <div class="crop-handle-diamond"></div>
       </div>

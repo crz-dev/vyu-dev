@@ -9,6 +9,9 @@
   import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -223,9 +226,11 @@
   <div class="controls-row" class:hide-for-gif={isGifVideo}>
     <button
       class="ctrl-btn tooltip-ctrl"
-      data-tooltip={`${playing ? "Pause" : "Play"}${shortcutSuffix("play-pause")}`}
+      data-tooltip={`${playing ? t("media.playback.pause") : t("media.playback.play")}${shortcutSuffix("play-pause")}`}
       onclick={togglePlay}
-      aria-label={playing ? "pause" : "play"}
+      aria-label={playing
+        ? t("media.playback.pauseAria")
+        : t("media.playback.playAria")}
     >
       {#key playing}
         {#if playing}
@@ -269,18 +274,18 @@
         data-tooltip={loopMenuOpen
           ? undefined
           : looping === "loop"
-            ? "Loop"
+            ? t("media.loop.mode.loop")
             : looping === "stop"
-              ? "Stop at end"
+              ? t("media.loop.stopAtEnd")
               : looping === "next"
-                ? "Play next"
+                ? t("media.loop.mode.next")
                 : looping === "shuffle-songs"
-                  ? "Shuffle songs"
-                  : "Shuffle"}
+                  ? t("media.loop.mode.shuffleSongs")
+                  : t("media.loop.mode.shuffle")}
         onclick={() => {
           loopMenuOpen = !loopMenuOpen;
         }}
-        aria-label="loop mode menu"
+        aria-label={t("media.loop.menuAria")}
       >
         {#if looping === "loop"}
           <svg
@@ -403,8 +408,8 @@
           bind:this={audioTrackButton}
           class="ctrl-btn track-control-btn audio-track-btn tooltip-ctrl"
           class:menu-active={menuStore.audioTrackMenuOpen}
-          data-tooltip="Audio track"
-          aria-label="Audio track"
+          data-tooltip={t("media.playback.audioTrack")}
+          aria-label={t("media.playback.audioTrack")}
           aria-haspopup="menu"
           aria-expanded={menuStore.audioTrackMenuOpen}
           onclick={() => {
@@ -451,9 +456,11 @@
       <button
         class="ctrl-btn volume-btn tooltip-ctrl"
         class:active={!(muted || volume === 0)}
-        data-tooltip={`${muted || volume === 0 ? "Unmute" : "Mute"}${shortcutSuffix("mute")}`}
+        data-tooltip={`${muted || volume === 0 ? t("media.playback.unmute") : t("media.playback.mute")}${shortcutSuffix("mute")}`}
         onclick={toggleMute}
-        aria-label={muted ? "unmute" : "mute"}
+        aria-label={muted
+          ? t("media.playback.unmuteAria")
+          : t("media.playback.muteAria")}
         oncontextmenu={handleVolumeRightClick}
       >
         {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
@@ -514,7 +521,7 @@
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(volumeSliderValue * 100)}
-          aria-label="Volume slider"
+          aria-label={t("media.playback.volumeSlider")}
           onpointerdown={handleVolumeTrackPointerDown}
           oncontextmenu={handleVolumeRightClick}
           onmouseenter={() => showVolumeSliderTooltip(volumeTrackEl)}
@@ -541,7 +548,7 @@
               }}
               role="button"
               tabindex="0"
-              aria-label="Set volume to {pct}%"
+              aria-label={t("media.playback.setVolumeTo", { percent: pct })}
             ></div>
           {/each}
           <div
@@ -563,9 +570,9 @@
               class:muted-diamond={muted}
               style="--i: {i}"
               onclick={() => setVolume((i + 1) / volumeSegments)}
-              aria-label="set volume {Math.round(
-                ((i + 1) / volumeSegments) * 100,
-              )}%"
+              aria-label={t("media.playback.setVolume", {
+                percent: Math.round(((i + 1) / volumeSegments) * 100),
+              })}
             ></button>
           {/each}
         </div>
@@ -582,8 +589,8 @@
       <button
         class="ctrl-btn speed-btn tooltip-ctrl"
         class:active={playbackSpeed !== 1}
-        data-tooltip="Playback speed"
-        aria-label="playback speed"
+        data-tooltip={t("media.playback.speed")}
+        aria-label={t("media.playback.speedAria")}
         onclick={() => setPlaybackSpeed(1)}
         oncontextmenu={handleSpeedRightClick}
       >
@@ -651,7 +658,7 @@
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(speedSliderValue * 100)}
-          aria-label="Playback speed slider"
+          aria-label={t("media.playback.speedSlider")}
           onpointerdown={handleSpeedTrackPointerDown}
           oncontextmenu={handleSpeedRightClick}
           onmouseenter={() => showSpeedSliderTooltip(speedTrackEl)}
@@ -678,7 +685,9 @@
               }}
               role="button"
               tabindex="0"
-              aria-label="Set speed to {marker.step}x"
+              aria-label={t("media.playback.setSpeedTo", {
+                speed: marker.step,
+              })}
             ></div>
           {/each}
           <div
@@ -704,7 +713,7 @@
               class:hidden={dist >= 3}
               style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
-              aria-label="set speed {step}x"
+              aria-label={t("media.playback.setSpeed", { speed: step })}
             ></button>
           {/each}
         </div>
@@ -718,8 +727,8 @@
           class="ctrl-btn track-control-btn subtitle-track-btn tooltip-ctrl"
           class:menu-active={menuStore.subtitleMenuOpen}
           class:active={tracks.selectedSubtitleId !== "off"}
-          data-tooltip="Subtitles"
-          aria-label="Subtitles"
+          data-tooltip={t("media.playback.subtitles")}
+          aria-label={t("media.playback.subtitles")}
           aria-haspopup="menu"
           aria-expanded={menuStore.subtitleMenuOpen}
           onclick={() => {
@@ -774,13 +783,13 @@
     <div class="ts-menu-anchor" style="position:relative;">
       <button
         class="ctrl-btn add-ts-btn tooltip-ctrl"
-        data-tooltip="Marker menu"
+        data-tooltip={t("media.playback.markerMenu")}
         class:ts-menu-open={tsMenuOpen}
         class:menu-active={tsMenuOpen}
         onclick={() => {
           tsMenuOpen = !tsMenuOpen;
         }}
-        aria-label="markers menu"
+        aria-label={t("media.playback.markerMenuAria")}
       >
         <svg
           class="ts-drop-arrow-icon"
@@ -829,7 +838,7 @@
       class="time-display tooltip-ctrl"
       data-tooltip={timerTooltip}
       onclick={toggleTimer}
-      aria-label="toggle timer mode"
+      aria-label={t("media.playback.toggleTimerAria")}
     >
       {currentTimeDisplay()} / {durationDisplay}
     </button>
@@ -837,9 +846,13 @@
   {#if isGifVideo}
     <button
       class="ctrl-btn gif-center-btn tooltip-ctrl"
-      data-tooltip={playing ? "Pause GIF" : "Play GIF"}
+      data-tooltip={playing
+        ? t("media.playback.pauseGif")
+        : t("media.playback.playGif")}
       onclick={togglePlay}
-      aria-label={playing ? "pause gif" : "play gif"}
+      aria-label={playing
+        ? t("media.playback.pauseGifAria")
+        : t("media.playback.playGifAria")}
     >
       {#if playing}
         <svg width="18" height="18" viewBox="0 0 16 16" fill="none"
@@ -870,9 +883,11 @@
   <div class="fs-controls-row" class:hide-for-gif={isGifVideo}>
     <button
       class="fs-ctrl-btn tooltip-ctrl"
-      data-tooltip={`${playing ? "Pause" : "Play"}${shortcutSuffix("play-pause")}`}
+      data-tooltip={`${playing ? t("media.playback.pause") : t("media.playback.play")}${shortcutSuffix("play-pause")}`}
       onclick={togglePlay}
-      aria-label={playing ? "pause" : "play"}
+      aria-label={playing
+        ? t("media.playback.pauseAria")
+        : t("media.playback.playAria")}
     >
       {#key playing}
         {#if playing}
@@ -916,18 +931,18 @@
         data-tooltip={loopMenuOpen
           ? undefined
           : looping === "loop"
-            ? "Loop"
+            ? t("media.loop.mode.loop")
             : looping === "stop"
-              ? "Stop at end"
+              ? t("media.loop.stopAtEnd")
               : looping === "next"
-                ? "Play next"
+                ? t("media.loop.mode.next")
                 : looping === "shuffle-songs"
-                  ? "Shuffle songs"
-                  : "Shuffle"}
+                  ? t("media.loop.mode.shuffleSongs")
+                  : t("media.loop.mode.shuffle")}
         onclick={() => {
           loopMenuOpen = !loopMenuOpen;
         }}
-        aria-label="loop mode menu"
+        aria-label={t("media.loop.menuAria")}
       >
         {#if looping === "loop"}
           <svg
@@ -1050,8 +1065,8 @@
           bind:this={audioTrackButton}
           class="fs-ctrl-btn track-control-btn audio-track-btn tooltip-ctrl"
           class:menu-active={menuStore.audioTrackMenuOpen}
-          data-tooltip="Audio track"
-          aria-label="Audio track"
+          data-tooltip={t("media.playback.audioTrack")}
+          aria-label={t("media.playback.audioTrack")}
           aria-haspopup="menu"
           aria-expanded={menuStore.audioTrackMenuOpen}
           onclick={() => {
@@ -1098,9 +1113,11 @@
       <button
         class="fs-ctrl-btn volume-btn tooltip-ctrl"
         class:active={!(muted || volume === 0)}
-        data-tooltip={`${muted || volume === 0 ? "Unmute" : "Mute"}${shortcutSuffix("mute")}`}
+        data-tooltip={`${muted || volume === 0 ? t("media.playback.unmute") : t("media.playback.mute")}${shortcutSuffix("mute")}`}
         onclick={toggleMute}
-        aria-label={muted ? "unmute" : "mute"}
+        aria-label={muted
+          ? t("media.playback.unmuteAria")
+          : t("media.playback.muteAria")}
         oncontextmenu={handleVolumeRightClick}
       >
         {#key muted || volume === 0 ? 0 : volume < 0.5 ? 1 : 2}
@@ -1161,7 +1178,7 @@
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(volumeSliderValue * 100)}
-          aria-label="Volume slider"
+          aria-label={t("media.playback.volumeSlider")}
           onpointerdown={handleVolumeTrackPointerDown}
           oncontextmenu={handleVolumeRightClick}
           onmouseenter={() => showVolumeSliderTooltip(volumeTrackEl)}
@@ -1188,7 +1205,7 @@
               }}
               role="button"
               tabindex="0"
-              aria-label="Set volume to {pct}%"
+              aria-label={t("media.playback.setVolumeTo", { percent: pct })}
             ></div>
           {/each}
           <div
@@ -1210,9 +1227,9 @@
               class:muted-diamond={muted}
               style="--i: {i}"
               onclick={() => setVolume((i + 1) / volumeSegments)}
-              aria-label="set volume {Math.round(
-                ((i + 1) / volumeSegments) * 100,
-              )}%"
+              aria-label={t("media.playback.setVolume", {
+                percent: Math.round(((i + 1) / volumeSegments) * 100),
+              })}
             ></button>
           {/each}
         </div>
@@ -1229,8 +1246,8 @@
       <button
         class="fs-ctrl-btn speed-btn tooltip-ctrl"
         class:active={playbackSpeed !== 1}
-        data-tooltip="Playback speed"
-        aria-label="playback speed"
+        data-tooltip={t("media.playback.speed")}
+        aria-label={t("media.playback.speedAria")}
         onclick={() => setPlaybackSpeed(1)}
         oncontextmenu={handleSpeedRightClick}
       >
@@ -1298,7 +1315,7 @@
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(speedSliderValue * 100)}
-          aria-label="Playback speed slider"
+          aria-label={t("media.playback.speedSlider")}
           onpointerdown={handleSpeedTrackPointerDown}
           oncontextmenu={handleSpeedRightClick}
           onmouseenter={() => showSpeedSliderTooltip(speedTrackEl)}
@@ -1325,7 +1342,9 @@
               }}
               role="button"
               tabindex="0"
-              aria-label="Set speed to {marker.step}x"
+              aria-label={t("media.playback.setSpeedTo", {
+                speed: marker.step,
+              })}
             ></div>
           {/each}
           <div
@@ -1351,7 +1370,7 @@
               class:hidden={dist >= 3}
               style="--i: {6 - i}"
               onclick={() => setPlaybackSpeed(step)}
-              aria-label="set speed {step}x"
+              aria-label={t("media.playback.setSpeed", { speed: step })}
             ></button>
           {/each}
         </div>
@@ -1365,8 +1384,8 @@
           class="fs-ctrl-btn track-control-btn subtitle-track-btn tooltip-ctrl"
           class:menu-active={menuStore.subtitleMenuOpen}
           class:active={tracks.selectedSubtitleId !== "off"}
-          data-tooltip="Subtitles"
-          aria-label="Subtitles"
+          data-tooltip={t("media.playback.subtitles")}
+          aria-label={t("media.playback.subtitles")}
           aria-haspopup="menu"
           aria-expanded={menuStore.subtitleMenuOpen}
           onclick={() => {
@@ -1421,13 +1440,13 @@
     <div class="ts-menu-anchor" style="position:relative;">
       <button
         class="fs-ctrl-btn add-ts-btn tooltip-ctrl"
-        data-tooltip="Marker menu"
+        data-tooltip={t("media.playback.markerMenu")}
         class:ts-menu-open={tsMenuOpen}
         class:menu-active={tsMenuOpen}
         onclick={() => {
           tsMenuOpen = !tsMenuOpen;
         }}
-        aria-label="markers menu"
+        aria-label={t("media.playback.markerMenuAria")}
       >
         <svg
           class="ts-drop-arrow-icon"
@@ -1476,16 +1495,16 @@
       class="fs-time tooltip-ctrl"
       data-tooltip={timerTooltip}
       onclick={toggleTimer}
-      aria-label="toggle timer mode"
+      aria-label={t("media.playback.toggleTimerAria")}
     >
       {currentTimeDisplay()} / {durationDisplay}
     </button>
     <div class="fs-right">
       <button
         class="fs-ctrl-btn tooltip-ctrl"
-        data-tooltip="Unfullscreen"
+        data-tooltip={t("media.playback.unfullscreen")}
         onclick={toggleFullscreen}
-        aria-label="exit fullscreen"
+        aria-label={t("media.playback.exitFullscreen")}
       >
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
           ><path
@@ -1502,9 +1521,13 @@
   {#if isGifVideo}
     <button
       class="fs-ctrl-btn fs-gif-center-btn tooltip-ctrl"
-      data-tooltip={playing ? "Pause GIF" : "Play GIF"}
+      data-tooltip={playing
+        ? t("media.playback.pauseGif")
+        : t("media.playback.playGif")}
       onclick={togglePlay}
-      aria-label={playing ? "pause gif" : "play gif"}
+      aria-label={playing
+        ? t("media.playback.pauseGifAria")
+        : t("media.playback.playGifAria")}
     >
       {#key playing}
         {#if playing}

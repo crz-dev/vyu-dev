@@ -70,6 +70,7 @@
   import { markup } from "$lib/features/markup/markup.svelte";
 
   import { showToast } from "$lib/components/toast.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
   import { createTrackSelection } from "$lib/features/media/tracks.svelte";
   import Shell from "$lib/components/Shell.svelte";
   import NowPlayingPill from "$lib/components/NowPlayingPill.svelte";
@@ -126,9 +127,16 @@
     buildPlaybackProps,
   } from "$lib/shared/pageProps";
 
+  const t = locale.t;
+
   let filePath = $state("");
   let fileSrc = $state("");
-  let fileName = $state("no file open");
+  let fileName = $state(t("shell.noFileOpen"));
+
+  // Keep the empty-state filename in the current language when no file is open.
+  $effect(() => {
+    if (!filePath) fileName = t("shell.noFileOpen");
+  });
   let isVideo = $state(false);
   let isAudio = $state(false);
   let isPdf = $state(false);
@@ -227,13 +235,20 @@
     try {
       const path = await open({
         multiple: false,
-        filters: [{ name: "Subtitle files", extensions: ["srt", "vtt"] }],
+        filters: [
+          {
+            name: t("shell.subtitles.filter"),
+            extensions: ["srt", "vtt"],
+          },
+        ],
       });
       if (typeof path === "string")
         await trackSelection.loadExternalSubtitle(path);
     } catch (error) {
       showToast({
-        message: `Could not open subtitle file: ${String(error)}`,
+        message: t("shell.subtitles.openFailed", {
+          error: String(error),
+        }),
         color: "red",
       });
     }
@@ -551,7 +566,7 @@
         clips.clearBoundaries();
         removeResumePoint();
         clearLoopMarkers();
-        showToast({ message: "Markers cleared", color: "yellow" });
+        showToast({ message: t("shell.markers.cleared"), color: "yellow" });
       },
       toggleTimer,
       currentTimeDisplay,
@@ -763,11 +778,11 @@
   function toggleSleepTimer() {
     if (sleepTimer.active) {
       sleepTimer.clear();
-      showToast({ message: "Sleep timer cleared", color: "grey" });
+      showToast({ message: t("shell.sleep.cleared"), color: "grey" });
     } else {
       sleepTimer.start(sleepTimer.minutes);
       showToast({
-        message: `Sleep timer set for ${sleepTimer.minutes} min`,
+        message: t("shell.sleep.set", { count: sleepTimer.minutes }),
         color: "blue",
       });
     }
@@ -814,7 +829,10 @@
       "show-shortcuts": keybindStore.toggleCheatSheet,
       "reset-accessibility": () => {
         resetAccessibilitySettings();
-        showToast({ message: "Accessibility settings reset", color: "green" });
+        showToast({
+          message: t("shell.accessibility.reset"),
+          color: "green",
+        });
       },
       "play-pause": () => {
         if (!isTimedMedia()) return;
@@ -1452,7 +1470,7 @@
     slideshow.stop();
     playing = false;
     showToast({
-      message: "Sleep timer stopped playback",
+      message: t("shell.sleep.stoppedPlayback"),
       color: "grey",
       duration: 4000,
     });

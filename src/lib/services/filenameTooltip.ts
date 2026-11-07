@@ -2,6 +2,7 @@ import {
   hideFloatingTooltip,
   showFloatingTooltip,
 } from "$lib/services/session";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 const FILENAME_TOOLTIP_ID = "filename-tooltip";
 
@@ -10,7 +11,7 @@ export function showFilenameTooltip(e: MouseEvent, text: string) {
   showFloatingTooltip(
     FILENAME_TOOLTIP_ID,
     el.getBoundingClientRect(),
-    text || "File name",
+    text || locale.t("shell.fileName"),
   );
 }
 

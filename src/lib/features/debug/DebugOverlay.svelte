@@ -2,6 +2,9 @@
   import { onDestroy, onMount } from "svelte";
   import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     fileName,
@@ -50,7 +53,7 @@
   let lastMediaSample = 0;
 
   function shortPath(path: string): string {
-    if (!path) return "No file";
+    if (!path) return t("settings.debug.overlay.noFile");
     const parts = path.replace(/\//g, "\\").split("\\").filter(Boolean);
     return parts.slice(-2).join("\\");
   }
@@ -116,56 +119,83 @@
 </script>
 
 {#if visible}
-  <div class="debug-overlay" role="status" aria-label="Debug overlay">
+  <div
+    class="debug-overlay"
+    role="status"
+    aria-label={t("settings.debug.overlay.aria")}
+  >
     <div class="debug-overlay-header">
-      <span>Debug</span>
+      <span>{t("settings.debug.header")}</span>
       <button
         class="debug-overlay-close"
         onclick={() => debugPrefs.setOverlayOpen(false)}
-        aria-label="Close debug overlay">×</button
+        aria-label={t("settings.debug.overlay.close")}>×</button
       >
     </div>
     <div class="debug-overlay-grid">
       <span>FPS</span><strong>{fps}</strong>
-      <span>Frame</span><strong>{frameMs.toFixed(1)} ms</strong>
-      <span>Heap</span>
+      <span>{t("settings.debug.overlay.frame")}</span><strong
+        >{frameMs.toFixed(1)} ms</strong
+      >
+      <span>{t("settings.debug.overlay.heap")}</span>
       <strong
         >{heapUsed
           ? `${(heapUsed / 1024 / 1024).toFixed(1)} MB`
-          : "Unavailable"}</strong
+          : t("settings.debug.status.unavailable")}</strong
       >
-      <span>Heap limit</span>
+      <span>{t("settings.debug.overlay.heapLimit")}</span>
       <strong
         >{heapLimit
           ? `${(heapLimit / 1024 / 1024).toFixed(0)} MB`
-          : "—"}</strong
+          : t("settings.debug.status.dash")}</strong
       >
-      <span>File</span><strong title={filePath}>{shortPath(filePath)}</strong>
-      <span>Type</span>
+      <span>{t("settings.debug.overlay.file")}</span><strong title={filePath}
+        >{shortPath(filePath)}</strong
+      >
+      <span>{t("settings.debug.overlay.type")}</span>
       <strong
         >{isVideo
-          ? "video"
+          ? t("settings.debug.type.video")
           : isAudio
-            ? "audio"
+            ? t("settings.debug.type.audio")
             : isPdf
-              ? "pdf"
+              ? t("settings.debug.type.pdf")
               : filePath
-                ? "image"
-                : "none"}</strong
+                ? t("settings.debug.type.image")
+                : t("settings.debug.type.none")}</strong
       >
-      <span>Dimensions</span><strong>{fileDimensions || "—"}</strong>
-      <span>Zoom</span><strong>{zoomLevel}%</strong>
-      <span>Speed</span><strong>{playbackSpeed.toFixed(2)}x</strong>
-      <span>State</span><strong
-        >{paused ? "paused" : playing ? "playing" : "—"}</strong
+      <span>{t("settings.debug.overlay.dimensions")}</span><strong
+        >{fileDimensions || t("settings.debug.status.dash")}</strong
       >
-      <span>Time</span>
-      <strong>{formatSeconds(mediaTime)} / {durationDisplay || "0:00"}</strong>
-      <span>Ready</span><strong>{readyState}</strong>
-      <span>Buffered</span><strong>{formatSeconds(buffered)}</strong>
-      <span>Viewport</span>
+      <span>{t("settings.debug.overlay.zoom")}</span><strong
+        >{zoomLevel}%</strong
+      >
+      <span>{t("settings.debug.overlay.speed")}</span><strong
+        >{playbackSpeed.toFixed(2)}x</strong
+      >
+      <span>{t("settings.debug.overlay.state")}</span><strong
+        >{paused
+          ? t("settings.debug.state.paused")
+          : playing
+            ? t("settings.debug.state.playing")
+            : t("settings.debug.status.dash")}</strong
+      >
+      <span>{t("settings.debug.overlay.time")}</span>
+      <strong
+        >{formatSeconds(mediaTime)} / {durationDisplay ||
+          t("settings.debug.status.dash")}</strong
+      >
+      <span>{t("settings.debug.overlay.ready")}</span><strong
+        >{readyState}</strong
+      >
+      <span>{t("settings.debug.overlay.buffered")}</span><strong
+        >{formatSeconds(buffered)}</strong
+      >
+      <span>{t("settings.debug.overlay.viewport")}</span>
       <strong>{viewportWidth} × {viewportHeight}</strong>
-      <span>Name</span><strong title={fileName}>{fileName}</strong>
+      <span>{t("settings.debug.overlay.name")}</span><strong title={fileName}
+        >{fileName}</strong
+      >
     </div>
   </div>
 {/if}

@@ -1,5 +1,8 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     src = null,
@@ -29,10 +32,12 @@
   class:xlarge={size === "xlarge"}
   style={src ? "" : `--cover-placeholder-bg: ${color}`}
   onclick={onPickAudio ?? onTogglePlay}
-  aria-label={onPickAudio ? "Open audio file" : "Play / Pause"}
+  aria-label={onPickAudio
+    ? t("media.album.cover.open")
+    : t("media.album.cover.playPause")}
 >
   {#if src}
-    <img {src} alt="Album cover" draggable="false" />
+    <img {src} alt={t("media.album.cover.alt")} draggable="false" />
   {:else if size === "xlarge"}
     <div class="album-cover-xlarge-placeholder">
       <svg

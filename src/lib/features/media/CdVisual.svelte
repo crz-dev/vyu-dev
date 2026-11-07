@@ -1,6 +1,9 @@
 <script lang="ts">
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     progress = 0,
@@ -174,11 +177,13 @@
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
   role="slider"
-  aria-label="Vinyl record with playback progress - drag to scrub"
+  aria-label={t("media.cd.seekAria")}
   aria-valuenow={Math.round(progress)}
   aria-valuemin={0}
   aria-valuemax={100}
-  aria-valuetext={`${Math.round(progress)}% played`}
+  aria-valuetext={t("media.cd.playedPercent", {
+    percent: Math.round(progress),
+  })}
   tabindex="0"
   style="--cd-accent: {color}; transform: scale({bassScale})"
   onmousedown={handleDragStart}
@@ -308,7 +313,7 @@
       class="cd-center-label"
       role="button"
       tabindex="0"
-      aria-label="Change vinyl color"
+      aria-label={t("media.cd.changeColor")}
       onclick={() => onCenterClick?.()}
       onkeydown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

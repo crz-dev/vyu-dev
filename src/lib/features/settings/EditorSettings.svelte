@@ -6,8 +6,11 @@
   import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
   import { settingsSearchState } from "$lib/features/settings/settingsSearchState.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   const exportQualityLevels = [
     "fast",
@@ -15,7 +18,12 @@
     "quality",
     "lossless",
   ] as const;
-  const exportQualityLabels = ["Fast", "Balanced", "Quality", "Lossless"];
+  const exportQualityLabels = [
+    "settings.editor.quality.fast",
+    "settings.editor.quality.balanced",
+    "settings.editor.quality.quality",
+    "settings.editor.quality.lossless",
+  ];
 
   let imageQualityPreview = $state(editing.imageQuality);
   let exportQualityPreview = $state(
@@ -34,11 +42,11 @@
   });
 
   function exportQualityLabel(index: number): string {
-    return exportQualityLabels[index] ?? "Balanced";
+    return t(exportQualityLabels[index] ?? "settings.editor.quality.balanced");
   }
 
   function shortFolderPath(path: string): string {
-    if (!path) return "Source folder";
+    if (!path) return t("settings.editor.sourceFolder");
     const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
     if (parts.length <= 2) return parts.join("/");
     return parts.slice(-2).join("/");
@@ -96,13 +104,13 @@
         d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
       /></svg
     >
-    Editor
+    {t("settings.sections.editor")}
   </p>
 
-  <SettingsGroup label="Editing Safety" icon="pencil">
+  <SettingsGroup label={t("settings.editor.group.safety")} icon="pencil">
     <SettingsRow
-      label="Remember Unapplied Edits"
-      hint="Restore pending edits after restarting"
+      label={t("settings.editor.rememberEdits.label")}
+      hint={t("settings.editor.rememberEdits.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -119,8 +127,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Confirm Before Applying"
-      hint="Ask before writing edits to the file"
+      label={t("settings.editor.confirmApply.label")}
+      hint={t("settings.editor.confirmApply.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -137,8 +145,8 @@
       {/snippet}
     </SettingsRow>
     <SettingsRow
-      label="Confirm Close While Editing"
-      hint="Ask before closing with an edit in progress"
+      label={t("settings.editor.confirmClose.label")}
+      hint={t("settings.editor.confirmClose.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -157,25 +165,28 @@
       {/snippet}
     </SettingsRow>
     <SettingsRow
-      label="File Backups"
-      hint="Off, ask before applying, or always keep"
+      label={t("settings.editor.backup.label")}
+      hint={t("settings.editor.backup.hint")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-3">
           <button
             class="pill-btn"
             class:active={editing.backupMode === "off"}
-            onclick={() => editing.setBackupMode("off")}>Off</button
+            onclick={() => editing.setBackupMode("off")}
+            >{t("settings.editor.backup.off")}</button
           >
           <button
             class="pill-btn"
             class:active={editing.backupMode === "ask"}
-            onclick={() => editing.setBackupMode("ask")}>Ask</button
+            onclick={() => editing.setBackupMode("ask")}
+            >{t("settings.editor.backup.ask")}</button
           >
           <button
             class="pill-btn"
             class:active={editing.backupMode === "always"}
-            onclick={() => editing.setBackupMode("always")}>Always</button
+            onclick={() => editing.setBackupMode("always")}
+            >{t("settings.editor.backup.always")}</button
           >
         </div>
       {/snippet}
@@ -183,26 +194,27 @@
 
     {#if editing.backupMode !== "off" || settingsSearchState.active}
       <SettingsRow
-        label="Backup Folder"
-        hint="Where original copies are stored"
+        label={t("settings.editor.backup.folder.label")}
+        hint={t("settings.editor.backup.folder.hint")}
         subrow
       >
         {#snippet control()}
           <div class="settings-control-inline">
             <button
               class="settings-action-btn blue"
-              title={editing.backupDir || "App data backups"}
+              title={editing.backupDir || t("settings.editor.backup.appData")}
               onclick={handlePickBackupDir}
             >
               {editing.backupDir
                 ? shortFolderPath(editing.backupDir)
-                : "App data backups"}
+                : t("settings.editor.backup.appData")}
             </button>
             {#if editing.backupDir}
               <button
                 class="settings-action-btn"
-                title="Use the default backup folder"
-                onclick={() => editing.setBackupDir("")}>Clear</button
+                title={t("settings.editor.backup.useDefault")}
+                onclick={() => editing.setBackupDir("")}
+                >{t("settings.editor.clear")}</button
               >
             {/if}
           </div>
@@ -211,23 +223,24 @@
     {/if}
   </SettingsGroup>
 
-  <SettingsGroup label="Export Defaults" icon="image">
+  <SettingsGroup label={t("settings.editor.group.exportDefaults")} icon="image">
     <SettingsRow
-      label="Image Format"
+      label={t("settings.editor.imageFormat.label")}
       hint={editing.imageFormat === "original"
-        ? "Same file format"
+        ? t("settings.editor.imageFormat.hint.original")
         : editing.imageFormat === "png"
-          ? "Lossless export format"
+          ? t("settings.editor.imageFormat.hint.png")
           : editing.imageFormat === "jpg"
-            ? "Smaller exports, no transparency"
-            : "Good quality with transparency"}
+            ? t("settings.editor.imageFormat.hint.jpg")
+            : t("settings.editor.imageFormat.hint.webp")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-4">
           <button
             class="pill-btn"
             class:active={editing.imageFormat === "original"}
-            onclick={() => editing.setImageFormat("original")}>Original</button
+            onclick={() => editing.setImageFormat("original")}
+            >{t("settings.editor.imageFormat.original")}</button
           >
           <button
             class="pill-btn"
@@ -249,14 +262,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Image Quality"
+      label={t("settings.editor.imageQuality.label")}
       hint={editing.imageFormat === "png"
-        ? "PNG quality (lossless 100)"
+        ? t("settings.editor.imageQuality.hint.png")
         : editing.imageFormat === "jpg"
-          ? "JPEG quality (max 95)"
+          ? t("settings.editor.imageQuality.hint.jpg")
           : editing.imageFormat === "webp"
-            ? "WebP quality (max 100)"
-            : "Quality for original format"}
+            ? t("settings.editor.imageQuality.hint.webp")
+            : t("settings.editor.imageQuality.hint.original")}
     >
       {#snippet control()}
         <div class="settings-slider-control">
@@ -265,7 +278,7 @@
             min="60"
             max={editing.imageQualityMax}
             step="1"
-            aria-label="Image export quality"
+            aria-label={t("settings.editor.imageQuality.aria")}
             value={imageQualityPreview}
             disabled={editing.imageFormat === "png"}
             class:slider-locked={editing.imageFormat === "png"}
@@ -280,14 +293,15 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Image Output Folder"
-      hint="Starting folder for image exports"
+      label={t("settings.editor.imageOutput.label")}
+      hint={t("settings.editor.imageOutput.hint")}
     >
       {#snippet control()}
         <div class="settings-control-inline">
           <button
             class="settings-action-btn blue"
-            title={editing.imageOutputDir || "Same folder as the original"}
+            title={editing.imageOutputDir ||
+              t("settings.editor.sameAsOriginal")}
             onclick={() => pickOutputDir("image")}
           >
             {shortFolderPath(editing.imageOutputDir)}
@@ -295,8 +309,9 @@
           {#if editing.imageOutputDir}
             <button
               class="settings-action-btn"
-              title="Use the source folder"
-              onclick={() => clearOutputDir("image")}>Clear</button
+              title={t("settings.editor.useSourceFolder")}
+              onclick={() => clearOutputDir("image")}
+              >{t("settings.editor.clear")}</button
             >
           {/if}
         </div>
@@ -304,17 +319,18 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Video Format"
+      label={t("settings.editor.videoFormat.label")}
       hint={editing.videoFormat === "original"
-        ? "Same file format"
-        : "Format used when exporting edited videos"}
+        ? t("settings.editor.videoFormat.hint.original")
+        : t("settings.editor.videoFormat.hint.other")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-4">
           <button
             class="pill-btn"
             class:active={editing.videoFormat === "original"}
-            onclick={() => editing.setVideoFormat("original")}>Original</button
+            onclick={() => editing.setVideoFormat("original")}
+            >{t("settings.editor.videoFormat.original")}</button
           >
           <button
             class="pill-btn"
@@ -336,8 +352,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Video Quality"
-      hint="Quality preset for edited video exports"
+      label={t("settings.editor.videoQuality.label")}
+      hint={t("settings.editor.videoQuality.hint")}
     >
       {#snippet control()}
         <div class="settings-slider-control">
@@ -346,7 +362,7 @@
             min="0"
             max="3"
             step="1"
-            aria-label="Video export quality"
+            aria-label={t("settings.editor.videoQuality.aria")}
             aria-valuetext={exportQualityLabel(exportQualityPreview)}
             value={exportQualityPreview}
             oninput={(e) =>
@@ -364,14 +380,15 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Video Output Folder"
-      hint="Starting folder for video exports"
+      label={t("settings.editor.videoOutput.label")}
+      hint={t("settings.editor.videoOutput.hint")}
     >
       {#snippet control()}
         <div class="settings-control-inline">
           <button
             class="settings-action-btn blue"
-            title={editing.videoOutputDir || "Same folder as the original"}
+            title={editing.videoOutputDir ||
+              t("settings.editor.sameAsOriginal")}
             onclick={() => pickOutputDir("video")}
           >
             {shortFolderPath(editing.videoOutputDir)}
@@ -379,8 +396,9 @@
           {#if editing.videoOutputDir}
             <button
               class="settings-action-btn"
-              title="Use the source folder"
-              onclick={() => clearOutputDir("video")}>Clear</button
+              title={t("settings.editor.useSourceFolder")}
+              onclick={() => clearOutputDir("video")}
+              >{t("settings.editor.clear")}</button
             >
           {/if}
         </div>
@@ -388,10 +406,10 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Export Behavior" icon="refresh">
+  <SettingsGroup label={t("settings.editor.group.behavior")} icon="refresh">
     <SettingsRow
-      label="Auto-open Exports"
-      hint="Open finished images and videos in the viewer"
+      label={t("settings.editor.autoOpen.label")}
+      hint={t("settings.editor.autoOpen.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -411,8 +429,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Keep Original File Date"
-      hint="Restore the modified date after in-place edits"
+      label={t("settings.editor.keepDate.label")}
+      hint={t("settings.editor.keepDate.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">

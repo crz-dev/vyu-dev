@@ -5,8 +5,11 @@
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { deleteStore } from "$lib/features/file-actions/deleteFile.svelte";
   import { saveSkipDeleteConfirmation } from "$lib/services/storage";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   function setSkipDeleteConfirmations(enabled: boolean) {
     deleteStore.deleteNoAsk = enabled;
@@ -33,19 +36,22 @@
         y2="8.01"
       /><line x1="12" y1="16" x2="12" y2="16.01" /></svg
     >
-    Motor
+    {t("settings.accessibility.section.motor")}
   </p>
 
-  <SettingsGroup label="Targets" icon="mouse">
+  <SettingsGroup
+    label={t("settings.accessibility.motor.group.targets")}
+    icon="mouse"
+  >
     <SettingsRow
-      label="Large Click Targets"
-      hint="Increase button, toggle and pill hit areas"
+      label={t("settings.accessibility.motor.largeTargets.label")}
+      hint={t("settings.accessibility.motor.largeTargets.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Large Click Targets"
+            aria-label={t("settings.accessibility.motor.largeTargets.aria")}
             checked={accessibility.largeTargets}
             onchange={(e) =>
               accessibility.setLargeTargets(e.currentTarget.checked)}
@@ -58,14 +64,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Larger Scrollbars"
-      hint="Make scrollbars easier to grab in long lists"
+      label={t("settings.accessibility.motor.largeScrollbars.label")}
+      hint={t("settings.accessibility.motor.largeScrollbars.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Larger Scrollbars"
+            aria-label={t("settings.accessibility.motor.largeScrollbars.aria")}
             checked={accessibility.largeScrollbars}
             onchange={(e) =>
               accessibility.setLargeScrollbars(e.currentTarget.checked)}
@@ -78,14 +84,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Large Timeline"
-      hint="Increase the seek bar and playhead size"
+      label={t("settings.accessibility.motor.largeTimeline.label")}
+      hint={t("settings.accessibility.motor.largeTimeline.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Large Timeline"
+            aria-label={t("settings.accessibility.motor.largeTimeline.aria")}
             checked={accessibility.largeTimeline}
             onchange={(e) =>
               accessibility.setLargeTimeline(e.currentTarget.checked)}
@@ -98,16 +104,21 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Playback Control" icon="play">
+  <SettingsGroup
+    label={t("settings.accessibility.motor.group.playback")}
+    icon="play"
+  >
     <SettingsRow
-      label="Always Show Controls"
-      hint="Keep video playback controls visible"
+      label={t("settings.accessibility.motor.alwaysShowControls.label")}
+      hint={t("settings.accessibility.motor.alwaysShowControls.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Always Show Controls"
+            aria-label={t(
+              "settings.accessibility.motor.alwaysShowControls.aria",
+            )}
             checked={accessibility.alwaysShowControls}
             onchange={(e) =>
               accessibility.setAlwaysShowControls(e.currentTarget.checked)}
@@ -120,30 +131,33 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Access & Safety" icon="shield">
+  <SettingsGroup
+    label={t("settings.accessibility.motor.group.access")}
+    icon="shield"
+  >
     <SettingsRow
-      label="Keyboard Shortcut Sheet"
-      hint="Open the full list of keyboard shortcuts"
+      label={t("settings.accessibility.motor.shortcutSheet.label")}
+      hint={t("settings.accessibility.motor.shortcutSheet.hint")}
     >
       {#snippet control()}
         <button
           class="settings-action-btn"
           onclick={() => keybindStore.toggleCheatSheet()}
         >
-          View shortcuts
+          {t("settings.accessibility.motor.shortcutSheet.button")}
         </button>
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Reduce Pan Sensitivity"
-      hint="Slow image and PDF dragging for finer control"
+      label={t("settings.accessibility.motor.reducePan.label")}
+      hint={t("settings.accessibility.motor.reducePan.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Reduce Pan Sensitivity"
+            aria-label={t("settings.accessibility.motor.reducePan.aria")}
             checked={accessibility.reducePanSensitivity}
             onchange={(e) =>
               accessibility.setReducePanSensitivity(e.currentTarget.checked)}
@@ -158,14 +172,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Skip Delete Confirmations"
-      hint="Delete files without a prompt. Deleted files may not be recoverable."
+      label={t("settings.accessibility.motor.skipDelete.label")}
+      hint={t("settings.accessibility.motor.skipDelete.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Skip Delete Confirmations"
+            aria-label={t("settings.accessibility.motor.skipDelete.aria")}
             checked={deleteStore.deleteNoAsk}
             onchange={(e) =>
               setSkipDeleteConfirmations(e.currentTarget.checked)}

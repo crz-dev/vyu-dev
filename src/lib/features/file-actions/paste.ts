@@ -8,6 +8,7 @@ import { arrayBufferToBase64 } from "$lib/shared/base64";
 import { ALL_EXTS_SET } from "$lib/shared/constants";
 import { getFileExt } from "$lib/services/files";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface PasteDeps {
   loadFile: (path: string) => Promise<void>;
@@ -34,12 +35,12 @@ export function createPasteHandler(deps: PasteDeps) {
           );
           await deps.loadFile(dest);
           showToast({
-            message: "Image pasted from clipboard",
+            message: locale.t("shell.files.pasted"),
             color: "blue",
             duration: 5000,
             actions: [
               {
-                label: "Save",
+                label: locale.t("common.save"),
                 variant: "accent",
                 icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>',
                 onClick: async () => {
@@ -47,16 +48,24 @@ export function createPasteHandler(deps: PasteDeps) {
                   const defaultName = `vyu-export-${Date.now()}.${saveExt}`;
                   const outputPath = await save({
                     defaultPath: defaultName,
-                    filters: [{ name: "Media", extensions: [saveExt] }],
+                    filters: [
+                      {
+                        name: locale.t("shell.files.filterMedia"),
+                        extensions: [saveExt],
+                      },
+                    ],
                   });
                   if (!outputPath) return;
                   try {
                     await invokeCopyFile(dest, outputPath);
-                    showToast({ message: "File saved", color: "green" });
+                    showToast({
+                      message: locale.t("shell.files.saved"),
+                      color: "green",
+                    });
                   } catch (err) {
                     console.error("Failed to save file:", err);
                     showToast({
-                      message: "Failed to save file",
+                      message: locale.t("shell.files.saveFailed"),
                       color: "red",
                     });
                   }

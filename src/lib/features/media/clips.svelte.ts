@@ -12,6 +12,7 @@ import {
   invokeOpenDirectory,
 } from "$lib/features/media/api";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface ClipDeleteConfirmState {
   visible: boolean;
@@ -183,7 +184,7 @@ export function createClips(deps: ClipsDeps) {
     try {
       return JSON.stringify(e);
     } catch {
-      return "Unknown error";
+      return locale.t("media.clips.unknownError");
     }
   }
 
@@ -204,16 +205,13 @@ export function createClips(deps: ClipsDeps) {
 
     const segments = sanitizeClipPairs();
     if (segments.length === 0) {
-      showClipToast(
-        "No clip segments defined. Add clip markers first.",
-        "error",
-      );
+      showClipToast(locale.t("media.clips.noSegments"), "error");
       return;
     }
 
     const mode = clipMergeSegments ? "merge" : "separate";
     clipJobRunning = true;
-    clipJobLabel = `Clipping ${segments.length} segment${segments.length > 1 ? "s" : ""}...`;
+    clipJobLabel = locale.tp("media.clips.jobLabel", segments.length);
 
     let outputDir = "";
     try {
@@ -226,7 +224,7 @@ export function createClips(deps: ClipsDeps) {
       );
       outputDir = result.output_dir;
       showClipToast(
-        `${result.outputs.length} clip${result.outputs.length > 1 ? "s" : ""} saved`,
+        locale.tp("media.clips.saved", result.outputs.length),
         "success",
       );
     } catch (err) {

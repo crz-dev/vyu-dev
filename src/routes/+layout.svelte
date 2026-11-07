@@ -2,10 +2,12 @@
   import "../app.css";
   import { theme } from "$lib/features/theme/theme.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { children } = $props();
 
   appearance.init();
+  locale.init();
 
   let overlayEl = $state<HTMLDivElement | null>(null);
   let expandTimer: ReturnType<typeof setTimeout> | null = null;

@@ -32,6 +32,7 @@ import {
   clearPreloadedImages,
   forgetPreloadedImage,
 } from "$lib/services/imagePreload";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface MediaState {
   filePath: string;
@@ -529,7 +530,7 @@ export function createMedia(
     set({
       filePath: "",
       fileSrc: "",
-      fileName: "no file open",
+      fileName: locale.t("media.player.noFileOpen"),
       isVideo: false,
       isAudio: false,
       isPdf: false,

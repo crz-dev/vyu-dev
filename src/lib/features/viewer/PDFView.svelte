@@ -7,6 +7,9 @@
   import { markup } from "$lib/features/markup/markup.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     pdfContainerEl = $bindable(null),
@@ -259,7 +262,10 @@
         }, 2000);
       }
     } catch {
-      showToast({ message: "Failed to copy selected text", color: "red" });
+      showToast({
+        message: t("shell.viewer.pdf.copySelectedFailed"),
+        color: "red",
+      });
     }
   }
 
@@ -346,7 +352,7 @@
     >
       <input
         type="text"
-        placeholder="Find in document\u2026"
+        placeholder={t("shell.viewer.pdf.findPlaceholder")}
         value={findQuery}
         oninput={(e) => findText((e.target as HTMLInputElement).value)}
         onkeydown={(e) => {
@@ -364,25 +370,25 @@
         <span class="pdf-find-count"
           >{findResults > 0
             ? `${findCurrentIdx}/${findResults}`
-            : "No results"}</span
+            : t("shell.viewer.pdf.noResults")}</span
         >
       {/if}
       <button
         class="pdf-find-btn"
         onclick={findPrev}
         disabled={findResults === 0}
-        aria-label="Previous match">▲</button
+        aria-label={t("shell.viewer.pdf.previousMatch")}>▲</button
       >
       <button
         class="pdf-find-btn"
         onclick={findNext}
         disabled={findResults === 0}
-        aria-label="Next match">▼</button
+        aria-label={t("shell.viewer.pdf.nextMatch")}>▼</button
       >
       <button
         class="pdf-find-close"
         onclick={toggleFind}
-        aria-label="Close find bar">✕</button
+        aria-label={t("shell.viewer.pdf.closeFind")}>✕</button
       >
     </div>
   {/if}
@@ -393,7 +399,7 @@
       transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}
     >
       <div class="pdf-page-panel-header">
-        <span class="pdf-page-panel-title">Index</span>
+        <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span>
         <button class="pdf-page-panel-close" onclick={togglePagePanel}>✕</button
         >
       </div>
@@ -425,7 +431,7 @@
   {#if loading}
     <div class="pdf-loading">
       <div class="pdf-spinner"></div>
-      <span>Loading PDF...</span>
+      <span>{t("shell.viewer.pdf.loading")}</span>
     </div>
   {:else if error}
     <div class="pdf-error">{error}</div>
@@ -440,9 +446,12 @@
         <button
           class="pdf-page-label tooltip-ctrl"
           onclick={togglePagePanel}
-          data-tooltip={showPagePanel ? "Close index" : "Open index"}
-          aria-label={showPagePanel ? "Close index" : "Open index"}
-          >{i + 1}</button
+          data-tooltip={showPagePanel
+            ? t("shell.viewer.pdf.closeIndex")
+            : t("shell.viewer.pdf.openIndex")}
+          aria-label={showPagePanel
+            ? t("shell.viewer.pdf.closeIndex")
+            : t("shell.viewer.pdf.openIndex")}>{i + 1}</button
         >
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(i + 1)}
@@ -486,8 +495,12 @@
         class="pdf-selection-copy tooltip-below"
         onclick={copySelection}
         onpointerdown={(e) => e.preventDefault()}
-        data-tooltip={textSelection.copied ? "Text copied" : "Copy text"}
-        aria-label={textSelection.copied ? "Text copied" : "Copy selected text"}
+        data-tooltip={textSelection.copied
+          ? t("shell.viewer.pdf.textCopied")
+          : t("shell.viewer.pdf.copyText")}
+        aria-label={textSelection.copied
+          ? t("shell.viewer.pdf.textCopied")
+          : t("shell.viewer.pdf.copySelected")}
         class:copied={textSelection.copied}
       >
         {#if textSelection.copied}

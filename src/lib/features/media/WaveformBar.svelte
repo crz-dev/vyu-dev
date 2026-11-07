@@ -1,5 +1,8 @@
 <script lang="ts">
   import type { VideoMarker, ClipBoundary, ClipPair } from "$lib/shared/types";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     filePath,
@@ -246,7 +249,7 @@
   onmousedown={onScrubStart}
   role="button"
   tabindex="0"
-  aria-label="Seek audio"
+  aria-label={t("media.waveform.seek")}
 >
   <canvas bind:this={canvasEl} class="waveform-canvas"></canvas>
   <div class="audio-progress-playhead" style="left: {progress}%"></div>
@@ -257,7 +260,7 @@
       style="left: {pct(abLoopRegion.start)}%; width: {pct(abLoopRegion.end) -
         pct(abLoopRegion.start)}%"
       role="region"
-      aria-label="AB Loop region"
+      aria-label={t("media.waveform.abLoop")}
       oncontextmenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -306,9 +309,14 @@
           seekToTimestamp?.(ts.time);
         }
       }}
-      aria-label="timestamp {ts.title
-        ? `${ts.title} at ${formatTime?.(ts.time) ?? ''}`
-        : (formatTime?.(ts.time) ?? '')}"
+      aria-label={ts.title
+        ? t("media.waveform.timestampTitledAria", {
+            title: ts.title,
+            time: formatTime?.(ts.time) ?? "",
+          })
+        : t("media.waveform.timestampAria", {
+            time: formatTime?.(ts.time) ?? "",
+          })}
     ></div>
   {/each}
 
@@ -343,7 +351,9 @@
           seekToTimestamp?.(loopStart!);
         }
       }}
-      aria-label="Loop start A at {formatTime?.(loopStart!) ?? ''}"
+      aria-label={t("media.waveform.loopStartAria", {
+        time: formatTime?.(loopStart!) ?? "",
+      })}
     ></div>
   {/if}
 
@@ -378,7 +388,9 @@
           seekToTimestamp?.(loopEnd!);
         }
       }}
-      aria-label="Loop end B at {formatTime?.(loopEnd!) ?? ''}"
+      aria-label={t("media.waveform.loopEndAria", {
+        time: formatTime?.(loopEnd!) ?? "",
+      })}
     ></div>
   {/if}
 
@@ -415,8 +427,18 @@
         }
       }}
       aria-label={cb.title
-        ? `${cb.kind} clip marker ${cb.title} at ${formatTime?.(cb.time) ?? ""}`
-        : `${cb.kind} clip marker at ${formatTime?.(cb.time) ?? ""}`}
+        ? t(
+            cb.kind === "start"
+              ? "media.waveform.clipMarkerStartTitled"
+              : "media.waveform.clipMarkerEndTitled",
+            { title: cb.title, time: formatTime?.(cb.time) ?? "" },
+          )
+        : t(
+            cb.kind === "start"
+              ? "media.waveform.clipMarkerStartAt"
+              : "media.waveform.clipMarkerEndAt",
+            { time: formatTime?.(cb.time) ?? "" },
+          )}
     ></div>
   {/each}
 
@@ -445,7 +467,9 @@
           seekToResumePoint?.();
         }
       }}
-      aria-label="Resume at {formatTime?.(resumePoint!) ?? ''}"
+      aria-label={t("media.waveform.resumeAria", {
+        time: formatTime?.(resumePoint!) ?? "",
+      })}
     ></div>
   {/if}
 </div>

@@ -28,8 +28,11 @@
   } from "$lib/features/system/api";
   import { showToast } from "$lib/components/toast.svelte";
   import type { StartupView } from "$lib/services/storage";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   let loading = $state(true);
   let contextMenu = $state(false);
@@ -69,10 +72,10 @@
     if (clearCacheTimeout) clearTimeout(clearCacheTimeout);
   });
 
-  const startupOptions: { value: StartupView; label: string }[] = [
-    { value: "last-file", label: "Last File" },
-    { value: "library", label: "Library" },
-    { value: "empty", label: "Empty" },
+  const startupOptions: { value: StartupView; labelKey: string }[] = [
+    { value: "last-file", labelKey: "settings.system.startupView.lastFile" },
+    { value: "library", labelKey: "settings.system.startupView.library" },
+    { value: "empty", labelKey: "settings.system.startupView.empty" },
   ];
 
   async function load() {
@@ -110,7 +113,7 @@
     }
     if (cfg.status === "rejected") {
       showToast({
-        message: "Failed to load some system settings",
+        message: t("settings.system.toast.loadFailed"),
         color: "red",
       });
     }
@@ -136,9 +139,11 @@
 
   function powerHint(): string {
     if (!powerStatus.supported) return "";
-    if (!powerStatus.onBattery) return "Plugged in";
-    const charge = powerStatus.charging ? " · charging" : "";
-    return `On battery${charge}${powerStatus.percent ? ` · ${powerStatus.percent}%` : ""}`;
+    if (!powerStatus.onBattery) return t("settings.system.power.pluggedIn");
+    const charge = powerStatus.charging
+      ? ` · ${t("settings.system.power.charging")}`
+      : "";
+    return `${t("settings.system.power.onBattery")}${charge}${powerStatus.percent ? ` · ${powerStatus.percent}%` : ""}`;
   }
 
   function updateHint(): string {
@@ -147,7 +152,9 @@
         ? `${updateResult.message} (${updateResult.latestVersion})`
         : updateResult.message;
     }
-    return appVersion ? `Version ${appVersion}` : "Current version";
+    return appVersion
+      ? t("settings.system.version.value", { version: appVersion })
+      : t("settings.system.version.current");
   }
 
   async function handleHardwareAcceleration(enabled: boolean) {
@@ -195,7 +202,10 @@
       cacheStats = await invokeGetCacheStats();
       if (freed > 0) {
         showToast({
-          message: `Cache limit set to ${formatLimit(mb)} · freed ${formatBytes(freed)}`,
+          message: t("settings.system.toast.cacheLimit", {
+            size: formatLimit(mb),
+            freed: formatBytes(freed),
+          }),
           color: "green",
         });
       }
@@ -241,8 +251,10 @@
       showToast({
         message:
           freed > 0
-            ? `Cleared ${formatBytes(freed)}`
-            : "Cache is already empty",
+            ? t("settings.system.toast.cacheCleared", {
+                size: formatBytes(freed),
+              })
+            : t("settings.system.toast.cacheEmpty"),
         color: freed > 0 ? "green" : "yellow",
       });
     } catch (e) {
@@ -276,7 +288,10 @@
     try {
       await openUrl(url);
     } catch (e) {
-      showToast({ message: `Failed to open release page: ${e}`, color: "red" });
+      showToast({
+        message: t("settings.system.toast.releaseFailed", { error: String(e) }),
+        color: "red",
+      });
     }
   }
 
@@ -307,11 +322,14 @@
         y2="21"
       /><line x1="12" y1="17" x2="12" y2="21" /></svg
     >
-    System
+    {t("settings.sections.system")}
   </p>
 
-  <SettingsGroup label="General" icon="window">
-    <SettingsRow label="Always on Top" hint="Keep Vyu above other windows">
+  <SettingsGroup label={t("settings.system.group.general")} icon="window">
+    <SettingsRow
+      label={t("settings.system.alwaysOnTop.label")}
+      hint={t("settings.system.alwaysOnTop.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
@@ -328,8 +346,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Single Instance"
-      hint="Reuse the current window when opening files"
+      label={t("settings.system.singleInstance.label")}
+      hint={t("settings.system.singleInstance.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -353,23 +371,25 @@
       >
         <div class="settings-label-col">
           <div class="settings-label-text">
-            <span class="settings-label">Restart Required</span>
+            <span class="settings-label"
+              >{t("settings.system.restart.label")}</span
+            >
             <span class="settings-hint"
-              >Single instance changes on the next launch</span
+              >{t("settings.system.restart.singleInstance")}</span
             >
           </div>
         </div>
         <div class="settings-control">
           <button class="settings-action-btn yellow" onclick={handleRestart}
-            >Restart</button
+            >{t("settings.system.restart.button")}</button
           >
         </div>
       </div>
     {/if}
 
     <SettingsRow
-      label="Keep Screen Awake"
-      hint="Video keeps the display on; audio prevents sleep"
+      label={t("settings.system.keepAwake.label")}
+      hint={t("settings.system.keepAwake.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -386,8 +406,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Pause When Unfocused"
-      hint="Pause playback when Vyu loses focus"
+      label={t("settings.system.pauseUnfocused.label")}
+      hint={t("settings.system.pauseUnfocused.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -405,8 +425,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Startup View"
-      hint="What Vyu shows when it starts without a file"
+      label={t("settings.system.startupView.label")}
+      hint={t("settings.system.startupView.hint")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-3">
@@ -415,7 +435,7 @@
               class="pill-btn"
               class:active={systemPrefs.startupView === option.value}
               onclick={() => systemPrefs.setStartupView(option.value)}
-              >{option.label}</button
+              >{t(option.labelKey)}</button
             >
           {/each}
         </div>
@@ -423,19 +443,19 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Default Media App"
-      hint="Choose Vyu in Windows Default Apps"
+      label={t("settings.system.defaultMediaApp.label")}
+      hint={t("settings.system.defaultMediaApp.hint")}
     >
       {#snippet control()}
         <button class="settings-action-btn" onclick={handleOpenDefaultApps}
-          >Open</button
+          >{t("settings.system.defaultMediaApp.open")}</button
         >
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Explorer Context Menu"
-      hint="Adds “Open with Vyu” to the classic right-click menu"
+      label={t("settings.system.contextMenu.label")}
+      hint={t("settings.system.contextMenu.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -453,10 +473,10 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Performance" icon="cpu">
+  <SettingsGroup label={t("settings.system.group.performance")} icon="cpu">
     <SettingsRow
-      label="Hardware Acceleration"
-      hint="Use WebView2 GPU rendering · requires restart"
+      label={t("settings.system.hardwareAcceleration.label")}
+      hint={t("settings.system.hardwareAcceleration.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -481,25 +501,26 @@
       >
         <div class="settings-label-col">
           <div class="settings-label-text">
-            <span class="settings-label">Restart Required</span>
+            <span class="settings-label"
+              >{t("settings.system.restart.label")}</span
+            >
             <span class="settings-hint"
-              >Acceleration changes on the next launch</span
+              >{t("settings.system.restart.acceleration")}</span
             >
           </div>
         </div>
         <div class="settings-control">
           <button class="settings-action-btn yellow" onclick={handleRestart}
-            >Restart</button
+            >{t("settings.system.restart.button")}</button
           >
         </div>
       </div>
     {/if}
 
     <SettingsRow
-      label="Battery Saver"
-      hint="Pause thumbnails and lower animation FPS on battery{powerHint()
-        ? ` · ${powerHint()}`
-        : ''}"
+      label={t("settings.system.batterySaver.label")}
+      hint={t("settings.system.batterySaver.hint") +
+        (powerHint() ? ` · ${powerHint()}` : "")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -519,8 +540,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Thumbnail Limit"
-      hint="Oldest thumbnails are removed above this size"
+      label={t("settings.system.thumbnailLimit.label")}
+      hint={t("settings.system.thumbnailLimit.hint")}
     >
       {#snippet control()}
         <div class="settings-slider-control">
@@ -532,7 +553,7 @@
             bind:value={cacheLimitPreview}
             onchange={handleCacheLimit}
             disabled={applyingCacheLimit}
-            aria-label="Thumbnail cache limit"
+            aria-label={t("settings.system.thumbnailLimit.aria")}
           />
           <span class="settings-slider-value"
             >{formatLimit(cacheLimitPreview)}</span
@@ -542,16 +563,17 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Cache"
+      label={t("settings.system.cache.label")}
       hint={cacheStats
-        ? `${formatBytes(cacheStats.total)} · thumbnails, previews and cover art`
-        : "Calculating…"}
+        ? `${formatBytes(cacheStats.total)} · ${t("settings.system.cache.hint")}`
+        : t("settings.system.cache.calculating")}
     >
       {#snippet control()}
         <div class="settings-control-inline">
           <button
             class="settings-action-btn"
-            onclick={() => handleOpenFolder("cache")}>Open</button
+            onclick={() => handleOpenFolder("cache")}
+            >{t("settings.system.cache.open")}</button
           >
           <button
             class="settings-action-btn yellow"
@@ -559,38 +581,44 @@
             disabled={clearingCache}
           >
             {clearingCache
-              ? "Clearing…"
+              ? t("settings.system.cache.clearing")
               : clearCacheConfirming
-                ? "Confirm?"
-                : "Clear"}
+                ? t("settings.system.cache.confirm")
+                : t("settings.system.cache.clear")}
           </button>
         </div>
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="App Data" hint="Database and configuration">
+    <SettingsRow
+      label={t("settings.system.appData.label")}
+      hint={t("settings.system.appData.hint")}
+    >
       {#snippet control()}
         <button
           class="settings-action-btn"
-          onclick={() => handleOpenFolder("data")}>Open</button
+          onclick={() => handleOpenFolder("data")}
+          >{t("settings.system.cache.open")}</button
         >
       {/snippet}
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Updates" icon="refresh">
-    <SettingsRow label="Version" hint={updateHint()}>
+  <SettingsGroup label={t("settings.system.group.updates")} icon="refresh">
+    <SettingsRow label={t("settings.system.version.label")} hint={updateHint()}>
       {#snippet control()}
         <div class="settings-control-inline">
           <button
             class="settings-action-btn"
             onclick={handleCheckUpdates}
             disabled={checkingUpdates}
-            >{checkingUpdates ? "Checking…" : "Check"}</button
+            >{checkingUpdates
+              ? t("settings.system.version.checking")
+              : t("settings.system.version.check")}</button
           >
           {#if updateResult?.status === "update" && updateResult.releaseUrl}
             <button class="settings-action-btn blue" onclick={handleOpenRelease}
-              >Open</button
+              >{t("settings.system.cache.open")}</button
             >
           {/if}
         </div>
@@ -598,8 +626,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Check for Updates on Launch"
-      hint="Look for a newer release in the background · applies next launch"
+      label={t("settings.system.checkUpdates.label")}
+      hint={t("settings.system.checkUpdates.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">

@@ -3,8 +3,11 @@
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { showToast } from "$lib/components/toast.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   type LibraryFileKind = keyof typeof library.fileFilters;
 
@@ -29,9 +32,9 @@
   });
 
   function formatThumbnailDensity(value: number): string {
-    if (value >= 67) return "Large";
-    if (value <= 33) return "Small";
-    return "Medium";
+    if (value >= 67) return t("settings.library.density.large");
+    if (value <= 33) return t("settings.library.density.small");
+    return t("settings.library.density.medium");
   }
 
   function isLastActiveFileType(kind: LibraryFileKind): boolean {
@@ -40,14 +43,17 @@
 
   function clearRecents() {
     library.clearRecentFiles();
-    showToast({ message: "Recent files cleared", color: "green" });
+    showToast({
+      message: t("settings.library.recents.cleared"),
+      color: "green",
+    });
   }
 
-  const fileKinds: { kind: LibraryFileKind; label: string }[] = [
-    { kind: "images", label: "Images" },
-    { kind: "videos", label: "Videos" },
-    { kind: "audio", label: "Audio" },
-    { kind: "documents", label: "Docs" },
+  const fileKinds: { kind: LibraryFileKind; labelKey: string }[] = [
+    { kind: "images", labelKey: "settings.library.fileTypes.images" },
+    { kind: "videos", labelKey: "settings.library.fileTypes.videos" },
+    { kind: "audio", labelKey: "settings.library.fileTypes.audio" },
+    { kind: "documents", labelKey: "settings.library.fileTypes.docs" },
   ];
 </script>
 
@@ -66,13 +72,13 @@
         d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
       /></svg
     >
-    Library
+    {t("settings.sections.library")}
   </p>
 
-  <SettingsGroup label="Display" icon="layout">
+  <SettingsGroup label={t("settings.library.group.display")} icon="layout">
     <SettingsRow
-      label="Thumbnail Size"
-      hint="Item size and preview resolution in library views"
+      label={t("settings.library.thumbnailSize.label")}
+      hint={t("settings.library.thumbnailSize.hint")}
     >
       {#snippet control()}
         <div class="settings-control-stack">
@@ -82,7 +88,7 @@
               min="0"
               max="100"
               step="1"
-              aria-label="Thumbnail size"
+              aria-label={t("settings.library.thumbnailSize.aria")}
               value={densityPreview}
               oninput={(e) => (densityPreview = Number(e.currentTarget.value))}
               onchange={(e) =>
@@ -92,21 +98,27 @@
               >{formatThumbnailDensity(densityPreview)}</span
             >
           </div>
-          <div class="pill-group pill-group-3" aria-label="Preview resolution">
+          <div
+            class="pill-group pill-group-3"
+            aria-label={t("settings.library.previewResolution.aria")}
+          >
             <button
               class="pill-btn"
               class:active={library.thumbnailSize === 128}
-              onclick={() => library.setThumbnailSize(128)}>Fast</button
+              onclick={() => library.setThumbnailSize(128)}
+              >{t("settings.library.preview.fast")}</button
             >
             <button
               class="pill-btn"
               class:active={library.thumbnailSize === 256}
-              onclick={() => library.setThumbnailSize(256)}>Normal</button
+              onclick={() => library.setThumbnailSize(256)}
+              >{t("settings.library.preview.normal")}</button
             >
             <button
               class="pill-btn"
               class:active={library.thumbnailSize === 512}
-              onclick={() => library.setThumbnailSize(512)}>Sharp</button
+              onclick={() => library.setThumbnailSize(512)}
+              >{t("settings.library.preview.sharp")}</button
             >
           </div>
         </div>
@@ -114,8 +126,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Visible File Types"
-      hint="At least one type stays visible"
+      label={t("settings.library.fileTypes.label")}
+      hint={t("settings.library.fileTypes.hint")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-4">
@@ -129,14 +141,17 @@
                 library.setFileKindVisible(
                   item.kind,
                   !library.fileFilters[item.kind],
-                )}>{item.label}</button
+                )}>{t(item.labelKey)}</button
             >
           {/each}
         </div>
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Show Folders" hint="Display folders alongside files">
+    <SettingsRow
+      label={t("settings.library.showFolders.label")}
+      hint={t("settings.library.showFolders.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
@@ -152,8 +167,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Show Thumbnails"
-      hint="Generate previews in library views"
+      label={t("settings.library.showThumbnails.label")}
+      hint={t("settings.library.showThumbnails.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -170,14 +185,14 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="History" icon="clock">
+  <SettingsGroup label={t("settings.library.group.history")} icon="clock">
     <SettingsRow
-      label="Record Recents"
+      label={t("settings.library.recents.label")}
       hint={library.recentsDisabled
-        ? "Recently opened files are not recorded"
+        ? t("settings.library.recents.hint.disabled")
         : library.privacyMode
-          ? "Paused while Privacy Mode is on"
-          : "Remember recently opened files"}
+          ? t("settings.library.recents.hint.paused")
+          : t("settings.library.recents.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -195,8 +210,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Recent Files Limit"
-      hint="How many recent items to remember"
+      label={t("settings.library.recents.limit.label")}
+      hint={t("settings.library.recents.limit.hint")}
       subrow
       open={!library.recentsDisabled}
     >
@@ -214,19 +229,21 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Remove After"
-      hint="Older entries drop off automatically"
+      label={t("settings.library.recents.retention.label")}
+      hint={t("settings.library.recents.retention.hint")}
       subrow
       open={!library.recentsDisabled}
     >
       {#snippet control()}
         <div class="pill-group pill-group-4">
-          {#each [{ value: 7, label: "7d" }, { value: 30, label: "30d" }, { value: 90, label: "90d" }, { value: 0, label: "Never" }] as option}
+          {#each [7, 30, 90, 0] as value}
             <button
               class="pill-btn"
-              class:active={library.recentRetentionDays === option.value}
-              onclick={() => library.setRecentRetentionDays(option.value)}
-              >{option.label}</button
+              class:active={library.recentRetentionDays === value}
+              onclick={() => library.setRecentRetentionDays(value)}
+              >{value === 0
+                ? t("settings.library.recents.retention.never")
+                : `${value}d`}</button
             >
           {/each}
         </div>
@@ -234,19 +251,22 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Clear Recent Files"
-      hint="Remove all items from the recent files list"
+      label={t("settings.library.recents.clear.label")}
+      hint={t("settings.library.recents.clear.hint")}
     >
       {#snippet control()}
         <button class="settings-action-btn yellow" onclick={clearRecents}
-          >Clear</button
+          >{t("settings.library.recents.clear.button")}</button
         >
       {/snippet}
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Privacy" icon="shield">
-    <SettingsRow label="Privacy Mode" hint="Blur thumbnails and pause recents">
+  <SettingsGroup label={t("settings.library.group.privacy")} icon="shield">
+    <SettingsRow
+      label={t("settings.library.privacy.mode.label")}
+      hint={t("settings.library.privacy.mode.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
@@ -262,8 +282,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Blur Strength"
-      hint="Higher values hide more detail"
+      label={t("settings.library.privacy.blur.label")}
+      hint={t("settings.library.privacy.blur.hint")}
       subrow
       open={library.privacyMode}
     >
@@ -274,7 +294,7 @@
             min="4"
             max="32"
             step="2"
-            aria-label="Privacy blur strength"
+            aria-label={t("settings.library.privacy.blur.aria")}
             value={privacyBlurPreview}
             oninput={(e) =>
               (privacyBlurPreview = Number(e.currentTarget.value))}
@@ -289,8 +309,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Hide File Names"
-      hint="Mask filenames in library views"
+      label={t("settings.library.privacy.hideNames.label")}
+      hint={t("settings.library.privacy.hideNames.hint")}
       subrow
       open={library.privacyMode}
     >
@@ -310,8 +330,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Reveal on Hover"
-      hint="Show sharp thumbnails when hovering"
+      label={t("settings.library.privacy.revealHover.label")}
+      hint={t("settings.library.privacy.revealHover.hint")}
       subrow
       open={library.privacyMode}
     >

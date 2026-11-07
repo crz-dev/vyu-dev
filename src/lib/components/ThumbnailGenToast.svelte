@@ -1,9 +1,13 @@
 <script lang="ts">
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
   let { class: className = "" }: { class?: string } = $props();
+
+  const t = locale.t;
 </script>
 
 <div class="thumb-gen-toast {className}">
-  <span>Loading thumbnails</span>
+  <span>{t("shell.thumbnails.loading")}</span>
 </div>
 
 <style>

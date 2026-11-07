@@ -6,6 +6,7 @@ import {
   type SortMode,
 } from "$lib/shared/constants";
 import { getFileExt, getFileName } from "$lib/services/files";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import type { BatchStatItem } from "$lib/shared/types";
 
 const IMAGE_SET = new Set(IMAGE_EXTS);
@@ -169,6 +170,75 @@ const MONTH_NAMES = [
   "December",
 ];
 
+// Grouping keys stay stable English identifiers so sorting and lookups do not
+// depend on the active language; only the rendered labels are translated.
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  Images: "library.sections.type.images",
+  Videos: "library.sections.type.videos",
+  Audio: "library.sections.type.audio",
+  Documents: "library.sections.type.documents",
+  Folders: "library.sections.type.folders",
+  Other: "library.sections.type.other",
+};
+
+const SIZE_LABEL_KEYS: Record<string, string> = {
+  "Tiny (<1 MB)": "library.sections.size.tiny",
+  "Small (1-10 MB)": "library.sections.size.small",
+  "Medium (10-100 MB)": "library.sections.size.medium",
+  "Large (100 MB-1 GB)": "library.sections.size.large",
+  "Huge (>1 GB)": "library.sections.size.huge",
+  "<100 KB": "library.sections.size.lt100kb",
+  "100 KB-1 MB": "library.sections.size.100kb1mb",
+  "1-10 MB": "library.sections.size.1mb10mb",
+  "10-100 MB": "library.sections.size.10mb100mb",
+  "100 MB-1 GB": "library.sections.size.100mb1gb",
+  "1-10 GB": "library.sections.size.1gb10gb",
+  ">10 GB": "library.sections.size.gt10gb",
+  "100-500 MB": "library.sections.size.100mb500mb",
+  "500 MB-1 GB": "library.sections.size.500mb1gb",
+  "10-50 GB": "library.sections.size.10gb50gb",
+  "50-100 GB": "library.sections.size.50gb100gb",
+  ">100 GB": "library.sections.size.gt100gb",
+};
+
+const DATE_LABEL_KEYS: Record<string, string> = {
+  Today: "library.sections.date.today",
+  Yesterday: "library.sections.date.yesterday",
+  "This Week": "library.sections.date.thisWeek",
+  "Last Week": "library.sections.date.lastWeek",
+  "This Month": "library.sections.date.thisMonth",
+  "Last Month": "library.sections.date.lastMonth",
+  Older: "library.sections.date.older",
+  Unknown: "library.sections.date.unknown",
+};
+
+const COLLECTION_LABEL_KEYS: Record<string, string> = {
+  "Custom collection": "library.sections.collection.custom",
+  "Linked folder": "library.sections.collection.linked",
+  Other: "library.sections.type.other",
+};
+
+/** Resolve a stable grouping key to a localized section label. */
+export function translateSectionLabel(label: string): string {
+  const key =
+    TYPE_LABEL_KEYS[label] ??
+    SIZE_LABEL_KEYS[label] ??
+    DATE_LABEL_KEYS[label] ??
+    COLLECTION_LABEL_KEYS[label];
+  if (key) return locale.t(key);
+  const monthYear = label.match(/^([A-Z][a-z]+) (\d{4})$/);
+  if (monthYear) {
+    const monthIndex = MONTH_NAMES.indexOf(monthYear[1]);
+    if (monthIndex >= 0) {
+      return locale.formatDate(new Date(Number(monthYear[2]), monthIndex, 1), {
+        month: "long",
+        year: "numeric",
+      });
+    }
+  }
+  return label;
+}
+
 function dateGroupKey(t: Tier, ms: number, now: Date): string {
   if (!ms) return "Unknown";
   const d = new Date(ms);
@@ -216,14 +286,14 @@ function buildSections(
     if (seen.has(label)) continue;
     const items = groups.get(label);
     if (items && items.length > 0) {
-      sections.push({ label, items });
+      sections.push({ label: translateSectionLabel(label), items });
       seen.add(label);
     }
   }
   // Append any remaining groups not in the ordered list
   for (const [label, items] of groups) {
     if (!seen.has(label)) {
-      sections.push({ label, items });
+      sections.push({ label: translateSectionLabel(label), items });
       seen.add(label);
     }
   }

@@ -1,5 +1,6 @@
 import { invokeFixMedia } from "$lib/features/media/api";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export function createCorruption() {
   const state = $state({
@@ -11,14 +12,14 @@ export function createCorruption() {
 
   function onImageError() {
     state.warning = true;
-    state.reason = "This image may be corrupted or in an unsupported format.";
+    state.reason = locale.t("media.corruption.imageCorrupt");
   }
 
   function onVideoError(videoEl: HTMLVideoElement | null) {
     const err = videoEl?.error;
     const reason = err
-      ? `Video decode error (code: ${err.code})`
-      : "This video may be corrupted.";
+      ? locale.t("media.corruption.videoError", { code: err.code })
+      : locale.t("media.corruption.videoCorrupt");
     state.warning = true;
     state.reason = reason;
   }
@@ -26,8 +27,8 @@ export function createCorruption() {
   function onAudioError(audioEl: HTMLAudioElement | null) {
     const err = audioEl?.error;
     const reason = err
-      ? `Audio decode error (code: ${err.code})`
-      : "This audio may be corrupted.";
+      ? locale.t("media.corruption.audioError", { code: err.code })
+      : locale.t("media.corruption.audioCorrupt");
     state.warning = true;
     state.reason = reason;
   }
@@ -55,15 +56,18 @@ export function createCorruption() {
       if (result.success) {
         state.warning = false;
         showToast({
-          message: `Fixed copy saved: ${result.output_path}`,
+          message: locale.t("media.corruption.fixedCopySaved", {
+            path: result.output_path,
+          }),
           color: "green",
           duration: 5000,
         });
       } else {
-        state.fixError = result.error || "Failed to fix media";
+        state.fixError = result.error || locale.t("media.corruption.fixFailed");
       }
     } catch (e) {
-      state.fixError = e instanceof Error ? e.message : "Failed to fix media";
+      state.fixError =
+        e instanceof Error ? e.message : locale.t("media.corruption.fixFailed");
     }
     state.fixing = false;
   }
@@ -79,12 +83,16 @@ export function createCorruption() {
       if (result.success) {
         state.warning = false;
         await opts.loadFile(result.output_path);
-        showToast({ message: "File fixed and replaced", color: "green" });
+        showToast({
+          message: locale.t("media.corruption.fixedReplaced"),
+          color: "green",
+        });
       } else {
-        state.fixError = result.error || "Failed to fix media";
+        state.fixError = result.error || locale.t("media.corruption.fixFailed");
       }
     } catch (e) {
-      state.fixError = e instanceof Error ? e.message : "Failed to fix media";
+      state.fixError =
+        e instanceof Error ? e.message : locale.t("media.corruption.fixFailed");
     }
     state.fixing = false;
   }

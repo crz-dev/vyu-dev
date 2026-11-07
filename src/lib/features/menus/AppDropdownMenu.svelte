@@ -1,5 +1,8 @@
 <script lang="ts">
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -61,7 +64,7 @@
           height="7"
         /></svg
       >
-      Library
+      {t("menus.dropdown.library")}
     </button>
     <div class="app-dropdown-separator"></div>
     <button
@@ -84,7 +87,7 @@
           d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
         /></svg
       >
-      Settings
+      {t("menus.dropdown.settings")}
     </button>
     <button
       class="app-dropdown-item"
@@ -108,7 +111,7 @@
           d="M21 16l-4-4"
         /></svg
       >
-      Accessibility
+      {t("menus.dropdown.accessibility")}
     </button>
     {#if !accessibility.simplifiedMenus}
       <button
@@ -131,7 +134,7 @@
             d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
           /></svg
         >
-        Feedback
+        {t("menus.dropdown.feedback")}
       </button>
     {/if}
     <button
@@ -154,7 +157,7 @@
           d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"
         /><line x1="12" y1="17" x2="12.01" y2="17" /></svg
       >
-      Help
+      {t("menus.dropdown.help")}
     </button>
     {#if !accessibility.simplifiedMenus}
       <div class="app-dropdown-separator"></div>
@@ -181,7 +184,7 @@
             y2="12"
           /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
         >
-        About
+        {t("menus.dropdown.about")}
       </button>
     {/if}
   </div>

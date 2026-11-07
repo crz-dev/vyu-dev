@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
   const MAX_CHARS = 200;
 
   let {
@@ -9,17 +11,20 @@
     closeFeedback: () => void;
   } = $props();
 
+  const t = locale.t;
+  const tp = locale.tp;
+
   let overall = $state(0);
   let performance = $state(0);
   let uiClarity = $state(0);
 
   const features = [
-    { id: "edit", label: "Edit" },
-    { id: "markers", label: "Markers (timestamps & clips)" },
-    { id: "convert", label: "Convert" },
-    { id: "compress", label: "Compress" },
-    { id: "slideshow", label: "Slideshow" },
-    { id: "library", label: "Library" },
+    { id: "edit", labelKey: "dialogs.feedback.features.edit" },
+    { id: "markers", labelKey: "dialogs.feedback.features.markers" },
+    { id: "convert", labelKey: "dialogs.feedback.features.convert" },
+    { id: "compress", labelKey: "dialogs.feedback.features.compress" },
+    { id: "slideshow", labelKey: "dialogs.feedback.features.slideshow" },
+    { id: "library", labelKey: "dialogs.feedback.features.library" },
   ];
 
   type Usefulness = "useful" | "neutral" | "not-used";
@@ -74,7 +79,13 @@
     closeFeedback();
   }
 
-  const starLabels = ["Poor", "Fair", "Good", "Great", "Excellent"];
+  const starLabels = [
+    "dialogs.feedback.stars.poor",
+    "dialogs.feedback.stars.fair",
+    "dialogs.feedback.stars.good",
+    "dialogs.feedback.stars.great",
+    "dialogs.feedback.stars.excellent",
+  ];
 </script>
 
 {#if feedbackOpen}
@@ -102,13 +113,13 @@
               d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"
             /></svg
           >
-          Feedback
+          {t("dialogs.feedback.title")}
         </p>
-        <p class="delete-subtitle">Help us make vyu better for everyone</p>
+        <p class="delete-subtitle">{t("dialogs.feedback.subtitle")}</p>
         <button
           class="dialog-close-x"
           onclick={closeFeedback}
-          aria-label="Close"
+          aria-label={t("dialogs.feedback.close")}
         >
           <svg
             viewBox="0 0 24 24"
@@ -140,7 +151,7 @@
                 y2="21"
               /><line x1="12" y1="17" x2="12" y2="21" /></svg
             >
-            System & app
+            {t("dialogs.feedback.system.title")}
           </div>
           <div class="feedback-user-info">
             <div class="feedback-select-row">
@@ -168,7 +179,7 @@
                     y2="21"
                   /></svg
                 >
-                OS
+                {t("dialogs.feedback.system.os")}
               </span>
               <div class="feedback-os-toggle">
                 <button
@@ -254,7 +265,7 @@
                       r="1"
                     /><circle cx="5" cy="12" r="1" /></svg
                   >
-                  Other
+                  {t("dialogs.feedback.system.osOther")}
                 </button>
               </div>
             </div>
@@ -273,7 +284,7 @@
                     points="8 6 2 12 8 18"
                   /></svg
                 >
-                Version
+                {t("dialogs.feedback.system.version")}
               </span>
               <div class="feedback-version-actions">
                 <span class="feedback-version-text">
@@ -290,7 +301,8 @@
                       d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
                     /><line x1="7" y1="7" x2="7.01" y2="7" /></svg
                   >
-                  Current version: <u>v{__APP_VERSION__}</u>
+                  {t("dialogs.feedback.system.currentVersion")}
+                  <u>v{__APP_VERSION__}</u>
                 </span>
                 <button class="feedback-version-btn">
                   <svg
@@ -308,7 +320,7 @@
                       d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
                     /></svg
                   >
-                  Check for updates
+                  {t("dialogs.feedback.system.checkUpdates")}
                 </button>
               </div>
             </div>
@@ -334,7 +346,7 @@
                     points="10 9 9 9 8 9"
                   /></svg
                 >
-                Logging
+                {t("dialogs.feedback.system.logging")}
               </span>
               <div class="feedback-version-actions">
                 <span class="feedback-version-text">
@@ -351,7 +363,8 @@
                       d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
                     /><polyline points="14 2 14 8 20 8" /></svg
                   >
-                  Include logs <u>(optional)</u>
+                  {t("dialogs.feedback.system.includeLogs")}
+                  <u>{t("dialogs.feedback.system.optional")}</u>
                 </span>
                 <input
                   type="file"
@@ -401,7 +414,7 @@
                         y2="15"
                       /></svg
                     >
-                    Attach a logs file
+                    {t("dialogs.feedback.system.attachLogs")}
                   {/if}
                 </button>
               </div>
@@ -424,7 +437,7 @@
                 d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
               /></svg
             >
-            Experience
+            {t("dialogs.feedback.experience.title")}
           </div>
           <div class="feedback-stars-row">
             <span class="feedback-label">
@@ -446,7 +459,7 @@
                   y2="9"
                 /></svg
               >
-              Overall
+              {t("dialogs.feedback.experience.overall")}
             </span>
             <div class="feedback-stars">
               {#each [1, 2, 3, 4, 5] as n}
@@ -454,7 +467,7 @@
                   class="feedback-star-btn"
                   class:filled={n <= overall}
                   onclick={() => (overall = n)}
-                  aria-label="{n} stars"
+                  aria-label={tp("dialogs.feedback.stars", n)}
                 >
                   <svg
                     width="18"
@@ -472,7 +485,9 @@
                 </button>
               {/each}
               <span class="feedback-star-label"
-                >{overall > 0 ? starLabels[overall - 1] : "Rate"}</span
+                >{overall > 0
+                  ? t(starLabels[overall - 1])
+                  : t("dialogs.feedback.experience.rate")}</span
               >
             </div>
           </div>
@@ -491,7 +506,7 @@
                   points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
                 /></svg
               >
-              Performance
+              {t("dialogs.feedback.experience.performance")}
             </span>
             <div class="feedback-stars">
               {#each [1, 2, 3, 4, 5] as n}
@@ -499,7 +514,7 @@
                   class="feedback-star-btn"
                   class:filled={n <= performance}
                   onclick={() => (performance = n)}
-                  aria-label="{n} stars"
+                  aria-label={tp("dialogs.feedback.stars", n)}
                 >
                   <svg
                     width="18"
@@ -517,7 +532,9 @@
                 </button>
               {/each}
               <span class="feedback-star-label"
-                >{performance > 0 ? starLabels[performance - 1] : "Rate"}</span
+                >{performance > 0
+                  ? t(starLabels[performance - 1])
+                  : t("dialogs.feedback.experience.rate")}</span
               >
             </div>
           </div>
@@ -536,7 +553,7 @@
                   d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
                 /><circle cx="12" cy="12" r="3" /></svg
               >
-              UI Clarity
+              {t("dialogs.feedback.experience.uiClarity")}
             </span>
             <div class="feedback-stars">
               {#each [1, 2, 3, 4, 5] as n}
@@ -544,7 +561,7 @@
                   class="feedback-star-btn"
                   class:filled={n <= uiClarity}
                   onclick={() => (uiClarity = n)}
-                  aria-label="{n} stars"
+                  aria-label={tp("dialogs.feedback.stars", n)}
                 >
                   <svg
                     width="18"
@@ -562,7 +579,9 @@
                 </button>
               {/each}
               <span class="feedback-star-label"
-                >{uiClarity > 0 ? starLabels[uiClarity - 1] : "Rate"}</span
+                >{uiClarity > 0
+                  ? t(starLabels[uiClarity - 1])
+                  : t("dialogs.feedback.experience.rate")}</span
               >
             </div>
           </div>
@@ -583,9 +602,9 @@
                 points="2 17 12 22 22 17"
               /><polyline points="2 12 12 17 22 12" /></svg
             >
-            Feature Usefulness
+            {t("dialogs.feedback.features.title")}
           </div>
-          <p class="feedback-hint">How useful are these features to you?</p>
+          <p class="feedback-hint">{t("dialogs.feedback.features.hint")}</p>
           <div class="feedback-features">
             {#each features as f}
               <div class="feedback-feature-row">
@@ -706,24 +725,26 @@
                       /></svg
                     >
                   {/if}
-                  {f.label}
+                  {t(f.labelKey)}
                 </span>
                 <div class="feedback-buckets">
                   <button
                     class="feedback-bucket red"
                     class:active={featureRatings[f.id] === "not-used"}
                     onclick={() => setFeature(f.id, "not-used")}
-                    >Not used</button
+                    >{t("dialogs.feedback.features.notUsed")}</button
                   >
                   <button
                     class="feedback-bucket neutral"
                     class:active={featureRatings[f.id] === "neutral"}
-                    onclick={() => setFeature(f.id, "neutral")}>Neutral</button
+                    onclick={() => setFeature(f.id, "neutral")}
+                    >{t("dialogs.feedback.features.neutral")}</button
                   >
                   <button
                     class="feedback-bucket green"
                     class:active={featureRatings[f.id] === "useful"}
-                    onclick={() => setFeature(f.id, "useful")}>Useful</button
+                    onclick={() => setFeature(f.id, "useful")}
+                    >{t("dialogs.feedback.features.useful")}</button
                   >
                 </div>
               </div>
@@ -751,7 +772,7 @@
                 d="M9 15a3 3 0 0 1 6 0"
               /></svg
             >
-            Pain points
+            {t("dialogs.feedback.pain.title")}
           </div>
           <div
             class="feedback-field"
@@ -777,7 +798,7 @@
                     y2="17"
                   /></svg
                 >
-                What bothered you most?
+                {t("dialogs.feedback.pain.mostLabel")}
               </label>
               <span
                 class="feedback-char-count"
@@ -789,13 +810,15 @@
             <textarea
               id="feedback-pain"
               bind:value={painPoint}
-              placeholder="Describe any friction or issue..."
+              placeholder={t("dialogs.feedback.pain.placeholder")}
               rows="2"
               maxlength={MAX_CHARS}
               onwheel={(e) => e.stopPropagation()}
             ></textarea>
             <div class="feedback-frequency">
-              <span class="feedback-frequency-label">Frequency</span>
+              <span class="feedback-frequency-label"
+                >{t("dialogs.feedback.pain.frequency")}</span
+              >
               <div class="feedback-frequency-toggle">
                 <button
                   class="feedback-freq-btn green"
@@ -813,7 +836,7 @@
                     stroke-linejoin="round"
                     ><polyline points="6 9 12 15 18 9" /></svg
                   >
-                  Low
+                  {t("dialogs.feedback.frequency.low")}
                 </button>
                 <button
                   class="feedback-freq-btn"
@@ -832,7 +855,7 @@
                     stroke-linejoin="round"
                     ><line x1="5" y1="12" x2="19" y2="12" /></svg
                   >
-                  Medium
+                  {t("dialogs.feedback.frequency.medium")}
                 </button>
                 <button
                   class="feedback-freq-btn red"
@@ -851,12 +874,13 @@
                     stroke-linejoin="round"
                     ><polyline points="6 15 12 9 18 15" /></svg
                   >
-                  High
+                  {t("dialogs.feedback.frequency.high")}
                 </button>
               </div>
             </div>
             {#if painPoint.length >= MAX_CHARS}
-              <span class="feedback-limit-warning">Character limit reached</span
+              <span class="feedback-limit-warning"
+                >{t("dialogs.feedback.limitReached")}</span
               >
             {/if}
           </div>
@@ -882,7 +906,7 @@
                     y2="12"
                   /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
                 >
-                What things do you want us to focus on?
+                {t("dialogs.feedback.focus.label")}
               </label>
               <span
                 class="feedback-char-count"
@@ -894,13 +918,14 @@
             <textarea
               id="feedback-focus"
               bind:value={focusArea}
-              placeholder="Features, workflows, anything..."
+              placeholder={t("dialogs.feedback.focus.placeholder")}
               rows="2"
               maxlength={MAX_CHARS}
               onwheel={(e) => e.stopPropagation()}
             ></textarea>
             {#if focusArea.length >= MAX_CHARS}
-              <span class="feedback-limit-warning">Character limit reached</span
+              <span class="feedback-limit-warning"
+                >{t("dialogs.feedback.limitReached")}</span
               >
             {/if}
           </div>
@@ -921,7 +946,7 @@
                 d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
               /></svg
             >
-            Future & Improvements
+            {t("dialogs.feedback.future.title")}
           </div>
           <div
             class="feedback-field"
@@ -942,7 +967,7 @@
                     points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
                   /></svg
                 >
-                One thing you'd change or add
+                {t("dialogs.feedback.future.label")}
               </label>
               <span
                 class="feedback-char-count"
@@ -954,13 +979,14 @@
             <textarea
               id="feedback-improve"
               bind:value={improvement}
-              placeholder="Your best idea..."
+              placeholder={t("dialogs.feedback.future.placeholder")}
               rows="2"
               maxlength={MAX_CHARS}
               onwheel={(e) => e.stopPropagation()}
             ></textarea>
             {#if improvement.length >= MAX_CHARS}
-              <span class="feedback-limit-warning">Character limit reached</span
+              <span class="feedback-limit-warning"
+                >{t("dialogs.feedback.limitReached")}</span
               >
             {/if}
           </div>
@@ -985,7 +1011,7 @@
                     d="M8 14s1.5 2 4 2 4-2 4-2"
                   /></svg
                 >
-                Would you recommend this app?
+                {t("dialogs.feedback.retention.label")}
               </span>
             </div>
             <div class="feedback-frequency">
@@ -1013,7 +1039,7 @@
                       d="M9 15a3 3 0 0 1 6 0"
                     /></svg
                   >
-                  No
+                  {t("dialogs.feedback.retention.no")}
                 </button>
                 <button
                   class="feedback-freq-btn"
@@ -1042,7 +1068,7 @@
                       y2="15"
                     /></svg
                   >
-                  Maybe
+                  {t("dialogs.feedback.retention.maybe")}
                 </button>
                 <button
                   class="feedback-freq-btn green"
@@ -1067,7 +1093,7 @@
                       d="M8 14s1.5 2 4 2 4-2 4-2"
                     /></svg
                   >
-                  Yes
+                  {t("dialogs.feedback.retention.yes")}
                 </button>
               </div>
             </div>
@@ -1090,7 +1116,7 @@
               d="M7 11V7a5 5 0 0110 0v4"
             /></svg
           >
-          Used only to improve the app. Nothing is tied to your identity.
+          {t("dialogs.feedback.privacy")}
         </span>
         <button
           class="settings-action-btn blue feedback-send-btn"
@@ -1109,7 +1135,7 @@
             stroke-linejoin="round"
             ><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg
           >
-          Send feedback
+          {t("dialogs.feedback.send")}
         </button>
       </div>
     </div>

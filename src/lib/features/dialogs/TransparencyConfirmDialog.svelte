@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
   let {
     open,
     fileName,
@@ -12,6 +14,8 @@
     onClose: () => void;
     onChoice: (choice: "png" | "keep") => void;
   } = $props();
+
+  const t = locale.t;
 </script>
 
 {#if open}
@@ -46,14 +50,14 @@
             <path d="M12 8h.01" />
           </svg>
           <div>
-            <p class="delete-title">Transparency Warning</p>
+            <p class="delete-title">{t("dialogs.transparency.title")}</p>
             <p class="delete-subtitle">{fileName}</p>
           </div>
         </div>
         <button
           class="edit-confirm-header-close"
           onclick={onClose}
-          aria-label="Cancel"
+          aria-label={t("dialogs.transparency.cancel")}
         >
           <svg
             width="14"
@@ -69,8 +73,7 @@
         </button>
       </div>
       <div class="edit-confirm-body-box">
-        JPEG and some image formats do not support transparent backgrounds.
-        Custom rotation will create transparent areas around the image.
+        {t("dialogs.transparency.body")}
       </div>
       <div class="edit-confirm-actions edit-confirm-actions-vertical">
         <button
@@ -89,7 +92,7 @@
           >
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
-          Keep as {fileExtUpper} (black background)
+          {t("dialogs.transparency.keepAs", { ext: fileExtUpper })}
         </button>
         <button
           class="edit-confirm-btn-primary edit-confirm-btn-full"
@@ -112,7 +115,7 @@
             <line x1="12" y1="18" x2="12" y2="12" />
             <line x1="9" y1="15" x2="15" y2="15" />
           </svg>
-          Convert to PNG (transparent background)
+          {t("dialogs.transparency.convertPng")}
         </button>
       </div>
     </div>

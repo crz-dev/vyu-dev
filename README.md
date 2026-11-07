@@ -100,6 +100,7 @@ Retro vinyl and Modern cassette layouts, waveform scrubbing, markers, and clip b
 | Dev             | `pnpm tauri dev`                                   |
 | Build           | `pnpm tauri build`                                 |
 | Frontend check  | `pnpm check`                                       |
+| i18n check      | `pnpm check:i18n`                                  |
 | Rust check      | `cargo check --manifest-path src-tauri/Cargo.toml` |
 | Format (writes) | `pnpm format`                                      |
 | Repair FFmpeg   | `pnpm ffmpeg:ensure`                               |

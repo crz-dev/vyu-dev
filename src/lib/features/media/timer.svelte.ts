@@ -1,4 +1,5 @@
 import { formatTime } from "$lib/features/media/playback.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 function createTimerStore() {
   let timerShowRemaining = $state(false);
@@ -29,7 +30,9 @@ function createTimerStore() {
   }
 
   function timerTooltip(): string {
-    return timerShowRemaining ? "Remaining" : "Elapsed";
+    return timerShowRemaining
+      ? locale.t("media.timer.remaining")
+      : locale.t("media.timer.elapsed");
   }
 
   return {

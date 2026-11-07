@@ -491,6 +491,16 @@ export function saveFont(f: "geist" | "satoshi" | "system"): void {
   localStorage.setItem("vyu-font", f);
 }
 
+// Language is a per-profile preference, so it is intentionally not listed in
+// PROFILE_SHARED_KEYS. "system" follows the webview/OS language at launch.
+export function loadLanguage(): string {
+  return localStorage.getItem("vyu-language") ?? "system";
+}
+
+export function saveLanguage(preference: string): void {
+  localStorage.setItem("vyu-language", preference);
+}
+
 // ── Appearance ──
 export type DisplayDensity = "comfortable" | "compact";
 export type DarkVariant = "standard" | "oled";

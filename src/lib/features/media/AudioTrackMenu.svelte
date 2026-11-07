@@ -2,6 +2,10 @@
   import Marquee from "$lib/components/Marquee.svelte";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
   import type { MediaTrack } from "$lib/shared/types";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   let {
     open,
@@ -23,7 +27,9 @@
 
   function trackTitle(track: MediaTrack, position: number): string {
     return (
-      track.title || track.language?.toUpperCase() || `Track ${position + 1}`
+      track.title ||
+      track.language?.toUpperCase() ||
+      t("media.tracks.trackN", { n: position + 1 })
     );
   }
 
@@ -31,9 +37,9 @@
     return [
       track.title && track.language ? track.language.toUpperCase() : "",
       track.channelLayout ||
-        (track.channels ? `${track.channels} channels` : ""),
+        (track.channels ? tp("media.tracks.channels", track.channels) : ""),
       track.codec?.toUpperCase() ?? "",
-      track.isDefault ? "Default" : "",
+      track.isDefault ? t("media.tracks.default") : "",
     ]
       .filter(Boolean)
       .join(" · ");
@@ -56,7 +62,7 @@
   <div
     class="track-menu audio-track-menu"
     role="menu"
-    aria-label="Audio tracks"
+    aria-label={t("media.tracks.audio.menuAria")}
   >
     <div class="track-menu-heading" style={animStyle(0)}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
@@ -67,7 +73,7 @@
           stroke-linecap="round"
         />
       </svg>
-      <span>Audio track</span>
+      <span>{t("media.tracks.audio.heading")}</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <path
           d="M5 10v4M9 7v10M15 7v10M19 10v4"
@@ -79,11 +85,11 @@
     </div>
     {#if loading}
       <div class="track-menu-message" style={animStyle(1)} role="status">
-        Preparing track…
+        {t("media.tracks.preparing")}
       </div>
     {:else if catalogLoading}
       <div class="track-menu-message" style={animStyle(1)} role="status">
-        Reading tracks…
+        {t("media.tracks.reading")}
       </div>
     {:else if error}
       <div class="track-menu-error" style={animStyle(1)} role="status">
@@ -110,8 +116,12 @@
                 </svg>
               </span>
               <span class="track-menu-option-copy">
-                <span class="track-menu-option-title">Off</span>
-                <span class="track-menu-option-detail">No audio track</span>
+                <span class="track-menu-option-title"
+                  >{t("media.tracks.off")}</span
+                >
+                <span class="track-menu-option-detail"
+                  >{t("media.tracks.audio.none")}</span
+                >
               </span>
             </div>
           {:else}

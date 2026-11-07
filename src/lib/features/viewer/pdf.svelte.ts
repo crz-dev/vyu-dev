@@ -3,6 +3,7 @@ import { getCached, setCached } from "$lib/services/thumbnailCache";
 import { invokeStoreThumbnail } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import { DOCUMENT_EXTS } from "$lib/shared/constants";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import type {
   PDFDocumentLoadingTask,
   PDFDocumentProxy,
@@ -595,7 +596,10 @@ export function createPdf() {
       clearTimeout(timeoutId);
       if (gen !== loadGen) return;
       state.loading = false;
-      state.error = err instanceof Error ? err.message : "Failed to load PDF";
+      state.error =
+        err instanceof Error
+          ? err.message
+          : locale.t("shell.viewer.pdf.loadFailed");
       console.error("PDF load error:", err);
     }
   }

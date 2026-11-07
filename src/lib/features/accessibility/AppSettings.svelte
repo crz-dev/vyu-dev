@@ -9,20 +9,26 @@
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import { showToast } from "$lib/components/toast.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   let sectionsOpen = $state(false);
 
   function resetAll() {
     resetAccessibilitySettings();
-    showToast({ message: "Accessibility settings reset", color: "green" });
+    showToast({
+      message: t("settings.accessibility.app.resetAll.toast"),
+      color: "green",
+    });
   }
 
   function resetSection(section: AccessibilitySection, label: string) {
     resetAccessibilitySection(section);
     showToast({
-      message: `${label} accessibility settings reset`,
+      message: t("settings.accessibility.app.reset.toast", { section: label }),
       color: "green",
     });
   }
@@ -43,106 +49,138 @@
         d="M3.51 15a9 9 0 102.13-9.36L1 10"
       /></svg
     >
-    Preferences
+    {t("settings.accessibility.app.header")}
   </p>
 
-  <SettingsGroup label="Reset" icon="refresh">
+  <SettingsGroup
+    label={t("settings.accessibility.app.group.reset")}
+    icon="refresh"
+  >
     <SettingsRow
-      label="Reset All Accessibility Settings"
-      hint="Restore every option in this dialog to its default"
+      label={t("settings.accessibility.app.resetAll.label")}
+      hint={t("settings.accessibility.app.resetAll.hint")}
     >
       {#snippet control()}
         <button
           class="settings-action-btn"
-          aria-label="Reset all accessibility settings"
-          onclick={resetAll}>Reset all</button
+          aria-label={t("settings.accessibility.app.resetAll.aria")}
+          onclick={resetAll}
+          >{t("settings.accessibility.app.resetAll.button")}</button
         >
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Reset by Sections" hint="Reset one section at a time">
+    <SettingsRow
+      label={t("settings.accessibility.app.resetSections.label")}
+      hint={t("settings.accessibility.app.resetSections.hint")}
+    >
       {#snippet control()}
         <button
           class="settings-action-btn"
           aria-expanded={sectionsOpen}
           onclick={() => (sectionsOpen = !sectionsOpen)}
         >
-          {sectionsOpen ? "Hide" : "Show"}
+          {sectionsOpen
+            ? t("settings.accessibility.app.resetSections.hide")
+            : t("settings.accessibility.app.resetSections.show")}
         </button>
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Vision"
-      hint="Reset color, contrast, text and motion options"
+      label={t("settings.accessibility.section.vision")}
+      hint={t("settings.accessibility.app.hints.vision")}
       subrow
       open={sectionsOpen}
     >
       {#snippet control()}
         <button
           class="settings-action-btn"
-          aria-label="Reset Vision accessibility settings"
-          onclick={() => resetSection("vision", "Vision")}>Reset</button
+          aria-label={t("settings.accessibility.app.reset.aria", {
+            section: t("settings.accessibility.section.vision"),
+          })}
+          onclick={() =>
+            resetSection("vision", t("settings.accessibility.section.vision"))}
+          >{t("settings.accessibility.app.reset.button")}</button
         >
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Hearing"
-      hint="Reset volume, audio processing and feedback options"
+      label={t("settings.accessibility.section.hearing")}
+      hint={t("settings.accessibility.app.hints.hearing")}
       subrow
       open={sectionsOpen}
     >
       {#snippet control()}
         <button
           class="settings-action-btn"
-          aria-label="Reset Hearing accessibility settings"
-          onclick={() => resetSection("hearing", "Hearing")}>Reset</button
+          aria-label={t("settings.accessibility.app.reset.aria", {
+            section: t("settings.accessibility.section.hearing"),
+          })}
+          onclick={() =>
+            resetSection(
+              "hearing",
+              t("settings.accessibility.section.hearing"),
+            )}>{t("settings.accessibility.app.reset.button")}</button
         >
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Motor"
-      hint="Reset targets, playback controls and input safety options"
+      label={t("settings.accessibility.section.motor")}
+      hint={t("settings.accessibility.app.hints.motor")}
       subrow
       open={sectionsOpen}
     >
       {#snippet control()}
         <button
           class="settings-action-btn"
-          aria-label="Reset Motor accessibility settings"
-          onclick={() => resetSection("motor", "Motor")}>Reset</button
+          aria-label={t("settings.accessibility.app.reset.aria", {
+            section: t("settings.accessibility.section.motor"),
+          })}
+          onclick={() =>
+            resetSection("motor", t("settings.accessibility.section.motor"))}
+          >{t("settings.accessibility.app.reset.button")}</button
         >
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Cognitive"
-      hint="Reset focus, distraction and library privacy options"
+      label={t("settings.accessibility.section.cognitive")}
+      hint={t("settings.accessibility.app.hints.cognitive")}
       subrow
       open={sectionsOpen}
     >
       {#snippet control()}
         <button
           class="settings-action-btn"
-          aria-label="Reset Cognitive accessibility settings"
-          onclick={() => resetSection("cognitive", "Cognitive")}>Reset</button
+          aria-label={t("settings.accessibility.app.reset.aria", {
+            section: t("settings.accessibility.section.cognitive"),
+          })}
+          onclick={() =>
+            resetSection(
+              "cognitive",
+              t("settings.accessibility.section.cognitive"),
+            )}>{t("settings.accessibility.app.reset.button")}</button
         >
       {/snippet}
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="System" icon="windows">
+  <SettingsGroup
+    label={t("settings.accessibility.app.group.system")}
+    icon="windows"
+  >
     <SettingsRow
-      label="Inherit Windows Settings"
-      hint="Follow Windows text size, high contrast and reduced animations"
+      label={t("settings.accessibility.app.inheritWindows.label")}
+      hint={t("settings.accessibility.app.inheritWindows.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Inherit Windows settings"
+            aria-label={t("settings.accessibility.app.inheritWindows.aria")}
             checked={accessibility.inheritWindows}
             onchange={(e) =>
               accessibility.setInheritWindows(e.currentTarget.checked)}
@@ -155,16 +193,19 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Menu" icon="window">
+  <SettingsGroup
+    label={t("settings.accessibility.app.group.menu")}
+    icon="window"
+  >
     <SettingsRow
-      label="Remember Last Tab"
-      hint="Reopen Settings and Accessibility where you left them"
+      label={t("settings.accessibility.app.rememberLastTab.label")}
+      hint={t("settings.accessibility.app.rememberLastTab.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Remember last tab"
+            aria-label={t("settings.accessibility.app.rememberLastTab.aria")}
             checked={appearance.rememberLastTab}
             onchange={(e) =>
               appearance.setRememberLastTab(e.currentTarget.checked)}
@@ -177,14 +218,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Hide Danger Zone"
-      hint="Hide the destructive actions section from Settings"
+      label={t("settings.accessibility.app.hideDangerZone.label")}
+      hint={t("settings.accessibility.app.hideDangerZone.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Hide danger zone"
+            aria-label={t("settings.accessibility.app.hideDangerZone.aria")}
             checked={appearance.hideDangerZone}
             onchange={(e) =>
               appearance.setHideDangerZone(e.currentTarget.checked)}

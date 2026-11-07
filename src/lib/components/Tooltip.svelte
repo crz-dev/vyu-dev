@@ -1,5 +1,8 @@
 <script lang="ts">
   import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     tsTooltip,
@@ -119,8 +122,8 @@
             class="ts-title-input"
             type="text"
             maxlength="100"
-            placeholder="Add title"
-            aria-label="Marker title"
+            placeholder={t("shell.tooltip.addTitle")}
+            aria-label={t("shell.tooltip.markerTitle")}
             value={currentTitle}
             oninput={(e) =>
               updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
@@ -138,12 +141,12 @@
           {#if !isSegmentMenu}
             <button
               class="ts-delete-btn tooltip-ctrl"
-              data-tooltip="Delete Marker"
+              data-tooltip={t("shell.tooltip.deleteMarker")}
               onclick={(e) => {
                 e.stopPropagation();
                 onEditorDeleteTimestamp();
               }}
-              aria-label="Delete timestamp"
+              aria-label={t("shell.tooltip.deleteTimestamp")}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <polyline
@@ -175,12 +178,12 @@
           {:else}
             <button
               class="ts-delete-btn tooltip-ctrl"
-              data-tooltip="Delete Marker"
+              data-tooltip={t("shell.tooltip.deleteMarker")}
               onclick={(e) => {
                 e.stopPropagation();
                 onEditorDeleteSegment();
               }}
-              aria-label="Delete clip marker"
+              aria-label={t("shell.tooltip.deleteClipMarker")}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <polyline
@@ -215,7 +218,7 @@
           class="ts-scissor-split"
           class:segment-toggle={isSegmentMenu}
           role="group"
-          aria-label="segment type"
+          aria-label={t("shell.tooltip.segmentType")}
         >
           <button
             class="ts-split-btn left tooltip-ctrl"
@@ -225,12 +228,12 @@
             class:is-inactive={isSegmentMenu
               ? editingSegment?.kind !== "start"
               : false}
-            data-tooltip="Clip start"
+            data-tooltip={t("shell.tooltip.clipStart")}
             onclick={(e) => {
               e.stopPropagation();
               onEditorScissor("start");
             }}
-            aria-label="Clip start"
+            aria-label={t("shell.tooltip.clipStart")}
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
               ><circle
@@ -260,12 +263,12 @@
             class:is-inactive={isSegmentMenu
               ? editingSegment?.kind !== "end"
               : false}
-            data-tooltip="Clip end"
+            data-tooltip={t("shell.tooltip.clipEnd")}
             onclick={(e) => {
               e.stopPropagation();
               onEditorScissor("end");
             }}
-            aria-label="Clip end"
+            aria-label={t("shell.tooltip.clipEnd")}
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
               ><circle

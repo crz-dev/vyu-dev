@@ -3,6 +3,9 @@
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";
   import { visualizerStore } from "$lib/features/visualizer/visualizer-store.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -281,6 +284,12 @@
       activeFilter = effectsStore.activeFilter;
     }
   });
+
+  function tuneLabel(
+    item: "pitch" | "reverb" | "chorus" | "distortion",
+  ): string {
+    return t(`menus.effects.${item}`);
+  }
 </script>
 
 {#if visible}
@@ -298,7 +307,7 @@
         class="ctx-drag"
         role="button"
         tabindex="0"
-        aria-label="Drag to move"
+        aria-label={t("menus.common.dragToMove")}
         onmousedown={(e) => {
           e.preventDefault();
           onMoved?.();
@@ -335,13 +344,15 @@
         <button
           class="ctx-pin tooltip-below"
           class:active={pinned}
-          data-tooltip={pinned ? "Unpin" : "Pin"}
+          data-tooltip={pinned
+            ? t("menus.common.unpin")
+            : t("menus.common.pin")}
           onclick={(e) => {
             e.stopPropagation();
             pinned = !pinned;
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label={pinned ? "Unpin" : "Pin"}
+          aria-label={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
         >
           <svg
             width="9"
@@ -364,7 +375,7 @@
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
           </span>
-          <span>Effects</span>
+          <span>{t("menus.effects.title")}</span>
           <span class="ctx-dots">
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
@@ -373,13 +384,13 @@
         </span>
         <button
           class="ctx-close tooltip-below"
-          data-tooltip="Close"
+          data-tooltip={t("menus.common.close")}
           onclick={(e) => {
             e.stopPropagation();
             onClose();
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label="Close"
+          aria-label={t("menus.common.close")}
         >
           <svg
             width="9"
@@ -416,7 +427,7 @@
               <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
               <line x1="12" y1="19" x2="12" y2="22" />
             </svg>
-            <span>Tune</span>
+            <span>{t("menus.effects.tune")}</span>
           </button>
           <button
             class="edit-menu-btn yellow"
@@ -438,7 +449,7 @@
               />
               <path d="M19 14l1 3 3 1-3 1-1 3-1-3-3-1 3-1z" />
             </svg>
-            <span>Filter</span>
+            <span>{t("menus.effects.filter")}</span>
           </button>
           <button
             class="edit-menu-btn green"
@@ -459,7 +470,7 @@
               <rect x="4" y="15" width="4" height="6" rx="1" />
               <rect x="16" y="15" width="4" height="6" rx="1" />
             </svg>
-            <span>Stage</span>
+            <span>{t("menus.effects.stage")}</span>
           </button>
           <button
             class="edit-menu-btn blue"
@@ -480,7 +491,7 @@
               <path d="M8 21h8M12 17v4" />
               <path d="M6 10v4M10 8v6M14 10v4M18 8v6" />
             </svg>
-            <span>Visual</span>
+            <span>{t("menus.effects.visual")}</span>
           </button>
         </div>
 
@@ -510,7 +521,7 @@
                 <circle cx="6" cy="18" r="3" />
                 <circle cx="18" cy="16" r="3" />
               </svg>
-              <span>Pitch</span>
+              <span>{t("menus.effects.pitch")}</span>
             </button>
             <button
               class="edit-menu-btn red sub"
@@ -531,7 +542,7 @@
                 <circle cx="12" cy="12" r="5" />
                 <circle cx="12" cy="12" r="8" />
               </svg>
-              <span>Reverb</span>
+              <span>{t("menus.effects.reverb")}</span>
             </button>
             <button
               class="edit-menu-btn red sub"
@@ -552,7 +563,7 @@
                 <path d="M2 12c3-4 5-4 8 0s5 4 8 0" />
                 <path d="M2 16c3-4 5-4 8 0s5 4 8 0" />
               </svg>
-              <span>Chorus</span>
+              <span>{t("menus.effects.chorus")}</span>
             </button>
             <button
               class="edit-menu-btn red sub"
@@ -571,13 +582,13 @@
               >
                 <path d="M14 2L6 12h5l-3 10 11-12h-6z" />
               </svg>
-              <span>Distortion</span>
+              <span>{t("menus.effects.distortion")}</span>
             </button>
           </div>
 
           {#if activeTuneItem}
             {@const item = activeTuneItem}
-            {@const label = item.charAt(0).toUpperCase() + item.slice(1)}
+            {@const label = tuneLabel(item)}
             {@const max = item === "pitch" ? 12 : 100}
             {@const min = item === "pitch" ? -12 : 0}
             {@const val = tuneValues[item]}
@@ -623,7 +634,10 @@
                     }}
                     role="button"
                     tabindex="0"
-                    aria-label="Set {label} to {marker.val}"
+                    aria-label={t("menus.effects.setValue", {
+                      label,
+                      value: marker.val,
+                    })}
                   ></div>
                 {/each}
                 <div
@@ -631,7 +645,7 @@
                   style="left: {tuneScrubberPct}%"
                   role="button"
                   tabindex="0"
-                  aria-label="Scrubber"
+                  aria-label={t("menus.common.scrubber")}
                   onpointerdown={(e) => {
                     e.stopPropagation();
                     if (!tuneTrackEl) return;
@@ -676,7 +690,7 @@
               >
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
-              <span>Nightcore</span>
+              <span>{t("menus.effects.nightcore")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -698,7 +712,7 @@
                 <path d="M7 2v3" />
                 <path d="M11 2v3" />
               </svg>
-              <span>Lo-Fi</span>
+              <span>{t("menus.effects.lofi")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -719,7 +733,7 @@
                 <circle cx="9" cy="15" r="3" />
                 <path d="M5 10l5-7" />
               </svg>
-              <span>Radio</span>
+              <span>{t("menus.effects.radio")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -740,7 +754,7 @@
                 <path d="M12 14V7" />
                 <circle cx="12" cy="5" r="2" />
               </svg>
-              <span>8-Bit</span>
+              <span>{t("menus.effects.eightBit")}</span>
             </button>
           </div>
         {/if}
@@ -771,7 +785,7 @@
                 <path d="M15 8a4 4 0 0 1 0 5" />
                 <path d="M17 6a7 7 0 0 1 0 9" />
               </svg>
-              <span>Mono</span>
+              <span>{t("menus.effects.mono")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
@@ -793,7 +807,7 @@
                 <path d="M1 8a3 3 0 0 1 0-3" />
                 <path d="M23 8a3 3 0 0 0 0-3" />
               </svg>
-              <span>Stereo</span>
+              <span>{t("menus.effects.stereo")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
@@ -815,7 +829,7 @@
                 <circle cx="12" cy="19" r="2.5" />
                 <circle cx="19" cy="12" r="2.5" />
               </svg>
-              <span>Surround</span>
+              <span>{t("menus.effects.surround")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
@@ -835,7 +849,7 @@
                 <ellipse cx="12" cy="12" rx="10" ry="4" />
                 <circle cx="6" cy="9" r="1.5" fill="currentColor" />
               </svg>
-              <span>8D</span>
+              <span>{t("menus.effects.eightD")}</span>
             </button>
           </div>
         {/if}
@@ -867,7 +881,7 @@
                 <rect x="13" y="4" width="3" height="16" rx="1" />
                 <rect x="18" y="10" width="3" height="10" rx="1" />
               </svg>
-              <span>Pulse</span>
+              <span>{t("menus.effects.pulse")}</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
@@ -892,7 +906,7 @@
                 <circle cx="9" cy="9" r="1.2" fill="currentColor" />
                 <circle cx="15" cy="9" r="1.2" fill="currentColor" />
               </svg>
-              <span>Spectrum</span>
+              <span>{t("menus.effects.spectrum")}</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
@@ -911,7 +925,7 @@
               >
                 <path d="M2 12h4l2-6 3 12 3-8 2 4h4" />
               </svg>
-              <span>Heartbeat</span>
+              <span>{t("menus.effects.heartbeat")}</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
@@ -934,7 +948,7 @@
                   stroke-width="2.5"
                 />
               </svg>
-              <span>Diamonds</span>
+              <span>{t("menus.effects.diamonds")}</span>
             </button>
           </div>
         {/if}

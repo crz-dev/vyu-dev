@@ -34,6 +34,7 @@ import {
 } from "$lib/services/storage";
 import { replacePathPrefix, samePath } from "$lib/services/files";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface DrawPoint {
   x: number;
@@ -707,7 +708,10 @@ function createMarkupStore() {
 
   function undoLastStroke() {
     if (strokes.length === 0) {
-      showToast({ message: "Nothing to undo", color: "yellow" });
+      showToast({
+        message: locale.t("editing.markup.toast.nothingToUndo"),
+        color: "yellow",
+      });
       return;
     }
     const removedIndex = strokes.length - 1;
@@ -721,7 +725,10 @@ function createMarkupStore() {
     ) {
       selectedIndex = null;
     }
-    showToast({ message: "Markup undone", color: "blue" });
+    showToast({
+      message: locale.t("editing.markup.toast.undone"),
+      color: "blue",
+    });
   }
 
   function deleteSelectedShape() {

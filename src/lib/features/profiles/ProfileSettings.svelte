@@ -2,8 +2,11 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { profiles } from "$lib/features/profiles/profiles.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 </script>
 
 <div id="accessibility-section-profiles" class="settings-section" class:flash>
@@ -25,19 +28,19 @@
         d="M16 3.13a4 4 0 010 7.75"
       /></svg
     >
-    Profiles
+    {t("settings.profiles.header")}
   </p>
 
-  <SettingsGroup label="Switching" icon="refresh">
+  <SettingsGroup label={t("settings.profiles.group.switching")} icon="refresh">
     <SettingsRow
-      label="Remember Last Profile"
-      hint="Reopen the profile you used last"
+      label={t("settings.profiles.rememberLast.label")}
+      hint={t("settings.profiles.rememberLast.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Remember last profile"
+            aria-label={t("settings.profiles.rememberLast.aria")}
             checked={profiles.preferences.rememberLast}
             onchange={(e) => profiles.setRememberLast(e.currentTarget.checked)}
           />
@@ -51,15 +54,15 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Startup Profile"
-      hint="Profile to open when Vyu starts"
+      label={t("settings.profiles.startup.label")}
+      hint={t("settings.profiles.startup.hint")}
       subrow
       open={!profiles.preferences.rememberLast}
     >
       {#snippet control()}
         <select
           class="profile-startup-select"
-          aria-label="Startup profile"
+          aria-label={t("settings.profiles.startup.aria")}
           value={profiles.preferences.startupProfileId ?? profiles.activeId}
           onchange={(e) => profiles.setStartupProfile(e.currentTarget.value)}
         >
@@ -71,14 +74,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Confirm Before Switching"
-      hint="Ask before replacing the current profile settings"
+      label={t("settings.profiles.confirmSwitch.label")}
+      hint={t("settings.profiles.confirmSwitch.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Confirm before switching profiles"
+            aria-label={t("settings.profiles.confirmSwitch.aria")}
             checked={profiles.preferences.confirmSwitch}
             onchange={(e) => profiles.setConfirmSwitch(e.currentTarget.checked)}
           />
@@ -92,16 +95,19 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Library and Accessibility" icon="accessibility">
+  <SettingsGroup
+    label={t("settings.profiles.group.library")}
+    icon="accessibility"
+  >
     <SettingsRow
-      label="Profile-Specific Library"
-      hint="Keep collections, favorites, recents and layout separate per profile"
+      label={t("settings.profiles.libraryIsolation.label")}
+      hint={t("settings.profiles.libraryIsolation.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Profile-specific library"
+            aria-label={t("settings.profiles.libraryIsolation.aria")}
             checked={profiles.preferences.libraryIsolation}
             onchange={(e) =>
               profiles.setLibraryIsolation(e.currentTarget.checked)}
@@ -116,14 +122,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Universal Accessibility"
-      hint="Use the same accessibility settings across every profile"
+      label={t("settings.profiles.universalAccessibility.label")}
+      hint={t("settings.profiles.universalAccessibility.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Universal accessibility"
+            aria-label={t("settings.profiles.universalAccessibility.aria")}
             checked={profiles.preferences.universalAccessibility}
             onchange={(e) =>
               profiles.setUniversalAccessibility(e.currentTarget.checked)}

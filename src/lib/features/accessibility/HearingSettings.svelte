@@ -2,8 +2,11 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   let volumeLimitPreview = $state(Math.round(accessibility.volumeLimit * 100));
   let balancePreview = $state(accessibility.balance);
@@ -17,9 +20,17 @@
   });
 
   function balanceLabel(value: number): string {
-    if (value <= -0.05) return `L ${Math.round(Math.abs(value) * 100)}%`;
-    if (value >= 0.05) return `R ${Math.round(value * 100)}%`;
-    return "Center";
+    if (value <= -0.05) {
+      return t("settings.accessibility.hearing.balance.left", {
+        value: Math.round(Math.abs(value) * 100),
+      });
+    }
+    if (value >= 0.05) {
+      return t("settings.accessibility.hearing.balance.right", {
+        value: Math.round(value * 100),
+      });
+    }
+    return t("settings.accessibility.hearing.balance.center");
   }
 </script>
 
@@ -38,13 +49,16 @@
         d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"
       /></svg
     >
-    Hearing
+    {t("settings.accessibility.section.hearing")}
   </p>
 
-  <SettingsGroup label="Output" icon="volume">
+  <SettingsGroup
+    label={t("settings.accessibility.hearing.group.output")}
+    icon="volume"
+  >
     <SettingsRow
-      label="Volume Limit"
-      hint="Cap the maximum output level to protect hearing"
+      label={t("settings.accessibility.hearing.volumeLimit.label")}
+      hint={t("settings.accessibility.hearing.volumeLimit.hint")}
     >
       {#snippet control()}
         <div class="settings-slider-control">
@@ -53,7 +67,7 @@
             min="20"
             max="100"
             step="5"
-            aria-label="Volume limit"
+            aria-label={t("settings.accessibility.hearing.volumeLimit.aria")}
             value={volumeLimitPreview}
             oninput={(e) =>
               (volumeLimitPreview = Number(e.currentTarget.value))}
@@ -66,14 +80,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Mono Audio"
-      hint="Combine left and right channels into one"
+      label={t("settings.accessibility.hearing.mono.label")}
+      hint={t("settings.accessibility.hearing.mono.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Mono Audio"
+            aria-label={t("settings.accessibility.hearing.mono.aria")}
             checked={accessibility.monoAudio}
             onchange={(e) =>
               accessibility.setMonoAudio(e.currentTarget.checked)}
@@ -85,7 +99,10 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Left / Right Balance" hint="Pan audio between channels">
+    <SettingsRow
+      label={t("settings.accessibility.hearing.balance.label")}
+      hint={t("settings.accessibility.hearing.balance.hint")}
+    >
       {#snippet control()}
         <div class="settings-slider-control">
           <input
@@ -93,7 +110,7 @@
             min="-100"
             max="100"
             step="5"
-            aria-label="Left and right balance"
+            aria-label={t("settings.accessibility.hearing.balance.aria")}
             value={Math.round(balancePreview * 100)}
             oninput={(e) =>
               (balancePreview = Number(e.currentTarget.value) / 100)}
@@ -108,14 +125,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Volume Normalization"
-      hint="Even out quiet and loud media automatically"
+      label={t("settings.accessibility.hearing.normalize.label")}
+      hint={t("settings.accessibility.hearing.normalize.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Volume Normalization"
+            aria-label={t("settings.accessibility.hearing.normalize.aria")}
             checked={accessibility.normalizeVolume}
             onchange={(e) =>
               accessibility.setNormalizeVolume(e.currentTarget.checked)}
@@ -128,16 +145,19 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Clarity" icon="sliders">
+  <SettingsGroup
+    label={t("settings.accessibility.hearing.group.clarity")}
+    icon="sliders"
+  >
     <SettingsRow
-      label="Reduce Loud Sounds"
-      hint="Limit sudden peaks and loud passages"
+      label={t("settings.accessibility.hearing.limitPeaks.label")}
+      hint={t("settings.accessibility.hearing.limitPeaks.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Reduce Loud Sounds"
+            aria-label={t("settings.accessibility.hearing.limitPeaks.aria")}
             checked={accessibility.limitPeaks}
             onchange={(e) =>
               accessibility.setLimitPeaks(e.currentTarget.checked)}
@@ -150,14 +170,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Boost Quiet Dialogue"
-      hint="Lift speech frequencies for clearer dialogue"
+      label={t("settings.accessibility.hearing.boostDialogue.label")}
+      hint={t("settings.accessibility.hearing.boostDialogue.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Boost Quiet Dialogue"
+            aria-label={t("settings.accessibility.hearing.boostDialogue.aria")}
             checked={accessibility.boostDialogue}
             onchange={(e) =>
               accessibility.setBoostDialogue(e.currentTarget.checked)}
@@ -170,16 +190,19 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Feedback" icon="info">
+  <SettingsGroup
+    label={t("settings.accessibility.hearing.group.feedback")}
+    icon="info"
+  >
     <SettingsRow
-      label="Visual Sound Alerts"
-      hint="Flash the window edge on play and pause"
+      label={t("settings.accessibility.hearing.visualAlerts.label")}
+      hint={t("settings.accessibility.hearing.visualAlerts.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Visual Sound Alerts"
+            aria-label={t("settings.accessibility.hearing.visualAlerts.aria")}
             checked={accessibility.visualAlerts}
             onchange={(e) =>
               accessibility.setVisualAlerts(e.currentTarget.checked)}
@@ -192,14 +215,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Audio Cues"
-      hint="Play short tones on playback and navigation actions"
+      label={t("settings.accessibility.hearing.audioCues.label")}
+      hint={t("settings.accessibility.hearing.audioCues.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Audio Cues"
+            aria-label={t("settings.accessibility.hearing.audioCues.aria")}
             checked={accessibility.audioCues}
             onchange={(e) =>
               accessibility.setAudioCues(e.currentTarget.checked)}

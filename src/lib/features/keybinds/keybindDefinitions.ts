@@ -22,8 +22,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   // App / global
   {
     id: "open-file",
-    label: "Open file",
-    description: "Open the file picker",
+    label: "settings.keybinds.actions.openFile.label",
+    description: "settings.keybinds.actions.openFile.description",
     category: "app",
     context: "global",
     defaultBinding: key("o", { ctrl: true }),
@@ -32,8 +32,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "close-file",
-    label: "Close file",
-    description: "Close the current file",
+    label: "settings.keybinds.actions.closeFile.label",
+    description: "settings.keybinds.actions.closeFile.description",
     category: "app",
     context: "global",
     defaultBinding: key("w", { ctrl: true }),
@@ -42,8 +42,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "toggle-library",
-    label: "Toggle library",
-    description: "Show or hide the library overlay",
+    label: "settings.keybinds.actions.toggleLibrary.label",
+    description: "settings.keybinds.actions.toggleLibrary.description",
     category: "app",
     context: "global",
     defaultBinding: key("l"),
@@ -52,8 +52,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "show-shortcuts",
-    label: "Shortcut cheat sheet",
-    description: "Show every active binding",
+    label: "settings.keybinds.actions.showShortcuts.label",
+    description: "settings.keybinds.actions.showShortcuts.description",
     category: "app",
     context: "global",
     defaultBinding: key("?"),
@@ -62,9 +62,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "reset-accessibility",
-    label: "Emergency reset accessibility",
-    description:
-      "Reset all accessibility settings; unbound by default and works with dialogs open",
+    label: "settings.keybinds.actions.resetAccessibility.label",
+    description: "settings.keybinds.actions.resetAccessibility.description",
     category: "app",
     context: "global",
     defaultBinding: null,
@@ -75,8 +74,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   // Viewer
   {
     id: "play-pause",
-    label: "Play / pause",
-    description: "Toggle playback for video or audio",
+    label: "settings.keybinds.actions.playPause.label",
+    description: "settings.keybinds.actions.playPause.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key(" "),
@@ -85,8 +84,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "fullscreen",
-    label: "Fullscreen",
-    description: "Toggle fullscreen",
+    label: "settings.keybinds.actions.fullscreen.label",
+    description: "settings.keybinds.actions.fullscreen.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("f"),
@@ -95,8 +94,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "next-file",
-    label: "Next file",
-    description: "Open the next file in the folder",
+    label: "settings.keybinds.actions.nextFile.label",
+    description: "settings.keybinds.actions.nextFile.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowRight", { alt: true }),
@@ -105,8 +104,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "previous-file",
-    label: "Previous file",
-    description: "Open the previous file in the folder",
+    label: "settings.keybinds.actions.previousFile.label",
+    description: "settings.keybinds.actions.previousFile.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowLeft", { alt: true }),
@@ -115,8 +114,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "first-file",
-    label: "First file",
-    description: "Jump to the first file in the folder",
+    label: "settings.keybinds.actions.firstFile.label",
+    description: "settings.keybinds.actions.firstFile.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowLeft", { ctrl: true }),
@@ -125,8 +124,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "last-file",
-    label: "Last file",
-    description: "Jump to the last file in the folder",
+    label: "settings.keybinds.actions.lastFile.label",
+    description: "settings.keybinds.actions.lastFile.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowRight", { ctrl: true }),
@@ -135,9 +134,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "seek-forward",
-    label: "Seek / navigate forward",
-    description:
-      "Seek audio or a hovered/fullscreen video; otherwise open the next file",
+    label: "settings.keybinds.actions.seekForward.label",
+    description: "settings.keybinds.actions.seekForward.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowRight"),
@@ -146,9 +144,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "seek-backward",
-    label: "Seek / navigate backward",
-    description:
-      "Seek audio or a hovered/fullscreen video; otherwise open the previous file",
+    label: "settings.keybinds.actions.seekBackward.label",
+    description: "settings.keybinds.actions.seekBackward.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowLeft"),
@@ -157,8 +154,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "volume-up",
-    label: "Volume up",
-    description: "Increase volume by one step",
+    label: "settings.keybinds.actions.volumeUp.label",
+    description: "settings.keybinds.actions.volumeUp.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowUp"),
@@ -167,8 +164,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "volume-down",
-    label: "Volume down",
-    description: "Decrease volume by one step",
+    label: "settings.keybinds.actions.volumeDown.label",
+    description: "settings.keybinds.actions.volumeDown.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("ArrowDown"),
@@ -177,8 +174,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "mute",
-    label: "Mute / unmute",
-    description: "Toggle audio output",
+    label: "settings.keybinds.actions.mute.label",
+    description: "settings.keybinds.actions.mute.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("m"),
@@ -187,8 +184,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "frame-back",
-    label: "Frame step back",
-    description: "Step one frame backward in a video",
+    label: "settings.keybinds.actions.frameBack.label",
+    description: "settings.keybinds.actions.frameBack.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key(","),
@@ -197,8 +194,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "frame-forward",
-    label: "Frame step forward",
-    description: "Step one frame forward in a video",
+    label: "settings.keybinds.actions.frameForward.label",
+    description: "settings.keybinds.actions.frameForward.description",
     category: "viewer",
     context: "viewer",
     defaultBinding: key("."),
@@ -207,8 +204,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "compare",
-    label: "Compare with original",
-    description: "Hold to preview the original while editing",
+    label: "settings.keybinds.actions.compare.label",
+    description: "settings.keybinds.actions.compare.description",
     category: "editing",
     context: "viewer",
     defaultBinding: key("c"),
@@ -217,8 +214,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "add-marker",
-    label: "Add marker",
-    description: "Add a timestamp marker to video or audio",
+    label: "settings.keybinds.actions.addMarker.label",
+    description: "settings.keybinds.actions.addMarker.description",
     category: "editing",
     context: "viewer",
     defaultBinding: key("t"),
@@ -227,8 +224,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "undo",
-    label: "Undo edit",
-    description: "Undo the latest image edit",
+    label: "settings.keybinds.actions.undo.label",
+    description: "settings.keybinds.actions.undo.description",
     category: "editing",
     context: "viewer",
     defaultBinding: key("z", { ctrl: true }),
@@ -237,8 +234,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "loop-start",
-    label: "Set loop start",
-    description: "Set the start of an A/B loop",
+    label: "settings.keybinds.actions.loopStart.label",
+    description: "settings.keybinds.actions.loopStart.description",
     category: "editing",
     context: "viewer",
     defaultBinding: key("["),
@@ -247,8 +244,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "loop-end",
-    label: "Set loop end",
-    description: "Set the end of an A/B loop",
+    label: "settings.keybinds.actions.loopEnd.label",
+    description: "settings.keybinds.actions.loopEnd.description",
     category: "editing",
     context: "viewer",
     defaultBinding: key("]"),
@@ -257,8 +254,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "delete-file",
-    label: "Delete current file",
-    description: "Move the current file to the recycle bin",
+    label: "settings.keybinds.actions.deleteFile.label",
+    description: "settings.keybinds.actions.deleteFile.description",
     category: "file",
     context: "viewer",
     defaultBinding: key("Delete", { shift: true }),
@@ -267,8 +264,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "copy-path",
-    label: "Copy current path",
-    description: "Copy the current file path to the clipboard",
+    label: "settings.keybinds.actions.copyPath.label",
+    description: "settings.keybinds.actions.copyPath.description",
     category: "file",
     context: "viewer",
     defaultBinding: key("c", { ctrl: true, shift: true }),
@@ -277,8 +274,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "export-edits",
-    label: "Export edited media",
-    description: "Export the current image or video with edits applied",
+    label: "settings.keybinds.actions.exportEdits.label",
+    description: "settings.keybinds.actions.exportEdits.description",
     category: "file",
     context: "viewer",
     defaultBinding: key("e", { ctrl: true }),
@@ -287,8 +284,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "toggle-slideshow",
-    label: "Toggle slideshow",
-    description: "Start or stop slideshow playback",
+    label: "settings.keybinds.actions.toggleSlideshow.label",
+    description: "settings.keybinds.actions.toggleSlideshow.description",
     category: "slideshow",
     context: "viewer",
     defaultBinding: key("s"),
@@ -297,9 +294,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "toggle-sleep-timer",
-    label: "Toggle sleep timer",
-    description:
-      "Start the sleep timer with the configured length, or clear it",
+    label: "settings.keybinds.actions.toggleSleepTimer.label",
+    description: "settings.keybinds.actions.toggleSleepTimer.description",
     category: "slideshow",
     context: "viewer",
     defaultBinding: key("s", { shift: true }),
@@ -310,8 +306,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   // Library
   {
     id: "library-up",
-    label: "Move up / previous",
-    description: "Move the library highlight up or to the previous item",
+    label: "settings.keybinds.actions.libraryUp.label",
+    description: "settings.keybinds.actions.libraryUp.description",
     category: "library",
     context: "library",
     defaultBinding: key("ArrowUp"),
@@ -320,8 +316,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-down",
-    label: "Move down / next",
-    description: "Move the library highlight down or to the next item",
+    label: "settings.keybinds.actions.libraryDown.label",
+    description: "settings.keybinds.actions.libraryDown.description",
     category: "library",
     context: "library",
     defaultBinding: key("ArrowDown"),
@@ -330,8 +326,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-left",
-    label: "Move left / previous",
-    description: "Move the library highlight left or to the previous item",
+    label: "settings.keybinds.actions.libraryLeft.label",
+    description: "settings.keybinds.actions.libraryLeft.description",
     category: "library",
     context: "library",
     defaultBinding: key("ArrowLeft"),
@@ -340,8 +336,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-right",
-    label: "Move right / next",
-    description: "Move the library highlight right or to the next item",
+    label: "settings.keybinds.actions.libraryRight.label",
+    description: "settings.keybinds.actions.libraryRight.description",
     category: "library",
     context: "library",
     defaultBinding: key("ArrowRight"),
@@ -350,9 +346,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-open",
-    label: "Open selected",
-    description:
-      "Open the highlighted library item (Space also works in filmstrip)",
+    label: "settings.keybinds.actions.libraryOpen.label",
+    description: "settings.keybinds.actions.libraryOpen.description",
     category: "library",
     context: "library",
     defaultBinding: key("Enter"),
@@ -361,8 +356,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-delete",
-    label: "Delete selected",
-    description: "Move selected library files to the recycle bin",
+    label: "settings.keybinds.actions.libraryDelete.label",
+    description: "settings.keybinds.actions.libraryDelete.description",
     category: "library",
     context: "library",
     defaultBinding: key("Delete", { shift: true }),
@@ -371,8 +366,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-first",
-    label: "First item",
-    description: "Jump to the first library item",
+    label: "settings.keybinds.actions.libraryFirst.label",
+    description: "settings.keybinds.actions.libraryFirst.description",
     category: "library",
     context: "library",
     defaultBinding: key("ArrowLeft", { ctrl: true }),
@@ -381,8 +376,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "library-last",
-    label: "Last item",
-    description: "Jump to the last library item",
+    label: "settings.keybinds.actions.libraryLast.label",
+    description: "settings.keybinds.actions.libraryLast.description",
     category: "library",
     context: "library",
     defaultBinding: key("ArrowRight", { ctrl: true }),
@@ -393,8 +388,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   // PDF
   {
     id: "pdf-find",
-    label: "Find in document",
-    description: "Open or close PDF search",
+    label: "settings.keybinds.actions.pdfFind.label",
+    description: "settings.keybinds.actions.pdfFind.description",
     category: "pdf",
     context: "pdf",
     defaultBinding: key("f", { ctrl: true }),
@@ -403,8 +398,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "pdf-next-page",
-    label: "Next page",
-    description: "Scroll to the next PDF page",
+    label: "settings.keybinds.actions.pdfNextPage.label",
+    description: "settings.keybinds.actions.pdfNextPage.description",
     category: "pdf",
     context: "pdf",
     defaultBinding: key("ArrowDown"),
@@ -413,8 +408,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "pdf-previous-page",
-    label: "Previous page",
-    description: "Scroll to the previous PDF page",
+    label: "settings.keybinds.actions.pdfPreviousPage.label",
+    description: "settings.keybinds.actions.pdfPreviousPage.description",
     category: "pdf",
     context: "pdf",
     defaultBinding: key("ArrowUp"),
@@ -438,20 +433,20 @@ export const KEYBIND_CATEGORY_ORDER: readonly KeybindCategory[] = [
 ];
 
 export const KEYBIND_CATEGORY_LABELS: Record<KeybindCategory, string> = {
-  app: "App",
-  viewer: "Viewer",
-  file: "File",
-  editing: "Markers & Editing",
-  library: "Library",
-  pdf: "PDF",
-  slideshow: "Slideshow & Sleep Timer",
+  app: "settings.keybinds.category.app",
+  viewer: "settings.keybinds.category.viewer",
+  file: "settings.keybinds.category.file",
+  editing: "settings.keybinds.category.editing",
+  library: "settings.keybinds.category.library",
+  pdf: "settings.keybinds.category.pdf",
+  slideshow: "settings.keybinds.category.slideshow",
 };
 
 export const KEYBIND_CONTEXT_LABELS: Record<KeybindContext, string> = {
-  global: "Applies everywhere",
-  viewer: "Viewer only",
-  library: "Library only",
-  pdf: "PDF only",
+  global: "settings.keybinds.context.global",
+  viewer: "settings.keybinds.context.viewer",
+  library: "settings.keybinds.context.library",
+  pdf: "settings.keybinds.context.pdf",
 };
 
 export function defaultBindings(): Record<string, KeybindBinding | null> {

@@ -11,6 +11,7 @@ import {
   onEditApplyProgress,
 } from "$lib/features/media/api";
 import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import {
   showToast,
   updateToast,
@@ -113,13 +114,13 @@ export function createEditActions(deps: EditActionsDeps) {
       return [
         {
           icon: CONFIRM_ICON,
-          tooltip: "Confirm?",
+          tooltip: locale.t("editing.action.confirm"),
           variant: "red" as const,
           onClick: executeReset,
         },
         {
           icon: APPLY_ICON,
-          tooltip: "Apply",
+          tooltip: locale.t("editing.action.apply"),
           variant: "green" as const,
           onClick: () => handleApplyEdits(),
         },
@@ -128,13 +129,13 @@ export function createEditActions(deps: EditActionsDeps) {
     return [
       {
         icon: RESET_ICON,
-        tooltip: "Reset",
+        tooltip: locale.t("editing.action.reset"),
         variant: "red" as const,
         onClick: startResetConfirm,
       },
       {
         icon: APPLY_ICON,
-        tooltip: "Apply",
+        tooltip: locale.t("editing.action.apply"),
         variant: "green" as const,
         onClick: () => handleApplyEdits(),
       },
@@ -144,14 +145,14 @@ export function createEditActions(deps: EditActionsDeps) {
   function showUnsavedToast() {
     if (unsavedToastId !== null) {
       updateToast(unsavedToastId, {
-        message: "File has unsaved changes",
+        message: locale.t("editing.toast.unsaved"),
         color: "grey",
         actions: getToastActions(),
       });
       return;
     }
     unsavedToastId = showToast({
-      message: "File has unsaved changes",
+      message: locale.t("editing.toast.unsaved"),
       color: "grey",
       duration: 0,
       icon: WARNING_ICON,
@@ -256,7 +257,7 @@ export function createEditActions(deps: EditActionsDeps) {
 
     if (isVideo) {
       progressToastId = showToast({
-        message: "Applying edits...",
+        message: locale.t("editing.toast.applying"),
         color: "grey",
         duration: 0,
         progress: 0,
@@ -307,7 +308,7 @@ export function createEditActions(deps: EditActionsDeps) {
 
       if (isVideo) {
         if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
-          throw new Error("Video not ready for export");
+          throw new Error(locale.t("editing.error.videoNotReady"));
         }
         await invokeExportEditedMedia(
           filePath,
@@ -345,18 +346,21 @@ export function createEditActions(deps: EditActionsDeps) {
 
       if (progressToastId !== null) {
         updateToast(progressToastId, {
-          message: "Edits applied",
+          message: locale.t("editing.toast.applied"),
           color: "green",
           duration: 3000,
           progress: 100,
         });
       } else {
-        showToast({ message: "Edits applied", color: "green" });
+        showToast({
+          message: locale.t("editing.toast.applied"),
+          color: "green",
+        });
       }
     } catch (err) {
       editing.isApplying = false;
       editDialogStore.exportFormatOverride = null;
-      const message = errorText(err, "Failed to apply edits");
+      const message = errorText(err, locale.t("editing.toast.applyFailed"));
       if (progressToastId !== null) {
         updateToast(progressToastId, {
           message,
@@ -407,8 +411,18 @@ export function createEditActions(deps: EditActionsDeps) {
       const outputPath = await save({
         defaultPath,
         filters: isVideo
-          ? [{ name: "Video", extensions: [overrideExt] }]
-          : [{ name: "Image", extensions: [overrideExt] }],
+          ? [
+              {
+                name: locale.t("editing.filter.video"),
+                extensions: [overrideExt],
+              },
+            ]
+          : [
+              {
+                name: locale.t("editing.filter.image"),
+                extensions: [overrideExt],
+              },
+            ],
       });
 
       if (!outputPath) return;
@@ -417,7 +431,7 @@ export function createEditActions(deps: EditActionsDeps) {
 
       editing.isExporting = true;
       const toastId = showToast({
-        message: "Exporting...",
+        message: locale.t("editing.toast.exporting"),
         color: "yellow",
         duration: 0,
       });
@@ -430,7 +444,7 @@ export function createEditActions(deps: EditActionsDeps) {
       const quality = editing.imageQualityFor(qualityFormat) / 100;
       if (isVideo) {
         if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
-          throw new Error("Video not ready for export");
+          throw new Error(locale.t("editing.error.videoNotReady"));
         }
         await invokeExportEditedMedia(
           filePath,
@@ -449,12 +463,12 @@ export function createEditActions(deps: EditActionsDeps) {
       unsavedToastDismissed = true;
       hideUnsavedToast();
       updateToast(toastId, {
-        message: "Exported!",
+        message: locale.t("editing.toast.exported"),
         color: "green",
         duration: 5000,
         actions: [
           {
-            label: "Open file",
+            label: locale.t("editing.action.openFile"),
             icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
             onClick: () => deps.loadFile(outputPath),
           },
@@ -473,7 +487,7 @@ export function createEditActions(deps: EditActionsDeps) {
     } catch (err) {
       editing.isExporting = false;
       showToast({
-        message: errorText(err, "Failed to export file"),
+        message: errorText(err, locale.t("editing.toast.exportFailed")),
         color: "red",
       });
     }
@@ -516,7 +530,10 @@ export function createEditActions(deps: EditActionsDeps) {
 
   async function handleExportEdits() {
     if (!editing.getHasEdits() && !editing.getCropBounds()) {
-      showToast({ message: "No edits to export", color: "yellow" });
+      showToast({
+        message: locale.t("editing.toast.noEdits"),
+        color: "yellow",
+      });
       return;
     }
 
@@ -590,11 +607,14 @@ export function createEditActions(deps: EditActionsDeps) {
 
   function handleUndo() {
     if (!editing.getCanUndo()) {
-      showToast({ message: "Nothing to undo", color: "yellow" });
+      showToast({
+        message: locale.t("editing.toast.nothingToUndo"),
+        color: "yellow",
+      });
       return;
     }
     editing.undo();
-    showToast({ message: "Edit undone", color: "blue" });
+    showToast({ message: locale.t("editing.toast.undone"), color: "blue" });
   }
 
   async function handleReset() {
@@ -606,11 +626,17 @@ export function createEditActions(deps: EditActionsDeps) {
     }
     if (restored) {
       if (path) await deps.loadFile(path, true);
-      showToast({ message: "Original restored", color: "green" });
+      showToast({
+        message: locale.t("editing.toast.originalRestored"),
+        color: "green",
+      });
     } else if (wasApplied) {
-      showToast({ message: "Edits cleared - no backup", color: "yellow" });
+      showToast({
+        message: locale.t("editing.toast.clearedNoBackup"),
+        color: "yellow",
+      });
     } else {
-      showToast({ message: "Edits reset", color: "red" });
+      showToast({ message: locale.t("editing.toast.reset"), color: "red" });
     }
   }
 

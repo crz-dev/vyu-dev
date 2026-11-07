@@ -74,6 +74,7 @@ import {
   setCached as sharedSetCached,
 } from "$lib/services/thumbnailCache";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
@@ -812,14 +813,14 @@ function createLibrary() {
     if (successCount > 0) {
       const { showToast } = await import("$lib/components/toast.svelte");
       showToast({
-        message: `${successCount} file${successCount === 1 ? "" : "s"} copied to collection`,
+        message: locale.tp("library.toasts.copySuccess", successCount),
         color: "blue",
       });
     }
     if (failCount > 0) {
       const { showToast } = await import("$lib/components/toast.svelte");
       showToast({
-        message: `Failed to copy ${failCount} file${failCount === 1 ? "" : "s"}`,
+        message: locale.tp("library.toasts.copyFailed", failCount),
         color: "red",
       });
     }

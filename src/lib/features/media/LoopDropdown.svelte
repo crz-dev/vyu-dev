@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { LoopMode } from "$lib/shared/constants";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     open,
@@ -16,11 +19,11 @@
     isAudio?: boolean;
   } = $props();
 
-  const modes: { mode: LoopMode; label: string }[] = [
-    { mode: "stop", label: "Stop" },
-    { mode: "next", label: "Play next" },
-    { mode: "loop", label: "Loop" },
-    { mode: "shuffle", label: "Shuffle" },
+  const modes: { mode: LoopMode; key: string }[] = [
+    { mode: "stop", key: "media.loop.mode.stop" },
+    { mode: "next", key: "media.loop.mode.next" },
+    { mode: "loop", key: "media.loop.mode.loop" },
+    { mode: "shuffle", key: "media.loop.mode.shuffle" },
   ];
 
   function animStyle(index: number): string {
@@ -49,7 +52,7 @@
           stroke-linejoin="round"
         />
       </svg>
-      <span>After playback</span>
+      <span>{t("media.loop.afterPlayback")}</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <rect
           x="4"
@@ -66,7 +69,7 @@
     </div>
     <div class="edit-menu-card">
       <div class="loop-drop-grid">
-        {#each modes as { mode, label }, i (mode)}
+        {#each modes as { mode, key }, i (mode)}
           <button
             class="loop-drop-btn"
             class:active={looping === mode}
@@ -145,7 +148,7 @@
                 <path d="M17 13l4 4-4 4" />
               </svg>
             {/if}
-            {label}
+            {t(key)}
           </button>
         {/each}
         {#if isAudio}
@@ -171,7 +174,7 @@
               <circle cx="6" cy="18" r="3" />
               <circle cx="18" cy="16" r="3" />
             </svg>
-            Shuffle songs
+            {t("media.loop.mode.shuffleSongs")}
           </button>
         {/if}
       </div>

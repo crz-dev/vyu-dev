@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
+
   let {
     visible,
     onClose,
@@ -26,22 +30,22 @@
   }[] = [
     {
       value: "grid",
-      label: "Grid",
+      label: "menus.view.grid",
       icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
     },
     {
       value: "river",
-      label: "River",
+      label: "menus.view.river",
       icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>`,
     },
     {
       value: "list",
-      label: "List",
+      label: "menus.view.list",
       icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`,
     },
     {
       value: "filmstrip",
-      label: "Filmstrip",
+      label: "menus.view.filmstrip",
       icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="16" x2="22" y2="16"/><line x1="7" y1="4" x2="7" y2="8"/><line x1="12" y1="4" x2="12" y2="8"/><line x1="17" y1="4" x2="17" y2="8"/><line x1="7" y1="16" x2="7" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="17" y1="16" x2="17" y2="20"/></svg>`,
     },
   ];
@@ -90,7 +94,7 @@
 {#if visible}
   <div class="sort-menu" style="left: {x - 60}px; bottom: {y + 0}px;">
     <div class="sort-menu-header">
-      <span class="sort-menu-title">View mode by</span>
+      <span class="sort-menu-title">{t("menus.view.title")}</span>
     </div>
     <div class="sort-menu-separator"></div>
     {#each VIEW_OPTIONS as option}
@@ -99,7 +103,7 @@
         class:active={viewMode === option.value}
         onclick={() => onViewChange(option.value)}
       >
-        <span class="sort-menu-label">{option.label}</span>
+        <span class="sort-menu-label">{t(option.label)}</span>
         {@html option.icon}
       </button>
     {/each}
@@ -117,7 +121,7 @@
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(density * 100)}
-          aria-label="Thumbnail size"
+          aria-label={t("menus.view.thumbnailSize")}
         >
           <div class="view-density-fill" style="width: {density * 100}%"></div>
           {#each [0, 0.5, 1] as pct}
@@ -137,11 +141,11 @@
               }}
               role="button"
               tabindex="0"
-              aria-label="Set size to {pct === 0
-                ? 'large'
+              aria-label={pct === 0
+                ? t("menus.view.setLarge")
                 : pct === 0.5
-                  ? 'medium'
-                  : 'small'}"
+                  ? t("menus.view.setMedium")
+                  : t("menus.view.setSmall")}
             ></div>
           {/each}
           <div

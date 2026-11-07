@@ -7,6 +7,7 @@ import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import { invokeCheckForUpdates } from "$lib/features/system/api";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 import {
   cleanupStaleStorageEntries,
   loadVolume,
@@ -195,8 +196,8 @@ export function setupInit(s: InitState) {
         if (closing) return;
         event.preventDefault();
         if (systemPrefs.confirmCloseWhileEditing && s.hasOpenEdits()) {
-          const quit = await confirm("Edits are still open. Close Vyu?", {
-            title: "Close Vyu",
+          const quit = await confirm(locale.t("shell.app.closeWhileEditing"), {
+            title: locale.t("shell.app.closeTitle"),
             kind: "warning",
           });
           if (!quit) return;

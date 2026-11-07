@@ -1,6 +1,10 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   let {
     visible,
@@ -115,7 +119,7 @@
       class="ctx-drag"
       role="button"
       tabindex="0"
-      aria-label="Drag to move"
+      aria-label={t("menus.common.dragToMove")}
       onmousedown={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -150,13 +154,13 @@
       <button
         class="ctx-pin tooltip-below"
         class:active={pinned}
-        data-tooltip={pinned ? "Unpin" : "Pin"}
+        data-tooltip={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
         onclick={(e) => {
           e.stopPropagation();
           pinned = !pinned;
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label={pinned ? "Unpin" : "Pin"}
+        aria-label={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
       >
         <svg
           width="9"
@@ -179,7 +183,7 @@
           <span class="ctx-dot"></span>
           <span class="ctx-dot"></span>
         </span>
-        <span>Slideshow</span>
+        <span>{t("menus.slideshow.title")}</span>
         <span class="ctx-dots">
           <span class="ctx-dot"></span>
           <span class="ctx-dot"></span>
@@ -188,13 +192,13 @@
       </span>
       <button
         class="ctx-close tooltip-below"
-        data-tooltip="Close"
+        data-tooltip={t("menus.common.close")}
         onclick={(e) => {
           e.stopPropagation();
           onClose();
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label="Close"
+        aria-label={t("menus.common.close")}
       >
         <svg
           width="9"
@@ -226,7 +230,7 @@
               points="12 6 12 12 16 14"
             /></svg
           >
-          Interval
+          {t("menus.slideshow.interval")}
         </span>
         <div
           class="color-slider-track"
@@ -236,7 +240,7 @@
           aria-valuemin={minInterval}
           aria-valuemax={maxInterval}
           aria-valuenow={slideshow.intervalSec}
-          aria-label="Slideshow interval"
+          aria-label={t("menus.slideshow.intervalAria")}
           onpointerdown={handleTrackPointerDown}
           onpointermove={handleTrackPointerMove}
           onpointerup={handleTrackPointerUp}
@@ -261,7 +265,7 @@
               }}
               role="button"
               tabindex="0"
-              aria-label="Set interval to {markerVal} seconds"
+              aria-label={tp("menus.slideshow.setInterval", markerVal)}
             ></div>
           {/each}
           <div
@@ -269,7 +273,7 @@
             style="left: {scrubberPct}%"
             role="button"
             tabindex="0"
-            aria-label="Scrubber"
+            aria-label={t("menus.common.scrubber")}
             onpointerdown={(e) => {
               e.stopPropagation();
               if (!trackEl) return;
@@ -301,7 +305,7 @@
             stroke-linecap="round"
             stroke-linejoin="round"><path d="M4 8h16M4 16h16" /></svg
           >
-          Order
+          {t("menus.slideshow.order")}
         </span>
         <div class="slideshow-toggle-row">
           <button
@@ -325,7 +329,7 @@
                 y2="19"
               /></svg
             >
-            Next
+            {t("menus.slideshow.next")}
           </button>
           <button
             class="slideshow-toggle-btn"
@@ -353,7 +357,7 @@
                 y2="21"
               /><line x1="4" y1="4" x2="9" y2="9" /></svg
             >
-            Shuffle
+            {t("menus.slideshow.shuffle")}
           </button>
         </div>
       </div>
@@ -377,7 +381,7 @@
               y2="21"
             /><line x1="12" y1="17" x2="12" y2="21" /></svg
           >
-          Videos
+          {t("menus.slideshow.videos")}
         </span>
         <div class="slideshow-toggle-row">
           <button
@@ -398,7 +402,7 @@
                 d="M8 12h8"
               /></svg
             >
-            Skip
+            {t("menus.slideshow.skip")}
           </button>
           <button
             class="slideshow-toggle-btn"
@@ -418,7 +422,7 @@
                 d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"
               /></svg
             >
-            Full
+            {t("menus.slideshow.full")}
           </button>
         </div>
       </div>
@@ -439,7 +443,7 @@
               points="2 17 12 12 22 17"
             /><polyline points="2 12 12 7 22 12" /></svg
           >
-          Transition
+          {t("menus.slideshow.transition")}
         </span>
         <div class="slideshow-toggle-row three">
           <button
@@ -463,7 +467,7 @@
                 y2="18"
               /></svg
             >
-            None
+            {t("menus.slideshow.none")}
           </button>
           <button
             class="slideshow-toggle-btn"
@@ -483,7 +487,7 @@
                 d="M12 2l3.09 8.26L21 12l-8.26 3.09L12 22l-3.09-8.26L3 12l8.26-3.09z"
               /></svg
             >
-            Fade
+            {t("menus.slideshow.fade")}
           </button>
           <button
             class="slideshow-toggle-btn"
@@ -503,7 +507,7 @@
                 d="M9 12h6"
               /><path d="M13 8l4 4-4 4" /></svg
             >
-            Slide
+            {t("menus.slideshow.slide")}
           </button>
         </div>
       </div>
@@ -527,7 +531,7 @@
               stroke-linejoin="round"
               ><polygon points="5 3 19 12 5 21 5 3" /></svg
             >
-            Start
+            {t("menus.slideshow.start")}
           </button>
         {:else}
           {#key slideshow.paused}
@@ -551,7 +555,7 @@
                   stroke-linejoin="round"
                   ><polygon points="5 3 19 12 5 21 5 3" /></svg
                 >
-                Play
+                {t("menus.slideshow.play")}
               {:else}
                 <svg
                   width="12"
@@ -569,7 +573,7 @@
                     height="16"
                   /></svg
                 >
-                Pause
+                {t("menus.slideshow.pause")}
               {/if}
             </button>
           {/key}
@@ -589,7 +593,7 @@
               stroke-linejoin="round"
               ><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /></svg
             >
-            Stop
+            {t("menus.slideshow.stop")}
           </button>
         {/if}
       </div>

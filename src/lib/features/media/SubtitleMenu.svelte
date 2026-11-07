@@ -4,6 +4,9 @@
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
   import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
   import type { SubtitleSize } from "$lib/features/media/tracks.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     open,
@@ -59,12 +62,20 @@
   }
 
   function sizeLabel(): string {
-    return size[0].toUpperCase() + size.slice(1);
+    const key =
+      size === "small"
+        ? "media.subtitles.sizeSmall"
+        : size === "large"
+          ? "media.subtitles.sizeLarge"
+          : "media.subtitles.sizeDefault";
+    return t(key);
   }
 
   function trackTitle(track: MediaTrack, position: number): string {
     return (
-      track.title || track.language?.toUpperCase() || `Subtitle ${position + 1}`
+      track.title ||
+      track.language?.toUpperCase() ||
+      t("media.subtitles.subtitleN", { n: position + 1 })
     );
   }
 
@@ -101,7 +112,11 @@
 </script>
 
 {#if open}
-  <div class="track-menu subtitle-menu" role="menu" aria-label="Subtitles">
+  <div
+    class="track-menu subtitle-menu"
+    role="menu"
+    aria-label={t("media.subtitles.aria")}
+  >
     <div class="track-menu-heading" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <rect
@@ -120,7 +135,7 @@
           stroke-linecap="round"
         />
       </svg>
-      <span>Subtitles</span>
+      <span>{t("media.subtitles.heading")}</span>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
         <rect
           x="3"
@@ -165,9 +180,13 @@
             {/if}
           </span>
           <span class="track-menu-option-copy">
-            <span class="track-menu-option-title">Off</span>
+            <span class="track-menu-option-title"
+              >{t("media.subtitles.off")}</span
+            >
             {#if tracks.length === 0 && sidecars.length === 0 && !error}
-              <span class="track-menu-option-detail">No subtitle track</span>
+              <span class="track-menu-option-detail"
+                >{t("media.subtitles.none")}</span
+              >
             {/if}
           </span>
         </button>
@@ -207,7 +226,7 @@
               />
               {#if !track.supported}
                 <span class="track-menu-option-detail"
-                  >Image subtitles unavailable</span
+                  >{t("media.subtitles.unavailable")}</span
                 >
               {:else if track.codec || (track.title && track.language)}
                 <span class="track-menu-option-detail">
@@ -229,7 +248,7 @@
 
     {#if catalogLoading}
       <div class="track-menu-message" style={animStyle(1)} role="status">
-        Reading tracks…
+        {t("media.tracks.reading")}
       </div>
     {/if}
     {#if error}
@@ -242,7 +261,7 @@
     <div
       class="track-menu-actions"
       role="group"
-      aria-label="Subtitle options"
+      aria-label={t("media.subtitles.optionsAria")}
       style={animStyle(tracks.length + 3)}
     >
       <button
@@ -250,8 +269,8 @@
         class="track-menu-icon-btn tooltip-ctrl"
         class:active={settingsPanel === "timing"}
         class:accent={delayMs !== 0}
-        data-tooltip="Timing"
-        aria-label="Subtitle timing"
+        data-tooltip={t("media.subtitles.timing")}
+        aria-label={t("media.subtitles.timingAria")}
         aria-expanded={settingsPanel === "timing"}
         disabled={loading}
         onclick={() => togglePanel("timing")}
@@ -278,8 +297,8 @@
         class="track-menu-icon-btn tooltip-ctrl"
         class:active={settingsPanel === "size"}
         class:accent={size !== "default"}
-        data-tooltip="Text size"
-        aria-label="Subtitle text size"
+        data-tooltip={t("media.subtitles.size")}
+        aria-label={t("media.subtitles.sizeAria")}
         aria-expanded={settingsPanel === "size"}
         onclick={() => togglePanel("size")}
       >
@@ -298,8 +317,8 @@
         class="track-menu-icon-btn tooltip-ctrl"
         class:active={settingsPanel === "nearby"}
         class:accent={selectedId.startsWith("sidecar:")}
-        data-tooltip="Nearby files"
-        aria-label="Nearby subtitle files"
+        data-tooltip={t("media.subtitles.nearby")}
+        aria-label={t("media.subtitles.nearbyAria")}
         aria-expanded={settingsPanel === "nearby"}
         onclick={() => togglePanel("nearby")}
       >
@@ -315,8 +334,8 @@
       <button
         type="button"
         class="track-menu-icon-btn track-menu-add-btn add tooltip-ctrl"
-        data-tooltip="Add subtitle"
-        aria-label="Add subtitle"
+        data-tooltip={t("media.subtitles.add")}
+        aria-label={t("media.subtitles.add")}
         disabled={loading}
         onclick={() => void loadSubtitle()}
       >
@@ -328,7 +347,7 @@
             stroke-linecap="round"
           />
         </svg>
-        <span>Add subtitle</span>
+        <span>{t("media.subtitles.add")}</span>
       </button>
     </div>
 
@@ -337,12 +356,15 @@
         {#if settingsPanel === "timing"}
           <div class="track-menu-setting">
             <div class="track-menu-setting-head">
-              <span class="track-menu-setting-label">Timing</span>
+              <span class="track-menu-setting-label"
+                >{t("media.subtitles.timing")}</span
+              >
               <button
                 type="button"
                 class="track-menu-reset"
                 disabled={selectedId === "off" || delayMs === 0 || loading}
-                onclick={() => onAdjustDelay(-delayMs)}>Reset</button
+                onclick={() => onAdjustDelay(-delayMs)}
+                >{t("media.subtitles.reset")}</button
               >
             </div>
             <div class="track-menu-card">
@@ -350,7 +372,7 @@
                 <button
                   type="button"
                   class="track-menu-small-button"
-                  aria-label="Bring subtitles earlier by 0.25 seconds"
+                  aria-label={t("media.subtitles.delayEarlier")}
                   disabled={selectedId === "off" || loading}
                   onclick={() => onAdjustDelay(-250)}>−0.25</button
                 >
@@ -358,7 +380,7 @@
                 <button
                   type="button"
                   class="track-menu-small-button"
-                  aria-label="Delay subtitles by 0.25 seconds"
+                  aria-label={t("media.subtitles.delayLater")}
                   disabled={selectedId === "off" || loading}
                   onclick={() => onAdjustDelay(250)}>+0.25</button
                 >
@@ -368,14 +390,16 @@
         {:else if settingsPanel === "size"}
           <div class="track-menu-setting">
             <div class="track-menu-setting-head">
-              <span class="track-menu-setting-label">Text size</span>
+              <span class="track-menu-setting-label"
+                >{t("media.subtitles.size")}</span
+              >
             </div>
             <div class="track-menu-card">
               <div class="track-menu-stepper">
                 <button
                   type="button"
                   class="track-menu-small-button"
-                  aria-label="Decrease subtitle text size"
+                  aria-label={t("media.subtitles.sizeDecrease")}
                   disabled={size === "small"}
                   onclick={() => stepSize(-1)}>−</button
                 >
@@ -383,7 +407,7 @@
                 <button
                   type="button"
                   class="track-menu-small-button"
-                  aria-label="Increase subtitle text size"
+                  aria-label={t("media.subtitles.sizeIncrease")}
                   disabled={size === "large"}
                   onclick={() => stepSize(1)}>+</button
                 >
@@ -393,7 +417,9 @@
         {:else}
           <div class="track-menu-setting">
             <div class="track-menu-setting-head">
-              <span class="track-menu-setting-label">Nearby files</span>
+              <span class="track-menu-setting-label"
+                >{t("media.subtitles.nearby")}</span
+              >
             </div>
             <div class="track-menu-card">
               {#if sidecars.length === 0}
@@ -412,7 +438,7 @@
                       stroke-linecap="round"
                     />
                   </svg>
-                  <span>No nearby subtitle files</span>
+                  <span>{t("media.subtitles.noneNearby")}</span>
                 </div>
               {:else}
                 <div class="track-menu-subpanel-list">

@@ -2,6 +2,9 @@
   import { fly } from "svelte/transition";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { formatFreq, formatDb } from "$lib/features/equalizer/bandConfig";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -108,6 +111,29 @@
 
   const presets = $derived(isVideo ? videoPresets : audioPresets);
 
+  const PRESET_KEYS: Record<string, string> = {
+    Flat: "menus.eq.preset.flat",
+    "Bass Boost": "menus.eq.preset.bassBoost",
+    Podcast: "menus.eq.preset.podcast",
+    Classical: "menus.eq.preset.classical",
+    Rock: "menus.eq.preset.rock",
+    Jazz: "menus.eq.preset.jazz",
+    EDM: "menus.eq.preset.edm",
+    Afterparty: "menus.eq.preset.afterparty",
+    Dialogue: "menus.eq.preset.dialogue",
+    Cinema: "menus.eq.preset.cinema",
+    Anime: "menus.eq.preset.anime",
+    Gaming: "menus.eq.preset.gaming",
+    "Night Mode": "menus.eq.preset.nightMode",
+    Surround: "menus.eq.preset.surround",
+    Custom: "menus.eq.preset.custom",
+  };
+
+  function presetLabel(name: string): string {
+    const key = PRESET_KEYS[name];
+    return key ? t(key) : name;
+  }
+
   const TRACK_HEIGHT = 100;
 
   function knobY(val: number): number {
@@ -189,7 +215,7 @@
         class="ctx-drag"
         role="button"
         tabindex="0"
-        aria-label="Drag to move"
+        aria-label={t("menus.common.dragToMove")}
         onmousedown={(e) => {
           e.preventDefault();
           onMoved?.();
@@ -226,13 +252,15 @@
         <button
           class="ctx-pin tooltip-below"
           class:active={pinned}
-          data-tooltip={pinned ? "Unpin" : "Pin"}
+          data-tooltip={pinned
+            ? t("menus.common.unpin")
+            : t("menus.common.pin")}
           onclick={(e) => {
             e.stopPropagation();
             pinned = !pinned;
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label={pinned ? "Unpin" : "Pin"}
+          aria-label={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
         >
           <svg
             width="9"
@@ -255,7 +283,7 @@
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
           </span>
-          <span>Equalizer</span>
+          <span>{t("menus.eq.title")}</span>
           <span class="ctx-dots">
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
@@ -264,13 +292,13 @@
         </span>
         <button
           class="ctx-close tooltip-below"
-          data-tooltip="Close"
+          data-tooltip={t("menus.common.close")}
           onclick={(e) => {
             e.stopPropagation();
             onClose();
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label="Close"
+          aria-label={t("menus.common.close")}
         >
           <svg
             width="9"
@@ -297,7 +325,9 @@
               <span class="eq-bypass-thumb"></span>
             </span>
             <span class="eq-bypass-label"
-              >{eqStore.bypass ? "Bypass" : "Active"}</span
+              >{eqStore.bypass
+                ? t("menus.eq.bypass")
+                : t("menus.eq.active")}</span
             >
           </button>
 
@@ -308,7 +338,7 @@
               class="eq-preset-btn"
               onclick={() => (presetDropdownOpen = !presetDropdownOpen)}
             >
-              <span>{eqStore.activePreset}</span>
+              <span>{presetLabel(eqStore.activePreset)}</span>
               <svg
                 width="8"
                 height="8"
@@ -338,7 +368,7 @@
                       presetDropdownOpen = false;
                     }}
                   >
-                    {name}
+                    {presetLabel(name)}
                   </button>
                 {/each}
                 {#if eqStore.activePreset === "Custom"}
@@ -347,7 +377,7 @@
                     class="eq-preset-item active"
                     onclick={() => (presetDropdownOpen = false)}
                   >
-                    Custom
+                    {t("menus.eq.preset.custom")}
                   </button>
                 {/if}
               </div>
@@ -356,9 +386,9 @@
 
           <button
             class="eq-reset-btn tooltip-below"
-            data-tooltip="Reset"
+            data-tooltip={t("menus.common.reset")}
             onclick={resetAll}
-            aria-label="Reset"
+            aria-label={t("menus.common.reset")}
           >
             <svg
               width="11"
@@ -489,7 +519,7 @@
               <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
             </svg>
-            Gain
+            {t("menus.eq.gain")}
           </span>
           <div class="eq-gain-track">
             <div class="eq-gain-center"></div>
@@ -502,21 +532,21 @@
               class:active={eqStore.outputGain === -12}
               style:left="0%"
               onclick={() => eqStore.setOutputGain(-12)}
-              aria-label="Min gain"
+              aria-label={t("menus.eq.minGain")}
             ></button>
             <button
               class="eq-gain-marker"
               class:active={eqStore.outputGain === 0}
               style:left="50%"
               onclick={() => eqStore.setOutputGain(0)}
-              aria-label="Zero gain"
+              aria-label={t("menus.eq.zeroGain")}
             ></button>
             <button
               class="eq-gain-marker"
               class:active={eqStore.outputGain === 12}
               style:left="100%"
               onclick={() => eqStore.setOutputGain(12)}
-              aria-label="Max gain"
+              aria-label={t("menus.eq.maxGain")}
             ></button>
             <input
               type="range"

@@ -2,7 +2,10 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 </script>
 
 <div id="accessibility-section-cognitive" class="settings-section" class:flash>
@@ -20,19 +23,24 @@
         d="M12 6v6l4 2"
       /></svg
     >
-    Cognitive
+    {t("settings.accessibility.section.cognitive")}
   </p>
 
-  <SettingsGroup label="Focus" icon="eye">
+  <SettingsGroup
+    label={t("settings.accessibility.cognitive.group.focus")}
+    icon="eye"
+  >
     <SettingsRow
-      label="Reduce Distractions"
-      hint="Hide the thumbnail strip and non-essential metadata"
+      label={t("settings.accessibility.cognitive.reduceDistractions.label")}
+      hint={t("settings.accessibility.cognitive.reduceDistractions.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Reduce Distractions"
+            aria-label={t(
+              "settings.accessibility.cognitive.reduceDistractions.aria",
+            )}
             checked={accessibility.reduceDistractions}
             onchange={(e) =>
               accessibility.setReduceDistractions(e.currentTarget.checked)}
@@ -45,14 +53,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Focus Mode"
-      hint="Hide the media bar and player controls, leaving the top bar"
+      label={t("settings.accessibility.cognitive.focusMode.label")}
+      hint={t("settings.accessibility.cognitive.focusMode.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Focus Mode"
+            aria-label={t("settings.accessibility.cognitive.focusMode.aria")}
             checked={accessibility.focusMode}
             onchange={(e) =>
               accessibility.setFocusMode(e.currentTarget.checked)}
@@ -65,14 +73,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Hide Media Details"
-      hint="Hide resolution, bitrate and file size in the media bar"
+      label={t("settings.accessibility.cognitive.hideDetails.label")}
+      hint={t("settings.accessibility.cognitive.hideDetails.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Hide Media Details"
+            aria-label={t("settings.accessibility.cognitive.hideDetails.aria")}
             checked={accessibility.hideMediaDetails}
             onchange={(e) =>
               accessibility.setHideMediaDetails(e.currentTarget.checked)}
@@ -85,14 +93,16 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Simplified Menus"
-      hint="Hide secondary entries such as Feedback and About"
+      label={t("settings.accessibility.cognitive.simplifiedMenus.label")}
+      hint={t("settings.accessibility.cognitive.simplifiedMenus.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Simplified Menus"
+            aria-label={t(
+              "settings.accessibility.cognitive.simplifiedMenus.aria",
+            )}
             checked={accessibility.simplifiedMenus}
             onchange={(e) =>
               accessibility.setSimplifiedMenus(e.currentTarget.checked)}

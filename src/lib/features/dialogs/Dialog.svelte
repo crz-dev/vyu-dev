@@ -36,6 +36,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { showToast, updateToast } from "$lib/components/toast.svelte";
   import { joinPath } from "$lib/services/files";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
     contextMenu,
@@ -189,12 +190,53 @@
     fixReplace: () => void;
   } = $props();
 
+  const t = locale.t;
+  const tp = locale.tp;
+
   let overlayFadeMs = $derived(appearance.reducedMotion ? 0 : 120);
 
   let pinned = $state(false);
   let deleteMarkersConfirm = $state(false);
   let deleteMarkersTimer: ReturnType<typeof setTimeout> | null = $state(null);
   const shareDeleteOriginal = $derived(conversionPrefs.deleteOriginal);
+
+  function unknownValue(): string {
+    return t("dialogs.dialog.properties.unknown");
+  }
+
+  function fileTypeName(): string {
+    if (isPdf) return t("dialogs.dialog.properties.typeDocument");
+    if (isVideo) return t("dialogs.dialog.properties.typeVideo");
+    return t("dialogs.dialog.properties.typeImage");
+  }
+
+  function fileTypeValue(): string {
+    return t("dialogs.dialog.properties.typeValue", {
+      type: fileTypeName(),
+      ext: fileExt() || t("dialogs.dialog.properties.unknownLower"),
+    });
+  }
+
+  function codecValue(): string {
+    const video = showValue(mediaProps?.video_codec);
+    const audio = mediaProps?.audio_codec;
+    return audio
+      ? t("dialogs.dialog.properties.codecValue", { video, audio })
+      : video;
+  }
+
+  function colorValue(): string {
+    const pixel = showValue(mediaProps?.pixel_format);
+    const parts = [pixel];
+    if (mediaProps?.color_space) parts.push(mediaProps.color_space);
+    const base = parts.join(" · ");
+    return mediaProps?.bit_depth
+      ? t("dialogs.dialog.properties.colorValue", {
+          value: base,
+          bit: mediaProps.bit_depth,
+        })
+      : base;
+  }
 
   function conversionPreset(): string {
     switch (conversionPrefs.quality) {
@@ -290,13 +332,16 @@
 
   function printPdf() {
     window.print();
-    showToast({ message: "Print dialog opened", color: "blue" });
+    showToast({
+      message: t("dialogs.dialog.toast.printOpened"),
+      color: "blue",
+    });
   }
 
   async function handleShazam() {
     closeShare();
     const toastId = showToast({
-      message: "Identifying\u2026",
+      message: t("dialogs.dialog.toast.identifying"),
       color: "blue",
       duration: 0,
     });
@@ -304,13 +349,16 @@
       const result = await invokeIdentifySong(filePath);
       if (result) {
         updateToast(toastId, {
-          message: `\uD83C\uDFB5 ${result.title} \u2014 ${result.artist}`,
+          message: t("dialogs.dialog.toast.songIdentified", {
+            title: result.title,
+            artist: result.artist,
+          }),
           color: "blue",
           duration: 3000,
         });
       } else {
         updateToast(toastId, {
-          message: "Couldn't identify this song",
+          message: t("dialogs.dialog.toast.songUnknown"),
           color: "blue",
           duration: 3000,
         });
@@ -318,8 +366,8 @@
     } catch (e) {
       const message =
         typeof e === "string" && e.toLowerCase().includes("sidecar")
-          ? "Song ID is unavailable in this build"
-          : "Shazam failed \u2014 check your internet connection";
+          ? t("dialogs.dialog.toast.songUnavailable")
+          : t("dialogs.dialog.toast.shazamFailed");
       updateToast(toastId, {
         message,
         color: "blue",
@@ -338,7 +386,7 @@
           ? e.message
           : typeof e === "string"
             ? e
-            : "Action failed";
+            : t("dialogs.dialog.toast.actionFailed");
       const appNotFoundMatch = msg.match(
         /^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/,
       );
@@ -346,12 +394,12 @@
         const appName = appNotFoundMatch[1];
         const installUrl = appNotFoundMatch[2];
         showToast({
-          message: `${appName} not installed \u2014 install?`,
+          message: t("dialogs.dialog.toast.appNotInstalled", { name: appName }),
           color: "red",
           duration: 5000,
           actions: [
             {
-              label: "Install",
+              label: t("dialogs.dialog.toast.install"),
               variant: "accent",
               onClick: () => window.open(installUrl, "_blank"),
             },
@@ -359,7 +407,10 @@
         });
       } else {
         console.error("Share action failed:", e);
-        showToast({ message: "Action failed", color: "red" });
+        showToast({
+          message: t("dialogs.dialog.toast.actionFailed"),
+          color: "red",
+        });
       }
     }
     closeShare();
@@ -370,14 +421,23 @@
       try {
         const { openPath } = await import("@tauri-apps/plugin-opener");
         await openPath(filePath);
-        showToast({ message: "Opened in default app", color: "green" });
+        showToast({
+          message: t("dialogs.dialog.toast.openedDefault"),
+          color: "green",
+        });
       } catch {
-        showToast({ message: "Failed to open file", color: "red" });
+        showToast({
+          message: t("dialogs.dialog.toast.openFailed"),
+          color: "red",
+        });
       }
       closeShare();
       return;
     }
-    await shareAction(() => invokeSetWallpaper(filePath), "Wallpaper set");
+    await shareAction(
+      () => invokeSetWallpaper(filePath),
+      t("dialogs.dialog.toast.wallpaperSet"),
+    );
   }
 
   async function finalizeSave(
@@ -407,7 +467,7 @@
       } catch (e) {
         console.error("Failed to delete original:", e);
         showToast({
-          message: "Converted but couldn't move original to trash",
+          message: t("dialogs.dialog.toast.trashFailed"),
           color: "red",
         });
       }
@@ -480,7 +540,9 @@
         );
       }
       showToast({
-        message: "Saved as " + format.toUpperCase(),
+        message: t("dialogs.dialog.toast.savedAs", {
+          format: format.toUpperCase(),
+        }),
         color: "green",
         duration: 5000,
       });
@@ -491,7 +553,7 @@
           ? e.message
           : typeof e === "string"
             ? e
-            : "Conversion failed";
+            : t("dialogs.dialog.toast.conversionFailed");
       console.error("Save as failed:", e);
       showToast({ message: msg, color: "red" });
     } finally {
@@ -507,7 +569,10 @@
   async function handleSaveAs(format: string) {
     const outputDir = conversionOutputDir();
     if (!outputDir) {
-      showToast({ message: "Pick a save location", color: "yellow" });
+      showToast({
+        message: t("dialogs.dialog.toast.pickLocation"),
+        color: "yellow",
+      });
       return;
     }
     await runSaveAs({ outputDir, revealDir: outputDir, format });
@@ -585,7 +650,10 @@
 
     const outputExt = outputPath.split(".").pop()?.toLowerCase() || "";
     if (!outputExt) {
-      showToast({ message: "No format selected", color: "yellow" });
+      showToast({
+        message: t("dialogs.dialog.toast.noFormat"),
+        color: "yellow",
+      });
       return;
     }
 
@@ -614,7 +682,7 @@
       class="ctx-drag"
       role="button"
       tabindex="0"
-      aria-label="Drag to move"
+      aria-label={t("dialogs.dialog.menu.drag")}
       onmousedown={(e) => {
         e.preventDefault();
         const startX = e.clientX;
@@ -649,13 +717,17 @@
       <button
         class="ctx-pin tooltip-below"
         class:active={pinned}
-        data-tooltip={pinned ? "Unpin" : "Pin"}
+        data-tooltip={pinned
+          ? t("dialogs.dialog.menu.unpin")
+          : t("dialogs.dialog.menu.pin")}
         onclick={(e) => {
           e.stopPropagation();
           pinned = !pinned;
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label={pinned ? "Unpin" : "Pin"}
+        aria-label={pinned
+          ? t("dialogs.dialog.menu.unpin")
+          : t("dialogs.dialog.menu.pin")}
       >
         <svg
           width="9"
@@ -679,13 +751,13 @@
       </span>
       <button
         class="ctx-close tooltip-below"
-        data-tooltip="Close"
+        data-tooltip={t("dialogs.dialog.menu.close")}
         onclick={(e) => {
           e.stopPropagation();
           onClose();
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label="Close"
+        aria-label={t("dialogs.dialog.menu.close")}
       >
         <svg
           width="11"
@@ -724,7 +796,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Copy page
+          {t("dialogs.dialog.menu.copyPage")}
         </button>
         <button
           class="ctx-item green"
@@ -769,7 +841,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Share
+          {t("dialogs.dialog.menu.share")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -795,7 +867,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Search
+          {t("dialogs.dialog.menu.search")}
         </button>
         <button
           class="ctx-item blue"
@@ -817,7 +889,7 @@
               stroke-linejoin="round"
             /></svg
           >
-          Markup
+          {t("dialogs.dialog.menu.markup")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -833,7 +905,7 @@
               stroke-width="2"
             /></svg
           >
-          Show in explorer
+          {t("dialogs.dialog.menu.showInExplorer")}
         </button>
         <button
           class="ctx-item yellow"
@@ -855,7 +927,7 @@
               stroke-linecap="round"
             /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
           >
-          Properties
+          {t("dialogs.dialog.menu.properties")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -887,7 +959,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Delete
+          {t("dialogs.dialog.menu.delete")}
         </button>
       {:else if isAudio}
         <button
@@ -909,7 +981,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Copy path
+          {t("dialogs.dialog.menu.copyPath")}
         </button>
         <button
           class="ctx-item green"
@@ -954,7 +1026,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Share
+          {t("dialogs.dialog.menu.share")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -979,7 +1051,7 @@
               d="M19 14l.75 2.25 2.25.75-2.25.75L19 20l-.75-2.25L16 17l2.25-.75z"
             />
           </svg>
-          Effects
+          {t("dialogs.dialog.menu.effects")}
         </button>
         <button
           class="ctx-item blue"
@@ -995,7 +1067,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Equalizer
+          {t("dialogs.dialog.menu.equalizer")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1011,7 +1083,7 @@
               stroke-width="2"
             /></svg
           >
-          Show in explorer
+          {t("dialogs.dialog.menu.showInExplorer")}
         </button>
         <button
           class="ctx-item yellow"
@@ -1033,7 +1105,7 @@
               stroke-linecap="round"
             /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
           >
-          Properties
+          {t("dialogs.dialog.menu.properties")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1065,7 +1137,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Delete
+          {t("dialogs.dialog.menu.delete")}
         </button>
       {:else if !isVideo}
         <button
@@ -1090,7 +1162,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Copy image
+          {t("dialogs.dialog.menu.copyImage")}
         </button>
         <button
           class="ctx-item green"
@@ -1135,7 +1207,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Share
+          {t("dialogs.dialog.menu.share")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1175,7 +1247,7 @@
               y2="14"
             /><line x1="16" y1="18" x2="16" y2="22" /></svg
           >
-          Edit
+          {t("dialogs.dialog.menu.edit")}
         </button>
         <button
           class="ctx-item blue"
@@ -1197,7 +1269,7 @@
               stroke-linejoin="round"
             /></svg
           >
-          Markup
+          {t("dialogs.dialog.menu.markup")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1213,7 +1285,7 @@
               stroke-width="2"
             /></svg
           >
-          Show in explorer
+          {t("dialogs.dialog.menu.showInExplorer")}
         </button>
         <button
           class="ctx-item yellow"
@@ -1235,7 +1307,7 @@
               stroke-linecap="round"
             /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
           >
-          Properties
+          {t("dialogs.dialog.menu.properties")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1267,7 +1339,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Delete
+          {t("dialogs.dialog.menu.delete")}
         </button>
       {:else}
         <button
@@ -1292,7 +1364,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Copy current frame
+          {t("dialogs.dialog.menu.copyFrame")}
         </button>
         <button
           class="ctx-item green"
@@ -1337,7 +1409,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Share
+          {t("dialogs.dialog.menu.share")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1377,7 +1449,7 @@
               y2="14"
             /><line x1="16" y1="18" x2="16" y2="22" /></svg
           >
-          Edit
+          {t("dialogs.dialog.menu.edit")}
         </button>
         <button
           class="ctx-item blue"
@@ -1393,7 +1465,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Equalizer
+          {t("dialogs.dialog.menu.equalizer")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -1409,7 +1481,7 @@
               stroke-width="2"
             /></svg
           >
-          Show in explorer
+          {t("dialogs.dialog.menu.showInExplorer")}
         </button>
         <button
           class="ctx-item yellow"
@@ -1431,7 +1503,7 @@
               stroke-linecap="round"
             /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
           >
-          Properties
+          {t("dialogs.dialog.menu.properties")}
         </button>
         <div class="ctx-sep"></div>
         {#if timestamps.length > 0 || clipBoundaries.length > 0 || resumePoint !== null}
@@ -1467,7 +1539,9 @@
                 stroke-linecap="round"
               /></svg
             >
-            {deleteMarkersConfirm ? "Confirm Delete" : "Delete Markers"}
+            {deleteMarkersConfirm
+              ? t("dialogs.dialog.menu.confirmDelete")
+              : t("dialogs.dialog.menu.deleteMarkers")}
           </button>
         {/if}
         <button
@@ -1499,7 +1573,7 @@
               stroke-linecap="round"
             /></svg
           >
-          Delete
+          {t("dialogs.dialog.menu.delete")}
         </button>
       {/if}
     </div>
@@ -1538,14 +1612,14 @@
             <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
           </svg>
           <div>
-            <p class="delete-title">Delete file</p>
+            <p class="delete-title">{t("dialogs.dialog.delete.title")}</p>
             <p class="delete-subtitle">{fileName}</p>
           </div>
         </div>
         <button
           class="edit-confirm-header-close"
           onclick={closeDeleteConfirm}
-          aria-label="Cancel"
+          aria-label={t("dialogs.dialog.delete.cancel")}
         >
           <svg
             width="14"
@@ -1577,7 +1651,7 @@
               /><path d="M10 11v6" /><path d="M14 11v6" /><path
                 d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
               /></svg
-            >Delete permanently</span
+            >{t("dialogs.dialog.delete.permanent")}</span
           >
           <input
             type="checkbox"
@@ -1604,7 +1678,7 @@
               /><path
                 d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
               /><line x1="1" y1="1" x2="23" y2="23" /></svg
-            >Don't ask again</span
+            >{t("dialogs.dialog.delete.noAsk")}</span
           >
           <input
             type="checkbox"
@@ -1628,7 +1702,7 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg
-            >Cancel
+            >{t("dialogs.dialog.delete.cancel")}
           </button>
           <button class="delete-confirm-btn" onclick={performDelete}>
             <svg
@@ -1645,7 +1719,7 @@
               /><path d="M10 11v6" /><path d="M14 11v6" /><path
                 d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
               /></svg
-            >Delete
+            >{t("dialogs.dialog.delete.confirm")}
           </button>
         </div>
       </div>
@@ -1685,14 +1759,16 @@
             <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
           </svg>
           <div>
-            <p class="delete-title">Delete files</p>
-            <p class="delete-subtitle">{multiDeleteCount} files</p>
+            <p class="delete-title">{t("dialogs.dialog.delete.multiTitle")}</p>
+            <p class="delete-subtitle">
+              {tp("dialogs.dialog.delete.fileCount", multiDeleteCount)}
+            </p>
           </div>
         </div>
         <button
           class="edit-confirm-header-close"
           onclick={closeMultiDeleteConfirm}
-          aria-label="Cancel"
+          aria-label={t("dialogs.dialog.delete.cancel")}
         >
           <svg
             width="14"
@@ -1724,7 +1800,7 @@
               /><path d="M10 11v6" /><path d="M14 11v6" /><path
                 d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
               /></svg
-            >Delete permanently</span
+            >{t("dialogs.dialog.delete.permanent")}</span
           >
           <input
             type="checkbox"
@@ -1752,7 +1828,7 @@
               /><path
                 d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
               /><line x1="1" y1="1" x2="23" y2="23" /></svg
-            >Don't ask again</span
+            >{t("dialogs.dialog.delete.noAsk")}</span
           >
           <input
             type="checkbox"
@@ -1776,7 +1852,7 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg
-            >Cancel
+            >{t("dialogs.dialog.delete.cancel")}
           </button>
           <button
             class="delete-confirm-btn"
@@ -1796,7 +1872,7 @@
               /><path d="M10 11v6" /><path d="M14 11v6" /><path
                 d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"
               /></svg
-            >Delete
+            >{t("dialogs.dialog.delete.confirm")}
           </button>
         </div>
       </div>
@@ -1829,13 +1905,13 @@
           <circle cx="12" cy="7.5" r="1" fill="currentColor" />
         </svg>
         <div>
-          <p class="delete-title">Properties</p>
+          <p class="delete-title">{t("dialogs.dialog.properties.title")}</p>
           <p class="delete-subtitle">{fileName}</p>
         </div>
         <button
           class="dialog-close-x"
           onclick={closeProperties}
-          aria-label="Close"
+          aria-label={t("dialogs.dialog.menu.close")}
         >
           <svg
             viewBox="0 0 24 24"
@@ -1850,16 +1926,11 @@
       <div class="props-list">
         <div
           class="props-row"
-          onclick={() =>
-            copyPropValue(
-              `${isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
-            )}
+          onclick={() => copyPropValue(fileTypeValue())}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              copyPropValue(
-                `${isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} (${fileExt() || "unknown"})`,
-              );
+              copyPropValue(fileTypeValue());
             }
           }}
           role="button"
@@ -1879,12 +1950,9 @@
                 d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
               /><polyline points="14 2 14 8 20 8" /></svg
             >
-            Type
+            {t("dialogs.dialog.properties.type")}
           </span>
-          <span class="props-v"
-            >{isPdf ? "Document (PDF)" : isVideo ? "Video" : "Image"} ({fileExt() ||
-              "unknown"})</span
-          >
+          <span class="props-v">{fileTypeValue()}</span>
         </div>
         {#if isPdf}
           <div
@@ -1913,7 +1981,7 @@
                   points="4 4 12 12 20 4"
                 /></svg
               >
-              Pages
+              {t("dialogs.dialog.properties.pages")}
             </span>
             <span class="props-v">{pdfPageCount}</span>
           </div>
@@ -1942,7 +2010,7 @@
                   stroke-linejoin="round"
                   ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg
                 >
-                Page size
+                {t("dialogs.dialog.properties.pageSize")}
               </span>
               <span class="props-v">{pdfPageSize}</span>
             </div>
@@ -1975,7 +2043,7 @@
                     stroke-linecap="round"
                   /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
                 >
-                > Version
+                > {t("dialogs.dialog.properties.version")}
               </span>
               <span class="props-v">{pdfVersion}</span>
             </div>
@@ -1983,11 +2051,11 @@
         {:else}
           <div
             class="props-row"
-            onclick={() => copyPropValue(fileDimensions || "Unknown")}
+            onclick={() => copyPropValue(fileDimensions || unknownValue())}
             onkeydown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                copyPropValue(fileDimensions || "Unknown");
+                copyPropValue(fileDimensions || unknownValue());
               }
             }}
             role="button"
@@ -2005,18 +2073,18 @@
                 stroke-linejoin="round"
                 ><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg
               >
-              Dimensions
+              {t("dialogs.dialog.properties.dimensions")}
             </span>
-            <span class="props-v">{fileDimensions || "Unknown"}</span>
+            <span class="props-v">{fileDimensions || unknownValue()}</span>
           </div>
         {/if}
         <div
           class="props-row"
-          onclick={() => copyPropValue(fileSize || "Unknown")}
+          onclick={() => copyPropValue(fileSize || unknownValue())}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              copyPropValue(fileSize || "Unknown");
+              copyPropValue(fileSize || unknownValue());
             }
           }}
           role="button"
@@ -2036,9 +2104,9 @@
                 points="7 10 12 15 17 10"
               /><line x1="12" y1="15" x2="12" y2="3" /></svg
             >
-            Size
+            {t("dialogs.dialog.properties.size")}
           </span>
-          <span class="props-v">{fileSize || "Unknown"}</span>
+          <span class="props-v">{fileSize || unknownValue()}</span>
         </div>
         {#if isVideo}
           <div
@@ -2067,7 +2135,7 @@
                   points="12 6 12 12 16 14"
                 /></svg
               >
-              Duration
+              {t("dialogs.dialog.properties.duration")}
             </span>
             <span class="props-v">{durationDisplay}</span>
           </div>
@@ -2078,7 +2146,7 @@
             onclick={() =>
               copyPropValue(
                 mediaPropsLoading
-                  ? "Loading..."
+                  ? t("dialogs.dialog.properties.loading")
                   : showValue(mediaProps?.container),
               )}
             onkeydown={(e) => {
@@ -2086,7 +2154,7 @@
                 e.preventDefault();
                 copyPropValue(
                   mediaPropsLoading
-                    ? "Loading..."
+                    ? t("dialogs.dialog.properties.loading")
                     : showValue(mediaProps?.container),
                 );
               }
@@ -2108,11 +2176,11 @@
                   d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"
                 /></svg
               >
-              Container
+              {t("dialogs.dialog.properties.container")}
             </span>
             <span class="props-v"
               >{mediaPropsLoading
-                ? "Loading..."
+                ? t("dialogs.dialog.properties.loading")
                 : showValue(mediaProps?.container)}</span
             >
           </div>
@@ -2123,16 +2191,16 @@
             onclick={() =>
               copyPropValue(
                 mediaPropsLoading
-                  ? "Loading..."
-                  : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`,
+                  ? t("dialogs.dialog.properties.loading")
+                  : codecValue(),
               )}
             onkeydown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 copyPropValue(
                   mediaPropsLoading
-                    ? "Loading..."
-                    : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`,
+                    ? t("dialogs.dialog.properties.loading")
+                    : codecValue(),
                 );
               }
             }}
@@ -2156,12 +2224,12 @@
                   y2="21"
                 /><line x1="12" y1="17" x2="12" y2="21" /></svg
               >
-              Codec
+              {t("dialogs.dialog.properties.codec")}
             </span>
             <span class="props-v">
               {mediaPropsLoading
-                ? "Loading..."
-                : `${showValue(mediaProps?.video_codec)}${mediaProps?.audio_codec ? ` / ${mediaProps.audio_codec}` : ""}`}
+                ? t("dialogs.dialog.properties.loading")
+                : codecValue()}
             </span>
           </div>
         {/if}
@@ -2171,16 +2239,16 @@
             onclick={() =>
               copyPropValue(
                 mediaPropsLoading
-                  ? "Loading..."
-                  : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`,
+                  ? t("dialogs.dialog.properties.loading")
+                  : colorValue(),
               )}
             onkeydown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 copyPropValue(
                   mediaPropsLoading
-                    ? "Loading..."
-                    : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`,
+                    ? t("dialogs.dialog.properties.loading")
+                    : colorValue(),
                 );
               }
             }}
@@ -2214,12 +2282,12 @@
                   y2="16"
                 /><line x1="16.62" y1="12" x2="10.88" y2="21.94" /></svg
               >
-              Color
+              {t("dialogs.dialog.properties.color")}
             </span>
             <span class="props-v">
               {mediaPropsLoading
-                ? "Loading..."
-                : `${showValue(mediaProps?.pixel_format)}${mediaProps?.color_space ? ` · ${mediaProps.color_space}` : ""}${mediaProps?.bit_depth ? ` · ${mediaProps.bit_depth} bit` : ""}`}
+                ? t("dialogs.dialog.properties.loading")
+                : colorValue()}
             </span>
           </div>
         {/if}
@@ -2229,7 +2297,7 @@
             onclick={() =>
               copyPropValue(
                 mediaPropsLoading
-                  ? "Loading..."
+                  ? t("dialogs.dialog.properties.loading")
                   : showValue(mediaProps?.frame_rate),
               )}
             onkeydown={(e) => {
@@ -2237,7 +2305,7 @@
                 e.preventDefault();
                 copyPropValue(
                   mediaPropsLoading
-                    ? "Loading..."
+                    ? t("dialogs.dialog.properties.loading")
                     : showValue(mediaProps?.frame_rate),
                 );
               }
@@ -2259,11 +2327,11 @@
                   points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
                 /></svg
               >
-              Frame rate
+              {t("dialogs.dialog.properties.frameRate")}
             </span>
             <span class="props-v"
               >{mediaPropsLoading
-                ? "Loading..."
+                ? t("dialogs.dialog.properties.loading")
                 : showValue(mediaProps?.frame_rate)}</span
             >
           </div>
@@ -2274,7 +2342,7 @@
             copyPropValue(
               library.privacyMode
                 ? "••••••••••••••••••"
-                : fileCreated || "Unknown",
+                : fileCreated || unknownValue(),
             )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -2282,7 +2350,7 @@
               copyPropValue(
                 library.privacyMode
                   ? "••••••••••••••••••"
-                  : fileCreated || "Unknown",
+                  : fileCreated || unknownValue(),
               );
             }
           }}
@@ -2311,12 +2379,12 @@
                 y2="10"
               /></svg
             >
-            Created
+            {t("dialogs.dialog.properties.created")}
           </span>
           <span class="props-v"
             >{library.privacyMode
               ? "••••••••••••••••••"
-              : fileCreated || "Unknown"}</span
+              : fileCreated || unknownValue()}</span
           >
         </div>
         <div
@@ -2325,7 +2393,7 @@
             copyPropValue(
               library.privacyMode
                 ? "••••••••••••••••••"
-                : fileModified || "Unknown",
+                : fileModified || unknownValue(),
             )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -2333,7 +2401,7 @@
               copyPropValue(
                 library.privacyMode
                   ? "••••••••••••••••••"
-                  : fileModified || "Unknown",
+                  : fileModified || unknownValue(),
               );
             }
           }}
@@ -2362,21 +2430,21 @@
                 y2="10"
               /></svg
             >
-            Modified
+            {t("dialogs.dialog.properties.modified")}
           </span>
           <span class="props-v"
             >{library.privacyMode
               ? "••••••••••••••••••"
-              : fileModified || "Unknown"}</span
+              : fileModified || unknownValue()}</span
           >
         </div>
         <div
           class="props-row"
-          onclick={() => copyPropValue(parentFolder() || "Unknown")}
+          onclick={() => copyPropValue(parentFolder() || unknownValue())}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              copyPropValue(parentFolder() || "Unknown");
+              copyPropValue(parentFolder() || unknownValue());
             }
           }}
           role="button"
@@ -2395,21 +2463,21 @@
                 d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
               /></svg
             >
-            Folder
+            {t("dialogs.dialog.properties.folder")}
           </span>
           <span class="props-v"
             >{library.privacyMode
-              ? obscurePath(parentFolder() || "Unknown")
-              : parentFolder() || "Unknown"}</span
+              ? obscurePath(parentFolder() || unknownValue())
+              : parentFolder() || unknownValue()}</span
           >
         </div>
         <div
           class="props-row"
-          onclick={() => copyPropValue(filePath || "Unknown")}
+          onclick={() => copyPropValue(filePath || unknownValue())}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              copyPropValue(filePath || "Unknown");
+              copyPropValue(filePath || unknownValue());
             }
           }}
           role="button"
@@ -2436,12 +2504,12 @@
                 points="10 9 9 9 8 9"
               /></svg
             >
-            Path
+            {t("dialogs.dialog.properties.filePath")}
           </span>
           <span class="props-v"
             >{library.privacyMode
-              ? obscurePath(filePath || "Unknown")
-              : filePath || "Unknown"}</span
+              ? obscurePath(filePath || unknownValue())
+              : filePath || unknownValue()}</span
           >
         </div>
       </div>
@@ -2460,7 +2528,7 @@
                 d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
               />
             </svg>
-            Open folder
+            {t("dialogs.dialog.properties.openFolder")}
           </button>
           <button class="props-btn" onclick={propsCopyPath}>
             <svg
@@ -2479,7 +2547,7 @@
                 d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
               />
             </svg>
-            Copy file path
+            {t("dialogs.dialog.properties.copyFilePath")}
           </button>
           <button class="props-btn" onclick={propsCopyAll}>
             <svg
@@ -2494,7 +2562,7 @@
               <rect x="8" y="8" width="13" height="13" rx="2" />
               <path d="M4 16V5a1 1 0 011-1h11" />
             </svg>
-            Copy properties
+            {t("dialogs.dialog.properties.copyProperties")}
           </button>
         </div>
       </div>
@@ -2530,10 +2598,14 @@
           <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
         </svg>
         <div>
-          <p class="delete-title">Share</p>
+          <p class="delete-title">{t("dialogs.dialog.share.title")}</p>
           <p class="delete-subtitle">{fileName}</p>
         </div>
-        <button class="dialog-close-x" onclick={closeShare} aria-label="Close">
+        <button
+          class="dialog-close-x"
+          onclick={closeShare}
+          aria-label={t("dialogs.dialog.share.close")}
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -2561,7 +2633,7 @@
                 points="16 6 12 2 8 6"
               /><line x1="12" y1="2" x2="12" y2="15" /></svg
             >
-            Send to...
+            {t("dialogs.dialog.share.sendTo")}
           </p>
           <div class="share-grid share-grid-4">
             {#if isVideo || isAudio}
@@ -2583,7 +2655,7 @@
                     stroke-linecap="round"
                   /></svg
                 >
-                Cast
+                {t("dialogs.dialog.share.cast")}
               </button>
             {:else}
               <button
@@ -2591,7 +2663,7 @@
                 onclick={() =>
                   shareAction(
                     () => invokePrintFile(filePath),
-                    "Print dialog opened",
+                    t("dialogs.dialog.toast.printOpened"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2617,13 +2689,16 @@
                     stroke-width="2"
                   /></svg
                 >
-                Printer
+                {t("dialogs.dialog.share.printer")}
               </button>
             {/if}
             <button
               class="share-btn"
               onclick={() =>
-                shareAction(() => openInDefaultApp(), "Shared via device")}
+                shareAction(
+                  () => openInDefaultApp(),
+                  t("dialogs.dialog.share.toast.sharedViaDevice"),
+                )}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
@@ -2643,7 +2718,7 @@
                   stroke-linecap="round"
                 /><circle cx="12" cy="19.5" r="1.5" fill="currentColor" /></svg
               >
-              Device
+              {t("dialogs.dialog.share.device")}
             </button>
             {#if isAudio}
               <button
@@ -2651,7 +2726,7 @@
                 onclick={() =>
                   shareAction(
                     () => invokeSendBluetooth(filePath),
-                    "Bluetooth wizard opened",
+                    t("dialogs.dialog.share.toast.bluetoothOpened"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2663,7 +2738,7 @@
                     stroke-linejoin="round"
                   /></svg
                 >
-                Bluetooth
+                {t("dialogs.dialog.share.bluetooth")}
               </button>
             {:else}
               <button class="share-btn" onclick={handleSetWallpaper}>
@@ -2695,7 +2770,7 @@
                     stroke-linecap="round"
                   /></svg
                 >
-                Wallpaper
+                {t("dialogs.dialog.share.wallpaper")}
               </button>
             {/if}
             {#if isAudio}
@@ -2729,7 +2804,7 @@
                 onclick={() =>
                   shareAction(
                     () => invokeSetLockScreen(filePath),
-                    "Lock screen set",
+                    t("dialogs.dialog.share.toast.lockScreenSet"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2748,7 +2823,7 @@
                     stroke-linecap="round"
                   /></svg
                 >
-                Lock Screen
+                {t("dialogs.dialog.share.lockScreen")}
               </button>
             {/if}
             <button
@@ -2756,7 +2831,7 @@
               onclick={() =>
                 shareAction(
                   () => invokeCreateDesktopShortcut(filePath),
-                  "Shortcut created on Desktop",
+                  t("dialogs.dialog.share.toast.shortcutCreated"),
                 )}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2786,7 +2861,7 @@
                   stroke-linecap="round"
                 /></svg
               >
-              Desktop
+              {t("dialogs.dialog.share.desktop")}
             </button>
           </div>
         </div>
@@ -2813,13 +2888,16 @@
                 y2="3"
               /></svg
             >
-            Open with...
+            {t("dialogs.dialog.share.openWith")}
           </p>
           <div class="share-grid share-grid-4">
             <button
               class="share-btn-circle"
               onclick={() =>
-                shareAction(() => openInDefaultApp(), "Opened in default app")}
+                shareAction(
+                  () => openInDefaultApp(),
+                  t("dialogs.dialog.toast.openedDefault"),
+                )}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
@@ -2845,7 +2923,7 @@
                   stroke-linejoin="round"
                 /></svg
               >
-              Default app
+              {t("dialogs.dialog.share.defaultApp")}
             </button>
             {#if isAudio}
               <button
@@ -2857,7 +2935,7 @@
                         filePath,
                         systemPrefs.externalApps.spotify || undefined,
                       ),
-                    "Copied to Spotify Local Files",
+                    t("dialogs.dialog.share.toast.spotifyLocal"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2892,7 +2970,7 @@
                 onclick={() =>
                   shareAction(
                     () => invokeOpenInPhotos(filePath),
-                    "Opened in Photos",
+                    t("dialogs.dialog.share.toast.photos"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2917,7 +2995,7 @@
                     stroke-linejoin="round"
                   /></svg
                 >
-                Photos
+                {t("dialogs.dialog.share.photos")}
               </button>
             {/if}
             {#if !isVideo && !isAudio}
@@ -2930,7 +3008,7 @@
                         filePath,
                         systemPrefs.externalApps.paint || undefined,
                       ),
-                    "Opened in Paint",
+                    t("dialogs.dialog.share.toast.paint"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2948,7 +3026,7 @@
                     stroke-linejoin="round"
                   /></svg
                 >
-                Paint
+                {t("dialogs.dialog.share.paint")}
               </button>
             {:else}
               <button
@@ -2960,7 +3038,7 @@
                         filePath,
                         systemPrefs.externalApps.vlc || undefined,
                       ),
-                    "Opened in VLC",
+                    t("dialogs.dialog.share.toast.vlc"),
                   )}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -2987,7 +3065,7 @@
               onclick={() =>
                 shareAction(
                   () => invokeOpenInBrowser(filePath),
-                  "Opened in browser",
+                  t("dialogs.dialog.share.toast.browser"),
                 )}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -3010,14 +3088,14 @@
                   stroke-width="2"
                 /></svg
               >
-              Browser
+              {t("dialogs.dialog.share.browser")}
             </button>
             <button
               class="share-btn-circle"
               onclick={() =>
                 shareAction(
                   () => invokeOpenWithDialog(filePath),
-                  "Open With dialog shown",
+                  t("dialogs.dialog.share.toast.openWithShown"),
                 )}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -3028,7 +3106,7 @@
                   fill="currentColor"
                 /><circle cx="19" cy="12" r="1.5" fill="currentColor" /></svg
               >
-              Other
+              {t("dialogs.dialog.share.other")}
             </button>
           </div>
         </div>
@@ -3051,7 +3129,7 @@
                   points="7 10 12 15 17 10"
                 /><line x1="12" y1="15" x2="12" y2="3" /></svg
               >
-              Save as...
+              {t("dialogs.dialog.share.saveAs")}
             </p>
             {#if isVideo}
               <div class="share-grid share-grid-3">
@@ -3085,7 +3163,8 @@
                 <button
                   class="share-btn-wide"
                   onclick={handleSaveAsOther}
-                  disabled={shareConverting}>Other…</button
+                  disabled={shareConverting}
+                  >{t("dialogs.dialog.share.otherFormat")}</button
                 >
               </div>
             {:else if isAudio}
@@ -3123,7 +3202,8 @@
                 <button
                   class="share-btn-wide"
                   onclick={handleSaveAsOther}
-                  disabled={shareConverting}>Other…</button
+                  disabled={shareConverting}
+                  >{t("dialogs.dialog.share.otherFormat")}</button
                 >
               </div>
             {:else}
@@ -3158,7 +3238,8 @@
                 <button
                   class="share-btn-wide"
                   onclick={handleSaveAsOther}
-                  disabled={shareConverting}>Other…</button
+                  disabled={shareConverting}
+                  >{t("dialogs.dialog.share.otherFormat")}</button
                 >
               </div>
             {/if}
@@ -3186,14 +3267,14 @@
               /></svg
             >
             {conversionPrefs.outputDir
-              ? "Saves to the default output folder"
-              : "Saves next to the original"}
+              ? t("dialogs.dialog.share.destinationDefault")
+              : t("dialogs.dialog.share.destinationOriginal")}
           </span>
           <button
             class="share-delete-toggle tooltip-above"
             class:is-on={shareDeleteOriginal}
-            data-tooltip="Move original to trash"
-            aria-label="Move original to trash"
+            data-tooltip={t("dialogs.dialog.share.moveOriginalToTrash")}
+            aria-label={t("dialogs.dialog.share.moveOriginalToTrash")}
             onclick={() =>
               conversionPrefs.setDeleteOriginal(
                 !conversionPrefs.deleteOriginal,

@@ -13,6 +13,9 @@
   } from "$lib/features/viewer/pdf.svelte";
   import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     fileList,
@@ -378,7 +381,7 @@
         data-index={item.index}
         style="width: {ITEM_W}px; height: {ITEM_W}px;"
         onclick={() => handleClick(item.index)}
-        aria-label="Open file"
+        aria-label={t("menus.thumbnail.openFile")}
       >
         {#if loaded.has(item.path)}
           <img

@@ -1,5 +1,8 @@
 <script lang="ts">
   import { CD_COLORS } from "$lib/shared/constants";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -34,7 +37,7 @@
         class:active={i === activeIndex}
         style="background: {color}"
         onclick={() => onPick(i)}
-        aria-label={`Color ${i + 1}`}
+        aria-label={t("media.cd.colorN", { n: i + 1 })}
       ></button>
     {/each}
   </div>

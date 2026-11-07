@@ -7,6 +7,7 @@ import {
 import { deleteResumePoint as deleteLocalResumePoint } from "$lib/services/storage";
 import type { LoopMode } from "$lib/shared/constants";
 import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 const timeline = createTimeline();
 
@@ -392,7 +393,10 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
       visible: true,
       x: rect.left + rect.width / 2,
       y: rect.top - 6,
-      title: which === "start" ? "Loop A" : "Loop B",
+      title:
+        which === "start"
+          ? locale.t("shell.markers.loopA")
+          : locale.t("shell.markers.loopB"),
       timeLabel: deps.formatTime(time ?? 0),
       tone: "green",
       targetId: which,
@@ -700,7 +704,7 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
       visible: true,
       x: rect.left + rect.width / 2,
       y: rect.top - 6,
-      title: "Resume",
+      title: locale.t("shell.markers.resume"),
       timeLabel: deps.formatTime(markerStore.resumePoint ?? 0),
       tone: "grey",
     };

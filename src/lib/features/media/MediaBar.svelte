@@ -10,26 +10,44 @@
   import type { SortMode } from "$lib/shared/constants";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
     return label ? ` (${label})` : "";
   }
 
-  const RECENTS_SORT_MODES = [
-    { value: "date-opened", label: "Date opened" },
-    ...SORT_MODES.map((m) => ({ value: m.value, label: m.label })),
-  ];
+  const SORT_LABEL_KEYS: Record<string, string> = {
+    name: "menus.sort.name",
+    "date-modified": "menus.sort.date-modified",
+    size: "menus.sort.size",
+    type: "menus.sort.type",
+  };
 
-  const COLLECTIONS_SORT_MODES = [
-    { value: "date-created", label: "Date created" },
-    ...SORT_MODES.map((m) => ({ value: m.value, label: m.label })),
-  ];
+  const BASE_SORT_MODES = $derived(
+    SORT_MODES.map((mode) => ({
+      value: mode.value,
+      label: t(SORT_LABEL_KEYS[mode.value] ?? "menus.sort.name"),
+    })),
+  );
 
-  const FAVORITES_SORT_MODES = [
-    { value: "date-favorited", label: "Date favorited" },
-    ...SORT_MODES.map((m) => ({ value: m.value, label: m.label })),
-  ];
+  const RECENTS_SORT_MODES = $derived([
+    { value: "date-opened", label: t("media.bar.sortDateOpened") },
+    ...BASE_SORT_MODES,
+  ]);
+
+  const COLLECTIONS_SORT_MODES = $derived([
+    { value: "date-created", label: t("media.bar.sortDateCreated") },
+    ...BASE_SORT_MODES,
+  ]);
+
+  const FAVORITES_SORT_MODES = $derived([
+    { value: "date-favorited", label: t("media.bar.sortDateFavorited") },
+    ...BASE_SORT_MODES,
+  ]);
 
   function toggleDividers() {
     library.setDividersOn(!library.dividersOn);
@@ -428,9 +446,9 @@
           class="fs-btn tooltip-above-shift-right"
           class:active={slideshow.active}
           class:menu-active={slideshowMenuVisible}
-          data-tooltip="Slideshow"
+          data-tooltip={t("media.bar.slideshow")}
           onclick={toggleSlideshowMenu}
-          aria-label="toggle slideshow menu"
+          aria-label={t("media.bar.slideshowAria")}
         >
           <svg
             width="14"
@@ -460,7 +478,7 @@
           class:active={thumbnailBarVisible}
           class:menu-active={thumbnailBarVisible || sortMenuVisible}
           class:tooltip-hidden={!filePositionTooltipVisible}
-          data-tooltip="File position"
+          data-tooltip={t("media.bar.filePosition")}
           onclick={toggleFilePositionBar}
           onmouseenter={handleFilePositionMouseEnter}
           oncontextmenu={handleFileCountContext}
@@ -475,9 +493,9 @@
         class:menu-active={libSortMenuVisible}
         style:width={libraryOpen ? "auto" : undefined}
         style:padding={libraryOpen ? "0 11px" : undefined}
-        data-tooltip="Sort by"
+        data-tooltip={t("media.bar.sortBy")}
         onmousedown={handleLibSortClick}
-        aria-label="sort by"
+        aria-label={t("media.bar.sortByAria")}
       >
         {#key library.sortMode}
           <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
@@ -492,11 +510,11 @@
         class:underline-active={library.dividersOn}
         style:padding={libraryOpen ? "0 3px" : undefined}
         style:font-size={libraryOpen ? "12px" : undefined}
-        data-tooltip="Section headers"
+        data-tooltip={t("media.bar.sectionHeaders")}
         onclick={toggleDividers}
-        aria-label="toggle dividers"
+        aria-label={t("media.bar.toggleDividersAria")}
       >
-        Headers
+        {t("media.bar.headers")}
       </button>
     </div>
   </div>
@@ -504,10 +522,9 @@
     {#if libraryOpen}
       <span
         class="file-info tooltip-above"
-        data-tooltip="Total files · Folder size"
+        data-tooltip={t("media.bar.totalFiles")}
       >
-        {fileListLength}
-        {fileListLength === 1 ? "file" : "files"}
+        {tp("media.bar.file", fileListLength)}
         {#if !library.totalSizeLoading && library.totalSize > 0}
           · {formatTotalSize(library.totalSize)}
         {:else if library.totalSizeLoading}
@@ -519,22 +536,22 @@
         <button
           class="file-info file-info-button tooltip-above"
           data-tooltip={isAudio
-            ? "Duration · Bitrate · File size"
-            : "Resolution · File size"}
+            ? t("media.bar.audioDetails")
+            : t("media.bar.mediaDetails")}
           onclick={onOpenProperties}
-          aria-label="Open file properties"
+          aria-label={t("media.bar.openPropertiesAria")}
           aria-haspopup="dialog"
         >
           {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
             {durationDisplay} · {audioBitrateDisplay} · {fileSize}
           {:else if fileDimensions && fileSize}
             {fileDimensions} · {fileSize}
-          {:else if !fileInfoLoading && fileName !== "no file open"}
+          {:else if !fileInfoLoading && fileName !== t("media.player.noFileOpen")}
             {fileName}
           {/if}
         </button>
       {:else}
-        <span class="file-info">no file open</span>
+        <span class="file-info">{t("media.bar.noFileOpen")}</span>
       {/if}
     {/if}
   </div>
@@ -546,13 +563,13 @@
             class="zoom audio-volume tooltip-above"
             class:menu-active={volumeMenuVisible}
             class:tooltip-hidden={!volumeTooltipVisible}
-            data-tooltip="Current volume"
+            data-tooltip={t("media.bar.currentVolume")}
             onclick={toggleVolumeMenu}
             onmouseenter={handleVolumeMouseEnter}
             aria-expanded={volumeMenuVisible}
-            aria-label="Volume controls"
+            aria-label={t("media.bar.volumeControlsAria")}
           >
-            {muted ? "Muted" : `${Math.round(volume * 100)}%`}
+            {muted ? t("media.bar.muted") : `${Math.round(volume * 100)}%`}
           </button>
           {#if volumeMenuVisible}
             <div class="zoom-menu-clip">
@@ -563,7 +580,7 @@
                   onpointerup={stopVolumeRepeat}
                   onpointercancel={stopVolumeRepeat}
                   onclick={(e) => handleVolumeClick(-1, e)}
-                  aria-label="Decrease volume">−</button
+                  aria-label={t("media.bar.volumeDecrease")}>−</button
                 >
                 <button
                   class="zoom-menu-btn"
@@ -571,7 +588,7 @@
                   onpointerup={stopVolumeRepeat}
                   onpointercancel={stopVolumeRepeat}
                   onclick={(e) => handleVolumeClick(1, e)}
-                  aria-label="Increase volume">+</button
+                  aria-label={t("media.bar.volumeIncrease")}>+</button
                 >
               </div>
             </div>
@@ -584,7 +601,7 @@
             class="zoom tooltip-above"
             class:menu-active={zoomMenuVisible}
             class:tooltip-hidden={!zoomTooltipVisible}
-            data-tooltip="Zoom level"
+            data-tooltip={t("media.bar.zoomLevel")}
             onclick={toggleZoomMenu}
             onmouseenter={handleZoomMouseEnter}
             oncontextmenu={(e) => {
@@ -592,7 +609,7 @@
               toggleZoomLock?.();
             }}
             aria-expanded={zoomMenuVisible}
-            aria-label="Zoom controls"
+            aria-label={t("media.bar.zoomControlsAria")}
           >
             {#if zoomLocked}
               <svg
@@ -630,7 +647,7 @@
                   onpointerup={stopZoomRepeat}
                   onpointercancel={stopZoomRepeat}
                   onclick={(e) => handleZoomClick(-1, e)}
-                  aria-label="Decrease zoom by 1 percent">−</button
+                  aria-label={t("media.bar.zoomDecrease")}>−</button
                 >
                 <button
                   class="zoom-menu-btn"
@@ -638,7 +655,7 @@
                   onpointerup={stopZoomRepeat}
                   onpointercancel={stopZoomRepeat}
                   onclick={(e) => handleZoomClick(1, e)}
-                  aria-label="Increase zoom by 1 percent">+</button
+                  aria-label={t("media.bar.zoomIncrease")}>+</button
                 >
               </div>
             </div>
@@ -647,9 +664,11 @@
       {/if}
       <button
         class="fs-btn tooltip-above-shift-left"
-        data-tooltip={`${fullscreen ? "Unfullscreen" : "Fullscreen"}${shortcutSuffix("fullscreen")}`}
+        data-tooltip={`${fullscreen ? t("media.bar.unfullscreen") : t("media.bar.fullscreen")}${shortcutSuffix("fullscreen")}`}
         onclick={toggleFullscreen}
-        aria-label={fullscreen ? "exit fullscreen" : "toggle fullscreen"}
+        aria-label={fullscreen
+          ? t("media.bar.exitFullscreenAria")
+          : t("media.bar.fullscreenAria")}
       >
         {#if fullscreen}
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
@@ -679,11 +698,11 @@
         class:underline-active={library.namesOn}
         style:padding={libraryOpen ? "0 3px" : undefined}
         style:font-size={libraryOpen ? "12px" : undefined}
-        data-tooltip="File labels"
+        data-tooltip={t("media.bar.fileLabels")}
         onclick={toggleNames}
-        aria-label="toggle names"
+        aria-label={t("media.bar.labelsAria")}
       >
-        Labels
+        {t("media.bar.labels")}
       </button>
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
@@ -692,9 +711,9 @@
         class:menu-active={viewMenuVisible}
         style:width={libraryOpen ? "auto" : undefined}
         style:padding={libraryOpen ? "0 11px" : undefined}
-        data-tooltip="View mode"
+        data-tooltip={t("media.bar.viewMode")}
         onmousedown={handleViewMenuClick}
-        aria-label="View mode"
+        aria-label={t("media.bar.viewMode")}
       >
         {#key library.viewMode}
           <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
@@ -742,7 +761,7 @@
         ? COLLECTIONS_SORT_MODES
         : library.activeTab === "favorites"
           ? FAVORITES_SORT_MODES
-          : SORT_MODES}
+          : BASE_SORT_MODES}
     separatorIndex={library.activeTab === "recents" ||
     library.activeTab === "collections" ||
     library.activeTab === "favorites"
@@ -776,7 +795,7 @@
       class="ctx-drag"
       role="button"
       tabindex="0"
-      aria-label="Drag to move"
+      aria-label={t("media.bar.dragToMove")}
       onmousedown={(e) => {
         e.preventDefault();
         onClipMenuMoved?.();
@@ -815,13 +834,13 @@
       <button
         class="ctx-pin tooltip-below"
         class:active={pinned}
-        data-tooltip={pinned ? "Unpin" : "Pin"}
+        data-tooltip={pinned ? t("media.bar.unpin") : t("media.bar.pin")}
         onclick={(e) => {
           e.stopPropagation();
           pinned = !pinned;
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label={pinned ? "Unpin" : "Pin"}
+        aria-label={pinned ? t("media.bar.unpin") : t("media.bar.pin")}
       >
         <svg
           width="9"
@@ -844,7 +863,7 @@
           <span class="ctx-dot"></span>
           <span class="ctx-dot"></span>
         </span>
-        <span>Clipping</span>
+        <span>{t("media.bar.clipping")}</span>
         <span class="ctx-dots">
           <span class="ctx-dot"></span>
           <span class="ctx-dot"></span>
@@ -853,14 +872,14 @@
       </span>
       <button
         class="ctx-close tooltip-below"
-        data-tooltip="Close"
+        data-tooltip={t("common.close")}
         onclick={(e) => {
           e.stopPropagation();
           dismissed = true;
           onClipMenuDismissed?.();
         }}
         onmousedown={(e) => e.stopPropagation()}
-        aria-label="Close"
+        aria-label={t("common.close")}
       >
         <svg
           width="9"
@@ -900,7 +919,7 @@
             stroke-width="2"
           /></svg
         >
-        <span>Clip Segments</span>
+        <span>{t("media.bar.clipSegments")}</span>
       </button>
       <div class="edit-menu-separator"></div>
       <div class="clip-options-grid">
@@ -918,7 +937,7 @@
               stroke-linecap="round"
             /></svg
           >
-          <span>Delete Original</span>
+          <span>{t("media.bar.deleteOriginal")}</span>
         </button>
         <button
           class="clip-toggle-btn green"
@@ -934,7 +953,7 @@
               stroke-linecap="round"
             /></svg
           >
-          <span>Merge Segments</span>
+          <span>{t("media.bar.mergeSegments")}</span>
         </button>
       </div>
     </div>

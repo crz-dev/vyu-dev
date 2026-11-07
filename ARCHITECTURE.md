@@ -35,6 +35,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Task                            | Start with                                                                                             |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Settings UI / preferences       | `features/dialogs/SettingsDialog.svelte` + the owning feature store                                    |
+| UI translations                 | `features/i18n/*` (locale store + `messages/<namespace>/<locale>.json`)                                |
 | Keybinds                        | `features/keybinds/*`, `shared/keybinds.ts`, `features/keybinds/KeybindsSettings.svelte`               |
 | System / OS integration         | `features/system/*`, `commands/system.rs`, `state/system.rs`                                           |
 | Debug / diagnostics             | `features/debug/*`, `commands/system.rs`, `commands/database.rs`                                       |

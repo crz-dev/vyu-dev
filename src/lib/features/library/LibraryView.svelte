@@ -16,7 +16,12 @@
   import { cubicInOut } from "svelte/easing";
   import { library } from "$lib/features/library/library.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
-  import { getSections, type Section } from "$lib/features/library/sections";
+  import {
+    getSections,
+    translateSectionLabel,
+    type Section,
+  } from "$lib/features/library/sections";
+  import { locale } from "$lib/features/i18n/locale.svelte";
   import type { BatchStatItem } from "$lib/shared/types";
   import { open } from "@tauri-apps/plugin-dialog";
   import { readDir } from "@tauri-apps/plugin-fs";
@@ -58,6 +63,9 @@
     ) => void | Promise<void>;
     selectMode?: boolean;
   } = $props();
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   let tabsEl: HTMLDivElement | null = $state(null);
   let tabHighlight = $state({
@@ -371,7 +379,7 @@
     if (!stripped) return [];
     const parts = stripped.split(/[\\/]/);
     const segments: { label: string; path: string }[] = [
-      { label: "Library", path: base },
+      { label: t("library.tabs.library"), path: base },
     ];
     let acc = base;
     for (const part of parts) {
@@ -390,7 +398,7 @@
     );
     if (!root) return [];
     const segments: { label: string; path: string | null }[] = [
-      { label: "Collections", path: null },
+      { label: t("library.tabs.collections"), path: null },
       { label: root.name, path: root.path },
     ];
     const relative = path.substring(root.path.length);
@@ -584,7 +592,9 @@
       const order = ["Today", "Yesterday", "This Week", "Older", "Unknown"];
       for (const label of order) {
         const items = groups.get(label);
-        if (items) sections.push({ label, items });
+        if (items) {
+          sections.push({ label: translateSectionLabel(label), items });
+        }
       }
     } else if (mode === "type") {
       const order = library.sortDesc
@@ -592,7 +602,9 @@
         : ["Linked folder", "Custom collection"];
       for (const label of order) {
         const items = groups.get(label);
-        if (items) sections.push({ label, items });
+        if (items) {
+          sections.push({ label: translateSectionLabel(label), items });
+        }
       }
     } else if (mode === "name" || mode === "size") {
       const order = [
@@ -609,14 +621,18 @@
       const ordered = library.sortDesc ? [...order].reverse() : order;
       for (const label of ordered) {
         const items = groups.get(label);
-        if (items) sections.push({ label, items });
+        if (items) {
+          sections.push({ label: translateSectionLabel(label), items });
+        }
       }
       for (const [label, items] of groups) {
-        if (!ordered.includes(label)) sections.push({ label, items });
+        if (!ordered.includes(label)) {
+          sections.push({ label: translateSectionLabel(label), items });
+        }
       }
     } else {
       for (const [label, items] of groups) {
-        sections.push({ label, items });
+        sections.push({ label: translateSectionLabel(label), items });
       }
     }
 
@@ -703,7 +719,7 @@
       d.getFullYear() === yesterday.getFullYear() &&
       d.getMonth() === yesterday.getMonth() &&
       d.getDate() === yesterday.getDate();
-    if (wasYesterday) return "Yesterday";
+    if (wasYesterday) return t("library.sections.date.yesterday");
     return d.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
@@ -752,7 +768,7 @@
       multiple: false,
       filters: [
         {
-          name: "Images",
+          name: t("library.dialog.images"),
           extensions: [
             "png",
             "jpg",
@@ -892,7 +908,7 @@
     try {
       await invokeOpenWithDialog(path);
     } catch {
-      showToast({ message: "Failed to open with dialog", color: "red" });
+      showToast({ message: t("library.toasts.openWithFailed"), color: "red" });
     }
   }
 
@@ -907,9 +923,9 @@
       await invokeRenameFile(path, destPath);
       await onFileMoved?.(path, destPath);
       library.triggerRescan();
-      showToast({ message: "File moved", color: "blue" });
+      showToast({ message: t("library.toasts.fileMoved"), color: "blue" });
     } catch {
-      showToast({ message: "Failed to move file", color: "red" });
+      showToast({ message: t("library.toasts.moveFailed"), color: "red" });
     }
   }
 
@@ -928,10 +944,16 @@
     closeLibCtxMenu();
     if (library.isFavorite(path)) {
       library.removeFavorite(path);
-      showToast({ message: "Removed from favorites", color: "yellow" });
+      showToast({
+        message: t("library.toasts.favoriteRemoved"),
+        color: "yellow",
+      });
     } else {
       library.addFavorite(path);
-      showToast({ message: "Added to favorites", color: "yellow" });
+      showToast({
+        message: t("library.toasts.favoriteAdded"),
+        color: "yellow",
+      });
     }
   }
 
@@ -941,9 +963,9 @@
     try {
       await invokeTrashFile(path);
       library.triggerRescan();
-      showToast({ message: "File deleted", color: "red" });
+      showToast({ message: t("library.toasts.fileDeleted"), color: "red" });
     } catch {
-      showToast({ message: "Failed to delete file", color: "red" });
+      showToast({ message: t("library.toasts.deleteFailed"), color: "red" });
     }
   }
 
@@ -987,7 +1009,7 @@
       multiple: false,
       filters: [
         {
-          name: "Images",
+          name: t("library.dialog.images"),
           extensions: [
             "png",
             "jpg",
@@ -1025,10 +1047,16 @@
       const file = await open({ multiple: false });
       if (file) {
         library.addFavorite(file as string);
-        showToast({ message: "Added to favorites", color: "yellow" });
+        showToast({
+          message: t("library.toasts.favoriteAdded"),
+          color: "yellow",
+        });
       }
     } catch {
-      showToast({ message: "Failed to add favorite", color: "red" });
+      showToast({
+        message: t("library.toasts.favoriteAddFailed"),
+        color: "red",
+      });
     }
   }
 
@@ -1086,12 +1114,11 @@
       library.clearSelection();
       library.triggerRescan();
       showToast({
-        message:
-          paths.length === 1 ? "File deleted" : `${paths.length} files deleted`,
+        message: tp("library.toasts.filesDeleted", paths.length),
         color: "red",
       });
     } catch {
-      showToast({ message: "Failed to delete file", color: "red" });
+      showToast({ message: t("library.toasts.deleteFailed"), color: "red" });
     }
   }
 
@@ -1746,7 +1773,7 @@
     closeColCtxMenu();
   }}
   role="region"
-  aria-label="File library"
+  aria-label={t("library.aria.fileLibrary")}
 >
   <div class="library-tabs" bind:this={tabsEl}>
     <span
@@ -1760,13 +1787,15 @@
       class="library-tab"
       data-tab="library"
       class:active={library.activeTab === "library"}
-      onclick={() => library.setActiveTab("library")}>Library</button
+      onclick={() => library.setActiveTab("library")}
+      >{t("library.tabs.library")}</button
     >
     <button
       class="library-tab"
       data-tab="recents"
       class:active={library.activeTab === "recents"}
-      onclick={() => library.setActiveTab("recents")}>Recents</button
+      onclick={() => library.setActiveTab("recents")}
+      >{t("library.tabs.recents")}</button
     >
     <button
       class="library-tab"
@@ -1776,13 +1805,14 @@
       onclick={() => {
         library.closeCollection();
         library.setActiveTab("collections");
-      }}>Collections</button
+      }}>{t("library.tabs.collections")}</button
     >
     <button
       class="library-tab"
       data-tab="favorites"
       class:active={library.activeTab === "favorites"}
-      onclick={() => library.setActiveTab("favorites")}>Favorites</button
+      onclick={() => library.setActiveTab("favorites")}
+      >{t("library.tabs.favorites")}</button
     >
   </div>
 
@@ -1839,7 +1869,8 @@
           /></svg
         >
         <span class="library-breadcrumb-segment active"
-          >Collections <span class="library-header-count"
+          >{t("library.tabs.collections")}
+          <span class="library-header-count"
             >({library.collections.length})</span
           ></span
         >
@@ -1863,14 +1894,14 @@
         /></svg
       >
       <span class="library-breadcrumb-segment active"
-        >Recents
+        >{t("library.tabs.recents")}
         {#if library.recentsDisabled || library.privacyMode}
-          <span class="library-header-count">(Off)</span>
+          <span class="library-header-count">({t("library.header.off")})</span>
         {:else}
           <button
             class="library-header-count tooltip-ctrl"
             class:warning={recentFilesWarning}
-            data-tooltip="Recents limit — older files drop off by count or age"
+            data-tooltip={t("library.header.recentsLimitTooltip")}
             onclick={openRecentsSettings}
             >({displayFiles.length}/{library.recentFilesLimit})</button
           >
@@ -1895,9 +1926,8 @@
         /></svg
       >
       <span class="library-breadcrumb-segment active"
-        >Favorites <span class="library-header-count"
-          >({displayFiles.length})</span
-        ></span
+        >{t("library.tabs.favorites")}
+        <span class="library-header-count">({displayFiles.length})</span></span
       >
     </div>
   {/if}
@@ -1925,7 +1955,9 @@
           height="7"
         /></svg
       >
-      <span class="library-breadcrumb-segment active">Library</span>
+      <span class="library-breadcrumb-segment active"
+        >{t("library.tabs.library")}</span
+      >
     </div>
   {/if}
 
@@ -2185,7 +2217,7 @@
                           role="checkbox"
                           tabindex="0"
                           aria-checked={selected}
-                          aria-label="Select file"
+                          aria-label={t("library.list.selectFile")}
                           onclick={(e) => {
                             e.stopPropagation();
                             library.toggleSelect(path);
@@ -2424,7 +2456,7 @@
                             role="checkbox"
                             tabindex="0"
                             aria-checked={selected}
-                            aria-label="Select file"
+                            aria-label={t("library.list.selectFile")}
                             onclick={(e) => {
                               e.stopPropagation();
                               library.toggleSelect(path);
@@ -2691,7 +2723,7 @@
                           role="checkbox"
                           tabindex="0"
                           aria-checked={selected}
-                          aria-label="Select file"
+                          aria-label={t("library.list.selectFile")}
                           onclick={(e) => {
                             e.stopPropagation();
                             library.toggleSelect(path);
@@ -2921,7 +2953,7 @@
                         role="checkbox"
                         tabindex="0"
                         aria-checked={selected}
-                        aria-label="Select file"
+                        aria-label={t("library.list.selectFile")}
                         onclick={(e) => {
                           e.stopPropagation();
                           library.toggleSelect(path);
@@ -3074,7 +3106,7 @@
                       role="checkbox"
                       tabindex="0"
                       aria-checked={allFilesSelected}
-                      aria-label="Select all files"
+                      aria-label={t("library.list.selectAll")}
                       onclick={() => {
                         if (allFilesSelected) {
                           library.clearSelection();
@@ -3131,7 +3163,7 @@
                       library.setSortMode("name", desc);
                     }}
                   >
-                    Name
+                    {t("library.list.name")}
                     {#if library.sortMode === "name"}
                       <span class="list-sort-arrow"
                         >{library.sortDesc ? "▲" : "▼"}</span
@@ -3146,7 +3178,7 @@
                       library.setSortMode("size", desc);
                     }}
                   >
-                    Size
+                    {t("library.list.size")}
                     {#if library.sortMode === "size"}
                       <span class="list-sort-arrow"
                         >{library.sortDesc ? "▲" : "▼"}</span
@@ -3162,7 +3194,7 @@
                       library.setSortMode("date-modified", desc);
                     }}
                   >
-                    Date Modified
+                    {t("library.list.dateModified")}
                     {#if library.sortMode === "date-modified"}
                       <span class="list-sort-arrow"
                         >{library.sortDesc ? "▲" : "▼"}</span
@@ -3177,7 +3209,7 @@
                       library.setSortMode("type", desc);
                     }}
                   >
-                    Type
+                    {t("library.list.type")}
                     {#if library.sortMode === "type"}
                       <span class="list-sort-arrow"
                         >{library.sortDesc ? "▲" : "▼"}</span
@@ -3221,7 +3253,7 @@
                       class="list-col list-col-name"
                       style="color: var(--text-muted, #888);"
                     >
-                      Add to favorites...
+                      {t("library.list.addFavorite")}
                     </span>
                     <span class="list-col list-col-size"></span>
                     <span class="list-col list-col-date"></span>
@@ -3305,7 +3337,7 @@
                             role="checkbox"
                             tabindex="0"
                             aria-checked={selected}
-                            aria-label="Select file"
+                            aria-label={t("library.list.selectFile")}
                           >
                             {#if selected}
                               <svg
@@ -3394,8 +3426,8 @@
               </svg>
               <span
                 >{library.favorites.length > 0
-                  ? "No favorites match the selected types"
-                  : "No files favorited"}</span
+                  ? t("library.empty.favoritesFiltered")
+                  : t("library.empty.favoritesNone")}</span
               >
             </div>
           {/if}
@@ -3418,12 +3450,12 @@
               </svg>
               <span
                 >{library.privacyMode
-                  ? "Recents are paused while Privacy Mode is on"
+                  ? t("library.empty.recentsPrivacy")
                   : library.recentsDisabled
-                    ? "Recents are off"
+                    ? t("library.empty.recentsOff")
                     : library.getRecentPaths().length > 0
-                      ? "No recent files match the selected types"
-                      : "No recent files"}</span
+                      ? t("library.empty.recentsFiltered")
+                      : t("library.empty.recentsNone")}</span
               >
             </div>
           {/if}
@@ -3484,8 +3516,8 @@
               </div>
               <span
                 >{fileList.length > 0
-                  ? "No files match the selected types"
-                  : "No files in this folder"}</span
+                  ? t("library.empty.filesFiltered")
+                  : t("library.empty.folderEmpty")}</span
               >
             </div>
           {/if}
@@ -3509,8 +3541,8 @@
               </svg>
               <span
                 >{collectionFiles.length > 0
-                  ? "No files match the selected types"
-                  : "No files in this folder"}</span
+                  ? t("library.empty.filesFiltered")
+                  : t("library.empty.folderEmpty")}</span
               >
             </div>
           {/if}
@@ -3533,8 +3565,8 @@
               </svg>
               <span
                 >{libraryDirFiles.length > 0
-                  ? "No files match the selected types"
-                  : "No files in this folder"}</span
+                  ? t("library.empty.filesFiltered")
+                  : t("library.empty.folderEmpty")}</span
               >
             </div>
           {/if}
@@ -3670,7 +3702,7 @@
                       class="library-collection-remove"
                       role="button"
                       tabindex="0"
-                      aria-label="Remove collection"
+                      aria-label={t("library.context.removeCollection")}
                       onclick={(e) => {
                         e.stopPropagation();
                         if (col.type === "custom") {
@@ -3723,7 +3755,7 @@
                     d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
                   />
                 </svg>
-                <span>No collections saved</span>
+                <span>{t("library.empty.collectionsNone")}</span>
               </div>
             {/if}
           {/if}
@@ -3754,7 +3786,7 @@
           class="ctx-drag"
           role="button"
           tabindex="0"
-          aria-label="Drag to move"
+          aria-label={t("library.context.drag")}
           onmousedown={(e) => {
             e.preventDefault();
             const startX = e.clientX;
@@ -3779,13 +3811,17 @@
           <button
             class="ctx-pin tooltip-below"
             class:active={libCtxPinned}
-            data-tooltip={libCtxPinned ? "Unpin" : "Pin"}
+            data-tooltip={libCtxPinned
+              ? t("library.context.unpin")
+              : t("library.context.pin")}
             onclick={(e) => {
               e.stopPropagation();
               libCtxPinned = !libCtxPinned;
             }}
             onmousedown={(e) => e.stopPropagation()}
-            aria-label={libCtxPinned ? "Unpin" : "Pin"}
+            aria-label={libCtxPinned
+              ? t("library.context.unpin")
+              : t("library.context.pin")}
           >
             <svg
               width="9"
@@ -3809,13 +3845,13 @@
           </span>
           <button
             class="ctx-close tooltip-below"
-            data-tooltip="Close"
+            data-tooltip={t("library.context.close")}
             onclick={(e) => {
               e.stopPropagation();
               forceCloseLibCtxMenu();
             }}
             onmousedown={(e) => e.stopPropagation()}
-            aria-label="Close"
+            aria-label={t("library.dialog.close")}
           >
             <svg
               width="11"
@@ -3850,7 +3886,7 @@
               <path d="M22 2 11 13" />
               <path d="M22 2 15 22 11 13 2 9 22 2" />
             </svg>
-            Move to
+            {t("library.context.moveTo")}
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -3884,7 +3920,7 @@
                 stroke-linecap="round"
               /></svg
             >
-            Collect
+            {t("library.context.collect")}
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -3908,7 +3944,9 @@
                 stroke-linejoin="round"
               /></svg
             >
-            {library.isFavorite(libCtxMenu.path) ? "Unfavorite" : "Favorite"}
+            {library.isFavorite(libCtxMenu.path)
+              ? t("library.context.unfavorite")
+              : t("library.context.favorite")}
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -3940,7 +3978,7 @@
                 stroke-linecap="round"
               /></svg
             >
-            Delete
+            {t("library.context.delete")}
           </button>
         </div>
       </div>
@@ -3962,7 +4000,7 @@
           class="ctx-drag"
           role="button"
           tabindex="0"
-          aria-label="Drag to move"
+          aria-label={t("library.context.drag")}
           onmousedown={(e) => {
             e.preventDefault();
             const startX = e.clientX;
@@ -3984,13 +4022,17 @@
           <button
             class="ctx-pin tooltip-below"
             class:active={colCtxPinned}
-            data-tooltip={colCtxPinned ? "Unpin" : "Pin"}
+            data-tooltip={colCtxPinned
+              ? t("library.context.unpin")
+              : t("library.context.pin")}
             onclick={(e) => {
               e.stopPropagation();
               colCtxPinned = !colCtxPinned;
             }}
             onmousedown={(e) => e.stopPropagation()}
-            aria-label={colCtxPinned ? "Unpin" : "Pin"}
+            aria-label={colCtxPinned
+              ? t("library.context.unpin")
+              : t("library.context.pin")}
           >
             <svg
               width="9"
@@ -4014,13 +4056,13 @@
           </span>
           <button
             class="ctx-close tooltip-below"
-            data-tooltip="Close"
+            data-tooltip={t("library.context.close")}
             onclick={(e) => {
               e.stopPropagation();
               forceCloseColCtxMenu();
             }}
             onmousedown={(e) => e.stopPropagation()}
-            aria-label="Close"
+            aria-label={t("library.dialog.close")}
           >
             <svg
               width="11"
@@ -4055,7 +4097,7 @@
               <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
               <path d="m15 5 4 4" />
             </svg>
-            Rename
+            {t("library.context.rename")}
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -4087,7 +4129,7 @@
                 fill="none"
               /></svg
             >
-            Change cover
+            {t("library.context.changeCover")}
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -4109,7 +4151,7 @@
                 d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
               /></svg
             >
-            Show in explorer
+            {t("library.context.showInExplorer")}
           </button>
           <div class="ctx-sep"></div>
           <button
@@ -4141,7 +4183,7 @@
                 stroke-linecap="round"
               /></svg
             >
-            Delete
+            {t("library.context.delete")}
           </button>
         </div>
       </div>
@@ -4181,12 +4223,14 @@
               <line x1="12" y1="11" x2="12" y2="17" />
               <line x1="9" y1="14" x2="15" y2="14" />
             </svg>
-            <p class="library-dialog-title">Add Collection</p>
+            <p class="library-dialog-title">
+              {t("library.dialog.addCollection")}
+            </p>
           </div>
           <button
             class="library-dialog-close"
             onclick={() => (showAddCollectionDialog = false)}
-            aria-label="Close"
+            aria-label={t("library.dialog.close")}
           >
             <svg
               width="14"
@@ -4222,12 +4266,12 @@
                   d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
                 />
               </svg>
-              <span>Sync folder from computer</span>
+              <span>{t("library.dialog.syncFolder")}</span>
             </button>
           </div>
           <div class="library-dialog-or">
             <span class="library-dialog-or-line"></span>
-            <span class="library-dialog-or-text">or</span>
+            <span class="library-dialog-or-text">{t("library.dialog.or")}</span>
             <span class="library-dialog-or-line"></span>
           </div>
           <div class="edit-menu-card">
@@ -4248,7 +4292,7 @@
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              <span>Create new collection</span>
+              <span>{t("library.dialog.createCollection")}</span>
             </button>
             <div class="library-dialog-row">
               <div class="library-dialog-name-wrap">
@@ -4277,7 +4321,7 @@
                   type="text"
                   autocomplete="off"
                   bind:value={newCollectionName}
-                  placeholder="Name"
+                  placeholder={t("library.dialog.name")}
                   onkeydown={(e) => {
                     if (e.key === "Enter") confirmCreateCollection();
                     if (e.key === "Escape") {
@@ -4307,7 +4351,7 @@
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <polyline points="21 15 16 10 5 21" />
                   </svg>
-                  <span>Cover</span>
+                  <span>{t("library.dialog.cover")}</span>
                 {/if}
               </button>
             </div>
@@ -4357,14 +4401,14 @@
             </svg>
             <p class="library-dialog-title">
               {delCol?.type === "linked"
-                ? "Delete sync with folder?"
-                : "Delete collection?"}
+                ? t("library.dialog.deleteSyncTitle")
+                : t("library.dialog.deleteCollectionTitle")}
             </p>
           </div>
           <button
             class="library-dialog-close"
             onclick={cancelDeleteCollection}
-            aria-label="Close"
+            aria-label={t("library.dialog.close")}
           >
             <svg
               width="14"
@@ -4383,11 +4427,9 @@
           <div class="edit-menu-card">
             <p class="library-dialog-warning">
               {#if delCol?.type === "linked"}
-                This will remove the link to this folder from the application.
-                The folder and its contents will not be affected.
+                {t("library.dialog.deleteSyncWarning")}
               {:else}
-                This will permanently delete the collection folder and all files
-                inside it.
+                {t("library.dialog.deleteCollectionWarning")}
               {/if}
             </p>
           </div>
@@ -4399,11 +4441,13 @@
           >
             <button
               class="library-dialog-btn library-dialog-btn-secondary"
-              onclick={cancelDeleteCollection}>Cancel</button
+              onclick={cancelDeleteCollection}
+              >{t("library.dialog.cancel")}</button
             >
             <button
               class="library-dialog-btn library-dialog-btn-danger"
-              onclick={confirmDeleteCollection}>Delete</button
+              onclick={confirmDeleteCollection}
+              >{t("library.dialog.delete")}</button
             >
           </div>
         </div>

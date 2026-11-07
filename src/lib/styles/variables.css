@@ -235,8 +235,25 @@
   --vinyl-center-hole: #0d0d0d;
 
   --font-family: "Geist", sans-serif;
+  --cjk-font: "Yu Gothic UI", "Microsoft YaHei UI", "Malgun Gothic";
 
   color-scheme: dark;
+}
+
+:root[lang="zh-TW"] {
+  --cjk-font: "Microsoft JhengHei UI", "Microsoft YaHei UI", "Yu Gothic UI";
+}
+
+:root[lang="zh-CN"] {
+  --cjk-font: "Microsoft YaHei UI", "Microsoft JhengHei UI", "Yu Gothic UI";
+}
+
+:root[lang="ja"] {
+  --cjk-font: "Yu Gothic UI", "Microsoft JhengHei UI", "Microsoft YaHei UI";
+}
+
+:root[lang="ko"] {
+  --cjk-font: "Malgun Gothic", "Microsoft YaHei UI", "Microsoft JhengHei UI";
 }
 
 [data-theme="light"] {

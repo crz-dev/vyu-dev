@@ -1,13 +1,20 @@
 <script lang="ts">
   import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 </script>
 
 <div class="now-playing-pill" role="status">
   <button
     class="now-playing-btn"
     onclick={() => backgroundAudio.toggle()}
-    aria-label={backgroundAudio.playing ? "Pause audio" : "Play audio"}
-    title={backgroundAudio.playing ? "Pause" : "Play"}
+    aria-label={backgroundAudio.playing
+      ? t("shell.audio.pause")
+      : t("shell.audio.play")}
+    title={backgroundAudio.playing
+      ? t("shell.audio.pause")
+      : t("shell.audio.play")}
   >
     {#if backgroundAudio.playing}
       <svg
@@ -33,14 +40,14 @@
     {/if}
   </button>
   <div class="now-playing-info">
-    <span class="now-playing-label">Audio playing</span>
+    <span class="now-playing-label">{t("shell.audio.playing")}</span>
     <span class="now-playing-name">{backgroundAudio.name}</span>
   </div>
   <button
     class="now-playing-btn now-playing-close"
     onclick={() => backgroundAudio.stop()}
-    aria-label="Stop audio"
-    title="Stop"
+    aria-label={t("shell.audio.stop")}
+    title={t("shell.audio.stopShort")}
   >
     <svg
       width="11"

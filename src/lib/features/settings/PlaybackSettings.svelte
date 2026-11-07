@@ -4,8 +4,11 @@
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
   import { sleepTimer } from "$lib/features/media/sleepTimer.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
+
+  const t = locale.t;
 
   let sleepEnabled = $state(sleepTimer.active);
   let sleepMinutesPreview = $state(sleepTimer.minutes);
@@ -48,7 +51,7 @@
   });
 
   function formatResumeThreshold(seconds: number): string {
-    if (seconds <= 0) return "Any";
+    if (seconds <= 0) return t("settings.playback.threshold.any");
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     if (mins === 0) return `${secs}s`;
@@ -76,38 +79,41 @@
       stroke-linecap="round"
       stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg
     >
-    Playback
+    {t("settings.sections.playback")}
   </p>
 
-  <SettingsGroup label="Resume" icon="rewind">
+  <SettingsGroup label={t("settings.playback.group.resume")} icon="rewind">
     <SettingsRow
-      label="Resume Playback"
-      hint="Remember where each file stopped"
+      label={t("settings.playback.resume.label")}
+      hint={t("settings.playback.resume.hint")}
     >
       {#snippet control()}
         <div class="pill-group pill-group-3">
           <button
             class="pill-btn"
             class:active={playbackPrefs.resumeMode === "off"}
-            onclick={() => playbackPrefs.setResumeMode("off")}>Off</button
+            onclick={() => playbackPrefs.setResumeMode("off")}
+            >{t("settings.playback.resume.off")}</button
           >
           <button
             class="pill-btn"
             class:active={playbackPrefs.resumeMode === "ask"}
-            onclick={() => playbackPrefs.setResumeMode("ask")}>Ask</button
+            onclick={() => playbackPrefs.setResumeMode("ask")}
+            >{t("settings.playback.resume.ask")}</button
           >
           <button
             class="pill-btn"
             class:active={playbackPrefs.resumeMode === "always"}
-            onclick={() => playbackPrefs.setResumeMode("always")}>Always</button
+            onclick={() => playbackPrefs.setResumeMode("always")}
+            >{t("settings.playback.resume.always")}</button
           >
         </div>
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Resume Threshold"
-      hint="Only resume after this much playback"
+      label={t("settings.playback.threshold.label")}
+      hint={t("settings.playback.threshold.hint")}
       subrow
       open={playbackPrefs.resumeMode !== "off"}
     >
@@ -118,7 +124,7 @@
             min="0"
             max="900"
             step="30"
-            aria-label="Resume threshold"
+            aria-label={t("settings.playback.threshold.aria")}
             value={900 - thresholdPreview}
             oninput={(e) =>
               (thresholdPreview = 900 - Number(e.currentTarget.value))}
@@ -135,10 +141,10 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Audio & Speed" icon="volume">
+  <SettingsGroup label={t("settings.playback.group.audioSpeed")} icon="volume">
     <SettingsRow
-      label="Volume Boost"
-      hint="Raise output up to 200%; may clip loud audio"
+      label={t("settings.playback.volumeBoost.label")}
+      hint={t("settings.playback.volumeBoost.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -156,8 +162,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Remember Volume"
-      hint="Restore the last volume on launch"
+      label={t("settings.playback.rememberVolume.label")}
+      hint={t("settings.playback.rememberVolume.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -175,8 +181,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Default Volume"
-      hint="Volume used when Vyu opens"
+      label={t("settings.playback.defaultVolume.label")}
+      hint={t("settings.playback.defaultVolume.hint")}
       subrow
       open={!playbackPrefs.rememberVolume}
     >
@@ -187,7 +193,7 @@
             min="0"
             max="1"
             step="0.05"
-            aria-label="Default volume"
+            aria-label={t("settings.playback.defaultVolume.aria")}
             value={volumePreview}
             oninput={(e) => (volumePreview = Number(e.currentTarget.value))}
             onchange={(e) =>
@@ -201,8 +207,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Background Audio in Library"
-      hint="Continue audio while the Library is open"
+      label={t("settings.playback.backgroundAudio.label")}
+      hint={t("settings.playback.backgroundAudio.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -219,7 +225,10 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="Remember Speed" hint="Restore the last playback speed">
+    <SettingsRow
+      label={t("settings.playback.rememberSpeed.label")}
+      hint={t("settings.playback.rememberSpeed.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
@@ -236,8 +245,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Default Speed"
-      hint="Speed used when a file opens"
+      label={t("settings.playback.defaultSpeed.label")}
+      hint={t("settings.playback.defaultSpeed.hint")}
       subrow
       open={!playbackPrefs.rememberSpeed}
     >
@@ -248,7 +257,7 @@
             min="0.1"
             max="3"
             step="0.05"
-            aria-label="Default playback speed"
+            aria-label={t("settings.playback.defaultSpeed.aria")}
             value={speedPreview}
             oninput={(e) => (speedPreview = Number(e.currentTarget.value))}
             onchange={(e) =>
@@ -260,14 +269,14 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Relative Seek"
-      hint="Set the seek step as a percentage of media duration"
+      label={t("settings.playback.relativeSeek.label")}
+      hint={t("settings.playback.relativeSeek.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
           <input
             type="checkbox"
-            aria-label="Relative seek"
+            aria-label={t("settings.playback.relativeSeek.aria")}
             checked={playbackPrefs.relativeSeek}
             onchange={(e) =>
               playbackPrefs.setRelativeSeek(e.currentTarget.checked)}
@@ -280,10 +289,10 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Seek Step"
+      label={t("settings.playback.seekStep.label")}
       hint={playbackPrefs.relativeSeek
-        ? "Percentage of media duration moved by arrow seeks"
-        : "Seconds moved by arrow seeks"}
+        ? t("settings.playback.seekStep.hint.relative")
+        : t("settings.playback.seekStep.hint.absolute")}
       subrow
     >
       {#snippet control()}
@@ -293,7 +302,7 @@
             min="1"
             max={playbackPrefs.relativeSeek ? 100 : 60}
             step="1"
-            aria-label="Seek step"
+            aria-label={t("settings.playback.seekStep.aria")}
             value={playbackPrefs.relativeSeek
               ? relativeSeekPreview
               : seekPreview}
@@ -319,8 +328,11 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label="Playback" icon="play">
-    <SettingsRow label="Autoplay Media" hint="Start playing when a file opens">
+  <SettingsGroup label={t("settings.playback.group.playback")} icon="play">
+    <SettingsRow
+      label={t("settings.playback.autoplay.label")}
+      hint={t("settings.playback.autoplay.hint")}
+    >
       {#snippet control()}
         <label class="toggle-row">
           <input
@@ -335,38 +347,45 @@
       {/snippet}
     </SettingsRow>
 
-    <SettingsRow label="End of Playback" hint="What happens when a file ends">
+    <SettingsRow
+      label={t("settings.playback.end.label")}
+      hint={t("settings.playback.end.hint")}
+    >
       {#snippet control()}
         <div class="pill-group pill-group-4 pill-group-end">
           <button
             class="pill-btn"
             class:active={loopModeStore.loopMode === "stop"}
-            onclick={() => loopModeStore.setMode("stop")}>Stop</button
+            onclick={() => loopModeStore.setMode("stop")}
+            >{t("settings.playback.end.stop")}</button
           >
           <button
             class="pill-btn"
             class:active={loopModeStore.loopMode === "loop"}
-            onclick={() => loopModeStore.setMode("loop")}>Loop</button
+            onclick={() => loopModeStore.setMode("loop")}
+            >{t("settings.playback.end.loop")}</button
           >
           <button
             class="pill-btn"
             class:active={loopModeStore.loopMode === "next"}
-            onclick={() => loopModeStore.setMode("next")}>Next</button
+            onclick={() => loopModeStore.setMode("next")}
+            >{t("settings.playback.end.next")}</button
           >
           <button
             class="pill-btn"
             class:active={loopModeStore.loopMode === "shuffle"}
-            onclick={() => loopModeStore.setMode("shuffle")}>Shuffle</button
+            onclick={() => loopModeStore.setMode("shuffle")}
+            >{t("settings.playback.end.shuffle")}</button
           >
         </div>
       {/snippet}
     </SettingsRow>
 
     <SettingsRow
-      label="Sleep Timer"
+      label={t("settings.playback.sleep.label")}
       hint={sleepTimer.active
-        ? `Stops playback in ${sleepTimer.label}`
-        : "Stop playback after a set time"}
+        ? t("settings.playback.sleep.active", { time: sleepTimer.label })
+        : t("settings.playback.sleep.hint")}
     >
       {#snippet control()}
         <label class="toggle-row">
@@ -383,8 +402,8 @@
     </SettingsRow>
 
     <SettingsRow
-      label="Timer Length"
-      hint="How long until playback stops"
+      label={t("settings.playback.sleep.length.label")}
+      hint={t("settings.playback.sleep.length.hint")}
       subrow
       open={sleepEnabled}
     >
@@ -396,7 +415,7 @@
               min="5"
               max="120"
               step="5"
-              aria-label="Sleep timer length"
+              aria-label={t("settings.playback.sleep.aria")}
               value={sleepMinutesPreview}
               oninput={(e) =>
                 (sleepMinutesPreview = Number(e.currentTarget.value))}
@@ -404,11 +423,15 @@
                 handleSleepMinutes(Number(e.currentTarget.value))}
             />
             <span class="settings-slider-value" style="min-width: 54px"
-              >{sleepMinutesPreview} min</span
+              >{t("settings.playback.sleep.minutes", {
+                count: sleepMinutesPreview,
+              })}</span
             >
           </div>
           <button class="settings-action-btn" onclick={toggleSleepRunning}>
-            {sleepTimer.active ? "Pause" : "Start"}
+            {sleepTimer.active
+              ? t("settings.playback.sleep.pause")
+              : t("settings.playback.sleep.start")}
           </button>
         </div>
       {/snippet}

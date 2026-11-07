@@ -4,6 +4,9 @@
   import { profiles } from "./profiles.svelte";
   import { exportProfileFile, importProfileFile } from "./profileTransfer";
   import { showToast } from "$lib/components/toast.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let triggerEl = $state<HTMLButtonElement | null>(null);
   let menuOpen = $state(false);
@@ -20,11 +23,17 @@
     try {
       const file = await importProfileFile();
       if (!file) return;
-      showToast({ message: "Settings imported", color: "green" });
+      showToast({
+        message: t("settings.profiles.toast.imported"),
+        color: "green",
+      });
       profiles.importInto(profiles.activeId, file.settings);
     } catch (e) {
       showToast({
-        message: e instanceof Error ? e.message : "Failed to import settings",
+        message:
+          e instanceof Error
+            ? e.message
+            : t("settings.profiles.toast.importFailed"),
         color: "red",
       });
     } finally {
@@ -42,10 +51,16 @@
         profiles.snapshotForActive(),
       );
       if (exported) {
-        showToast({ message: "Settings exported", color: "green" });
+        showToast({
+          message: t("settings.profiles.toast.exported"),
+          color: "green",
+        });
       }
     } catch {
-      showToast({ message: "Failed to export settings", color: "red" });
+      showToast({
+        message: t("settings.profiles.toast.exportFailed"),
+        color: "red",
+      });
     } finally {
       busy = false;
     }
@@ -101,7 +116,7 @@
         points="7 10 12 15 17 10"
       /><line x1="12" y1="15" x2="12" y2="3" /></svg
     >
-    Import Settings
+    {t("settings.profiles.importSettings")}
   </button>
   <button
     class="settings-action-btn"
@@ -121,7 +136,7 @@
         points="7 10 12 15 17 10"
       /><line x1="12" y1="15" x2="12" y2="3" /></svg
     >
-    Export Settings
+    {t("settings.profiles.exportSettings")}
   </button>
 </div>
 

@@ -1,8 +1,9 @@
 import type { MediaProperties } from "$lib/shared/types";
 import { invokeCopyImageToClipboard } from "$lib/features/media/api";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export function showValue(v: string | undefined): string {
-  return v && v.trim() ? v : "Unknown";
+  return v && v.trim() ? v : locale.t("common.unknown");
 }
 
 export async function copyImageToClipboard(filePath: string): Promise<void> {
@@ -17,13 +18,13 @@ export async function copyFrameToClipboard(
     videoEl.videoWidth <= 0 ||
     videoEl.videoHeight <= 0
   ) {
-    throw new Error("Frame not ready yet.");
+    throw new Error(locale.t("shell.clipboard.frameNotReady"));
   }
   const canvas = document.createElement("canvas");
   canvas.width = videoEl.videoWidth;
   canvas.height = videoEl.videoHeight;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not get canvas context.");
+  if (!ctx) throw new Error(locale.t("shell.clipboard.noCanvas"));
   ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
   const blob = await new Promise<Blob | null>((resolve) =>
@@ -31,10 +32,10 @@ export async function copyFrameToClipboard(
   );
   canvas.width = 0;
   canvas.height = 0;
-  if (!blob) throw new Error("Could not encode frame as PNG.");
+  if (!blob) throw new Error(locale.t("shell.clipboard.encodeFailed"));
 
   if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
-    throw new Error("Image clipboard API is unavailable in this runtime.");
+    throw new Error(locale.t("shell.clipboard.imageUnavailable"));
   }
   await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
 }
@@ -45,7 +46,7 @@ export async function copyPathToClipboard(filePath: string): Promise<void> {
 
 export async function copyTextToClipboard(text: string): Promise<void> {
   if (!navigator.clipboard?.writeText) {
-    throw new Error("Text clipboard API is unavailable in this runtime.");
+    throw new Error(locale.t("shell.clipboard.textUnavailable"));
   }
   await navigator.clipboard.writeText(text);
 }

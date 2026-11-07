@@ -5,6 +5,9 @@
   import SubtitleOverlay from "$lib/features/viewer/SubtitleOverlay.svelte";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
   import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     fileSrc,
@@ -98,7 +101,8 @@
               kind="subtitles"
               src={tracks.subtitleSrc}
               srclang="und"
-              label={tracks.selectedSubtitleLabel || "Subtitles"}
+              label={tracks.selectedSubtitleLabel ||
+                t("shell.viewer.subtitles")}
               default
               onload={handleSubtitleLoad}
             />

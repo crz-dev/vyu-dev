@@ -30,6 +30,9 @@
     type BarsState,
     type ScopeState,
   } from "./renderers";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     type,
@@ -40,10 +43,10 @@
   } = $props();
 
   const TITLES: Record<VisualizerType, string> = {
-    pulse: "Pulse",
-    spectrum: "Spectrum",
-    heartbeat: "Heartbeat",
-    diamonds: "Diamonds",
+    pulse: "media.visualizer.title.pulse",
+    spectrum: "media.visualizer.title.spectrum",
+    heartbeat: "media.visualizer.title.heartbeat",
+    diamonds: "media.visualizer.title.diamonds",
   };
 
   const CANVAS_W = 386;
@@ -267,7 +270,7 @@
         class="ctx-drag"
         role="button"
         tabindex="0"
-        aria-label="Drag to move"
+        aria-label={t("media.visualizer.dragToMove")}
         onpointerdown={(e) => {
           if ((e.target as HTMLElement).closest("button")) return;
           e.preventDefault();
@@ -307,13 +310,17 @@
         <button
           class="ctx-pin tooltip-below"
           class:active={pinned}
-          data-tooltip={pinned ? "Unpin" : "Pin"}
+          data-tooltip={pinned
+            ? t("media.visualizer.unpin")
+            : t("media.visualizer.pin")}
           onclick={(e) => {
             e.stopPropagation();
             pinned = !pinned;
             visualizerStore.setPinned(type, pinned);
           }}
-          aria-label={pinned ? "Unpin" : "Pin"}
+          aria-label={pinned
+            ? t("media.visualizer.unpin")
+            : t("media.visualizer.pin")}
         >
           <svg
             width="9"
@@ -336,7 +343,7 @@
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
           </span>
-          <span>{TITLES[type]}</span>
+          <span>{t(TITLES[type])}</span>
           <span class="ctx-dots">
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
@@ -345,12 +352,12 @@
         </span>
         <button
           class="ctx-close tooltip-below"
-          data-tooltip="Close"
+          data-tooltip={t("common.close")}
           onclick={(e) => {
             e.stopPropagation();
             close();
           }}
-          aria-label="Close"
+          aria-label={t("common.close")}
         >
           <svg
             width="9"
@@ -368,53 +375,76 @@
 
       <canvas bind:this={canvasEl} width={CANVAS_W} height={CANVAS_H}></canvas>
 
-      <div class="visualizer-metrics" aria-label="Audio metrics">
+      <div
+        class="visualizer-metrics"
+        aria-label={t("media.visualizer.metricsAria")}
+      >
         <div
           class="visualizer-metric-pill tooltip-below"
-          data-tooltip="Current signal level in digital dBFS"
-          aria-label={`Level ${formatLevelDb(metrics.levelDb)}`}
+          data-tooltip={t("media.visualizer.levelTooltip")}
+          aria-label={t("media.visualizer.levelAria", {
+            value: formatLevelDb(metrics.levelDb),
+          })}
         >
-          <span class="visualizer-metric-label">Level</span>
+          <span class="visualizer-metric-label"
+            >{t("media.visualizer.level")}</span
+          >
           <span class="visualizer-metric-value"
             >{formatLevelDb(metrics.levelDb)}</span
           >
         </div>
         <div
           class="visualizer-metric-pill tooltip-below"
-          data-tooltip="Strongest frequency in the current signal"
-          aria-label={`Peak frequency ${formatFrequency(metrics.peakFrequencyHz)}`}
+          data-tooltip={t("media.visualizer.freqTooltip")}
+          aria-label={t("media.visualizer.freqAria", {
+            value: formatFrequency(metrics.peakFrequencyHz),
+          })}
         >
-          <span class="visualizer-metric-label">Freq</span>
+          <span class="visualizer-metric-label"
+            >{t("media.visualizer.freq")}</span
+          >
           <span class="visualizer-metric-value"
             >{formatFrequency(metrics.peakFrequencyHz)}</span
           >
         </div>
         <div
           class="visualizer-metric-pill tooltip-below"
-          data-tooltip="Low-frequency energy from 20 to 250 Hz"
-          aria-label={`Low frequency energy ${formatBandDb(metrics.lowDb)}`}
+          data-tooltip={t("media.visualizer.lowTooltip")}
+          aria-label={t("media.visualizer.lowAria", {
+            value: formatBandDb(metrics.lowDb),
+          })}
         >
-          <span class="visualizer-metric-label">Low</span>
+          <span class="visualizer-metric-label"
+            >{t("media.visualizer.low")}</span
+          >
           <span class="visualizer-metric-value"
             >{formatBandDb(metrics.lowDb)}</span
           >
         </div>
         <div
           class="visualizer-metric-pill tooltip-below"
-          data-tooltip="Mid-frequency energy from 250 Hz to 2 kHz"
-          aria-label={`Mid frequency energy ${formatBandDb(metrics.midDb)}`}
+          data-tooltip={t("media.visualizer.midTooltip")}
+          aria-label={t("media.visualizer.midAria", {
+            value: formatBandDb(metrics.midDb),
+          })}
         >
-          <span class="visualizer-metric-label">Mid</span>
+          <span class="visualizer-metric-label"
+            >{t("media.visualizer.mid")}</span
+          >
           <span class="visualizer-metric-value"
             >{formatBandDb(metrics.midDb)}</span
           >
         </div>
         <div
           class="visualizer-metric-pill tooltip-below"
-          data-tooltip="High-frequency energy from 2 to 20 kHz"
-          aria-label={`High frequency energy ${formatBandDb(metrics.highDb)}`}
+          data-tooltip={t("media.visualizer.highTooltip")}
+          aria-label={t("media.visualizer.highAria", {
+            value: formatBandDb(metrics.highDb),
+          })}
         >
-          <span class="visualizer-metric-label">High</span>
+          <span class="visualizer-metric-label"
+            >{t("media.visualizer.high")}</span
+          >
           <span class="visualizer-metric-value"
             >{formatBandDb(metrics.highDb)}</span
           >

@@ -6,6 +6,9 @@
     DRAW_COLORS,
     HIGHLIGHT_COLORS,
   } from "$lib/features/markup/markup.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
+  const t = locale.t;
 
   let {
     visible,
@@ -546,7 +549,10 @@
             }
             resetConfirming = false;
             markup.clearAllStrokes();
-            showToast({ message: "Markups reset", color: "red" });
+            showToast({
+              message: t("menus.markup.markupsReset"),
+              color: "red",
+            });
           } else {
             resetConfirming = true;
             resetConfirmTimeout = setTimeout(() => {
@@ -555,8 +561,12 @@
             }, 3000);
           }
         }}
-        data-tooltip={resetConfirming ? "Confirm reset" : "Reset"}
-        aria-label={resetConfirming ? "Confirm reset" : "Reset"}
+        data-tooltip={resetConfirming
+          ? t("menus.markup.confirmReset")
+          : t("menus.common.reset")}
+        aria-label={resetConfirming
+          ? t("menus.markup.confirmReset")
+          : t("menus.common.reset")}
       >
         {#if resetConfirming}
           <svg
@@ -573,7 +583,7 @@
             <path d="M12 16v0" />
             <path d="M12 8v4" />
           </svg>
-          <span class="edit-action-label">Confirm</span>
+          <span class="edit-action-label">{t("menus.common.confirm")}</span>
         {:else}
           <svg
             width="14"
@@ -591,7 +601,7 @@
             <line x1="10" y1="11" x2="10" y2="17" />
             <line x1="14" y1="11" x2="14" y2="17" />
           </svg>
-          <span class="edit-action-label">Reset</span>
+          <span class="edit-action-label">{t("menus.common.reset")}</span>
         {/if}
       </button>
       <button
@@ -599,8 +609,8 @@
         class:inactive={!canUndo}
         disabled={!canUndo}
         onclick={() => markup.undoLastStroke()}
-        data-tooltip="Undo"
-        aria-label="Undo"
+        data-tooltip={t("menus.common.undo")}
+        aria-label={t("menus.common.undo")}
       >
         <svg
           width="14"
@@ -615,7 +625,7 @@
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
           <path d="M3 3v5h5" />
         </svg>
-        <span class="edit-action-label">Undo</span>
+        <span class="edit-action-label">{t("menus.common.undo")}</span>
       </button>
     </div>
 
@@ -628,7 +638,7 @@
         class="ctx-drag"
         role="button"
         tabindex="0"
-        aria-label="Drag to move"
+        aria-label={t("menus.common.dragToMove")}
         onmousedown={(e) => {
           e.preventDefault();
           queueMicrotask(() => onMoved?.());
@@ -677,13 +687,15 @@
         <button
           class="ctx-pin tooltip-below"
           class:active={pinned}
-          data-tooltip={pinned ? "Unpin" : "Pin"}
+          data-tooltip={pinned
+            ? t("menus.common.unpin")
+            : t("menus.common.pin")}
           onclick={(e) => {
             e.stopPropagation();
             pinned = !pinned;
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label={pinned ? "Unpin" : "Pin"}
+          aria-label={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
         >
           <svg
             width="9"
@@ -706,7 +718,7 @@
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
           </span>
-          <span>Markup</span>
+          <span>{t("menus.markup.title")}</span>
           <span class="ctx-dots">
             <span class="ctx-dot"></span>
             <span class="ctx-dot"></span>
@@ -715,13 +727,13 @@
         </span>
         <button
           class="ctx-close tooltip-below"
-          data-tooltip="Close"
+          data-tooltip={t("menus.common.close")}
           onclick={(e) => {
             e.stopPropagation();
             onClose();
           }}
           onmousedown={(e) => e.stopPropagation()}
-          aria-label="Close"
+          aria-label={t("menus.common.close")}
         >
           <svg
             width="9"
@@ -757,7 +769,7 @@
               <path d="M20 20H7L3 16l9-9 8 8-4 4" />
               <path d="M6.5 13.5l5-5" />
             </svg>
-            <span>Erase</span>
+            <span>{t("menus.markup.erase")}</span>
           </button>
           <button
             class="edit-menu-btn yellow"
@@ -778,7 +790,7 @@
               <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
               <path d="M2 22l1-4 3 3-1 4H2z" opacity="0.5" />
             </svg>
-            <span>Highlight</span>
+            <span>{t("menus.markup.highlight")}</span>
           </button>
           <button
             class="edit-menu-btn green"
@@ -800,7 +812,7 @@
               <path d="M2 2l7.586 7.586" />
               <circle cx="11" cy="11" r="2" />
             </svg>
-            <span>Draw</span>
+            <span>{t("menus.markup.draw")}</span>
           </button>
           <button
             class="edit-menu-btn blue"
@@ -821,7 +833,7 @@
               <line x1="9" y1="20" x2="15" y2="20" />
               <line x1="12" y1="4" x2="12" y2="20" />
             </svg>
-            <span>Text</span>
+            <span>{t("menus.markup.text")}</span>
           </button>
         </div>
 
@@ -863,7 +875,7 @@
                 <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
                 <path d="M13 13l6 6" />
               </svg>
-              <span>Select</span>
+              <span>{t("menus.markup.select")}</span>
             </button>
             <button
               class="edit-menu-btn red sub"
@@ -897,7 +909,7 @@
                 <line x1="8" y1="8" x2="16" y2="16" />
                 <line x1="16" y1="8" x2="8" y2="16" />
               </svg>
-              <span>Remove</span>
+              <span>{t("menus.markup.remove")}</span>
             </button>
             <button
               class="edit-menu-btn red sub"
@@ -919,7 +931,7 @@
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
-              <span>Hide</span>
+              <span>{t("menus.markup.hide")}</span>
             </button>
             <button
               class="edit-menu-btn red sub"
@@ -932,7 +944,10 @@
                   }
                   clearAllConfirming = false;
                   markup.clearAllStrokes();
-                  showToast({ message: "Markups reset", color: "red" });
+                  showToast({
+                    message: t("menus.markup.markupsReset"),
+                    color: "red",
+                  });
                 } else {
                   clearAllConfirming = true;
                   clearAllConfirmTimeout = setTimeout(() => {
@@ -957,7 +972,7 @@
                   <path d="M12 16v0" />
                   <path d="M12 8v4" />
                 </svg>
-                <span>Confirm?</span>
+                <span>{t("menus.markup.confirmQuestion")}</span>
               {:else}
                 <svg
                   width="11"
@@ -975,7 +990,7 @@
                   <path d="M14 11v6" />
                   <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
                 </svg>
-                <span>Clear all</span>
+                <span>{t("menus.markup.clearAll")}</span>
               {/if}
             </button>
           </div>
@@ -1021,7 +1036,7 @@
                   stroke="none"
                 />
               </svg>
-              <span>Color</span>
+              <span>{t("menus.markup.color")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -1041,7 +1056,7 @@
                 <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
                 <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
               </svg>
-              <span>Thickness</span>
+              <span>{t("menus.markup.thickness")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
@@ -1060,13 +1075,13 @@
               >
                 <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
               </svg>
-              <span>Opacity</span>
+              <span>{t("menus.markup.opacity")}</span>
             </button>
             <button
               class="edit-menu-btn yellow sub"
               class:active={highlightModeRowOpen}
               onclick={toggleHighlightMode}
-              data-tooltip="Mode"
+              data-tooltip={t("menus.markup.mode")}
             >
               <svg
                 width="11"
@@ -1081,7 +1096,7 @@
                 <rect x="2" y="2" width="20" height="20" rx="5" />
                 <rect x="6" y="6" width="12" height="12" rx="2" opacity="0.5" />
               </svg>
-              <span>Mode</span>
+              <span>{t("menus.markup.mode")}</span>
             </button>
           </div>
 
@@ -1096,7 +1111,7 @@
                 class="edit-menu-btn yellow sub"
                 class:active={markup.highlightMode === "free"}
                 onclick={() => markup.setHighlightMode("free")}
-                data-tooltip="Freehand"
+                data-tooltip={t("menus.markup.freehand")}
               >
                 <svg
                   width="11"
@@ -1110,13 +1125,13 @@
                 >
                   <path d="M3 14 Q6 8 9 14 T15 14 T21 14" />
                 </svg>
-                <span>Free</span>
+                <span>{t("menus.markup.free")}</span>
               </button>
               <button
                 class="edit-menu-btn yellow sub"
                 class:active={markup.highlightMode === "straight"}
                 onclick={() => markup.setHighlightMode("straight")}
-                data-tooltip="Straight"
+                data-tooltip={t("menus.markup.straight")}
               >
                 <svg
                   width="11"
@@ -1130,7 +1145,7 @@
                 >
                   <line x1="4" y1="20" x2="20" y2="4" />
                 </svg>
-                <span>Straight</span>
+                <span>{t("menus.markup.straight")}</span>
               </button>
             </div>
           {/if}
@@ -1150,7 +1165,9 @@
                     onclick={() => {
                       markup.setHighlightColor(color);
                     }}
-                    aria-label={`Color ${i + 1}`}
+                    aria-label={t("menus.markup.colorSwatch", {
+                      index: i + 1,
+                    })}
                   ></button>
                 {/each}
               </div>
@@ -1162,7 +1179,9 @@
                     class:active={markup.highlightColor === color &&
                       color !== ""}
                     style={color ? `background: ${color}` : ""}
-                    aria-label={`Custom color ${i + 1}`}
+                    aria-label={t("menus.markup.customColor", {
+                      index: i + 1,
+                    })}
                     oncontextmenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1204,7 +1223,7 @@
                 aria-valuemin={0}
                 aria-valuemax={40}
                 aria-valuenow={localHighlightThickness}
-                aria-label="Highlight thickness"
+                aria-label={t("menus.markup.highlightThickness")}
                 onmouseenter={() =>
                   handleSliderMouseEnter("highlightThickness")}
                 onmouseleave={() =>
@@ -1233,7 +1252,9 @@
                     }}
                     role="button"
                     tabindex="0"
-                    aria-label="Set thickness to {marker.val}"
+                    aria-label={t("menus.markup.setThickness", {
+                      value: marker.val,
+                    })}
                   ></div>
                 {/each}
                 <div
@@ -1241,7 +1262,7 @@
                   style="left: {highlightThicknessScrubberPct}%"
                   role="button"
                   tabindex="0"
-                  aria-label="Scrubber"
+                  aria-label={t("menus.common.scrubber")}
                   onpointerdown={(e) => {
                     e.stopPropagation();
                     if (!highlightThicknessTrackEl) return;
@@ -1276,7 +1297,7 @@
                 aria-valuemin={0}
                 aria-valuemax={0.8}
                 aria-valuenow={localHighlightOpacity}
-                aria-label="Highlight opacity"
+                aria-label={t("menus.markup.highlightOpacity")}
                 onmouseenter={() => handleSliderMouseEnter("highlightOpacity")}
                 onmouseleave={() => handleSliderMouseLeave("highlightOpacity")}
                 onpointerdown={handleHighlightOpacityPointerDown}
@@ -1303,7 +1324,9 @@
                     }}
                     role="button"
                     tabindex="0"
-                    aria-label="Set opacity to {Math.round(marker.val * 100)}%"
+                    aria-label={t("menus.markup.setOpacity", {
+                      value: Math.round(marker.val * 100),
+                    })}
                   ></div>
                 {/each}
                 <div
@@ -1311,7 +1334,7 @@
                   style="left: {highlightOpacityScrubberPct}%"
                   role="button"
                   tabindex="0"
-                  aria-label="Scrubber"
+                  aria-label={t("menus.common.scrubber")}
                   onpointerdown={(e) => {
                     e.stopPropagation();
                     if (!highlightOpacityTrackEl) return;
@@ -1372,7 +1395,7 @@
                   stroke="none"
                 />
               </svg>
-              <span>Color</span>
+              <span>{t("menus.markup.color")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
@@ -1392,7 +1415,7 @@
                 <line x1="3" y1="8" x2="21" y2="8" stroke-width="2" />
                 <line x1="3" y1="16" x2="21" y2="16" stroke-width="4" />
               </svg>
-              <span>Thickness</span>
+              <span>{t("menus.markup.thickness")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
@@ -1411,13 +1434,13 @@
               >
                 <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
               </svg>
-              <span>Opacity</span>
+              <span>{t("menus.markup.opacity")}</span>
             </button>
             <button
               class="edit-menu-btn green sub"
               class:sub-open={shapesRowOpen}
               onclick={toggleShapes}
-              aria-label="Shapes"
+              aria-label={t("menus.markup.shapes")}
             >
               <svg
                 width="11"
@@ -1433,7 +1456,7 @@
                 <circle cx="17.5" cy="6.5" r="3.5" />
                 <polygon points="7 21 12 14 17 21" />
               </svg>
-              <span>Shapes</span>
+              <span>{t("menus.markup.shapes")}</span>
             </button>
           </div>
 
@@ -1453,8 +1476,8 @@
                   markup.toggleSelectedShapeFill();
                 }}
                 aria-pressed={markup.fillShapes}
-                aria-label="Fill shapes"
-                data-tooltip="Fill shapes"
+                aria-label={t("menus.markup.fillShapes")}
+                data-tooltip={t("menus.markup.fillShapes")}
               >
                 <svg
                   width="11"
@@ -1491,8 +1514,8 @@
                 class="edit-menu-btn green sub"
                 class:active={markup.activeTool === "square"}
                 onclick={() => markup.setActiveTool("square")}
-                aria-label="Square"
-                data-tooltip="Square"
+                aria-label={t("menus.markup.square")}
+                data-tooltip={t("menus.markup.square")}
               >
                 <svg
                   width="11"
@@ -1511,8 +1534,8 @@
                 class="edit-menu-btn green sub"
                 class:active={markup.activeTool === "circle"}
                 onclick={() => markup.setActiveTool("circle")}
-                aria-label="Circle"
-                data-tooltip="Circle"
+                aria-label={t("menus.markup.circle")}
+                data-tooltip={t("menus.markup.circle")}
               >
                 <svg
                   width="11"
@@ -1531,8 +1554,8 @@
                 class="edit-menu-btn green sub"
                 class:active={markup.activeTool === "triangle"}
                 onclick={() => markup.setActiveTool("triangle")}
-                aria-label="Triangle"
-                data-tooltip="Triangle"
+                aria-label={t("menus.markup.triangle")}
+                data-tooltip={t("menus.markup.triangle")}
               >
                 <svg
                   width="11"
@@ -1552,8 +1575,8 @@
                 class="edit-menu-btn green sub"
                 class:active={markup.activeTool === "line"}
                 onclick={() => markup.setActiveTool("line")}
-                aria-label="Line"
-                data-tooltip="Line"
+                aria-label={t("menus.markup.line")}
+                data-tooltip={t("menus.markup.line")}
               >
                 <svg
                   width="11"
@@ -1572,8 +1595,8 @@
                 class="edit-menu-btn green sub"
                 class:active={markup.activeTool === "arrow"}
                 onclick={() => markup.setActiveTool("arrow")}
-                aria-label="Arrow"
-                data-tooltip="Arrow"
+                aria-label={t("menus.markup.arrow")}
+                data-tooltip={t("menus.markup.arrow")}
               >
                 <svg
                   width="11"
@@ -1593,8 +1616,8 @@
                 class="edit-menu-btn green sub"
                 class:active={markup.activeTool === "bidirectional-arrow"}
                 onclick={() => markup.setActiveTool("bidirectional-arrow")}
-                aria-label="Bidirectional arrow"
-                data-tooltip="Bidirectional"
+                aria-label={t("menus.markup.bidirectionalArrow")}
+                data-tooltip={t("menus.markup.bidirectional")}
               >
                 <svg
                   width="11"
@@ -1621,8 +1644,8 @@
                   markup.setPathMode(!markup.pathMode);
                 }}
                 aria-pressed={markup.pathMode}
-                aria-label="Path"
-                data-tooltip="Freeform lines"
+                aria-label={t("menus.markup.path")}
+                data-tooltip={t("menus.markup.freeformLines")}
               >
                 <svg
                   width="11"
@@ -1655,7 +1678,9 @@
                     onclick={() => {
                       markup.setDrawColor(color);
                     }}
-                    aria-label={`Color ${i + 1}`}
+                    aria-label={t("menus.markup.colorSwatch", {
+                      index: i + 1,
+                    })}
                   ></button>
                 {/each}
               </div>
@@ -1666,7 +1691,9 @@
                     class:markup-color-swatch-empty={!color}
                     class:active={markup.drawColor === color && color !== ""}
                     style={color ? `background: ${color}` : ""}
-                    aria-label={`Custom color ${i + 1}`}
+                    aria-label={t("menus.markup.customColor", {
+                      index: i + 1,
+                    })}
                     oncontextmenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1705,7 +1732,7 @@
                 aria-valuemin={1}
                 aria-valuemax={20}
                 aria-valuenow={localThickness}
-                aria-label="Thickness"
+                aria-label={t("menus.markup.thickness")}
                 onmouseenter={() => handleSliderMouseEnter("thickness")}
                 onmouseleave={() => handleSliderMouseLeave("thickness")}
                 onpointerdown={handleThicknessPointerDown}
@@ -1732,7 +1759,9 @@
                     }}
                     role="button"
                     tabindex="0"
-                    aria-label="Set thickness to {marker.val}"
+                    aria-label={t("menus.markup.setThickness", {
+                      value: marker.val,
+                    })}
                   ></div>
                 {/each}
                 <div
@@ -1740,7 +1769,7 @@
                   style="left: {thicknessScrubberPct}%"
                   role="button"
                   tabindex="0"
-                  aria-label="Scrubber"
+                  aria-label={t("menus.common.scrubber")}
                   onpointerdown={(e) => {
                     e.stopPropagation();
                     if (!thicknessTrackEl) return;
@@ -1775,7 +1804,7 @@
                 aria-valuemin={0.1}
                 aria-valuemax={1}
                 aria-valuenow={localOpacity}
-                aria-label="Opacity"
+                aria-label={t("menus.markup.opacity")}
                 onmouseenter={() => handleSliderMouseEnter("opacity")}
                 onmouseleave={() => handleSliderMouseLeave("opacity")}
                 onpointerdown={handleOpacityPointerDown}
@@ -1802,7 +1831,9 @@
                     }}
                     role="button"
                     tabindex="0"
-                    aria-label="Set opacity to {Math.round(marker.val * 100)}%"
+                    aria-label={t("menus.markup.setOpacity", {
+                      value: Math.round(marker.val * 100),
+                    })}
                   ></div>
                 {/each}
                 <div
@@ -1810,7 +1841,7 @@
                   style="left: {opacityScrubberPct}%"
                   role="button"
                   tabindex="0"
-                  aria-label="Scrubber"
+                  aria-label={t("menus.common.scrubber")}
                   onpointerdown={(e) => {
                     e.stopPropagation();
                     if (!opacityTrackEl) return;
@@ -1871,7 +1902,7 @@
                   stroke="none"
                 />
               </svg>
-              <span>Color</span>
+              <span>{t("menus.markup.color")}</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
@@ -1894,7 +1925,7 @@
                 <path d="M2 7h2" />
                 <path d="M20 7h2" />
               </svg>
-              <span>Font</span>
+              <span>{t("menus.markup.font")}</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
@@ -1918,7 +1949,7 @@
                 <line x1="14" y1="6" x2="18" y2="6" />
                 <line x1="14" y1="18" x2="18" y2="18" />
               </svg>
-              <span>Style</span>
+              <span>{t("menus.markup.style")}</span>
             </button>
             <button
               class="edit-menu-btn blue sub"
@@ -1940,7 +1971,7 @@
                 <line x1="21" y1="14" x2="3" y2="14" />
                 <line x1="17" y1="18" x2="3" y2="18" />
               </svg>
-              <span>Alignment</span>
+              <span>{t("menus.markup.alignment")}</span>
             </button>
           </div>
 
@@ -1962,7 +1993,9 @@
                       markup.textBgEnabled
                         ? markup.setTextBgColor(color)
                         : markup.setTextColor(color)}
-                    aria-label={`Color ${i + 1}`}
+                    aria-label={t("menus.markup.colorSwatch", {
+                      index: i + 1,
+                    })}
                   ></button>
                 {/each}
               </div>
@@ -1975,7 +2008,9 @@
                       ? markup.textBgColor
                       : markup.textColor) === color && color !== ""}
                     style={color ? `background: ${color}` : ""}
-                    aria-label={`Custom color ${i + 1}`}
+                    aria-label={t("menus.markup.customColor", {
+                      index: i + 1,
+                    })}
                     oncontextmenu={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1999,8 +2034,8 @@
                 class="text-bg-color-btn"
                 class:active={markup.textBgEnabled}
                 onclick={() => markup.setTextBgEnabled(!markup.textBgEnabled)}
-                data-tooltip="Background color"
-                aria-label="Toggle text background"
+                data-tooltip={t("menus.markup.background")}
+                aria-label={t("menus.markup.toggleTextBackground")}
               >
                 <svg
                   width="14"
@@ -2027,7 +2062,7 @@
               in:fly={{ y: -10, duration: 150, opacity: 0.05 }}
               out:fly={{ y: -10, duration: 100, opacity: 0.05 }}
             >
-              <span class="text-font-label">Font:</span>
+              <span class="text-font-label">{t("menus.markup.fontLabel")}</span>
               <div class="text-font-anchor">
                 <button
                   class="text-font-btn"
@@ -2092,11 +2127,11 @@
                 {/if}
               </div>
               <div class="edit-menu-divider"></div>
-              <span class="text-font-label">Size:</span>
+              <span class="text-font-label">{t("menus.markup.sizeLabel")}</span>
               <button
                 class="text-size-btn"
                 onclick={() => markup.setTextFontSize(markup.textFontSize - 1)}
-                aria-label="Decrease font size"
+                aria-label={t("menus.markup.decreaseFontSize")}
               >
                 <svg
                   width="7"
@@ -2124,7 +2159,7 @@
               <button
                 class="text-size-btn"
                 onclick={() => markup.setTextFontSize(markup.textFontSize + 1)}
-                aria-label="Increase font size"
+                aria-label={t("menus.markup.increaseFontSize")}
               >
                 <svg
                   width="7"
@@ -2152,8 +2187,8 @@
                 class="edit-menu-btn blue sub text-style-btn"
                 class:active={markup.textBold}
                 onclick={() => markup.setTextBold(!markup.textBold)}
-                data-tooltip="Bold"
-                aria-label="Bold"
+                data-tooltip={t("menus.markup.bold")}
+                aria-label={t("menus.markup.bold")}
               >
                 <span style="font-weight: 700">B</span>
               </button>
@@ -2161,8 +2196,8 @@
                 class="edit-menu-btn blue sub text-style-btn"
                 class:active={markup.textItalic}
                 onclick={() => markup.setTextItalic(!markup.textItalic)}
-                data-tooltip="Italic"
-                aria-label="Italic"
+                data-tooltip={t("menus.markup.italic")}
+                aria-label={t("menus.markup.italic")}
               >
                 <span style="font-style: italic">I</span>
               </button>
@@ -2170,8 +2205,8 @@
                 class="edit-menu-btn blue sub text-style-btn"
                 class:active={markup.textUnderline}
                 onclick={() => markup.setTextUnderline(!markup.textUnderline)}
-                data-tooltip="Underline"
-                aria-label="Underline"
+                data-tooltip={t("menus.markup.underline")}
+                aria-label={t("menus.markup.underline")}
               >
                 <span style="text-decoration: underline">U</span>
               </button>
@@ -2180,8 +2215,8 @@
                 class:active={markup.textStrikethrough}
                 onclick={() =>
                   markup.setTextStrikethrough(!markup.textStrikethrough)}
-                data-tooltip="Strikethrough"
-                aria-label="Strikethrough"
+                data-tooltip={t("menus.markup.strikethrough")}
+                aria-label={t("menus.markup.strikethrough")}
               >
                 <span style="text-decoration: line-through">S</span>
               </button>
@@ -2198,8 +2233,8 @@
                 class="edit-menu-btn blue sub"
                 class:active={markup.textAlign === "left"}
                 onclick={() => markup.setTextAlign("left")}
-                data-tooltip="Left"
-                aria-label="Align left"
+                data-tooltip={t("menus.markup.left")}
+                aria-label={t("menus.markup.alignLeft")}
               >
                 <svg
                   width="11"
@@ -2219,8 +2254,8 @@
                 class="edit-menu-btn blue sub"
                 class:active={markup.textAlign === "center"}
                 onclick={() => markup.setTextAlign("center")}
-                data-tooltip="Center"
-                aria-label="Align center"
+                data-tooltip={t("menus.markup.center")}
+                aria-label={t("menus.markup.alignCenter")}
               >
                 <svg
                   width="11"
@@ -2240,8 +2275,8 @@
                 class="edit-menu-btn blue sub"
                 class:active={markup.textAlign === "right"}
                 onclick={() => markup.setTextAlign("right")}
-                data-tooltip="Right"
-                aria-label="Align right"
+                data-tooltip={t("menus.markup.right")}
+                aria-label={t("menus.markup.alignRight")}
               >
                 <svg
                   width="11"
@@ -2261,8 +2296,8 @@
                 class="edit-menu-btn blue sub"
                 class:active={markup.textAlign === "justify"}
                 onclick={() => markup.setTextAlign("justify")}
-                data-tooltip="Justify"
-                aria-label="Justify"
+                data-tooltip={t("menus.markup.justify")}
+                aria-label={t("menus.markup.justify")}
               >
                 <svg
                   width="11"
@@ -2294,8 +2329,8 @@
         class="edit-action-btn yellow tooltip-ctrl"
         disabled={!hasEdits}
         onclick={onExport}
-        data-tooltip="Export"
-        aria-label="Export"
+        data-tooltip={t("menus.common.export")}
+        aria-label={t("menus.common.export")}
       >
         <svg
           width="14"
@@ -2311,14 +2346,14 @@
           <polyline points="17,8 12,3 7,8" />
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        <span class="edit-action-label">Export</span>
+        <span class="edit-action-label">{t("menus.common.export")}</span>
       </button>
       <button
         class="edit-action-btn green tooltip-ctrl"
         disabled={!hasEdits}
         onclick={onApply}
-        data-tooltip="Apply"
-        aria-label="Apply"
+        data-tooltip={t("menus.common.apply")}
+        aria-label={t("menus.common.apply")}
       >
         <svg
           width="14"
@@ -2332,7 +2367,7 @@
         >
           <path d="M20 6L9 17l-5-5" />
         </svg>
-        <span class="edit-action-label">Apply</span>
+        <span class="edit-action-label">{t("menus.common.apply")}</span>
       </button>
     </div>
   </div>

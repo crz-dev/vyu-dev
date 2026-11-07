@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { locale } from "$lib/features/i18n/locale.svelte";
+
   let {
     aboutOpen,
     closeAbout,
@@ -6,6 +8,8 @@
     aboutOpen: boolean;
     closeAbout: () => void;
   } = $props();
+
+  const t = locale.t;
 </script>
 
 {#if aboutOpen}
@@ -36,10 +40,16 @@
               y2="12"
             /><line x1="12" y1="8" x2="12.01" y2="8" /></svg
           >
-          About Vyu
+          {t("dialogs.about.title")}
         </p>
-        <p class="delete-subtitle">Version: v{__APP_VERSION__}</p>
-        <button class="dialog-close-x" onclick={closeAbout} aria-label="Close">
+        <p class="delete-subtitle">
+          {t("dialogs.about.version", { version: __APP_VERSION__ })}
+        </p>
+        <button
+          class="dialog-close-x"
+          onclick={closeAbout}
+          aria-label={t("dialogs.about.close")}
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -60,11 +70,15 @@
         </div>
 
         <h2 class="about-title">
-          View <span class="about-title-underline">Your</span> Universe
+          {t("dialogs.about.tagline.before")}
+          <span class="about-title-underline"
+            >{t("dialogs.about.tagline.highlight")}</span
+          >
+          {t("dialogs.about.tagline.after")}
         </h2>
 
         <p class="about-desc">
-          A modern media viewer actually built for this decade. And for you.
+          {t("dialogs.about.description")}
         </p>
 
         <div class="about-panel">
@@ -82,34 +96,43 @@
                 d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
               /><polyline points="14 2 14 8 20 8" /></svg
             >
-            Supported formats
+            {t("dialogs.about.formats.title")}
           </div>
           <div class="about-panel-body">
             <div class="about-format-row">
-              <span class="about-format-badge">Images</span>
+              <span class="about-format-badge"
+                >{t("dialogs.about.formats.images")}</span
+              >
               <span class="about-format-items"
                 >JPG · PNG · GIF · WebP · BMP · HEIC · AVIF · TIFF · JXL</span
               >
             </div>
             <div class="about-sep"></div>
             <div class="about-format-row">
-              <span class="about-format-badge">Videos</span>
+              <span class="about-format-badge"
+                >{t("dialogs.about.formats.videos")}</span
+              >
               <span class="about-format-items"
                 >MP4 · MKV · MOV · AVI · WebM · WMV · M4V · MPG · TS</span
               >
             </div>
             <div class="about-sep"></div>
             <div class="about-format-row">
-              <span class="about-format-badge">Audio</span>
+              <span class="about-format-badge"
+                >{t("dialogs.about.formats.audio")}</span
+              >
               <span class="about-format-items"
                 >MP3 · AAC · WAV · FLAC · M4A · OGG · WMA · AIFF · ALAC</span
               >
             </div>
             <div class="about-sep"></div>
             <div class="about-format-row">
-              <span class="about-format-badge">Other</span>
+              <span class="about-format-badge"
+                >{t("dialogs.about.formats.other")}</span
+              >
               <span class="about-format-items"
-                >PSD · PDF · SVG · ICO · RAW · Opus · Damaged Files</span
+                >PSD · PDF · SVG · ICO · RAW · Opus ·
+                {t("dialogs.about.formats.damagedFiles")}</span
               >
             </div>
           </div>
@@ -132,7 +155,7 @@
                 d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
               /></svg
             >
-            Links
+            {t("dialogs.about.links.title")}
           </div>
           <div class="about-panel-body about-panel-body-center">
             <button class="about-link-btn" onclick={() => {}}>
@@ -172,7 +195,7 @@
                   y2="17"
                 /></svg
               >
-              Report an issue
+              {t("dialogs.about.links.reportIssue")}
             </button>
             <button class="about-link-btn" onclick={() => {}}>
               <svg
@@ -189,15 +212,21 @@
                   d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
                 /></svg
               >
-              Support
+              {t("dialogs.about.links.support")}
             </button>
           </div>
         </div>
 
         <div class="about-credits">
-          <span>Made by <strong>crz-dev</strong></span>
+          <span
+            >{t("dialogs.about.credits.madeBy")}
+            <strong>crz-dev</strong></span
+          >
           <span class="about-credits-sep">|</span>
-          <span>Icon design by <strong>wamu</strong></span>
+          <span
+            >{t("dialogs.about.credits.iconDesign")}
+            <strong>wamu</strong></span
+          >
         </div>
       </div>
     </div>

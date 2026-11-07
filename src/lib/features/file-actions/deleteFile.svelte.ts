@@ -4,6 +4,7 @@ import {
   saveSkipDeleteConfirmation,
 } from "$lib/services/storage";
 import { showToast } from "$lib/components/toast.svelte";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface DeleteActionsDeps {
   getFilePath: () => string;
@@ -92,14 +93,14 @@ export async function performMultiDelete(deps: MultiDeleteActionsDeps) {
   }
   if (successCount > 0) {
     showToast({
-      message: `${successCount} file${successCount === 1 ? "" : "s"} deleted`,
+      message: locale.tp("shell.files.deleted", successCount),
       color: "red",
     });
     deps.refreshView();
   }
   if (failCount > 0) {
     showToast({
-      message: `Failed to delete ${failCount} file${failCount === 1 ? "" : "s"}`,
+      message: locale.tp("shell.files.deleteFailedCount", failCount),
       color: "red",
     });
   }
@@ -119,12 +120,15 @@ export function createDeleteActions(deps: DeleteActionsDeps) {
       else await invokeTrashFile(pathToDelete);
       showToast({
         message: deleteStore.deletePermanently
-          ? "File deleted permanently"
-          : "File moved to trash",
+          ? locale.t("shell.files.deletedPermanently")
+          : locale.t("shell.files.movedToTrash"),
         color: "red",
       });
     } catch {
-      showToast({ message: "Failed to delete file", color: "red" });
+      showToast({
+        message: locale.t("shell.files.deleteFailed"),
+        color: "red",
+      });
       if (pathToDelete) await deps.loadFile(pathToDelete);
       return;
     }

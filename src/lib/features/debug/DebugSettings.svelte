@@ -24,6 +24,7 @@
     invokeOpenDevTools,
     invokeRestartAppMode,
   } from "$lib/features/system/api";
+  import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
     flash = false,
@@ -32,6 +33,9 @@
     flash?: boolean;
     fileInfo?: DebugFileInfo | null;
   } = $props();
+
+  const t = locale.t;
+  const tp = locale.tp;
 
   let info = $state<DebugInfo | null>(null);
   let loading = $state(true);
@@ -59,72 +63,94 @@
   }
 
   function shortPath(path: string): string {
-    if (!path) return "—";
+    if (!path) return t("settings.debug.status.dash");
     const parts = path.replace(/\//g, "\\").split("\\").filter(Boolean);
     return parts.length <= 2 ? path : parts.slice(-2).join("\\");
   }
 
   function platformLabel(): string {
-    if (!info) return "Loading…";
+    if (!info) return t("settings.debug.status.loading");
     return `${info.runtime.os} · ${info.runtime.arch} · ${info.platform}`;
   }
 
   function gpuLabel(): string {
-    if (!info) return "Loading…";
-    if (!info.gpu.available) return "Unavailable";
+    if (!info) return t("settings.debug.status.loading");
+    if (!info.gpu.available) return t("settings.debug.status.unavailable");
     return `${info.gpu.vendor} · ${info.gpu.renderer}`;
   }
 
   function encoderLabel(): string {
-    if (!info) return "Loading…";
+    if (!info) return t("settings.debug.status.loading");
     return info.ffmpeg.hardwareEncoders.length > 0
       ? info.ffmpeg.hardwareEncoders.join(", ")
-      : "Software only";
+      : t("settings.debug.status.softwareOnly");
   }
 
   function appLabel(): string {
-    if (!info) return loading ? "Loading…" : "Unavailable";
+    if (!info) {
+      return loading
+        ? t("settings.debug.status.loading")
+        : t("settings.debug.status.unavailable");
+    }
     return `${info.appVersion} · Tauri ${info.tauriVersion}`;
   }
 
   function ffmpegLabel(): string {
-    if (!info) return "—";
+    if (!info) return t("settings.debug.status.dash");
     return `${info.ffmpeg.ffmpegVersion} · ${encoderLabel()}`;
   }
 
   function accelerationLabel(): string {
-    if (!info) return "—";
-    return info.systemConfig.hardwareAcceleration ? "Enabled" : "Disabled";
+    if (!info) return t("settings.debug.status.dash");
+    return info.systemConfig.hardwareAcceleration
+      ? t("settings.debug.status.enabled")
+      : t("settings.debug.status.disabled");
   }
 
   function safeModeLabel(): string {
-    if (!info) return "—";
-    return info.runtime.safeMode ? "On" : "Off";
+    if (!info) return t("settings.debug.status.dash");
+    return info.runtime.safeMode
+      ? t("settings.debug.status.on")
+      : t("settings.debug.status.off");
   }
 
   function databaseLabel(): string {
-    if (!info) return "Loading…";
-    return `${formatBytes(info.database.sizeBytes + info.database.walBytes)} · ${info.database.metadataRows} files`;
+    if (!info) return t("settings.debug.status.loading");
+    return tp("settings.debug.database.summary", info.database.metadataRows, {
+      size: formatBytes(info.database.sizeBytes + info.database.walBytes),
+    });
   }
 
   async function copyDiagnostics() {
     if (!info) await load();
     if (!info) {
-      showToast({ message: "Diagnostics unavailable", color: "red" });
+      showToast({
+        message: t("settings.debug.toast.diagnosticsUnavailable"),
+        color: "red",
+      });
       return;
     }
     try {
       await copyTextToClipboard(diagnosticsJson(info));
-      showToast({ message: "Diagnostics copied", color: "green" });
+      showToast({
+        message: t("settings.debug.toast.diagnosticsCopied"),
+        color: "green",
+      });
     } catch {
-      showToast({ message: "Failed to copy diagnostics", color: "red" });
+      showToast({
+        message: t("settings.debug.toast.diagnosticsCopyFailed"),
+        color: "red",
+      });
     }
   }
 
   async function exportDiagnostics() {
     if (!info) await load();
     if (!info) {
-      showToast({ message: "Diagnostics unavailable", color: "red" });
+      showToast({
+        message: t("settings.debug.toast.diagnosticsUnavailable"),
+        color: "red",
+      });
       return;
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -135,15 +161,24 @@
     if (!path) return;
     try {
       await invokeWriteFileAtomic(path, stringToBase64(diagnosticsJson(info)));
-      showToast({ message: "Diagnostics exported", color: "green" });
+      showToast({
+        message: t("settings.debug.toast.diagnosticsExported"),
+        color: "green",
+      });
     } catch {
-      showToast({ message: "Failed to export diagnostics", color: "red" });
+      showToast({
+        message: t("settings.debug.toast.diagnosticsExportFailed"),
+        color: "red",
+      });
     }
   }
 
   async function exportFileMetadata() {
     if (!fileInfo?.filePath) {
-      showToast({ message: "No file is open", color: "yellow" });
+      showToast({
+        message: t("settings.debug.toast.noFile"),
+        color: "yellow",
+      });
       return;
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -157,19 +192,37 @@
         path,
         stringToBase64(fileMetadataJson(fileInfo)),
       );
-      showToast({ message: "File metadata exported", color: "green" });
+      showToast({
+        message: t("settings.debug.toast.metadataExported"),
+        color: "green",
+      });
     } catch {
-      showToast({ message: "Failed to export file metadata", color: "red" });
+      showToast({
+        message: t("settings.debug.toast.metadataExportFailed"),
+        color: "red",
+      });
     }
   }
 
   async function copyValue(value: string) {
-    if (!value || value === "—" || value === "Loading…") return;
+    if (
+      !value ||
+      value === t("settings.debug.status.dash") ||
+      value === t("settings.debug.status.loading")
+    ) {
+      return;
+    }
     try {
       await copyTextToClipboard(value);
-      showToast({ message: "Copied to clipboard", color: "green" });
+      showToast({
+        message: t("settings.debug.toast.copied"),
+        color: "green",
+      });
     } catch {
-      showToast({ message: "Failed to copy", color: "red" });
+      showToast({
+        message: t("settings.debug.toast.copyFailed"),
+        color: "red",
+      });
     }
   }
 
@@ -182,8 +235,10 @@
       showToast({
         message:
           freed > 0
-            ? `Database compacted · freed ${formatBytes(freed)}`
-            : "Database already compact",
+            ? t("settings.debug.toast.compacted", {
+                size: formatBytes(freed),
+              })
+            : t("settings.debug.toast.alreadyCompact"),
         color: freed > 0 ? "green" : "yellow",
       });
     } catch (e) {
@@ -218,7 +273,7 @@
         d="M2 12l10 5 10-5"
       /></svg
     >
-    Debug
+    {t("settings.sections.debug")}
   </p>
 
   {#if error}
@@ -231,12 +286,12 @@
     <span class="settings-group-icon">
       <SettingsGroupIcon name="cpu" />
     </span>
-    Runtime
+    {t("settings.debug.group.runtime")}
   </p>
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-text">
-        <span class="settings-label">Vyu version</span>
+        <span class="settings-label">{t("settings.debug.row.version")}</span>
       </div>
       <button class="settings-info-value" onclick={() => copyValue(appLabel())}
         >{appLabel()}</button
@@ -244,7 +299,7 @@
     </div>
     <div class="settings-row">
       <div class="settings-label-text">
-        <span class="settings-label">GPU</span>
+        <span class="settings-label">{t("settings.debug.row.gpu")}</span>
       </div>
       <button class="settings-info-value" onclick={() => copyValue(gpuLabel())}
         >{gpuLabel()}</button
@@ -252,7 +307,7 @@
     </div>
     <div class="settings-row">
       <div class="settings-label-text">
-        <span class="settings-label">FFmpeg</span>
+        <span class="settings-label">{t("settings.debug.row.ffmpeg")}</span>
       </div>
       <button
         class="settings-info-value"
@@ -262,9 +317,11 @@
     <div class="settings-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
-          <span class="settings-label">Runtime Details</span>
+          <span class="settings-label"
+            >{t("settings.debug.row.runtimeDetails")}</span
+          >
           <span class="settings-hint"
-            >WebView2, system, safety and maintenance</span
+            >{t("settings.debug.row.runtimeDetails.hint")}</span
           >
         </div>
       </div>
@@ -273,7 +330,9 @@
           class="settings-action-btn"
           onclick={() => (detailsOpen = !detailsOpen)}
         >
-          {detailsOpen ? "Hide" : "Show"}
+          {detailsOpen
+            ? t("settings.debug.button.hide")
+            : t("settings.debug.button.show")}
         </button>
       </div>
     </div>
@@ -284,17 +343,22 @@
       >
         <div class="settings-row settings-subrow">
           <div class="settings-label-text">
-            <span class="settings-label">WebView2</span>
+            <span class="settings-label"
+              >{t("settings.debug.row.webview2")}</span
+            >
           </div>
           <button
             class="settings-info-value"
-            onclick={() => copyValue(info?.webview2Version ?? "—")}
-            >{info?.webview2Version ?? "—"}</button
+            onclick={() =>
+              copyValue(
+                info?.webview2Version ?? t("settings.debug.status.dash"),
+              )}
+            >{info?.webview2Version ?? t("settings.debug.status.dash")}</button
           >
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-text">
-            <span class="settings-label">System</span>
+            <span class="settings-label">{t("settings.debug.row.system")}</span>
           </div>
           <button
             class="settings-info-value"
@@ -303,7 +367,9 @@
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-text">
-            <span class="settings-label">Acceleration</span>
+            <span class="settings-label"
+              >{t("settings.debug.row.acceleration")}</span
+            >
           </div>
           <button
             class="settings-info-value"
@@ -313,7 +379,9 @@
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-text">
-            <span class="settings-label">FFmpeg Path</span>
+            <span class="settings-label"
+              >{t("settings.debug.row.ffmpegPath")}</span
+            >
           </div>
           <button
             class="settings-info-value"
@@ -323,7 +391,9 @@
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-text">
-            <span class="settings-label">Safe Mode</span>
+            <span class="settings-label"
+              >{t("settings.debug.row.safeMode")}</span
+            >
           </div>
           <button
             class="settings-info-value"
@@ -333,7 +403,9 @@
         <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
-              <span class="settings-label">Database</span>
+              <span class="settings-label"
+                >{t("settings.debug.row.database")}</span
+              >
               <span class="settings-hint">{databaseLabel()}</span>
             </div>
           </div>
@@ -342,30 +414,39 @@
               class="settings-action-btn"
               onclick={compactDatabase}
               disabled={compacting || loading}
-              >{compacting ? "Compacting…" : "Compact"}</button
+              >{compacting
+                ? t("settings.debug.button.compacting")
+                : t("settings.debug.button.compact")}</button
             >
           </div>
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
-              <span class="settings-label">Open Webview DevTools</span>
-              <span class="settings-hint">Inspect the app window</span>
+              <span class="settings-label"
+                >{t("settings.debug.row.devtools")}</span
+              >
+              <span class="settings-hint"
+                >{t("settings.debug.row.devtools.hint")}</span
+              >
             </div>
           </div>
           <div class="settings-control">
             <button
               class="settings-action-btn"
-              onclick={() => void invokeOpenDevTools()}>Open</button
+              onclick={() => void invokeOpenDevTools()}
+              >{t("settings.debug.button.open")}</button
             >
           </div>
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
-              <span class="settings-label">Debug Overlay</span>
+              <span class="settings-label"
+                >{t("settings.debug.row.overlay")}</span
+              >
               <span class="settings-hint"
-                >FPS, heap, media state and viewport</span
+                >{t("settings.debug.row.overlay.hint")}</span
               >
             </div>
           </div>
@@ -386,9 +467,11 @@
         <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
-              <span class="settings-label">Refresh</span>
+              <span class="settings-label"
+                >{t("settings.debug.row.refresh")}</span
+              >
               <span class="settings-hint"
-                >Reload runtime and graphics details</span
+                >{t("settings.debug.row.refresh.hint")}</span
               >
             </div>
           </div>
@@ -397,26 +480,30 @@
               class="settings-action-btn"
               onclick={() => load(true)}
               disabled={refreshing}
-              >{refreshing ? "Refreshing…" : "Refresh"}</button
+              >{refreshing
+                ? t("settings.debug.button.refreshing")
+                : t("settings.debug.button.refresh")}</button
             >
           </div>
         </div>
         <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">
-              <span class="settings-label">Restart Mode</span>
+              <span class="settings-label"
+                >{t("settings.debug.row.restartMode")}</span
+              >
               <span class="settings-hint"
                 >{info?.runtime.safeMode
-                  ? "Relaunch without --safe-mode"
-                  : "Relaunch with --safe-mode"}</span
+                  ? t("settings.debug.row.restartMode.normal")
+                  : t("settings.debug.row.restartMode.safe")}</span
               >
             </div>
           </div>
           <div class="settings-control">
             <button class="settings-action-btn" onclick={restartMode}
               >{info?.runtime.safeMode
-                ? "Restart Normally"
-                : "Restart in Safe Mode"}</button
+                ? t("settings.debug.button.restartNormal")
+                : t("settings.debug.button.restartSafe")}</button
             >
           </div>
         </div>
@@ -428,43 +515,46 @@
     <span class="settings-group-icon">
       <SettingsGroupIcon name="file" />
     </span>
-    Diagnostics
+    {t("settings.debug.group.diagnostics")}
   </p>
   <div class="settings-card has-child">
     <div class="settings-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
-          <span class="settings-label">Copy Diagnostics</span>
-          <span class="settings-hint"
-            >App, graphics, FFmpeg, database, caches and keybinds</span
-          >
+          <span class="settings-label">{t("settings.debug.row.copy")}</span>
+          <span class="settings-hint">{t("settings.debug.row.copy.hint")}</span>
         </div>
       </div>
       <div class="settings-control">
         <button class="settings-action-btn" onclick={copyDiagnostics}
-          >Copy</button
+          >{t("settings.debug.button.copy")}</button
         >
       </div>
     </div>
     <div class="settings-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
-          <span class="settings-label">Export Diagnostics</span>
-          <span class="settings-hint">Save the same report as JSON</span>
+          <span class="settings-label">{t("settings.debug.row.export")}</span>
+          <span class="settings-hint"
+            >{t("settings.debug.row.export.hint")}</span
+          >
         </div>
       </div>
       <div class="settings-control">
         <button class="settings-action-btn" onclick={exportDiagnostics}
-          >Export</button
+          >{t("settings.debug.button.export")}</button
         >
       </div>
     </div>
     <div class="settings-row">
       <div class="settings-label-col">
         <div class="settings-label-text">
-          <span class="settings-label">Current File Metadata</span>
+          <span class="settings-label"
+            >{t("settings.debug.row.fileMetadata")}</span
+          >
           <span class="settings-hint"
-            >{fileInfo?.fileName || "No file open"}</span
+            >{fileInfo?.fileName ||
+              t("settings.debug.row.fileMetadata.hint")}</span
           >
         </div>
       </div>
@@ -472,7 +562,8 @@
         <button
           class="settings-action-btn"
           onclick={exportFileMetadata}
-          disabled={!fileInfo?.filePath}>Export</button
+          disabled={!fileInfo?.filePath}
+          >{t("settings.debug.button.export")}</button
         >
       </div>
     </div>

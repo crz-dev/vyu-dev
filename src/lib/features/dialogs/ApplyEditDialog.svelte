@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { locale } from "$lib/features/i18n/locale.svelte";
   import type { EditBackupMode } from "$lib/services/storage";
 
   let {
@@ -24,6 +25,8 @@
     onUpdateApplyNoAsk: (v: boolean) => void;
     onUpdateKeepBackup: (v: boolean) => void;
   } = $props();
+
+  const t = locale.t;
 </script>
 
 {#if open}
@@ -59,14 +62,14 @@
             />
           </svg>
           <div>
-            <p class="delete-title">Apply Edits?</p>
+            <p class="delete-title">{t("dialogs.apply.title")}</p>
             <p class="delete-subtitle">{fileName}</p>
           </div>
         </div>
         <button
           class="edit-confirm-header-close"
           onclick={onClose}
-          aria-label="Cancel"
+          aria-label={t("dialogs.apply.cancel")}
         >
           <svg
             width="14"
@@ -82,14 +85,13 @@
         </button>
       </div>
       <div class="edit-confirm-body-box">
-        Applying edits will overwrite the current file.
+        {t("dialogs.apply.body.overwrite")}
         {#if backupMode === "always"}
-          A backup of the original is kept so you can restore it from the Edit
-          menu later.
+          {t("dialogs.apply.body.backupKept")}
         {:else if backupMode === "off"}
-          No backup will be kept. This cannot be undone.
+          {t("dialogs.apply.body.noBackup")}
         {:else}
-          Choose whether to keep a backup of the original.
+          {t("dialogs.apply.body.chooseBackup")}
         {/if}
       </div>
       {#if backupMode === "ask"}
@@ -109,7 +111,7 @@
                   d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
                 /></svg
               >
-              Keep a backup of the original</span
+              {t("dialogs.apply.keepBackup")}</span
             >
             <input
               type="checkbox"
@@ -140,7 +142,7 @@
                 d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"
               /><line x1="1" y1="1" x2="23" y2="23" /></svg
             >
-            Always apply in place</span
+            {t("dialogs.apply.alwaysApply")}</span
           >
           <input
             type="checkbox"
@@ -168,7 +170,7 @@
             <polyline points="17,8 12,3 7,8" />
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
-          Export instead
+          {t("dialogs.apply.exportInstead")}
         </button>
         <button class="edit-confirm-btn-primary" onclick={onConfirm}>
           <svg
@@ -183,7 +185,7 @@
           >
             <path d="M20 6L9 17l-5-5" />
           </svg>
-          Apply
+          {t("dialogs.apply.confirm")}
         </button>
       </div>
     </div>

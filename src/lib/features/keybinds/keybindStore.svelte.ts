@@ -19,6 +19,7 @@ import {
   sanitizeBindings,
 } from "$lib/features/keybinds/keybindUtils";
 import { loadKeybinds, saveKeybinds } from "$lib/services/storage";
+import { locale } from "$lib/features/i18n/locale.svelte";
 
 export type RecordResult =
   | "bound"
@@ -104,13 +105,15 @@ function createKeybindStore() {
         // Modifier-only or dead keys: keep waiting for a real key.
         return "ignored";
       }
-      recordingError = "That key is reserved.";
+      recordingError = locale.t("settings.keybinds.error.reserved");
       return "reserved";
     }
 
     const conflict = conflictsFor(action, binding, KEYBIND_ACTIONS, bindings);
     if (conflict.length > 0) {
-      recordingError = `Already used by ${conflict[0].label}.`;
+      recordingError = locale.t("settings.keybinds.error.conflict", {
+        action: locale.t(conflict[0].label),
+      });
       return "conflict";
     }
 
@@ -123,7 +126,7 @@ function createKeybindStore() {
 
   function resetAction(id: string): string | null {
     const action = actionFor(id);
-    if (!action) return "Unknown action.";
+    if (!action) return locale.t("settings.keybinds.error.unknownAction");
     const fallback = action.defaultBinding;
     if (!fallback) {
       bindings = { ...bindings, [id]: null };
@@ -132,7 +135,9 @@ function createKeybindStore() {
     }
     const conflict = conflictsFor(action, fallback, KEYBIND_ACTIONS, bindings);
     if (conflict.length > 0) {
-      return `Default is already used by ${conflict[0].label}. Reset all instead.`;
+      return locale.t("settings.keybinds.error.defaultConflict", {
+        action: locale.t(conflict[0].label),
+      });
     }
     bindings = { ...bindings, [id]: fallback };
     persist();
