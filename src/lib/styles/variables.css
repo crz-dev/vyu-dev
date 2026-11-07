@@ -444,14 +444,3 @@
 [data-theme="light"] .about-logo {
   filter: brightness(0.3);
 }
-
-/* The timestamp editor keeps its dark surface in both themes */
-[data-theme="light"] .ts-edit-menu {
-  --yellow: #f5c518;
-  --yellow-soft: #facc15;
-  --yellow-bg-faint: rgba(245, 197, 24, 0.12);
-  --yellow-border-strong: rgba(245, 197, 24, 0.58);
-  --yellow-border-solid: rgba(245, 197, 24, 0.92);
-  --blue-light: #60a5fa;
-  --blue-lighter: #93c5fd;
-}

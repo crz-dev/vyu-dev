@@ -1494,72 +1494,56 @@
 .ts-edit-menu {
   position: fixed;
   transform: translate(-50%, -100%);
-  background:
-    linear-gradient(180deg, rgba(36, 36, 36, 0.95), rgba(22, 22, 22, 0.95)),
-    var(--bg-elevated);
-  color: var(--yellow);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 11px;
   font-family: var(--font-family);
-  padding: 4px 5px;
-  border-radius: 7px;
-  border: 0.5px solid var(--yellow-border-strong);
+  padding: 4px;
+  border-radius: 9px;
+  border: 0.5px solid var(--yellow-border);
   z-index: 10000;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  width: fit-content;
-  min-width: 73px;
-  max-width: 128px;
+  gap: 3px;
+  width: 168px;
   box-shadow:
-    0 8px 26px rgba(0, 0, 0, 0.44),
-    0 0 0 1px var(--yellow-bg-faint) inset;
+    0 12px 32px rgba(0, 0, 0, 0.7),
+    0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
   backdrop-filter: blur(5px);
   animation: tsEditMenuPopIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    color 0.2s ease,
-    background 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 .ts-edit-menu.blue {
-  color: var(--blue-light);
-  border-color: var(--blue-light-border-strong);
-  box-shadow:
-    0 8px 26px rgba(0, 0, 0, 0.44),
-    0 0 0 1px var(--blue-light-border-subtle) inset;
+  border-color: var(--blue-light-border);
 }
 .ts-title-input {
-  background: rgba(0, 0, 0, 0.16);
-  border: 0.5px solid var(--yellow-border-strong);
-  color: var(--yellow);
+  background: rgba(255, 255, 255, 0.055);
+  border: 0.5px solid transparent;
+  color: var(--text-primary);
   outline: none;
+  font-family: var(--font-family);
   font-size: 11px;
+  min-height: 24px;
   padding: 4px 6px;
   box-sizing: border-box;
-  border-radius: 4px;
-  text-align: center;
+  border-radius: 6px;
+  text-align: left;
   transition:
-    border-color 0.2s ease,
-    color 0.2s ease,
-    background 0.2s ease;
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 .ts-title-input::placeholder {
-  color: var(--yellow-border-strong);
-  text-align: center;
+  color: var(--text-muted);
+}
+.ts-title-input:hover {
+  background: rgba(255, 255, 255, 0.07);
 }
 .ts-title-input:focus {
-  border-color: var(--yellow);
-}
-.ts-edit-menu.blue .ts-title-input {
-  border-color: var(--blue-light-border-solid);
-  color: var(--blue-lighter);
-  background: rgba(37, 99, 235, 0.13);
-}
-.ts-edit-menu.blue .ts-title-input::placeholder {
-  color: rgba(147, 197, 253, 0.75);
+  border-color: var(--yellow-border-strong);
+  background: rgba(0, 0, 0, 0.18);
 }
 .ts-edit-menu.blue .ts-title-input:focus {
-  border-color: var(--blue-light);
+  border-color: var(--blue-light-border-solid);
 }
 .ts-edit-menu-top {
   display: flex;
@@ -1570,37 +1554,25 @@
 .ts-edit-menu-top .ts-title-input {
   flex: 1;
   min-width: 0;
-  max-width: none;
 }
 .ts-scissor-split {
-  display: flex;
-  border: 0.5px solid var(--blue-light-border-solid);
-  border-radius: 5px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 0.5px solid var(--bg-elevated);
+  border-radius: 6px;
   overflow: hidden;
-  background: rgba(37, 99, 235, 0.24);
+  background: rgba(255, 255, 255, 0.04);
   width: 100%;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease;
-}
-.ts-edit-menu.blue .ts-scissor-split {
-  border-color: var(--blue-light-border-solid);
-  background: rgba(37, 99, 235, 0.18);
-}
-.ts-scissor-split.segment-toggle {
-  border-color: rgba(120, 120, 120, 0.45);
-  background: rgba(255, 255, 255, 0.05);
 }
 .ts-split-btn {
   border: none;
   background: transparent;
-  color: var(--blue-lighter);
-  flex: 1;
-  height: 22px;
+  color: var(--text-secondary);
+  min-width: 0;
+  height: 28px;
   padding: 0;
   cursor: pointer;
-  line-height: 1;
-  display: inline-grid;
+  display: grid;
   place-items: center;
   transition:
     background 0.15s ease,
@@ -1611,19 +1583,19 @@
   height: 12px;
 }
 .ts-split-btn + .ts-split-btn {
-  border-left: 0.5px solid var(--blue-light-border-strong);
+  border-left: 0.5px solid var(--bg-elevated);
 }
 .ts-split-btn:hover {
-  background: var(--blue-bg-active);
-  color: #bfdbfe;
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text-primary);
 }
 .ts-split-btn.is-active {
   background: var(--blue-bg-active);
-  color: #bfdbfe;
+  color: var(--blue-light);
 }
 .ts-split-btn.is-inactive {
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
 }
 .ts-split-btn.is-inactive:hover {
   color: var(--text-secondary);
@@ -1631,12 +1603,12 @@
 }
 
 .ts-delete-btn {
-  border: 0.5px solid var(--red-border-strong);
+  border: 0.5px solid var(--red-border);
   background: var(--red-bg);
   color: var(--red);
-  border-radius: 5px;
+  border-radius: 6px;
   width: 24px;
-  height: 24px;
+  min-height: 24px;
   padding: 0;
   display: inline-grid;
   place-items: center;
@@ -1652,16 +1624,6 @@
   height: 12px;
 }
 .ts-delete-btn:hover {
-  background: var(--red-bg-active);
-  border-color: var(--red-border-solid);
-  color: var(--red-soft);
-}
-.ts-edit-menu.blue .ts-delete-btn {
-  border-color: var(--red-border-strong);
-  background: var(--red-bg);
-  color: var(--red);
-}
-.ts-edit-menu.blue .ts-delete-btn:hover {
   background: var(--red-bg-active);
   border-color: var(--red-border-solid);
   color: var(--red-soft);
@@ -5367,6 +5329,28 @@
 
 [data-theme="light"] :where(.settings-action-btn:hover) {
   background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .ts-edit-menu {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .ts-title-input,
+[data-theme="light"] .ts-scissor-split {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .ts-title-input:hover,
+[data-theme="light"] .ts-split-btn:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .ts-title-input:focus {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .ts-split-btn.is-inactive {
+  background: rgba(0, 0, 0, 0.015);
 }
 
 [data-theme="light"] .profile-editor-save {

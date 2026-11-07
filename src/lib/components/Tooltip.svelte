@@ -118,7 +118,8 @@
           class="ts-title-input"
           type="text"
           maxlength="100"
-          placeholder="Add Title..."
+          placeholder="Add title"
+          aria-label="Marker title"
           value={currentTitle}
           oninput={(e) =>
             updateEditorTitle((e.currentTarget as HTMLInputElement).value)}
@@ -143,14 +144,32 @@
             }}
             aria-label="Delete timestamp"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-              ><path
-                d="M6 6L18 18M18 6L6 18"
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <polyline
+                points="3 6 5 6 21 6"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
-              /></svg
-            >
+              />
+              <path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
           </button>
         {:else}
           <button
@@ -162,14 +181,32 @@
             }}
             aria-label="Delete clip marker"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-              ><path
-                d="M6 6L18 18M18 6L6 18"
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <polyline
+                points="3 6 5 6 21 6"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
-              /></svg
-            >
+              />
+              <path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
           </button>
         {/if}
       </div>
