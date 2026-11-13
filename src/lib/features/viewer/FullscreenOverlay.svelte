@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import Marquee from "$lib/components/Marquee.svelte";
   import Controls from "$lib/components/Controls.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
@@ -173,6 +174,7 @@
         <button
           class="fs-nav-btn tooltip-ctrl tooltip-right"
           data-tooltip="Previous file"
+          transition:fly={{ x: -24, duration: 220 }}
           onclick={() => navigate(-1)}
           aria-label="previous file"
         >
@@ -198,6 +200,7 @@
       <button
         class="fs-nav-btn tooltip-ctrl tooltip-left"
         data-tooltip="Next file"
+        transition:fly={{ x: 24, duration: 220 }}
         onclick={() => navigate(1)}
         aria-label="next file"
       >

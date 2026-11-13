@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
@@ -51,7 +52,36 @@
   ];
 
   let trackEl: HTMLDivElement | null = $state(null);
+  let menuElement = $state<HTMLDivElement | null>(null);
   let dragging = false;
+
+  function clampMenuPosition() {
+    const menu = menuElement;
+    if (!menu) return;
+
+    const margin = 8;
+    const width = menu.offsetWidth;
+    const height = menu.offsetHeight;
+    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - height - margin);
+    const left = Math.max(margin, Math.min(x - 60, maxLeft));
+    const top = Math.max(
+      margin,
+      Math.min(window.innerHeight - y - height, maxTop),
+    );
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.bottom = "auto";
+  }
+
+  $effect(() => {
+    if (!visible || !menuElement) return;
+    void x;
+    void y;
+    const frame = requestAnimationFrame(clampMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
 
   function densityFromPointer(clientX: number) {
     if (!trackEl) return density;
@@ -89,10 +119,18 @@
   }
 </script>
 
-<svelte:window onmousedown={handleWindowMouseDown} />
+<svelte:window
+  onmousedown={handleWindowMouseDown}
+  onresize={clampMenuPosition}
+/>
 
 {#if visible}
-  <div class="sort-menu" style="left: {x - 60}px; bottom: {y + 0}px;">
+  <div
+    class="sort-menu"
+    bind:this={menuElement}
+    style="left: {x - 60}px; bottom: {y + 0}px;"
+    transition:fly={{ y: 8, duration: 170, opacity: 0.08 }}
+  >
     <div class="sort-menu-header">
       <span class="sort-menu-title">{t("menus.view.title")}</span>
     </div>

@@ -14,6 +14,7 @@
     typeRank,
   } from "$lib/services/files";
   import { cubicInOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import {
@@ -3814,6 +3815,7 @@
         style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
         role="menu"
         tabindex="-1"
+        transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
         onclick={(e) => e.stopPropagation()}
         onkeydown={(e) => e.stopPropagation()}
       >
@@ -4028,6 +4030,7 @@
         style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
         role="menu"
         tabindex="-1"
+        transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
         onclick={(e) => e.stopPropagation()}
         onkeydown={(e) => e.stopPropagation()}
       >

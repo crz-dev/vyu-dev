@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -47,6 +48,36 @@
     "date-favorited": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
   };
 
+  let menuElement = $state<HTMLDivElement | null>(null);
+
+  function clampMenuPosition() {
+    const menu = menuElement;
+    if (!menu) return;
+
+    const margin = 8;
+    const width = menu.offsetWidth;
+    const height = menu.offsetHeight;
+    const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - height - margin);
+    const left = Math.max(margin, Math.min(x + 62, maxLeft));
+    const top = Math.max(
+      margin,
+      Math.min(window.innerHeight - (y + 4) - height, maxTop),
+    );
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.style.bottom = "auto";
+  }
+
+  $effect(() => {
+    if (!visible || !menuElement) return;
+    void x;
+    void y;
+    const frame = requestAnimationFrame(clampMenuPosition);
+    return () => cancelAnimationFrame(frame);
+  });
+
   function handleWindowMouseDown(e: MouseEvent) {
     if (
       visible &&
@@ -59,10 +90,18 @@
   }
 </script>
 
-<svelte:window onmousedown={handleWindowMouseDown} />
+<svelte:window
+  onmousedown={handleWindowMouseDown}
+  onresize={clampMenuPosition}
+/>
 
 {#if visible}
-  <div class="sort-menu" style="left: {x + 62}px; bottom: {y + 4}px;">
+  <div
+    class="sort-menu"
+    bind:this={menuElement}
+    style="left: {x + 62}px; bottom: {y + 4}px;"
+    transition:fly={{ y: 8, duration: 170, opacity: 0.08 }}
+  >
     <div class="sort-menu-header">
       <span class="sort-menu-title">{t("menus.sort.title")}</span>
     </div>

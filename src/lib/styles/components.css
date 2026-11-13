@@ -1651,7 +1651,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   left: -6px;
   z-index: 1200;
   min-width: 190px;
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  backdrop-filter: blur(12px);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 5px;
@@ -1659,7 +1660,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   flex-direction: column;
   gap: 2px;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
-  animation: appDropdownIn 160ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
 }
 
 .app-dropdown-header {
@@ -1677,7 +1677,13 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
 
 .app-dropdown-separator {
   height: 1px;
-  background: var(--bg-border);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--bg-border) 16%,
+    var(--bg-border) 84%,
+    transparent
+  );
   margin: 2px 4px;
 }
 
@@ -1714,17 +1720,6 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   font-weight: 600;
   position: relative;
   overflow: hidden;
-}
-
-@keyframes appDropdownIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 @keyframes tsDropItemPopIn {

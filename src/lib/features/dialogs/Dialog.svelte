@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import type {
     ClipBoundary,
@@ -677,6 +677,7 @@
     bind:this={contextMenuElement}
     style="left: {contextMenu.x}px; top: {contextMenu.y}px;"
     role="menu"
+    transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
   >
     <div
       class="ctx-drag"

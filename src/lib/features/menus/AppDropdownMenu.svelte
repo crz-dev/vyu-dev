@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
@@ -30,7 +31,10 @@
 </script>
 
 {#if visible}
-  <div class="app-dropdown-menu">
+  <div
+    class="app-dropdown-menu"
+    transition:fly={{ y: -6, duration: 160, opacity: 0.08 }}
+  >
     <button
       class="app-dropdown-item library-item"
       class:active={libraryOpen}
