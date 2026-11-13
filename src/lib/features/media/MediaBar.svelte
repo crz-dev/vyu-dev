@@ -580,16 +580,46 @@
                   onpointerup={stopVolumeRepeat}
                   onpointercancel={stopVolumeRepeat}
                   onclick={(e) => handleVolumeClick(-1, e)}
-                  aria-label={t("media.bar.volumeDecrease")}>−</button
+                  aria-label={t("media.bar.volumeDecrease")}
                 >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1.5 6h9"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
                 <button
                   class="zoom-menu-btn"
                   onpointerdown={(e) => handleVolumePointerDown(1, e)}
                   onpointerup={stopVolumeRepeat}
                   onpointercancel={stopVolumeRepeat}
                   onclick={(e) => handleVolumeClick(1, e)}
-                  aria-label={t("media.bar.volumeIncrease")}>+</button
+                  aria-label={t("media.bar.volumeIncrease")}
                 >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 1.5v9M1.5 6h9"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           {/if}
@@ -647,16 +677,46 @@
                   onpointerup={stopZoomRepeat}
                   onpointercancel={stopZoomRepeat}
                   onclick={(e) => handleZoomClick(-1, e)}
-                  aria-label={t("media.bar.zoomDecrease")}>−</button
+                  aria-label={t("media.bar.zoomDecrease")}
                 >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1.5 6h9"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
                 <button
                   class="zoom-menu-btn"
                   onpointerdown={() => startZoomRepeat(1)}
                   onpointerup={stopZoomRepeat}
                   onpointercancel={stopZoomRepeat}
                   onclick={(e) => handleZoomClick(1, e)}
-                  aria-label={t("media.bar.zoomIncrease")}>+</button
+                  aria-label={t("media.bar.zoomIncrease")}
                 >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 1.5v9M1.5 6h9"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           {/if}
@@ -671,21 +731,21 @@
           : t("media.bar.fullscreenAria")}
       >
         {#if fullscreen}
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none"
             ><path
               d="M4 1V4H1M8 1V4H11M8 11V8H11M4 11V8H1"
               stroke="currentColor"
-              stroke-width="1.2"
+              stroke-width="1.1"
               stroke-linecap="round"
               stroke-linejoin="round"
             /></svg
           >
         {:else}
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+          <svg width="14" height="14" viewBox="0 0 12 12" fill="none"
             ><path
               d="M1 4V1H4M8 1H11V4M11 8V11H8M4 11H1V8"
               stroke="currentColor"
-              stroke-width="1.2"
+              stroke-width="1.1"
               stroke-linecap="round"
             /></svg
           >

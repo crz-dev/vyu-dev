@@ -231,6 +231,9 @@
   let staleFrameSrc = $state("");
   let staleFrameTimer: ReturnType<typeof setTimeout> | undefined;
   let staleClearToken = 0;
+  let lastSrcChangeAt = 0;
+  // Rapid skips should not stack held-back frames on top of the incoming image.
+  const RAPID_SKIP_MS = 400;
   // Plain trackers: the effect must not depend on its own writes.
   let lastSeenSrc = "";
   let lastSeenWasImage = false;
@@ -238,6 +241,7 @@
   let lastTransitionPath = "";
   let lastTransitionSrc = "";
   let pendingTransitionPath = "";
+  let pendingTransitionDirection = 1;
   let fileTransitionAnimation: Animation | null = null;
 
   $effect.pre(() => {
@@ -248,7 +252,19 @@
     const animatingSlideshow =
       slideshow.active && slideshowTransition !== "none";
     if (src !== lastSeenSrc) {
-      if (lastSeenWasImage && isImage && lastSeenSrc && !animatingSlideshow) {
+      const now = performance.now();
+      const rapidSkip =
+        appearance.fileTransition !== "none" &&
+        lastSrcChangeAt > 0 &&
+        now - lastSrcChangeAt < RAPID_SKIP_MS;
+      lastSrcChangeAt = now;
+      if (
+        lastSeenWasImage &&
+        isImage &&
+        lastSeenSrc &&
+        !animatingSlideshow &&
+        !rapidSkip
+      ) {
         staleClearToken++;
         staleFrameSrc = lastSeenSrc;
         clearTimeout(staleFrameTimer);
@@ -256,13 +272,32 @@
         staleFrameTimer = setTimeout(() => {
           staleFrameSrc = "";
         }, 4000);
-      } else if ((!isImage || animatingSlideshow) && staleFrameSrc) {
+      } else if (staleFrameSrc) {
+        clearTimeout(staleFrameTimer);
+        staleClearToken++;
         staleFrameSrc = "";
       }
       lastSeenSrc = src;
     }
     lastSeenWasImage = isImage;
   });
+
+  // A cyclic file list should slide in the direction the viewer moved, even
+  // when navigating wraps from the first file to the last (or vice versa).
+  function slideDirection(previousPath: string, nextPath: string): 1 | -1 {
+    const total = fileList.length;
+    if (total < 2) return 1;
+    const previousIndex = fileList.indexOf(previousPath);
+    const nextIndex = fileList.indexOf(nextPath);
+    if (previousIndex < 0 || nextIndex < 0 || previousIndex === nextIndex) {
+      return 1;
+    }
+    let step = nextIndex - previousIndex;
+    const half = total / 2;
+    if (step > half) step -= total;
+    else if (step < -half) step += total;
+    return step < 0 ? -1 : 1;
+  }
 
   $effect(() => {
     const path = filePath;
@@ -278,6 +313,7 @@
     }
 
     if (path !== lastTransitionPath) {
+      pendingTransitionDirection = slideDirection(lastTransitionPath, path);
       pendingTransitionPath = lastTransitionPath && path ? path : "";
       lastTransitionPath = path;
     }
@@ -302,11 +338,12 @@
     if (!target) return;
 
     fileTransitionAnimation?.cancel();
+    const slideFrom = pendingTransitionDirection < 0 ? "-24px" : "24px";
     fileTransitionAnimation = target.animate(
       transition === "fade"
         ? [{ opacity: 0 }, { opacity: 1 }]
         : [
-            { opacity: 0, translate: "24px 0" },
+            { opacity: 0, translate: `${slideFrom} 0` },
             { opacity: 1, translate: "0 0" },
           ],
       { duration: 280, easing: "ease-out" },
@@ -349,7 +386,8 @@
   >
     {#if fileSrc}
       <button
-        class="nav-btn"
+        class="nav-btn tooltip-ctrl tooltip-right"
+        data-tooltip="Previous file"
         transition:fly={{ x: -24, duration: 220 }}
         onclick={() => navigate(-1)}
         aria-label="previous file"
@@ -607,7 +645,8 @@
   >
     {#if fileSrc}
       <button
-        class="nav-btn"
+        class="nav-btn tooltip-ctrl tooltip-left"
+        data-tooltip="Next file"
         transition:fly={{ x: 24, duration: 220 }}
         onclick={() => navigate(1)}
         aria-label="next file"

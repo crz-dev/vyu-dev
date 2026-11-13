@@ -15,11 +15,13 @@ main {
   border-bottom: 0.5px solid var(--bg-elevated);
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 8px 0 16px;
   gap: 8px;
   flex-shrink: 0;
   cursor: grab;
   user-select: none;
+  position: relative;
+  z-index: 92;
 }
 .divider,
 .wc-sep {
@@ -50,9 +52,20 @@ main {
   display: inline-flex;
   align-items: center;
   padding: 2px 0 0 0;
+  border-radius: 4px;
+  transition:
+    color 0.2s ease,
+    transform 0.15s ease;
 }
 .filename-btn:hover {
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.filename-btn:active {
+  transform: scale(0.99);
+}
+.filename-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .filename-input {
   font-size: 12px;
@@ -68,6 +81,8 @@ main {
   box-sizing: border-box;
   outline: none;
   caret-color: var(--text-primary);
+  transform-origin: left center;
+  animation: filenameInputIn 160ms ease-out both;
   transition:
     border-color 0.15s ease,
     background 0.15s ease;
@@ -78,6 +93,7 @@ main {
 .filename-input:focus {
   border-color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-muted) 14%, transparent);
 }
 
 /* Marquee scrolling text */
@@ -130,14 +146,21 @@ main {
 .folder-btn svg {
   width: 16px;
   height: 16px;
+  transition: transform 0.2s ease;
 }
 .folder-btn:hover {
   background: var(--bg-elevated);
   color: var(--text-mid);
   transform: translateY(-1px);
 }
+.folder-btn:hover svg {
+  transform: scale(1.05);
+}
 .folder-btn:active {
   transform: scale(0.96);
+}
+.folder-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .close-file-btn {
   color: var(--yellow-soft);
@@ -178,12 +201,21 @@ main {
   color: var(--text-secondary);
   transform: translateY(-1px);
 }
+.wc-btn:hover svg {
+  transform: scale(1.06);
+}
+.wc-btn svg {
+  transition: transform 0.2s ease;
+}
 .wc-btn.close:hover {
   background: #3a1a1a;
   color: var(--red);
 }
 .wc-btn:active {
   transform: scale(0.96);
+}
+.wc-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .wc-sep {
   margin: 0 2px;
@@ -210,7 +242,7 @@ main {
   border-radius: 50%;
   background: var(--bg-elevated);
   border: 0.5px solid var(--bg-border);
-  color: var(--text-dim);
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -223,6 +255,10 @@ main {
 }
 .nav-btn svg {
   display: block;
+  transition: transform 0.2s ease;
+}
+.nav-btn:hover svg {
+  transform: scale(1.08);
 }
 .nav-btn:hover {
   color: var(--text-secondary);
@@ -402,7 +438,7 @@ main:not(.fullscreen).thumbnail-bar-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px;
+  padding: 0 8px;
   flex-shrink: 0;
   position: relative;
   z-index: 91;
@@ -410,12 +446,14 @@ main:not(.fullscreen).thumbnail-bar-open {
 .file-count,
 .file-info {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-family: var(--font-family);
-  height: 36px;
+  height: 28px;
+  line-height: 1;
   display: flex;
   align-items: center;
-  margin-top: 2px;
+  justify-content: center;
+  text-align: center;
 }
 
 .file-count {
@@ -423,24 +461,28 @@ main:not(.fullscreen).thumbnail-bar-open {
   border: none;
   cursor: pointer;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-variant-numeric: tabular-nums;
   transition:
     color 0.2s,
+    background-color 0.15s ease,
     transform 0.15s ease;
-  margin-top: 2px;
 }
 
 .file-count:hover {
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
 }
 
 .file-count.active {
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 .file-count:active {
   transform: scale(0.97);
+}
+.file-count:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .bottombar-left {
   display: flex;
@@ -478,8 +520,10 @@ main:not(.fullscreen).thumbnail-bar-open {
 
 .file-info-wrapper {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  width: fit-content;
+  margin: 0 auto;
   display: flex;
   justify-content: center;
   pointer-events: none;
@@ -491,15 +535,17 @@ main:not(.fullscreen).thumbnail-bar-open {
 .file-info-button {
   padding: 0 6px;
   border: 0;
-  border-radius: 3px;
+  border-radius: 4px;
   background: none;
   cursor: pointer;
   transition:
     color 0.2s,
+    background-color 0.15s ease,
     transform 0.15s ease;
 }
 .file-info-button:hover {
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
 }
 .file-info-button:active {
@@ -510,28 +556,34 @@ main:not(.fullscreen).thumbnail-bar-open {
 }
 .zoom {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-family: var(--font-family);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   padding: 0 4px;
-  border-radius: 3px;
+  border-radius: 4px;
   transition:
     color 0.2s,
+    background-color 0.15s ease,
     transform 0.15s ease;
   background: none;
   border: none;
-  height: 36px;
+  height: 28px;
   display: flex;
   align-items: center;
-  margin-top: 2px;
+  justify-content: center;
+  line-height: 1;
 }
 .zoom:hover {
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
 }
 .zoom:active {
   transform: scale(0.97);
+}
+.zoom:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .zoom-control {
   position: relative;
@@ -539,25 +591,26 @@ main:not(.fullscreen).thumbnail-bar-open {
   align-items: center;
   justify-content: center;
   height: 36px;
-  width: 48px;
-  flex: 0 0 48px;
+  width: auto;
+  flex: 0 0 auto;
 }
 .audio-volume {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 36px;
-  width: 48px;
-  flex: 0 0 48px;
-  margin-top: 2px;
+  height: 28px;
+  width: auto;
+  flex: 0 0 auto;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-family: var(--font-family);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
   user-select: none;
 }
 .zoom.menu-active {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 .zoom-lock-icon {
   flex-shrink: 0;
@@ -602,9 +655,6 @@ main:not(.fullscreen).thumbnail-bar-open {
   border-radius: 5px;
   background: var(--bg-elevated);
   color: var(--text-muted);
-  font-family: var(--font-family);
-  font-size: 14px;
-  line-height: 1;
   cursor: pointer;
   transition:
     background 0.15s ease,
@@ -612,10 +662,17 @@ main:not(.fullscreen).thumbnail-bar-open {
     color 0.15s ease,
     transform 0.15s ease;
 }
+.zoom-menu-btn svg {
+  display: block;
+  transition: transform 0.2s ease;
+}
 .zoom-menu-btn:hover {
   background: var(--bg-primary);
   color: var(--text-primary);
   transform: translateY(-1px);
+}
+.zoom-menu-btn:hover svg {
+  transform: scale(1.08);
 }
 .zoom-menu-btn:active {
   transform: scale(0.96);
@@ -625,33 +682,52 @@ main:not(.fullscreen).thumbnail-bar-open {
   border-color: var(--blue-light-border);
   color: var(--blue-light);
 }
+.zoom-menu-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+}
 
 .fs-btn {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border-radius: 3px;
+  border-radius: 4px;
   transition:
     color 0.2s,
+    background-color 0.15s ease,
     transform 0.15s ease;
-  height: 36px;
-  width: 36px;
+  height: 28px;
+  width: 28px;
   margin-top: 0;
 }
+.fs-btn svg {
+  display: block;
+  transition: transform 0.2s ease;
+}
 .fs-btn:hover {
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
   transform: translateY(-1px);
+}
+.fs-btn:hover svg {
+  transform: scale(1.06);
 }
 .fs-btn.active {
   color: var(--blue-light);
 }
+.fs-btn.menu-active {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
 .fs-btn:active {
   transform: scale(0.96);
+}
+.fs-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 main.fullscreen .topbar {
@@ -734,22 +810,35 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition:
     background 0.2s,
-    color 0.2s;
+    color 0.2s,
+    transform 0.15s ease;
   color: var(--text-muted);
+}
+.fs-wc-btn svg {
+  transition: transform 0.2s ease;
 }
 .fs-wc-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+.fs-wc-btn:hover svg {
+  transform: scale(1.06);
 }
 .fs-wc-btn.close:hover {
   background: rgba(255, 0, 0, 0.2);
   color: var(--red);
+}
+.fs-wc-btn:active {
+  transform: scale(0.96);
+}
+.fs-wc-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .fs-nav-left,
 .fs-nav-right {
@@ -773,19 +862,31 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   background: rgba(0, 0, 0, 0.5);
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   color: var(--text-muted);
-  font-size: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition:
     color 0.2s,
-    background 0.2s;
-  line-height: 1;
+    background 0.2s,
+    transform 0.15s ease;
+}
+.fs-nav-btn svg {
+  display: block;
+  transition: transform 0.2s ease;
 }
 .fs-nav-btn:hover {
   color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.7);
+}
+.fs-nav-btn:hover svg {
+  transform: scale(1.08);
+}
+.fs-nav-btn:active {
+  transform: scale(0.96);
+}
+.fs-nav-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .fs-file-count-pill {
@@ -804,12 +905,19 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   cursor: pointer;
   transition:
     color 0.2s,
-    background 0.2s;
+    background 0.2s,
+    transform 0.15s ease;
 }
 
 .fs-file-count-pill:hover {
   color: var(--text-secondary);
   background: rgba(0, 0, 0, 0.75);
+}
+.fs-file-count-pill:active {
+  transform: translateX(-50%) scale(0.97);
+}
+.fs-file-count-pill:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .fs-file-count-pill.slideshow-active {
   color: var(--blue-light);
@@ -934,7 +1042,10 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   font-family: var(--font-family);
   font-weight: 500;
   white-space: nowrap;
-  transition: color 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.15s ease,
+    transform 0.15s ease;
 }
 .underline-btn.underline-active {
   color: var(--text-primary);
@@ -1030,6 +1141,15 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
 
 [data-theme="light"] .filename-input:focus {
   background: rgba(0, 0, 0, 0.07);
+}
+
+[data-theme="light"] .file-count:hover,
+[data-theme="light"] .file-info-button:hover,
+[data-theme="light"] .zoom:hover,
+[data-theme="light"] .fs-btn:hover,
+[data-theme="light"] .zoom.menu-active,
+[data-theme="light"] .fs-btn.menu-active {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="light"] .sort-menu-item:hover,

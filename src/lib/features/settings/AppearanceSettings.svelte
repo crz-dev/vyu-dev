@@ -213,9 +213,9 @@
         <div class="pill-group pill-group-3">
           <button
             class="pill-btn"
-            class:active={appearance.fileTransition === "none"}
-            onclick={() => appearance.setFileTransition("none")}
-            >{t("settings.appearance.transition.none")}</button
+            class:active={appearance.fileTransition === "slide"}
+            onclick={() => appearance.setFileTransition("slide")}
+            >{t("settings.appearance.transition.slide")}</button
           >
           <button
             class="pill-btn"
@@ -225,9 +225,9 @@
           >
           <button
             class="pill-btn"
-            class:active={appearance.fileTransition === "slide"}
-            onclick={() => appearance.setFileTransition("slide")}
-            >{t("settings.appearance.transition.slide")}</button
+            class:active={appearance.fileTransition === "none"}
+            onclick={() => appearance.setFileTransition("none")}
+            >{t("settings.appearance.transition.none")}</button
           >
         </div>
       {/snippet}

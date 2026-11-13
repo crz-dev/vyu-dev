@@ -377,19 +377,66 @@
         class="pdf-find-btn"
         onclick={findPrev}
         disabled={findResults === 0}
-        aria-label={t("shell.viewer.pdf.previousMatch")}>▲</button
+        aria-label={t("shell.viewer.pdf.previousMatch")}
       >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M18 15l-6-6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
       <button
         class="pdf-find-btn"
         onclick={findNext}
         disabled={findResults === 0}
-        aria-label={t("shell.viewer.pdf.nextMatch")}>▼</button
+        aria-label={t("shell.viewer.pdf.nextMatch")}
       >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M6 9l6 6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
       <button
         class="pdf-find-close"
         onclick={toggleFind}
-        aria-label={t("shell.viewer.pdf.closeFind")}>✕</button
+        aria-label={t("shell.viewer.pdf.closeFind")}
       >
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M1 1l8 8M9 1l-8 8"
+            stroke="currentColor"
+            stroke-width="1.2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     </div>
   {/if}
 
@@ -400,8 +447,26 @@
     >
       <div class="pdf-page-panel-header">
         <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span>
-        <button class="pdf-page-panel-close" onclick={togglePagePanel}>✕</button
+        <button
+          class="pdf-page-panel-close"
+          onclick={togglePagePanel}
+          aria-label={t("shell.viewer.pdf.closeIndex")}
         >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M1 1l8 8M9 1l-8 8"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
       </div>
       <div class="pdf-page-panel-list">
         {#each pages as page, i}

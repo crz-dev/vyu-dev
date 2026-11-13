@@ -605,7 +605,7 @@ export function saveViewerBackground(background: ViewerBackground): void {
 
 export function loadFileTransition(): FileTransition {
   const value = localStorage.getItem("vyu-file-transition");
-  return value === "fade" || value === "slide" ? value : "none";
+  return value === "none" || value === "fade" ? value : "slide";
 }
 
 export function saveFileTransition(transition: FileTransition): void {

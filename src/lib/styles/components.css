@@ -74,8 +74,18 @@
   border: 1px solid rgba(255, 255, 255, 0.25);
   pointer-events: auto;
 }
-.gif-center-btn:hover {
+.gif-center-btn:hover,
+.ctrl-btn.gif-center-btn:hover {
   background: rgba(0, 0, 0, 0.62);
+  color: var(--text-primary);
+}
+.ctrl-btn.gif-center-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--text-primary);
 }
 
 .progress-bar {
@@ -88,6 +98,13 @@
   border: none;
   padding: 0;
   overflow: visible;
+  transition: background-color 0.15s ease;
+}
+.progress-bar:hover {
+  background: color-mix(in srgb, var(--text-primary) 24%, transparent);
+}
+.progress-bar:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .progress-fill {
   height: 100%;
@@ -293,7 +310,8 @@
   line-height: 0;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease;
 }
 .ctrl-btn svg {
   width: 16px;
@@ -305,6 +323,13 @@
 .ctrl-btn:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+.ctrl-btn:active {
+  transform: scale(0.94);
+}
+.ctrl-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .loop-btn {
   color: var(--text-primary);
@@ -333,12 +358,19 @@
   border-radius: 4px;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease;
   white-space: nowrap;
 }
 .time-display:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
+}
+.time-display:active {
+  transform: scale(0.97);
+}
+.time-display:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .volume-control {
@@ -412,6 +444,10 @@
 .volume-diamond:hover {
   border-color: var(--text-mid);
 }
+.volume-diamond:focus-visible {
+  border-color: var(--text-mid);
+  box-shadow: 0 0 0 1px var(--text-muted);
+}
 
 @keyframes clipMarkerPopIn {
   0% {
@@ -478,8 +514,17 @@
   border: 1px solid rgba(255, 255, 255, 0.28);
   pointer-events: auto;
 }
-.fs-gif-center-btn:hover {
+.fs-gif-center-btn:hover,
+.fs-ctrl-btn.fs-gif-center-btn:hover {
   background: rgba(0, 0, 0, 0.68);
+}
+.fs-ctrl-btn.fs-gif-center-btn {
+  width: 66px;
+  height: 66px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--text-primary);
 }
 .fs-progress {
   width: 100%;
@@ -489,6 +534,13 @@
   cursor: pointer;
   position: relative;
   overflow: visible;
+  transition: background-color 0.15s ease;
+}
+.fs-progress:hover {
+  background: rgba(255, 255, 255, 0.34);
+}
+.fs-progress:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .fs-progress-fill {
   height: 100%;
@@ -643,11 +695,19 @@
   line-height: 0;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease;
 }
 .fs-ctrl-btn:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+.fs-ctrl-btn:active {
+  transform: scale(0.94);
+}
+.fs-ctrl-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .fs-ctrl-btn svg {
   width: 22px;
@@ -706,7 +766,8 @@
   border-radius: 4px;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -715,6 +776,12 @@
 .fs-time:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
+}
+.fs-time:active {
+  transform: scale(0.97);
+}
+.fs-time:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .fs-right {
   margin-left: auto;
@@ -1218,6 +1285,10 @@
 .speed-diamond:hover {
   transform: rotate(45deg) scale(1.35);
 }
+.speed-diamond:focus-visible {
+  opacity: 1;
+  box-shadow: 0 0 0 1px var(--text-muted);
+}
 
 .speed-control .playback-slider-track {
   order: -1;
@@ -1231,6 +1302,10 @@
   align-items: center;
   cursor: pointer;
   touch-action: none;
+  border-radius: 4px;
+}
+.playback-slider-track:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .playback-slider-track::before {
@@ -1307,6 +1382,10 @@
 .playback-slider-marker:hover {
   opacity: 1;
   transform: translate(-50%, -50%) rotate(45deg) scale(1.4);
+}
+.playback-slider-marker:focus-visible {
+  opacity: 1;
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .playback-slider-track.muted {
@@ -1407,6 +1486,15 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border-color: var(--text-primary);
   opacity: 1;
   transform: scale(1.03);
+}
+
+.thumbnail-item:active {
+  transform: scale(0.98);
+}
+
+.thumbnail-item:focus-visible {
+  border-color: var(--text-secondary);
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .thumbnail-item img {
@@ -1518,7 +1606,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   border-radius: 4px;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease;
   height: 30px;
   width: 30px;
   display: inline-flex;
@@ -1531,6 +1620,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   height: 24px;
   object-fit: contain;
   transform: translate(0px, 0px);
+  transition: transform 0.2s ease;
 }
 
 .app-dropdown-toggle:hover {
@@ -1538,9 +1628,21 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   color: var(--text-mid);
 }
 
+.app-dropdown-toggle:hover .app-icon {
+  transform: scale(1.05);
+}
+
 .app-dropdown-toggle.active {
   background: var(--bg-elevated);
   color: var(--text-secondary);
+}
+
+.app-dropdown-toggle:active {
+  transform: scale(0.96);
+}
+
+.app-dropdown-toggle:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .app-dropdown-menu {
@@ -3602,7 +3704,8 @@ main.menu-open .subtitle-overlay {
   line-height: 0;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease;
 }
 .audio-customize-btn svg {
   width: 15px;
@@ -3613,6 +3716,13 @@ main.menu-open .subtitle-overlay {
 .audio-customize-btn:hover {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+.audio-customize-btn:active {
+  transform: scale(0.94);
+}
+.audio-customize-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .audio-swap-container {
   width: 100%;
@@ -3885,11 +3995,19 @@ main.menu-open .subtitle-overlay {
   border-radius: 4px;
   transition:
     background 0.13s,
-    color 0.13s;
+    color 0.13s,
+    transform 0.15s ease;
 }
 .audio-transport-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.audio-transport-btn:active {
+  transform: scale(0.94);
+}
+.audio-transport-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .audio-transport-btn.is-playpause {
   width: 30px;
@@ -3923,7 +4041,8 @@ main.menu-open .subtitle-overlay {
   border-radius: 5px;
   transition:
     background 0.13s,
-    color 0.13s;
+    color 0.13s,
+    transform 0.15s ease;
   line-height: 0;
   flex-shrink: 0;
 }
@@ -3938,6 +4057,15 @@ main.menu-open .subtitle-overlay {
 .retro-controls-row .retro-slider-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.retro-controls-row .retro-slider-btn:active {
+  transform: scale(0.94);
+}
+
+.retro-controls-row .retro-slider-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .retro-controls-row .retro-slider-btn.active {
@@ -4096,7 +4224,8 @@ main.menu-open .subtitle-overlay {
   border-radius: 5px;
   transition:
     background 0.13s,
-    color 0.13s;
+    color 0.13s,
+    transform 0.15s ease;
   line-height: 0;
   box-sizing: border-box;
 }
@@ -4111,6 +4240,15 @@ main.menu-open .subtitle-overlay {
 .retro-transport-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.retro-transport-btn:active {
+  transform: scale(0.94);
+}
+
+.retro-transport-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .retro-transport-btn.is-playpause {
@@ -4891,6 +5029,11 @@ main.menu-open .subtitle-overlay {
 [data-theme="light"] .eq-bypass-btn:hover,
 [data-theme="light"] .eq-preset-btn:hover,
 [data-theme="light"] .eq-preset-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .audio-controls-card .time-display:hover,
+[data-theme="light"] .audio-modern-controls-card .ctrl-btn:hover {
   background: rgba(0, 0, 0, 0.06);
 }
 

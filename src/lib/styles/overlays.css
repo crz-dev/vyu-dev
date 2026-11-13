@@ -558,7 +558,7 @@
   outline: none;
 }
 .pdf-find-input:focus {
-  border-color: var(--accent);
+  border-color: var(--text-secondary);
 }
 .pdf-find-count {
   font-size: 11px;
@@ -578,17 +578,39 @@
   border-radius: 4px;
   background: var(--bg-elevated);
   color: var(--text-primary);
-  font-size: 10px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition:
+    background 0.2s,
+    transform 0.15s ease;
   padding: 0;
+}
+.pdf-find-btn svg {
+  display: block;
+  transition: transform 0.2s ease;
 }
 .pdf-find-btn:hover {
   background: var(--bg-primary);
+  transform: translateY(-1px);
+}
+.pdf-find-btn:hover svg {
+  transform: scale(1.08);
+}
+.pdf-find-btn:active {
+  transform: scale(0.94);
+}
+.pdf-find-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .pdf-find-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+.pdf-find-btn:disabled:hover {
+  background: var(--bg-elevated);
+  transform: none;
+}
+.pdf-find-btn:disabled:hover svg {
+  transform: none;
 }
 .pdf-find-close {
   width: 22px;
@@ -600,13 +622,22 @@
   border-radius: 4px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.15s ease,
+    transform 0.15s ease;
   padding: 0;
 }
 .pdf-find-close:hover {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+.pdf-find-close:active {
+  transform: scale(0.94);
+}
+.pdf-find-close:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .pdf-highlight-overlay {
   position: absolute;
@@ -786,14 +817,22 @@
   border-radius: 4px;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
   cursor: pointer;
-  transition: color 0.2s;
+  transition:
+    color 0.2s,
+    background-color 0.15s ease,
+    transform 0.15s ease;
   padding: 0;
 }
 .pdf-page-panel-close:hover {
   color: var(--red);
   background: var(--red-bg-faint);
+}
+.pdf-page-panel-close:active {
+  transform: scale(0.94);
+}
+.pdf-page-panel-close:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .pdf-page-panel-list {
   flex: 1;
@@ -834,7 +873,7 @@
 }
 .pdf-page-panel-item.active {
   background: var(--bg-elevated);
-  border-color: var(--accent);
+  border-color: var(--text-secondary);
 }
 .pdf-page-panel-thumb {
   width: 100%;

@@ -405,7 +405,7 @@
     </button>
     <span class="wc-sep"></span>
     <button
-      class="wc-btn close tooltip-below"
+      class="wc-btn close tooltip-below tooltip-below-end"
       data-tooltip={t("menus.app.close")}
       onclick={closeWindow}
       aria-label={t("menus.app.close")}

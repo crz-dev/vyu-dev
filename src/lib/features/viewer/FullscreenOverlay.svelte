@@ -103,34 +103,120 @@
         ><Marquee text={fileName} scrollOnHover class="fs-marquee" /></span
       >
       <div class="fs-window-controls">
-        <button class="fs-wc-btn" onclick={minimizeWindow} aria-label="minimize"
-          >−</button
-        ><button
+        <button
+          class="fs-wc-btn"
+          onclick={minimizeWindow}
+          aria-label="minimize"
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M1 5h8"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <button
           class="fs-wc-btn"
           onclick={maximizeWindow}
-          aria-label="maximize">▢</button
-        ><button
+          aria-label="maximize"
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect
+              x="1"
+              y="1"
+              width="8"
+              height="8"
+              rx="0.75"
+              stroke="currentColor"
+              stroke-width="1.2"
+            />
+          </svg>
+        </button>
+        <button
           class="fs-wc-btn close"
           onclick={closeWindow}
-          aria-label="close">✕</button
+          aria-label="close"
         >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M1 1l8 8M9 1l-8 8"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
       </div>
     </div>
     {#if !showPagePanel}
       <div class="fs-nav-left" style="position: fixed; z-index: 200;">
         <button
-          class="fs-nav-btn"
+          class="fs-nav-btn tooltip-ctrl tooltip-right"
+          data-tooltip="Previous file"
           onclick={() => navigate(-1)}
-          aria-label="previous file">‹</button
+          aria-label="previous file"
         >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
     {/if}
     <div class="fs-nav-right" style="position: fixed; z-index: 200;">
       <button
-        class="fs-nav-btn"
+        class="fs-nav-btn tooltip-ctrl tooltip-left"
+        data-tooltip="Next file"
         onclick={() => navigate(1)}
-        aria-label="next file">›</button
+        aria-label="next file"
       >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M9 18l6-6-6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     </div>
     <div
       class="fs-controls image-only"
@@ -145,7 +231,7 @@
             data-tooltip={`Unfullscreen${shortcutSuffix("fullscreen")}`}
             onclick={toggleFullscreen}
             aria-label="exit fullscreen"
-            ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+            ><svg width="14" height="14" viewBox="0 0 12 12" fill="none"
               ><path
                 d="M4 1v3h-3M8 1v3h3M8 11v-3h3M4 11v-3h-3"
                 stroke="currentColor"
@@ -199,31 +285,115 @@
           <button
             class="fs-wc-btn"
             onclick={minimizeWindow}
-            aria-label="minimize">−</button
-          ><button
+            aria-label="minimize"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M1 5h8"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <button
             class="fs-wc-btn"
             onclick={maximizeWindow}
-            aria-label="maximize">▢</button
-          ><button
+            aria-label="maximize"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="1"
+                y="1"
+                width="8"
+                height="8"
+                rx="0.75"
+                stroke="currentColor"
+                stroke-width="1.2"
+              />
+            </svg>
+          </button>
+          <button
             class="fs-wc-btn close"
             onclick={closeWindow}
-            aria-label="close">✕</button
+            aria-label="close"
           >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M1 1l8 8M9 1l-8 8"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
         </div>
       </div>
       <div class="fs-nav-left">
         <button
-          class="fs-nav-btn"
+          class="fs-nav-btn tooltip-ctrl tooltip-right"
+          data-tooltip="Previous file"
           onclick={() => navigate(-1)}
-          aria-label="previous file">‹</button
+          aria-label="previous file"
         >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
       <div class="fs-nav-right">
         <button
-          class="fs-nav-btn"
+          class="fs-nav-btn tooltip-ctrl tooltip-left"
+          data-tooltip="Next file"
           onclick={() => navigate(1)}
-          aria-label="next file">›</button
+          aria-label="next file"
         >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M9 18l6-6-6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
       {#if isVideo && videoEl}
         <div class="fs-controls" class:gif-only={isGifVideo}>
@@ -238,7 +408,7 @@
                 data-tooltip={`Unfullscreen${shortcutSuffix("fullscreen")}`}
                 onclick={toggleFullscreen}
                 aria-label="exit fullscreen"
-                ><svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+                ><svg width="14" height="14" viewBox="0 0 12 12" fill="none"
                   ><path
                     d="M4 1v3h-3M8 1v3h3M8 11v-3h3M4 11v-3h-3"
                     stroke="currentColor"
