@@ -21,10 +21,18 @@ main {
   cursor: grab;
   user-select: none;
 }
-.divider {
-  font-size: 14px;
-  color: var(--text-dim);
-  font-family: var(--font-family);
+.divider,
+.wc-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--text-dim) 25%,
+    var(--text-dim) 75%,
+    transparent
+  );
 }
 .filename {
   font-size: 12px;
@@ -173,6 +181,9 @@ main {
 }
 .wc-btn:active {
   transform: scale(0.96);
+}
+.wc-sep {
+  margin: 0 2px;
 }
 
 .content {

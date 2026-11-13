@@ -237,7 +237,7 @@
     />
   </div>
   {#if libraryOpen}
-    <span class="divider">/</span>
+    <span class="divider"></span>
     <button
       class="folder-btn back-btn tooltip-below"
       data-tooltip={t("menus.app.backToViewer")}
@@ -263,7 +263,7 @@
     </button>
   {/if}
   {#if !libraryOpen}
-    <span class="divider">/</span>
+    <span class="divider"></span>
     {#if editing}
       <input
         bind:this={inputEl}
@@ -303,7 +303,7 @@
       class="file-actions"
       transition:fly={{ y: -8, duration: 180, opacity: 0.12 }}
     >
-      <span class="divider">/</span>
+      <span class="divider"></span>
       <button
         class="folder-btn close-file-btn tooltip-below"
         data-tooltip={`${t("menus.app.closeFile")}${shortcutSuffix("close-file")}`}
@@ -327,7 +327,7 @@
           />
         </svg>
       </button>
-      <span class="divider">/</span>
+      <span class="divider"></span>
       <button
         class="folder-btn open-file-btn tooltip-below"
         data-tooltip={`${t("menus.app.openFile")}${shortcutSuffix("open-file")}`}
@@ -370,6 +370,7 @@
       onclick={maximizeWindow}
       aria-label={t("menus.app.maximize")}>▢</button
     >
+    <span class="wc-sep"></span>
     <button
       class="wc-btn close tooltip-below"
       data-tooltip={t("menus.app.close")}
