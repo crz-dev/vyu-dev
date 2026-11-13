@@ -40,6 +40,7 @@
     cropContainerEl = $bindable(null),
     pdfContainerEl = $bindable(null),
     hoverZone = $bindable("none"),
+    dragDropActive = false,
     viewer,
     style,
     markup,
@@ -136,6 +137,7 @@
     cropContainerEl: HTMLElement | null;
     pdfContainerEl: HTMLElement | null;
     hoverZone: string;
+    dragDropActive: boolean;
     viewer: ViewerStore;
     style: ViewerStyleStore;
     markup: MarkupStore;
@@ -350,8 +352,24 @@
         class="nav-btn"
         transition:fly={{ x: -24, duration: 220 }}
         onclick={() => navigate(-1)}
-        aria-label="previous file">‹</button
+        aria-label="previous file"
       >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M15 18l-6-6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     {/if}
   </div>
   <div
@@ -526,15 +544,50 @@
         {audioMarkerProps}
       />
     {:else}
-      <button class="empty" onclick={openFileDialog}
-        ><span class="empty-icon-frame" aria-hidden="true"
-          ><svg class="empty-diamond" viewBox="0 0 32 32" aria-hidden="true"
-            ><path
-              d="M14.6 2.4Q16 1 17.4 2.4L29.6 14.6Q31 16 29.6 17.4L17.4 29.6Q16 31 14.6 29.6L2.4 17.4Q1 16 2.4 14.6Z"
-            /></svg
-          ><span class="empty-icon">+</span></span
-        ><span class="empty-text">open a file</span></button
+      <button
+        class="empty"
+        class:drag-active={dragDropActive}
+        onclick={openFileDialog}
       >
+        <span class="empty-icon-frame" aria-hidden="true">
+          <svg
+            class="empty-glyph"
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <path
+              d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M13 3v6h6"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span class="empty-add">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path
+                d="M5 1.5v7M1.5 5h7"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+              />
+            </svg>
+          </span>
+        </span>
+        <span class="empty-copy">
+          <span class="empty-text">Open a file</span>
+          <span class="empty-hint">Drag &amp; drop or paste an image</span>
+        </span>
+      </button>
     {/if}
     {#if staleFrameSrc}
       <div
@@ -557,8 +610,24 @@
         class="nav-btn"
         transition:fly={{ x: 24, duration: 220 }}
         onclick={() => navigate(1)}
-        aria-label="next file">›</button
+        aria-label="next file"
       >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M9 18l6-6-6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
     {/if}
   </div>
 </div>

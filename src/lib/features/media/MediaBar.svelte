@@ -675,7 +675,7 @@
             ><path
               d="M4 1V4H1M8 1V4H11M8 11V8H11M4 11V8H1"
               stroke="currentColor"
-              stroke-width="0.6"
+              stroke-width="1.2"
               stroke-linecap="round"
               stroke-linejoin="round"
             /></svg
@@ -685,7 +685,7 @@
             ><path
               d="M1 4V1H4M8 1H11V4M11 8V11H8M4 11H1V8"
               stroke="currentColor"
-              stroke-width="0.6"
+              stroke-width="1.2"
               stroke-linecap="round"
             /></svg
           >

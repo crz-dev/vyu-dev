@@ -362,21 +362,69 @@
       class="wc-btn tooltip-below"
       data-tooltip={t("menus.app.minimize")}
       onclick={minimizeWindow}
-      aria-label={t("menus.app.minimize")}>−</button
+      aria-label={t("menus.app.minimize")}
     >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 10 10"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M1 5h8"
+          stroke="currentColor"
+          stroke-width="1.2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
     <button
       class="wc-btn tooltip-below"
       data-tooltip={t("menus.app.maximize")}
       onclick={maximizeWindow}
-      aria-label={t("menus.app.maximize")}>▢</button
+      aria-label={t("menus.app.maximize")}
     >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 10 10"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="1"
+          y="1"
+          width="8"
+          height="8"
+          rx="0.75"
+          stroke="currentColor"
+          stroke-width="1.2"
+        />
+      </svg>
+    </button>
     <span class="wc-sep"></span>
     <button
       class="wc-btn close tooltip-below"
       data-tooltip={t("menus.app.close")}
       onclick={closeWindow}
-      aria-label={t("menus.app.close")}>✕</button
+      aria-label={t("menus.app.close")}
     >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 10 10"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M1 1l8 8M9 1l-8 8"
+          stroke="currentColor"
+          stroke-width="1.2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
   </div>
 </div>
 

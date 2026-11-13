@@ -170,6 +170,7 @@
   let imageNaturalHeight = $state(0);
   let volume = $state(1);
   let hoverZone = $state("none");
+  let dragDropActive = $state(false);
   let dragStart = $state({ x: 0, y: 0, tx: 0, ty: 0 });
   let lastLeftClickTime = 0;
   let pendingPlay: ReturnType<typeof setTimeout> | undefined;
@@ -1307,6 +1308,7 @@
     rawDurationSecs: { get: () => rawDurationSecs },
     playbackUI,
     loadFile,
+    setDragDropActive: (active) => (dragDropActive = active),
     openLibrary: () => (menuStore.libraryOpen = true),
     saveResumePosition: saveCurrentPosition,
     hasPlayback,
@@ -1665,6 +1667,7 @@
       bind:cropContainerEl
       bind:pdfContainerEl
       bind:hoverZone
+      {dragDropActive}
       {viewer}
       {style}
       {markup}

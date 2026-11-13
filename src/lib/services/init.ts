@@ -41,6 +41,7 @@ export interface InitState {
     setPlaybackSpeed: (v: number) => void;
   };
   loadFile: (path: string) => Promise<void>;
+  setDragDropActive: (active: boolean) => void;
   openLibrary: () => void;
   saveResumePosition: () => void;
   hasPlayback: () => boolean;
@@ -137,8 +138,17 @@ export function setupInit(s: InitState) {
     let unlistenDragDrop: () => void = () => {};
     getCurrentWindow()
       .onDragDropEvent((event) => {
-        if (event.payload.type === "drop" && event.payload.paths?.length > 0)
-          s.loadFile(event.payload.paths[0]);
+        const payload = event.payload;
+        if (payload.type === "leave") {
+          s.setDragDropActive(false);
+          return;
+        }
+        if (payload.type === "drop") {
+          s.setDragDropActive(false);
+          if (payload.paths.length > 0) s.loadFile(payload.paths[0]);
+          return;
+        }
+        s.setDragDropActive(true);
       })
       .then((fn) => {
         unlistenDragDrop = fn;
@@ -167,6 +177,7 @@ export function setupInit(s: InitState) {
           focusTimer = null;
         }
         if (focused) return;
+        s.setDragDropActive(false);
         focusTimer = setTimeout(() => {
           focusTimer = null;
           if (systemPrefs.pauseOnFocusLoss && s.hasPlayback()) {
