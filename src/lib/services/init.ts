@@ -193,8 +193,10 @@ export function setupInit(s: InitState) {
     let closing = false;
     getCurrentWindow()
       .onCloseRequested(async (event) => {
-        if (closing) return;
+        // The runtime vetoes every close request while this listener exists,
+        // so the window only goes away once we destroy it explicitly.
         event.preventDefault();
+        if (closing) return;
         if (systemPrefs.confirmCloseWhileEditing && s.hasOpenEdits()) {
           const quit = await confirm(locale.t("shell.app.closeWhileEditing"), {
             title: locale.t("shell.app.closeTitle"),
@@ -205,7 +207,7 @@ export function setupInit(s: InitState) {
         closing = true;
         try {
           await s.cleanupBeforeClose();
-          await getCurrentWindow().close();
+          await getCurrentWindow().destroy();
         } catch (e) {
           closing = false;
           console.error("Failed to close cleanly:", e);
