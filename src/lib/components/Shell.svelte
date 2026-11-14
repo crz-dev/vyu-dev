@@ -508,7 +508,7 @@
   });
 
   const MENU_WIDTH = $derived(Math.min(398, window.innerWidth - 30));
-  const MENU_GAP = 8;
+  const MENU_GAP = 4;
   const MENU_OUTER_EXTRA = 13;
   const ACTION_BAR_WIDTH = 60;
   const WRAPPER_GAP = 6;
@@ -628,6 +628,92 @@
       return `left: calc(50% + ${layoutOffsets.clip}px);`;
     }
     return "";
+  });
+
+  $effect(() => {
+    if (!editMenuVisible || !markupMenuVisible) return;
+
+    const getMenus = () => [
+      {
+        wrapper: document.querySelector(".edit-menu-wrapper-edit"),
+        element: document.querySelector(".edit-menu-wrapper-edit .ctx-close"),
+        close: closeEditMenu,
+      },
+      {
+        wrapper: document.querySelector(".markup-menu-wrapper-markup"),
+        element: document.querySelector(
+          ".markup-menu-wrapper-markup .ctx-close",
+        ),
+        close: closeMarkupMenu,
+      },
+    ];
+
+    const isInside = (element: Element | null, target: EventTarget | null) =>
+      target instanceof Node && element?.contains(target);
+
+    const containsPoint = (element: Element | null, x: number, y: number) => {
+      if (!element) return false;
+      const rect = element.getBoundingClientRect();
+      return (
+        x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
+      );
+    };
+
+    const clearHoverState = () => {
+      for (const { wrapper } of getMenus()) {
+        wrapper?.classList.remove("menu-control-hover", "close-target-hover");
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const menus = getMenus();
+      const target = event.target;
+      const hoveredControl =
+        target instanceof Element
+          ? target.closest(".ctx-pin, .ctx-close")
+          : null;
+      const hoveredWrapper = hoveredControl?.closest(
+        ".edit-menu-wrapper-edit, .markup-menu-wrapper-markup",
+      );
+      const closeTarget =
+        menus.find(({ element }) => isInside(element, target)) ??
+        menus.find(({ element }) =>
+          containsPoint(element, event.clientX, event.clientY),
+        );
+
+      for (const menu of menus) {
+        const active = menu.wrapper === hoveredWrapper || menu === closeTarget;
+        menu.wrapper?.classList.toggle("menu-control-hover", active);
+        menu.wrapper?.classList.toggle(
+          "close-target-hover",
+          menu === closeTarget && !isInside(menu.element, target),
+        );
+      }
+    };
+
+    const handleOverlappedMenuClose = (event: MouseEvent) => {
+      const menus = getMenus();
+      if (menus.some(({ element }) => isInside(element, event.target))) return;
+
+      const overlappedClose = menus.find(({ element }) =>
+        containsPoint(element, event.clientX, event.clientY),
+      );
+      if (!overlappedClose) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      overlappedClose.close();
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, true);
+    window.addEventListener("mouseleave", clearHoverState);
+    window.addEventListener("click", handleOverlappedMenuClose, true);
+    return () => {
+      clearHoverState();
+      window.removeEventListener("pointermove", handlePointerMove, true);
+      window.removeEventListener("mouseleave", clearHoverState);
+      window.removeEventListener("click", handleOverlappedMenuClose, true);
+    };
   });
 
   let mainEl = $state<HTMLElement | null>(null);

@@ -90,6 +90,11 @@
   color: var(--red);
   background: var(--red-bg-faint);
 }
+.edit-menu-wrapper.close-target-hover .ctx-close,
+.markup-menu-wrapper.close-target-hover .ctx-close {
+  color: var(--red);
+  background: var(--red-bg-faint);
+}
 .ctx-pin {
   display: flex;
   align-items: center;

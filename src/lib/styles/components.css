@@ -2560,6 +2560,10 @@ main.menu-open .subtitle-overlay {
 .markup-menu-wrapper.peer-open {
   flex-direction: row-reverse;
 }
+.edit-menu-wrapper.menu-control-hover,
+.markup-menu-wrapper.menu-control-hover {
+  z-index: 1101;
+}
 .edit-menu {
   width: min(398px, calc(100vw - 30px));
   background: color-mix(
@@ -2578,6 +2582,8 @@ main.menu-open .subtitle-overlay {
   align-items: center;
 }
 .edit-menu .ctx-drag {
+  position: relative;
+  z-index: 1;
   width: 100%;
   border-bottom: 0.5px solid var(--bg-border);
   margin-bottom: 0;
