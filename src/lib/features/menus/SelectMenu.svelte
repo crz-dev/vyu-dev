@@ -342,7 +342,12 @@
     bottom: 40px;
     left: 50%;
     transform: translateX(-50%) translateY(calc(100% + 20px));
-    background: var(--bg-secondary);
+    background: color-mix(
+      in srgb,
+      var(--bg-secondary) var(--menu-opacity),
+      transparent
+    );
+    backdrop-filter: blur(var(--menu-blur)) saturate(130%);
     border: 0.5px solid var(--bg-border);
     border-radius: 9px;
     padding: 6px;

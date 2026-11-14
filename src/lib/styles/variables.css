@@ -92,6 +92,9 @@
 
   --settings-card-divider: rgba(255, 255, 255, 0.08);
 
+  --menu-opacity: 75%;
+  --menu-blur: 18px;
+
   --yellow: #f5c518;
   --yellow-soft: #facc15;
 

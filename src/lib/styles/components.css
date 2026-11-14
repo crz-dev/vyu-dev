@@ -797,7 +797,12 @@
   transform: translateX(-50%);
   z-index: 1100;
   width: min(398px, calc(100vw - 30px));
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 6px;
@@ -1089,7 +1094,12 @@
   left: 8px;
   z-index: 1100;
   width: min(260px, calc(100vw - 24px));
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 5px;
@@ -1651,8 +1661,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   left: -6px;
   z-index: 1200;
   min-width: 190px;
-  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 5px;
@@ -1739,7 +1753,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   left: 50%;
   transform: translateX(-50%);
   transform-origin: bottom center;
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 9px;
   padding: 5px;
@@ -1956,7 +1975,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   left: 50%;
   transform: translateX(-50%);
   transform-origin: bottom center;
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 9px;
   padding: 5px;
@@ -2091,7 +2115,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   scrollbar-width: none;
   box-sizing: border-box;
   color: var(--text-primary);
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 9px;
   box-shadow:
@@ -2340,7 +2369,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   flex-direction: column;
   padding: 6px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.035);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-elevated);
   border-radius: 6px;
 }
@@ -2351,7 +2385,12 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   min-height: 36px;
   padding: 3px;
   box-sizing: border-box;
-  background: var(--bg-primary);
+  background: color-mix(
+    in srgb,
+    var(--bg-primary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-elevated);
   border-radius: 6px;
 }
@@ -2523,8 +2562,12 @@ main.menu-open .subtitle-overlay {
 }
 .edit-menu {
   width: min(398px, calc(100vw - 30px));
-  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 6px;
@@ -2540,6 +2583,10 @@ main.menu-open .subtitle-overlay {
   margin-bottom: 0;
   border-radius: 4px 4px 0 0;
   padding-bottom: 4px;
+}
+.edit-menu .ctx-drag-title,
+.edit-menu .ctx-drag-title svg {
+  color: var(--text-muted);
 }
 .process-ffmpeg-note {
   width: 100%;
@@ -2568,7 +2615,12 @@ main.menu-open .subtitle-overlay {
   border: 0.5px solid var(--bg-border);
   border-radius: 10px;
   padding: 6px;
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--bg-primary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2595,13 +2647,13 @@ main.menu-open .subtitle-overlay {
     opacity 0.16s,
     transform 0.16s ease,
     box-shadow 0.16s ease;
-  opacity: 0.68;
+  opacity: 0.78;
 }
 .edit-menu-btn:not(.sub) {
   min-height: 30px;
 }
 .edit-menu-btn:hover:not(:disabled) {
-  opacity: 0.86;
+  opacity: 0.92;
   transform: translateY(-1px);
 }
 .edit-menu-btn:active:not(:disabled) {
@@ -2825,7 +2877,12 @@ main.menu-open .subtitle-overlay {
 .edit-menu-slider-panel {
   width: 100%;
   padding: 6px;
-  background: var(--bg-elevated);
+  background: color-mix(
+    in srgb,
+    var(--bg-elevated) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 7px;
   display: flex;
@@ -2942,7 +2999,12 @@ main.menu-open .subtitle-overlay {
   min-width: 100%;
   max-height: 200px;
   overflow-y: auto;
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 4px;
@@ -3126,8 +3188,12 @@ main.menu-open .subtitle-overlay {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(
+    in srgb,
+    var(--bg-primary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 5px;
@@ -3173,7 +3239,7 @@ main.menu-open .subtitle-overlay {
     opacity 0.16s,
     transform 0.16s ease,
     box-shadow 0.16s ease;
-  opacity: 0.68;
+  opacity: 0.78;
   flex-shrink: 0;
   padding: 0;
 }
@@ -3187,7 +3253,7 @@ main.menu-open .subtitle-overlay {
 }
 
 .edit-action-btn:hover {
-  opacity: 0.86;
+  opacity: 0.92;
   transform: translateY(-1px);
 }
 
@@ -3274,7 +3340,12 @@ main.menu-open .subtitle-overlay {
   width: 100%;
   margin: 0;
   padding: 6px 6px;
-  background: var(--bg-elevated);
+  background: color-mix(
+    in srgb,
+    var(--bg-elevated) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 7px;
   display: flex;
@@ -4391,7 +4462,12 @@ main.menu-open .subtitle-overlay {
   width: 100%;
   margin: 0;
   padding: 6px 6px;
-  background: var(--bg-elevated);
+  background: color-mix(
+    in srgb,
+    var(--bg-elevated) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 7px;
   display: flex;
@@ -4552,7 +4628,12 @@ main.menu-open .subtitle-overlay {
   left: 0;
   z-index: 1300;
   min-width: 100%;
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 4px;

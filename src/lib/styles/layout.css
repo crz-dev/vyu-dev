@@ -638,7 +638,12 @@ main:not(.fullscreen).thumbnail-bar-open {
   align-items: center;
   gap: 3px;
   padding: 4px;
-  background: var(--bg-secondary);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-bottom: 0;
   border-radius: 7px 7px 0 0;
@@ -975,8 +980,12 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   min-width: min(190px, calc(100vw - 16px));
   max-width: calc(100vw - 16px);
   box-sizing: border-box;
-  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
   border-radius: 9px;
   padding: 5px;

@@ -114,6 +114,8 @@ html[data-a11y-spacing="true"]
 /* Reduced transparency — replace translucent surfaces with solid colors */
 html[data-a11y-opaque="true"] {
   --bg-elevated: #1a1a1a;
+  --menu-opacity: 100% !important;
+  --menu-blur: 0px !important;
 }
 
 html[data-a11y-opaque="true"]
@@ -126,8 +128,24 @@ html[data-a11y-opaque="true"]
     .delete-dialog,
     .app-dropdown-menu,
     .sort-menu,
+    .zoom-menu,
+    .ts-drop-menu,
+    .loop-drop-menu,
+    .track-menu,
+    .slideshow-menu,
+    .select-menu,
     .edit-menu,
     .context-menu,
+    .clip-actions,
+    .text-font-dropdown,
+    .eq-preset-dropdown,
+    .profile-menu,
+    .language-menu,
+    .pdf-find-bar,
+    .pdf-selection-pill,
+    .pdf-page-panel,
+    .ts-edit-menu,
+    .debug-overlay,
     .cheat-sheet,
     .toast
   ) {
