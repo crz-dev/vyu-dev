@@ -139,6 +139,19 @@ html[data-a11y-opaque="true"][data-theme="light"] {
   --bg-elevated: #ffffff;
 }
 
+html[data-a11y-opaque="true"] .delete-overlay {
+  backdrop-filter: none !important;
+}
+
+html[data-a11y-opaque="true"] .edit-menu-card {
+  background-color: var(--bg-primary) !important;
+}
+
+html[data-a11y-opaque="true"] .edit-actions-bar {
+  background-color: var(--bg-primary) !important;
+  backdrop-filter: none !important;
+}
+
 /* Larger click targets */
 html[data-a11y-large-targets="true"]
   :where(

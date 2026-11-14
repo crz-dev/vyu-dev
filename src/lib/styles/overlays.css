@@ -351,10 +351,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(3px) saturate(85%);
   animation: uiOverlayFadeIn 160ms ease both;
 }
 .delete-dialog {
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 96%, transparent);
+  backdrop-filter: blur(16px) saturate(115%);
   border: 0.5px solid var(--bg-border);
   border-radius: 12px;
   padding: 16px 24px;
@@ -390,6 +392,38 @@
   border: 0.5px solid var(--bg-elevated);
   border-radius: 10px;
 }
+.delete-confirm-dialog .delete-toggles .toggle-row {
+  position: relative;
+  padding: 5px 4px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+.delete-confirm-dialog .delete-toggles .toggle-row:hover {
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+.delete-confirm-dialog .delete-toggles .toggle-row input {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.delete-confirm-dialog .delete-toggles .toggle-label {
+  transition: color 0.15s ease;
+}
+.delete-confirm-dialog .delete-toggles .toggle-row:hover .toggle-label {
+  color: var(--text-secondary);
+}
+.delete-confirm-dialog
+  .delete-toggles
+  .toggle-row
+  input:focus-visible
+  + .toggle-track {
+  box-shadow: 0 0 0 2px var(--text-muted);
+}
 .delete-toggles .toggle-label {
   display: inline-flex;
   align-items: center;
@@ -423,6 +457,15 @@
 }
 .delete-dialog .toggle-track.on {
   background: #ef4444;
+}
+.delete-confirm-dialog
+  .delete-toggles
+  .toggle-row:not(:first-child)
+  .toggle-track.on {
+  background: var(--text-muted);
+}
+.delete-confirm-dialog .edit-confirm-header-left > svg {
+  color: var(--red);
 }
 .toggle-track.green-toggle.on {
   background: var(--green);
@@ -464,25 +507,48 @@
   cursor: pointer;
   transition:
     background 0.2s,
-    color 0.2s;
+    color 0.2s,
+    border-color 0.2s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .delete-cancel:hover {
   background: var(--bg-elevated);
   color: var(--text-secondary);
+  border-color: var(--text-dim);
+  transform: translateY(-1px);
+}
+.delete-cancel:active {
+  transform: scale(0.97);
+}
+.delete-cancel:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .delete-confirm-btn {
   padding: 7px 16px;
   border-radius: 7px;
-  border: none;
+  border: 0.5px solid var(--red-border);
   background: var(--red-bg-default);
   color: var(--red);
   font-size: 12px;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: background 0.2s;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .delete-confirm-btn:hover {
-  background: var(--red-border);
+  background: var(--red-bg-active);
+  border-color: var(--red-border-strong);
+  transform: translateY(-1px);
+}
+.delete-confirm-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.delete-confirm-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--red);
 }
 .delete-confirm-btn:disabled {
   opacity: 0.5;
@@ -1030,6 +1096,7 @@
 .share-dialog {
   width: 440px;
   max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
   gap: 10px;
   padding: 0 24px 16px;
   overflow: hidden;
@@ -1064,6 +1131,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-border) transparent;
 }
 .share-section {
   display: flex;
@@ -1087,15 +1158,16 @@
 }
 .share-grid {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   justify-content: center;
 }
 .share-grid-4 {
   flex-wrap: wrap;
+  gap: 6px;
 }
 .share-grid-3 {
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 /* Square buttons (Send to) */
 .share-btn {
@@ -1113,11 +1185,17 @@
   font-size: 10px;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: background 0.15s;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .share-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   color: var(--blue-light);
+  border-color: color-mix(in srgb, currentColor 45%, var(--bg-border));
+  transform: translateY(-1px);
 }
 .share-btn:disabled {
   opacity: 0.55;
@@ -1139,11 +1217,17 @@
   font-size: 10px;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: background 0.15s;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .share-btn-circle:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   color: var(--green);
+  border-color: color-mix(in srgb, currentColor 45%, var(--bg-border));
+  transform: translateY(-1px);
 }
 .share-btn-circle:disabled {
   opacity: 0.55;
@@ -1165,15 +1249,42 @@
   font-size: 11px;
   font-family: var(--font-family);
   cursor: pointer;
-  transition: background 0.15s;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .share-btn-wide:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   color: var(--yellow-soft);
+  border-color: color-mix(in srgb, currentColor 45%, var(--bg-border));
+  transform: translateY(-1px);
 }
 .share-btn-wide:disabled {
   opacity: 0.55;
   cursor: default;
+}
+.share-btn:active:not(:disabled),
+.share-btn-circle:active:not(:disabled),
+.share-btn-wide:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.share-btn:focus-visible,
+.share-btn-circle:focus-visible,
+.share-btn-wide:focus-visible {
+  box-shadow: 0 0 0 1px currentColor;
+}
+.share-btn svg,
+.share-btn-circle svg,
+.share-btn-wide svg {
+  flex-shrink: 0;
+  transition: transform 0.16s ease;
+}
+.share-btn:hover:not(:disabled) svg,
+.share-btn-circle:hover:not(:disabled) svg,
+.share-btn-wide:hover:not(:disabled) svg {
+  transform: scale(1.08);
 }
 /* Progress-bar fill on converting share button */
 .share-btn-wide.converting {
@@ -1200,7 +1311,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 6px;
   padding: 0;
 }
 .share-dest-label {
@@ -1221,7 +1332,9 @@
   background: var(--bg-primary);
   border: 0.5px solid var(--bg-elevated);
   border-radius: 7px;
-  padding: 5px 7px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   aspect-ratio: 1;
   color: var(--text-muted);
   cursor: pointer;
@@ -1231,10 +1344,19 @@
   transition:
     color 0.15s,
     background 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .share-delete-toggle:hover {
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+.share-delete-toggle:active {
+  transform: scale(0.95);
+}
+.share-delete-toggle:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 .share-delete-toggle.is-on {
   background: var(--red-bg-default);
@@ -1419,7 +1541,10 @@
   cursor: pointer;
   transition:
     background 0.2s,
-    color 0.2s;
+    color 0.2s,
+    border-color 0.2s,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .edit-confirm-btn-full {
   width: 100%;
@@ -1480,11 +1605,19 @@
   padding: 0;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .edit-confirm-header-close:hover {
   background: var(--bg-elevated);
   color: var(--red);
+}
+.edit-confirm-header-close:active {
+  transform: scale(0.95);
+}
+.edit-confirm-header-close:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .ts-tooltip {
@@ -1829,7 +1962,9 @@
   z-index: 2;
   transition:
     color 0.15s,
-    background 0.15s;
+    background 0.15s,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .dialog-close-x svg {
   width: 16px;
@@ -1839,6 +1974,12 @@
 .dialog-close-x:hover {
   color: var(--red);
   background: var(--red-bg-faint);
+}
+.dialog-close-x:active {
+  transform: scale(0.95);
+}
+.dialog-close-x:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
 }
 
 .settings-header-bar .delete-title {
@@ -5545,6 +5686,26 @@
 
 [data-theme="light"] :where(.settings-action-btn:hover) {
   background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .share-btn,
+[data-theme="light"] .share-btn-circle,
+[data-theme="light"] .share-btn-wide,
+[data-theme="light"] .share-dest-label,
+[data-theme="light"] .share-delete-toggle {
+  background: rgba(0, 0, 0, 0.035);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="light"] .share-btn:hover:not(:disabled),
+[data-theme="light"] .share-btn-circle:hover:not(:disabled),
+[data-theme="light"] .share-btn-wide:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.075);
+}
+
+[data-theme="light"] .share-delete-toggle.is-on {
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
 }
 
 [data-theme="light"] .ts-edit-menu {

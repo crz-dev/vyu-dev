@@ -1584,11 +1584,12 @@
 {#if deleteConfirm}
   <div
     class="delete-overlay"
+    out:fade={{ duration: overlayFadeMs }}
     role="presentation"
     onmousedown={closeDeleteConfirm}
   >
     <div
-      class="delete-dialog edit-confirm-dialog"
+      class="delete-dialog edit-confirm-dialog delete-confirm-dialog"
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -1731,11 +1732,12 @@
 {#if multiDeleteConfirm}
   <div
     class="delete-overlay"
+    out:fade={{ duration: overlayFadeMs }}
     role="presentation"
     onmousedown={closeMultiDeleteConfirm}
   >
     <div
-      class="delete-dialog edit-confirm-dialog"
+      class="delete-dialog edit-confirm-dialog delete-confirm-dialog"
       role="dialog"
       aria-modal="true"
       tabindex="-1"
