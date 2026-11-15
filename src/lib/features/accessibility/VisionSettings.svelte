@@ -3,16 +3,11 @@
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
-  import type { ViewerBackground } from "$lib/features/theme/appearance.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
 
   const t = locale.t;
-
-  function setViewerBackground(background: ViewerBackground) {
-    appearance.setViewerBackground(background);
-  }
 </script>
 
 <div id="accessibility-section-vision" class="settings-section" class:flash>
@@ -221,34 +216,6 @@
             ><span class="toggle-thumb"></span></span
           >
         </label>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
-      label={t("settings.accessibility.vision.viewerBackground.label")}
-      hint={t("settings.accessibility.vision.viewerBackground.hint")}
-    >
-      {#snippet control()}
-        <div class="pill-group pill-group-3">
-          <button
-            class="pill-btn"
-            class:active={appearance.viewerBackground === "theme"}
-            onclick={() => setViewerBackground("theme")}
-            >{t("settings.accessibility.vision.viewerBackground.theme")}</button
-          >
-          <button
-            class="pill-btn"
-            class:active={appearance.viewerBackground === "black"}
-            onclick={() => setViewerBackground("black")}
-            >{t("settings.accessibility.vision.viewerBackground.black")}</button
-          >
-          <button
-            class="pill-btn"
-            class:active={appearance.viewerBackground === "gray"}
-            onclick={() => setViewerBackground("gray")}
-            >{t("settings.accessibility.vision.viewerBackground.gray")}</button
-          >
-        </div>
       {/snippet}
     </SettingsRow>
 

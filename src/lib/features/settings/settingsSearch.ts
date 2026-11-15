@@ -416,7 +416,6 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
   "strong focus rings": ["keyboard", "outline", "focus", "accessible"],
   "bold text": ["weight", "font", "thick", "readability"],
   "text spacing": ["line", "letter", "spacing", "readability", "dyslexia"],
-  "viewer background": ["canvas", "background", "black", "gray", "theme"],
   "larger viewer controls": ["player", "media", "controls", "bigger"],
   "volume limit": ["hearing", "safe", "maximum", "loud", "cap"],
   "mono audio": ["hearing", "channels", "stereo", "single", "deaf"],

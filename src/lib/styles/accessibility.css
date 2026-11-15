@@ -40,6 +40,14 @@ html[data-viewer-bg="gray"] .viewer {
   background-color: #181818;
 }
 
+html[data-viewer-bg="black"] .content.checkerboard {
+  background-color: #000000;
+}
+
+html[data-viewer-bg="gray"] .content.checkerboard {
+  background-color: #181818;
+}
+
 /* Global tooltip visibility */
 html[data-tooltips="off"] [data-tooltip]::after,
 html[data-tooltips="off"] .tooltip-ctrl::after {

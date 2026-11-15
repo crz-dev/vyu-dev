@@ -377,7 +377,10 @@
   }
 </script>
 
-<div class="content">
+<div
+  class="content"
+  class:checkerboard={appearance.checkerboard && !isVideo && !isAudio && !isPdf}
+>
   <div
     class="sidebar left"
     onmouseenter={() => (hoverZone = "sidebar")}
@@ -412,10 +415,6 @@
   </div>
   <div
     class="viewer"
-    class:checkerboard={appearance.checkerboard &&
-      !isVideo &&
-      !isAudio &&
-      !isPdf}
     bind:this={viewerEl}
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}

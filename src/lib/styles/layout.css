@@ -327,12 +327,15 @@ main {
   padding: 0;
 }
 
-.viewer.checkerboard {
+.content.checkerboard {
   background-image: repeating-conic-gradient(
     var(--checker-a) 0% 25%,
     transparent 0% 50%
   );
   background-size: 20px 20px;
+}
+.content.checkerboard .viewer {
+  background: transparent;
 }
 
 main:not(.fullscreen).thumbnail-bar-open .viewer {
