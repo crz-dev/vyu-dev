@@ -70,8 +70,17 @@
   } = $props();
 
   let editing = $state(false);
+  let closing = $state(false);
   let editValue = $state("");
   let inputEl = $state<HTMLInputElement | null>(null);
+  let startWidthPx = 0;
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
+  let measureCtx: CanvasRenderingContext2D | null = null;
+
+  // Mirrors .filename max-width in layout.css.
+  const FILENAME_MAX_WIDTH = 300;
+  // Mirrors the .filename-input width transition in layout.css.
+  const RENAME_CLOSE_MS = 190;
 
   let folderEditing = $state(false);
   let folderEditValue = $state("");
@@ -79,7 +88,14 @@
 
   const folderName = $derived(parentFolder ? getFileName(parentFolder()) : "");
 
-  function startEditing() {
+  function startEditing(target?: HTMLButtonElement | EventTarget | null) {
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+      closing = false;
+    }
+    startWidthPx =
+      target instanceof HTMLElement ? target.getBoundingClientRect().width : 0;
     editValue = fileName;
     editing = true;
     setTimeout(() => {
@@ -87,13 +103,112 @@
       inputEl.focus();
       const dotIndex = editValue.lastIndexOf(".");
       inputEl.setSelectionRange(0, dotIndex > 0 ? dotIndex : editValue.length);
+      resetRenameScroll(inputEl);
     }, 0);
   }
 
+  function measureRenameTextWidth(
+    text: string,
+    style: CSSStyleDeclaration,
+  ): number | null {
+    if (!measureCtx) {
+      measureCtx = document.createElement("canvas").getContext("2d");
+    }
+    if (!measureCtx) return null;
+    measureCtx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    return measureCtx.measureText(text).width;
+  }
+
+  function measureRenameChrome(style: CSSStyleDeclaration): number {
+    return (
+      parseFloat(style.paddingLeft) +
+      parseFloat(style.paddingRight) +
+      parseFloat(style.borderLeftWidth) +
+      parseFloat(style.borderRightWidth)
+    );
+  }
+
+  // Space the topbar can spare before the actions to the right of the input.
+  // Those actions move as the input grows, so measure against the topbar's
+  // right edge (the window controls are pinned there) rather than against the
+  // next sibling, which would just echo the input's current width.
+  function measureRenameLimit(input: HTMLInputElement): number {
+    const topbar = input.parentElement;
+    if (!topbar) return Number.POSITIVE_INFINITY;
+    const topbarStyle = getComputedStyle(topbar);
+    const gap = parseFloat(topbarStyle.columnGap) || 0;
+    let reserved = 0;
+    for (
+      let sibling = input.nextElementSibling;
+      sibling;
+      sibling = sibling.nextElementSibling
+    ) {
+      reserved += sibling.getBoundingClientRect().width + gap;
+    }
+    const rightEdge =
+      topbar.getBoundingClientRect().right -
+      parseFloat(topbarStyle.paddingRight);
+    return Math.max(
+      0,
+      Math.floor(rightEdge - input.getBoundingClientRect().left - reserved),
+    );
+  }
+
+  function measureRenameWidth(input: HTMLInputElement): number {
+    const style = getComputedStyle(input);
+    const textWidth = measureRenameTextWidth(input.value, style) ?? 0;
+    const natural = Math.ceil(textWidth + measureRenameChrome(style)) + 2;
+    return Math.min(natural, measureRenameLimit(input));
+  }
+
+  function resizeRenameInput(input: HTMLInputElement) {
+    input.style.width = `${measureRenameWidth(input)}px`;
+
+    // Canvas metrics can drift from the font the field actually renders with.
+    // Its scrollWidth reports the text width alone, so grow when the name
+    // still clips.
+    if (input.scrollWidth > input.clientWidth) {
+      const chrome = measureRenameChrome(getComputedStyle(input));
+      const needed = Math.ceil(input.scrollWidth + chrome) + 2;
+      input.style.width = `${Math.min(needed, measureRenameLimit(input))}px`;
+    }
+  }
+
+  // Chromium scrolls a focused field to its caret when the selection changes,
+  // which hides the start of a name that is wider than the box.
+  function resetRenameScroll(input: HTMLInputElement) {
+    input.scrollLeft = 0;
+  }
+
+  // Shrink back to the filename's displayed width before swapping the input
+  // for the label, so the actions slide back with it. The box keeps its text
+  // visible while the chrome collapses, landing on the label's geometry.
+  function startClose(displayName: string) {
+    if (!editing || closing) return;
+    closing = true;
+    const input = inputEl;
+    if (input) {
+      // Drop focus so the caret and its scroll-into-view cannot fight the
+      // shrink, and Chromium cannot scroll away from the start of the name.
+      input.blur();
+      input.scrollLeft = 0;
+      const textWidth =
+        measureRenameTextWidth(displayName, getComputedStyle(input)) ?? 0;
+      const target = Math.min(Math.ceil(textWidth) + 1, FILENAME_MAX_WIDTH);
+      input.style.width = `${Math.max(target, 0)}px`;
+    }
+    closeTimer = setTimeout(() => {
+      closeTimer = null;
+      editing = false;
+      closing = false;
+    }, RENAME_CLOSE_MS);
+  }
+
   async function commitRename() {
-    editing = false;
-    hideFilenameTooltip();
+    if (closing) return;
     const newName = editValue.trim();
+    startClose(newName || fileName);
+    hideFilenameTooltip();
     if (!newName || newName === fileName || !filePath) return;
 
     // Sanitize: reject names containing path separators or traversal
@@ -128,7 +243,8 @@
   }
 
   function cancelEdit() {
-    editing = false;
+    if (closing) return;
+    startClose(fileName);
   }
 
   function startFolderEditing() {
@@ -183,11 +299,37 @@
     folderEditing = false;
   }
 
+  // Grow the input from the filename's displayed width so the actions to the
+  // right slide over instead of jumping.
+  $effect(() => {
+    if (!editing) return;
+    const input = inputEl;
+    if (!input) return;
+    input.style.width = `${startWidthPx || input.offsetWidth}px`;
+    // Flush the start width so the change below transitions instead of
+    // being treated as the element's initial style.
+    void input.offsetWidth;
+    resizeRenameInput(input);
+    resetRenameScroll(input);
+
+    // Canvas metrics fall back to another font until the display font is
+    // ready, which can under-measure the name.
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (cancelled || closing || inputEl !== input) return;
+      resizeRenameInput(input);
+      resetRenameScroll(input);
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
   // Submit rename on any click outside the input.
   // onblur doesn't work here because startPan calls preventDefault()
   // on mousedown, which prevents the browser from blurring the input.
   $effect(() => {
-    if (!editing) return;
+    if (!editing || closing) return;
     function onGlobalMouseDown(e: MouseEvent) {
       if (inputEl && !inputEl.contains(e.target as Node)) {
         commitRename();
@@ -269,7 +411,11 @@
         bind:this={inputEl}
         bind:value={editValue}
         class="filename-input"
+        class:closing
         type="text"
+        oninput={() => {
+          if (inputEl && !closing) resizeRenameInput(inputEl);
+        }}
         onkeydown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -288,7 +434,7 @@
         class="filename filename-btn"
         onmouseenter={showFilenameTooltip}
         onmouseleave={hideFilenameTooltip}
-        onclick={fileSrc ? startEditing : undefined}
+        onclick={(e) => fileSrc && startEditing(e.currentTarget)}
         aria-label={t("menus.app.renameFile")}
         ><Marquee
           text={fileName}

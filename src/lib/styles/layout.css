@@ -75,7 +75,7 @@ main {
   border: 0.5px solid var(--bg-border);
   border-radius: 6px;
   padding: 0 8px;
-  max-width: 300px;
+  max-width: 100%;
   min-width: 80px;
   height: 26px;
   box-sizing: border-box;
@@ -84,8 +84,13 @@ main {
   transform-origin: left center;
   animation: filenameInputIn 160ms ease-out both;
   transition:
+    width 180ms ease,
+    min-width 180ms ease,
+    padding 180ms ease,
+    border-width 180ms ease,
     border-color 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .filename-input:hover {
   border-color: var(--text-dim);
@@ -94,6 +99,16 @@ main {
   border-color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.07);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-muted) 14%, transparent);
+}
+.filename-input.closing {
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-width: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
 }
 
 /* Marquee scrolling text */
@@ -1154,7 +1169,7 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
 
 /* ── Light theme fills ─────────────────────────────── */
 /* White-alpha fills disappear on light surfaces; use dark alpha instead. */
-[data-theme="light"] .filename-input {
+[data-theme="light"] .filename-input:not(.closing) {
   background: rgba(0, 0, 0, 0.05);
 }
 
