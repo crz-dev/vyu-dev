@@ -23,7 +23,7 @@ This is intentional, not a judgment on contributions. Keeping sole copyright all
 - **Report bugs** — open an Issue with steps to reproduce and, where useful, screenshots or a short recording.
 - **Report security vulnerabilities** — follow [SECURITY.md](./SECURITY.md); do not post vulnerability details in a public Issue.
 - **Request features** — open an Issue describing the use case.
-- **Share ideas** — use Issues for anything actionable. The in-app feedback form is currently a UI placeholder and does not submit data.
+- **Share ideas** — use Issues for anything actionable. The in-app feedback form prepares a prefilled Issue and opens it in your browser; nothing is sent until you post it.
 - **Fork after release** — once Vyu ships under GPL-3.0 at the first stable release, you can build on it for your own use.
 
 ## Why GPL-3.0 then?

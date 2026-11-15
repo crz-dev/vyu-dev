@@ -1,7 +1,16 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { openUrl } from "@tauri-apps/plugin-opener";
+  import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
+  import { showToast } from "$lib/components/toast.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import {
+    invokeCheckForUpdates,
+    invokeGetRuntimeInfo,
+  } from "$lib/features/system/api";
 
   const MAX_CHARS = 200;
+  const ISSUE_URL = "https://github.com/crz-dev/vyu-dev/issues/new";
 
   let {
     feedbackOpen,
@@ -14,70 +23,43 @@
   const t = locale.t;
   const tp = locale.tp;
 
+  type Os = "windows" | "linux" | "macos" | "other" | "";
+  type Usefulness = "useful" | "neutral" | "not-used";
+  type FeatureRating = Usefulness | "";
+  type Frequency = "low" | "medium" | "high" | "";
+  type Retention = "no" | "maybe" | "yes" | "";
+
   let overall = $state(0);
   let performance = $state(0);
+  let reliability = $state(0);
   let uiClarity = $state(0);
 
   const features = [
-    { id: "edit", labelKey: "dialogs.feedback.features.edit" },
-    { id: "markers", labelKey: "dialogs.feedback.features.markers" },
-    { id: "convert", labelKey: "dialogs.feedback.features.convert" },
-    { id: "compress", labelKey: "dialogs.feedback.features.compress" },
-    { id: "slideshow", labelKey: "dialogs.feedback.features.slideshow" },
-    { id: "library", labelKey: "dialogs.feedback.features.library" },
+    {
+      id: "edit",
+      icon: "pencil",
+      labelKey: "dialogs.feedback.features.edit",
+      descKey: "dialogs.feedback.features.edit.desc",
+    },
+    {
+      id: "markers",
+      icon: "bookmark",
+      labelKey: "dialogs.feedback.features.markers",
+      descKey: "dialogs.feedback.features.markers.desc",
+    },
+    {
+      id: "library",
+      icon: "layout",
+      labelKey: "dialogs.feedback.features.library",
+      descKey: "dialogs.feedback.features.library.desc",
+    },
+    {
+      id: "accessibility",
+      icon: "settings",
+      labelKey: "dialogs.feedback.features.accessibility",
+      descKey: "dialogs.feedback.features.accessibility.desc",
+    },
   ];
-
-  type Usefulness = "useful" | "neutral" | "not-used";
-  let featureRatings = $state<Record<string, Usefulness>>(
-    Object.fromEntries(features.map((f) => [f.id, "neutral" as Usefulness])),
-  );
-
-  let painPoint = $state("");
-  let improvement = $state("");
-  let focusArea = $state("");
-
-  type Frequency = "low" | "medium" | "high" | "";
-  let frequency = $state<Frequency>("");
-
-  type Retention = "no" | "maybe" | "yes" | "";
-  let retention = $state<Retention>("");
-
-  let os = $state("");
-  let appVersion = $state("");
-  let logFile = $state<File | null>(null);
-
-  const atLimit = $derived(
-    painPoint.length >= MAX_CHARS ||
-      improvement.length >= MAX_CHARS ||
-      focusArea.length >= MAX_CHARS,
-  );
-
-  function setFeature(id: string, value: Usefulness) {
-    featureRatings = { ...featureRatings, [id]: value };
-  }
-
-  function reset() {
-    overall = 0;
-    performance = 0;
-    uiClarity = 0;
-    featureRatings = Object.fromEntries(
-      features.map((f) => [f.id, "neutral" as Usefulness]),
-    );
-    painPoint = "";
-    improvement = "";
-    focusArea = "";
-    frequency = "";
-    retention = "";
-    os = "";
-    appVersion = "";
-    logFile = null;
-  }
-
-  function submit() {
-    if (atLimit) return;
-    reset();
-    closeFeedback();
-  }
 
   const starLabels = [
     "dialogs.feedback.stars.poor",
@@ -86,7 +68,276 @@
     "dialogs.feedback.stars.great",
     "dialogs.feedback.stars.excellent",
   ];
+
+  const usefulnessKeys: Record<Usefulness, string> = {
+    "not-used": "dialogs.feedback.features.notUsed",
+    neutral: "dialogs.feedback.features.neutral",
+    useful: "dialogs.feedback.features.useful",
+  };
+
+  const usefulnessTones: Record<Usefulness, string> = {
+    "not-used": "red",
+    neutral: "neutral",
+    useful: "green",
+  };
+
+  const frequencyKeys: Record<Exclude<Frequency, "">, string> = {
+    low: "dialogs.feedback.frequency.low",
+    medium: "dialogs.feedback.frequency.medium",
+    high: "dialogs.feedback.frequency.high",
+  };
+
+  const retentionKeys: Record<Exclude<Retention, "">, string> = {
+    no: "dialogs.feedback.retention.no",
+    maybe: "dialogs.feedback.retention.maybe",
+    yes: "dialogs.feedback.retention.yes",
+  };
+
+  let featureRatings = $state<Record<string, FeatureRating>>(
+    Object.fromEntries(features.map((f) => [f.id, "" as FeatureRating])),
+  );
+
+  let painPoint = $state("");
+  let improvement = $state("");
+  let frequency = $state<Frequency>("");
+  let retention = $state<Retention>("");
+
+  let os = $state<Os>("");
+  let osTouched = false;
+
+  let hoveredRow = $state("");
+  let hoveredStar = $state(0);
+
+  let checkingUpdates = $state(false);
+  let sending = $state(false);
+
+  const hasInput = $derived(
+    overall > 0 ||
+      performance > 0 ||
+      reliability > 0 ||
+      uiClarity > 0 ||
+      features.some((f) => featureRatings[f.id] !== "") ||
+      painPoint.trim() !== "" ||
+      improvement.trim() !== "" ||
+      frequency !== "" ||
+      retention !== "",
+  );
+
+  onMount(() => {
+    let cancelled = false;
+    void invokeGetRuntimeInfo()
+      .then((info) => {
+        if (cancelled || osTouched) return;
+        os =
+          info.os === "windows" || info.os === "linux" || info.os === "macos"
+            ? (info.os as Os)
+            : "other";
+      })
+      .catch(() => {
+        // OS detection is a convenience; the buttons still work without it.
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  function setOs(value: Os) {
+    osTouched = true;
+    os = os === value ? "" : value;
+  }
+
+  function setFeature(id: string, value: Usefulness) {
+    featureRatings = { ...featureRatings, [id]: value };
+  }
+
+  function reset() {
+    overall = 0;
+    performance = 0;
+    reliability = 0;
+    uiClarity = 0;
+    featureRatings = Object.fromEntries(
+      features.map((f) => [f.id, "" as FeatureRating]),
+    );
+    painPoint = "";
+    improvement = "";
+    frequency = "";
+    retention = "";
+    os = "";
+    osTouched = false;
+    hoveredRow = "";
+    hoveredStar = 0;
+  }
+
+  function osLabel(): string {
+    if (os === "windows") return "Windows";
+    if (os === "linux") return "Linux";
+    if (os === "macos") return "macOS";
+    if (os === "other") return t("dialogs.feedback.system.osOther");
+    return "—";
+  }
+
+  function ratingLine(label: string, value: number): string {
+    const score = value > 0 ? `${value}/5 · ${t(starLabels[value - 1])}` : "—";
+    return `- **${label}:** ${score}`;
+  }
+
+  function issueSummary(): string {
+    return (improvement.trim() || painPoint.trim())
+      .replace(/\s+/g, " ")
+      .slice(0, 60);
+  }
+
+  function buildIssueUrl(): string {
+    const lines = [
+      `### ${t("dialogs.feedback.experience.title")}`,
+      "",
+      ratingLine(t("dialogs.feedback.experience.performance"), performance),
+      ratingLine(t("dialogs.feedback.experience.reliability"), reliability),
+      ratingLine(t("dialogs.feedback.experience.uiClarity"), uiClarity),
+      ratingLine(t("dialogs.feedback.experience.overall"), overall),
+      "",
+      `### ${t("dialogs.feedback.features.title")}`,
+      "",
+      ...features.map((f) => {
+        const rating = featureRatings[f.id];
+        return `- **${t(f.labelKey)}:** ${rating ? t(usefulnessKeys[rating]) : "—"}`;
+      }),
+      "",
+      `### ${t("dialogs.feedback.pain.title")}`,
+      "",
+      painPoint.trim() || "—",
+      "",
+      `${t("dialogs.feedback.pain.frequency")}: ${frequency ? t(frequencyKeys[frequency]) : "—"}`,
+      "",
+      `### ${t("dialogs.feedback.future.title")}`,
+      "",
+      improvement.trim() || "—",
+      "",
+      `${t("dialogs.feedback.retention.label")} ${retention ? t(retentionKeys[retention]) : "—"}`,
+      "",
+      `### ${t("dialogs.feedback.system.title")}`,
+      "",
+      `- **${t("dialogs.feedback.system.os")}:** ${osLabel()}`,
+      `- **${t("dialogs.feedback.system.version")}:** v${__APP_VERSION__}`,
+    ];
+
+    const summary = issueSummary();
+    const title = summary
+      ? `${t("dialogs.feedback.title")}: ${summary}`
+      : `${t("dialogs.feedback.title")} — v${__APP_VERSION__}`;
+
+    return `${ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(lines.join("\n"))}`;
+  }
+
+  async function submit() {
+    if (sending || !hasInput) return;
+    sending = true;
+    try {
+      await openUrl(buildIssueUrl());
+      reset();
+      closeFeedback();
+    } catch (e) {
+      showToast({
+        message: t("dialogs.feedback.toast.openFailed", { error: String(e) }),
+        color: "red",
+      });
+    } finally {
+      sending = false;
+    }
+  }
+
+  async function checkForUpdates() {
+    if (checkingUpdates) return;
+    checkingUpdates = true;
+    try {
+      const result = await invokeCheckForUpdates();
+      const url = result.status === "update" ? result.releaseUrl : null;
+      showToast({
+        message: result.message,
+        color: "grey",
+        duration: url ? 7000 : 4000,
+        actions: url
+          ? [
+              {
+                label: t("dialogs.feedback.toast.open"),
+                variant: "accent",
+                onClick: () => {
+                  void openUrl(url).catch((e) =>
+                    showToast({ message: String(e), color: "red" }),
+                  );
+                },
+              },
+            ]
+          : [],
+      });
+    } catch (e) {
+      showToast({ message: String(e), color: "red" });
+    } finally {
+      checkingUpdates = false;
+    }
+  }
 </script>
+
+{#snippet starPicker(
+  id: string,
+  labelKey: string,
+  value: number,
+  onSet: (n: number) => void,
+)}
+  {@const display = hoveredRow === id && hoveredStar > 0 ? hoveredStar : value}
+  <div
+    class="feedback-stars"
+    role="group"
+    aria-label={t(labelKey)}
+    onmouseleave={() => (hoveredStar = 0)}
+  >
+    {#each [1, 2, 3, 4, 5] as n}
+      <button
+        class="feedback-star-btn"
+        class:filled={n <= display}
+        aria-pressed={value === n}
+        aria-label={tp("dialogs.feedback.stars", n)}
+        onclick={() => onSet(n)}
+        onmouseenter={() => {
+          hoveredRow = id;
+          hoveredStar = n;
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill={n <= display ? "currentColor" : "none"}
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+          />
+        </svg>
+      </button>
+    {/each}
+    <span class="feedback-star-label">
+      {display > 0
+        ? t(starLabels[display - 1])
+        : t("dialogs.feedback.experience.rate")}
+    </span>
+  </div>
+{/snippet}
+
+{#snippet bucketIcon(value: Usefulness)}
+  {#if value === "useful"}
+    <path
+      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"
+    />
+  {:else if value === "not-used"}
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  {:else}
+    <line x1="5" y1="12" x2="19" y2="12" />
+  {/if}
+{/snippet}
 
 {#if feedbackOpen}
   <div
@@ -96,9 +347,14 @@
       if (e.target === e.currentTarget) closeFeedback();
     }}
   >
-    <div class="delete-dialog feedback-dialog" role="dialog" aria-modal="true">
+    <div
+      class="delete-dialog feedback-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="feedback-title"
+    >
       <div class="settings-header-bar">
-        <p class="delete-title">
+        <p class="delete-title" id="feedback-title">
           <svg
             class="header-icon"
             width="16"
@@ -185,86 +441,29 @@
                 <button
                   class="feedback-os-btn"
                   class:active={os === "windows"}
-                  onclick={() => (os = os === "windows" ? "" : "windows")}
+                  onclick={() => setOs("windows")}
                 >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><rect x="3" y="3" width="18" height="18" rx="2" /><line
-                      x1="12"
-                      y1="3"
-                      x2="12"
-                      y2="21"
-                    /><line x1="3" y1="12" x2="21" y2="12" /></svg
-                  >
                   Windows
                 </button>
                 <button
                   class="feedback-os-btn"
                   class:active={os === "linux"}
-                  onclick={() => (os = os === "linux" ? "" : "linux")}
+                  onclick={() => setOs("linux")}
                 >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><polyline points="16 18 22 12 16 6" /><polyline
-                      points="8 6 2 12 8 18"
-                    /></svg
-                  >
                   Linux
                 </button>
                 <button
                   class="feedback-os-btn"
                   class:active={os === "macos"}
-                  onclick={() => (os = os === "macos" ? "" : "macos")}
+                  onclick={() => setOs("macos")}
                 >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"
-                    /><path d="M10 2c1 .5 2 2 2 5" /></svg
-                  >
                   macOS
                 </button>
                 <button
                   class="feedback-os-btn"
                   class:active={os === "other"}
-                  onclick={() => (os = os === "other" ? "" : "other")}
+                  onclick={() => setOs("other")}
                 >
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><circle cx="12" cy="12" r="1" /><circle
-                      cx="19"
-                      cy="12"
-                      r="1"
-                    /><circle cx="5" cy="12" r="1" /></svg
-                  >
                   {t("dialogs.feedback.system.osOther")}
                 </button>
               </div>
@@ -280,31 +479,22 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  ><polyline points="16 18 22 12 16 6" /><polyline
-                    points="8 6 2 12 8 18"
-                  /></svg
+                  ><path
+                    d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+                  /><line x1="7" y1="7" x2="7.01" y2="7" /></svg
                 >
                 {t("dialogs.feedback.system.version")}
               </span>
               <div class="feedback-version-actions">
                 <span class="feedback-version-text">
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
-                    /><line x1="7" y1="7" x2="7.01" y2="7" /></svg
-                  >
                   {t("dialogs.feedback.system.currentVersion")}
                   <u>v{__APP_VERSION__}</u>
                 </span>
-                <button class="feedback-version-btn">
+                <button
+                  class="feedback-version-btn"
+                  disabled={checkingUpdates}
+                  onclick={checkForUpdates}
+                >
                   <svg
                     width="10"
                     height="10"
@@ -321,101 +511,6 @@
                     /></svg
                   >
                   {t("dialogs.feedback.system.checkUpdates")}
-                </button>
-              </div>
-            </div>
-            <div class="feedback-select-row">
-              <span class="feedback-label">
-                <svg
-                  width="11"
-                  height="11"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><path
-                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                  /><polyline points="14 2 14 8 20 8" /><line
-                    x1="16"
-                    y1="13"
-                    x2="8"
-                    y2="13"
-                  /><line x1="16" y1="17" x2="8" y2="17" /><polyline
-                    points="10 9 9 9 8 9"
-                  /></svg
-                >
-                {t("dialogs.feedback.system.logging")}
-              </span>
-              <div class="feedback-version-actions">
-                <span class="feedback-version-text">
-                  <svg
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                    /><polyline points="14 2 14 8 20 8" /></svg
-                  >
-                  {t("dialogs.feedback.system.includeLogs")}
-                  <u>{t("dialogs.feedback.system.optional")}</u>
-                </span>
-                <input
-                  type="file"
-                  accept=".json"
-                  id="feedback-log-input"
-                  class="feedback-log-input"
-                  onchange={(e) => {
-                    const file = e.currentTarget.files?.[0] ?? null;
-                    logFile = file;
-                  }}
-                />
-                <button
-                  class="feedback-version-btn"
-                  class:feedback-log-btn-active={logFile !== null}
-                  onclick={() =>
-                    document.getElementById("feedback-log-input")?.click()}
-                >
-                  {#if logFile}
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><polyline points="20 6 9 17 4 12" /></svg
-                    >
-                    {logFile.name}
-                  {:else}
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><path
-                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-                      /><polyline points="17 8 12 3 7 8" /><line
-                        x1="12"
-                        y1="3"
-                        x2="12"
-                        y2="15"
-                      /></svg
-                    >
-                    {t("dialogs.feedback.system.attachLogs")}
-                  {/if}
                 </button>
               </div>
             </div>
@@ -450,46 +545,18 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                ><circle cx="12" cy="12" r="10" /><path
-                  d="M8 14s1.5 2 4 2 4-2 4-2"
-                /><line x1="9" y1="9" x2="9.01" y2="9" /><line
-                  x1="15"
-                  y1="9"
-                  x2="15.01"
-                  y2="9"
+                ><polygon
+                  points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
                 /></svg
               >
-              {t("dialogs.feedback.experience.overall")}
+              {t("dialogs.feedback.experience.performance")}
             </span>
-            <div class="feedback-stars">
-              {#each [1, 2, 3, 4, 5] as n}
-                <button
-                  class="feedback-star-btn"
-                  class:filled={n <= overall}
-                  onclick={() => (overall = n)}
-                  aria-label={tp("dialogs.feedback.stars", n)}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill={n <= overall ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                    /></svg
-                  >
-                </button>
-              {/each}
-              <span class="feedback-star-label"
-                >{overall > 0
-                  ? t(starLabels[overall - 1])
-                  : t("dialogs.feedback.experience.rate")}</span
-              >
-            </div>
+            {@render starPicker(
+              "performance",
+              "dialogs.feedback.experience.performance",
+              performance,
+              (n) => (performance = n),
+            )}
           </div>
           <div class="feedback-stars-row">
             <span class="feedback-label">
@@ -502,41 +569,18 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                ><polygon
-                  points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"
+                ><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path
+                  d="M9 12l2 2 4-4"
                 /></svg
               >
-              {t("dialogs.feedback.experience.performance")}
+              {t("dialogs.feedback.experience.reliability")}
             </span>
-            <div class="feedback-stars">
-              {#each [1, 2, 3, 4, 5] as n}
-                <button
-                  class="feedback-star-btn"
-                  class:filled={n <= performance}
-                  onclick={() => (performance = n)}
-                  aria-label={tp("dialogs.feedback.stars", n)}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill={n <= performance ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                    /></svg
-                  >
-                </button>
-              {/each}
-              <span class="feedback-star-label"
-                >{performance > 0
-                  ? t(starLabels[performance - 1])
-                  : t("dialogs.feedback.experience.rate")}</span
-              >
-            </div>
+            {@render starPicker(
+              "reliability",
+              "dialogs.feedback.experience.reliability",
+              reliability,
+              (n) => (reliability = n),
+            )}
           </div>
           <div class="feedback-stars-row">
             <span class="feedback-label">
@@ -555,35 +599,41 @@
               >
               {t("dialogs.feedback.experience.uiClarity")}
             </span>
-            <div class="feedback-stars">
-              {#each [1, 2, 3, 4, 5] as n}
-                <button
-                  class="feedback-star-btn"
-                  class:filled={n <= uiClarity}
-                  onclick={() => (uiClarity = n)}
-                  aria-label={tp("dialogs.feedback.stars", n)}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill={n <= uiClarity ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    ><path
-                      d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                    /></svg
-                  >
-                </button>
-              {/each}
-              <span class="feedback-star-label"
-                >{uiClarity > 0
-                  ? t(starLabels[uiClarity - 1])
-                  : t("dialogs.feedback.experience.rate")}</span
+            {@render starPicker(
+              "clarity",
+              "dialogs.feedback.experience.uiClarity",
+              uiClarity,
+              (n) => (uiClarity = n),
+            )}
+          </div>
+          <div class="feedback-stars-row">
+            <span class="feedback-label">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><circle cx="12" cy="12" r="10" /><path
+                  d="M8 14s1.5 2 4 2 4-2 4-2"
+                /><line x1="9" y1="9" x2="9.01" y2="9" /><line
+                  x1="15"
+                  y1="9"
+                  x2="15.01"
+                  y2="9"
+                /></svg
               >
-            </div>
+              {t("dialogs.feedback.experience.overall")}
+            </span>
+            {@render starPicker(
+              "overall",
+              "dialogs.feedback.experience.overall",
+              overall,
+              (n) => (overall = n),
+            )}
           </div>
         </div>
 
@@ -604,148 +654,66 @@
             >
             {t("dialogs.feedback.features.title")}
           </div>
-          <p class="feedback-hint">{t("dialogs.feedback.features.hint")}</p>
+          <div class="feedback-feature-legend" aria-hidden="true">
+            {#each Object.entries(usefulnessKeys) as [id, key] (id)}
+              <span
+                class="feedback-legend-item {usefulnessTones[id as Usefulness]}"
+              >
+                <svg
+                  width="9"
+                  height="9"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  {@render bucketIcon(id as Usefulness)}
+                </svg>
+                {t(key)}
+              </span>
+            {/each}
+          </div>
           <div class="feedback-features">
-            {#each features as f}
+            {#each features as f (f.id)}
               <div class="feedback-feature-row">
-                <span class="feedback-feature-name">
-                  {#if f.id === "edit"}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><path
-                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                      /><path
-                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L18.5 2.5z"
-                      /></svg
-                    >
-                  {:else if f.id === "markers"}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><circle cx="6" cy="6" r="3" /><circle
-                        cx="6"
-                        cy="18"
-                        r="3"
-                      /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line
-                        x1="14.47"
-                        y1="14.48"
-                        x2="20"
-                        y2="20"
-                      /><line x1="8.12" y1="8.12" x2="12" y2="12" /></svg
-                    >
-                  {:else if f.id === "convert"}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><polyline points="23 4 23 10 17 10" /><polyline
-                        points="1 20 1 14 7 14"
-                      /><path
-                        d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
-                      /></svg
-                    >
-                  {:else if f.id === "compress"}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><polyline points="4 14 10 14 10 20" /><polyline
-                        points="20 10 14 10 14 4"
-                      /><line x1="14" y1="10" x2="21" y2="3" /><line
-                        x1="3"
-                        y1="21"
-                        x2="10"
-                        y2="14"
-                      /></svg
-                    >
-                  {:else if f.id === "slideshow"}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><rect
-                        x="3"
-                        y="3"
-                        width="18"
-                        height="18"
-                        rx="2"
-                        ry="2"
-                      /><circle cx="8.5" cy="8.5" r="1.5" /><polyline
-                        points="21 15 16 10 5 21"
-                      /></svg
-                    >
-                  {:else if f.id === "library"}
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      ><rect x="3" y="3" width="7" height="7" /><rect
-                        x="14"
-                        y="3"
-                        width="7"
-                        height="7"
-                      /><rect x="14" y="14" width="7" height="7" /><rect
-                        x="3"
-                        y="14"
-                        width="7"
-                        height="7"
-                      /></svg
-                    >
-                  {/if}
-                  {t(f.labelKey)}
+                <span class="feedback-feature-text">
+                  <span class="feedback-feature-name">
+                    <SettingsGroupIcon name={f.icon} />
+                    {t(f.labelKey)}
+                  </span>
+                  <span class="feedback-feature-desc">{t(f.descKey)}</span>
                 </span>
-                <div class="feedback-buckets">
-                  <button
-                    class="feedback-bucket red"
-                    class:active={featureRatings[f.id] === "not-used"}
-                    onclick={() => setFeature(f.id, "not-used")}
-                    >{t("dialogs.feedback.features.notUsed")}</button
-                  >
-                  <button
-                    class="feedback-bucket neutral"
-                    class:active={featureRatings[f.id] === "neutral"}
-                    onclick={() => setFeature(f.id, "neutral")}
-                    >{t("dialogs.feedback.features.neutral")}</button
-                  >
-                  <button
-                    class="feedback-bucket green"
-                    class:active={featureRatings[f.id] === "useful"}
-                    onclick={() => setFeature(f.id, "useful")}
-                    >{t("dialogs.feedback.features.useful")}</button
-                  >
+                <div
+                  class="feedback-buckets"
+                  role="group"
+                  aria-label={t(f.labelKey)}
+                >
+                  {#each Object.entries(usefulnessKeys) as [id, key] (id)}
+                    <button
+                      class="feedback-bucket {usefulnessTones[
+                        id as Usefulness
+                      ]}"
+                      class:active={featureRatings[f.id] === id}
+                      aria-pressed={featureRatings[f.id] === id}
+                      aria-label={t(key)}
+                      onclick={() => setFeature(f.id, id as Usefulness)}
+                    >
+                      <svg
+                        width="11"
+                        height="11"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        {@render bucketIcon(id as Usefulness)}
+                      </svg>
+                    </button>
+                  {/each}
                 </div>
               </div>
             {/each}
@@ -800,11 +768,16 @@
                 >
                 {t("dialogs.feedback.pain.mostLabel")}
               </label>
-              <span
-                class="feedback-char-count"
-                class:at-limit={painPoint.length >= MAX_CHARS}
-              >
-                {painPoint.length} / {MAX_CHARS}
+              <span class="feedback-field-status">
+                {#if painPoint.length >= MAX_CHARS}
+                  <span class="feedback-limit-warning"
+                    >{t("dialogs.feedback.limitReached")}</span
+                  >
+                {:else}
+                  <span class="feedback-char-count">
+                    {painPoint.length} / {MAX_CHARS}
+                  </span>
+                {/if}
               </span>
             </div>
             <textarea
@@ -823,6 +796,7 @@
                 <button
                   class="feedback-freq-btn green"
                   class:active={frequency === "low"}
+                  aria-pressed={frequency === "low"}
                   onclick={() => (frequency = frequency === "low" ? "" : "low")}
                 >
                   <svg
@@ -841,6 +815,7 @@
                 <button
                   class="feedback-freq-btn"
                   class:active={frequency === "medium"}
+                  aria-pressed={frequency === "medium"}
                   onclick={() =>
                     (frequency = frequency === "medium" ? "" : "medium")}
                 >
@@ -860,6 +835,7 @@
                 <button
                   class="feedback-freq-btn red"
                   class:active={frequency === "high"}
+                  aria-pressed={frequency === "high"}
                   onclick={() =>
                     (frequency = frequency === "high" ? "" : "high")}
                 >
@@ -878,56 +854,6 @@
                 </button>
               </div>
             </div>
-            {#if painPoint.length >= MAX_CHARS}
-              <span class="feedback-limit-warning"
-                >{t("dialogs.feedback.limitReached")}</span
-              >
-            {/if}
-          </div>
-          <div
-            class="feedback-field"
-            class:at-limit={focusArea.length >= MAX_CHARS}
-          >
-            <div class="feedback-field-header">
-              <label for="feedback-focus">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><line
-                    x1="12"
-                    y1="8"
-                    x2="12"
-                    y2="12"
-                  /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
-                >
-                {t("dialogs.feedback.focus.label")}
-              </label>
-              <span
-                class="feedback-char-count"
-                class:at-limit={focusArea.length >= MAX_CHARS}
-              >
-                {focusArea.length} / {MAX_CHARS}
-              </span>
-            </div>
-            <textarea
-              id="feedback-focus"
-              bind:value={focusArea}
-              placeholder={t("dialogs.feedback.focus.placeholder")}
-              rows="2"
-              maxlength={MAX_CHARS}
-              onwheel={(e) => e.stopPropagation()}
-            ></textarea>
-            {#if focusArea.length >= MAX_CHARS}
-              <span class="feedback-limit-warning"
-                >{t("dialogs.feedback.limitReached")}</span
-              >
-            {/if}
           </div>
         </div>
 
@@ -969,11 +895,16 @@
                 >
                 {t("dialogs.feedback.future.label")}
               </label>
-              <span
-                class="feedback-char-count"
-                class:at-limit={improvement.length >= MAX_CHARS}
-              >
-                {improvement.length} / {MAX_CHARS}
+              <span class="feedback-field-status">
+                {#if improvement.length >= MAX_CHARS}
+                  <span class="feedback-limit-warning"
+                    >{t("dialogs.feedback.limitReached")}</span
+                  >
+                {:else}
+                  <span class="feedback-char-count">
+                    {improvement.length} / {MAX_CHARS}
+                  </span>
+                {/if}
               </span>
             </div>
             <textarea
@@ -984,41 +915,17 @@
               maxlength={MAX_CHARS}
               onwheel={(e) => e.stopPropagation()}
             ></textarea>
-            {#if improvement.length >= MAX_CHARS}
-              <span class="feedback-limit-warning"
-                >{t("dialogs.feedback.limitReached")}</span
-              >
-            {/if}
           </div>
           <div class="feedback-field">
-            <div class="feedback-field-header">
-              <span class="feedback-label">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  ><circle cx="12" cy="12" r="10" /><line
-                    x1="9"
-                    y1="9"
-                    x2="9.01"
-                    y2="9"
-                  /><line x1="15" y1="9" x2="15.01" y2="9" /><path
-                    d="M8 14s1.5 2 4 2 4-2 4-2"
-                  /></svg
-                >
-                {t("dialogs.feedback.retention.label")}
-              </span>
-            </div>
             <div class="feedback-frequency">
+              <span class="feedback-frequency-label"
+                >{t("dialogs.feedback.retention.label")}</span
+              >
               <div class="feedback-frequency-toggle">
                 <button
                   class="feedback-freq-btn red"
                   class:active={retention === "no"}
+                  aria-pressed={retention === "no"}
                   onclick={() => (retention = retention === "no" ? "" : "no")}
                 >
                   <svg
@@ -1044,6 +951,7 @@
                 <button
                   class="feedback-freq-btn"
                   class:active={retention === "maybe"}
+                  aria-pressed={retention === "maybe"}
                   onclick={() =>
                     (retention = retention === "maybe" ? "" : "maybe")}
                 >
@@ -1073,6 +981,7 @@
                 <button
                   class="feedback-freq-btn green"
                   class:active={retention === "yes"}
+                  aria-pressed={retention === "yes"}
                   onclick={() => (retention = retention === "yes" ? "" : "yes")}
                 >
                   <svg
@@ -1120,8 +1029,8 @@
         </span>
         <button
           class="settings-action-btn blue feedback-send-btn"
-          class:faded={atLimit}
-          disabled={atLimit}
+          class:faded={!hasInput || sending}
+          disabled={!hasInput || sending}
           onclick={submit}
         >
           <svg
