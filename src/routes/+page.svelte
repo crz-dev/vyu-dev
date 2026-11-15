@@ -1263,6 +1263,7 @@
 
   async function cleanupBeforeClose() {
     saveCurrentPosition();
+    library.flushRecentSave();
     backgroundAudio.stop();
     slideshow.stop();
     sleepTimer.clear();
@@ -1303,6 +1304,7 @@
     isVideo: { get: () => isVideo },
     isAudio: { get: () => isAudio },
     isPdf: { get: () => isPdf },
+    isPlaying: { get: () => playing },
     filePath: { get: () => filePath },
     rawCurrentSecs: { get: () => rawCurrentSecs },
     rawDurationSecs: { get: () => rawDurationSecs },

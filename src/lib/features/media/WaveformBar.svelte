@@ -1,6 +1,11 @@
 <script lang="ts">
   import type { VideoMarker, ClipBoundary, ClipPair } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import {
+    getWaveformPeaks,
+    setWaveformPeaks,
+    WAVEFORM_PEAK_COUNT,
+  } from "$lib/features/media/waveformPeaks";
 
   const t = locale.t;
 
@@ -78,7 +83,7 @@
     showLoopMarkerTooltip?: (e: MouseEvent, which: "start" | "end") => void;
   } = $props();
 
-  const NUM_PEAKS = 300;
+  const NUM_PEAKS = WAVEFORM_PEAK_COUNT;
 
   let canvasEl = $state<HTMLCanvasElement | null>(null);
   let peaks = $state<Float32Array | null>(null);
@@ -86,6 +91,7 @@
   let cachedCanvasW = 0;
   let cachedCanvasH = 0;
   let bgCanvas: OffscreenCanvas | null = null;
+  let playedCanvas: OffscreenCanvas | null = null;
   let bgW = 0;
   let bgH = 0;
 
@@ -97,6 +103,13 @@
   async function loadPeaks(path: string) {
     peaks = null;
     decodeFailed = false;
+
+    const cached = getWaveformPeaks(path);
+    if (cached) {
+      peaks = cached;
+      return;
+    }
+
     try {
       const { readFile } = await import("@tauri-apps/plugin-fs");
       const bytes = await readFile(path);
@@ -119,30 +132,50 @@
         }
         result[i] = max;
       }
+      setWaveformPeaks(path, result);
       peaks = result;
     } catch {
       decodeFailed = true;
     }
   }
 
-  function drawBackground(w: number, h: number, dpr: number) {
-    if (!peaks || w === 0 || h === 0) return;
+  function paintPeaks(
+    w: number,
+    h: number,
+    dpr: number,
+    colorName: string,
+    fallback: string,
+  ): OffscreenCanvas | null {
+    if (!peaks || w === 0 || h === 0) return null;
     const offscreen = new OffscreenCanvas(w * dpr, h * dpr);
     const ctx = offscreen.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) return null;
     ctx.scale(dpr, dpr);
 
     const barWidth = w / peaks.length;
     const midY = h / 2;
 
-    ctx.fillStyle = waveformColor("--waveform-bar", "rgba(255, 255, 255, 0.3)");
+    ctx.fillStyle = waveformColor(colorName, fallback);
     for (let i = 0; i < peaks.length; i++) {
       const amp = peaks[i] * midY;
       const x = i * barWidth;
       ctx.fillRect(x, midY - amp, Math.max(barWidth - 1, 1), amp * 2);
     }
 
-    bgCanvas = offscreen;
+    return offscreen;
+  }
+
+  function drawBackground(w: number, h: number, dpr: number) {
+    if (!peaks || w === 0 || h === 0) return;
+
+    bgCanvas = paintPeaks(
+      w,
+      h,
+      dpr,
+      "--waveform-bar",
+      "rgba(255, 255, 255, 0.3)",
+    );
+    playedCanvas = paintPeaks(w, h, dpr, "--waveform-bar-played", "#ffffff");
     bgW = w;
     bgH = h;
   }
@@ -176,28 +209,17 @@
 
     if (!peaks || decodeFailed) return;
 
-    if (!bgCanvas || bgW !== w || bgH !== h) {
+    if (!bgCanvas || !playedCanvas || bgW !== w || bgH !== h) {
       drawBackground(w, h, dpr);
     }
-    if (bgCanvas) {
+    if (bgCanvas && playedCanvas) {
       ctx.drawImage(bgCanvas, 0, 0, w, h);
     }
 
-    const clipX = (progress / 100) * w;
-    if (clipX > 0) {
-      const barWidth = w / peaks.length;
-      const midY = h / 2;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, clipX, h);
-      ctx.clip();
-      ctx.fillStyle = waveformColor("--waveform-bar-played", "#ffffff");
-      for (let i = 0; i < peaks.length; i++) {
-        const amp = peaks[i] * midY;
-        const x = i * barWidth;
-        ctx.fillRect(x, midY - amp, Math.max(barWidth - 1, 1), amp * 2);
-      }
-      ctx.restore();
+    const clipX = Math.min(Math.max(progress, 0), 100) * 0.01 * w;
+    if (playedCanvas && clipX > 0) {
+      const sliceW = Math.min(clipX, w);
+      ctx.drawImage(playedCanvas, 0, 0, sliceW * dpr, h * dpr, 0, 0, sliceW, h);
     }
   }
 
@@ -205,6 +227,7 @@
     const path = filePath;
     if (path) {
       bgCanvas = null;
+      playedCanvas = null;
       loadPeaks(path);
     }
   });
@@ -219,6 +242,7 @@
   $effect(() => {
     const observer = new MutationObserver(() => {
       bgCanvas = null;
+      playedCanvas = null;
       draw();
     });
     observer.observe(document.documentElement, {
@@ -236,6 +260,7 @@
       cachedCanvasW = rect.width;
       cachedCanvasH = rect.height;
       bgCanvas = null;
+      playedCanvas = null;
       draw();
     });
     ro.observe(canvas.parentElement!);

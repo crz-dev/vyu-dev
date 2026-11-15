@@ -24,6 +24,35 @@ interface PlaybackSnapshot {
 
 const AUDIO_VARIANT_NONCE = Date.now();
 
+// Track inspection spawns ffprobe and reads the folder for sidecars. Catalog
+// contents are stable for a path, so revisiting a file can reuse the result.
+const TRACK_CATALOG_CACHE_MAX = 50;
+const trackCatalogCache = new Map<string, TrackCatalogCacheEntry>();
+
+interface TrackCatalogCacheEntry {
+  audio: MediaTrack[];
+  subtitles: MediaTrack[];
+  sidecars: SubtitleSidecar[];
+}
+
+function cacheTrackCatalog(path: string, entry: TrackCatalogCacheEntry): void {
+  trackCatalogCache.delete(path);
+  trackCatalogCache.set(path, entry);
+  while (trackCatalogCache.size > TRACK_CATALOG_CACHE_MAX) {
+    const first = trackCatalogCache.keys().next().value;
+    if (first === undefined) break;
+    trackCatalogCache.delete(first);
+  }
+}
+
+export function forgetTrackCatalog(path: string): void {
+  trackCatalogCache.delete(path);
+}
+
+export function clearTrackCatalog(): void {
+  trackCatalogCache.clear();
+}
+
 export function createTrackSelection(
   getVideoEl: () => HTMLVideoElement | null,
 ) {
@@ -120,14 +149,32 @@ export function createTrackSelection(
     loadingTracks = true;
 
     try {
-      const [catalog, matches] = await Promise.all([
-        invokeGetMediaTracks(path),
-        findSubtitleSidecars(path).catch(() => []),
-      ]);
-      if (generation !== loadGeneration) return;
+      const cached = trackCatalogCache.get(path);
+      let audio: MediaTrack[];
+      let subtitles: MediaTrack[];
+      let matches: SubtitleSidecar[];
 
-      audioTracks = catalog.audio;
-      subtitleTracks = catalog.subtitles;
+      if (cached) {
+        // Refresh LRU order.
+        trackCatalogCache.delete(path);
+        trackCatalogCache.set(path, cached);
+        audio = cached.audio;
+        subtitles = cached.subtitles;
+        matches = cached.sidecars;
+      } else {
+        const [catalog, found] = await Promise.all([
+          invokeGetMediaTracks(path),
+          findSubtitleSidecars(path).catch(() => [] as SubtitleSidecar[]),
+        ]);
+        if (generation !== loadGeneration) return;
+        audio = catalog.audio;
+        subtitles = catalog.subtitles;
+        matches = found;
+        cacheTrackCatalog(path, { audio, subtitles, sidecars: matches });
+      }
+
+      audioTracks = audio;
+      subtitleTracks = subtitles;
       sidecars = matches;
       selectedAudioTrackIndex =
         audioTracks.find((track) => track.isDefault)?.index ??

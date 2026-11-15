@@ -420,6 +420,24 @@ function createLibrary() {
     activeTab = tab;
   }
 
+  let saveRecentFilesTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function flushRecentSave() {
+    if (saveRecentFilesTimer) {
+      clearTimeout(saveRecentFilesTimer);
+      saveRecentFilesTimer = undefined;
+    }
+    saveRecentFiles(recentFiles, recentFilesLimit);
+  }
+
+  function scheduleRecentSave() {
+    if (saveRecentFilesTimer) clearTimeout(saveRecentFilesTimer);
+    saveRecentFilesTimer = setTimeout(() => {
+      saveRecentFilesTimer = undefined;
+      saveRecentFiles(recentFiles, recentFilesLimit);
+    }, 400);
+  }
+
   function addRecent(path: string) {
     if (recentsDisabled || privacyMode) return;
     const next = pruneRecentByAge(
@@ -430,7 +448,9 @@ function createLibrary() {
       recentRetentionDays,
     );
     recentFiles = next.slice(0, recentFilesLimit);
-    saveRecentFiles(recentFiles, recentFilesLimit);
+    // The in-memory list updates immediately; coalesce the storage write so
+    // rapid skipping doesn't serialize on every file.
+    scheduleRecentSave();
   }
 
   function clearRecentFiles() {
@@ -883,6 +903,7 @@ function createLibrary() {
       return recentFiles;
     },
     addRecent,
+    flushRecentSave,
     clearRecentFiles,
     get recentFilesLimit() {
       return recentFilesLimit;

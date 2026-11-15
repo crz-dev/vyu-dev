@@ -24,6 +24,7 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
     let rafId: number;
     let wasScrubbing = false;
     let lastUpdate = 0;
+    let lastRawTick = -1;
 
     function poll(now: number) {
       const el = mediaEl;
@@ -37,7 +38,13 @@ export function createPlaybackPoller(deps: PlaybackPollerDeps) {
           if (!isScrubbing) {
             const t = el.currentTime;
             const d = el.duration || 0;
-            deps.setRawCurrentSecs(t);
+            // Time labels render whole seconds; refreshing the raw time at
+            // 10 Hz keeps them identical while sparing the reactive graph.
+            const rawTick = Math.floor(t * 10);
+            if (rawTick !== lastRawTick) {
+              lastRawTick = rawTick;
+              deps.setRawCurrentSecs(t);
+            }
             deps.setProgress(d > 0 ? (t / d) * 100 : 0);
 
             // Skip AB loop for one frame after scrubbing ends to avoid

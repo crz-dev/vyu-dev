@@ -32,6 +32,10 @@ import {
   clearPreloadedImages,
   forgetPreloadedImage,
 } from "$lib/services/imagePreload";
+import {
+  forgetWaveformPeaks,
+  clearWaveformPeaks,
+} from "$lib/features/media/waveformPeaks";
 import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface MediaState {
@@ -254,6 +258,14 @@ export function createMedia(
         }
 
         entry.meta = { timestamps, clipBoundaries, resumePoint };
+      } else if (pathIsVideo(path) || pathIsAudio(path)) {
+        // Cache the "no row yet" case so displaying this file doesn't repeat
+        // the query. Fall back exactly like displayFile does.
+        entry.meta = {
+          timestamps: lsReadTimestamps(path),
+          clipBoundaries: pathIsVideo(path) ? lsReadClipBoundaries(path) : [],
+          resumePoint: lsLoadResumePoint(path),
+        };
       }
 
       if (prefetchCache.size >= MAX_PREFETCH) {
@@ -319,6 +331,7 @@ export function createMedia(
       // The file changed on disk; drop every cached representation of it.
       statCache.delete(path);
       forgetPreloadedImage(path);
+      forgetWaveformPeaks(path);
       const queuedIdx = pendingPixelPreloads.findIndex((p) => p.path === path);
       if (queuedIdx !== -1) pendingPixelPreloads.splice(queuedIdx, 1);
     }
@@ -339,7 +352,7 @@ export function createMedia(
     let clipBoundaries: ClipBoundary[] = [];
     let resumePoint: number | null = null;
 
-    if (cached?.meta) {
+    if (cached?.meta && !refresh) {
       timestamps = cached.meta.timestamps;
       clipBoundaries = cached.meta.clipBoundaries;
       resumePoint = cached.meta.resumePoint;
@@ -600,6 +613,7 @@ export function createMedia(
     prefetchCache.clear();
     statCache.clear();
     clearPreloadedImages();
+    clearWaveformPeaks();
     pendingPixelPreloads.length = 0;
     clearTimeout(preloadFlushTimer);
     preloadFlushTimer = undefined;

@@ -2222,6 +2222,7 @@
                             src={thumbFor(path)}
                             alt=""
                             draggable="false"
+                            decoding="async"
                           />
                         {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
                           <div class="library-placeholder pdf-placeholder">
@@ -2477,6 +2478,7 @@
                               src={thumbFor(path)}
                               alt=""
                               draggable="false"
+                              decoding="async"
                             />
                           {:else}
                             <div class="library-placeholder"></div>
@@ -2727,6 +2729,7 @@
                             src={thumbFor(path)}
                             alt=""
                             draggable="false"
+                            decoding="async"
                             onload={(e) => onImageLoad(path, e)}
                           />
                         {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
@@ -2957,6 +2960,7 @@
                           src={thumbFor(path)}
                           alt=""
                           draggable="false"
+                          decoding="async"
                           onload={(e) => onImageLoad(path, e)}
                         />
                       {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
@@ -3398,6 +3402,7 @@
                               src={thumbFor(path)}
                               alt=""
                               draggable="false"
+                              decoding="async"
                             />
                           {:else if DOCUMENT_EXTS.includes(getFileExt(path))}
                             <div class="list-placeholder pdf-placeholder">
@@ -3687,6 +3692,7 @@
                           src={library.cache[firstFilePath]}
                           alt=""
                           draggable="false"
+                          decoding="async"
                         />
                       {:else}
                         <div class="library-collection-placeholder">

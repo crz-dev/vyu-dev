@@ -8,6 +8,11 @@ import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
 import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+import {
+  clearTrackCatalog,
+  forgetTrackCatalog,
+} from "$lib/features/media/tracks.svelte";
+import { visualizerStore } from "$lib/features/visualizer/visualizer-store.svelte";
 
 import { corruption } from "$lib/features/media/corruption.svelte";
 import {
@@ -50,14 +55,10 @@ import type { PdfState } from "$lib/features/viewer/pdf.svelte";
 
 const PREV_DOUBLE_CLICK_MS = 1200;
 
-async function closeVisualizers() {
-  try {
-    const { visualizerStore } =
-      await import("$lib/features/visualizer/visualizer-store.svelte");
-    visualizerStore.closeAll();
-  } catch {
-    // Non-critical — visualizers will be cleaned up on next call
-  }
+// Visualizers are floating windows that must close when the file changes.
+// closeAll() is a no-op when nothing is open.
+function closeVisualizers() {
+  visualizerStore.closeAll();
 }
 
 export interface NavigationDeps extends SetMediaStateSetters {
@@ -280,12 +281,16 @@ export function createNavigation(deps: NavigationDeps) {
     setCurrentIndex: deps.setCurrentIndex,
     loadFile: (path: string) => loadFile(path),
     closeFile: () => closeFile(),
-    onExternalChange: () => media.clearCaches(),
+    onExternalChange: () => {
+      media.clearCaches();
+      clearTrackCatalog();
+    },
   });
 
   async function loadFile(path: string, refresh = false) {
     slideshow.stop();
     editing.exitCropMode();
+    if (refresh) forgetTrackCatalog(path);
     let loadedIndex = -1;
     await media.loadFile(
       path,
@@ -314,7 +319,7 @@ export function createNavigation(deps: NavigationDeps) {
   async function navigate(direction: number) {
     if (deps.getFileList().length === 0) return;
     if (!menuStore.effectsMenuVisible) {
-      await closeVisualizers();
+      closeVisualizers();
     }
     slideshow.stop();
     editing.exitCropMode();
@@ -338,7 +343,7 @@ export function createNavigation(deps: NavigationDeps) {
     const fileList = deps.getFileList();
     if (fileList.length === 0 || index === deps.getCurrentIndex()) return;
     if (!menuStore.effectsMenuVisible) {
-      await closeVisualizers();
+      closeVisualizers();
     }
     slideshow.stop();
     editing.exitCropMode();
@@ -351,7 +356,7 @@ export function createNavigation(deps: NavigationDeps) {
   async function navigateToEdge(first: boolean) {
     if (deps.getFileList().length === 0) return;
     if (!menuStore.effectsMenuVisible) {
-      await closeVisualizers();
+      closeVisualizers();
     }
     slideshow.stop();
     editing.exitCropMode();
@@ -376,7 +381,7 @@ export function createNavigation(deps: NavigationDeps) {
       const ext = getFileExt(fileList[idx]);
       if (AUDIO_EXTS.includes(ext)) {
         if (!menuStore.effectsMenuVisible) {
-          await closeVisualizers();
+          closeVisualizers();
         }
         slideshow.stop();
         editing.exitCropMode();

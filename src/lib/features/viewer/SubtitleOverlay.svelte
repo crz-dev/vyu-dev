@@ -197,16 +197,30 @@
     positionInitialized = true;
   }
 
+  // The video moves via CSS transforms, so reading its box is the only way to
+  // follow zoom/pan. Track the transform inputs instead of reflowing every frame.
+  let lastLayoutKey = "";
+
+  function layoutKey(): string {
+    const s = viewer.state;
+    return `${s.zoomLevel}|${s.translateX}|${s.translateY}|${s.isFullscreen ? 1 : 0}`;
+  }
+
   function tick() {
     frameId = 0;
     syncCues();
-    refreshMetrics();
+    const key = layoutKey();
+    if (key !== lastLayoutKey) {
+      lastLayoutKey = key;
+      refreshMetrics();
+    }
     if (videoEl && !videoEl.paused && !videoEl.ended) {
       frameId = requestAnimationFrame(tick);
     }
   }
 
   function startLoop() {
+    lastLayoutKey = "";
     if (!frameId) frameId = requestAnimationFrame(tick);
   }
 

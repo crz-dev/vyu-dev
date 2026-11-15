@@ -148,8 +148,12 @@ function createEditingStore() {
     saveEditSession(session);
   }
 
-  function saveCurrentToSession() {
-    if (!filePath) return;
+  /**
+   * Copy the live snapshot into the session map.
+   * Returns true when the persisted session content actually changed.
+   */
+  function saveCurrentToSession(): boolean {
+    if (!filePath) return false;
     const index = sessionEditsOrder.indexOf(filePath);
     if (index !== -1) sessionEditsOrder.splice(index, 1);
     if (getHasEdits()) {
@@ -159,9 +163,9 @@ function createEditingStore() {
         const oldest = sessionEditsOrder.shift();
         if (oldest !== undefined) sessionEdits.delete(oldest);
       }
-    } else {
-      sessionEdits.delete(filePath);
+      return true;
     }
+    return sessionEdits.delete(filePath);
   }
 
   if (typeof window !== "undefined") {
@@ -324,8 +328,8 @@ function createEditingStore() {
   }
 
   function switchFile(newPath: string) {
-    saveCurrentToSession();
-    persistSession();
+    const sessionChanged = saveCurrentToSession();
+    if (sessionChanged) persistSession();
     filePath = newPath;
     const saved = sessionEdits.get(newPath);
     if (saved) {
@@ -343,8 +347,8 @@ function createEditingStore() {
   }
 
   function cleanup() {
-    saveCurrentToSession();
-    persistSession();
+    const sessionChanged = saveCurrentToSession();
+    if (sessionChanged) persistSession();
     undoStack = [];
     snapshot = defaultSnapshot();
     cropMode = false;

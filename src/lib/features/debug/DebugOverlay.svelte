@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
   import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -109,12 +108,16 @@
     raf = requestAnimationFrame(tick);
   }
 
-  onMount(() => {
-    raf = requestAnimationFrame(tick);
-  });
+  $effect(() => {
+    if (!visible) return;
 
-  onDestroy(() => {
-    cancelAnimationFrame(raf);
+    frames = 0;
+    lastFrame = 0;
+    lastSample = 0;
+    lastMediaSample = 0;
+    raf = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(raf);
   });
 </script>
 

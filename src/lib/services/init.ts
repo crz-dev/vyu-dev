@@ -33,6 +33,7 @@ export interface InitState {
   isVideo: { get: () => boolean };
   isAudio: { get: () => boolean };
   isPdf: { get: () => boolean };
+  isPlaying: { get: () => boolean };
   filePath: { get: () => string };
   rawCurrentSecs: { get: () => number };
   rawDurationSecs: { get: () => number };
@@ -132,7 +133,8 @@ export function setupInit(s: InitState) {
     window.addEventListener("beforeunload", saveResumeBeforeUnload);
 
     const resumeInterval = setInterval(() => {
-      if (s.isVideo.get() || s.isAudio.get()) s.saveResumePosition();
+      // Pause and seek already save; only flush while playback is advancing.
+      if (s.isPlaying.get()) s.saveResumePosition();
     }, 10_000);
 
     let unlistenDragDrop: () => void = () => {};

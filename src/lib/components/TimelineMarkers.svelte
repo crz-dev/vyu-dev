@@ -96,6 +96,8 @@
   const clipPairPrefix = $derived(fullscreen ? "fspair" : "pair");
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
   const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
+  // Integer percentage keeps the accessibility tree stable at playback rate.
+  const ariaProgress = $derived(Math.round(clampedProgress));
   const showResumeMarker = $derived(
     resumePoint !== null &&
       durationSecs > 0 &&
@@ -152,7 +154,7 @@
   oncontextmenu={(e) => e.preventDefault()}
   role="slider"
   aria-label={t("shell.timeline.scrubber")}
-  aria-valuenow={progress}
+  aria-valuenow={ariaProgress}
   aria-valuemin={0}
   aria-valuemax={100}
   tabindex="0"

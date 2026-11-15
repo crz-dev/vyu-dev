@@ -134,7 +134,7 @@
     }
 
     const freqData = new Uint8Array(analyser.frequencyBinCount);
-    let rafId: number;
+    let rafId: number | null = null;
     let currentScale = 1;
     let frameCount = 0;
 
@@ -161,11 +161,33 @@
       rafId = requestAnimationFrame(tick);
     }
 
-    rafId = requestAnimationFrame(tick);
+    function start() {
+      if (rafId !== null) return;
+      frameCount = 0;
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function stop() {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      currentScale = 1;
+      bassScale = 1;
+    }
+
+    el.addEventListener("play", start);
+    el.addEventListener("playing", start);
+    el.addEventListener("pause", stop);
+    el.addEventListener("ended", stop);
+    if (!el.paused && !el.ended) start();
 
     return () => {
-      cancelAnimationFrame(rafId);
-      bassScale = 1;
+      stop();
+      el.removeEventListener("play", start);
+      el.removeEventListener("playing", start);
+      el.removeEventListener("pause", stop);
+      el.removeEventListener("ended", stop);
     };
   });
 </script>
