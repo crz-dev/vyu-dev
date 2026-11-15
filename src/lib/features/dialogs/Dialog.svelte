@@ -34,8 +34,13 @@
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
+  import { open } from "@tauri-apps/plugin-dialog";
   import { showToast, updateToast } from "$lib/components/toast.svelte";
-  import { joinPath } from "$lib/services/files";
+  import {
+    hideFloatingTooltip,
+    showFloatingTooltip,
+  } from "$lib/services/session";
+  import { getFileExt, getParentFolder, joinPath } from "$lib/services/files";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
@@ -265,6 +270,23 @@
     return conversionPrefs.outputDir || parentFolder();
   }
 
+  function shortFolderPath(path: string): string {
+    if (!path) return "";
+    const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
+    if (parts.length <= 2) return parts.join("/");
+    return parts.slice(-2).join("/");
+  }
+
+  async function pickShareOutputDir() {
+    hideFloatingTooltip("share-dest-tooltip");
+    const dir = await open({
+      directory: true,
+      defaultPath: conversionPrefs.outputDir || undefined,
+    });
+    if (!dir) return;
+    conversionPrefs.setOutputDir(dir as string);
+  }
+
   async function sourceModifiedMs(): Promise<number | null> {
     if (!conversionPrefs.keepOriginalDate) return null;
     try {
@@ -308,6 +330,7 @@
 
   $effect(() => {
     if (!shareOpen) {
+      hideFloatingTooltip("share-dest-tooltip");
       shareConverting = false;
       convertingFormat = undefined;
       convertProgress = 0;
@@ -567,11 +590,40 @@
   }
 
   async function handleSaveAs(format: string) {
-    const outputDir = conversionOutputDir();
+    const outputDir = conversionPrefs.outputDir;
     if (!outputDir) {
-      showToast({
-        message: t("dialogs.dialog.toast.pickLocation"),
-        color: "yellow",
+      const { save } = await import("@tauri-apps/plugin-dialog");
+      const stem = fileName.replace(/\.[^.]+$/, "");
+      const startDir = parentFolder();
+      const defaultPath = startDir
+        ? joinPath(startDir, `${stem}.${format}`)
+        : `${stem}.${format}`;
+      const outputPath = await save({
+        defaultPath,
+        filters: [{ name: format.toUpperCase(), extensions: [format] }],
+      });
+      if (!outputPath) return;
+      const pickedDir = getParentFolder(outputPath);
+      const pickedExt = getFileExt(outputPath);
+      if (!pickedExt) {
+        showToast({
+          message: t("dialogs.dialog.toast.noFormat"),
+          color: "yellow",
+        });
+        return;
+      }
+      if (!pickedDir) {
+        showToast({
+          message: t("dialogs.dialog.toast.pickLocation"),
+          color: "yellow",
+        });
+        return;
+      }
+      await runSaveAs({
+        outputDir: pickedDir,
+        revealDir: pickedDir,
+        format: pickedExt,
+        outputPath,
       });
       return;
     }
@@ -648,7 +700,7 @@
     const outputPath = await save({ defaultPath, filters });
     if (!outputPath) return;
 
-    const outputExt = outputPath.split(".").pop()?.toLowerCase() || "";
+    const outputExt = getFileExt(outputPath);
     if (!outputExt) {
       showToast({
         message: t("dialogs.dialog.toast.noFormat"),
@@ -657,9 +709,7 @@
       return;
     }
 
-    const sep = outputPath.includes("\\") ? "\\" : "/";
-    const lastSep = outputPath.lastIndexOf(sep);
-    const outputDirFromSave = lastSep > 0 ? outputPath.slice(0, lastSep) : "";
+    const outputDirFromSave = getParentFolder(outputPath);
 
     await runSaveAs({
       outputDir: outputDirFromSave,
@@ -3252,7 +3302,28 @@
 
       {#if !isPdf}
         <div class="share-dest-bar">
-          <span class="share-dest-label">
+          <button
+            class="share-dest-btn"
+            class:is-set={!!conversionPrefs.outputDir}
+            aria-label={conversionPrefs.outputDir ||
+              t("dialogs.dialog.share.outputFolder")}
+            onclick={pickShareOutputDir}
+            onmouseenter={(e) => {
+              if (!conversionPrefs.outputDir) return;
+              showFloatingTooltip(
+                "share-dest-tooltip",
+                e.currentTarget.getBoundingClientRect(),
+                conversionPrefs.outputDir,
+                "above",
+              );
+            }}
+            onmouseleave={() => hideFloatingTooltip("share-dest-tooltip")}
+            oncontextmenu={(e) => {
+              e.preventDefault();
+              hideFloatingTooltip("share-dest-tooltip");
+              if (conversionPrefs.outputDir) conversionPrefs.setOutputDir("");
+            }}
+          >
             <svg
               width="11"
               height="11"
@@ -3262,17 +3333,18 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              style="margin-right: 4px; flex-shrink: 0;"
               ><path
                 d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
               /><polyline points="17 21 17 13 7 13 7 21" /><polyline
                 points="7 3 7 8 15 8"
               /></svg
             >
-            {conversionPrefs.outputDir
-              ? t("dialogs.dialog.share.destinationDefault")
-              : t("dialogs.dialog.share.destinationOriginal")}
-          </span>
+            <span class="share-dest-name">
+              {conversionPrefs.outputDir
+                ? shortFolderPath(conversionPrefs.outputDir)
+                : t("dialogs.dialog.share.outputFolder")}
+            </span>
+          </button>
           <button
             class="share-delete-toggle tooltip-above"
             class:is-on={shareDeleteOriginal}
@@ -3304,4 +3376,9 @@
       {/if}
     </div>
   </div>
+  <div
+    id="share-dest-tooltip"
+    class="filename-tooltip share-dest-path-tooltip"
+    style="position: fixed; opacity: 0; left: 0; top: 0; pointer-events: none; z-index: 9999"
+  ></div>
 {/if}

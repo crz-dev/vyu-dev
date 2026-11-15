@@ -82,7 +82,7 @@
   }
 
   function shortFolderPath(path: string): string {
-    if (!path) return t("settings.process.sourceFolder");
+    if (!path) return "";
     const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
     if (parts.length <= 2) return parts.join("/");
     return parts.slice(-2).join("/");
@@ -155,9 +155,12 @@
       {#snippet control()}
         <div class="settings-control-inline">
           <button
-            class="settings-action-btn blue"
+            class="settings-action-btn"
+            class:blue={!!conversionPrefs.outputDir}
+            class:is-empty={!conversionPrefs.outputDir}
             title={conversionPrefs.outputDir ||
-              t("settings.process.sameAsOriginal")}
+              t("settings.process.output.label")}
+            aria-label={t("settings.process.output.label")}
             onclick={pickOutputDir}
           >
             {shortFolderPath(conversionPrefs.outputDir)}

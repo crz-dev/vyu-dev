@@ -17,6 +17,7 @@ export function showFloatingTooltip(
   id: string,
   anchorRect: DOMRect,
   text: string,
+  placement: "above" | "below" = "below",
 ): void {
   const tip = document.getElementById(id);
   if (!tip) return;
@@ -24,7 +25,7 @@ export function showFloatingTooltip(
   if (previousRaf) cancelAnimationFrame(previousRaf);
   tip.textContent = text;
   tip.style.left = "8px";
-  tip.style.top = `${anchorRect.bottom + 6}px`;
+  tip.style.top = `${anchorRect.top}px`;
   tip.style.opacity = "0";
 
   const rafId = requestAnimationFrame(() => {
@@ -34,10 +35,11 @@ export function showFloatingTooltip(
     const centeredLeft =
       anchorRect.left + anchorRect.width / 2 - tipRect.width / 2;
     const left = Math.min(Math.max(centeredLeft, 8), maxLeft);
-    const top = Math.min(
-      anchorRect.bottom + 6,
-      window.innerHeight - tipRect.height - 8,
-    );
+    const preferredTop =
+      placement === "above"
+        ? anchorRect.top - tipRect.height - 6
+        : anchorRect.bottom + 6;
+    const top = Math.min(preferredTop, window.innerHeight - tipRect.height - 8);
     tip.style.left = `${left}px`;
     tip.style.top = `${Math.max(8, top)}px`;
     tip.style.opacity = "1";

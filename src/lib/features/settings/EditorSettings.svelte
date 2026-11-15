@@ -46,7 +46,7 @@
   }
 
   function shortFolderPath(path: string): string {
-    if (!path) return t("settings.editor.sourceFolder");
+    if (!path) return "";
     const parts = path.replace(/\\/g, "/").split("/").filter(Boolean);
     if (parts.length <= 2) return parts.join("/");
     return parts.slice(-2).join("/");
@@ -299,9 +299,12 @@
       {#snippet control()}
         <div class="settings-control-inline">
           <button
-            class="settings-action-btn blue"
+            class="settings-action-btn"
+            class:blue={!!editing.imageOutputDir}
+            class:is-empty={!editing.imageOutputDir}
             title={editing.imageOutputDir ||
-              t("settings.editor.sameAsOriginal")}
+              t("settings.editor.imageOutput.label")}
+            aria-label={t("settings.editor.imageOutput.label")}
             onclick={() => pickOutputDir("image")}
           >
             {shortFolderPath(editing.imageOutputDir)}
@@ -386,9 +389,12 @@
       {#snippet control()}
         <div class="settings-control-inline">
           <button
-            class="settings-action-btn blue"
+            class="settings-action-btn"
+            class:blue={!!editing.videoOutputDir}
+            class:is-empty={!editing.videoOutputDir}
             title={editing.videoOutputDir ||
-              t("settings.editor.sameAsOriginal")}
+              t("settings.editor.videoOutput.label")}
+            aria-label={t("settings.editor.videoOutput.label")}
             onclick={() => pickOutputDir("video")}
           >
             {shortFolderPath(editing.videoOutputDir)}

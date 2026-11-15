@@ -1367,7 +1367,7 @@
   gap: 6px;
   padding: 0;
 }
-.share-dest-label {
+.share-dest-btn {
   font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
@@ -1375,10 +1375,44 @@
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  gap: 5px;
+  max-width: 240px;
   background: var(--bg-primary);
   border: 0.5px solid var(--bg-elevated);
   border-radius: 7px;
   padding: 5px 10px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+}
+.share-dest-btn:hover {
+  color: var(--text-secondary);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.share-dest-btn svg {
+  flex-shrink: 0;
+}
+.share-dest-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.share-dest-path-tooltip {
+  white-space: nowrap;
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.share-dest-btn.is-set {
+  color: var(--yellow-soft);
+  background: var(--yellow-bg-faint);
+  border-color: var(--yellow-border);
+}
+.share-dest-btn.is-set:hover {
+  background: var(--yellow-bg-hover);
+  border-color: var(--yellow-border-strong);
+  color: var(--yellow-soft);
 }
 .share-delete-toggle {
   position: relative;
@@ -2719,6 +2753,18 @@
 .settings-action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
+}
+
+.settings-action-btn.is-empty {
+  background: transparent;
+  border-color: var(--bg-border);
+  color: var(--text-muted);
+}
+
+.settings-action-btn.is-empty:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-mid);
 }
 
 .settings-action-btn.red {
@@ -5772,10 +5818,15 @@
 [data-theme="light"] .share-btn,
 [data-theme="light"] .share-btn-circle,
 [data-theme="light"] .share-btn-wide,
-[data-theme="light"] .share-dest-label,
+[data-theme="light"] .share-dest-btn,
 [data-theme="light"] .share-delete-toggle {
   background: rgba(0, 0, 0, 0.035);
   border-color: rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="light"] .share-dest-btn.is-set {
+  background: var(--yellow-bg-faint);
+  border-color: var(--yellow-border);
 }
 
 [data-theme="light"] .share-btn:hover:not(:disabled),
