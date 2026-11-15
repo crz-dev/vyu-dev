@@ -36,7 +36,7 @@ export function createPasteHandler(deps: PasteDeps) {
           await deps.loadFile(dest);
           showToast({
             message: locale.t("shell.files.pasted"),
-            color: "blue",
+            color: "green",
             duration: 5000,
             actions: [
               {

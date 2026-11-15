@@ -217,7 +217,7 @@
     await invokeDeleteBundledFfmpeg();
     showToast({
       message: t("settings.danger.toast.ffmpegDeleted"),
-      color: "green",
+      color: "yellow",
     });
   }
 
@@ -226,7 +226,7 @@
     if (!result.started) {
       showToast({
         message: t("settings.danger.toast.uninstallOpened"),
-        color: "blue",
+        color: "grey",
       });
     }
   }

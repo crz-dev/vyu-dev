@@ -167,7 +167,7 @@ function createProfiles() {
         message: locale.t("settings.profiles.toast.deleted", {
           name: profile.name,
         }),
-        color: "green",
+        color: "red",
       });
       return null;
     }

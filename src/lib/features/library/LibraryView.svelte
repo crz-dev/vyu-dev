@@ -959,7 +959,7 @@
       await invokeRenameFile(path, destPath);
       await onFileMoved?.(path, destPath);
       library.triggerRescan();
-      showToast({ message: t("library.toasts.fileMoved"), color: "blue" });
+      showToast({ message: t("library.toasts.fileMoved"), color: "green" });
     } catch {
       showToast({ message: t("library.toasts.moveFailed"), color: "red" });
     }
@@ -982,13 +982,13 @@
       library.removeFavorite(path);
       showToast({
         message: t("library.toasts.favoriteRemoved"),
-        color: "yellow",
+        color: "red",
       });
     } else {
       library.addFavorite(path);
       showToast({
         message: t("library.toasts.favoriteAdded"),
-        color: "yellow",
+        color: "green",
       });
     }
   }
@@ -1085,7 +1085,7 @@
         library.addFavorite(file as string);
         showToast({
           message: t("library.toasts.favoriteAdded"),
-          color: "yellow",
+          color: "green",
         });
       }
     } catch {

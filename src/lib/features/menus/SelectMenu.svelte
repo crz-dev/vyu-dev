@@ -68,7 +68,7 @@
     if (successCount > 0) {
       showToast({
         message: tp("menus.select.moved", successCount),
-        color: "blue",
+        color: "green",
       });
     }
     if (failCount > 0) {
@@ -93,7 +93,7 @@
       for (const p of paths) library.removeFavorite(p);
       showToast({
         message: tp("menus.select.removedFavorites", paths.length),
-        color: "yellow",
+        color: "red",
       });
     } else {
       for (const p of paths) {
@@ -102,7 +102,7 @@
       }
       showToast({
         message: tp("menus.select.addedFavorites", paths.length),
-        color: "yellow",
+        color: "green",
       });
     }
     handleClose();

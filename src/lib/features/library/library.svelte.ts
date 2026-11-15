@@ -858,7 +858,7 @@ function createLibrary() {
       const { showToast } = await import("$lib/components/toast.svelte");
       showToast({
         message: locale.tp("library.toasts.copySuccess", successCount),
-        color: "blue",
+        color: "green",
       });
     }
     if (failCount > 0) {

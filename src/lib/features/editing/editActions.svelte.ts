@@ -258,7 +258,7 @@ export function createEditActions(deps: EditActionsDeps) {
     if (isVideo) {
       progressToastId = showToast({
         message: locale.t("editing.toast.applying"),
-        color: "grey",
+        color: "yellow",
         duration: 0,
         progress: 0,
       });

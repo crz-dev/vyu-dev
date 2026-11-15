@@ -134,7 +134,7 @@
       await copyTextToClipboard(diagnosticsJson(info));
       showToast({
         message: t("settings.debug.toast.diagnosticsCopied"),
-        color: "green",
+        color: "yellow",
       });
     } catch {
       showToast({
@@ -216,7 +216,7 @@
       await copyTextToClipboard(value);
       showToast({
         message: t("settings.debug.toast.copied"),
-        color: "green",
+        color: "yellow",
       });
     } catch {
       showToast({

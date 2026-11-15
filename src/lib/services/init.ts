@@ -101,7 +101,7 @@ export function setupInit(s: InitState) {
           if (result.status === "update") {
             showToast({
               message: result.message,
-              color: "blue",
+              color: "grey",
               duration: 7000,
             });
           }

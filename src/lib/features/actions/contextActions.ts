@@ -28,7 +28,7 @@ export async function ctxCopyPdfPage(opts: {
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     showToast({
       message: locale.t("shell.actions.copiedPage"),
-      color: "green",
+      color: "yellow",
     });
   } catch (err) {
     const message =
@@ -48,7 +48,7 @@ export async function ctxCopyImage(opts: {
     await copyImageToClipboard(opts.filePath);
     showToast({
       message: locale.t("shell.actions.copiedImage"),
-      color: "green",
+      color: "yellow",
     });
   } catch {
     showToast({
@@ -68,7 +68,7 @@ export async function ctxCopyFrame(opts: {
     await copyFrameToClipboard(opts.videoEl);
     showToast({
       message: locale.t("shell.actions.copiedFrame"),
-      color: "green",
+      color: "yellow",
     });
   } catch (err) {
     console.error("Failed to copy current frame to clipboard:", err);
@@ -91,7 +91,7 @@ export async function ctxCopyPath(opts: {
     await copyPathToClipboard(opts.filePath);
     showToast({
       message: locale.t("shell.actions.copiedPath"),
-      color: "blue",
+      color: "yellow",
     });
   } catch {
     showToast({

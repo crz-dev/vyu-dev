@@ -357,7 +357,7 @@
     window.print();
     showToast({
       message: t("dialogs.dialog.toast.printOpened"),
-      color: "blue",
+      color: "green",
     });
   }
 
@@ -376,13 +376,13 @@
             title: result.title,
             artist: result.artist,
           }),
-          color: "blue",
+          color: "green",
           duration: 3000,
         });
       } else {
         updateToast(toastId, {
           message: t("dialogs.dialog.toast.songUnknown"),
-          color: "blue",
+          color: "yellow",
           duration: 3000,
         });
       }
@@ -393,7 +393,7 @@
           : t("dialogs.dialog.toast.shazamFailed");
       updateToast(toastId, {
         message,
-        color: "blue",
+        color: "red",
         duration: 3000,
       });
     }
