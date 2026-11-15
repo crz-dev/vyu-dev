@@ -56,8 +56,11 @@ html[data-tooltips="off"] .tooltip-ctrl::after {
 
 /* ── Accessibility dialog preferences ── */
 
-/* Grayscale — remove color from the whole app shell */
-html[data-a11y-grayscale="true"] main {
+/* Grayscale — remove color from the whole app shell.
+   Applied to the root element: a filter on any other ancestor would turn it into
+   the containing block for fixed descendants, letting the thumbnail bar add
+   scrollable overflow that shifts the app chrome when a dialog scrolls into view. */
+html[data-a11y-grayscale="true"] {
   filter: grayscale(1);
 }
 
