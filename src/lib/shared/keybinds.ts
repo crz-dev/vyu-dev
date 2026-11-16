@@ -41,18 +41,23 @@ export function createKeybindHandler(deps: KeybindActions) {
       return;
     }
 
-    if (isTypingTarget(e.target)) return;
-
     if (keybindStore.cheatSheetOpen) {
       if (e.key === "Escape") {
         e.preventDefault();
         keybindStore.closeCheatSheet();
-        return;
-      }
-      if (keybindStore.matches("show-shortcuts", e)) {
+      } else if (keybindStore.matches("show-shortcuts", e)) {
         e.preventDefault();
         if (!e.repeat) keybindStore.toggleCheatSheet();
       }
+      return;
+    }
+
+    if (isTypingTarget(e.target)) return;
+
+    // Keep the sheet reachable while dialogs or the library are open.
+    if (keybindStore.matches("show-shortcuts", e)) {
+      e.preventDefault();
+      if (!e.repeat) keybindStore.toggleCheatSheet(deps.getContext());
       return;
     }
 

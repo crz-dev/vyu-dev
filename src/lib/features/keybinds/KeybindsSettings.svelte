@@ -3,6 +3,7 @@
   import { showToast } from "$lib/components/toast.svelte";
   import {
     KEYBIND_ACTIONS,
+    KEYBIND_CATEGORY_ICONS,
     KEYBIND_CATEGORY_LABELS,
     KEYBIND_CATEGORY_ORDER,
     KEYBIND_CONTEXT_LABELS,
@@ -15,6 +16,7 @@
   import KeyboardOverview from "$lib/features/keybinds/KeyboardOverview.svelte";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
 
   let { flash = false }: { flash?: boolean } = $props();
 
@@ -29,6 +31,9 @@
   let expandedCategories = $state<Record<string, boolean>>({});
   let resetAllConfirming = $state(false);
   let resetAllTimeout: ReturnType<typeof setTimeout> | null = null;
+  let highlightedActionId = $state<string | null>(null);
+  let highlightTimeout: ReturnType<typeof setTimeout> | null = null;
+  let actionScrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const contextActions = $derived.by(() =>
     KEYBIND_ACTIONS.filter(
@@ -79,6 +84,40 @@
 
   onDestroy(() => {
     if (resetAllTimeout) clearTimeout(resetAllTimeout);
+    if (highlightTimeout) clearTimeout(highlightTimeout);
+    if (actionScrollTimeout) clearTimeout(actionScrollTimeout);
+  });
+
+  // The cheat sheet can jump to a specific binding. Expand its category, drop
+  // any filters, and highlight the row so the remap control is right there.
+  $effect(() => {
+    const request = keybindStore.actionFocusRequest;
+    if (!request) return;
+    const action = keybindStore.actionFor(request.id);
+    keybindStore.clearActionFocus();
+    if (!action) return;
+
+    search = "";
+    contextFilter = "all";
+    unboundOnly = false;
+    selectedKey = null;
+    expandedCategories = { [action.category]: true };
+    highlightedActionId = request.id;
+
+    if (highlightTimeout) clearTimeout(highlightTimeout);
+    highlightTimeout = setTimeout(() => {
+      highlightedActionId = null;
+      highlightTimeout = null;
+    }, 1900);
+
+    if (actionScrollTimeout) clearTimeout(actionScrollTimeout);
+    actionScrollTimeout = setTimeout(() => {
+      document.getElementById(`keybind-row-${request.id}`)?.scrollIntoView({
+        behavior: appearance.reducedMotion ? "auto" : "smooth",
+        block: "center",
+      });
+      actionScrollTimeout = null;
+    }, 380);
   });
 
   function startRecording(id: string, button: HTMLButtonElement) {
@@ -149,16 +188,6 @@
     { id: "library", labelKey: "settings.keybinds.filter.library" },
     { id: "pdf", labelKey: "settings.keybinds.filter.pdf" },
   ];
-
-  const categoryIcons: Record<string, string> = {
-    app: "window",
-    viewer: "eye",
-    file: "file",
-    editing: "pencil",
-    library: "book",
-    pdf: "file",
-    slideshow: "slideshow",
-  };
 </script>
 
 <div id="settings-section-keybinds" class="settings-section" class:flash>
@@ -276,7 +305,7 @@
       >
         <span class="settings-group-icon">
           <SettingsGroupIcon
-            name={categoryIcons[group.category] ?? "keyboard"}
+            name={KEYBIND_CATEGORY_ICONS[group.category] ?? "keyboard"}
           />
         </span>
         {t(KEYBIND_CATEGORY_LABELS[group.category])}
@@ -300,7 +329,11 @@
             {@const recording = keybindStore.recordingActionId === action.id}
             {@const label = keybindStore.label(action.id)}
             {@const custom = keybindStore.isCustom(action.id)}
-            <div class="settings-row keybind-row">
+            <div
+              class="settings-row keybind-row"
+              class:keybind-row-highlight={highlightedActionId === action.id}
+              id={`keybind-row-${action.id}`}
+            >
               <div class="settings-label-col">
                 <div class="settings-label-text">
                   <span class="settings-label">{t(action.label)}</span>

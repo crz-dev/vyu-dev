@@ -7,6 +7,7 @@ import type {
   KeybindAction,
   KeybindBinding,
   KeybindBindings,
+  KeybindCategory,
   KeybindContext,
 } from "$lib/features/keybinds/keybindTypes";
 import {
@@ -37,6 +38,8 @@ function createKeybindStore() {
   let recordingActionId = $state<string | null>(null);
   let recordingError = $state("");
   let cheatSheetOpen = $state(false);
+  let cheatSheetCategory = $state<KeybindCategory>("app");
+  let actionFocusRequest = $state<{ id: string } | null>(null);
 
   function persist() {
     saveKeybinds({ version: 1, bindings });
@@ -170,12 +173,29 @@ function createKeybindStore() {
     return eventMatchesBinding(e, bindingFor(id));
   }
 
-  function toggleCheatSheet() {
-    cheatSheetOpen = !cheatSheetOpen;
+  function toggleCheatSheet(category?: KeybindCategory) {
+    if (cheatSheetOpen) {
+      cheatSheetOpen = false;
+      return;
+    }
+    if (category) cheatSheetCategory = category;
+    cheatSheetOpen = true;
+  }
+
+  function setCheatSheetCategory(category: KeybindCategory) {
+    cheatSheetCategory = category;
   }
 
   function closeCheatSheet() {
     cheatSheetOpen = false;
+  }
+
+  function requestActionFocus(id: string) {
+    actionFocusRequest = { id };
+  }
+
+  function clearActionFocus() {
+    actionFocusRequest = null;
   }
 
   function exportConfig() {
@@ -201,6 +221,12 @@ function createKeybindStore() {
     get cheatSheetOpen() {
       return cheatSheetOpen;
     },
+    get cheatSheetCategory() {
+      return cheatSheetCategory;
+    },
+    get actionFocusRequest() {
+      return actionFocusRequest;
+    },
     get unboundIds() {
       return KEYBIND_ACTIONS.filter((action) => !bindings[action.id]).map(
         (action) => action.id,
@@ -219,7 +245,10 @@ function createKeybindStore() {
     actionForEvent,
     matches,
     toggleCheatSheet,
+    setCheatSheetCategory,
     closeCheatSheet,
+    requestActionFocus,
+    clearActionFocus,
     exportConfig,
   };
 }

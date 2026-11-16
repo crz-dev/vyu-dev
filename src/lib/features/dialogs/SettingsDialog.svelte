@@ -12,6 +12,7 @@
   import KeybindsSettings from "$lib/features/keybinds/KeybindsSettings.svelte";
   import ProfileFooter from "$lib/features/profiles/ProfileFooter.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     applySettingsSearchFilter,
@@ -45,10 +46,14 @@
 
   const t = locale.t;
 
+  const requestedSection = menuStore.settingsSection;
+  if (requestedSection) menuStore.clearSettingsSection();
+
   let activeSection = $state(
-    appearance.rememberLastTab
-      ? loadLastDialogSection("settings") || "appearance"
-      : "appearance",
+    requestedSection ??
+      (appearance.rememberLastTab
+        ? loadLastDialogSection("settings") || "appearance"
+        : "appearance"),
   );
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
@@ -78,6 +83,16 @@
         }
       });
     }
+  });
+
+  // Jump to a section requested after the dialog is already open (e.g. from
+  // the shortcut cheat sheet).
+  $effect(() => {
+    if (!settingsOpen) return;
+    const section = menuStore.settingsSection;
+    if (!section) return;
+    menuStore.clearSettingsSection();
+    void scrollToSection(section);
   });
 
   const sections = $derived(

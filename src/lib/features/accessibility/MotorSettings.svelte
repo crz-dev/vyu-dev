@@ -142,7 +142,7 @@
       {#snippet control()}
         <button
           class="settings-action-btn"
-          onclick={() => keybindStore.toggleCheatSheet()}
+          onclick={() => keybindStore.toggleCheatSheet("app")}
         >
           {t("settings.accessibility.motor.shortcutSheet.button")}
         </button>

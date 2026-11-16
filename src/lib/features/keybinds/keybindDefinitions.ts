@@ -425,10 +425,10 @@ export const KEYBIND_ACTIONS_BY_ID = new Map(
 export const KEYBIND_CATEGORY_ORDER: readonly KeybindCategory[] = [
   "app",
   "viewer",
-  "file",
-  "editing",
   "library",
   "pdf",
+  "file",
+  "editing",
   "slideshow",
 ];
 
@@ -440,6 +440,16 @@ export const KEYBIND_CATEGORY_LABELS: Record<KeybindCategory, string> = {
   library: "settings.keybinds.category.library",
   pdf: "settings.keybinds.category.pdf",
   slideshow: "settings.keybinds.category.slideshow",
+};
+
+export const KEYBIND_CATEGORY_ICONS: Record<KeybindCategory, string> = {
+  app: "window",
+  viewer: "eye",
+  file: "file",
+  editing: "pencil",
+  library: "book",
+  pdf: "file",
+  slideshow: "slideshow",
 };
 
 export const KEYBIND_CONTEXT_LABELS: Record<KeybindContext, string> = {

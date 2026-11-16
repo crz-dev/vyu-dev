@@ -120,6 +120,9 @@
     <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
   {:else if name === "shield"}
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  {:else if name === "lock"}
+    <rect x="3" y="11" width="18" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 0110 0v4" />
   {:else if name === "window"}
     <rect x="2" y="3" width="20" height="14" rx="2" /><line
       x1="8"

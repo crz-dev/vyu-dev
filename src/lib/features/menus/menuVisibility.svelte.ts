@@ -6,6 +6,7 @@ function createMenuVisibilityStore() {
   let slideshowMenuVisible = $state(false);
   let appDropdownVisible = $state(false);
   let settingsOpen = $state(false);
+  let settingsSection = $state<string | null>(null);
   let accessibilityOpen = $state(false);
   let helpOpen = $state(false);
   let aboutOpen = $state(false);
@@ -67,6 +68,16 @@ function createMenuVisibilityStore() {
     },
     set settingsOpen(v: boolean) {
       settingsOpen = v;
+    },
+    openSettingsAt(section: string) {
+      settingsSection = section;
+      settingsOpen = true;
+    },
+    get settingsSection() {
+      return settingsSection;
+    },
+    clearSettingsSection() {
+      settingsSection = null;
     },
     get accessibilityOpen() {
       return accessibilityOpen;
@@ -174,6 +185,7 @@ function createMenuVisibilityStore() {
       slideshowMenuVisible = false;
       appDropdownVisible = false;
       settingsOpen = false;
+      settingsSection = null;
       accessibilityOpen = false;
       helpOpen = false;
       aboutOpen = false;
@@ -269,7 +281,10 @@ export function createMenuBindings() {
     get settingsOpen() {
       return menuStore.settingsOpen;
     },
-    closeSettings: () => (menuStore.settingsOpen = false),
+    closeSettings: () => {
+      menuStore.settingsOpen = false;
+      menuStore.clearSettingsSection();
+    },
     get accessibilityOpen() {
       return menuStore.accessibilityOpen;
     },

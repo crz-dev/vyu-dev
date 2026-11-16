@@ -789,9 +789,12 @@
     }
   }
 
+  function keybindContext(): "pdf" | "library" | "viewer" {
+    return isPdf ? "pdf" : menuStore.libraryOpen ? "library" : "viewer";
+  }
+
   const configuredKeybind = createKeybindHandler({
-    getContext: () =>
-      isPdf ? "pdf" : menuStore.libraryOpen ? "library" : "viewer",
+    getContext: keybindContext,
     areDialogsOpen: () =>
       areDialogsOpen({
         contextMenuStore,
@@ -827,7 +830,6 @@
       "open-file": openFileDialog,
       "close-file": closeFile,
       "toggle-library": () => (menuStore.libraryOpen = !menuStore.libraryOpen),
-      "show-shortcuts": keybindStore.toggleCheatSheet,
       "reset-accessibility": () => {
         resetAccessibilitySettings();
         showToast({
