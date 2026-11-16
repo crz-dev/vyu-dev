@@ -1070,6 +1070,26 @@
 .props-row:hover {
   background: rgba(255, 255, 255, 0.04);
 }
+.props-row-copied {
+  animation: props-row-bounce 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes props-row-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-3px);
+  }
+  65% {
+    transform: translateY(1px);
+  }
+  85% {
+    transform: translateY(-0.5px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
 .props-k {
   display: inline-flex;
   align-items: center;
