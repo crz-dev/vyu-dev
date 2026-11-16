@@ -250,14 +250,15 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Batch stat processes paths in chunks of 8                             | Limits work per blocking task; overall concurrency is not capped at 8.              |
 | Thumbnail cache evicted at a configurable soft limit (500 MB default) | Prevents unbounded disk usage while letting users trade cache size for speed.       |
 | Display cache evicted at 2 GB soft limit                              | Prevents unbounded disk usage.                                                      |
-| Prepared audio and WebVTT track files use the display cache           | Shares the existing cache and eviction policy.                                       |
-| Active audio-track variants are pinned in the display cache           | Avoids interrupting playback; a large active variant may exceed the soft limit.      |
+| Prepared audio and WebVTT track files use the display cache           | Shares the existing cache and eviction policy.                                      |
+| Active audio-track variants are pinned in the display cache           | Avoids interrupting playback; a large active variant may exceed the soft limit.     |
 | Audio track switching remuxes a cached single-audio rendition         | WebView playback does not expose reliable embedded audio-track selection.           |
 | Embedded text subtitles are extracted as WebVTT                       | Native `<track>` renders them; bitmap subtitles are not supported.                  |
 | Temp paths are unique per operation                                   | Prevents concurrent-operation conflicts.                                            |
 | Cross-volume rename uses copy+delete fallback                         | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
 | JPEG scale-down via `jpeg-decoder`, not `image`                       | `image` uses `zune-jpeg`, which lacks IDCT scaling.                                 |
-| Semaphores: 16 native image, 2 video/FFmpeg/RAW, 2 audio              | Keeps native image work from queueing behind FFmpeg.                                |
+| Semaphores: 16 image, 2 video/FFmpeg/RAW, 2 audio, 1 preview          | Preview frames skip the library thumbnail queue.                                    |
+| Timeline previews use 2 s buckets and `pv1` cache keys                | Bucket math changes bump the version instead of reusing frames.                     |
 | Thumbnail eviction counter is atomic and best-effort                  | Avoids full directory scans on the hot path; `get_thumbnail_cache_size` resyncs it. |
 | Inflight dedup keyed by `{hash}_{size}` (no mtime)                    | Allows metadata stat inside `spawn_blocking`.                                       |
 | FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified   | Reproducible provisioning.                                                          |

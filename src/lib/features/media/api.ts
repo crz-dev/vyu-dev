@@ -173,6 +173,20 @@ export async function invokeStoreThumbnail(
   return invoke("store_thumbnail", { path, size, dataUrl });
 }
 
+export async function invokeGetVideoPreview(
+  path: string,
+  bucket: number,
+  timeSecs: number,
+  width?: number,
+): Promise<string> {
+  return invoke("get_video_preview", {
+    path,
+    bucket,
+    timeSecs,
+    width: width ?? null,
+  });
+}
+
 // Listen for streaming thumbnail results from get_thumbnails
 export function onThumbnailProgress(
   callback: (path: string, dataUrl: string) => void,

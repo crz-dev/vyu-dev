@@ -7,6 +7,7 @@ export interface TimelineProps {
   progress: number;
   currentTimeSecs: number;
   isGifVideo: boolean;
+  previewPath: string;
   clipPairs: { startId: string; endId: string }[];
   clipBoundaries: ClipBoundary[];
   timestamps: VideoMarker[];

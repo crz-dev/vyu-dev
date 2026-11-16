@@ -83,6 +83,7 @@ pub struct ThumbState {
     pub image_sem: Semaphore,
     pub video_sem: Semaphore,
     pub audio_sem: Semaphore,
+    pub preview_sem: Semaphore,
     pub inflight: InFlightRegistry,
 }
 
@@ -92,6 +93,7 @@ impl ThumbState {
             image_sem: Semaphore::new(16),
             video_sem: Semaphore::new(2),
             audio_sem: Semaphore::new(2),
+            preview_sem: Semaphore::new(1),
             inflight: InFlightRegistry::new(),
         }
     }

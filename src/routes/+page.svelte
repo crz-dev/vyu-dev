@@ -460,6 +460,7 @@
       progress,
       currentTimeSecs: rawCurrentSecs,
       isGifVideo,
+      previewPath: isVideo && !isGifVideo ? filePath : "",
       clipPairs: clips.clipPairs,
       clipBoundaries: clips.clipBoundaries,
       timestamps: markerStore.timestamps,

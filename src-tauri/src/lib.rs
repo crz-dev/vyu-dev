@@ -106,6 +106,7 @@ pub fn run() {
             get_ffmpeg_info,
             get_thumbnail,
             get_thumbnails,
+            get_video_preview,
             store_thumbnail,
             get_thumbnail_cache_size,
             clear_thumbnail_cache,

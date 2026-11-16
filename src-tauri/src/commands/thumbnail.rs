@@ -4,7 +4,7 @@ use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::OnceLock;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::Engine as _;
 use futures::stream::FuturesUnordered;
@@ -21,6 +21,11 @@ use crate::util::{canonicalize_path, format_data_url, hash_path_xxh3, run_ffmpeg
 
 const DEFAULT_MAX_CACHE_BYTES: u64 = 500 * 1024 * 1024;
 const EVICTION_MARGIN: u64 = 10 * 1024 * 1024;
+const PREVIEW_WIDTH: u32 = 160;
+const PREVIEW_MIN_WIDTH: u32 = 64;
+const PREVIEW_MAX_WIDTH: u32 = 320;
+const PREVIEW_MAX_BUCKET: u32 = 1_000_000;
+const FFMPEG_PREVIEW_TIMEOUT: Duration = Duration::from_secs(4);
 
 /// Configurable cache cap (driven by System settings)
 static CACHE_LIMIT_BYTES: AtomicU64 = AtomicU64::new(DEFAULT_MAX_CACHE_BYTES);
@@ -148,6 +153,44 @@ fn generate_video_frame(
         ],
         thumb_path,
         FFMPEG_THUMB_TIMEOUT,
+    )
+}
+
+fn preview_cache_key(hash: &str, mtime: u64, bucket: u32, width: u32) -> String {
+    // Bump `pv1` when the frontend changes its preview bucket math.
+    format!("{hash}_{mtime}_pv1_{bucket}_{width}")
+}
+
+fn generate_video_preview_frame(
+    path: &str,
+    out_path: &Path,
+    time_secs: f64,
+    width: u32,
+) -> Result<Option<String>, String> {
+    let seek = format!("{time_secs:.3}");
+    let scale = format!("scale={width}:-2:flags=lanczos");
+    run_ffmpeg(
+        &[
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            &seek,
+            "-i",
+            path,
+            "-frames:v",
+            "1",
+            "-an",
+            "-sn",
+            "-vf",
+            &scale,
+            "-q:v",
+            "5",
+            &out_path.to_string_lossy(),
+        ],
+        out_path,
+        FFMPEG_PREVIEW_TIMEOUT,
     )
 }
 
@@ -525,6 +568,107 @@ pub async fn get_thumbnail(
     let thumb_size = size.unwrap_or(THUMB_SHORT_SIDE);
     let cache_dir = thumb_cache_dir(&app).to_path_buf();
     thumbnail_for_path(&app, &state, &cache_dir, &path, thumb_size).await
+}
+
+/// Single frame from a video at a bucketed timestamp, cached in the shared
+/// thumbnail cache. Returns an empty string when a frame cannot be produced.
+#[tauri::command]
+pub async fn get_video_preview(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, ThumbState>,
+    path: String,
+    bucket: u32,
+    time_secs: f64,
+    width: Option<u32>,
+) -> Result<String, String> {
+    let width = width
+        .unwrap_or(PREVIEW_WIDTH)
+        .clamp(PREVIEW_MIN_WIDTH, PREVIEW_MAX_WIDTH);
+    if bucket > PREVIEW_MAX_BUCKET || !time_secs.is_finite() || time_secs < 0.0 {
+        return Ok(String::new());
+    }
+
+    let ext = path.rsplit('.').next().unwrap_or("").to_lowercase();
+    if !MediaKind::from_ext(&ext).is_video {
+        return Ok(String::new());
+    }
+
+    let canonical = canonicalize_path(&path)?;
+    let canonical_str = canonical.to_string_lossy().to_string();
+    let hash = hash_path_xxh3(&canonical_str);
+    let mtime = source_mtime(&canonical);
+    let cache_dir = thumb_cache_dir(&app).to_path_buf();
+    let cache_key = preview_cache_key(&hash, mtime, bucket, width);
+    let preview_path = cache_dir.join(format!("{cache_key}.jpg"));
+
+    if let Ok(bytes) = fs::read(&preview_path) {
+        if !bytes.is_empty() {
+            return Ok(format_data_url(&bytes));
+        }
+    }
+
+    let inflight_key = format!("preview_{cache_key}");
+    if let Some(rx) = state.inflight.register(&inflight_key).await {
+        return rx
+            .await
+            .unwrap_or(Ok(std::sync::Arc::new(vec![])))
+            .map(|bytes| {
+                if bytes.is_empty() {
+                    String::new()
+                } else {
+                    format_data_url(&bytes[..])
+                }
+            });
+    }
+
+    let _permit = match state.preview_sem.acquire().await {
+        Ok(permit) => permit,
+        Err(e) => {
+            state.inflight.cancel(&inflight_key).await;
+            return Err(format!("Semaphore error: {e}"));
+        }
+    };
+
+    let path_c = canonical_str;
+    let preview_path_c = preview_path.clone();
+    let cache_dir_c = cache_dir.clone();
+    let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
+        let generated =
+            generate_video_preview_frame(&path_c, &preview_path_c, time_secs, width)?;
+        if generated.is_none() {
+            let _ = fs::remove_file(&preview_path_c);
+            return Ok(Vec::new());
+        }
+
+        let bytes = fs::read(&preview_path_c)
+            .map_err(|e| format!("Failed to read preview frame: {e}"))?;
+        if bytes.is_empty() {
+            let _ = fs::remove_file(&preview_path_c);
+            return Ok(Vec::new());
+        }
+
+        record_cache_write(bytes.len() as u64, &cache_dir_c);
+        Ok(bytes)
+    })
+    .await;
+
+    let bytes = match spawn_result {
+        Ok(Ok(bytes)) => bytes,
+        Ok(Err(e)) => {
+            state.inflight.cancel(&inflight_key).await;
+            return Err(e);
+        }
+        Err(e) => {
+            state.inflight.cancel(&inflight_key).await;
+            return Err(format!("Thread join error: {e}"));
+        }
+    };
+
+    state.inflight.complete(&inflight_key, Ok(bytes.clone())).await;
+    if bytes.is_empty() {
+        return Ok(String::new());
+    }
+    Ok(format_data_url(&bytes))
 }
 
 /// Batch thumbnail command — process multiple paths in a single IPC call

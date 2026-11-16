@@ -1,14 +1,22 @@
 <script lang="ts">
   import type { ClipBoundary, ClipPair, VideoMarker } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import {
+    cancelPendingTimelinePreviews,
+    getCachedTimelinePreview,
+    previewBucketForPct,
+    previewTimeForBucket,
+    requestTimelinePreview,
+    TIMELINE_PREVIEW_WIDTH,
+  } from "$lib/features/media/timelinePreview";
 
   const t = locale.t;
 
   let {
     fullscreen = false,
     progress,
-    currentTimeSecs,
     isGifVideo,
+    previewPath = "",
     clipPairs,
     clipBoundaries,
     timestamps,
@@ -44,8 +52,8 @@
   }: {
     fullscreen?: boolean;
     progress: number;
-    currentTimeSecs: number;
     isGifVideo: boolean;
+    previewPath?: string;
     clipPairs: ClipPair[];
     clipBoundaries: ClipBoundary[];
     timestamps: VideoMarker[];
@@ -103,53 +111,179 @@
       durationSecs > 0 &&
       resumePoint / durationSecs >= 0.25,
   );
-  let showPlayheadTooltip = $state(false);
-  let playheadHovered = $state(false);
+  let showPreview = $state(false);
+  let previewPct = $state(0);
+  let previewSrc = $state("");
+  let previewTimeSecs = $state(0);
+  let barWidth = $state(0);
+  let barEl = $state<HTMLDivElement | null>(null);
   let isScrubbing = $state(false);
+  let previewBucket = -1;
+  let previewToken = 0;
+  let previewDebounce: ReturnType<typeof setTimeout> | null = null;
+  let previewRaf: number | null = null;
+  let hoverClientX = 0;
 
-  function showPlayheadTimeTooltip() {
-    showPlayheadTooltip = true;
+  const PREVIEW_HALF_PX = TIMELINE_PREVIEW_WIDTH / 2 + 8;
+  const previewHalfPct = $derived(
+    barWidth > 0 ? Math.min(50, (PREVIEW_HALF_PX / barWidth) * 100) : 20,
+  );
+  const previewLeftPct = $derived(
+    Math.min(100 - previewHalfPct, Math.max(previewHalfPct, previewPct)),
+  );
+
+  function clearPreviewDebounce() {
+    if (previewDebounce) {
+      clearTimeout(previewDebounce);
+      previewDebounce = null;
+    }
   }
 
-  function hidePlayheadTimeTooltip() {
-    if (isScrubbing || playheadHovered) return;
-    showPlayheadTooltip = false;
+  function invalidatePreviewRequests() {
+    clearPreviewDebounce();
+    previewToken++;
+    cancelPendingTimelinePreviews();
   }
 
-  function handlePlayheadMouseEnter() {
-    playheadHovered = true;
-    showPlayheadTimeTooltip();
+  function hidePreview() {
+    showPreview = false;
+    clearPreviewDebounce();
+    previewBucket = -1;
   }
 
-  function handlePlayheadMouseLeave() {
-    playheadHovered = false;
-    hidePlayheadTimeTooltip();
+  function schedulePreviewRequest(bucket: number) {
+    clearPreviewDebounce();
+    const token = ++previewToken;
+    const path = previewPath;
+    const timeSecs = previewTimeForBucket(bucket, durationSecs);
+    previewDebounce = setTimeout(() => {
+      previewDebounce = null;
+      void requestTimelinePreview(path, bucket, timeSecs).then((src) => {
+        if (
+          token !== previewToken ||
+          bucket !== previewBucket ||
+          path !== previewPath
+        ) {
+          return;
+        }
+        if (src) previewSrc = src;
+      });
+    }, 120);
   }
 
-  function handleBarMouseDown(e: MouseEvent) {
-    isScrubbing = true;
-    showPlayheadTimeTooltip();
-    startScrubbing(e);
+  function showPreviewAt(pct: number) {
+    if (!(durationSecs > 0) || !Number.isFinite(durationSecs)) {
+      showPreview = false;
+      return;
+    }
 
-    const stopScrub = () => {
-      isScrubbing = false;
-      hidePlayheadTimeTooltip();
-      window.removeEventListener("mouseup", stopScrub);
-    };
+    showPreview = true;
+    previewPct = Math.max(0, Math.min(100, pct));
+    previewTimeSecs = Math.max(
+      0,
+      Math.min((previewPct / 100) * durationSecs, durationSecs - 0.05),
+    );
 
-    window.addEventListener("mouseup", stopScrub);
+    if (!previewPath) {
+      previewSrc = "";
+      return;
+    }
+
+    const bucket = previewBucketForPct(previewPct, durationSecs);
+    if (bucket === previewBucket) return;
+
+    previewBucket = bucket;
+    invalidatePreviewRequests();
+    const cached = getCachedTimelinePreview(previewPath, bucket);
+    if (cached) {
+      previewSrc = cached;
+      return;
+    }
+
+    schedulePreviewRequest(bucket);
+  }
+
+  function updateHoverPosition(clientX: number) {
+    hoverClientX = clientX;
+    if (previewRaf !== null) return;
+    previewRaf = requestAnimationFrame(() => {
+      previewRaf = null;
+      const rect = barEl?.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return;
+      barWidth = rect.width;
+      const pct = ((hoverClientX - rect.left) / rect.width) * 100;
+      showPreviewAt(pct);
+    });
+  }
+
+  function handleBarMouseEnter(e: MouseEvent) {
+    // Warm the layout read before the first move so the preview is not delayed.
+    barWidth = barEl?.getBoundingClientRect().width ?? barWidth;
+    if (durationSecs > 0) updateHoverPosition(e.clientX);
+  }
+
+  function handleBarMouseMove(e: MouseEvent) {
+    if (!(durationSecs > 0)) return;
+    updateHoverPosition(e.clientX);
   }
 
   function handleBarMouseLeave() {
-    hidePlayheadTimeTooltip();
+    if (isScrubbing) return;
+    hidePreview();
   }
+
+  function handleBarMouseDown(e: MouseEvent) {
+    if (e.button !== 0) return;
+    isScrubbing = true;
+    updateHoverPosition(e.clientX);
+    startScrubbing(e);
+
+    const onScrubMove = (ev: MouseEvent) => updateHoverPosition(ev.clientX);
+    const stopScrub = (ev: MouseEvent) => {
+      isScrubbing = false;
+      window.removeEventListener("mousemove", onScrubMove);
+      window.removeEventListener("mouseup", stopScrub);
+      const rect = barEl?.getBoundingClientRect();
+      const over = rect
+        ? ev.clientX >= rect.left &&
+          ev.clientX <= rect.right &&
+          ev.clientY >= rect.top - 24 &&
+          ev.clientY <= rect.bottom + 24
+        : false;
+      if (!over) {
+        hidePreview();
+      }
+    };
+
+    window.addEventListener("mousemove", onScrubMove);
+    window.addEventListener("mouseup", stopScrub);
+  }
+
+  $effect(() => {
+    const path = previewPath;
+    void path;
+    invalidatePreviewRequests();
+    previewBucket = -1;
+    previewSrc = "";
+    showPreview = false;
+  });
+
+  $effect(() => {
+    return () => {
+      if (previewRaf !== null) cancelAnimationFrame(previewRaf);
+      invalidatePreviewRequests();
+    };
+  });
 </script>
 
 <div
   class={barClass}
+  bind:this={barEl}
   data-clipbar={clipBarName}
   class:hide-for-gif={isGifVideo}
   onmousedown={handleBarMouseDown}
+  onmouseenter={handleBarMouseEnter}
+  onmousemove={handleBarMouseMove}
   onmouseleave={handleBarMouseLeave}
   oncontextmenu={(e) => e.preventDefault()}
   role="slider"
@@ -163,17 +297,21 @@
   <div
     class={playheadClass}
     style="left: {progress}%"
-    onmouseenter={handlePlayheadMouseEnter}
-    onmouseleave={handlePlayheadMouseLeave}
     role="presentation"
     aria-hidden="true"
   ></div>
-  {#if showPlayheadTooltip && !tsEditMenuVisible}
+  {#if showPreview && !tsEditMenuVisible}
     <div
-      class="ts-tooltip white scrubber-tooltip"
-      style="left: {clampedProgress}%; top: -12px;"
+      class="ts-tooltip white scrubber-tooltip timeline-preview"
+      style="left: {previewLeftPct}%; top: -12px;"
+      aria-hidden="true"
     >
-      <span>{formatTime(currentTimeSecs)}</span>
+      {#if previewSrc}
+        <img class="timeline-preview-img" src={previewSrc} alt="" />
+      {:else if previewPath}
+        <div class="timeline-preview-img timeline-preview-placeholder"></div>
+      {/if}
+      <span class="timeline-preview-time">{formatTime(previewTimeSecs)}</span>
     </div>
   {/if}
   {#each clipPairs as pair (`${clipPairPrefix}-${pair.startId}-${pair.endId}`)}
@@ -388,3 +526,28 @@
     ></div>
   {/each}
 </div>
+
+<style>
+  .timeline-preview {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .timeline-preview-img {
+    display: block;
+    /* Keep in sync with TIMELINE_PREVIEW_WIDTH in timelinePreview.ts. */
+    width: 160px;
+    height: 90px;
+    object-fit: contain;
+    border-radius: 3px;
+    background: #000;
+  }
+
+  .timeline-preview-placeholder {
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .timeline-preview-time {
+    font-variant-numeric: tabular-nums;
+  }
+</style>
