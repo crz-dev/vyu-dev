@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { fade, fly } from "svelte/transition";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
   import { showToast } from "$lib/components/toast.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     invokeCheckForUpdates,
     invokeGetRuntimeInfo,
@@ -343,6 +345,7 @@
   <div
     class="delete-overlay"
     role="presentation"
+    out:fade={{ duration: appearance.reducedMotion ? 0 : 140 }}
     onmousedown={(e) => {
       if (e.target === e.currentTarget) closeFeedback();
     }}
@@ -352,6 +355,11 @@
       role="dialog"
       aria-modal="true"
       aria-labelledby="feedback-title"
+      out:fly={{
+        y: 5,
+        duration: appearance.reducedMotion ? 0 : 120,
+        opacity: 0,
+      }}
     >
       <div class="settings-header-bar">
         <p class="delete-title" id="feedback-title">

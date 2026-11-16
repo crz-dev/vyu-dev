@@ -1,10 +1,12 @@
 <script lang="ts">
   import { cubicInOut } from "svelte/easing";
+  import { fade, fly } from "svelte/transition";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { showToast } from "$lib/components/toast.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { invokeCheckForUpdates } from "$lib/features/system/api";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     loadLastDialogSection,
     saveLastDialogSection,
@@ -477,11 +479,21 @@
   <div
     class="delete-overlay"
     role="presentation"
+    out:fade={{ duration: appearance.reducedMotion ? 0 : 140 }}
     onmousedown={(e) => {
       if (e.target === e.currentTarget) closeHelp();
     }}
   >
-    <div class="delete-dialog help-dialog" role="dialog" aria-modal="true">
+    <div
+      class="delete-dialog help-dialog"
+      role="dialog"
+      aria-modal="true"
+      out:fly={{
+        y: 5,
+        duration: appearance.reducedMotion ? 0 : 120,
+        opacity: 0,
+      }}
+    >
       <div class="settings-header-bar">
         <p class="delete-title">
           <svg

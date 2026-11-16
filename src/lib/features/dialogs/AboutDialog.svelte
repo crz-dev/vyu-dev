@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { fade, fly } from "svelte/transition";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
 
   let {
     aboutOpen,
@@ -16,11 +18,21 @@
   <div
     class="delete-overlay"
     role="presentation"
+    out:fade={{ duration: appearance.reducedMotion ? 0 : 140 }}
     onmousedown={(e) => {
       if (e.target === e.currentTarget) closeAbout();
     }}
   >
-    <div class="delete-dialog about-dialog" role="dialog" aria-modal="true">
+    <div
+      class="delete-dialog about-dialog"
+      role="dialog"
+      aria-modal="true"
+      out:fly={{
+        y: 5,
+        duration: appearance.reducedMotion ? 0 : 120,
+        opacity: 0,
+      }}
+    >
       <div class="settings-header-bar">
         <p class="delete-title">
           <svg

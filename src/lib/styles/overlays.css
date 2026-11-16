@@ -363,7 +363,7 @@
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(3px) saturate(85%);
-  animation: uiOverlayFadeIn 160ms ease both;
+  animation: uiOverlayFadeIn 160ms ease backwards;
 }
 .delete-dialog {
   background: color-mix(
@@ -380,7 +380,9 @@
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
-  animation: uiDialogPopIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  /* `backwards` rather than `both` so Svelte outro transitions aren't
+     overridden by the finished entry animation. */
+  animation: uiDialogPopIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
 }
 .delete-title {
   font-size: 15px;

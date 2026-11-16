@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
+  import { fade, fly } from "svelte/transition";
   import VisionSettings from "$lib/features/accessibility/VisionSettings.svelte";
   import HearingSettings from "$lib/features/accessibility/HearingSettings.svelte";
   import MotorSettings from "$lib/features/accessibility/MotorSettings.svelte";
@@ -214,6 +215,7 @@
   <div
     class="delete-overlay"
     role="presentation"
+    out:fade={{ duration: appearance.reducedMotion ? 0 : 140 }}
     onmousedown={(e) => {
       if (e.target === e.currentTarget) closeAccessibility();
     }}
@@ -222,6 +224,11 @@
       class="delete-dialog accessibility-dialog"
       role="dialog"
       aria-modal="true"
+      out:fly={{
+        y: 5,
+        duration: appearance.reducedMotion ? 0 : 120,
+        opacity: 0,
+      }}
     >
       <div class="settings-header-bar">
         <p class="delete-title">
