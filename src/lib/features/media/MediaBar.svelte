@@ -243,6 +243,16 @@
     onSelectMenuMoved?: () => void;
   } = $props();
 
+  let previousLibraryOpen: boolean | null = null;
+  $effect(() => {
+    if (previousLibraryOpen !== null && previousLibraryOpen !== libraryOpen) {
+      libSortMenuVisible = false;
+      viewMenuVisible = false;
+      closeSortMenu();
+    }
+    previousLibraryOpen = libraryOpen;
+  });
+
   $effect(() => {
     if (
       !(isVideo || isAudio) ||
@@ -396,8 +406,8 @@
     if (fileListLength <= 0) return;
     if (fileCountEl) {
       const rect = fileCountEl.getBoundingClientRect();
-      sortMenuX = rect.left;
-      sortMenuY = window.innerHeight - rect.top + 4;
+      sortMenuX = rect.left + rect.width / 2;
+      sortMenuY = rect.top;
     }
     toggleSortMenu();
   }
@@ -406,8 +416,8 @@
     e.stopPropagation();
     const btn = e.currentTarget as HTMLElement;
     const rect = btn.getBoundingClientRect();
-    libSortMenuX = rect.left + 40;
-    libSortMenuY = window.innerHeight - rect.top + 4;
+    libSortMenuX = rect.left + rect.width / 2;
+    libSortMenuY = rect.top;
     libSortMenuVisible = !libSortMenuVisible;
   }
 
@@ -420,8 +430,8 @@
     e.stopPropagation();
     const btn = e.currentTarget as HTMLElement;
     const rect = btn.getBoundingClientRect();
-    viewMenuX = rect.left;
-    viewMenuY = window.innerHeight - rect.top + 4;
+    viewMenuX = rect.left + rect.width / 2;
+    viewMenuY = rect.top;
     viewMenuVisible = !viewMenuVisible;
   }
 
@@ -489,13 +499,15 @@
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
-        class="fs-btn tooltip-above-shift-right"
+        class="fs-btn lib-sort-toggle tooltip-above-shift-right"
         class:menu-active={libSortMenuVisible}
         style:width={libraryOpen ? "auto" : undefined}
         style:padding={libraryOpen ? "0 11px" : undefined}
         data-tooltip={t("media.bar.sortBy")}
         onmousedown={handleLibSortClick}
         aria-label={t("media.bar.sortByAria")}
+        aria-haspopup="menu"
+        aria-expanded={libSortMenuVisible}
       >
         {#key library.sortMode}
           <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
@@ -774,6 +786,8 @@
         data-tooltip={t("media.bar.viewMode")}
         onmousedown={handleViewMenuClick}
         aria-label={t("media.bar.viewMode")}
+        aria-haspopup="menu"
+        aria-expanded={viewMenuVisible}
       >
         {#key library.viewMode}
           <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
@@ -794,54 +808,48 @@
   onMoved={onSelectMenuMoved}
 />
 
-{#if sortMenuVisible}
-  <SortMenu
-    visible={sortMenuVisible}
-    onClose={closeSortMenu}
-    x={sortMenuX}
-    y={sortMenuY}
-    {sortMode}
-    {sortDesc}
-    {onSortChange}
-  />
-{/if}
+<SortMenu
+  visible={sortMenuVisible}
+  onClose={closeSortMenu}
+  x={sortMenuX}
+  y={sortMenuY}
+  {sortMode}
+  {sortDesc}
+  {onSortChange}
+/>
 
-{#if libSortMenuVisible}
-  <SortMenu
-    visible={libSortMenuVisible}
-    onClose={() => (libSortMenuVisible = false)}
-    x={libSortMenuX}
-    y={libSortMenuY}
-    sortMode={library.sortMode}
-    sortDesc={library.sortDesc}
-    onSortChange={handleLibSortChange}
-    modes={library.activeTab === "recents"
-      ? RECENTS_SORT_MODES
-      : library.activeTab === "collections"
-        ? COLLECTIONS_SORT_MODES
-        : library.activeTab === "favorites"
-          ? FAVORITES_SORT_MODES
-          : BASE_SORT_MODES}
-    separatorIndex={library.activeTab === "recents" ||
-    library.activeTab === "collections" ||
-    library.activeTab === "favorites"
-      ? 0
-      : -1}
-  />
-{/if}
+<SortMenu
+  visible={libSortMenuVisible}
+  onClose={() => (libSortMenuVisible = false)}
+  x={libSortMenuX}
+  y={libSortMenuY}
+  sortMode={library.sortMode}
+  sortDesc={library.sortDesc}
+  onSortChange={handleLibSortChange}
+  modes={library.activeTab === "recents"
+    ? RECENTS_SORT_MODES
+    : library.activeTab === "collections"
+      ? COLLECTIONS_SORT_MODES
+      : library.activeTab === "favorites"
+        ? FAVORITES_SORT_MODES
+        : BASE_SORT_MODES}
+  separatorIndex={library.activeTab === "recents" ||
+  library.activeTab === "collections" ||
+  library.activeTab === "favorites"
+    ? 0
+    : -1}
+/>
 
-{#if viewMenuVisible}
-  <ViewMenu
-    visible={viewMenuVisible}
-    onClose={() => (viewMenuVisible = false)}
-    x={viewMenuX}
-    y={viewMenuY}
-    viewMode={library.viewMode}
-    onViewChange={handleViewChange}
-    density={library.density}
-    onDensityChange={(v) => library.setDensity(v)}
-  />
-{/if}
+<ViewMenu
+  visible={viewMenuVisible}
+  onClose={() => (viewMenuVisible = false)}
+  x={viewMenuX}
+  y={viewMenuY}
+  viewMode={library.viewMode}
+  onViewChange={handleViewChange}
+  density={library.density}
+  onDensityChange={(v) => library.setDensity(v)}
+/>
 
 {#if (isVideo || isAudio) && clipCount > 0 && !dismissed}
   <div

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
 
   const t = locale.t;
 
@@ -16,7 +17,9 @@
   }: {
     visible: boolean;
     onClose: () => void;
+    /** Trigger center X in viewport pixels. */
     x: number;
+    /** Trigger top Y in viewport pixels. */
     y: number;
     viewMode: "grid" | "list" | "river" | "filmstrip";
     onViewChange: (mode: "grid" | "list" | "river" | "filmstrip") => void;
@@ -54,21 +57,20 @@
   let trackEl: HTMLDivElement | null = $state(null);
   let menuElement = $state<HTMLDivElement | null>(null);
   let dragging = false;
+  const menuTransitionMs = $derived(appearance.reducedMotion ? 0 : 170);
 
-  function clampMenuPosition() {
+  function positionMenu() {
     const menu = menuElement;
     if (!menu) return;
 
     const margin = 8;
+    const gap = 8;
     const width = menu.offsetWidth;
     const height = menu.offsetHeight;
     const maxLeft = Math.max(margin, window.innerWidth - width - margin);
     const maxTop = Math.max(margin, window.innerHeight - height - margin);
-    const left = Math.max(margin, Math.min(x - 60, maxLeft));
-    const top = Math.max(
-      margin,
-      Math.min(window.innerHeight - y - height, maxTop),
-    );
+    const left = Math.max(margin, Math.min(x - width / 2, maxLeft));
+    const top = Math.max(margin, Math.min(y - gap - height, maxTop));
 
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
@@ -79,9 +81,27 @@
     if (!visible || !menuElement) return;
     void x;
     void y;
-    const frame = requestAnimationFrame(clampMenuPosition);
+    positionMenu();
+    const frame = requestAnimationFrame(positionMenu);
     return () => cancelAnimationFrame(frame);
   });
+
+  function handleTrackKeydown(e: KeyboardEvent) {
+    let next: number | null = null;
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+      next = Math.max(0, density - 0.05);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+      next = Math.min(1, density + 0.05);
+    } else if (e.key === "Home") {
+      next = 0;
+    } else if (e.key === "End") {
+      next = 1;
+    }
+    if (next === null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onDensityChange(next);
+  }
 
   function densityFromPointer(clientX: number) {
     if (!trackEl) return density;
@@ -117,36 +137,48 @@
       onClose();
     }
   }
+
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (!visible || e.key !== "Escape") return;
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
+  }
 </script>
 
 <svelte:window
   onmousedown={handleWindowMouseDown}
-  onresize={clampMenuPosition}
+  onkeydowncapture={handleWindowKeydown}
+  onresize={positionMenu}
 />
 
 {#if visible}
   <div
     class="sort-menu"
     bind:this={menuElement}
-    style="left: {x - 60}px; bottom: {y + 0}px;"
-    transition:fly={{ y: 8, duration: 170, opacity: 0.08 }}
+    style="left: {x}px; top: {y}px;"
+    transition:fly={{ y: 8, duration: menuTransitionMs, opacity: 0.08 }}
   >
     <div class="sort-menu-header">
       <span class="sort-menu-title">{t("menus.view.title")}</span>
     </div>
     <div class="sort-menu-separator"></div>
-    {#each VIEW_OPTIONS as option}
+    {#each VIEW_OPTIONS as option, i}
       <button
         class="sort-menu-item"
         class:active={viewMode === option.value}
+        style="animation-delay: {i * 35}ms"
         onclick={() => onViewChange(option.value)}
       >
-        <span class="sort-menu-label">{t(option.label)}</span>
         {@html option.icon}
+        <span class="sort-menu-label">{t(option.label)}</span>
       </button>
     {/each}
     <div class="sort-menu-separator"></div>
-    <div class="view-density-wrap">
+    <div
+      class="view-density-wrap menu-row-stagger"
+      style="animation-delay: {VIEW_OPTIONS.length * 35}ms"
+    >
       <div class="view-density-row">
         <div
           class="view-density-track"
@@ -154,11 +186,13 @@
           onpointerdown={handleTrackPointerDown}
           onpointermove={handleTrackPointerMove}
           onpointerup={handleTrackPointerUp}
+          onkeydown={handleTrackKeydown}
           role="slider"
           tabindex="0"
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.round(density * 100)}
+          aria-orientation="horizontal"
           aria-label={t("menus.view.thumbnailSize")}
         >
           <div class="view-density-fill" style="width: {density * 100}%"></div>
@@ -214,15 +248,6 @@
 {/if}
 
 <style>
-  .sort-menu-item {
-    justify-content: flex-end;
-    text-align: right;
-  }
-
-  .sort-menu-header {
-    justify-content: flex-end;
-  }
-
   .view-density-wrap {
     padding: 6px 10px;
   }

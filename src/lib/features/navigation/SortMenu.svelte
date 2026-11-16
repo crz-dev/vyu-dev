@@ -3,6 +3,7 @@
   import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
 
   const t = locale.t;
 
@@ -19,7 +20,9 @@
   }: {
     visible: boolean;
     onClose: () => void;
+    /** Trigger center X in viewport pixels. */
     x: number;
+    /** Trigger top Y in viewport pixels. */
     y: number;
     sortMode: SortMode;
     sortDesc: boolean;
@@ -49,21 +52,20 @@
   };
 
   let menuElement = $state<HTMLDivElement | null>(null);
+  const menuTransitionMs = $derived(appearance.reducedMotion ? 0 : 170);
 
-  function clampMenuPosition() {
+  function positionMenu() {
     const menu = menuElement;
     if (!menu) return;
 
     const margin = 8;
+    const gap = 8;
     const width = menu.offsetWidth;
     const height = menu.offsetHeight;
     const maxLeft = Math.max(margin, window.innerWidth - width - margin);
     const maxTop = Math.max(margin, window.innerHeight - height - margin);
-    const left = Math.max(margin, Math.min(x + 62, maxLeft));
-    const top = Math.max(
-      margin,
-      Math.min(window.innerHeight - (y + 4) - height, maxTop),
-    );
+    const left = Math.max(margin, Math.min(x - width / 2, maxLeft));
+    const top = Math.max(margin, Math.min(y - gap - height, maxTop));
 
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;
@@ -74,7 +76,8 @@
     if (!visible || !menuElement) return;
     void x;
     void y;
-    const frame = requestAnimationFrame(clampMenuPosition);
+    positionMenu();
+    const frame = requestAnimationFrame(positionMenu);
     return () => cancelAnimationFrame(frame);
   });
 
@@ -83,24 +86,33 @@
       visible &&
       !(e.target as HTMLElement).closest(".sort-menu") &&
       !(e.target as HTMLElement).closest(".file-count") &&
-      !(e.target as HTMLElement).closest(".fs-file-count-pill")
+      !(e.target as HTMLElement).closest(".fs-file-count-pill") &&
+      !(e.target as HTMLElement).closest(".lib-sort-toggle")
     ) {
       onClose();
     }
+  }
+
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (!visible || e.key !== "Escape") return;
+    e.preventDefault();
+    e.stopPropagation();
+    onClose();
   }
 </script>
 
 <svelte:window
   onmousedown={handleWindowMouseDown}
-  onresize={clampMenuPosition}
+  onkeydowncapture={handleWindowKeydown}
+  onresize={positionMenu}
 />
 
 {#if visible}
   <div
     class="sort-menu"
     bind:this={menuElement}
-    style="left: {x + 62}px; bottom: {y + 4}px;"
-    transition:fly={{ y: 8, duration: 170, opacity: 0.08 }}
+    style="left: {x}px; top: {y}px;"
+    transition:fly={{ y: 8, duration: menuTransitionMs, opacity: 0.08 }}
   >
     <div class="sort-menu-header">
       <span class="sort-menu-title">{t("menus.sort.title")}</span>
@@ -110,6 +122,7 @@
       <button
         class="sort-menu-item"
         class:active={sortMode === option.value}
+        style="animation-delay: {i * 35}ms"
         onclick={() =>
           onSortChange(
             option.value as SortMode,
@@ -130,6 +143,7 @@
     <div class="sort-menu-separator"></div>
     <button
       class="sort-menu-item sort-dir"
+      style="animation-delay: {modes.length * 35}ms"
       onclick={() => onSortChange(sortMode, !sortDesc)}
     >
       <svg

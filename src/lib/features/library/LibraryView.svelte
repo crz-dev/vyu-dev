@@ -17,6 +17,7 @@
   import { fly } from "svelte/transition";
   import { library } from "$lib/features/library/library.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     getSections,
     translateSectionLabel,
@@ -67,6 +68,11 @@
 
   const t = locale.t;
   const tp = locale.tp;
+  const swipeDuration = $derived(appearance.reducedMotion ? 0 : 240);
+
+  function scrollBehavior(): ScrollBehavior {
+    return appearance.reducedMotion ? "auto" : "smooth";
+  }
 
   let tabsEl: HTMLDivElement | null = $state(null);
   let tabHighlight = $state({
@@ -83,12 +89,16 @@
       direction,
       duration,
       easing,
+      enabled = true,
     }: {
       direction: number;
       duration: number;
       easing: (value: number) => number;
+      enabled?: boolean;
     },
   ) {
+    if (!enabled) return { duration: 0 };
+
     const width = node.getBoundingClientRect().width;
 
     return {
@@ -171,6 +181,32 @@
   }>({ visible: false, x: 0, y: 0, path: "", name: "" });
   let colCtxPinned = $state(false);
   let colCtxKey = $state(0);
+  let libCtxEl = $state<HTMLDivElement | null>(null);
+  let colCtxEl = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    const menu = libCtxEl;
+    if (!libCtxMenu.visible || !menu) return;
+    const maxX = Math.max(8, window.innerWidth - menu.offsetWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - menu.offsetHeight - 8);
+    const x = Math.max(8, Math.min(libCtxMenu.x, maxX));
+    const y = Math.max(8, Math.min(libCtxMenu.y, maxY));
+    if (x !== libCtxMenu.x || y !== libCtxMenu.y) {
+      libCtxMenu = { ...libCtxMenu, x, y };
+    }
+  });
+
+  $effect(() => {
+    const menu = colCtxEl;
+    if (!colCtxMenu.visible || !menu) return;
+    const maxX = Math.max(8, window.innerWidth - menu.offsetWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - menu.offsetHeight - 8);
+    const x = Math.max(8, Math.min(colCtxMenu.x, maxX));
+    const y = Math.max(8, Math.min(colCtxMenu.y, maxY));
+    if (x !== colCtxMenu.x || y !== colCtxMenu.y) {
+      colCtxMenu = { ...colCtxMenu, x, y };
+    }
+  });
 
   const IMAGE_SET = new Set(IMAGE_EXTS);
   const VIDEO_SET = new Set(VIDEO_EXTS);
@@ -928,7 +964,7 @@
   }
 
   function closeLibCtxMenu() {
-    if (libCtxPinned) return;
+    if (libCtxPinned || !libCtxMenu.visible) return;
     libCtxMenu = { ...libCtxMenu, visible: false };
     libCtxPinned = false;
   }
@@ -1022,7 +1058,7 @@
   }
 
   function closeColCtxMenu() {
-    if (colCtxPinned) return;
+    if (colCtxPinned || !colCtxMenu.visible) return;
     colCtxMenu = { ...colCtxMenu, visible: false };
     colCtxPinned = false;
   }
@@ -1163,6 +1199,13 @@
     if (target && target.closest("input, textarea, [contenteditable='true']")) {
       return;
     }
+    if (e.key === "Escape" && (libCtxMenu.visible || colCtxMenu.visible)) {
+      e.preventDefault();
+      e.stopPropagation();
+      forceCloseLibCtxMenu();
+      forceCloseColCtxMenu();
+      return;
+    }
     if (target?.closest(".context-menu, [role='menu']")) return;
     if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
     if (e.key === "Escape") {
@@ -1222,6 +1265,23 @@
     ) {
       run(openHighlighted);
     }
+  }
+
+  function handleGlobalMouseDown(e: MouseEvent) {
+    if (!libCtxMenu.visible && !colCtxMenu.visible) return;
+    const target = e.target as HTMLElement | null;
+    if (target?.closest(".context-menu")) return;
+    closeLibCtxMenu();
+    closeColCtxMenu();
+  }
+
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    if (e.key !== "Escape") return;
+    if (!libCtxMenu.visible && !colCtxMenu.visible) return;
+    e.preventDefault();
+    e.stopPropagation();
+    forceCloseLibCtxMenu();
+    forceCloseColCtxMenu();
   }
 
   // Virtualization tracking
@@ -1340,7 +1400,11 @@
         width: buttonRect.width,
         height: buttonRect.height,
       };
-      tabHighlightReady = true;
+      if (!tabHighlightReady) {
+        requestAnimationFrame(() => {
+          tabHighlightReady = true;
+        });
+      }
     };
 
     const frame = requestAnimationFrame(updateHighlight);
@@ -1614,7 +1678,8 @@
         const el = scrollEl.querySelector(
           `[data-path="${cssAttr(fileList[currentIndex])}"]`,
         ) as HTMLElement | null;
-        if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        if (el)
+          el.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
       }
       return;
     }
@@ -1726,7 +1791,7 @@
         0,
         el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2,
       );
-      strip.scrollTo({ left: target, behavior: "smooth" });
+      strip.scrollTo({ left: target, behavior: scrollBehavior() });
       el.focus({ preventScroll: true });
     }
   }
@@ -1764,6 +1829,11 @@
     };
   });
 </script>
+
+<svelte:window
+  onmousedown={handleGlobalMouseDown}
+  onkeydowncapture={handleGlobalKeydown}
+/>
 
 {#snippet folderCard(path: string, className: string)}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -2094,12 +2164,13 @@
           class:filmstrip-mode={library.viewMode === "filmstrip"}
           in:swipe={{
             direction: library.tabDirection,
-            duration: 240,
+            duration: swipeDuration,
             easing: cubicInOut,
+            enabled: mounted,
           }}
           out:swipe={{
             direction: -library.tabDirection,
-            duration: 240,
+            duration: swipeDuration,
             easing: cubicInOut,
           }}
           style="grid-area: 1 / 1;"
@@ -3818,12 +3889,19 @@
       <div
         class="context-menu lib-ctx"
         class:pinned={libCtxPinned}
+        bind:this={libCtxEl}
         style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
         role="menu"
         tabindex="-1"
         transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
         onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => e.stopPropagation()}
+        onkeydown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Escape") {
+            e.preventDefault();
+            forceCloseLibCtxMenu();
+          }
+        }}
       >
         <div
           class="ctx-drag"
@@ -3836,10 +3914,26 @@
             const startY = e.clientY;
             const startMenuX = libCtxMenu.x;
             const startMenuY = libCtxMenu.y;
+            const menu = (e.currentTarget as HTMLElement).closest(
+              ".context-menu",
+            );
+            const menuRect = menu?.getBoundingClientRect();
+            const maxX = menuRect
+              ? Math.max(0, window.innerWidth - menuRect.width)
+              : Number.POSITIVE_INFINITY;
+            const maxY = menuRect
+              ? Math.max(0, window.innerHeight - menuRect.height)
+              : Number.POSITIVE_INFINITY;
 
             function onMouseMove(ev: MouseEvent) {
-              libCtxMenu.x = startMenuX + ev.clientX - startX;
-              libCtxMenu.y = startMenuY + ev.clientY - startY;
+              libCtxMenu.x = Math.max(
+                0,
+                Math.min(startMenuX + ev.clientX - startX, maxX),
+              );
+              libCtxMenu.y = Math.max(
+                0,
+                Math.min(startMenuY + ev.clientY - startY, maxY),
+              );
             }
 
             function onMouseUp() {
@@ -3931,7 +4025,6 @@
             </svg>
             {t("library.context.moveTo")}
           </button>
-          <div class="ctx-sep"></div>
           <button
             class="ctx-item blue"
             onclick={ctxCollect}
@@ -3965,7 +4058,6 @@
             >
             {t("library.context.collect")}
           </button>
-          <div class="ctx-sep"></div>
           <button
             class="ctx-item yellow"
             onclick={ctxFavorite}
@@ -4033,12 +4125,19 @@
       <div
         class="context-menu lib-ctx"
         class:pinned={colCtxPinned}
+        bind:this={colCtxEl}
         style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
         role="menu"
         tabindex="-1"
         transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
         onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => e.stopPropagation()}
+        onkeydown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Escape") {
+            e.preventDefault();
+            forceCloseColCtxMenu();
+          }
+        }}
       >
         <div
           class="ctx-drag"
@@ -4051,9 +4150,25 @@
             const startY = e.clientY;
             const startMenuX = colCtxMenu.x;
             const startMenuY = colCtxMenu.y;
+            const menu = (e.currentTarget as HTMLElement).closest(
+              ".context-menu",
+            );
+            const menuRect = menu?.getBoundingClientRect();
+            const maxX = menuRect
+              ? Math.max(0, window.innerWidth - menuRect.width)
+              : Number.POSITIVE_INFINITY;
+            const maxY = menuRect
+              ? Math.max(0, window.innerHeight - menuRect.height)
+              : Number.POSITIVE_INFINITY;
             function onMouseMove(ev: MouseEvent) {
-              colCtxMenu.x = startMenuX + ev.clientX - startX;
-              colCtxMenu.y = startMenuY + ev.clientY - startY;
+              colCtxMenu.x = Math.max(
+                0,
+                Math.min(startMenuX + ev.clientX - startX, maxX),
+              );
+              colCtxMenu.y = Math.max(
+                0,
+                Math.min(startMenuY + ev.clientY - startY, maxY),
+              );
             }
             function onMouseUp() {
               window.removeEventListener("mousemove", onMouseMove);
@@ -4143,7 +4258,6 @@
             </svg>
             {t("library.context.rename")}
           </button>
-          <div class="ctx-sep"></div>
           <button
             class="ctx-item blue"
             onclick={ctxChangeCoverCol}
@@ -4175,7 +4289,6 @@
             >
             {t("library.context.changeCover")}
           </button>
-          <div class="ctx-sep"></div>
           <button
             class="ctx-item yellow"
             onclick={ctxShowInExplorerCol}
@@ -4525,6 +4638,17 @@
     outline: none;
   }
 
+  .lib-ctx .ctx-sep {
+    height: 1px;
+    margin: 4px 8px;
+  }
+
+  .library-grid,
+  .library-river,
+  .library-list {
+    animation: ss-fade-in 140ms ease-out both;
+  }
+
   .tab-content {
     width: 100%;
     min-height: 100%;
@@ -4543,6 +4667,7 @@
     justify-content: center;
     gap: 2px;
     padding: 12px 24px 8px;
+    border-bottom: 0.5px solid var(--bg-border, #2a2a2a);
   }
 
   .library-tab-highlight {
@@ -4557,6 +4682,10 @@
       transform 300ms cubic-bezier(0.65, 0, 0.35, 1),
       width 300ms cubic-bezier(0.65, 0, 0.35, 1),
       opacity 120ms ease;
+  }
+
+  .library-tab-highlight:not(.ready) {
+    transition: none;
   }
 
   .library-tab-highlight.ready {
@@ -4649,7 +4778,7 @@
   .library-collection-header {
     font-family: var(--font-family);
     font-size: 15px;
-    padding: 8px 24px 0;
+    padding: 8px 24px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -4924,7 +5053,7 @@
   }
 
   .filmstrip-cell.active {
-    border-color: #fff;
+    border-color: var(--text-primary, #fff);
   }
 
   .filmstrip-cell.selected {
@@ -5001,7 +5130,7 @@
   }
 
   .river-cell.active {
-    border-color: #fff;
+    border-color: var(--text-primary, #fff);
   }
 
   .river-cell.selected {
@@ -5118,7 +5247,7 @@
   }
 
   .library-cell.active {
-    border-color: #fff;
+    border-color: var(--text-primary, #fff);
   }
 
   .library-cell.selected {

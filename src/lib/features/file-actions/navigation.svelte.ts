@@ -540,7 +540,7 @@ export function createNavigation(deps: NavigationDeps) {
     const fsPillEl = deps.getFsPillEl();
     if (fsPillEl) {
       const rect = fsPillEl.getBoundingClientRect();
-      sort.toggleAt(rect.left, window.innerHeight - rect.top + 4);
+      sort.toggleAt(rect.left + rect.width / 2, rect.top);
     } else {
       sort.toggle();
     }

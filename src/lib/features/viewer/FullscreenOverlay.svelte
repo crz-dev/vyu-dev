@@ -438,17 +438,15 @@
           {currentIndex + 1} / {fileListLength}
         </button>
       {/if}
-      {#if sortMenuVisible}
-        <SortMenu
-          visible={sortMenuVisible}
-          onClose={sortClose}
-          x={sortMenuX}
-          y={sortMenuY}
-          {sortMode}
-          {sortDesc}
-          {onSortChange}
-        />
-      {/if}
+      <SortMenu
+        visible={sortMenuVisible}
+        onClose={sortClose}
+        x={sortMenuX}
+        y={sortMenuY}
+        {sortMode}
+        {sortDesc}
+        {onSortChange}
+      />
     </div>
   {/if}
 {/if}
