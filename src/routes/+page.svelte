@@ -455,12 +455,22 @@
     removeClipBoundary,
   } = markerActions;
 
+  const previewAspectRatio = $derived.by(() => {
+    // fileDimensions is formatted like "1920 × 1080" (multiplication sign).
+    const match = /^(\d+)\s*[x×*]\s*(\d+)$/i.exec(fileDimensions.trim());
+    if (!match) return 16 / 9;
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    return width > 0 && height > 0 ? width / height : 16 / 9;
+  });
+
   const timelineProps = $derived(
     buildTimelineProps({
       progress,
       currentTimeSecs: rawCurrentSecs,
       isGifVideo,
       previewPath: isVideo && !isGifVideo ? filePath : "",
+      previewAspectRatio,
       clipPairs: clips.clipPairs,
       clipBoundaries: clips.clipBoundaries,
       timestamps: markerStore.timestamps,

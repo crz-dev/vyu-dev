@@ -21,11 +21,12 @@ use crate::util::{canonicalize_path, format_data_url, hash_path_xxh3, run_ffmpeg
 
 const DEFAULT_MAX_CACHE_BYTES: u64 = 500 * 1024 * 1024;
 const EVICTION_MARGIN: u64 = 10 * 1024 * 1024;
-const PREVIEW_WIDTH: u32 = 160;
+const PREVIEW_WIDTH: u32 = 128;
 const PREVIEW_MIN_WIDTH: u32 = 64;
 const PREVIEW_MAX_WIDTH: u32 = 320;
 const PREVIEW_MAX_BUCKET: u32 = 1_000_000;
-const FFMPEG_PREVIEW_TIMEOUT: Duration = Duration::from_secs(4);
+const FFMPEG_PREVIEW_TIMEOUT: Duration = Duration::from_secs(3);
+const FFMPEG_PREVIEW_ACCURATE_TIMEOUT: Duration = Duration::from_millis(500);
 
 /// Configurable cache cap (driven by System settings)
 static CACHE_LIMIT_BYTES: AtomicU64 = AtomicU64::new(DEFAULT_MAX_CACHE_BYTES);
@@ -157,8 +158,9 @@ fn generate_video_frame(
 }
 
 fn preview_cache_key(hash: &str, mtime: u64, bucket: u32, width: u32) -> String {
-    // Bump `pv1` when the frontend changes its preview bucket math.
-    format!("{hash}_{mtime}_pv1_{bucket}_{width}")
+    // Bump `pv2` when the frontend changes its preview bucket math or the
+    // backend changes how frames are selected.
+    format!("{hash}_{mtime}_pv2_{bucket}_{width}")
 }
 
 fn generate_video_preview_frame(
@@ -166,32 +168,64 @@ fn generate_video_preview_frame(
     out_path: &Path,
     time_secs: f64,
     width: u32,
+    keyframe_only: bool,
 ) -> Result<Option<String>, String> {
     let seek = format!("{time_secs:.3}");
-    let scale = format!("scale={width}:-2:flags=lanczos");
-    run_ffmpeg(
-        &[
-            "-y",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-ss",
-            &seek,
-            "-i",
-            path,
-            "-frames:v",
-            "1",
-            "-an",
-            "-sn",
-            "-vf",
-            &scale,
-            "-q:v",
-            "5",
-            &out_path.to_string_lossy(),
-        ],
-        out_path,
-        FFMPEG_PREVIEW_TIMEOUT,
-    )
+    let scale = format!("scale={width}:-2:flags=bilinear,format=yuvj420p");
+    if keyframe_only {
+        // Keyframe-only seeking keeps hover previews fast on long-GOP and
+        // high-resolution sources; the frame may be from a nearby keyframe.
+        run_ffmpeg(
+            &[
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-ss",
+                &seek,
+                "-noaccurate_seek",
+                "-skip_frame",
+                "nokey",
+                "-i",
+                path,
+                "-frames:v",
+                "1",
+                "-an",
+                "-sn",
+                "-vf",
+                &scale,
+                "-q:v",
+                "7",
+                &out_path.to_string_lossy(),
+            ],
+            out_path,
+            FFMPEG_PREVIEW_TIMEOUT,
+        )
+    } else {
+        run_ffmpeg(
+            &[
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-ss",
+                &seek,
+                "-i",
+                path,
+                "-frames:v",
+                "1",
+                "-an",
+                "-sn",
+                "-vf",
+                &scale,
+                "-q:v",
+                "7",
+                &out_path.to_string_lossy(),
+            ],
+            out_path,
+            FFMPEG_PREVIEW_ACCURATE_TIMEOUT,
+        )
+    }
 }
 
 fn generate_ffmpeg_image_frame(
@@ -580,6 +614,7 @@ pub async fn get_video_preview(
     bucket: u32,
     time_secs: f64,
     width: Option<u32>,
+    fast: Option<bool>,
 ) -> Result<String, String> {
     let width = width
         .unwrap_or(PREVIEW_WIDTH)
@@ -632,9 +667,39 @@ pub async fn get_video_preview(
     let path_c = canonical_str;
     let preview_path_c = preview_path.clone();
     let cache_dir_c = cache_dir.clone();
+    let prefer_fast = fast.unwrap_or(false);
     let spawn_result = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
-        let generated =
-            generate_video_preview_frame(&path_c, &preview_path_c, time_secs, width)?;
+        // Try an accurate frame first, but bail out quickly. Long-GOP or very
+        // high-resolution sources fall back to a nearby keyframe.
+        let mut generated = if prefer_fast {
+            None
+        } else {
+            generate_video_preview_frame(&path_c, &preview_path_c, time_secs, width, false)?
+        };
+        if generated.is_none() {
+            generated =
+                generate_video_preview_frame(&path_c, &preview_path_c, time_secs, width, true)?;
+        }
+        // Near the end of a video the next keyframe may be past EOF; step back.
+        if generated.is_none() && time_secs > 10.0 {
+            generated = generate_video_preview_frame(
+                &path_c,
+                &preview_path_c,
+                time_secs - 10.0,
+                width,
+                true,
+            )?;
+        }
+        // Absolute last resort: the first decodable frame, so the hover frame
+        // never collapses into a timestamp-only tooltip.
+        if generated.is_none() {
+            generated =
+                generate_video_preview_frame(&path_c, &preview_path_c, 0.0, width, true)?;
+        }
+        if generated.is_none() {
+            generated =
+                generate_video_preview_frame(&path_c, &preview_path_c, 0.0, width, false)?;
+        }
         if generated.is_none() {
             let _ = fs::remove_file(&preview_path_c);
             return Ok(Vec::new());

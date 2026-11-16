@@ -100,9 +100,6 @@
   overflow: visible;
   transition: background-color 0.15s ease;
 }
-.progress-bar:hover {
-  background: color-mix(in srgb, var(--text-primary) 24%, transparent);
-}
 .progress-bar:focus-visible {
   box-shadow: 0 0 0 1px var(--text-muted);
 }
@@ -535,9 +532,6 @@
   position: relative;
   overflow: visible;
   transition: background-color 0.15s ease;
-}
-.fs-progress:hover {
-  background: rgba(255, 255, 255, 0.34);
 }
 .fs-progress:focus-visible {
   box-shadow: 0 0 0 1px var(--text-muted);

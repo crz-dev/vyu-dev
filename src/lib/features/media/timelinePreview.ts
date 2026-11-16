@@ -1,13 +1,15 @@
 import { invokeGetVideoPreview } from "$lib/features/media/api";
 
 export const TIMELINE_PREVIEW_BUCKET_SECS = 2;
-// Keep in sync with .timeline-preview-img in TimelineMarkers.svelte.
-export const TIMELINE_PREVIEW_WIDTH = 160;
+// Maximum preview width; the tooltip shrinks it for vertical videos.
+export const TIMELINE_PREVIEW_WIDTH = 128;
 
 const PREVIEW_CACHE_LIMIT = 64;
+const SLOW_PREVIEW_THRESHOLD_MS = 500;
 
 const cache = new Map<string, string>();
 const inFlight = new Map<string, Promise<string>>();
+const slowPaths = new Set<string>();
 
 interface PendingPreviewRequest {
   path: string;
@@ -77,11 +79,13 @@ function loadPreview(
   const existing = inFlight.get(key);
   if (existing) return existing;
 
+  const started = performance.now();
   const promise = invokeGetVideoPreview(
     path,
     bucket,
     timeSecs,
     TIMELINE_PREVIEW_WIDTH,
+    slowPaths.has(path),
   )
     .then((src) => {
       if (src) store(path, bucket, src);
@@ -89,6 +93,8 @@ function loadPreview(
     })
     .catch(() => "")
     .finally(() => {
+      if (performance.now() - started > SLOW_PREVIEW_THRESHOLD_MS)
+        slowPaths.add(path);
       inFlight.delete(key);
     });
 

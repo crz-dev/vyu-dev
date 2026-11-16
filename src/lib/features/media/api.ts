@@ -178,12 +178,14 @@ export async function invokeGetVideoPreview(
   bucket: number,
   timeSecs: number,
   width?: number,
+  fast?: boolean,
 ): Promise<string> {
   return invoke("get_video_preview", {
     path,
     bucket,
     timeSecs,
     width: width ?? null,
+    fast: fast ?? null,
   });
 }
 

@@ -97,6 +97,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Tauri invoke wrappers                                  | `features/media/api.ts`                                                        |
 | Markers / timeline helpers                             | `features/markers/*`                                                           |
 | Timeline                                               | `components/TimelineMarkers.svelte`, `markers/timeline.ts`                     |
+| Timeline preview frames                                | `features/media/timelinePreview.ts`                                            |
 | PDF rendering                                          | `features/viewer/pdf.svelte.ts`                                                |
 | Drawing / markup                                       | `features/markup/markup.svelte.ts`                                             |
 | Markup actions                                         | `features/markup/markupActions.ts`                                             |
@@ -258,7 +259,7 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Cross-volume rename uses copy+delete fallback                         | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
 | JPEG scale-down via `jpeg-decoder`, not `image`                       | `image` uses `zune-jpeg`, which lacks IDCT scaling.                                 |
 | Semaphores: 16 image, 2 video/FFmpeg/RAW, 2 audio, 1 preview          | Preview frames skip the library thumbnail queue.                                    |
-| Timeline previews use 2 s buckets and `pv1` cache keys                | Bucket math changes bump the version instead of reusing frames.                     |
+| Timeline previews use 2 s buckets and keyframe `pv2` keys             | Accurate attempt falls back to keyframes after 500 ms.                              |
 | Thumbnail eviction counter is atomic and best-effort                  | Avoids full directory scans on the hot path; `get_thumbnail_cache_size` resyncs it. |
 | Inflight dedup keyed by `{hash}_{size}` (no mtime)                    | Allows metadata stat inside `spawn_blocking`.                                       |
 | FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified   | Reproducible provisioning.                                                          |

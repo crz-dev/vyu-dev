@@ -17,6 +17,7 @@
     progress,
     isGifVideo,
     previewPath = "",
+    previewAspectRatio = 16 / 9,
     clipPairs,
     clipBoundaries,
     timestamps,
@@ -54,6 +55,7 @@
     progress: number;
     isGifVideo: boolean;
     previewPath?: string;
+    previewAspectRatio?: number;
     clipPairs: ClipPair[];
     clipBoundaries: ClipBoundary[];
     timestamps: VideoMarker[];
@@ -114,66 +116,121 @@
   let showPreview = $state(false);
   let previewPct = $state(0);
   let previewSrc = $state("");
+  let previewLoading = $state(false);
+  let previewImageAspect = $state(0);
   let previewTimeSecs = $state(0);
   let barWidth = $state(0);
   let barEl = $state<HTMLDivElement | null>(null);
   let isScrubbing = $state(false);
   let previewBucket = -1;
-  let previewToken = 0;
-  let previewDebounce: ReturnType<typeof setTimeout> | null = null;
+  let previewLoadingBucket = -1;
+  let previewRequestTimer: ReturnType<typeof setTimeout> | null = null;
+  let previewLastRequestAt = 0;
+  let lastPreviewPath = "";
   let previewRaf: number | null = null;
   let hoverClientX = 0;
+  let pointerClientX = 0;
+  let pointerClientY = 0;
+  let pointerKnown = false;
 
-  const PREVIEW_HALF_PX = TIMELINE_PREVIEW_WIDTH / 2 + 8;
+  const PREVIEW_REQUEST_INTERVAL_MS = 100;
+  const PREVIEW_MIN_ASPECT = 0.5;
+  const PREVIEW_MAX_ASPECT = 2.4;
+  const PREVIEW_MAX_HEIGHT = 80;
+  const previewBox = $derived.by(() => {
+    const sourceAspect =
+      previewImageAspect > 0 ? previewImageAspect : previewAspectRatio;
+    const raw =
+      Number.isFinite(sourceAspect) && sourceAspect > 0 ? sourceAspect : 16 / 9;
+    const ratio = Math.max(
+      PREVIEW_MIN_ASPECT,
+      Math.min(PREVIEW_MAX_ASPECT, raw),
+    );
+    let width = TIMELINE_PREVIEW_WIDTH;
+    let height = width / ratio;
+    if (height > PREVIEW_MAX_HEIGHT) {
+      height = PREVIEW_MAX_HEIGHT;
+      width = height * ratio;
+    }
+    return { width: Math.round(width), height: Math.round(height) };
+  });
   const previewHalfPct = $derived(
-    barWidth > 0 ? Math.min(50, (PREVIEW_HALF_PX / barWidth) * 100) : 20,
+    barWidth > 0
+      ? Math.min(50, ((previewBox.width / 2 + 3) / barWidth) * 100)
+      : 20,
   );
   const previewLeftPct = $derived(
     Math.min(100 - previewHalfPct, Math.max(previewHalfPct, previewPct)),
   );
 
-  function clearPreviewDebounce() {
-    if (previewDebounce) {
-      clearTimeout(previewDebounce);
-      previewDebounce = null;
+  function clearPreviewTimer() {
+    if (previewRequestTimer) {
+      clearTimeout(previewRequestTimer);
+      previewRequestTimer = null;
     }
-  }
-
-  function invalidatePreviewRequests() {
-    clearPreviewDebounce();
-    previewToken++;
-    cancelPendingTimelinePreviews();
   }
 
   function hidePreview() {
     showPreview = false;
-    clearPreviewDebounce();
+    previewLoading = false;
+    clearPreviewTimer();
+    cancelPendingTimelinePreviews();
     previewBucket = -1;
+    previewLoadingBucket = -1;
   }
 
-  function schedulePreviewRequest(bucket: number) {
-    clearPreviewDebounce();
-    const token = ++previewToken;
-    const path = previewPath;
-    const timeSecs = previewTimeForBucket(bucket, durationSecs);
-    previewDebounce = setTimeout(() => {
-      previewDebounce = null;
-      void requestTimelinePreview(path, bucket, timeSecs).then((src) => {
-        if (
-          token !== previewToken ||
-          bucket !== previewBucket ||
-          path !== previewPath
-        ) {
-          return;
+  function ensurePreviewFrame() {
+    if (!showPreview || !previewPath || previewBucket < 0) return;
+    if (previewLoadingBucket === previewBucket) {
+      previewLoading = true;
+      return;
+    }
+    if (previewRequestTimer) {
+      previewLoading = true;
+      return;
+    }
+
+    const cached = getCachedTimelinePreview(previewPath, previewBucket);
+    if (cached) {
+      previewSrc = cached;
+      previewLoading = false;
+      return;
+    }
+
+    previewLoading = true;
+    const delay = Math.max(
+      0,
+      PREVIEW_REQUEST_INTERVAL_MS - (Date.now() - previewLastRequestAt),
+    );
+    previewRequestTimer = setTimeout(() => {
+      previewRequestTimer = null;
+      if (!showPreview || !previewPath || previewBucket < 0) return;
+
+      const bucket = previewBucket;
+      const path = previewPath;
+      previewLoadingBucket = bucket;
+      previewLastRequestAt = Date.now();
+      void requestTimelinePreview(
+        path,
+        bucket,
+        previewTimeForBucket(bucket, durationSecs),
+      ).then((src) => {
+        if (previewLoadingBucket === bucket) previewLoadingBucket = -1;
+        if (path !== previewPath) return;
+        if (bucket === previewBucket) {
+          previewLoading = false;
+          if (src) previewSrc = src;
         }
-        if (src) previewSrc = src;
+        // The pointer may have moved while this frame was loading.
+        if (showPreview && bucket !== previewBucket) ensurePreviewFrame();
       });
-    }, 120);
+    }, delay);
   }
 
   function showPreviewAt(pct: number) {
     if (!(durationSecs > 0) || !Number.isFinite(durationSecs)) {
       showPreview = false;
+      previewLoading = false;
       return;
     }
 
@@ -186,6 +243,7 @@
 
     if (!previewPath) {
       previewSrc = "";
+      previewLoading = false;
       return;
     }
 
@@ -193,14 +251,7 @@
     if (bucket === previewBucket) return;
 
     previewBucket = bucket;
-    invalidatePreviewRequests();
-    const cached = getCachedTimelinePreview(previewPath, bucket);
-    if (cached) {
-      previewSrc = cached;
-      return;
-    }
-
-    schedulePreviewRequest(bucket);
+    ensurePreviewFrame();
   }
 
   function updateHoverPosition(clientX: number) {
@@ -216,20 +267,11 @@
     });
   }
 
-  function handleBarMouseEnter(e: MouseEvent) {
-    // Warm the layout read before the first move so the preview is not delayed.
-    barWidth = barEl?.getBoundingClientRect().width ?? barWidth;
+  function handleBarHover(e: MouseEvent) {
+    pointerClientX = e.clientX;
+    pointerClientY = e.clientY;
+    pointerKnown = true;
     if (durationSecs > 0) updateHoverPosition(e.clientX);
-  }
-
-  function handleBarMouseMove(e: MouseEvent) {
-    if (!(durationSecs > 0)) return;
-    updateHoverPosition(e.clientX);
-  }
-
-  function handleBarMouseLeave() {
-    if (isScrubbing) return;
-    hidePreview();
   }
 
   function handleBarMouseDown(e: MouseEvent) {
@@ -237,7 +279,6 @@
     isScrubbing = true;
     updateHoverPosition(e.clientX);
     startScrubbing(e);
-
     const onScrubMove = (ev: MouseEvent) => updateHoverPosition(ev.clientX);
     const stopScrub = (ev: MouseEvent) => {
       isScrubbing = false;
@@ -259,19 +300,73 @@
     window.addEventListener("mouseup", stopScrub);
   }
 
+  function isWithinBarRect(rect: DOMRect, clientX: number, clientY: number) {
+    return (
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top - 14 &&
+      clientY <= rect.bottom + 4
+    );
+  }
+
+  $effect(() => {
+    // Track the cursor at window level so the preview still appears when a
+    // child marker or an overlay captures the bar's own mouse events.
+    function onWindowMouseMove(e: MouseEvent) {
+      pointerClientX = e.clientX;
+      pointerClientY = e.clientY;
+      pointerKnown = true;
+      const rect = barEl?.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return;
+      if (isWithinBarRect(rect, e.clientX, e.clientY)) {
+        if (durationSecs > 0) updateHoverPosition(e.clientX);
+      } else if (showPreview && !isScrubbing) {
+        hidePreview();
+      }
+    }
+
+    window.addEventListener("mousemove", onWindowMouseMove);
+    return () => window.removeEventListener("mousemove", onWindowMouseMove);
+  });
+
+  $effect(() => {
+    // Metadata can arrive after the pointer is already resting on the bar.
+    // Re-evaluate then so the first hover does not require a click or drag.
+    const duration = durationSecs;
+    const path = previewPath;
+    const progressValue = progress;
+    void duration;
+    void path;
+    void progressValue;
+    if (!pointerKnown || !(duration > 0) || !Number.isFinite(duration)) return;
+    if (!path || showPreview) return;
+    const rect = barEl?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
+    if (isWithinBarRect(rect, pointerClientX, pointerClientY)) {
+      updateHoverPosition(pointerClientX);
+    }
+  });
+
   $effect(() => {
     const path = previewPath;
-    void path;
-    invalidatePreviewRequests();
+    // Spread props can re-run effects without the path actually changing.
+    if (path === lastPreviewPath) return;
+    lastPreviewPath = path;
+    clearPreviewTimer();
+    cancelPendingTimelinePreviews();
     previewBucket = -1;
+    previewLoadingBucket = -1;
     previewSrc = "";
+    previewImageAspect = 0;
+    previewLoading = false;
     showPreview = false;
   });
 
   $effect(() => {
     return () => {
       if (previewRaf !== null) cancelAnimationFrame(previewRaf);
-      invalidatePreviewRequests();
+      clearPreviewTimer();
+      cancelPendingTimelinePreviews();
     };
   });
 </script>
@@ -282,9 +377,8 @@
   data-clipbar={clipBarName}
   class:hide-for-gif={isGifVideo}
   onmousedown={handleBarMouseDown}
-  onmouseenter={handleBarMouseEnter}
-  onmousemove={handleBarMouseMove}
-  onmouseleave={handleBarMouseLeave}
+  onmouseenter={handleBarHover}
+  onmousemove={handleBarHover}
   oncontextmenu={(e) => e.preventDefault()}
   role="slider"
   aria-label={t("shell.timeline.scrubber")}
@@ -307,9 +401,24 @@
       aria-hidden="true"
     >
       {#if previewSrc}
-        <img class="timeline-preview-img" src={previewSrc} alt="" />
+        <img
+          class="timeline-preview-img"
+          style="width: {previewBox.width}px; height: {previewBox.height}px"
+          src={previewSrc}
+          alt=""
+          onload={(e) => {
+            const img = e.currentTarget as HTMLImageElement;
+            if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+              previewImageAspect = img.naturalWidth / img.naturalHeight;
+            }
+          }}
+        />
       {:else if previewPath}
-        <div class="timeline-preview-img timeline-preview-placeholder"></div>
+        <div
+          class="timeline-preview-img"
+          class:timeline-preview-loading={previewLoading}
+          style="width: {previewBox.width}px; height: {previewBox.height}px"
+        ></div>
       {/if}
       <span class="timeline-preview-time">{formatTime(previewTimeSecs)}</span>
     </div>
@@ -528,23 +637,46 @@
 </div>
 
 <style>
-  .timeline-preview {
-    padding: 4px;
-    gap: 4px;
+  /* Expand the hover/click target above the thin bar into the controls gap. */
+  .progress-bar::before,
+  .fs-progress::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -10px;
+    bottom: 0;
+  }
+
+  .ts-tooltip.timeline-preview {
+    padding: 3px;
+    gap: 3px;
+    border-radius: 6px;
+    background: color-mix(
+      in srgb,
+      var(--bg-secondary) var(--menu-opacity),
+      transparent
+    );
+    backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+    border: 0.5px solid color-mix(in srgb, var(--text-primary) 20%, transparent);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
   }
 
   .timeline-preview-img {
     display: block;
-    /* Keep in sync with TIMELINE_PREVIEW_WIDTH in timelinePreview.ts. */
-    width: 160px;
-    height: 90px;
     object-fit: contain;
-    border-radius: 3px;
-    background: #000;
+    border-radius: 4px;
   }
 
-  .timeline-preview-placeholder {
-    background: rgba(0, 0, 0, 0.55);
+  .timeline-preview-loading {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--text-primary) 16%, transparent) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: thumbShimmer 3s ease-in-out infinite;
   }
 
   .timeline-preview-time {
