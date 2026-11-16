@@ -117,8 +117,10 @@
   let mounted = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
-  let filmstripHighlightTimer: ReturnType<typeof setTimeout> | null = null;
   let filmstripReady = $state(false);
+  let filmstripReadyKey = "";
+  let filmstripLastDensity = -1;
+  let filmstripLastIndex = -1;
   let lastManualHighlight = 0;
 
   let dragStart: { x: number; y: number } | null = $state(null);
@@ -1669,6 +1671,7 @@
     void library.density;
 
     if (library.viewMode !== "filmstrip") {
+      filmstripReadyKey = "";
       // Grid/list: scroll current file into view
       if (
         fileList.length > 0 &&
@@ -1684,67 +1687,91 @@
       return;
     }
 
-    filmstripReady = false;
+    const layoutKey = `${library.activeTab}:${library.viewMode}`;
+    const needsReady = filmstripReadyKey !== layoutKey;
+    const indexChanged = filmstripLastIndex !== currentIndex;
+    const densityChanged = filmstripLastDensity !== library.density;
+    filmstripLastIndex = currentIndex;
+    filmstripLastDensity = library.density;
+    if (needsReady) {
+      filmstripReady = false;
+    }
 
-    // Double rAF + setTimeout: wait for browser layout + paint before scrolling
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const stripEl = scrollEl?.querySelector(
+    let strip: HTMLElement | null = null;
+    let firstFrame = 0;
+    let secondFrame = 0;
+    let readyTimer: ReturnType<typeof setTimeout> | null = null;
+    let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastWheel = 0;
+    let onWheel: ((e: WheelEvent) => void) | null = null;
+    let onScroll: (() => void) | null = null;
+
+    // Double rAF: wait for browser layout + paint before scrolling
+    firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        const stripNode = scrollEl?.querySelector(
           ".library-filmstrip",
         ) as HTMLElement | null;
-        if (!stripEl) return;
-        const strip = stripEl;
+        if (!stripNode) return;
+        strip = stripNode;
 
-        // Scroll to current file (instant on open)
-        const path = fileList[currentIndex];
+        // Scroll to current file (instant on open). When only the density
+        // changed, keep the cell the user is browsing centered.
+        const path =
+          !needsReady && densityChanged && !indexChanged
+            ? (sortedFiles[highlightIndex] ?? fileList[currentIndex])
+            : fileList[currentIndex];
         if (path) {
-          scrollToFilmstripCellInstant(path);
-          // Fallback: if scroll didn't take effect, retry after layout settles
-          setTimeout(() => {
-            if (strip.scrollLeft === 0 && currentIndex > 0) {
-              scrollToFilmstripCellInstant(path);
-            }
-            filmstripReady = true;
-          }, 50);
+          scrollToFilmstripCellInstant(path, needsReady);
+          if (needsReady) {
+            // Fallback: if scroll didn't take effect, retry after layout settles
+            readyTimer = setTimeout(() => {
+              readyTimer = null;
+              if (stripNode.scrollLeft === 0 && currentIndex > 0) {
+                scrollToFilmstripCellInstant(path, false);
+              }
+              filmstripReadyKey = layoutKey;
+              filmstripReady = true;
+            }, 50);
+          }
         } else {
+          filmstripReadyKey = layoutKey;
           filmstripReady = true;
         }
 
-        // Wheel: snap to adjacent cell with light cooldown to avoid overskip
-        let lastWheel = 0;
-        function onWheel(e: WheelEvent) {
-          if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-            e.preventDefault();
-            e.stopPropagation();
-            const now = performance.now();
-            if (now - lastWheel < 15) return;
-            lastWheel = now;
-            let delta = e.deltaY;
-            if (e.deltaMode === 1) delta *= 40;
-            else if (e.deltaMode === 2)
-              delta = Math.sign(delta) * strip.clientWidth;
-            if (sortedFiles.length === 0) return;
-            const dir = delta > 0 ? 1 : -1;
-            const next = Math.max(
-              0,
-              Math.min(sortedFiles.length - 1, highlightIndex + dir),
-            );
-            if (next !== highlightIndex) {
-              lastManualHighlight = performance.now();
-              highlightIndex = next;
-              scrollToFilmstripCell(sortedFiles[next]);
-            }
-          }
-        }
+        // Wheel: snap to adjacent cell with a cooldown so trackpad inertia
+        // doesn't race through the folder.
+        onWheel = (e: WheelEvent) => {
+          if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const now = performance.now();
+          if (now - lastWheel < 60) return;
+          lastWheel = now;
+          let delta = e.deltaY;
+          if (e.deltaMode === 1) delta *= 40;
+          else if (e.deltaMode === 2)
+            delta = Math.sign(delta) * stripNode.clientWidth;
+          if (sortedFiles.length === 0) return;
+          const dir = delta > 0 ? 1 : -1;
+          const next = Math.max(
+            0,
+            Math.min(sortedFiles.length - 1, highlightIndex + dir),
+          );
+          if (next === highlightIndex) return;
+          lastManualHighlight = performance.now();
+          highlightIndex = next;
+          scrollToFilmstripCell(sortedFiles[next]);
+        };
 
         // Scroll: update highlight to centered cell
-        let highlightTimer: ReturnType<typeof setTimeout> | null = null;
-        function onScroll() {
+        onScroll = () => {
           if (highlightTimer) clearTimeout(highlightTimer);
           highlightTimer = setTimeout(() => {
             if (performance.now() - lastManualHighlight < 250) return;
-            const center = strip.scrollLeft + strip.clientWidth / 2;
-            const cells = strip.querySelectorAll<HTMLElement>("[data-path]");
+            const center = stripNode.scrollLeft + stripNode.clientWidth / 2;
+            const cells =
+              stripNode.querySelectorAll<HTMLElement>("[data-path]");
             let closestPath = "";
             let closestDist = Infinity;
             cells.forEach((c) => {
@@ -1759,19 +1786,21 @@
               if (idx >= 0) highlightIndex = idx;
             }
           }, 60);
-        }
-
-        strip.addEventListener("wheel", onWheel, { passive: false });
-        strip.addEventListener("scroll", onScroll);
-
-        // Cleanup on effect re-run or unmount
-        return () => {
-          strip.removeEventListener("wheel", onWheel);
-          strip.removeEventListener("scroll", onScroll);
-          if (highlightTimer) clearTimeout(highlightTimer);
         };
+
+        stripNode.addEventListener("wheel", onWheel, { passive: false });
+        stripNode.addEventListener("scroll", onScroll);
       });
     });
+
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+      if (strip && onWheel) strip.removeEventListener("wheel", onWheel);
+      if (strip && onScroll) strip.removeEventListener("scroll", onScroll);
+      if (readyTimer) clearTimeout(readyTimer);
+      if (highlightTimer) clearTimeout(highlightTimer);
+    };
   });
 
   function cssAttr(path: string) {
@@ -1796,7 +1825,7 @@
     }
   }
 
-  function scrollToFilmstripCellInstant(path: string) {
+  function scrollToFilmstripCellInstant(path: string, focus = true) {
     const strip = scrollEl?.querySelector(
       ".library-filmstrip",
     ) as HTMLElement | null;
@@ -1809,7 +1838,7 @@
         0,
         el.offsetLeft - strip.clientWidth / 2 + el.offsetWidth / 2,
       );
-      el.focus({ preventScroll: true });
+      if (focus) el.focus({ preventScroll: true });
     }
   }
 
