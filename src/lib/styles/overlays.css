@@ -3261,7 +3261,7 @@
 .help-dialog {
   width: 480px;
   max-width: calc(100vw - 32px);
-  max-height: min(520px, calc(100vh - 80px));
+  height: min(520px, calc(100vh - 80px));
   gap: 0;
   padding: 0;
   overflow: hidden;
@@ -3269,42 +3269,29 @@
   flex-direction: column;
 }
 
-.help-dialog .delete-actions {
-  padding: 12px 20px 16px;
-  border-top: 0.5px solid var(--bg-elevated);
-  margin: 0;
-  justify-content: space-between;
+.help-dialog .settings-header-bar {
+  flex-shrink: 0;
 }
 
-.help-dialog .delete-actions .settings-action-btn {
-  padding: 7px 16px;
-  border-radius: 7px;
-  border: 0.5px solid var(--bg-border);
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-  font-size: 12px;
-  font-family: var(--font-family);
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    color 0.2s;
-  gap: 6px;
-  min-width: 0;
+.help-dialog .settings-content {
+  padding: 12px 14px 14px;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
-.help-dialog .delete-actions .settings-action-btn:hover {
-  background: var(--bg-elevated);
-  color: var(--text-secondary);
+
+.help-dialog .settings-section {
+  padding: 12px;
 }
 
 /* Help horizontal tabs */
 .help-tabs {
   display: flex;
-  gap: 4px;
-  padding: 8px 16px;
+  gap: 3px;
+  padding: 8px 10px;
   border-bottom: 0.5px solid var(--bg-elevated);
   flex-shrink: 0;
   overflow-x: auto;
-  justify-content: center;
+  justify-content: safe center;
   scrollbar-width: none;
 }
 
@@ -3316,12 +3303,12 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 10px;
+  padding: 5px 7px;
   border-radius: 6px;
   border: none;
   background: transparent;
   color: var(--text-hint);
-  font-size: 11px;
+  font-size: 10.5px;
   font-family: var(--font-family);
   cursor: pointer;
   white-space: nowrap;
@@ -3336,22 +3323,22 @@
   color: var(--text-muted);
 }
 
-.help-tab-btn.active[data-section="quick-start"] {
+.help-tab-btn.active[data-section="start"] {
   background: var(--green-bg-faint);
   color: var(--green-soft);
 }
 
-.help-tab-btn.active[data-section="faq"] {
+.help-tab-btn.active[data-section="features"] {
   background: var(--blue-bg-faint);
   color: var(--blue-lighter);
 }
 
-.help-tab-btn.active[data-section="tips"] {
+.help-tab-btn.active[data-section="faq"] {
   background: var(--yellow-bg-faint);
   color: var(--yellow-soft);
 }
 
-.help-tab-btn.active[data-section="troubleshooting"] {
+.help-tab-btn.active[data-section="issues"] {
   background: var(--red-bg-faint);
   color: var(--red-soft);
 }
@@ -3361,43 +3348,43 @@
   color: var(--text-secondary);
 }
 
-/* Help section header colors - Green (Quick start) */
-#help-section-quick-start .settings-section-header {
+/* Help section header colors - Green (Start here) */
+#help-section-start .settings-section-header {
   background: var(--green-bg-subtle);
   border-color: var(--green-border-subtle);
   color: var(--green);
 }
-#help-section-quick-start .settings-section-header svg {
+#help-section-start .settings-section-header svg {
   color: var(--green);
 }
 
-/* Help section header colors - Blue (FAQ) */
-#help-section-faq .settings-section-header {
+/* Help section header colors - Blue (Features) */
+#help-section-features .settings-section-header {
   background: var(--blue-bg-subtle);
   border-color: var(--blue-border-subtle);
   color: var(--blue-light);
 }
-#help-section-faq .settings-section-header svg {
+#help-section-features .settings-section-header svg {
   color: var(--blue-light);
 }
 
-/* Help section header colors - Yellow (Tips) */
-#help-section-tips .settings-section-header {
+/* Help section header colors - Yellow (FAQ) */
+#help-section-faq .settings-section-header {
   background: var(--yellow-bg-subtle);
   border-color: var(--yellow-border-subtle);
   color: var(--yellow-soft);
 }
-#help-section-tips .settings-section-header svg {
+#help-section-faq .settings-section-header svg {
   color: var(--yellow-soft);
 }
 
-/* Help section header colors - Red (Troubleshooting) */
-#help-section-troubleshooting .settings-section-header {
+/* Help section header colors - Red (Issues) */
+#help-section-issues .settings-section-header {
   background: var(--red-bg-subtle);
   border-color: var(--red-border-subtle);
   color: var(--red);
 }
-#help-section-troubleshooting .settings-section-header svg {
+#help-section-issues .settings-section-header svg {
   color: var(--red);
 }
 
@@ -3438,26 +3425,154 @@
   border-color: #3a3a3a;
 }
 
-/* Help text rows */
-.help-text-row {
-  align-items: flex-start;
+/* Help sections: animated panel + compact entry list */
+.help-panel-stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(min-content, 1fr);
+  min-height: 100%;
 }
-.help-text {
+
+.help-panel {
+  grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+}
+
+.help-panel > .settings-section {
+  flex: 1;
+}
+
+.help-entries {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 2px;
+}
+.help-entry + .help-entry {
+  border-top: 0.5px solid var(--bg-border);
+}
+
+.help-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 16px;
+}
+
+.help-entry-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.help-entry-title {
   font-size: 12px;
-  color: var(--text-mid);
-  font-family: var(--font-family);
-  line-height: 1.5;
-}
-.help-text p {
-  margin: 0;
-}
-.help-text strong {
-  color: var(--text-secondary);
   font-weight: 600;
+  font-family: var(--font-family);
+  color: var(--text-secondary);
 }
+
+.help-entry-keys {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.help-entry-body {
+  margin: 0;
+  padding-left: 21px;
+  font-size: 11.5px;
+  font-family: var(--font-family);
+  color: var(--text-mid);
+  line-height: 1.45;
+}
+
+/* Help header action (changelog version + update check) */
+.help-header-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.help-header-version {
+  font-size: 10.5px;
+  font-weight: 500;
+  font-family: var(--font-family);
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+}
+
+.help-header-action .settings-action-btn {
+  min-width: 0;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  border-color: var(--bg-border);
+  background: var(--bg-primary);
+  color: var(--text-muted);
+}
+.help-header-action .settings-action-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+/* Help footer: section navigation */
+.help-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border-top: 0.5px solid var(--bg-elevated);
+  flex-shrink: 0;
+}
+
+.help-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 88px;
+  max-width: 48%;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 0.5px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.help-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.help-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.help-nav-btn svg {
+  flex-shrink: 0;
+}
+
 .help-kbd-inline {
   display: inline-block;
   padding: 2px 6px;
@@ -5812,6 +5927,7 @@
 [data-theme="light"] .settings-card > .settings-row:hover,
 [data-theme="light"] .keybind-category-toggle:hover,
 [data-theme="light"] .help-tab-btn:hover:not(.active),
+[data-theme="light"] .help-nav-btn:hover:not(:disabled),
 [data-theme="light"] .pill-btn:hover:not(.active) {
   background: rgba(0, 0, 0, 0.04);
 }
