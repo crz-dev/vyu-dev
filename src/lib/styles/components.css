@@ -288,8 +288,71 @@
   align-items: center;
   gap: 2px;
 }
+.controls-primary,
+.controls-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.controls-tools {
+  margin-left: auto;
+}
 .controls-spacer {
   flex: 1;
+}
+
+/* Compact layout for narrow video (e.g. portrait phone footage): transport and
+   tools share the top line, the progress bar moves to the bottom and the timer
+   sits centered underneath it. Driven by the measured `.compact` class so the
+   layout cannot flip back and forth while widths change. */
+.video-controls:has(> .controls-row.compact) {
+  /* Room for the centered timer and play button under the progress bar; the
+     larger row gap keeps the timeline's expanded hit area clear of the row. */
+  padding-top: 2px;
+  padding-bottom: 62px;
+  row-gap: 12px;
+}
+.video-controls:has(> .controls-row.compact) .controls-row {
+  order: 1;
+  justify-content: space-between;
+}
+.video-controls:has(> .controls-row.compact) .controls-spacer {
+  display: none;
+}
+.video-controls:has(> .controls-row.compact) .controls-tools {
+  margin-left: 0;
+}
+.video-controls:has(> .controls-row.compact) .progress-bar {
+  order: 2;
+}
+.video-controls:has(> .controls-row.compact) .time-display {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 36px;
+  width: max-content;
+  margin-inline: auto;
+  height: 22px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+/* Play/pause moves below the elapsed time. */
+.video-controls:has(> .controls-row.compact)
+  .controls-primary
+  > .ctrl-btn:first-child {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  margin-inline: auto;
+}
+
+/* Volume/speed popovers reuse the music layout's vertical panels, so they open
+   upward instead of widening the control row. */
+.video-controls .retro-slider-container,
+.fs-controls .retro-slider-container {
+  animation: uiOverlayFadeIn 140ms ease both;
 }
 
 .ctrl-btn {

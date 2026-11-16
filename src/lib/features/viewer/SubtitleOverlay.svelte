@@ -136,7 +136,12 @@
     }
 
     const viewerEl = video.closest(".viewer");
-    const containerBox = viewerEl?.getBoundingClientRect() ?? videoBox;
+    // Keep the subtitle box on the video itself, not the viewer, so it never
+    // spills into the letterbox beside narrow (portrait) video.
+    const containerBox =
+      videoBox.width > 0 && videoBox.height > 0
+        ? videoBox
+        : (viewerEl?.getBoundingClientRect() ?? videoBox);
     if (
       Math.abs(containerBox.left - containerRect.left) >= 0.5 ||
       Math.abs(containerBox.top - containerRect.top) >= 0.5 ||
@@ -343,8 +348,7 @@
     if (!interactive || e.button !== 0 || !videoEl) return;
 
     refreshMetrics();
-    const viewerEl = videoEl.closest(".viewer");
-    const rect = (viewerEl ?? videoEl).getBoundingClientRect();
+    const rect = videoEl.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
     const block = e.currentTarget as HTMLElement;
