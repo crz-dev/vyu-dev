@@ -79,6 +79,7 @@ import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
 const MAX_CONCURRENT = 2;
+const THUMBNAIL_TIMEOUT_MS = 20_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const THUMBNAIL_SIZES: readonly number[] = [128, 256, 512];
 const RECENT_RETENTION_DAYS: readonly number[] = [0, 7, 30, 90];
@@ -100,6 +101,17 @@ function isValidCollectionName(name: string): boolean {
 
   const deviceName = trimmed.split(".")[0].replace(/[ .]+$/, "");
   return !RESERVED_COLLECTION_DEVICE_NAME.test(deviceName);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<T>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error("Thumbnail request timed out")),
+      ms,
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
 function clampPrivacyBlur(value: number): number {
@@ -132,6 +144,8 @@ function createLibrary() {
   let pendingSet = new Set<string>();
   let pendingOrder: string[] = [];
   let inflight = 0;
+  const inflightPaths = new Set<string>();
+  const pdfInflight = new Set<string>();
   let _fetchGen = 0;
   let _generating = $state(false);
 
@@ -264,6 +278,7 @@ function createLibrary() {
       batchPaths.push(p);
     }
     pendingOrder = defer;
+    for (const p of batchPaths) inflightPaths.add(p);
 
     let unlisten: (() => void) | null = null;
     try {
@@ -273,7 +288,10 @@ function createLibrary() {
         if (!(p in cache)) setCacheEntry(p, dataUrl);
       });
 
-      const results = await invokeGetThumbnails(batchPaths, thumbnailSize);
+      const results = await withTimeout(
+        invokeGetThumbnails(batchPaths, thumbnailSize),
+        THUMBNAIL_TIMEOUT_MS,
+      );
       if (localGen !== _fetchGen) return;
       for (const [p, dataUrl] of Object.entries(results)) {
         if (dataUrl && !(p in cache)) {
@@ -284,17 +302,21 @@ function createLibrary() {
       // PDFs: generate thumbnails on frontend (backend FFmpeg can't decode PDFs)
       for (const p of batchPaths) {
         if (isPdfPath(p) && !(p in cache)) {
-          generatePdfThumbnail(p, thumbnailSize).then((dataUrl) => {
-            if (localGen !== _fetchGen) return;
-            if (dataUrl && !(p in cache)) {
-              setCacheEntry(p, dataUrl);
-            }
-          });
+          pdfInflight.add(p);
+          generatePdfThumbnail(p, thumbnailSize)
+            .then((dataUrl) => {
+              if (localGen !== _fetchGen) return;
+              if (dataUrl && !(p in cache)) {
+                setCacheEntry(p, dataUrl);
+              }
+            })
+            .finally(() => pdfInflight.delete(p));
         }
       }
     } catch {
     } finally {
       unlisten?.();
+      for (const p of batchPaths) inflightPaths.delete(p);
       inflight--;
       kick();
       updateGenerating();
@@ -338,6 +360,12 @@ function createLibrary() {
       pendingOrder = pendingOrder.filter((p) => p !== path);
     }
     updateGenerating();
+  }
+
+  function isThumbnailPending(path: string) {
+    return (
+      pendingSet.has(path) || inflightPaths.has(path) || pdfInflight.has(path)
+    );
   }
 
   function updateGenerating() {
@@ -886,6 +914,7 @@ function createLibrary() {
       return cache;
     },
     requestThumbnail,
+    isThumbnailPending,
     cancelPending,
     clearQueue,
     rebuildQueue,

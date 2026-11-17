@@ -1423,6 +1423,11 @@
     }
   });
 
+  const THUMBNAIL_RETRY_MS = 3000;
+  const THUMBNAIL_MAX_RETRIES = 5;
+  const visibleThumbPaths = new Set<string>();
+  const thumbRetryCounts = new Map<string, number>();
+
   $effect(() => {
     observer = new IntersectionObserver(
       (entries) => {
@@ -1430,8 +1435,12 @@
           const path = (entry.target as HTMLElement).dataset.path;
           if (!path) continue;
           if (entry.isIntersecting) {
+            thumbRetryCounts.delete(path);
+            visibleThumbPaths.add(path);
             if (library.showThumbnails) library.requestThumbnail(path);
           } else {
+            visibleThumbPaths.delete(path);
+            thumbRetryCounts.delete(path);
             library.cancelPending(path);
           }
         }
@@ -1439,6 +1448,26 @@
       { rootMargin: "200px" },
     );
     return () => observer?.disconnect();
+  });
+
+  // Retry visible thumbnails that failed or stalled, so placeholders don't
+  // stay stuck shimmering until the library is reopened.
+  $effect(() => {
+    const timer = setInterval(() => {
+      if (!library.showThumbnails || library.thumbnailsPaused) return;
+      for (const path of visibleThumbPaths) {
+        if (library.cache[path]) {
+          thumbRetryCounts.delete(path);
+          continue;
+        }
+        if (library.isThumbnailPending(path)) continue;
+        const attempts = thumbRetryCounts.get(path) ?? 0;
+        if (attempts >= THUMBNAIL_MAX_RETRIES) continue;
+        thumbRetryCounts.set(path, attempts + 1);
+        library.requestThumbnail(path);
+      }
+    }, THUMBNAIL_RETRY_MS);
+    return () => clearInterval(timer);
   });
 
   $effect(() => {

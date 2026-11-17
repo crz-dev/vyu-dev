@@ -38,6 +38,20 @@
   const OVERSCAN = 6;
   const VIDEO_EXTS_SET = new Set(VIDEO_EXTS);
   const AUDIO_EXTS_SET = new Set(AUDIO_EXTS);
+  const THUMBNAIL_TIMEOUT_MS = 20_000;
+  const THUMBNAIL_RETRY_MS = 3000;
+  const THUMBNAIL_MAX_RETRIES = 5;
+
+  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<T>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error("Thumbnail request timed out")),
+        ms,
+      );
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  }
 
   let trackEl: HTMLDivElement | null = $state(null);
   let barEl: HTMLDivElement | null = $state(null);
@@ -222,7 +236,10 @@
         }
       });
 
-      const results = await invokeGetThumbnails(paths, 120);
+      const results = await withTimeout(
+        invokeGetThumbnails(paths, 120),
+        THUMBNAIL_TIMEOUT_MS,
+      );
       if (localGen !== _fetchGen) return;
       // Process any results not delivered via streaming
       const updated = new Map(loaded);
@@ -261,7 +278,10 @@
         }
       }
     } catch {
-      // Silently fail — thumbnail stays as placeholder
+      // Leave the placeholder up — the retry ticker will try again.
+      if (localGen === _fetchGen) {
+        failed = new Set([...failed, ...paths.filter((p) => !loaded.has(p))]);
+      }
     } finally {
       unlisten?.();
       const next = new Set(fetching);
@@ -322,6 +342,35 @@
         behavior: "smooth",
       });
     }
+  });
+
+  // Retry thumbnails that failed or stalled while the bar is open, so
+  // placeholders don't stay stuck shimmering until the bar is reopened.
+  let retryCounts = new Map<string, number>();
+
+  $effect(() => {
+    if (!afterOpen) return;
+    const timer = setInterval(() => {
+      const visiblePaths = new Set(visibleItems.map((item) => item.path));
+      for (const key of retryCounts.keys()) {
+        if (!visiblePaths.has(key) || loaded.has(key)) retryCounts.delete(key);
+      }
+      const retryable = visibleItems.filter(
+        (item) =>
+          !loaded.has(item.path) &&
+          !fetching.has(item.path) &&
+          !pdfPending.has(item.path) &&
+          (retryCounts.get(item.path) ?? 0) < THUMBNAIL_MAX_RETRIES,
+      );
+      if (retryable.length === 0) return;
+      const next = new Set(failed);
+      for (const item of retryable) {
+        retryCounts.set(item.path, (retryCounts.get(item.path) ?? 0) + 1);
+        next.delete(item.path);
+      }
+      failed = next;
+    }, THUMBNAIL_RETRY_MS);
+    return () => clearInterval(timer);
   });
 
   // Listen for PDF thumbnail readiness events from the PDF viewer
