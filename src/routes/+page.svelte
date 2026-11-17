@@ -948,30 +948,49 @@
     return () => window.removeEventListener("blur", release);
   });
 
-  // Intercept Ctrl+F before WebView2's built-in find. The library search takes
-  // priority over PDF find when the library is the visible surface.
+  // Intercept Ctrl+F before WebView2's built-in find, and route the find
+  // binding to whichever surface is visible: library search over PDF find.
   $effect(() => {
     function captureFind(e: KeyboardEvent) {
       if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
-      const dialogsOpen = menuStore.isAnyOpen;
+
       const isCtrlF = e.ctrlKey && (e.key === "f" || e.key === "F");
+      const libraryOpen = menuStore.libraryOpen;
+      const target = e.target as Element | null;
+
+      // WebView2 owns Ctrl+F; suppress its find bar before anything else.
       if (isCtrlF) {
         e.preventDefault();
         e.stopPropagation();
-        if (dialogsOpen || isTypingTarget(e.target)) return;
-        if (
-          menuStore.libraryOpen &&
-          keybindStore.matches("library-search", e)
-        ) {
-          library.requestSearchFocus();
-          return;
-        }
+      }
+
+      const overlayOpen = libraryOpen
+        ? menuStore.isAnyOpenExceptLibrary
+        : menuStore.isAnyOpen;
+      if (overlayOpen) return;
+
+      const inLibrarySearch = !!target?.closest?.("[data-library-search]");
+      const chord = e.ctrlKey || e.altKey || e.metaKey;
+      if (
+        libraryOpen &&
+        keybindStore.matches("library-search", e) &&
+        (inLibrarySearch ? chord : !isTypingTarget(e.target))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        library.requestSearchFocus();
+        return;
+      }
+
+      if (isCtrlF) {
+        if (isTypingTarget(e.target)) return;
         if (isPdf && keybindStore.matches("pdf-find", e)) {
           pdf.toggleFind();
         }
         return;
       }
-      if (dialogsOpen || isTypingTarget(e.target)) return;
+
+      if (menuStore.isAnyOpen || isTypingTarget(e.target)) return;
       if (isPdf && keybindStore.matches("pdf-find", e)) {
         e.preventDefault();
         e.stopPropagation();

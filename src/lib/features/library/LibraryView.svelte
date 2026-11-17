@@ -74,6 +74,11 @@
   const tp = locale.tp;
   const swipeDuration = $derived(appearance.reducedMotion ? 0 : 240);
 
+  function shortcutSuffix(id: string): string {
+    const label = keybindStore.label(id);
+    return label ? ` (${label})` : "";
+  }
+
   function scrollBehavior(): ScrollBehavior {
     return appearance.reducedMotion ? "auto" : "smooth";
   }
@@ -119,8 +124,47 @@
   let viewEl: HTMLDivElement | null = $state(null);
   let searchInputEl: HTMLInputElement | null = $state(null);
   let searchOpen = $state(false);
-  const searchExpanded = $derived(searchOpen || library.searchActive);
   const searchTokens = $derived(parseLibrarySearch(library.searchQuery));
+
+  let filterBtnEl: HTMLButtonElement | null = $state(null);
+  let filterOpen = $state(false);
+  let filterHintVisible = $state(false);
+  let filterHintTimer: ReturnType<typeof setTimeout> | undefined;
+  let filterLeft = $state(11);
+  let searchRight = $state(8);
+  const searchExpanded = $derived(
+    searchOpen || (library.searchActive && !filterOpen),
+  );
+  const controlsOpen = $derived(filterOpen || searchExpanded);
+  const hiddenFilterCount = $derived(
+    Object.values(library.fileFilters).filter((visible) => !visible).length,
+  );
+  const filterKinds: ReadonlyArray<{
+    kind: keyof typeof library.fileFilters;
+    labelKey: string;
+    icon: string;
+  }> = [
+    {
+      kind: "images",
+      labelKey: "settings.library.fileTypes.images",
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+    },
+    {
+      kind: "videos",
+      labelKey: "settings.library.fileTypes.videos",
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>`,
+    },
+    {
+      kind: "audio",
+      labelKey: "settings.library.fileTypes.audio",
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+    },
+    {
+      kind: "documents",
+      labelKey: "settings.library.fileTypes.docs",
+      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    },
+  ];
   let observer: IntersectionObserver | null = null;
   let mounted = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
@@ -1190,6 +1234,7 @@
   }
 
   function focusSearch() {
+    filterOpen = false;
     searchOpen = true;
     requestAnimationFrame(() => {
       searchInputEl?.focus();
@@ -1201,6 +1246,88 @@
     library.clearSearch();
     searchInputEl?.focus();
   }
+
+  function toggleFilterRow() {
+    const next = !filterOpen;
+    filterOpen = next;
+    // One expanded header control at a time: on narrow viewports their cards
+    // would otherwise overlap and stack two borders.
+    if (next) searchOpen = false;
+  }
+
+  function handleFilterFocusOut(e: FocusEvent) {
+    const next = e.relatedTarget as Node | null;
+    if (next && (e.currentTarget as HTMLElement).contains(next)) return;
+    filterOpen = false;
+  }
+
+  function handleFilterKeydown(e: KeyboardEvent) {
+    if (!filterOpen || e.key !== "Escape") return;
+    e.preventDefault();
+    e.stopPropagation();
+    filterOpen = false;
+    filterBtnEl?.focus({ preventScroll: true });
+  }
+
+  function isFilterKindLocked(kind: keyof typeof library.fileFilters) {
+    return library.fileFilters[kind] && hiddenFilterCount === 3;
+  }
+
+  function showFilterHint() {
+    filterHintVisible = true;
+    if (filterHintTimer) clearTimeout(filterHintTimer);
+    filterHintTimer = setTimeout(() => {
+      filterHintTimer = undefined;
+      filterHintVisible = false;
+    }, 2600);
+  }
+
+  function toggleFilterKind(kind: keyof typeof library.fileFilters) {
+    if (isFilterKindLocked(kind)) {
+      showFilterHint();
+      return;
+    }
+    library.setFileKindVisible(kind, !library.fileFilters[kind]);
+  }
+
+  // The hint bubble is anchored to the card; drop it when the card closes.
+  $effect(() => {
+    if (!filterOpen) filterHintVisible = false;
+  });
+
+  $effect(() => {
+    return () => {
+      if (filterHintTimer) clearTimeout(filterHintTimer);
+    };
+  });
+
+  // Mirror the topbar's app button and close button so both header controls sit
+  // exactly under them, independent of topbar padding or button metrics.
+  $effect(() => {
+    const sync = () => {
+      const appBtn = document.querySelector<HTMLElement>("[data-topbar-app]");
+      const closeBtn = document.querySelector<HTMLElement>(
+        "[data-topbar-close]",
+      );
+      if (appBtn) {
+        const rect = appBtn.getBoundingClientRect();
+        if (rect.width > 0) {
+          filterLeft = Math.round(rect.left + rect.width / 2 - 14);
+        }
+      }
+      if (closeBtn) {
+        const rect = closeBtn.getBoundingClientRect();
+        if (rect.width > 0) {
+          searchRight = Math.round(
+            window.innerWidth - (rect.left + rect.width / 2) - 14,
+          );
+        }
+      }
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  });
 
   function handleSearchKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -1230,6 +1357,7 @@
   // state in the page.
   $effect(() => {
     if (library.searchFocusNonce === 0) return;
+    filterOpen = false;
     searchOpen = true;
     requestAnimationFrame(() => {
       searchInputEl?.focus();
@@ -2045,7 +2173,12 @@
   role="region"
   aria-label={t("library.aria.fileLibrary")}
 >
-  <div class="library-tabs" bind:this={tabsEl}>
+  <div
+    class="library-tabs"
+    class:controls-open={controlsOpen}
+    class:no-motion={appearance.reducedMotion}
+    bind:this={tabsEl}
+  >
     <span
       class="library-tab-highlight"
       class:ready={tabHighlightReady}
@@ -2053,6 +2186,68 @@
       aria-hidden="true"
       style={`top: ${tabHighlight.top}px; height: ${tabHighlight.height}px; width: ${tabHighlight.width}px; transform: translateX(${tabHighlight.left}px);`}
     ></span>
+    <div
+      class="lib-filter"
+      class:expanded={filterOpen}
+      class:no-motion={appearance.reducedMotion}
+      style="left: {filterLeft}px;"
+      role="group"
+      aria-label={t("library.filter.aria")}
+      onfocusout={handleFilterFocusOut}
+      onkeydown={handleFilterKeydown}
+    >
+      <button
+        bind:this={filterBtnEl}
+        class="lib-filter-toggle tooltip-below-start tooltip-gap-lg"
+        data-tooltip={t("library.filter.tooltip")}
+        aria-label={t("library.filter.aria")}
+        aria-expanded={filterOpen}
+        onclick={toggleFilterRow}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+        {#if hiddenFilterCount > 0 && !filterOpen}
+          <span class="lib-filter-dot" aria-hidden="true"></span>
+        {/if}
+      </button>
+      <span class="lib-filter-divider" aria-hidden="true"></span>
+      <div class="lib-filter-chips" inert={!filterOpen}>
+        {#each filterKinds as meta (meta.kind)}
+          <button
+            class="lib-filter-chip tooltip-below-start tooltip-gap-lg"
+            class:on={library.fileFilters[meta.kind]}
+            class:tooltip-hidden={filterHintVisible &&
+              isFilterKindLocked(meta.kind)}
+            data-tooltip={t(meta.labelKey)}
+            aria-label={t(meta.labelKey)}
+            aria-pressed={library.fileFilters[meta.kind]}
+            aria-disabled={isFilterKindLocked(meta.kind)}
+            onmouseenter={() => {
+              if (isFilterKindLocked(meta.kind)) showFilterHint();
+            }}
+            onmouseleave={() => (filterHintVisible = false)}
+            onclick={() => toggleFilterKind(meta.kind)}
+          >
+            {@html meta.icon}
+          </button>
+        {/each}
+      </div>
+      {#if filterHintVisible}
+        <span class="lib-filter-hint" role="status"
+          >{t("settings.library.fileTypes.hint")}</span
+        >
+      {/if}
+    </div>
     <button
       class="library-tab"
       data-tab="library"
@@ -2091,11 +2286,12 @@
       class:no-motion={appearance.reducedMotion}
       role="search"
       aria-label={t("library.search.aria")}
+      style="right: {searchRight}px;"
       onfocusout={handleSearchFocusOut}
     >
       <button
-        class="library-search-toggle tooltip-below-end"
-        data-tooltip={t("library.search.open")}
+        class="library-search-toggle tooltip-below-end tooltip-gap-lg"
+        data-tooltip={`${t("library.search.open")}${shortcutSuffix("library-search")}`}
         aria-label={t("library.search.aria")}
         aria-expanded={searchExpanded}
         onclick={focusSearch}
@@ -2113,11 +2309,15 @@
           <circle cx="11" cy="11" r="7" />
           <path d="M21 21l-4.35-4.35" />
         </svg>
+        {#if library.searchActive && !searchExpanded}
+          <span class="library-search-dot" aria-hidden="true"></span>
+        {/if}
       </button>
       <input
         bind:this={searchInputEl}
         class="library-search-input"
         type="search"
+        data-library-search
         value={library.searchQuery}
         placeholder={t("library.search.placeholder")}
         aria-label={t("library.search.aria")}
@@ -2136,7 +2336,7 @@
           })}</span
         >
         <button
-          class="library-search-clear tooltip-below-end"
+          class="library-search-clear tooltip-below-end tooltip-gap-lg"
           data-tooltip={t("library.search.clear")}
           aria-label={t("library.search.clear")}
           onclick={clearSearch}
@@ -4969,7 +5169,36 @@
     cursor: pointer;
     transition:
       background 0.15s,
-      color 0.15s;
+      color 0.15s,
+      opacity 140ms ease;
+  }
+
+  /* Centre the tab group with auto margins so an overflowing row starts at the
+     padding edge instead of sliding under the filter button. */
+  .library-tab[data-tab="library"] {
+    margin-left: auto;
+  }
+
+  .library-tab[data-tab="favorites"] {
+    margin-right: auto;
+  }
+
+  .library-tabs.no-motion .library-tab,
+  .library-tabs.no-motion .library-tab-highlight {
+    transition-duration: 0ms;
+  }
+
+  /* An expanded header control can reach the centred tabs at any width (large
+     font scale, narrow window). The highlight pill always yields; labels dim
+     only where the row is genuinely tight. */
+  .library-tabs.controls-open .library-tab-highlight {
+    opacity: 0;
+  }
+
+  @media (max-width: 880px) {
+    .library-tabs.controls-open .library-tab {
+      opacity: 0.35;
+    }
   }
 
   .library-tab:hover {
@@ -4990,11 +5219,13 @@
   }
 
   /* Search sits absolutely so the centered tab row and the tab-highlight
-     measurements stay untouched while the field grows. */
+     measurements stay untouched while the field grows. The left/right offsets
+     are measured from the topbar app and close buttons at runtime; the values
+     here are the fallback before measurement. */
   .library-search {
     position: absolute;
     top: 50%;
-    right: 24px;
+    right: 8px;
     z-index: 2;
     transform: translateY(-50%);
     display: flex;
@@ -5006,6 +5237,7 @@
     border: 0.5px solid transparent;
     border-radius: 8px;
     background: transparent;
+    box-sizing: border-box;
     transition:
       width 200ms cubic-bezier(0.65, 0, 0.35, 1),
       padding 200ms cubic-bezier(0.65, 0, 0.35, 1),
@@ -5025,14 +5257,247 @@
     gap: 0;
   }
 
-  /* Keep the collapsed icon clear of the last tab on narrow windows. */
+  /* Mirrors the search: the collapsed box is centered under the topbar app
+     button and grows to the right into a type-filter card. */
+  .lib-filter {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    z-index: 2;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 28px;
+    height: 30px;
+    padding: 0;
+    border: 0.5px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    box-sizing: border-box;
+    transition:
+      width 200ms cubic-bezier(0.65, 0, 0.35, 1),
+      padding 200ms cubic-bezier(0.65, 0, 0.35, 1),
+      background 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .lib-filter.expanded {
+    /* Scales with the window: ~176px on a narrow window, 280px on a wide one. */
+    width: clamp(176px, 70px + 11vw, 280px);
+    padding: 0 4px;
+    border-color: var(--bg-border, #2a2a2a);
+    background: var(--bg-primary, #0b0b0b);
+  }
+
+  .lib-filter.expanded:focus-within {
+    border-color: var(--text-primary, #fff);
+    background: var(--bg-secondary, #111);
+  }
+
+  .lib-filter.no-motion {
+    transition: none;
+  }
+
+  .lib-filter-toggle {
+    position: relative;
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .lib-filter-toggle:focus-visible {
+    box-shadow: 0 0 0 1px var(--text-muted, #888);
+    outline: none;
+  }
+
+  .lib-filter.expanded .lib-filter-toggle:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--text-muted, #888);
+  }
+
+  .lib-filter-toggle:hover {
+    background: var(--bg-secondary, #111);
+    color: var(--text-secondary, #ccc);
+  }
+
+  /* The expanded card already frames the control; a hover fill here would
+     cross the card's rounded border. */
+  .lib-filter.expanded .lib-filter-toggle:hover {
+    background: transparent;
+    color: var(--text-primary, #fff);
+  }
+
+  .lib-filter-divider {
+    flex: 0 0 1px;
+    width: 1px;
+    height: 16px;
+    background: var(--bg-border, #2a2a2a);
+    opacity: 0;
+    transition: opacity 100ms ease;
+  }
+
+  .lib-filter.expanded .lib-filter-divider {
+    opacity: 0.8;
+    transition-delay: 140ms;
+  }
+
+  .lib-filter-chips {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 100ms ease;
+  }
+
+  .lib-filter.expanded .lib-filter-chips {
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 140ms;
+  }
+
+  .lib-filter.no-motion .lib-filter-chips,
+  .lib-filter.no-motion .lib-filter-divider {
+    transition: none;
+  }
+
+  .lib-filter-chip {
+    flex: 1 1 26px;
+    min-width: 24px;
+    max-width: 40px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-hint, #555);
+    cursor: pointer;
+    transition:
+      color 0.13s ease,
+      background 0.13s ease;
+  }
+
+  .lib-filter-chip:hover {
+    background: var(--bg-elevated, #1a1a1a);
+    color: var(--text-secondary, #ccc);
+  }
+
+  .lib-filter-chip:focus-visible {
+    box-shadow: 0 0 0 1px var(--text-muted, #888);
+  }
+
+  .lib-filter-chip.on {
+    background: var(--bg-elevated, #1a1a1a);
+    color: var(--text-primary, #fff);
+  }
+
+  .lib-filter-chip[aria-disabled="true"] {
+    cursor: default;
+  }
+
+  .lib-filter-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent-blue, #3b82f6);
+    animation: lib-filter-dot-in 120ms ease both;
+  }
+
+  .lib-filter-hint {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    z-index: 3;
+    transform: translateX(-50%);
+    max-width: 190px;
+    padding: 5px 9px;
+    border: 0.5px solid var(--bg-border, #2a2a2a);
+    border-radius: 6px;
+    background: color-mix(
+      in srgb,
+      var(--bg-elevated, #1a1a1a) 92%,
+      transparent
+    );
+    color: var(--text-mid, #bbb);
+    font-family: var(--font-family);
+    font-size: 11px;
+    line-height: 1.35;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+    animation: lib-filter-hint-in 140ms ease both;
+  }
+
+  @keyframes lib-filter-hint-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .lib-filter.no-motion .lib-filter-hint {
+    animation: none;
+  }
+
+  .lib-filter.no-motion .lib-filter-dot {
+    animation: none;
+  }
+
+  @keyframes lib-filter-dot-in {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Keep both header buttons clear of the centred tabs on narrow windows. */
   @media (max-width: 620px) {
     .library-tabs {
-      padding-right: 52px;
+      padding: 12px 52px 8px;
     }
 
-    .library-search {
-      right: 12px;
+    .library-tab {
+      padding: 6px 11px;
+      font-size: 12px;
+    }
+  }
+
+  /* Keep the two header controls from ever overlapping on very narrow
+     viewports (high UI scale or display scaling). */
+  @media (max-width: 380px) {
+    .library-search.expanded,
+    .lib-filter.expanded {
+      width: calc(100vw - 60px);
+    }
+
+    .lib-filter-chip {
+      min-width: 18px;
     }
   }
 
@@ -5046,6 +5511,7 @@
   }
 
   .library-search-toggle {
+    position: relative;
     flex: 0 0 28px;
     display: grid;
     place-items: center;
@@ -5113,6 +5579,21 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     animation: library-search-count-in 140ms ease both;
+  }
+
+  .library-search-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent-blue, #3b82f6);
+    animation: lib-filter-dot-in 120ms ease both;
+  }
+
+  .library-search.no-motion .library-search-dot {
+    animation: none;
   }
 
   @keyframes library-search-count-in {

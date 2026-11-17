@@ -359,6 +359,7 @@
       class="app-dropdown-toggle tooltip-below"
       class:active={dropdownVisible}
       class:menu-active={dropdownVisible}
+      data-topbar-app
       onclick={onToggleDropdown}
       aria-label={t("menus.app.open")}
       data-tooltip="Vyu"
@@ -552,6 +553,7 @@
     <span class="wc-sep"></span>
     <button
       class="wc-btn close tooltip-below tooltip-below-end"
+      data-topbar-close
       data-tooltip={t("menus.app.close")}
       onclick={closeWindow}
       aria-label={t("menus.app.close")}

@@ -178,6 +178,26 @@ function createMenuVisibilityStore() {
         subtitleMenuOpen
       );
     },
+    /** Overlays that sit above the library; used where the library itself is
+     * the surface being operated on (library find). */
+    get isAnyOpenExceptLibrary() {
+      return !!(
+        editMenuVisible ||
+        markupMenuVisible ||
+        effectsMenuVisible ||
+        equalizerMenuVisible ||
+        slideshowMenuVisible ||
+        appDropdownVisible ||
+        settingsOpen ||
+        accessibilityOpen ||
+        helpOpen ||
+        aboutOpen ||
+        feedbackOpen ||
+        tsMenuOpen ||
+        audioTrackMenuOpen ||
+        subtitleMenuOpen
+      );
+    },
     saveViewerMenus() {
       audioTrackMenuOpen = false;
       subtitleMenuOpen = false;
