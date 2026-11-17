@@ -1827,7 +1827,8 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.7),
     0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
-  animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  /* `backwards` rather than `both` so Svelte outro transitions can run. */
+  animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards;
 }
 .ts-drop-item {
   display: flex;
@@ -2049,7 +2050,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.7),
     0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
-  animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards;
 }
 .loop-drop-header {
   display: flex;
@@ -2185,7 +2186,7 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
     0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
   transform: translateX(-50%);
   transform-origin: bottom center;
-  animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  animation: tsDropMenuPopIn 380ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards;
 }
 .track-menu::-webkit-scrollbar {
   display: none;
@@ -3921,7 +3922,7 @@ main.menu-open .subtitle-overlay {
   border: 0.5px solid var(--bg-border);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  animation: cdColorPickerIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  animation: cdColorPickerIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
 }
 @keyframes cdColorPickerIn {
   0% {
@@ -4704,7 +4705,7 @@ main.menu-open .subtitle-overlay {
   flex-direction: column;
   gap: 1px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  animation: eqPresetDropdownIn 140ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  animation: eqPresetDropdownIn 140ms cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
 }
 
 .eq-preset-item {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
-  import { fade, fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import VisionSettings from "$lib/features/accessibility/VisionSettings.svelte";
   import HearingSettings from "$lib/features/accessibility/HearingSettings.svelte";
   import MotorSettings from "$lib/features/accessibility/MotorSettings.svelte";
@@ -224,11 +225,7 @@
       class="delete-dialog accessibility-dialog"
       role="dialog"
       aria-modal="true"
-      out:fly={{
-        y: 5,
-        duration: appearance.reducedMotion ? 0 : 120,
-        opacity: 0,
-      }}
+      out:menuOut={{ y: 10, scale: 0.92, duration: 180 }}
     >
       <div class="settings-header-bar">
         <p class="delete-title">

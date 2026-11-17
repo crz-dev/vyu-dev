@@ -584,8 +584,11 @@
             {muted ? t("media.bar.muted") : `${Math.round(volume * 100)}%`}
           </button>
           {#if volumeMenuVisible}
-            <div class="zoom-menu-clip">
-              <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
+            <div
+              class="zoom-menu-clip"
+              out:fly={{ y: 8, duration: 140, opacity: 0.08 }}
+            >
+              <div class="zoom-menu" in:fly={{ y: 10, duration: 150 }}>
                 <button
                   class="zoom-menu-btn"
                   onpointerdown={(e) => handleVolumePointerDown(-1, e)}
@@ -681,8 +684,11 @@
             {Math.round(isPdf ? pdfScale * 100 : zoomLevel)}%</button
           >
           {#if zoomMenuVisible}
-            <div class="zoom-menu-clip">
-              <div class="zoom-menu" transition:fly={{ y: 10, duration: 150 }}>
+            <div
+              class="zoom-menu-clip"
+              out:fly={{ y: 8, duration: 140, opacity: 0.08 }}
+            >
+              <div class="zoom-menu" in:fly={{ y: 10, duration: 150 }}>
                 <button
                   class="zoom-menu-btn"
                   onpointerdown={() => startZoomRepeat(-1)}

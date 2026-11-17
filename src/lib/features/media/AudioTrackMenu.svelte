@@ -1,6 +1,7 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import type { MediaTrack } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
@@ -63,6 +64,7 @@
     class="track-menu audio-track-menu"
     role="menu"
     aria-label={t("media.tracks.audio.menuAria")}
+    out:menuOut={{ y: 8, scale: 0.9, duration: 220 }}
   >
     <div class="track-menu-heading" style={animStyle(0)}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">

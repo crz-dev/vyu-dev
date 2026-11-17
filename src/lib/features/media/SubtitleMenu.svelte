@@ -2,6 +2,7 @@
   import Marquee from "$lib/components/Marquee.svelte";
   import { slide } from "svelte/transition";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
   import type { SubtitleSize } from "$lib/features/media/tracks.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -116,6 +117,7 @@
     class="track-menu subtitle-menu"
     role="menu"
     aria-label={t("media.subtitles.aria")}
+    out:menuOut={{ y: 8, scale: 0.9, duration: 220 }}
   >
     <div class="track-menu-heading" style={animStyle(0)}>
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none">

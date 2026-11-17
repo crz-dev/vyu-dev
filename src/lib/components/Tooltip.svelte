@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
@@ -115,6 +116,7 @@
       class="ts-edit-menu"
       class:blue={isSegmentMenu}
       style="left: {tsEditMenu.x}px; top: {tsEditMenu.y}px;"
+      out:menuOut={{ y: 8, scale: 0.92, duration: 180 }}
     >
       <div class="edit-menu-card">
         <div class="ts-edit-menu-top">

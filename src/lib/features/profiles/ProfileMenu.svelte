@@ -5,6 +5,7 @@
   import { profiles } from "./profiles.svelte";
   import { importProfileFile } from "./profileTransfer";
   import { showToast } from "$lib/components/toast.svelte";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     PROFILE_COLORS,
@@ -13,7 +14,11 @@
   } from "$lib/services/storage";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
-  let { anchor, onclose }: { anchor: HTMLElement | null; onclose: () => void } =
+  let {
+    anchor,
+    open,
+    onclose,
+  }: { anchor: HTMLElement | null; open: boolean; onclose: () => void } =
     $props();
 
   const t = locale.t;
@@ -64,12 +69,14 @@
   }
 
   $effect(() => {
+    if (!open) return;
     place();
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   });
 
   $effect(() => {
+    if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (rootEl?.contains(target) || anchor?.contains(target)) return;
@@ -88,6 +95,16 @@
       window.removeEventListener("pointerdown", onPointerDown, true);
       window.removeEventListener("keydown", onKeyDown, true);
     };
+  });
+
+  $effect.pre(() => {
+    if (!open) return;
+    expandedId = null;
+    creating = false;
+    busy = false;
+    error = "";
+    renameValue = "";
+    newName = "";
   });
 
   async function choose(id: string) {
@@ -176,248 +193,252 @@
   }
 </script>
 
-<div
-  class="profile-menu"
-  style={position}
-  bind:this={rootEl}
-  use:portal
-  role="menu"
-  aria-label={t("settings.profiles.menu.aria")}
->
-  <div class="profile-menu-header">
-    <span class="profile-menu-title">
-      <svg
-        width="13"
-        height="13"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle
-          cx="9"
-          cy="7"
-          r="4"
-        /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path
-          d="M16 3.13a4 4 0 010 7.75"
-        /></svg
-      >
-      {t("settings.profiles.header")}
-    </span>
-    <span class="profile-menu-count">{profiles.list.length}</span>
-  </div>
-
-  <div class="profile-menu-list">
-    {#each profiles.list as profile (profile.id)}
-      <div
-        class="profile-menu-row"
-        class:active={profile.id === profiles.activeId}
-        style={profileColorVars(profile)}
-      >
-        <button
-          class="profile-menu-row-main"
-          role="menuitem"
-          aria-current={profile.id === profiles.activeId ? "true" : undefined}
-          disabled={busy}
-          onclick={() => void choose(profile.id)}
-        >
-          <span
-            class="profile-avatar"
-            style={`--profile-color:${profile.color}`}
-          >
-            <ProfileIcon icon={profile.icon} size={12} />
-          </span>
-          <span class="profile-menu-name">{profile.name}</span>
-        </button>
-        <button
-          class="profile-menu-more"
-          class:active={expandedId === profile.id}
-          aria-label={t("settings.profiles.menu.edit", {
-            name: profile.name,
-          })}
-          aria-expanded={expandedId === profile.id}
-          onclick={() => toggleEditor(profile)}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><circle cx="5" cy="12" r="1" /><circle
-              cx="12"
-              cy="12"
-              r="1"
-            /><circle cx="19" cy="12" r="1" /></svg
-          >
-        </button>
-        <span class="profile-menu-status" aria-hidden="true">
-          {#if profile.id === profiles.activeId}
-            <svg
-              class="profile-menu-check"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg
-            >
-          {:else}
-            <span class="profile-menu-dot"></span>
-          {/if}
-        </span>
-      </div>
-
-      {#if expandedId === profile.id}
-        <div
-          class="profile-menu-editor"
-          style={profileColorVars(profile)}
-          transition:slide={{ duration: appearance.reducedMotion ? 0 : 140 }}
-        >
-          <p class="profile-editor-label">
-            {t("settings.profiles.menu.name")}
-          </p>
-          <div class="profile-editor-name">
-            <input
-              class="profile-menu-input"
-              bind:this={renameInput}
-              bind:value={renameValue}
-              aria-label={t("settings.profiles.menu.name.aria")}
-              maxlength="32"
-              onkeydown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  saveName(profile.id);
-                }
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  expandedId = null;
-                }
-              }}
-            />
-            <button
-              class="profile-editor-save"
-              onclick={() => saveName(profile.id)}
-              >{t("settings.profiles.menu.save")}</button
-            >
-          </div>
-
-          <p class="profile-editor-label">
-            {t("settings.profiles.menu.color")}
-          </p>
-          <div class="profile-swatches">
-            {#each PROFILE_COLORS as color}
-              <button
-                class="profile-swatch"
-                class:active={profile.color === color}
-                style={`--swatch-color:${color}`}
-                aria-label={t("settings.profiles.menu.color.use", {
-                  color,
-                })}
-                aria-pressed={profile.color === color}
-                onclick={() => profiles.setColor(profile.id, color)}
-              ></button>
-            {/each}
-          </div>
-
-          <p class="profile-editor-label">
-            {t("settings.profiles.menu.icon")}
-          </p>
-          <div class="profile-icon-grid">
-            {#each PROFILE_ICONS as icon}
-              <button
-                class="profile-icon-btn"
-                class:active={profile.icon === icon}
-                aria-label={t("settings.profiles.menu.icon.use", {
-                  icon,
-                })}
-                aria-pressed={profile.icon === icon}
-                onclick={() => profiles.setIcon(profile.id, icon)}
-              >
-                <ProfileIcon {icon} size={13} />
-              </button>
-            {/each}
-          </div>
-
-          <div class="profile-editor-actions">
-            <button
-              class="profile-editor-btn"
-              disabled={busy}
-              onclick={() => void importIntoProfile(profile)}
-              >{t("settings.profiles.menu.import")}</button
-            >
-            <button
-              class="profile-editor-btn danger"
-              disabled={busy || profiles.list.length <= 1}
-              onclick={() => void removeProfile(profile)}
-              >{t("settings.profiles.menu.delete")}</button
-            >
-          </div>
-        </div>
-      {/if}
-    {/each}
-  </div>
-
-  <div class="profile-menu-footer">
-    {#if creating}
-      <form
-        class="profile-menu-create"
-        onsubmit={(e) => {
-          e.preventDefault();
-          addProfile();
-        }}
-      >
-        <input
-          class="profile-menu-input"
-          bind:this={newNameInput}
-          bind:value={newName}
-          placeholder={t("settings.profiles.menu.newPlaceholder")}
-          aria-label={t("settings.profiles.menu.newAria")}
-          maxlength="32"
-          onkeydown={(e) => {
-            if (e.key === "Escape") {
-              e.preventDefault();
-              e.stopPropagation();
-              creating = false;
-              newName = "";
-              error = "";
-            }
-          }}
-        />
-        <button class="profile-editor-save" type="submit">
-          {t("settings.profiles.menu.add")}
-        </button>
-      </form>
-    {:else}
-      <button class="profile-menu-new" onclick={startCreating}>
+{#if open}
+  <div
+    class="profile-menu"
+    style={position}
+    bind:this={rootEl}
+    use:portal
+    role="menu"
+    aria-label={t("settings.profiles.menu.aria")}
+    out:menuOut={{ y: 8, scale: 0.92 }}
+  >
+    <div class="profile-menu-header">
+      <span class="profile-menu-title">
         <svg
-          width="12"
-          height="12"
+          width="13"
+          height="13"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
-          ><line x1="12" y1="5" x2="12" y2="19" /><line
-            x1="5"
-            y1="12"
-            x2="19"
-            y2="12"
+          ><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle
+            cx="9"
+            cy="7"
+            r="4"
+          /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path
+            d="M16 3.13a4 4 0 010 7.75"
           /></svg
         >
-        {t("settings.profiles.menu.new")}
-      </button>
-    {/if}
-    {#if error}
-      <p class="profile-menu-error">{error}</p>
-    {/if}
+        {t("settings.profiles.header")}
+      </span>
+      <span class="profile-menu-count">{profiles.list.length}</span>
+    </div>
+
+    <div class="profile-menu-list">
+      {#each profiles.list as profile (profile.id)}
+        <div
+          class="profile-menu-row"
+          class:active={profile.id === profiles.activeId}
+          style={profileColorVars(profile)}
+        >
+          <button
+            class="profile-menu-row-main"
+            role="menuitem"
+            aria-current={profile.id === profiles.activeId ? "true" : undefined}
+            disabled={busy}
+            onclick={() => void choose(profile.id)}
+          >
+            <span
+              class="profile-avatar"
+              style={`--profile-color:${profile.color}`}
+            >
+              <ProfileIcon icon={profile.icon} size={12} />
+            </span>
+            <span class="profile-menu-name">{profile.name}</span>
+          </button>
+          <button
+            class="profile-menu-more"
+            class:active={expandedId === profile.id}
+            aria-label={t("settings.profiles.menu.edit", {
+              name: profile.name,
+            })}
+            aria-expanded={expandedId === profile.id}
+            onclick={() => toggleEditor(profile)}
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><circle cx="5" cy="12" r="1" /><circle
+                cx="12"
+                cy="12"
+                r="1"
+              /><circle cx="19" cy="12" r="1" /></svg
+            >
+          </button>
+          <span class="profile-menu-status" aria-hidden="true">
+            {#if profile.id === profiles.activeId}
+              <svg
+                class="profile-menu-check"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><polyline points="20 6 9 17 4 12" /></svg
+              >
+            {:else}
+              <span class="profile-menu-dot"></span>
+            {/if}
+          </span>
+        </div>
+
+        {#if expandedId === profile.id}
+          <div
+            class="profile-menu-editor"
+            style={profileColorVars(profile)}
+            transition:slide={{ duration: appearance.reducedMotion ? 0 : 140 }}
+          >
+            <p class="profile-editor-label">
+              {t("settings.profiles.menu.name")}
+            </p>
+            <div class="profile-editor-name">
+              <input
+                class="profile-menu-input"
+                bind:this={renameInput}
+                bind:value={renameValue}
+                aria-label={t("settings.profiles.menu.name.aria")}
+                maxlength="32"
+                onkeydown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    saveName(profile.id);
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    expandedId = null;
+                  }
+                }}
+              />
+              <button
+                class="profile-editor-save"
+                onclick={() => saveName(profile.id)}
+                >{t("settings.profiles.menu.save")}</button
+              >
+            </div>
+
+            <p class="profile-editor-label">
+              {t("settings.profiles.menu.color")}
+            </p>
+            <div class="profile-swatches">
+              {#each PROFILE_COLORS as color}
+                <button
+                  class="profile-swatch"
+                  class:active={profile.color === color}
+                  style={`--swatch-color:${color}`}
+                  aria-label={t("settings.profiles.menu.color.use", {
+                    color,
+                  })}
+                  aria-pressed={profile.color === color}
+                  onclick={() => profiles.setColor(profile.id, color)}
+                ></button>
+              {/each}
+            </div>
+
+            <p class="profile-editor-label">
+              {t("settings.profiles.menu.icon")}
+            </p>
+            <div class="profile-icon-grid">
+              {#each PROFILE_ICONS as icon}
+                <button
+                  class="profile-icon-btn"
+                  class:active={profile.icon === icon}
+                  aria-label={t("settings.profiles.menu.icon.use", {
+                    icon,
+                  })}
+                  aria-pressed={profile.icon === icon}
+                  onclick={() => profiles.setIcon(profile.id, icon)}
+                >
+                  <ProfileIcon {icon} size={13} />
+                </button>
+              {/each}
+            </div>
+
+            <div class="profile-editor-actions">
+              <button
+                class="profile-editor-btn"
+                disabled={busy}
+                onclick={() => void importIntoProfile(profile)}
+                >{t("settings.profiles.menu.import")}</button
+              >
+              <button
+                class="profile-editor-btn danger"
+                disabled={busy || profiles.list.length <= 1}
+                onclick={() => void removeProfile(profile)}
+                >{t("settings.profiles.menu.delete")}</button
+              >
+            </div>
+          </div>
+        {/if}
+      {/each}
+    </div>
+
+    <div class="profile-menu-footer">
+      {#if creating}
+        <form
+          class="profile-menu-create"
+          onsubmit={(e) => {
+            e.preventDefault();
+            addProfile();
+          }}
+        >
+          <input
+            class="profile-menu-input"
+            bind:this={newNameInput}
+            bind:value={newName}
+            placeholder={t("settings.profiles.menu.newPlaceholder")}
+            aria-label={t("settings.profiles.menu.newAria")}
+            maxlength="32"
+            onkeydown={(e) => {
+              if (e.key === "Escape") {
+                e.preventDefault();
+                e.stopPropagation();
+                creating = false;
+                newName = "";
+                error = "";
+              }
+            }}
+          />
+          <button class="profile-editor-save" type="submit">
+            {t("settings.profiles.menu.add")}
+          </button>
+        </form>
+      {:else}
+        <button class="profile-menu-new" onclick={startCreating}>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><line x1="12" y1="5" x2="12" y2="19" /><line
+              x1="5"
+              y1="12"
+              x2="19"
+              y2="12"
+            /></svg
+          >
+          {t("settings.profiles.menu.new")}
+        </button>
+      {/if}
+      {#if error}
+        <p class="profile-menu-error">{error}</p>
+      {/if}
+    </div>
   </div>
-</div>
+{/if}

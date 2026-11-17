@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
-  import { fade, fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import DangerSettings from "$lib/features/danger/DangerSettings.svelte";
   import DebugSettings from "$lib/features/debug/DebugSettings.svelte";
   import type { DebugFileInfo } from "$lib/features/debug/debugTypes";
@@ -259,11 +260,7 @@
       class="delete-dialog settings-dialog"
       role="dialog"
       aria-modal="true"
-      out:fly={{
-        y: 5,
-        duration: appearance.reducedMotion ? 0 : 120,
-        opacity: 0,
-      }}
+      out:menuOut={{ y: 10, scale: 0.92, duration: 180 }}
     >
       <div class="settings-header-bar">
         <p class="delete-title">

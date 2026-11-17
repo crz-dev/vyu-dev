@@ -19,6 +19,7 @@
   import AccessibilityDialog from "$lib/features/dialogs/AccessibilityDialog.svelte";
   import VisualAlert from "$lib/features/accessibility/VisualAlert.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import HelpDialog from "$lib/features/dialogs/HelpDialog.svelte";
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
@@ -1039,7 +1040,7 @@
   <VisualizerMenu type="heartbeat" />
   <VisualizerMenu type="diamonds" />
 
-  {#key settingsOpen}
+  {#key menuStore.settingsInstance}
     <SettingsDialog
       {settingsOpen}
       closeSettings={() => closeSettings()}
@@ -1063,19 +1064,19 @@
       {toggleClipDeleteOriginal}
     />
   {/key}
-  {#key accessibilityOpen}
+  {#key menuStore.accessibilityInstance}
     <AccessibilityDialog
       {accessibilityOpen}
       closeAccessibility={() => closeAccessibility()}
     />
   {/key}
-  {#key helpOpen}
+  {#key menuStore.helpInstance}
     <HelpDialog {helpOpen} closeHelp={() => closeHelp()} />
   {/key}
-  {#key aboutOpen}
+  {#key menuStore.aboutInstance}
     <AboutDialog {aboutOpen} closeAbout={() => closeAbout()} />
   {/key}
-  {#key feedbackOpen}
+  {#key menuStore.feedbackInstance}
     <FeedbackDialog {feedbackOpen} closeFeedback={() => closeFeedback()} />
   {/key}
 

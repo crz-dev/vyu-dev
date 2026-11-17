@@ -6,11 +6,16 @@ function createMenuVisibilityStore() {
   let slideshowMenuVisible = $state(false);
   let appDropdownVisible = $state(false);
   let settingsOpen = $state(false);
+  let settingsInstance = $state(0);
   let settingsSection = $state<string | null>(null);
   let accessibilityOpen = $state(false);
+  let accessibilityInstance = $state(0);
   let helpOpen = $state(false);
+  let helpInstance = $state(0);
   let aboutOpen = $state(false);
+  let aboutInstance = $state(0);
   let feedbackOpen = $state(false);
+  let feedbackInstance = $state(0);
   let libraryOpen = $state(false);
   let tsMenuOpen = $state(false);
   let loopMenuOpen = $state(false);
@@ -67,10 +72,15 @@ function createMenuVisibilityStore() {
       return settingsOpen;
     },
     set settingsOpen(v: boolean) {
+      if (v && !settingsOpen) settingsInstance++;
       settingsOpen = v;
+    },
+    get settingsInstance() {
+      return settingsInstance;
     },
     openSettingsAt(section: string) {
       settingsSection = section;
+      if (!settingsOpen) settingsInstance++;
       settingsOpen = true;
     },
     get settingsSection() {
@@ -83,25 +93,41 @@ function createMenuVisibilityStore() {
       return accessibilityOpen;
     },
     set accessibilityOpen(v: boolean) {
+      if (v && !accessibilityOpen) accessibilityInstance++;
       accessibilityOpen = v;
+    },
+    get accessibilityInstance() {
+      return accessibilityInstance;
     },
     get helpOpen() {
       return helpOpen;
     },
     set helpOpen(v: boolean) {
+      if (v && !helpOpen) helpInstance++;
       helpOpen = v;
+    },
+    get helpInstance() {
+      return helpInstance;
     },
     get aboutOpen() {
       return aboutOpen;
     },
     set aboutOpen(v: boolean) {
+      if (v && !aboutOpen) aboutInstance++;
       aboutOpen = v;
+    },
+    get aboutInstance() {
+      return aboutInstance;
     },
     get feedbackOpen() {
       return feedbackOpen;
     },
     set feedbackOpen(v: boolean) {
+      if (v && !feedbackOpen) feedbackInstance++;
       feedbackOpen = v;
+    },
+    get feedbackInstance() {
+      return feedbackInstance;
     },
     get libraryOpen() {
       return libraryOpen;

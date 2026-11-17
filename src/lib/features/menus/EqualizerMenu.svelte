@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { formatFreq, formatDb } from "$lib/features/equalizer/bandConfig";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -358,6 +359,7 @@
                 role="menu"
                 tabindex="-1"
                 onmouseleave={() => (presetDropdownOpen = false)}
+                out:menuOut={{ y: -8, scale: 0.92, duration: 160 }}
               >
                 {#each Object.keys(presets) as name}
                   <button

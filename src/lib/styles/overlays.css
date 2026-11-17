@@ -1807,7 +1807,8 @@
     0 12px 32px rgba(0, 0, 0, 0.7),
     0 0 0 0.5px rgba(255, 255, 255, 0.04) inset;
   backdrop-filter: blur(var(--menu-blur)) saturate(130%);
-  animation: tsEditMenuPopIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  /* `backwards` rather than `both` so Svelte outro transitions can run. */
+  animation: tsEditMenuPopIn 200ms cubic-bezier(0.22, 0.9, 0.3, 1) backwards;
   transition: border-color 0.2s ease;
 }
 .ts-edit-menu.blue {
@@ -4498,7 +4499,7 @@
   border-radius: 12px;
   box-shadow: 0 14px 44px rgba(0, 0, 0, 0.72);
   transform-origin: bottom left;
-  animation: profileMenuIn 190ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: profileMenuIn 190ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
   max-height: min(430px, calc(100vh - 20px));
 }
 

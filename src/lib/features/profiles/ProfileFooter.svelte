@@ -140,6 +140,4 @@
   </button>
 </div>
 
-{#if menuOpen}
-  <ProfileMenu anchor={triggerEl} onclose={closeMenu} />
-{/if}
+<ProfileMenu anchor={triggerEl} open={menuOpen} onclose={closeMenu} />

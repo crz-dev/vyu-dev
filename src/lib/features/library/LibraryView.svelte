@@ -172,7 +172,6 @@
     path: string;
   }>({ visible: false, x: 0, y: 0, path: "" });
   let libCtxPinned = $state(false);
-  let libCtxKey = $state(0);
 
   let colCtxMenu = $state<{
     visible: boolean;
@@ -182,7 +181,6 @@
     name: string;
   }>({ visible: false, x: 0, y: 0, path: "", name: "" });
   let colCtxPinned = $state(false);
-  let colCtxKey = $state(0);
   let libCtxEl = $state<HTMLDivElement | null>(null);
   let colCtxEl = $state<HTMLDivElement | null>(null);
 
@@ -962,7 +960,6 @@
     );
     libCtxMenu = { visible: true, x, y, path };
     libCtxPinned = false;
-    libCtxKey++;
   }
 
   function closeLibCtxMenu() {
@@ -1056,7 +1053,6 @@
     );
     colCtxMenu = { visible: true, x, y, path, name };
     colCtxPinned = false;
-    colCtxKey++;
   }
 
   function closeColCtxMenu() {
@@ -3914,466 +3910,460 @@
   </div>
 
   {#if libCtxMenu.visible}
-    {#key libCtxKey}
+    <div
+      class="context-menu lib-ctx"
+      class:pinned={libCtxPinned}
+      bind:this={libCtxEl}
+      style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
+      role="menu"
+      tabindex="-1"
+      transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Escape") {
+          e.preventDefault();
+          forceCloseLibCtxMenu();
+        }
+      }}
+    >
       <div
-        class="context-menu lib-ctx"
-        class:pinned={libCtxPinned}
-        bind:this={libCtxEl}
-        style="left: {libCtxMenu.x}px; top: {libCtxMenu.y}px;"
-        role="menu"
-        tabindex="-1"
-        transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
-        onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => {
-          e.stopPropagation();
-          if (e.key === "Escape") {
-            e.preventDefault();
-            forceCloseLibCtxMenu();
+        class="ctx-drag"
+        role="button"
+        tabindex="0"
+        aria-label={t("library.context.drag")}
+        onmousedown={(e) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const startMenuX = libCtxMenu.x;
+          const startMenuY = libCtxMenu.y;
+          const menu = (e.currentTarget as HTMLElement).closest(
+            ".context-menu",
+          );
+          const menuRect = menu?.getBoundingClientRect();
+          const maxX = menuRect
+            ? Math.max(0, window.innerWidth - menuRect.width)
+            : Number.POSITIVE_INFINITY;
+          const maxY = menuRect
+            ? Math.max(0, window.innerHeight - menuRect.height)
+            : Number.POSITIVE_INFINITY;
+
+          function onMouseMove(ev: MouseEvent) {
+            libCtxMenu.x = Math.max(
+              0,
+              Math.min(startMenuX + ev.clientX - startX, maxX),
+            );
+            libCtxMenu.y = Math.max(
+              0,
+              Math.min(startMenuY + ev.clientY - startY, maxY),
+            );
           }
+
+          function onMouseUp() {
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+          }
+
+          window.addEventListener("mousemove", onMouseMove);
+          window.addEventListener("mouseup", onMouseUp);
         }}
       >
-        <div
-          class="ctx-drag"
-          role="button"
-          tabindex="0"
-          aria-label={t("library.context.drag")}
-          onmousedown={(e) => {
-            e.preventDefault();
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startMenuX = libCtxMenu.x;
-            const startMenuY = libCtxMenu.y;
-            const menu = (e.currentTarget as HTMLElement).closest(
-              ".context-menu",
-            );
-            const menuRect = menu?.getBoundingClientRect();
-            const maxX = menuRect
-              ? Math.max(0, window.innerWidth - menuRect.width)
-              : Number.POSITIVE_INFINITY;
-            const maxY = menuRect
-              ? Math.max(0, window.innerHeight - menuRect.height)
-              : Number.POSITIVE_INFINITY;
-
-            function onMouseMove(ev: MouseEvent) {
-              libCtxMenu.x = Math.max(
-                0,
-                Math.min(startMenuX + ev.clientX - startX, maxX),
-              );
-              libCtxMenu.y = Math.max(
-                0,
-                Math.min(startMenuY + ev.clientY - startY, maxY),
-              );
-            }
-
-            function onMouseUp() {
-              window.removeEventListener("mousemove", onMouseMove);
-              window.removeEventListener("mouseup", onMouseUp);
-            }
-
-            window.addEventListener("mousemove", onMouseMove);
-            window.addEventListener("mouseup", onMouseUp);
+        <button
+          class="ctx-pin tooltip-below"
+          class:active={libCtxPinned}
+          data-tooltip={libCtxPinned
+            ? t("library.context.unpin")
+            : t("library.context.pin")}
+          onclick={(e) => {
+            e.stopPropagation();
+            libCtxPinned = !libCtxPinned;
           }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={libCtxPinned
+            ? t("library.context.unpin")
+            : t("library.context.pin")}
         >
-          <button
-            class="ctx-pin tooltip-below"
-            class:active={libCtxPinned}
-            data-tooltip={libCtxPinned
-              ? t("library.context.unpin")
-              : t("library.context.pin")}
-            onclick={(e) => {
-              e.stopPropagation();
-              libCtxPinned = !libCtxPinned;
-            }}
-            onmousedown={(e) => e.stopPropagation()}
-            aria-label={libCtxPinned
-              ? t("library.context.unpin")
-              : t("library.context.pin")}
+          <svg
+            width="9"
+            height="9"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <svg
-              width="9"
-              height="9"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
-              />
-            </svg>
-          </button>
-          <span class="ctx-dots">
-            <span class="ctx-dot"></span>
-            <span class="ctx-dot"></span>
-            <span class="ctx-dot"></span>
-          </span>
-          <button
-            class="ctx-close tooltip-below"
-            data-tooltip={t("library.context.close")}
-            onclick={(e) => {
-              e.stopPropagation();
-              forceCloseLibCtxMenu();
-            }}
-            onmousedown={(e) => e.stopPropagation()}
-            aria-label={t("library.dialog.close")}
+            <path
+              d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+            />
+          </svg>
+        </button>
+        <span class="ctx-dots">
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+        </span>
+        <button
+          class="ctx-close tooltip-below"
+          data-tooltip={t("library.context.close")}
+          onclick={(e) => {
+            e.stopPropagation();
+            forceCloseLibCtxMenu();
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={t("library.dialog.close")}
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
           >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="edit-menu-card">
-          <button
-            class="ctx-item green"
-            onclick={ctxMoveTo}
-            role="menuitem"
-            style="animation-delay: 0ms"
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="edit-menu-card">
+        <button
+          class="ctx-item green"
+          onclick={ctxMoveTo}
+          role="menuitem"
+          style="animation-delay: 0ms"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
+            <path d="M22 2 11 13" />
+            <path d="M22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+          {t("library.context.moveTo")}
+        </button>
+        <button
+          class="ctx-item blue"
+          onclick={ctxCollect}
+          role="menuitem"
+          style="animation-delay: 55ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><path
+              d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-            >
-              <path d="M22 2 11 13" />
-              <path d="M22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-            {t("library.context.moveTo")}
-          </button>
-          <button
-            class="ctx-item blue"
-            onclick={ctxCollect}
-            role="menuitem"
-            style="animation-delay: 55ms"
+            /><line
+              x1="12"
+              y1="11"
+              x2="12"
+              y2="17"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><line
+              x1="9"
+              y1="14"
+              x2="15"
+              y2="14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><path
-                d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /><line
-                x1="12"
-                y1="11"
-                x2="12"
-                y2="17"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><line
-                x1="9"
-                y1="14"
-                x2="15"
-                y2="14"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /></svg
-            >
-            {t("library.context.collect")}
-          </button>
-          <button
-            class="ctx-item yellow"
-            onclick={ctxFavorite}
-            role="menuitem"
-            style="animation-delay: 110ms"
+          {t("library.context.collect")}
+        </button>
+        <button
+          class="ctx-item yellow"
+          onclick={ctxFavorite}
+          role="menuitem"
+          style="animation-delay: 110ms"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill={library.isFavorite(libCtxMenu.path) ? "currentColor" : "none"}
+            ><polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill={library.isFavorite(libCtxMenu.path)
-                ? "currentColor"
-                : "none"}
-              ><polygon
-                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
-            >
-            {library.isFavorite(libCtxMenu.path)
-              ? t("library.context.unfavorite")
-              : t("library.context.favorite")}
-          </button>
-          <div class="ctx-sep"></div>
-          <button
-            class="ctx-item red"
-            onclick={ctxDelete}
-            role="menuitem"
-            style="animation-delay: 165ms"
+          {library.isFavorite(libCtxMenu.path)
+            ? t("library.context.unfavorite")
+            : t("library.context.favorite")}
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item red"
+          onclick={ctxDelete}
+          role="menuitem"
+          style="animation-delay: 165ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><polyline
+              points="3 6 5 6 21 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M19 6l-1 14H6L5 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M10 11v6M14 11v6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M9 6V4h6v2"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><polyline
-                points="3 6 5 6 21 6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><path
-                d="M19 6l-1 14H6L5 6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><path
-                d="M10 11v6M14 11v6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><path
-                d="M9 6V4h6v2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /></svg
-            >
-            {t("library.context.delete")}
-          </button>
-        </div>
+          {t("library.context.delete")}
+        </button>
       </div>
-    {/key}
+    </div>
   {/if}
 
   {#if colCtxMenu.visible}
-    {#key colCtxKey}
+    <div
+      class="context-menu lib-ctx"
+      class:pinned={colCtxPinned}
+      bind:this={colCtxEl}
+      style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
+      role="menu"
+      tabindex="-1"
+      transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Escape") {
+          e.preventDefault();
+          forceCloseColCtxMenu();
+        }
+      }}
+    >
       <div
-        class="context-menu lib-ctx"
-        class:pinned={colCtxPinned}
-        bind:this={colCtxEl}
-        style="left: {colCtxMenu.x}px; top: {colCtxMenu.y}px;"
-        role="menu"
-        tabindex="-1"
-        transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
-        onclick={(e) => e.stopPropagation()}
-        onkeydown={(e) => {
-          e.stopPropagation();
-          if (e.key === "Escape") {
-            e.preventDefault();
-            forceCloseColCtxMenu();
+        class="ctx-drag"
+        role="button"
+        tabindex="0"
+        aria-label={t("library.context.drag")}
+        onmousedown={(e) => {
+          e.preventDefault();
+          const startX = e.clientX;
+          const startY = e.clientY;
+          const startMenuX = colCtxMenu.x;
+          const startMenuY = colCtxMenu.y;
+          const menu = (e.currentTarget as HTMLElement).closest(
+            ".context-menu",
+          );
+          const menuRect = menu?.getBoundingClientRect();
+          const maxX = menuRect
+            ? Math.max(0, window.innerWidth - menuRect.width)
+            : Number.POSITIVE_INFINITY;
+          const maxY = menuRect
+            ? Math.max(0, window.innerHeight - menuRect.height)
+            : Number.POSITIVE_INFINITY;
+          function onMouseMove(ev: MouseEvent) {
+            colCtxMenu.x = Math.max(
+              0,
+              Math.min(startMenuX + ev.clientX - startX, maxX),
+            );
+            colCtxMenu.y = Math.max(
+              0,
+              Math.min(startMenuY + ev.clientY - startY, maxY),
+            );
           }
+          function onMouseUp() {
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+          }
+          window.addEventListener("mousemove", onMouseMove);
+          window.addEventListener("mouseup", onMouseUp);
         }}
       >
-        <div
-          class="ctx-drag"
-          role="button"
-          tabindex="0"
-          aria-label={t("library.context.drag")}
-          onmousedown={(e) => {
-            e.preventDefault();
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startMenuX = colCtxMenu.x;
-            const startMenuY = colCtxMenu.y;
-            const menu = (e.currentTarget as HTMLElement).closest(
-              ".context-menu",
-            );
-            const menuRect = menu?.getBoundingClientRect();
-            const maxX = menuRect
-              ? Math.max(0, window.innerWidth - menuRect.width)
-              : Number.POSITIVE_INFINITY;
-            const maxY = menuRect
-              ? Math.max(0, window.innerHeight - menuRect.height)
-              : Number.POSITIVE_INFINITY;
-            function onMouseMove(ev: MouseEvent) {
-              colCtxMenu.x = Math.max(
-                0,
-                Math.min(startMenuX + ev.clientX - startX, maxX),
-              );
-              colCtxMenu.y = Math.max(
-                0,
-                Math.min(startMenuY + ev.clientY - startY, maxY),
-              );
-            }
-            function onMouseUp() {
-              window.removeEventListener("mousemove", onMouseMove);
-              window.removeEventListener("mouseup", onMouseUp);
-            }
-            window.addEventListener("mousemove", onMouseMove);
-            window.addEventListener("mouseup", onMouseUp);
+        <button
+          class="ctx-pin tooltip-below"
+          class:active={colCtxPinned}
+          data-tooltip={colCtxPinned
+            ? t("library.context.unpin")
+            : t("library.context.pin")}
+          onclick={(e) => {
+            e.stopPropagation();
+            colCtxPinned = !colCtxPinned;
           }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={colCtxPinned
+            ? t("library.context.unpin")
+            : t("library.context.pin")}
         >
-          <button
-            class="ctx-pin tooltip-below"
-            class:active={colCtxPinned}
-            data-tooltip={colCtxPinned
-              ? t("library.context.unpin")
-              : t("library.context.pin")}
-            onclick={(e) => {
-              e.stopPropagation();
-              colCtxPinned = !colCtxPinned;
-            }}
-            onmousedown={(e) => e.stopPropagation()}
-            aria-label={colCtxPinned
-              ? t("library.context.unpin")
-              : t("library.context.pin")}
+          <svg
+            width="9"
+            height="9"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <svg
-              width="9"
-              height="9"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
-              />
-            </svg>
-          </button>
-          <span class="ctx-dots">
-            <span class="ctx-dot"></span>
-            <span class="ctx-dot"></span>
-            <span class="ctx-dot"></span>
-          </span>
-          <button
-            class="ctx-close tooltip-below"
-            data-tooltip={t("library.context.close")}
-            onclick={(e) => {
-              e.stopPropagation();
-              forceCloseColCtxMenu();
-            }}
-            onmousedown={(e) => e.stopPropagation()}
-            aria-label={t("library.dialog.close")}
+            <path
+              d="M12 2C8 2 6 5 6 9V11L2 15V18H22V15L18 11V9C18 5 16 2 12 2ZM12 18V23"
+            />
+          </svg>
+        </button>
+        <span class="ctx-dots">
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+          <span class="ctx-dot"></span>
+        </span>
+        <button
+          class="ctx-close tooltip-below"
+          data-tooltip={t("library.context.close")}
+          onclick={(e) => {
+            e.stopPropagation();
+            forceCloseColCtxMenu();
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={t("library.dialog.close")}
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
           >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="edit-menu-card">
-          <button
-            class="ctx-item green"
-            onclick={ctxRenameCol}
-            role="menuitem"
-            style="animation-delay: 0ms"
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-              <path d="m15 5 4 4" />
-            </svg>
-            {t("library.context.rename")}
-          </button>
-          <button
-            class="ctx-item blue"
-            onclick={ctxChangeCoverCol}
-            role="menuitem"
-            style="animation-delay: 55ms"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><rect
-                x="3"
-                y="3"
-                width="18"
-                height="18"
-                rx="2"
-                ry="2"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="8.5"
-                cy="8.5"
-                r="1.5"
-                stroke="currentColor"
-                stroke-width="2"
-              /><polyline
-                points="21 15 16 10 5 21"
-                stroke="currentColor"
-                stroke-width="2"
-                fill="none"
-              /></svg
-            >
-            {t("library.context.changeCover")}
-          </button>
-          <button
-            class="ctx-item yellow"
-            onclick={ctxShowInExplorerCol}
-            role="menuitem"
-            style="animation-delay: 110ms"
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path
-                d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-              /></svg
-            >
-            {t("library.context.showInExplorer")}
-          </button>
-          <div class="ctx-sep"></div>
-          <button
-            class="ctx-item red"
-            onclick={ctxDeleteCol}
-            role="menuitem"
-            style="animation-delay: 165ms"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><polyline
-                points="3 6 5 6 21 6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><path
-                d="M19 6l-1 14H6L5 6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><path
-                d="M10 11v6M14 11v6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><path
-                d="M9 6V4h6v2"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /></svg
-            >
-            {t("library.context.delete")}
-          </button>
-        </div>
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-    {/key}
+      <div class="edit-menu-card">
+        <button
+          class="ctx-item green"
+          onclick={ctxRenameCol}
+          role="menuitem"
+          style="animation-delay: 0ms"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+            <path d="m15 5 4 4" />
+          </svg>
+          {t("library.context.rename")}
+        </button>
+        <button
+          class="ctx-item blue"
+          onclick={ctxChangeCoverCol}
+          role="menuitem"
+          style="animation-delay: 55ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><rect
+              x="3"
+              y="3"
+              width="18"
+              height="18"
+              rx="2"
+              ry="2"
+              stroke="currentColor"
+              stroke-width="2"
+            /><circle
+              cx="8.5"
+              cy="8.5"
+              r="1.5"
+              stroke="currentColor"
+              stroke-width="2"
+            /><polyline
+              points="21 15 16 10 5 21"
+              stroke="currentColor"
+              stroke-width="2"
+              fill="none"
+            /></svg
+          >
+          {t("library.context.changeCover")}
+        </button>
+        <button
+          class="ctx-item yellow"
+          onclick={ctxShowInExplorerCol}
+          role="menuitem"
+          style="animation-delay: 110ms"
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path
+              d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+            /></svg
+          >
+          {t("library.context.showInExplorer")}
+        </button>
+        <div class="ctx-sep"></div>
+        <button
+          class="ctx-item red"
+          onclick={ctxDeleteCol}
+          role="menuitem"
+          style="animation-delay: 165ms"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            ><polyline
+              points="3 6 5 6 21 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M19 6l-1 14H6L5 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M10 11v6M14 11v6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /><path
+              d="M9 6V4h6v2"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            /></svg
+          >
+          {t("library.context.delete")}
+        </button>
+      </div>
+    </div>
   {/if}
 
   {#if showAddCollectionDialog}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
@@ -56,7 +57,12 @@
 </script>
 
 {#if open}
-  <div class="ts-drop-menu" class:thin role="menu">
+  <div
+    class="ts-drop-menu"
+    class:thin
+    role="menu"
+    out:menuOut={{ y: 8, scale: 0.9, duration: 220 }}
+  >
     <div class="ts-drop-header" style={animStyle(0)}>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
         <polygon

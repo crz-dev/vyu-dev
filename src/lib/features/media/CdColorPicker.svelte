@@ -1,5 +1,6 @@
 <script lang="ts">
   import { CD_COLORS } from "$lib/shared/constants";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
@@ -30,7 +31,7 @@
 <svelte:window onmousedown={handleWindowMouseDown} />
 
 {#if visible}
-  <div class="cd-color-picker">
+  <div class="cd-color-picker" out:menuOut={{ scale: 0.85, duration: 180 }}>
     {#each CD_COLORS as color, i}
       <button
         class="cd-color-swatch"

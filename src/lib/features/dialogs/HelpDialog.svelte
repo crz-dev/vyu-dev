@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cubicInOut } from "svelte/easing";
-  import { fade, fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { showToast } from "$lib/components/toast.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -488,11 +489,7 @@
       class="delete-dialog help-dialog"
       role="dialog"
       aria-modal="true"
-      out:fly={{
-        y: 5,
-        duration: appearance.reducedMotion ? 0 : 120,
-        opacity: 0,
-      }}
+      out:menuOut={{ y: 10, scale: 0.92, duration: 180 }}
     >
       <div class="settings-header-bar">
         <p class="delete-title">

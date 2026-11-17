@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fade, fly } from "svelte/transition";
+  import { fade } from "svelte/transition";
+  import { menuOut } from "$lib/features/menus/menuTransition";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
   import { showToast } from "$lib/components/toast.svelte";
@@ -355,11 +356,7 @@
       role="dialog"
       aria-modal="true"
       aria-labelledby="feedback-title"
-      out:fly={{
-        y: 5,
-        duration: appearance.reducedMotion ? 0 : 120,
-        opacity: 0,
-      }}
+      out:menuOut={{ y: 10, scale: 0.92, duration: 180 }}
     >
       <div class="settings-header-bar">
         <p class="delete-title" id="feedback-title">
