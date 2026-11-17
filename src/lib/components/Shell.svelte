@@ -487,6 +487,9 @@
   });
 
   const selectMenuVisible = $derived(libraryOpen && library.selectedCount > 0);
+  // Minimized while nothing is open, but the enabled state is kept so the
+  // bar returns when another file/folder is opened.
+  const thumbnailBarShown = $derived(thumbnailBarVisible && fileList.length > 0);
   let selectMenuMoved = $state(false);
 
   $effect(() => {
@@ -757,11 +760,11 @@
   bind:this={mainEl}
   class:fullscreen={viewerStateIsFullscreen}
   class:menu-open={anyMenuOpen}
-  class:thumbnail-bar-open={thumbnailBarVisible}
+  class:thumbnail-bar-open={thumbnailBarShown}
   class:is-audio={isAudio}
   class:library-mode={libraryOpen}
   class:fs-controls-hidden={viewerStateIsFullscreen &&
-    thumbnailBarVisible &&
+    thumbnailBarShown &&
     !viewerFsControlsVisible}
   onmousemove={viewerStateIsFullscreen ? viewerResetFsTimer : undefined}
   ondrop={(e) => e.preventDefault()}
@@ -907,7 +910,7 @@
   <ThumbnailBar
     {fileList}
     {currentIndex}
-    visible={thumbnailBarVisible}
+    visible={thumbnailBarShown}
     {onSelect}
     fullscreen={viewerStateIsFullscreen}
   />
