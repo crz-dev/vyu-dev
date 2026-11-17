@@ -1736,6 +1736,54 @@
   box-shadow: 0 0 0 1px var(--text-muted);
 }
 
+/* ── Delete confirmation dialog ─────────────────────── */
+.delete-confirm-dialog {
+  width: 300px;
+  padding: 14px 16px;
+  gap: 6px;
+}
+.delete-confirm-dialog .edit-confirm-header {
+  align-items: center;
+  gap: 8px;
+}
+.delete-confirm-dialog .edit-confirm-header-left {
+  gap: 8px;
+}
+.delete-confirm-dialog .edit-confirm-header-left > div {
+  min-width: 0;
+}
+.delete-confirm-dialog .edit-confirm-header-left > svg {
+  width: 16px;
+  height: 16px;
+}
+.delete-confirm-dialog .delete-toggles {
+  padding: 5px 8px;
+  gap: 2px;
+  border-radius: 8px;
+}
+.delete-confirm-dialog .delete-toggles .toggle-row {
+  padding: 4px 2px;
+}
+.delete-confirm-dialog .delete-toggles .toggle-label {
+  gap: 5px;
+}
+.delete-confirm-dialog .delete-toggles .toggle-label svg {
+  width: 11px;
+  height: 11px;
+}
+.delete-confirm-dialog .delete-actions-card {
+  padding: 5px;
+  border-radius: 8px;
+}
+.delete-confirm-dialog .edit-confirm-actions {
+  gap: 5px;
+  padding-top: 0;
+}
+.delete-confirm-dialog .delete-cancel,
+.delete-confirm-dialog .delete-confirm-btn {
+  padding: 6px 12px;
+}
+
 .ts-tooltip {
   position: fixed;
   transform: translate(-50%, calc(-100% - 8px));
