@@ -2164,6 +2164,7 @@
   class="library-view"
   tabindex="-1"
   bind:this={viewEl}
+  style="--lib-header-inset: {filterLeft + 6}px;"
   onkeydown={handleKeydown}
   onclick={() => {
     confirmRename();
@@ -5738,11 +5739,12 @@
     cursor: pointer;
   }
 
-  /* Collection header / breadcrumb */
+  /* Collection header / breadcrumb. The leading icon is centred under the
+     filter button: 16px icon vs a 28px button, so the inset is filterLeft + 6. */
   .library-collection-header {
     font-family: var(--font-family);
     font-size: 15px;
-    padding: 8px 24px;
+    padding: 8px 24px 8px var(--lib-header-inset, 18px);
     display: flex;
     align-items: center;
     gap: 6px;
