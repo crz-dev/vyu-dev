@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "将媒体库高亮右移或移到下一个项目",
   "keybinds.actions.libraryRight.label": "右移 / 下一个",
   "keybinds.actions.libraryUp.description": "将媒体库高亮上移或移到上一个项目",
+  "keybinds.actions.librarySearch.label": "搜索媒体库",
+  "keybinds.actions.librarySearch.description": "聚焦媒体库搜索框",
   "keybinds.actions.libraryUp.label": "上移 / 上一个",
   "keybinds.actions.loopEnd.description": "设置 A/B 循环的终点",
   "keybinds.actions.loopEnd.label": "设置循环终点",

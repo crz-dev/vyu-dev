@@ -404,6 +404,8 @@
   "keybinds.actions.libraryRight.description": "將媒體庫醒目顯示右移或移至下一個項目",
   "keybinds.actions.libraryRight.label": "右移 / 下一個",
   "keybinds.actions.libraryUp.description": "將媒體庫醒目顯示上移或移至上一個項目",
+  "keybinds.actions.librarySearch.label": "搜尋媒體庫",
+  "keybinds.actions.librarySearch.description": "將焦點移到媒體庫搜尋欄",
   "keybinds.actions.libraryUp.label": "上移 / 上一個",
   "keybinds.actions.loopEnd.description": "設定 A/B 循環的終點",
   "keybinds.actions.loopEnd.label": "設定循環終點",

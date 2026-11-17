@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "Move o destaque da biblioteca para a direita ou para o próximo item",
   "keybinds.actions.libraryRight.label": "Mover para a direita / próximo",
   "keybinds.actions.libraryUp.description": "Move o destaque da biblioteca para cima ou para o item anterior",
+  "keybinds.actions.librarySearch.label": "Pesquisar na biblioteca",
+  "keybinds.actions.librarySearch.description": "Focar o campo de pesquisa da biblioteca",
   "keybinds.actions.libraryUp.label": "Mover para cima / anterior",
   "keybinds.actions.loopEnd.description": "Define o fim de um loop A/B",
   "keybinds.actions.loopEnd.label": "Definir fim do loop",

@@ -841,6 +841,10 @@
       "open-file": openFileDialog,
       "close-file": closeFile,
       "toggle-library": () => (menuStore.libraryOpen = !menuStore.libraryOpen),
+      "library-search": () => {
+        if (!menuStore.libraryOpen) return;
+        library.requestSearchFocus();
+      },
       "reset-accessibility": () => {
         resetAccessibilitySettings();
         showToast({
@@ -944,21 +948,25 @@
     return () => window.removeEventListener("blur", release);
   });
 
-  // Intercept the PDF find binding before WebView2's built-in find.
+  // Intercept Ctrl+F before WebView2's built-in find. The library search takes
+  // priority over PDF find when the library is the visible surface.
   $effect(() => {
-    function capturePdfFind(e: KeyboardEvent) {
+    function captureFind(e: KeyboardEvent) {
       if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
       const dialogsOpen = menuStore.isAnyOpen;
       const isCtrlF = e.ctrlKey && (e.key === "f" || e.key === "F");
       if (isCtrlF) {
         e.preventDefault();
         e.stopPropagation();
+        if (dialogsOpen || isTypingTarget(e.target)) return;
         if (
-          !dialogsOpen &&
-          isPdf &&
-          !isTypingTarget(e.target) &&
-          keybindStore.matches("pdf-find", e)
+          menuStore.libraryOpen &&
+          keybindStore.matches("library-search", e)
         ) {
+          library.requestSearchFocus();
+          return;
+        }
+        if (isPdf && keybindStore.matches("pdf-find", e)) {
           pdf.toggleFind();
         }
         return;
@@ -970,9 +978,9 @@
         pdf.toggleFind();
       }
     }
-    window.addEventListener("keydown", capturePdfFind, { capture: true });
+    window.addEventListener("keydown", captureFind, { capture: true });
     return () =>
-      window.removeEventListener("keydown", capturePdfFind, { capture: true });
+      window.removeEventListener("keydown", captureFind, { capture: true });
   });
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -1544,6 +1552,7 @@
     if (menuStore.libraryOpen && !prevLibraryOpen) {
       menuStore.saveViewerMenus();
     } else if (!menuStore.libraryOpen && prevLibraryOpen) {
+      library.clearSearch();
       menuStore.restoreViewerMenus();
     }
     prevLibraryOpen = menuStore.libraryOpen;

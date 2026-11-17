@@ -384,6 +384,16 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     allowRepeat: false,
     behavior: "tap",
   },
+  {
+    id: "library-search",
+    label: "settings.keybinds.actions.librarySearch.label",
+    description: "settings.keybinds.actions.librarySearch.description",
+    category: "library",
+    context: "library",
+    defaultBinding: key("f", { ctrl: true }),
+    allowRepeat: false,
+    behavior: "tap",
+  },
 
   // PDF
   {

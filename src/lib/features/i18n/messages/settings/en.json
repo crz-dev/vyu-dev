@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "Move the library highlight right or to the next item",
   "keybinds.actions.libraryRight.label": "Move right / next",
   "keybinds.actions.libraryUp.description": "Move the library highlight up or to the previous item",
+  "keybinds.actions.librarySearch.label": "Search library",
+  "keybinds.actions.librarySearch.description": "Focus the library search field",
   "keybinds.actions.libraryUp.label": "Move up / previous",
   "keybinds.actions.loopEnd.description": "Set the end of an A/B loop",
   "keybinds.actions.loopEnd.label": "Set loop end",

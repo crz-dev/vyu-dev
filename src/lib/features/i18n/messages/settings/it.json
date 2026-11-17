@@ -406,6 +406,8 @@
   "keybinds.actions.libraryRight.description": "Sposta la selezione della libreria a destra o all'elemento successivo",
   "keybinds.actions.libraryRight.label": "Destra / successivo",
   "keybinds.actions.libraryUp.description": "Sposta la selezione della libreria in alto o all'elemento precedente",
+  "keybinds.actions.librarySearch.label": "Cerca nella libreria",
+  "keybinds.actions.librarySearch.description": "Sposta il cursore nel campo di ricerca della libreria",
   "keybinds.actions.libraryUp.label": "Su / precedente",
   "keybinds.actions.loopEnd.description": "Imposta la fine di un loop A/B",
   "keybinds.actions.loopEnd.label": "Imposta fine loop",

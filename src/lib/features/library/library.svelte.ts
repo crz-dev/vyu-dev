@@ -184,6 +184,12 @@ function createLibrary() {
   let savedSortMode = $state<SortMode>(loadSortMode());
   let savedSortDesc = $state(loadSortDesc());
 
+  // Search state is session-only: it filters the active tab and is cleared
+  // when the library closes, so reopening never shows a stale filter.
+  let searchQuery = $state("");
+  let searchFocusNonce = $state(0);
+  const searchActive = $derived(searchQuery.trim().length > 0);
+
   let totalSize = $state(0);
   let totalSizeLoading = $state(false);
 
@@ -408,6 +414,19 @@ function createLibrary() {
   function setViewMode(mode: "grid" | "list" | "river" | "filmstrip") {
     viewMode = mode;
     saveViewMode(mode);
+  }
+
+  function setSearchQuery(value: string) {
+    searchQuery = value;
+  }
+
+  function clearSearch() {
+    searchQuery = "";
+    searchFocusNonce = 0;
+  }
+
+  function requestSearchFocus() {
+    searchFocusNonce += 1;
   }
 
   function setActiveTab(tab: LibraryTab) {
@@ -983,6 +1002,18 @@ function createLibrary() {
     get sortDesc() {
       return sortDesc;
     },
+    get searchQuery() {
+      return searchQuery;
+    },
+    get searchActive() {
+      return searchActive;
+    },
+    get searchFocusNonce() {
+      return searchFocusNonce;
+    },
+    setSearchQuery,
+    clearSearch,
+    requestSearchFocus,
     setSortMode,
     get dividersOn() {
       return dividersOn;

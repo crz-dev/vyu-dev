@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "Bibliotheksauswahl nach rechts oder zum nächsten Element bewegen",
   "keybinds.actions.libraryRight.label": "Nach rechts / weiter",
   "keybinds.actions.libraryUp.description": "Bibliotheksauswahl nach oben oder zum vorherigen Element bewegen",
+  "keybinds.actions.librarySearch.label": "Bibliothek durchsuchen",
+  "keybinds.actions.librarySearch.description": "Suchfeld der Bibliothek fokussieren",
   "keybinds.actions.libraryUp.label": "Nach oben / zurück",
   "keybinds.actions.loopEnd.description": "Das Ende einer A/B-Schleife festlegen",
   "keybinds.actions.loopEnd.label": "Loop-Ende festlegen",

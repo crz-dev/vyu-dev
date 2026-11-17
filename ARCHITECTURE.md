@@ -113,6 +113,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Library view                                           | `features/library/*`                                                           |
 | Profiles, switching, settings import/export            | `features/profiles/*`, `services/storage.ts`                                   |
 | Library section grouping                               | `features/library/sections.ts`                                                 |
+| Library search matching                                | `features/library/search.ts`                                                   |
 | Window controls                                        | `features/menus/windowControls.ts`                                             |
 | Context menu state                                     | `features/menus/contextMenu.svelte.ts`                                         |
 | Menu visibility state                                  | `features/menus/menuVisibility.svelte.ts`                                      |

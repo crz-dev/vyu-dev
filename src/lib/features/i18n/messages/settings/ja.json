@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "ライブラリの選択を右または次の項目へ移動します",
   "keybinds.actions.libraryRight.label": "右へ / 次へ",
   "keybinds.actions.libraryUp.description": "ライブラリの選択を上または前の項目へ移動します",
+  "keybinds.actions.librarySearch.label": "ライブラリを検索",
+  "keybinds.actions.librarySearch.description": "ライブラリの検索欄にフォーカス",
   "keybinds.actions.libraryUp.label": "上へ / 前へ",
   "keybinds.actions.loopEnd.description": "A/B ループの終了位置を設定します",
   "keybinds.actions.loopEnd.label": "ループ終了を設定",

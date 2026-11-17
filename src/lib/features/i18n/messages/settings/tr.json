@@ -406,6 +406,8 @@
   "keybinds.actions.libraryRight.description": "Kitaplık vurgusunu sağa veya sonraki öğeye taşı",
   "keybinds.actions.libraryRight.label": "Sağ / sonraki",
   "keybinds.actions.libraryUp.description": "Kitaplık vurgusunu yukarı veya önceki öğeye taşı",
+  "keybinds.actions.librarySearch.label": "Kitaplıkta ara",
+  "keybinds.actions.librarySearch.description": "Kitaplık arama alanına odaklan",
   "keybinds.actions.libraryUp.label": "Yukarı / önceki",
   "keybinds.actions.loopEnd.description": "A/B döngüsünün sonunu ayarla",
   "keybinds.actions.loopEnd.label": "Döngü sonunu ayarla",

@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "라이브러리 선택을 오른쪽 또는 다음 항목으로 이동합니다",
   "keybinds.actions.libraryRight.label": "오른쪽 / 다음",
   "keybinds.actions.libraryUp.description": "라이브러리 선택을 위로 또는 이전 항목으로 이동합니다",
+  "keybinds.actions.librarySearch.label": "라이브러리 검색",
+  "keybinds.actions.librarySearch.description": "라이브러리 검색 필드로 포커스",
   "keybinds.actions.libraryUp.label": "위로 / 이전",
   "keybinds.actions.loopEnd.description": "A/B 반복의 끝 지점을 설정합니다",
   "keybinds.actions.loopEnd.label": "반복 끝 설정",

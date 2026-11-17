@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "Переместить выделение в библиотеке вправо или к следующему элементу",
   "keybinds.actions.libraryRight.label": "Вправо / следующий",
   "keybinds.actions.libraryUp.description": "Переместить выделение в библиотеке вверх или к предыдущему элементу",
+  "keybinds.actions.librarySearch.label": "Поиск по библиотеке",
+  "keybinds.actions.librarySearch.description": "Перейти к полю поиска по библиотеке",
   "keybinds.actions.libraryUp.label": "Вверх / предыдущий",
   "keybinds.actions.loopEnd.description": "Задать конец цикла A/B",
   "keybinds.actions.loopEnd.label": "Задать конец цикла",

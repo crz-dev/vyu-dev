@@ -23,6 +23,10 @@
     translateSectionLabel,
     type Section,
   } from "$lib/features/library/sections";
+  import {
+    matchesLibrarySearch,
+    parseLibrarySearch,
+  } from "$lib/features/library/search";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import type { BatchStatItem } from "$lib/shared/types";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -113,6 +117,10 @@
 
   let scrollEl: HTMLDivElement | null = $state(null);
   let viewEl: HTMLDivElement | null = $state(null);
+  let searchInputEl: HTMLInputElement | null = $state(null);
+  let searchOpen = $state(false);
+  const searchExpanded = $derived(searchOpen || library.searchActive);
+  const searchTokens = $derived(parseLibrarySearch(library.searchQuery));
   let observer: IntersectionObserver | null = null;
   let mounted = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
@@ -390,7 +398,10 @@
       }
       return desc ? -cmp : cmp;
     });
-    return sorted;
+    if (!library.searchActive) return sorted;
+    return sorted.filter((path) =>
+      matchesLibrarySearch(getFileName(path), searchTokens),
+    );
   });
 
   function navigateToFolder(folderPath: string) {
@@ -454,7 +465,7 @@
     library.activeTab !== "collections" || isViewingCollection,
   );
 
-  const displayFiles = $derived.by(() => {
+  const displayFilesRaw = $derived.by(() => {
     if (
       library.activeTab === "recents" &&
       (library.privacyMode || library.recentsDisabled)
@@ -468,6 +479,13 @@
     if (library.activeTab === "library" && libraryDirPath)
       return libraryDirFiles.filter(isVisibleFile);
     return fileList.filter(isVisibleFile);
+  });
+
+  const displayFiles = $derived.by(() => {
+    if (!library.searchActive) return displayFilesRaw;
+    return displayFilesRaw.filter((path) =>
+      matchesLibrarySearch(getFileName(path), searchTokens),
+    );
   });
 
   const sortedFiles = $derived.by(() => {
@@ -537,7 +555,7 @@
       : [],
   );
 
-  const sortedCollections = $derived.by(() => {
+  const sortedCollectionsRaw = $derived.by(() => {
     const cols = [...library.collections];
     const mode = library.sortMode;
     const desc = library.sortDesc;
@@ -564,6 +582,34 @@
     }
     return cols;
   });
+
+  const sortedCollections = $derived.by(() => {
+    if (!library.searchActive) return sortedCollectionsRaw;
+    return sortedCollectionsRaw.filter((col) =>
+      matchesLibrarySearch(col.name, searchTokens),
+    );
+  });
+
+  // Counts for the search field. The collections root shows collections
+  // instead of files, so the totals follow the active branch.
+  const searchResultCount = $derived(
+    showFileGrid
+      ? displayFiles.length + currentFolderPaths.length
+      : sortedCollections.length,
+  );
+  const searchTotal = $derived(
+    showFileGrid
+      ? displayFilesRaw.length +
+          (library.showFolders
+            ? isViewingCollection
+              ? collectionFolders.length
+              : libraryDirFolders.length
+            : 0)
+      : sortedCollectionsRaw.length,
+  );
+  const searchHasNoResults = $derived(
+    library.searchActive && searchResultCount === 0 && searchTotal > 0,
+  );
 
   const collectionSections = $derived.by(() => {
     const cols = sortedCollections;
@@ -1138,9 +1184,67 @@
   }
 
   function openHighlighted() {
+    if (library.searchActive && sortedFiles.length === 0) return;
     const path = sortedFiles[highlightIndex] ?? fileList[currentIndex];
     if (path) onSelect(path);
   }
+
+  function focusSearch() {
+    searchOpen = true;
+    requestAnimationFrame(() => {
+      searchInputEl?.focus();
+      searchInputEl?.select();
+    });
+  }
+
+  function clearSearch() {
+    library.clearSearch();
+    searchInputEl?.focus();
+  }
+
+  function handleSearchKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (library.searchActive) {
+        library.clearSearch();
+      } else {
+        searchOpen = false;
+        viewEl?.focus();
+      }
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (showFileGrid && sortedFiles.length > 0) openHighlighted();
+    }
+  }
+
+  function handleSearchFocusOut(e: FocusEvent) {
+    const next = e.relatedTarget as Node | null;
+    if (next && (e.currentTarget as HTMLElement).contains(next)) return;
+    if (!library.searchActive) searchOpen = false;
+  }
+
+  // Ctrl+F (and the keybind action) bump the nonce instead of holding focus
+  // state in the page.
+  $effect(() => {
+    if (library.searchFocusNonce === 0) return;
+    searchOpen = true;
+    requestAnimationFrame(() => {
+      searchInputEl?.focus();
+      searchInputEl?.select();
+    });
+  });
+
+  // Filtering rewrites the list under the highlight, so restart navigation
+  // from the top instead of leaving it on an off-screen index.
+  $effect(() => {
+    library.searchQuery;
+    highlightIndex = 0;
+    scrollTop = 0;
+    scrollEl?.scrollTo({ top: 0, behavior: "instant" });
+  });
 
   function moveHighlight(direction: -1 | 1) {
     if (sortedFiles.length === 0) return;
@@ -1209,6 +1313,12 @@
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
+      if (library.searchActive) {
+        library.clearSearch();
+        searchOpen = false;
+        viewEl?.focus();
+        return;
+      }
       if (isViewingCollection) {
         library.closeCollection();
       } else {
@@ -1974,6 +2084,77 @@
       onclick={() => library.setActiveTab("favorites")}
       >{t("library.tabs.favorites")}</button
     >
+
+    <div
+      class="library-search"
+      class:expanded={searchExpanded}
+      class:no-motion={appearance.reducedMotion}
+      role="search"
+      aria-label={t("library.search.aria")}
+      onfocusout={handleSearchFocusOut}
+    >
+      <button
+        class="library-search-toggle tooltip-below-end"
+        data-tooltip={t("library.search.open")}
+        aria-label={t("library.search.aria")}
+        aria-expanded={searchExpanded}
+        onclick={focusSearch}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      </button>
+      <input
+        bind:this={searchInputEl}
+        class="library-search-input"
+        type="search"
+        value={library.searchQuery}
+        placeholder={t("library.search.placeholder")}
+        aria-label={t("library.search.aria")}
+        aria-hidden={!searchExpanded}
+        tabindex={searchExpanded ? 0 : -1}
+        autocomplete="off"
+        spellcheck="false"
+        oninput={(e) => library.setSearchQuery(e.currentTarget.value)}
+        onkeydown={handleSearchKeydown}
+      />
+      {#if library.searchActive}
+        <span class="library-search-count" aria-live="polite" aria-atomic="true"
+          >{t("library.search.count", {
+            shown: searchResultCount,
+            total: searchTotal,
+          })}</span
+        >
+        <button
+          class="library-search-clear tooltip-below-end"
+          data-tooltip={t("library.search.clear")}
+          aria-label={t("library.search.clear")}
+          onclick={clearSearch}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      {/if}
+    </div>
   </div>
 
   {#if library.activeTab === "collections"}
@@ -2030,8 +2211,7 @@
         >
         <span class="library-breadcrumb-segment active"
           >{t("library.tabs.collections")}
-          <span class="library-header-count"
-            >({library.collections.length})</span
+          <span class="library-header-count">({sortedCollections.length})</span
           ></span
         >
       {/if}
@@ -2063,7 +2243,7 @@
             class:warning={recentFilesWarning}
             data-tooltip={t("library.header.recentsLimitTooltip")}
             onclick={openRecentsSettings}
-            >({displayFiles.length}/{library.recentFilesLimit})</button
+            >({displayFilesRaw.length}/{library.recentFilesLimit})</button
           >
         {/if}
       </span>
@@ -2229,7 +2409,39 @@
           }}
           style="grid-area: 1 / 1;"
         >
-          {#if showFileGrid}
+          {#if searchHasNoResults}
+            <div
+              class="library-empty library-search-empty"
+              class:no-motion={appearance.reducedMotion}
+            >
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                opacity="0.3"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <span
+                >{t("library.search.noResults", {
+                  query: library.searchQuery.trim(),
+                })}</span
+              >
+              <span class="library-search-empty-hint"
+                >{t("library.search.noResultsHint")}</span
+              >
+              <button class="library-search-empty-clear" onclick={clearSearch}
+                >{t("library.search.clearAction")}</button
+              >
+            </div>
+          {/if}
+          {#if showFileGrid && !searchHasNoResults}
             {#if library.viewMode === "grid"}
               {#if gridVirtualRange && !library.dividersOn}
                 <!-- Virtualized grid (no dividers) -->
@@ -3626,7 +3838,7 @@
             </div>
           {/if}
 
-          {#if library.activeTab === "library" && displayFiles.length === 0}
+          {#if library.activeTab === "library" && displayFiles.length === 0 && currentFolderPaths.length === 0}
             <div class="library-empty">
               <div class="library-empty-icons">
                 <svg
@@ -3688,7 +3900,7 @@
             </div>
           {/if}
 
-          {#if isViewingCollection && displayFiles.length === 0}
+          {#if isViewingCollection && displayFiles.length === 0 && currentFolderPaths.length === 0}
             <div class="library-empty">
               <svg
                 width="48"
@@ -3737,7 +3949,7 @@
             </div>
           {/if}
 
-          {#if library.activeTab === "collections" && !library.activeCollectionPath}
+          {#if library.activeTab === "collections" && !library.activeCollectionPath && !searchHasNoResults}
             <div
               class="library-grid"
               style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, {gridMinCol}px));"
@@ -4775,6 +4987,229 @@
 
   .library-tab.collect-mode {
     color: #fff;
+  }
+
+  /* Search sits absolutely so the centered tab row and the tab-highlight
+     measurements stay untouched while the field grows. */
+  .library-search {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    z-index: 2;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 28px;
+    height: 30px;
+    padding: 0;
+    border: 0.5px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    transition:
+      width 200ms cubic-bezier(0.65, 0, 0.35, 1),
+      padding 200ms cubic-bezier(0.65, 0, 0.35, 1),
+      background 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .library-search.expanded {
+    /* Scales with the window: 170px on a narrow window, ~340px on a wide one. */
+    width: clamp(170px, 60px + 18vw, 340px);
+    padding: 0 4px;
+    border-color: var(--bg-border, #2a2a2a);
+    background: var(--bg-primary, #0b0b0b);
+  }
+
+  .library-search:not(.expanded) {
+    gap: 0;
+  }
+
+  /* Keep the collapsed icon clear of the last tab on narrow windows. */
+  @media (max-width: 620px) {
+    .library-tabs {
+      padding-right: 52px;
+    }
+
+    .library-search {
+      right: 12px;
+    }
+  }
+
+  .library-search.expanded:focus-within {
+    border-color: var(--text-primary, #fff);
+    background: var(--bg-secondary, #111);
+  }
+
+  .library-search.no-motion {
+    transition: none;
+  }
+
+  .library-search-toggle {
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .library-search-toggle:hover {
+    background: var(--bg-secondary, #111);
+    color: var(--text-secondary, #ccc);
+  }
+
+  .library-search.expanded .library-search-toggle {
+    color: var(--text-hint, #555);
+  }
+
+  .library-search.expanded .library-search-toggle:hover {
+    background: transparent;
+    color: var(--text-secondary, #ccc);
+  }
+
+  .library-search-input {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-secondary, #ccc);
+    font-family: var(--font-family);
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+
+  .library-search.expanded .library-search-input {
+    opacity: 1;
+    transition-delay: 60ms;
+  }
+
+  .library-search-input::placeholder {
+    color: var(--text-hint, #555);
+  }
+
+  .library-search-input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .library-search-count {
+    flex: 0 0 auto;
+    color: var(--text-hint, #555);
+    font-family: var(--font-family);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    animation: library-search-count-in 140ms ease both;
+  }
+
+  @keyframes library-search-count-in {
+    from {
+      opacity: 0;
+      transform: translateX(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .library-search.no-motion .library-search-count {
+    animation: none;
+  }
+
+  .library-search-clear {
+    flex: 0 0 18px;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    animation: library-search-clear-in 120ms ease both;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .library-search-clear:hover {
+    background: var(--bg-elevated, #1a1a1a);
+    color: var(--text-primary, #fff);
+  }
+
+  @keyframes library-search-clear-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .library-search.no-motion .library-search-clear {
+    animation: none;
+  }
+
+  .library-search-empty {
+    gap: 10px;
+    animation: library-search-fade-in 140ms ease both;
+  }
+
+  .library-search-empty.no-motion {
+    animation: none;
+  }
+
+  .library-search-empty-hint {
+    margin-top: -6px;
+    color: var(--text-hint, #555);
+    font-size: 12px;
+  }
+
+  .library-search-empty-clear {
+    pointer-events: auto;
+    padding: 4px 10px;
+    border: 0.5px solid var(--bg-border, #2a2a2a);
+    border-radius: 7px;
+    background: var(--bg-secondary, #111);
+    color: var(--text-secondary, #ccc);
+    font-family: var(--font-family);
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .library-search-empty-clear:hover {
+    border-color: var(--text-muted, #888);
+    color: var(--text-primary, #fff);
+  }
+
+  @keyframes library-search-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .library-placeholder-grid {

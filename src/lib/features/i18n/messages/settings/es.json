@@ -410,6 +410,8 @@
   "keybinds.actions.libraryRight.description": "Mueve el resaltado de la biblioteca a la derecha o al elemento siguiente",
   "keybinds.actions.libraryRight.label": "Derecha / siguiente",
   "keybinds.actions.libraryUp.description": "Mueve el resaltado de la biblioteca arriba o al elemento anterior",
+  "keybinds.actions.librarySearch.label": "Buscar en la biblioteca",
+  "keybinds.actions.librarySearch.description": "Enfocar el campo de búsqueda de la biblioteca",
   "keybinds.actions.libraryUp.label": "Subir / anterior",
   "keybinds.actions.loopEnd.description": "Define el fin de un bucle A/B",
   "keybinds.actions.loopEnd.label": "Definir fin del bucle",
