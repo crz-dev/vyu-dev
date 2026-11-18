@@ -1251,6 +1251,7 @@
 
   function clearSearch() {
     searchDismissed = false;
+    searchOpen = true;
     library.clearSearch();
     searchInputEl?.focus();
   }
@@ -2458,6 +2459,7 @@
       <button
         bind:this={filterBtnEl}
         class="lib-filter-toggle tooltip-below"
+        class:is-on={hiddenFilterCount > 0}
         data-tooltip={t("library.filter.tooltip")}
         aria-label={t("library.filter.aria")}
         aria-expanded={filterOpen}
@@ -2475,9 +2477,6 @@
         >
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
         </svg>
-        {#if hiddenFilterCount > 0}
-          <span class="lib-filter-dot" aria-hidden="true"></span>
-        {/if}
       </button>
       <span class="lib-filter-divider" aria-hidden="true"></span>
       <div class="lib-filter-chips" inert={!filterOpen}>
@@ -2519,26 +2518,42 @@
     >
       <button
         class="library-search-toggle tooltip-below-end"
-        data-tooltip={`${t("library.search.open")}${shortcutSuffix("library-search")}`}
-        aria-label={t("library.search.aria")}
-        aria-expanded={searchExpanded}
-        onclick={focusSearch}
+        class:is-on={library.searchActive}
+        data-tooltip={library.searchActive
+          ? t("library.search.clear")
+          : `${t("library.search.open")}${shortcutSuffix("library-search")}`}
+        aria-label={library.searchActive
+          ? t("library.search.clear")
+          : t("library.search.aria")}
+        aria-expanded={library.searchActive ? undefined : searchExpanded}
+        onclick={library.searchActive ? clearSearch : focusSearch}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
         {#if library.searchActive}
-          <span class="library-search-dot" aria-hidden="true"></span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        {:else}
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
         {/if}
       </button>
       <input
@@ -2566,24 +2581,6 @@
             total: searchTotal,
           })}</span
         >
-        <button
-          class="library-search-clear tooltip-below-end"
-          data-tooltip={t("library.search.clear")}
-          aria-label={t("library.search.clear")}
-          onclick={clearSearch}
-        >
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
       {/if}
     </div>
   </div>
@@ -2916,7 +2913,7 @@
                 <!-- Non-virtualized grid (dividers on or fallback) -->
                 <div
                   class="library-grid"
-                  style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, {gridMinCol}px));"
+                  style="grid-template-columns: repeat({gridColCount}, 1fr);"
                 >
                   {#if library.activeTab === "favorites"}
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -3996,7 +3993,7 @@
             {/if}
           {/if}
 
-          {#if library.activeTab === "favorites" && displayFiles.length === 0}
+          {#if library.activeTab === "favorites" && displayFiles.length === 0 && !searchHasNoResults}
             <div class="library-empty">
               <svg
                 width="48"
@@ -4023,7 +4020,7 @@
             </div>
           {/if}
 
-          {#if library.activeTab === "recents" && displayFiles.length === 0}
+          {#if library.activeTab === "recents" && displayFiles.length === 0 && !searchHasNoResults}
             <div class="library-empty">
               <svg
                 width="48"
@@ -4051,7 +4048,7 @@
             </div>
           {/if}
 
-          {#if library.activeTab === "library" && displayFiles.length === 0 && currentFolderPaths.length === 0}
+          {#if library.activeTab === "library" && !libraryDirPath && displayFiles.length === 0 && currentFolderPaths.length === 0 && !searchHasNoResults}
             <div class="library-empty">
               <div class="library-empty-icons">
                 <svg
@@ -4113,7 +4110,7 @@
             </div>
           {/if}
 
-          {#if isViewingCollection && displayFiles.length === 0 && currentFolderPaths.length === 0}
+          {#if isViewingCollection && displayFiles.length === 0 && currentFolderPaths.length === 0 && !searchHasNoResults}
             <div class="library-empty">
               <svg
                 width="48"
@@ -4137,7 +4134,7 @@
               >
             </div>
           {/if}
-          {#if library.activeTab === "library" && libraryDirPath && displayFiles.length === 0 && currentFolderPaths.length === 0}
+          {#if library.activeTab === "library" && libraryDirPath && displayFiles.length === 0 && currentFolderPaths.length === 0 && !searchHasNoResults}
             <div class="library-empty">
               <svg
                 width="48"
@@ -4165,7 +4162,7 @@
           {#if library.activeTab === "collections" && !library.activeCollectionPath && !searchHasNoResults}
             <div
               class="library-grid"
-              style="grid-template-columns: repeat(auto-fill, minmax({gridMinCol}px, {gridMinCol}px));"
+              style="grid-template-columns: repeat({gridColCount}, 1fr);"
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
@@ -5334,6 +5331,14 @@
     color: var(--text-primary, #fff);
   }
 
+  .lib-filter-toggle.is-on,
+  .lib-filter-toggle.is-on:hover,
+  .lib-filter.expanded .lib-filter-toggle.is-on,
+  .lib-filter.expanded .lib-filter-toggle.is-on:hover {
+    background: var(--bg-elevated, #1a1a1a);
+    color: var(--text-primary, #fff);
+  }
+
   .lib-filter-divider {
     flex: 0 0 1px;
     width: 1px;
@@ -5407,26 +5412,6 @@
     cursor: default;
   }
 
-  .lib-filter-dot {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--accent-blue, #3b82f6);
-    opacity: 0;
-    transform: scale(0.5);
-    transition:
-      opacity 120ms ease,
-      transform 120ms ease;
-  }
-
-  .lib-filter:not(.expanded) .lib-filter-dot {
-    opacity: 1;
-    transform: none;
-  }
-
   .lib-filter-hint {
     position: absolute;
     top: calc(100% + 6px);
@@ -5464,10 +5449,6 @@
 
   .lib-filter.no-motion .lib-filter-hint {
     animation: none;
-  }
-
-  .lib-filter.no-motion .lib-filter-dot {
-    transition: none;
   }
 
   /* Keep both header buttons clear of the centred tabs on narrow windows. */
@@ -5538,6 +5519,20 @@
     color: var(--text-secondary, #ccc);
   }
 
+  .library-search-toggle.is-on,
+  .library-search-toggle.is-on:hover {
+    background: var(--bg-elevated, #1a1a1a);
+    color: var(--text-primary, #fff);
+  }
+
+  /* Inside the expanded field the arc already frames the control; a filled
+     square here reads as a badge poking through the rounded edge. */
+  .library-search.expanded .library-search-toggle.is-on,
+  .library-search.expanded .library-search-toggle.is-on:hover {
+    background: transparent;
+    color: var(--text-primary, #fff);
+  }
+
   .library-search-input {
     flex: 1 1 0;
     width: 0;
@@ -5577,30 +5572,6 @@
     animation: library-search-count-in 140ms ease both;
   }
 
-  .library-search-dot {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--accent-blue, #3b82f6);
-    opacity: 0;
-    transform: scale(0.5);
-    transition:
-      opacity 120ms ease,
-      transform 120ms ease;
-  }
-
-  .library-search:not(.expanded) .library-search-dot {
-    opacity: 1;
-    transform: none;
-  }
-
-  .library-search.no-motion .library-search-dot {
-    transition: none;
-  }
-
   @keyframes library-search-count-in {
     from {
       opacity: 0;
@@ -5613,44 +5584,6 @@
   }
 
   .library-search.no-motion .library-search-count {
-    animation: none;
-  }
-
-  .library-search-clear {
-    flex: 0 0 18px;
-    display: grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-    padding: 0;
-    border: none;
-    border-radius: 5px;
-    background: transparent;
-    color: var(--text-muted, #888);
-    cursor: pointer;
-    animation: library-search-clear-in 120ms ease both;
-    transition:
-      color 0.15s ease,
-      background 0.15s ease;
-  }
-
-  .library-search-clear:hover {
-    background: var(--bg-elevated, #1a1a1a);
-    color: var(--text-primary, #fff);
-  }
-
-  @keyframes library-search-clear-in {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-
-  .library-search.no-motion .library-search-clear {
     animation: none;
   }
 
