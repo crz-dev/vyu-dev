@@ -1607,6 +1607,13 @@ main.fs-controls-hidden .thumbnail-bar.fullscreen {
   animation: thumbShimmer 3s ease-in-out infinite;
 }
 
+/* Terminal state: stop shimmering so a failed request never looks pending. */
+.thumb-placeholder.failed {
+  animation: none;
+  background: var(--bg-elevated);
+  opacity: 0.6;
+}
+
 .thumb-spacer {
   flex-shrink: 0;
   height: 70px;

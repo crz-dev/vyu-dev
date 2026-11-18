@@ -1,5 +1,9 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { getCached, setCached } from "$lib/services/thumbnailCache";
+import {
+  getCached,
+  registerDocumentThumbnailRenderer,
+  setCached,
+} from "$lib/services/thumbnailCache.svelte";
 import { invokeStoreThumbnail } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import { DOCUMENT_EXTS } from "$lib/shared/constants";
@@ -125,6 +129,9 @@ export function generatePdfThumbnail(
 export function isPdfPath(path: string): boolean {
   return DOCUMENT_EXTS.includes(getFileExt(path));
 }
+
+// Let the shared thumbnail service route PDFs here instead of the backend.
+registerDocumentThumbnailRenderer(generatePdfThumbnail);
 
 export interface PdfPage {
   pageNum: number;

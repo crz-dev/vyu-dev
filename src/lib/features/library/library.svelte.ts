@@ -1,7 +1,5 @@
 import { untrack } from "svelte";
 import {
-  invokeGetThumbnails,
-  onThumbnailProgress,
   invokeGetFilesTotalSize,
   invokeBatchStat,
   invokeCreateCollectionFolder,
@@ -11,10 +9,14 @@ import {
   invokeDeleteFile,
   invokeMigrateThumbnailCache,
 } from "$lib/features/media/api";
+// Side effect: registers the PDF.js renderer with the thumbnail service.
+import "$lib/features/viewer/pdf.svelte";
 import {
-  generatePdfThumbnail,
-  isPdfPath,
-} from "$lib/features/viewer/pdf.svelte";
+  getCached as getCachedThumbnail,
+  isGenerating as isGeneratingThumbnails,
+  isThumbnailFailed as isThumbnailFailedThumbnail,
+  requestThumbnail as requestThumbnailFromCache,
+} from "$lib/services/thumbnailCache.svelte";
 import {
   loadViewDensity,
   saveViewDensity,
@@ -69,17 +71,11 @@ import {
   replacePathPrefix,
   samePath,
 } from "$lib/services/files";
-import {
-  getCached as sharedGetCached,
-  setCached as sharedSetCached,
-} from "$lib/services/thumbnailCache";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import { locale } from "$lib/features/i18n/locale.svelte";
 import type { SortMode } from "$lib/shared/constants";
 import type { BatchStatItem } from "$lib/shared/types";
 
-const MAX_CONCURRENT = 2;
-const THUMBNAIL_TIMEOUT_MS = 20_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const THUMBNAIL_SIZES: readonly number[] = [128, 256, 512];
 const RECENT_RETENTION_DAYS: readonly number[] = [0, 7, 30, 90];
@@ -103,17 +99,6 @@ function isValidCollectionName(name: string): boolean {
   return !RESERVED_COLLECTION_DEVICE_NAME.test(deviceName);
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<T>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error("Thumbnail request timed out")),
-      ms,
-    );
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
 function clampPrivacyBlur(value: number): number {
   return Math.max(4, Math.min(32, Math.round(value / 2) * 2));
 }
@@ -135,20 +120,7 @@ const TAB_ORDER: LibraryTab[] = [
   "favorites",
 ];
 
-const CACHE_MAX = 500;
-
 function createLibrary() {
-  const cache = $state<Record<string, string>>({});
-  const cacheOrder: string[] = [];
-  const indexMap = new Map<string, number>();
-  let pendingSet = new Set<string>();
-  let pendingOrder: string[] = [];
-  let inflight = 0;
-  const inflightPaths = new Set<string>();
-  const pdfInflight = new Set<string>();
-  let _fetchGen = 0;
-  let _generating = $state(false);
-
   let activeTab = $state<LibraryTab>("library");
   let tabDirection = $state(1);
 
@@ -235,180 +207,25 @@ function createLibrary() {
     root.dataset.privacyReveal = privacyRevealHover ? "true" : "false";
   }
 
-  function evictCacheOne() {
-    while (cacheOrder.length > 0) {
-      const oldest = cacheOrder.shift()!;
-      indexMap.delete(oldest);
-      if (oldest !== "") {
-        delete cache[oldest];
-        return;
-      }
-    }
-  }
-
-  function touchCache(path: string) {
-    const idx = indexMap.get(path);
-    if (idx !== undefined) {
-      cacheOrder[idx] = "";
-      cacheOrder.push(path);
-      indexMap.set(path, cacheOrder.length - 1);
-    }
-  }
-
-  function setCacheEntry(path: string, dataUrl: string) {
-    sharedSetCached(path, thumbnailSize, dataUrl);
-    if (path in cache) touchCache(path);
-    else {
-      cache[path] = dataUrl;
-      cacheOrder.push(path);
-      indexMap.set(path, cacheOrder.length - 1);
-      if (cacheOrder.length > CACHE_MAX) evictCacheOne();
-    }
-  }
-
-  async function loadOne(path: string) {
-    const localGen = _fetchGen;
-    inflight++;
-    pendingSet.delete(path);
-
-    // Batch with adjacent queued items
-    const BATCH_SIZE = 8;
-    const batchPaths: string[] = [path];
-    const defer: string[] = [];
-    for (const p of pendingOrder) {
-      if (batchPaths.length >= BATCH_SIZE) {
-        defer.push(p);
-        continue;
-      }
-      pendingSet.delete(p);
-      batchPaths.push(p);
-    }
-    pendingOrder = defer;
-    for (const p of batchPaths) inflightPaths.add(p);
-
-    let unlisten: (() => void) | null = null;
-    try {
-      unlisten = await onThumbnailProgress((p, dataUrl) => {
-        if (localGen !== _fetchGen) return;
-        if (!dataUrl) return;
-        if (!(p in cache)) setCacheEntry(p, dataUrl);
-      });
-
-      const results = await withTimeout(
-        invokeGetThumbnails(batchPaths, thumbnailSize),
-        THUMBNAIL_TIMEOUT_MS,
-      );
-      if (localGen !== _fetchGen) return;
-      for (const [p, dataUrl] of Object.entries(results)) {
-        if (dataUrl && !(p in cache)) {
-          setCacheEntry(p, dataUrl);
-        }
-      }
-
-      // PDFs: generate thumbnails on frontend (backend FFmpeg can't decode PDFs)
-      for (const p of batchPaths) {
-        if (isPdfPath(p) && !(p in cache)) {
-          pdfInflight.add(p);
-          generatePdfThumbnail(p, thumbnailSize)
-            .then((dataUrl) => {
-              if (localGen !== _fetchGen) return;
-              if (dataUrl && !(p in cache)) {
-                setCacheEntry(p, dataUrl);
-              }
-            })
-            .finally(() => pdfInflight.delete(p));
-        }
-      }
-    } catch {
-    } finally {
-      unlisten?.();
-      for (const p of batchPaths) inflightPaths.delete(p);
-      inflight--;
-      kick();
-      updateGenerating();
-    }
-  }
-
   function thumbnailsPaused() {
     return systemPrefs.batterySaverActive;
   }
 
-  function kick() {
-    if (thumbnailsPaused()) return;
-    if (inflight >= MAX_CONCURRENT || pendingOrder.length === 0) return;
-    const path = pendingOrder.shift()!;
-    pendingSet.delete(path);
-    loadOne(path);
-    updateGenerating();
-  }
-
   function requestThumbnail(path: string) {
-    if (path in cache) {
-      touchCache(path);
-      return cache[path];
-    }
-    const shared = sharedGetCached(path, thumbnailSize);
-    if (shared) {
-      setCacheEntry(path, shared);
-      return shared;
-    }
-    if (thumbnailsPaused()) return "";
-    if (!pendingSet.has(path)) {
-      pendingSet.add(path);
-      pendingOrder.push(path);
-    }
-    kick();
-    return "";
+    return untrack(() => {
+      const cached = getCachedThumbnail(path, thumbnailSize);
+      if (cached) return cached;
+      if (thumbnailsPaused()) return "";
+      return requestThumbnailFromCache(path, thumbnailSize);
+    });
   }
 
-  function cancelPending(path: string) {
-    if (pendingSet.delete(path)) {
-      pendingOrder = pendingOrder.filter((p) => p !== path);
-    }
-    updateGenerating();
+  function thumbnailUrl(path: string) {
+    return getCachedThumbnail(path, thumbnailSize) ?? "";
   }
 
-  function isThumbnailPending(path: string) {
-    return (
-      pendingSet.has(path) || inflightPaths.has(path) || pdfInflight.has(path)
-    );
-  }
-
-  function updateGenerating() {
-    _generating = pendingOrder.length > 0 || inflight > 0;
-  }
-
-  function clearQueue() {
-    _fetchGen++;
-    pendingSet.clear();
-    pendingOrder = [];
-    _generating = inflight > 0;
-  }
-
-  function rebuildQueue(fileList: string[], currentIndex: number) {
-    _fetchGen++;
-    pendingSet.clear();
-    pendingOrder = [];
-
-    if (thumbnailsPaused()) {
-      _generating = false;
-      return;
-    }
-
-    // Snapshot the reactive cache without subscribing the calling effect to
-    // every thumbnail write (which would reset _fetchGen mid-generation).
-    const cachedPaths = untrack(() => new Set(Object.keys(cache)));
-
-    for (let i = 0; i < fileList.length; i++) {
-      const path = fileList[i];
-      if (!cachedPaths.has(path)) {
-        pendingSet.add(path);
-        pendingOrder.push(path);
-      }
-    }
-
-    _generating = pendingOrder.length > 0;
-    kick();
+  function isThumbnailFailed(path: string) {
+    return isThumbnailFailedThumbnail(path, thumbnailSize);
   }
 
   function setViewMode(mode: "grid" | "list" | "river" | "filmstrip") {
@@ -592,15 +409,6 @@ function createLibrary() {
     }
     thumbnailSize = size;
     saveLibraryThumbnailSize(size);
-    _fetchGen++;
-    for (const key of Object.keys(cache)) {
-      delete cache[key];
-    }
-    cacheOrder.length = 0;
-    indexMap.clear();
-    pendingSet.clear();
-    pendingOrder = [];
-    updateGenerating();
   }
 
   function setDensity(v: number) {
@@ -929,14 +737,9 @@ function createLibrary() {
   applyPrivacyStyles();
 
   return {
-    get cache() {
-      return cache;
-    },
     requestThumbnail,
-    isThumbnailPending,
-    cancelPending,
-    clearQueue,
-    rebuildQueue,
+    thumbnailUrl,
+    isThumbnailFailed,
     get thumbnailsPaused() {
       return thumbnailsPaused();
     },
@@ -1075,7 +878,7 @@ function createLibrary() {
       return activeCollectionPath;
     },
     get generating() {
-      return _generating;
+      return isGeneratingThumbnails();
     },
     get scanKey() {
       return scanKey;

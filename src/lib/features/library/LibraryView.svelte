@@ -170,7 +170,6 @@
     },
   ];
 
-  let observer: IntersectionObserver | null = null;
   let mounted = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
@@ -307,9 +306,14 @@
   let scrollTop = $state(0);
   let containerHeight = $state(0);
   let containerWidth = $state(0);
+  let scrolling = $state(false);
+  let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null;
   const GRID_GAP = 6;
   const GRID_HORIZONTAL_PADDING = 48;
-  const GRID_OVERSCAN = 3;
+  const GRID_OVERSCAN = 5;
+  // Prefetch further ahead than we render so cached thumbnails are already in
+  // memory by the time a row scrolls into view.
+  const GRID_THUMB_LOOKAHEAD_ROWS = 8;
   const gridContentWidth = $derived(
     containerWidth > 0
       ? Math.max(0, containerWidth - GRID_HORIZONTAL_PADDING)
@@ -355,8 +359,19 @@
     return items;
   });
 
+  type GridRange = {
+    firstIdx: number;
+    lastIdx: number;
+    topSpacer: number;
+    bottomSpacer: number;
+  };
+  let lastGridRange: GridRange | null = null;
+
   const gridVirtualRange = $derived.by(() => {
-    if (!flatGridItems || flatGridItems.length === 0) return null;
+    if (!flatGridItems || flatGridItems.length === 0) {
+      lastGridRange = null;
+      return null;
+    }
     const totalRows = Math.ceil(flatGridItems.length / gridColCount);
     const firstRow = Math.max(
       0,
@@ -373,7 +388,22 @@
     );
     const topSpacer = firstRow * gridRowStep;
     const bottomSpacer = Math.max(0, (totalRows - lastRow - 1) * gridRowStep);
-    return { firstIdx, lastIdx, topSpacer, bottomSpacer };
+    const next: GridRange = { firstIdx, lastIdx, topSpacer, bottomSpacer };
+
+    // Reuse the previous object while the rendered window is unchanged so
+    // sub-pixel scrolling does not invalidate the grid markup every frame.
+    const prev = lastGridRange;
+    if (
+      prev !== null &&
+      prev.firstIdx === next.firstIdx &&
+      prev.lastIdx === next.lastIdx &&
+      prev.topSpacer === next.topSpacer &&
+      prev.bottomSpacer === next.bottomSpacer
+    ) {
+      return prev;
+    }
+    lastGridRange = next;
+    return next;
   });
 
   const activePaths = $derived.by(() => {
@@ -802,7 +832,15 @@
   );
 
   function thumbFor(path: string) {
-    return library.cache[path] || "";
+    return library.thumbnailUrl(path);
+  }
+
+  function thumbFailed(path: string) {
+    // A paused generator is not "loading"; do not shimmer forever.
+    return (
+      library.isThumbnailFailed(path) ||
+      (library.thumbnailsPaused && !thumbFor(path))
+    );
   }
 
   function getMediaBadge(path: string) {
@@ -1553,7 +1591,23 @@
     if (scrollEl) {
       scrollTop = scrollEl.scrollTop;
     }
+    markScrolling();
   }
+
+  function markScrolling() {
+    scrolling = true;
+    if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = setTimeout(() => {
+      scrolling = false;
+      scrollIdleTimer = null;
+    }, 120);
+  }
+
+  $effect(() => {
+    return () => {
+      if (scrollIdleTimer) clearTimeout(scrollIdleTimer);
+    };
+  });
 
   function rectsOverlap(
     a: { left: number; right: number; top: number; bottom: number },
@@ -1689,76 +1743,41 @@
     }
   });
 
-  const THUMBNAIL_RETRY_MS = 3000;
-  const THUMBNAIL_MAX_RETRIES = 5;
-  const visibleThumbPaths = new Set<string>();
-  const thumbRetryCounts = new Map<string, number>();
-
+  // Every rendered cell asks the shared service for its thumbnail. For the
+  // virtualised grid we also preload several rows beyond the rendered window so
+  // a thumbnail is already in memory by the time it scrolls into view.
   $effect(() => {
-    observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const path = (entry.target as HTMLElement).dataset.path;
-          if (!path) continue;
-          if (entry.isIntersecting) {
-            thumbRetryCounts.delete(path);
-            visibleThumbPaths.add(path);
-            if (library.showThumbnails) library.requestThumbnail(path);
-          } else {
-            visibleThumbPaths.delete(path);
-            thumbRetryCounts.delete(path);
-            library.cancelPending(path);
-          }
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    return () => observer?.disconnect();
-  });
-
-  // Retry visible thumbnails that failed or stalled, so placeholders don't
-  // stay stuck shimmering until the library is reopened.
-  $effect(() => {
-    const timer = setInterval(() => {
-      if (!library.showThumbnails || library.thumbnailsPaused) return;
-      for (const path of visibleThumbPaths) {
-        if (library.cache[path]) {
-          thumbRetryCounts.delete(path);
-          continue;
-        }
-        if (library.isThumbnailPending(path)) continue;
-        const attempts = thumbRetryCounts.get(path) ?? 0;
-        if (attempts >= THUMBNAIL_MAX_RETRIES) continue;
-        thumbRetryCounts.set(path, attempts + 1);
-        library.requestThumbnail(path);
-      }
-    }, THUMBNAIL_RETRY_MS);
-    return () => clearInterval(timer);
-  });
-
-  $effect(() => {
-    sortedFiles;
-    const els = scrollEl?.querySelectorAll("[data-path]");
-    if (els && observer) {
-      observer.disconnect();
-      for (const el of els) {
-        observer.observe(el);
-      }
-    }
-  });
-
-  let previousThumbnailsPaused = library.thumbnailsPaused;
-  $effect(() => {
-    const paused = library.thumbnailsPaused;
-    if (previousThumbnailsPaused && !paused) {
-      library.rebuildQueue(sortedFiles, currentIndex);
-    }
-    previousThumbnailsPaused = paused;
-  });
-
-  $effect(() => {
+    if (!library.showThumbnails || library.thumbnailsPaused) return;
     void library.thumbnailSize;
-    library.rebuildQueue(sortedFiles, currentIndex);
+
+    const items = flatGridItems;
+    if (items) {
+      const range = gridVirtualRange;
+      if (!range) return;
+      const lookahead = GRID_THUMB_LOOKAHEAD_ROWS * gridColCount;
+      const from = Math.max(0, range.firstIdx - lookahead);
+      const to = Math.min(items.length - 1, range.lastIdx + lookahead);
+      for (let i = from; i <= to; i++) {
+        const item = items[i];
+        if (item.type === "file" && !item.path.startsWith("__")) {
+          library.requestThumbnail(item.path);
+        }
+      }
+      return;
+    }
+
+    // Other view modes render every cell; request whatever is in the DOM.
+    void sortedFiles;
+    void gridVirtualRange;
+    void library.viewMode;
+    void library.activeTab;
+    void library.dividersOn;
+    const root = scrollEl;
+    if (!root) return;
+    for (const el of root.querySelectorAll<HTMLElement>("[data-path]")) {
+      const path = el.dataset.path;
+      if (path && !path.startsWith("__")) library.requestThumbnail(path);
+    }
   });
 
   $effect(() => {
@@ -1933,12 +1952,6 @@
         }
       })();
     }
-  });
-
-  $effect(() => {
-    return () => {
-      library.clearQueue();
-    };
   });
 
   // Keep the library selector on the current file when the list changes;
@@ -2707,6 +2720,7 @@
     class="library-scroll"
     class:select-mode={selectMode}
     class:dragging={isDragging}
+    class:scrolling
     class:filmstrip={library.viewMode === "filmstrip"}
     bind:this={scrollEl}
     bind:clientHeight={containerHeight}
@@ -2907,7 +2921,10 @@
                             </svg>
                           </div>
                         {:else}
-                          <div class="library-placeholder"></div>
+                          <div
+                            class="library-placeholder"
+                            class:failed={thumbFailed(path)}
+                          ></div>
                         {/if}
                         {#if library.namesOn}
                           <div
@@ -3154,7 +3171,10 @@
                               decoding="async"
                             />
                           {:else}
-                            <div class="library-placeholder"></div>
+                            <div
+                              class="library-placeholder"
+                              class:failed={thumbFailed(path)}
+                            ></div>
                           {/if}
                           {#if library.namesOn}
                             <div
@@ -3428,7 +3448,10 @@
                             </svg>
                           </div>
                         {:else}
-                          <div class="river-placeholder"></div>
+                          <div
+                            class="river-placeholder"
+                            class:failed={thumbFailed(path)}
+                          ></div>
                         {/if}
                         {#if library.namesOn}
                           <div
@@ -3667,7 +3690,10 @@
                           </svg>
                         </div>
                       {:else}
-                        <div class="filmstrip-placeholder"></div>
+                        <div
+                          class="filmstrip-placeholder"
+                          class:failed={thumbFailed(path)}
+                        ></div>
                       {/if}
                       {#if library.namesOn}
                         <div
@@ -4116,7 +4142,10 @@
                               </svg>
                             </div>
                           {:else}
-                            <div class="list-placeholder"></div>
+                            <div
+                              class="list-placeholder"
+                              class:failed={thumbFailed(path)}
+                            ></div>
                           {/if}
                         </span>
                         <span class="list-col list-col-name">
@@ -4383,10 +4412,10 @@
                     }}
                   >
                     <div class="library-collection-content">
-                      {#if library.showCollectionCovers && library.showThumbnails && firstFilePath && library.cache[firstFilePath]}
+                      {#if library.showCollectionCovers && library.showThumbnails && firstFilePath && thumbFor(firstFilePath)}
                         <img
                           class="library-collection-thumb"
-                          src={library.cache[firstFilePath]}
+                          src={thumbFor(firstFilePath)}
                           alt=""
                           draggable="false"
                           decoding="async"
@@ -5272,7 +5301,6 @@
     width: 100%;
     min-height: 100%;
     min-width: 0;
-    will-change: transform, opacity;
   }
 
   .tab-content.filmstrip-mode {
@@ -6321,6 +6349,17 @@
     transform: scale(1.02);
   }
 
+  /* Suppress hover motion while scrolling so cells passing under the pointer
+     do not scale in and out, which reads as flicker. */
+  .library-scroll.scrolling :where(.library-cell, .library-subfolder-card) {
+    transition: none;
+  }
+
+  .library-scroll.scrolling
+    :where(.library-cell:hover, .library-subfolder-card:hover) {
+    transform: none;
+  }
+
   .library-subfolder-icon {
     flex-shrink: 0;
   }
@@ -6388,6 +6427,27 @@
     );
     background-size: 200% 100%;
     animation: thumbShimmer 3s ease-in-out infinite;
+  }
+
+  /* Terminal state: a failed request must not look like it is still loading. */
+  .library-placeholder.failed,
+  .river-placeholder.failed,
+  .filmstrip-placeholder.failed,
+  .list-placeholder.failed {
+    animation: none;
+    background: var(--bg-elevated);
+    opacity: 0.6;
+  }
+
+  /* Shimmer repaints are pure paint work; freeze them while the user scrolls. */
+  .library-scroll.scrolling
+    :where(
+      .library-placeholder,
+      .river-placeholder,
+      .filmstrip-placeholder,
+      .list-placeholder
+    ) {
+    animation-play-state: paused;
   }
 
   /* Media-type badges */

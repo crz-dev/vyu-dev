@@ -2,15 +2,12 @@
   import { VIDEO_EXTS, AUDIO_EXTS, DOCUMENT_EXTS } from "$lib/shared/constants";
   import { getFileExt } from "$lib/services/files";
   import {
-    invokeGetThumbnails,
-    onThumbnailProgress,
-  } from "$lib/features/media/api";
-  import { getCached, setCached } from "$lib/services/thumbnailCache";
+    getCached,
+    isGenerating,
+    isThumbnailFailed,
+    requestThumbnails,
+  } from "$lib/services/thumbnailCache.svelte";
   import { library } from "$lib/features/library/library.svelte";
-  import {
-    generatePdfThumbnail,
-    isPdfPath,
-  } from "$lib/features/viewer/pdf.svelte";
   import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -36,22 +33,11 @@
   const ITEM_GAP = 6;
   const ITEM_STEP = ITEM_W + ITEM_GAP;
   const OVERSCAN = 6;
+  const THUMB_SIZE = 120;
   const VIDEO_EXTS_SET = new Set(VIDEO_EXTS);
   const AUDIO_EXTS_SET = new Set(AUDIO_EXTS);
-  const THUMBNAIL_TIMEOUT_MS = 20_000;
-  const THUMBNAIL_RETRY_MS = 3000;
-  const THUMBNAIL_MAX_RETRIES = 5;
-
-  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const timeout = new Promise<T>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error("Thumbnail request timed out")),
-        ms,
-      );
-    });
-    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-  }
+  // Safety net: if the open transition never reports, still start loading.
+  const OPEN_FALLBACK_MS = 400;
 
   let trackEl: HTMLDivElement | null = $state(null);
   let barEl: HTMLDivElement | null = $state(null);
@@ -71,16 +57,8 @@
   // Thumbnails are NOT fetched until the open-transition finishes.
   let afterOpen = $state(false);
 
-  // Thumbnails
-  let loaded = $state(new Map<string, string>());
-  let fetching = $state(new Set<string>());
-  let failed = $state(new Set<string>());
-  let pdfPending = $state(new Set<string>());
-
   // Delay the toast so it doesn't flash when thumbnails are already cached.
-  const generating = $derived(
-    afterOpen && loaded.size + failed.size < fileList.length,
-  );
+  const generating = $derived(afterOpen && isGenerating());
   let showToast = $state(false);
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -119,190 +97,27 @@
     })),
   );
 
-  // Center-outward load queue
-  let loadQueue = $state<string[]>([]);
-  let observed = $state(new Set<string>());
-
-  // Rebuild queue when bar opens or currentIndex changes
-  $effect(() => {
-    if (!afterOpen || fileList.length === 0) {
-      loadQueue = [];
-      return;
-    }
-
-    // Build center-outward order: current, -1, +1, -2, +2, …
-    const order: number[] = [currentIndex];
-    let l = currentIndex - 1;
-    let r = currentIndex + 1;
-    while (l >= 0 || r < fileList.length) {
-      if (l >= 0) order.push(l--);
-      if (r < fileList.length) order.push(r++);
-    }
-
-    // Keep all items — will be fetched in center-outward order
-    loadQueue = order.map((idx) => fileList[idx]);
-  });
-
-  // IntersectionObserver
-  let observer: IntersectionObserver | null = null;
-
-  $effect(() => {
-    observer = new IntersectionObserver(
-      (entries) => {
-        let added: string[] = [];
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const path = (entry.target as HTMLElement).dataset.path;
-            if (path && !observed.has(path)) {
-              added.push(path);
-            }
-          }
-        }
-        if (added.length > 0) {
-          observed = new Set([...observed, ...added]);
-        }
-      },
-      { rootMargin: "50px" },
-    );
-    return () => {
-      observer?.disconnect();
-    };
-  });
-
-  // Observe newly rendered elements (re-runs when visibleItems changes)
-  $effect(() => {
-    visibleItems;
-    const els = trackEl?.querySelectorAll("[data-path]");
-    if (els && observer) {
-      for (const el of els) {
-        observer.observe(el);
-      }
-    }
-  });
-
-  // Stale guard — incremented on close/cleanup to cancel in-flight batches
-  let _fetchGen = 0;
-
-  let inflightBatches = $state(0);
-
-  // Queue processor
-  // Process queue in center-outward order — fills outward from current file
-  const BATCH_SIZE = 6;
-  const MAX_CONCURRENT = 4;
+  // Load the rendered strip items. The shared service deduplicates, batches and
+  // owns retries, so requesting is always safe and needs no local bookkeeping.
   $effect(() => {
     if (!afterOpen) return;
-    if (inflightBatches >= MAX_CONCURRENT) return;
-    // Collect a batch of uncached paths in queue order
-    const batch: string[] = [];
-    const cacheHits: [string, string][] = [];
-    for (const path of loadQueue) {
-      if (
-        loaded.has(path) ||
-        fetching.has(path) ||
-        failed.has(path) ||
-        pdfPending.has(path)
-      )
-        continue;
-      const cached = getCached(path);
-      if (cached) {
-        cacheHits.push([path, cached]);
-        continue;
-      }
-      batch.push(path);
-      if (batch.length >= BATCH_SIZE) break;
-    }
-    if (cacheHits.length > 0) {
-      const updated = new Map(loaded);
-      for (const [path, dataUrl] of cacheHits) updated.set(path, dataUrl);
-      loaded = updated;
-    }
-    if (batch.length > 0) fetchBatch(batch);
+    requestThumbnails(
+      visibleItems.map((item) => item.path),
+      THUMB_SIZE,
+    );
   });
 
-  async function fetchBatch(paths: string[]) {
-    const localGen = _fetchGen;
-    inflightBatches++;
-    fetching = new Set([...fetching, ...paths]);
-
-    // Listen for streaming results from the backend
-    let unlisten: (() => void) | null = null;
-    try {
-      unlisten = await onThumbnailProgress((path, dataUrl) => {
-        if (localGen !== _fetchGen) return;
-        if (!dataUrl) return;
-        setCached(path, 120, dataUrl);
-        if (!loaded.has(path)) {
-          loaded = new Map([...loaded, [path, dataUrl]]);
-        }
-      });
-
-      const results = await withTimeout(
-        invokeGetThumbnails(paths, 120),
-        THUMBNAIL_TIMEOUT_MS,
-      );
-      if (localGen !== _fetchGen) return;
-      // Process any results not delivered via streaming
-      const updated = new Map(loaded);
-      let changed = false;
-      for (const [p, dataUrl] of Object.entries(results)) {
-        if (dataUrl && !updated.has(p)) {
-          updated.set(p, dataUrl);
-          setCached(p, 120, dataUrl);
-          changed = true;
-        }
-      }
-      if (changed) loaded = updated;
-
-      // PDFs: generate thumbnails on frontend (backend FFmpeg can't decode PDFs)
-      for (const p of paths) {
-        if (isPdfPath(p) && !loaded.has(p) && !pdfPending.has(p)) {
-          pdfPending = new Set([...pdfPending, p]);
-          generatePdfThumbnail(p, 120)
-            .then((dataUrl) => {
-              if (localGen !== _fetchGen) return;
-              if (dataUrl) {
-                setCached(p, 120, dataUrl);
-                loaded = new Map([...loaded, [p, dataUrl]]);
-              } else {
-                failed = new Set([...failed, p]);
-              }
-            })
-            .finally(() => {
-              if (localGen !== _fetchGen) return;
-              const next = new Set(pdfPending);
-              next.delete(p);
-              pdfPending = next;
-            });
-        } else if (!loaded.has(p) && !isPdfPath(p)) {
-          failed = new Set([...failed, p]);
-        }
-      }
-    } catch {
-      // Leave the placeholder up — the retry ticker will try again.
-      if (localGen === _fetchGen) {
-        failed = new Set([...failed, ...paths.filter((p) => !loaded.has(p))]);
-      }
-    } finally {
-      unlisten?.();
-      const next = new Set(fetching);
-      for (const p of paths) next.delete(p);
-      fetching = next;
-      inflightBatches--;
-    }
-  }
-
-  // Cleanup on close
+  // Fall back when the open transition never reports (mount already open).
   $effect(() => {
     if (!visible) {
-      _fetchGen++;
-      inflightBatches = 0;
       afterOpen = false;
-      observed = new Set();
-      loadQueue = [];
-      fetching = new Set();
-      failed = new Set();
-      pdfPending = new Set();
+      return;
     }
+    if (afterOpen) return;
+    const timer = setTimeout(() => {
+      if (visible) afterOpen = true;
+    }, OPEN_FALLBACK_MS);
+    return () => clearTimeout(timer);
   });
 
   function onTransitionEnd(e: TransitionEvent) {
@@ -342,48 +157,6 @@
         behavior: "smooth",
       });
     }
-  });
-
-  // Retry thumbnails that failed or stalled while the bar is open, so
-  // placeholders don't stay stuck shimmering until the bar is reopened.
-  let retryCounts = new Map<string, number>();
-
-  $effect(() => {
-    if (!afterOpen) return;
-    const timer = setInterval(() => {
-      const visiblePaths = new Set(visibleItems.map((item) => item.path));
-      for (const key of retryCounts.keys()) {
-        if (!visiblePaths.has(key) || loaded.has(key)) retryCounts.delete(key);
-      }
-      const retryable = visibleItems.filter(
-        (item) =>
-          !loaded.has(item.path) &&
-          !fetching.has(item.path) &&
-          !pdfPending.has(item.path) &&
-          (retryCounts.get(item.path) ?? 0) < THUMBNAIL_MAX_RETRIES,
-      );
-      if (retryable.length === 0) return;
-      const next = new Set(failed);
-      for (const item of retryable) {
-        retryCounts.set(item.path, (retryCounts.get(item.path) ?? 0) + 1);
-        next.delete(item.path);
-      }
-      failed = next;
-    }, THUMBNAIL_RETRY_MS);
-    return () => clearInterval(timer);
-  });
-
-  // Listen for PDF thumbnail readiness events from the PDF viewer
-  $effect(() => {
-    function onPdfThumbnail(e: Event) {
-      const { path, dataUrl } = (e as CustomEvent).detail;
-      if (!loaded.has(path)) {
-        loaded = new Map([...loaded, [path, dataUrl]]);
-      }
-    }
-    window.addEventListener("vyu-pdf-thumbnail-ready", onPdfThumbnail);
-    return () =>
-      window.removeEventListener("vyu-pdf-thumbnail-ready", onPdfThumbnail);
   });
 
   function handleClick(index: number) {
@@ -432,9 +205,9 @@
         onclick={() => handleClick(item.index)}
         aria-label={t("menus.thumbnail.openFile")}
       >
-        {#if loaded.has(item.path)}
+        {#if getCached(item.path, THUMB_SIZE)}
           <img
-            src={loaded.get(item.path)}
+            src={getCached(item.path, THUMB_SIZE)}
             alt=""
             width={ITEM_W}
             height={ITEM_W}
@@ -463,7 +236,7 @@
         {:else}
           <div
             class="thumb-placeholder"
-            class:fetching={fetching.has(item.path)}
+            class:failed={isThumbnailFailed(item.path, THUMB_SIZE)}
             style="width: {ITEM_W}px; height: {ITEM_W}px;"
           ></div>
         {/if}
@@ -506,7 +279,7 @@
           </div>
         {/if}
 
-        {#if item.isPdf && loaded.has(item.path)}
+        {#if item.isPdf && getCached(item.path, THUMB_SIZE)}
           <div class="thumbnail-pdf-badge">
             <svg
               width="10"

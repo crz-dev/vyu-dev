@@ -1372,7 +1372,7 @@ export function savePauseOnFocusLoss(enabled: boolean): void {
 }
 
 export function loadBatterySaverThumbnails(): boolean {
-  return loadSystemBoolean("battery-saver-thumbnails", true);
+  return loadSystemBoolean("battery-saver-thumbnails", false);
 }
 
 export function saveBatterySaverThumbnails(enabled: boolean): void {

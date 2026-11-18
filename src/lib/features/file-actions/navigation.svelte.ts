@@ -25,7 +25,7 @@ import {
   isVideo as pathIsVideo,
 } from "$lib/shared/mediaKind";
 import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
-import { requestThumbnail } from "$lib/services/thumbnailCache";
+import { requestThumbnail } from "$lib/services/thumbnailCache.svelte";
 import { getPreloadedSize } from "$lib/services/imagePreload";
 import {
   AUDIO_EXTS,

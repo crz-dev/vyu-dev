@@ -49,7 +49,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Profiles / settings transfer    | `features/profiles/*`, `services/storage.ts`                                                           |
 | File open / delete / navigation | `features/file-actions/*`, `features/navigation/*`, `commands/file_ops.rs`                             |
 | Persistence                     | `services/storage.ts` (prefs), `services/database.ts` (SQLite), `src-tauri/src/database/*`             |
-| Thumbnails / display            | `commands/thumbnail.rs`, `commands/display.rs`, `services/thumbnailCache.ts`                           |
+| Thumbnails / display            | `commands/thumbnail.rs`, `commands/display.rs`, `services/thumbnailCache.svelte.ts`                    |
 
 ## Ownership map
 
@@ -132,7 +132,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Filesystem scans / folder cache           | `services/files.ts`                          |
 | localStorage preferences                  | `services/storage.ts`                        |
 | SQLite frontend wrappers / migration      | `services/database.ts`                       |
-| Shared in-memory thumbnail cache          | `services/thumbnailCache.ts`                 |
+| Shared in-memory thumbnail cache          | `services/thumbnailCache.svelte.ts`          |
 | Decoded neighbouring-image cache          | `services/imagePreload.ts`                   |
 | Thumbnail generation indicator            | `components/ThumbnailGenToast.svelte`        |
 | Clipboard                                 | `services/clipboard.ts`                      |
@@ -246,7 +246,7 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Constraint                                                            | Reason                                                                              |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | Library reactive caches use `$state<Record>`                          | Svelte proxy tracking depends on property access.                                   |
-| `services/thumbnailCache.ts` uses a non-reactive `Map`                | It is an in-memory batching/cache layer, not UI state.                              |
+| `services/thumbnailCache.svelte.ts` owns thumbnail requests           | It is the single queue/cache so library and thumbnail bar cannot diverge.           |
 | `pdfjs-dist` remains dynamic                                          | Keeps startup bundle smaller.                                                       |
 | Sort-related stat uses one batch IPC call                             | Eliminates per-call IPC overhead.                                                   |
 | Batch stat processes paths in chunks of 8                             | Limits work per blocking task; overall concurrency is not capped at 8.              |

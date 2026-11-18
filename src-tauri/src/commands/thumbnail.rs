@@ -10,7 +10,6 @@ use base64::Engine as _;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use image::GenericImageView;
-use tauri::Emitter;
 use tauri::Manager;
 
 use crate::constants::{
@@ -736,9 +735,7 @@ pub async fn get_video_preview(
     Ok(format_data_url(&bytes))
 }
 
-/// Batch thumbnail command — process multiple paths in a single IPC call
-/// Emits `thumbnail-progress` events as each result completes so the frontend
-/// can render thumbnails incrementally instead of waiting for all to finish.
+/// Batch thumbnail command — process multiple paths in a single IPC call.
 #[tauri::command]
 pub async fn get_thumbnails(
     app: tauri::AppHandle,
@@ -768,10 +765,6 @@ pub async fn get_thumbnails(
     while let Some((path, result)) = tasks.next().await {
         match result {
             Ok(data_url) => {
-                let _ = app.emit(
-                    "thumbnail-progress",
-                    serde_json::json!({ "path": &path, "dataUrl": &data_url }),
-                );
                 results.insert(path, data_url);
             }
             Err(_) => {
