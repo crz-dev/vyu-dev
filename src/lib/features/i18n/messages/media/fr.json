@@ -10,6 +10,8 @@
   "bar.audioDetails": "Durée · Débit · Taille",
   "bar.clipSegments": "Segments de clip",
   "bar.clipping": "Découpage",
+  "bar.collection_one": "{count} collection",
+  "bar.collection_other": "{count} collections",
   "bar.currentVolume": "Volume actuel",
   "bar.deleteOriginal": "Supprimer l’original",
   "bar.dragToMove": "Faire glisser pour déplacer",

@@ -9,6 +9,7 @@
     performMultiDelete,
   } from "$lib/features/file-actions/deleteFile.svelte";
   import Dialog from "$lib/features/dialogs/Dialog.svelte";
+  import LibraryPropertiesDialog from "$lib/features/dialogs/LibraryPropertiesDialog.svelte";
   import Tooltip from "$lib/components/Tooltip.svelte";
   import EditMenu from "$lib/features/menus/EditMenu.svelte";
   import MarkupMenu from "$lib/features/menus/MarkupMenu.svelte";
@@ -210,6 +211,7 @@
     deleteNoAsk,
     deletePermanently,
     propertiesOpen,
+    libraryPropertiesOpen,
     shareOpen,
     fileExt,
     fileCreated,
@@ -224,6 +226,11 @@
     propsOpenFolder,
     propsCopyAll,
     copyPropValue,
+    onOpenLibraryProperties,
+    onCloseLibraryProperties,
+    viewPropsOpenFolder,
+    viewPropsCopyPath,
+    viewPropsCopyAll,
     performDelete,
     corruptionWarning,
     corruptionReason,
@@ -403,6 +410,7 @@
     deleteNoAsk: boolean;
     deletePermanently: boolean;
     propertiesOpen: boolean;
+    libraryPropertiesOpen: boolean;
     shareOpen: boolean;
     fileExt: () => string;
     fileCreated: string;
@@ -417,6 +425,11 @@
     propsOpenFolder: () => void;
     propsCopyAll: () => void;
     copyPropValue: (v: string) => void;
+    onOpenLibraryProperties: () => void;
+    onCloseLibraryProperties: () => void;
+    viewPropsOpenFolder: () => void;
+    viewPropsCopyPath: () => void;
+    viewPropsCopyAll: () => void;
     performDelete: () => void;
     corruptionWarning: boolean;
     corruptionReason: string;
@@ -849,6 +862,7 @@
     {fileName}
     {fileSrc}
     onOpenProperties={ctxProperties}
+    {onOpenLibraryProperties}
     {zoomLevel}
     {zoomLocked}
     {adjustZoom}
@@ -994,6 +1008,16 @@
     {dismissCorruption}
     {fixCopy}
     {fixReplace}
+  />
+
+  <LibraryPropertiesDialog
+    open={libraryPropertiesOpen}
+    viewInfo={library.viewInfo}
+    onClose={onCloseLibraryProperties}
+    onOpenFolder={viewPropsOpenFolder}
+    onCopyPath={viewPropsCopyPath}
+    onCopyAll={viewPropsCopyAll}
+    {copyPropValue}
   />
 
   <ToastStack />

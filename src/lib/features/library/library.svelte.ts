@@ -67,14 +67,26 @@ import type {
 } from "$lib/services/storage";
 import { exists } from "@tauri-apps/plugin-fs";
 import {
+  getFileExt,
+  getFileName,
   getParentFolder,
   replacePathPrefix,
   samePath,
 } from "$lib/services/files";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import { locale } from "$lib/features/i18n/locale.svelte";
+import {
+  AUDIO_EXTS,
+  DOCUMENT_EXTS,
+  IMAGE_EXTS,
+  VIDEO_EXTS,
+} from "$lib/shared/constants";
 import type { SortMode } from "$lib/shared/constants";
-import type { BatchStatItem } from "$lib/shared/types";
+import type {
+  BatchStatItem,
+  LibraryTypeCounts,
+  LibraryViewInfo,
+} from "$lib/shared/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const THUMBNAIL_SIZES: readonly number[] = [128, 256, 512];
@@ -82,6 +94,37 @@ const RECENT_RETENTION_DAYS: readonly number[] = [0, 7, 30, 90];
 const INVALID_COLLECTION_NAME_CHARS = /[<>:"\/\\|?*\u0000-\u001f\u007f-\u009f]/;
 const RESERVED_COLLECTION_DEVICE_NAME =
   /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+
+const IMAGE_SET = new Set(IMAGE_EXTS);
+const VIDEO_SET = new Set(VIDEO_EXTS);
+const AUDIO_SET = new Set(AUDIO_EXTS);
+const DOCUMENT_SET = new Set(DOCUMENT_EXTS);
+
+type ViewInfoSource =
+  | { kind: "folder"; path: string; files: string[]; folders: string[] }
+  | { kind: "recents" | "favorites"; files: string[] }
+  | { kind: "collections"; collections: CollectionItem[] };
+
+function emptyTypeCounts(): LibraryTypeCounts {
+  return { images: 0, videos: 0, audio: 0, documents: 0 };
+}
+
+function countFileTypes(files: string[]): LibraryTypeCounts {
+  const counts = emptyTypeCounts();
+  for (const path of files) {
+    const ext = getFileExt(path);
+    if (IMAGE_SET.has(ext)) {
+      counts.images++;
+    } else if (VIDEO_SET.has(ext)) {
+      counts.videos++;
+    } else if (AUDIO_SET.has(ext)) {
+      counts.audio++;
+    } else if (DOCUMENT_SET.has(ext)) {
+      counts.documents++;
+    }
+  }
+  return counts;
+}
 
 function isValidCollectionName(name: string): boolean {
   const trimmed = name.trim();
@@ -162,8 +205,8 @@ function createLibrary() {
   let searchFocusNonce = $state(0);
   const searchActive = $derived(searchQuery.trim().length > 0);
 
-  let totalSize = $state(0);
-  let totalSizeLoading = $state(false);
+  let viewInfo = $state<LibraryViewInfo | null>(null);
+  let viewInfoRequestId = 0;
 
   // Stat cache for sort by size/date-modified
   let stats = $state<Record<string, BatchStatItem>>({});
@@ -423,19 +466,82 @@ function createLibrary() {
     saveSortDesc(desc);
   }
 
-  async function computeTotalSize(paths: string[]) {
-    if (paths.length === 0) {
-      totalSize = 0;
+  function setViewInfo(source: ViewInfoSource) {
+    const requestId = ++viewInfoRequestId;
+
+    if (source.kind === "collections") {
+      const linked = source.collections.filter((c) => c.type === "linked");
+      viewInfo = {
+        kind: "collections",
+        path: null,
+        name: "",
+        parent: null,
+        fileCount: 0,
+        folderCount: 0,
+        totalSize: 0,
+        loading: false,
+        createdMs: null,
+        modifiedMs: null,
+        typeCounts: emptyTypeCounts(),
+        collectionCount: source.collections.length,
+        linkedCollectionCount: linked.length,
+        customCollectionCount: source.collections.length - linked.length,
+      };
       return;
     }
-    totalSizeLoading = true;
-    try {
-      totalSize = await invokeGetFilesTotalSize(paths);
-    } catch {
-      totalSize = 0;
-    } finally {
-      totalSizeLoading = false;
+
+    const files = source.files;
+    const isFolder = source.kind === "folder";
+    const path = isFolder ? source.path : null;
+    const base: LibraryViewInfo = {
+      kind: source.kind,
+      path,
+      name: path ? getFileName(path) : "",
+      parent: path ? getParentFolder(path) : null,
+      fileCount: files.length,
+      folderCount: isFolder ? source.folders.length : 0,
+      totalSize: 0,
+      loading: files.length > 0 || isFolder,
+      createdMs: null,
+      modifiedMs: null,
+      typeCounts: countFileTypes(files),
+      collectionCount: 0,
+      linkedCollectionCount: 0,
+      customCollectionCount: 0,
+    };
+    viewInfo = base;
+
+    if (!isFolder && files.length === 0) {
+      viewInfo = { ...base, loading: false };
+      return;
     }
+
+    void (async () => {
+      const [size, stats] = await Promise.all([
+        files.length > 0
+          ? invokeGetFilesTotalSize(files).catch(() => 0)
+          : Promise.resolve(0),
+        isFolder && path
+          ? invokeBatchStat([path]).catch(() => [] as BatchStatItem[])
+          : Promise.resolve([] as BatchStatItem[]),
+      ]);
+      if (requestId !== viewInfoRequestId) return;
+      const folderStat = isFolder ? stats[0] : undefined;
+      const created = folderStat?.birthtime_ms;
+      const modified = folderStat?.mtime_ms;
+      viewInfo = {
+        ...base,
+        totalSize: size,
+        loading: false,
+        createdMs: created && created > 0 ? created : null,
+        modifiedMs: modified && modified > 0 ? modified : null,
+      };
+    })();
+  }
+
+  function clearViewInfo() {
+    viewInfoRequestId++;
+    viewInfo = null;
   }
 
   async function loadStats(paths: string[]) {
@@ -842,13 +948,11 @@ function createLibrary() {
       return privacyRevealHover;
     },
     setPrivacyRevealHover,
-    get totalSize() {
-      return totalSize;
+    get viewInfo() {
+      return viewInfo;
     },
-    get totalSizeLoading() {
-      return totalSizeLoading;
-    },
-    computeTotalSize,
+    setViewInfo,
+    clearViewInfo,
     get stats() {
       return stats;
     },

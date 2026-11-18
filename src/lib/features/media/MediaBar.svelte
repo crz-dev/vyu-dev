@@ -11,6 +11,7 @@
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { formatByteSize } from "$lib/shared/fileMeta";
 
   const t = locale.t;
   const tp = locale.tp;
@@ -120,6 +121,7 @@
     fileName,
     fileSrc,
     onOpenProperties,
+    onOpenLibraryProperties,
     zoomLevel,
     zoomLocked,
     toggleZoomLock,
@@ -185,6 +187,7 @@
     fileName: string;
     fileSrc: string;
     onOpenProperties: () => void;
+    onOpenLibraryProperties: () => void;
     zoomLevel: number;
     zoomLocked: boolean;
     toggleZoomLock?: () => void;
@@ -439,13 +442,6 @@
     library.setViewMode(mode);
     viewMenuVisible = false;
   }
-
-  function formatTotalSize(bytes: number): string {
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024)
-      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-  }
 </script>
 
 <div class="bottombar" class:library-mode={libraryOpen}>
@@ -546,17 +542,29 @@
   </div>
   <div class="file-info-wrapper">
     {#if libraryOpen}
-      <span
-        class="file-info tooltip-above"
-        data-tooltip={t("media.bar.totalFiles")}
-      >
-        {tp("media.bar.file", fileListLength)}
-        {#if !library.totalSizeLoading && library.totalSize > 0}
-          · {formatTotalSize(library.totalSize)}
-        {:else if library.totalSizeLoading}
-          · ...
-        {/if}
-      </span>
+      {@const info = library.viewInfo}
+      {#if info}
+        <button
+          class="file-info file-info-button tooltip-above"
+          data-tooltip={t("dialogs.dialog.properties.title")}
+          onclick={onOpenLibraryProperties}
+          aria-label={t("dialogs.dialog.properties.openAria")}
+          aria-haspopup="dialog"
+        >
+          {#if info.kind === "collections"}
+            {tp("media.bar.collection", info.collectionCount)}
+          {:else}
+            {tp("media.bar.file", info.fileCount)}
+            {#if info.loading}
+              · ...
+            {:else if info.totalSize > 0}
+              · {formatByteSize(info.totalSize)}
+            {/if}
+          {/if}
+        </button>
+      {:else}
+        <span class="file-info">—</span>
+      {/if}
     {:else if !accessibility.hideMediaDetails}
       {#if fileSrc}
         <button

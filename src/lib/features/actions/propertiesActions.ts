@@ -1,10 +1,11 @@
 import {
   copyPathToClipboard,
   copyAllPropertiesToClipboard,
+  copyViewPropertiesToClipboard,
 } from "$lib/services/clipboard";
 import { invokeOpenDirectory } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
-import type { MediaProperties } from "$lib/shared/types";
+import type { LibraryViewInfo, MediaProperties } from "$lib/shared/types";
 import { showToast } from "$lib/components/toast.svelte";
 import { locale } from "$lib/features/i18n/locale.svelte";
 import { library } from "$lib/features/library/library.svelte";
@@ -24,6 +25,7 @@ export interface PropertiesFileSnapshot {
 
 export interface PropertiesActionsDeps {
   getFile: () => PropertiesFileSnapshot;
+  getViewInfo: () => LibraryViewInfo | null;
   getParentFolder: (path: string) => string;
 }
 
@@ -94,5 +96,55 @@ export function createPropertiesActions(deps: PropertiesActionsDeps) {
     }
   }
 
-  return { propsCopyPath, propsOpenFolder, propsCopyAll, copyPropValue };
+  async function viewPropsOpenFolder() {
+    const info = deps.getViewInfo();
+    if (!info || info.kind !== "folder" || !info.path) return;
+    try {
+      await invokeOpenDirectory(info.path);
+    } catch {}
+  }
+
+  async function viewPropsCopyPath() {
+    const info = deps.getViewInfo();
+    if (!info?.path) return;
+    try {
+      await copyPathToClipboard(info.path);
+      showToast({
+        message: locale.t("shell.actions.copiedPath"),
+        color: "yellow",
+      });
+    } catch {
+      showToast({
+        message: locale.t("shell.actions.copyPathFailed"),
+        color: "red",
+      });
+    }
+  }
+
+  async function viewPropsCopyAll() {
+    const info = deps.getViewInfo();
+    if (!info) return;
+    try {
+      await copyViewPropertiesToClipboard(info, library.privacyMode);
+      showToast({
+        message: locale.t("shell.actions.copiedAll"),
+        color: "yellow",
+      });
+    } catch {
+      showToast({
+        message: locale.t("shell.actions.copyAllFailed"),
+        color: "red",
+      });
+    }
+  }
+
+  return {
+    propsCopyPath,
+    propsOpenFolder,
+    propsCopyAll,
+    copyPropValue,
+    viewPropsOpenFolder,
+    viewPropsCopyPath,
+    viewPropsCopyAll,
+  };
 }

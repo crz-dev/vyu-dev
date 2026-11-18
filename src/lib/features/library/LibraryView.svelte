@@ -171,6 +171,7 @@
   ];
 
   let mounted = $state(false);
+  let destroyed = false;
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
   let renderDividers = $state(library.dividersOn);
@@ -1039,6 +1040,9 @@
     }
     collectionFolders = folders;
     collectionFiles = filesList;
+    if (!destroyed) {
+      library.setViewInfo({ kind: "folder", path, files: filesList, folders });
+    }
   }
 
   function startRename(path: string, currentName: string) {
@@ -1781,9 +1785,35 @@
   });
 
   $effect(() => {
-    if (fileList.length > 0) {
-      library.computeTotalSize(fileList);
+    if (library.activeTab !== "recents") return;
+    const files =
+      library.privacyMode || library.recentsDisabled
+        ? []
+        : library.getRecentPaths();
+    library.setViewInfo({ kind: "recents", files });
+  });
+
+  $effect(() => {
+    if (library.activeTab !== "favorites") return;
+    library.setViewInfo({
+      kind: "favorites",
+      files: library.getFavoritePaths(),
+    });
+  });
+
+  $effect(() => {
+    if (library.activeTab !== "collections" || library.activeCollectionPath) {
+      return;
     }
+    library.setViewInfo({
+      kind: "collections",
+      collections: library.collections,
+    });
+  });
+
+  $effect(() => () => {
+    destroyed = true;
+    library.clearViewInfo();
   });
 
   // Load file stats for sort by size/date-modified
@@ -1809,9 +1839,13 @@
     const path = libraryDirPath;
     library.scanKey;
     if (!path || library.activeTab !== "library") {
+      if (library.activeTab === "library") library.clearViewInfo();
       libraryDirFolders = [];
       libraryDirFiles = [];
       return;
+    }
+    if (untrack(() => library.viewInfo?.path) !== path) {
+      library.clearViewInfo();
     }
     (async () => {
       try {
@@ -1834,12 +1868,17 @@
           });
         folders.sort(sortFn);
         files.sort(sortFn);
+        if (destroyed) return;
+        if (path !== libraryDirPath || library.activeTab !== "library") return;
         libraryDirFolders = folders;
         libraryDirFiles = files;
+        library.setViewInfo({ kind: "folder", path, files, folders });
       } catch {
-        if (library.activeTab !== "library") return;
+        if (destroyed) return;
+        if (path !== libraryDirPath || library.activeTab !== "library") return;
         libraryDirFolders = [];
         libraryDirFiles = [];
+        library.setViewInfo({ kind: "folder", path, files: [], folders: [] });
       }
     })();
   });
@@ -1866,16 +1905,22 @@
 
   $effect(() => {
     const path = library.activeCollectionPath;
+    const tab = library.activeTab;
     library.scanKey;
     if (!path) {
       collectionFiles = [];
       collectionFolders = [];
       return;
     }
+    if (tab !== "collections") return;
+    if (untrack(() => library.viewInfo?.path) !== path) {
+      library.clearViewInfo();
+    }
     (async () => {
       try {
         const sep = path.includes("\\") ? "\\" : "/";
         const entries = await readDir(path);
+        if (library.activeCollectionPath !== path) return;
         const folders: string[] = [];
         const files: string[] = [];
         for (const e of entries) {
@@ -1892,18 +1937,26 @@
           });
         folders.sort(sortFn);
         files.sort(sortFn);
+        if (destroyed) return;
         collectionFolders = folders;
         collectionFiles = files;
+        if (library.activeTab === "collections") {
+          library.setViewInfo({ kind: "folder", path, files, folders });
+        }
       } catch {
+        if (destroyed) return;
+        if (library.activeCollectionPath !== path) return;
         collectionFiles = [];
         collectionFolders = [];
+        if (library.activeTab === "collections") {
+          library.setViewInfo({ kind: "folder", path, files: [], folders: [] });
+        }
       }
     })();
   });
 
   $effect(() => {
     if (isViewingCollection && collectionFiles.length > 0) {
-      library.computeTotalSize(collectionFiles);
       library.loadStats(collectionFiles);
     }
   });

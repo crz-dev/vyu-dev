@@ -10,6 +10,8 @@
   "bar.audioDetails": "Dauer · Bitrate · Dateigröße",
   "bar.clipSegments": "Clip-Segmente",
   "bar.clipping": "Clipping",
+  "bar.collection_one": "{count} Sammlung",
+  "bar.collection_other": "{count} Sammlungen",
   "bar.currentVolume": "Aktuelle Lautstärke",
   "bar.deleteOriginal": "Original löschen",
   "bar.dragToMove": "Zum Verschieben ziehen",

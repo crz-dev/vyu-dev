@@ -10,6 +10,8 @@
   "bar.audioDetails": "길이 · 비트레이트 · 파일 크기",
   "bar.clipSegments": "클립 구간",
   "bar.clipping": "클립 생성 중",
+  "bar.collection_one": "{count}개 컬렉션",
+  "bar.collection_other": "{count}개 컬렉션",
   "bar.currentVolume": "현재 볼륨",
   "bar.deleteOriginal": "원본 삭제",
   "bar.dragToMove": "드래그하여 이동",

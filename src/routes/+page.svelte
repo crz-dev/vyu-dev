@@ -176,6 +176,7 @@
   let pendingPlay: ReturnType<typeof setTimeout> | undefined;
   let isScrubbing = $state(false);
   let propertiesOpen = $state(false);
+  let libraryPropertiesOpen = $state(false);
   let shareOpen = $state(false);
   let audioLayoutMode: "retro" | "modern" = $state(loadAudioLayoutMode());
   let cassetteFilenameOverflow = $state(false);
@@ -271,6 +272,7 @@
       markerStore,
       deleteStore,
       propertiesOpen,
+      libraryPropertiesOpen,
       shareOpen,
       clips,
       editDialogStore,
@@ -813,6 +815,7 @@
         markerStore,
         deleteStore,
         propertiesOpen,
+        libraryPropertiesOpen,
         shareOpen,
         clips,
         editDialogStore,
@@ -826,6 +829,7 @@
       deleteStore.multiDeleteConfirm = false;
       deleteStore.multiDeletePaths = [];
       propertiesOpen = false;
+      libraryPropertiesOpen = false;
       shareOpen = false;
       markerStore.tsEditMenu.visible = false;
       clips.clipDeleteConfirm.visible = false;
@@ -1123,22 +1127,30 @@
     setShareOpen: (v) => (shareOpen = v),
     deleteActions,
   });
-  const { propsCopyPath, propsOpenFolder, propsCopyAll, copyPropValue } =
-    createPropertiesActions({
-      getFile: () => ({
-        fileName,
-        filePath,
-        isVideo,
-        isPdf,
-        fileDimensions,
-        fileSize,
-        fileCreated,
-        fileModified,
-        durationDisplay,
-        mediaProps,
-      }),
-      getParentFolder,
-    });
+  const {
+    propsCopyPath,
+    propsOpenFolder,
+    propsCopyAll,
+    copyPropValue,
+    viewPropsOpenFolder,
+    viewPropsCopyPath,
+    viewPropsCopyAll,
+  } = createPropertiesActions({
+    getFile: () => ({
+      fileName,
+      filePath,
+      isVideo,
+      isPdf,
+      fileDimensions,
+      fileSize,
+      fileCreated,
+      fileModified,
+      durationDisplay,
+      mediaProps,
+    }),
+    getViewInfo: () => library.viewInfo,
+    getParentFolder,
+  });
   const handleGlobalMouseDown = createGlobalMouseHandler({
     contextMenuStore,
     menuStore: {
@@ -1232,6 +1244,12 @@
     volume,
     setVolume,
     propertiesOpen,
+    libraryPropertiesOpen,
+    onOpenLibraryProperties: () => (libraryPropertiesOpen = true),
+    onCloseLibraryProperties: () => (libraryPropertiesOpen = false),
+    viewPropsOpenFolder,
+    viewPropsCopyPath,
+    viewPropsCopyAll,
     shareOpen,
     fileCreated,
     fileModified,
@@ -1571,6 +1589,7 @@
     if (menuStore.libraryOpen && !prevLibraryOpen) {
       menuStore.saveViewerMenus();
     } else if (!menuStore.libraryOpen && prevLibraryOpen) {
+      libraryPropertiesOpen = false;
       library.clearSearch();
       menuStore.restoreViewerMenus();
     }

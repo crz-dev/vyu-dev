@@ -1,6 +1,7 @@
-import type { MediaProperties } from "$lib/shared/types";
+import type { LibraryViewInfo, MediaProperties } from "$lib/shared/types";
 import { invokeCopyImageToClipboard } from "$lib/features/media/api";
 import { locale } from "$lib/features/i18n/locale.svelte";
+import { formatByteSize, formatMetaDate } from "$lib/shared/fileMeta";
 
 export function showValue(v: string | undefined): string {
   return v && v.trim() ? v : locale.t("common.unknown");
@@ -91,5 +92,62 @@ export async function copyAllPropertiesToClipboard(
           `Path: ${filePath || "Unknown"}`,
         ]),
   ];
+  await navigator.clipboard.writeText(lines.join("\n"));
+}
+
+export async function copyViewPropertiesToClipboard(
+  info: LibraryViewInfo,
+  privacyMode = false,
+): Promise<void> {
+  const masked = "••••••••••••••••••";
+  const typeLabel =
+    info.kind === "folder"
+      ? "Folder"
+      : info.kind === "recents"
+        ? "Recents"
+        : info.kind === "favorites"
+          ? "Favorites"
+          : "Collections";
+  const lines = [`Type: ${typeLabel}`];
+
+  if (info.kind === "collections") {
+    lines.push(`Collections: ${info.collectionCount}`);
+    lines.push(`Linked folders: ${info.linkedCollectionCount}`);
+    lines.push(`Custom collections: ${info.customCollectionCount}`);
+  } else {
+    if (info.kind === "folder") {
+      lines.push(`Name: ${info.name}`);
+    }
+    lines.push(`Files: ${info.fileCount}`);
+    if (info.kind === "folder") {
+      lines.push(`Folders: ${info.folderCount}`);
+    }
+    lines.push(`Size: ${formatByteSize(info.totalSize)}`);
+    if (info.typeCounts.images > 0) {
+      lines.push(`Images: ${info.typeCounts.images}`);
+    }
+    if (info.typeCounts.videos > 0) {
+      lines.push(`Videos: ${info.typeCounts.videos}`);
+    }
+    if (info.typeCounts.audio > 0) {
+      lines.push(`Audio: ${info.typeCounts.audio}`);
+    }
+    if (info.typeCounts.documents > 0) {
+      lines.push(`Documents: ${info.typeCounts.documents}`);
+    }
+    if (info.kind === "folder") {
+      lines.push(
+        `Created: ${privacyMode ? masked : formatMetaDate(info.createdMs)}`,
+      );
+      lines.push(
+        `Modified: ${privacyMode ? masked : formatMetaDate(info.modifiedMs)}`,
+      );
+      if (!privacyMode) {
+        lines.push(`Folder: ${info.parent || "Unknown"}`);
+        lines.push(`Path: ${info.path || "Unknown"}`);
+      }
+    }
+  }
+
   await navigator.clipboard.writeText(lines.join("\n"));
 }

@@ -71,6 +71,36 @@ export interface BatchStatItem {
   birthtime_ms: number;
 }
 
+export interface LibraryTypeCounts {
+  images: number;
+  videos: number;
+  audio: number;
+  documents: number;
+}
+
+export type LibraryViewKind =
+  | "folder"
+  | "recents"
+  | "favorites"
+  | "collections";
+
+export interface LibraryViewInfo {
+  kind: LibraryViewKind;
+  path: string | null;
+  name: string;
+  parent: string | null;
+  fileCount: number;
+  folderCount: number;
+  totalSize: number;
+  loading: boolean;
+  createdMs: number | null;
+  modifiedMs: number | null;
+  typeCounts: LibraryTypeCounts;
+  collectionCount: number;
+  linkedCollectionCount: number;
+  customCollectionCount: number;
+}
+
 export interface CropBounds {
   left: number;
   top: number;

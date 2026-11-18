@@ -10,6 +10,8 @@
   "bar.audioDetails": "時間長度 · 位元率 · 檔案大小",
   "bar.clipSegments": "片段裁切",
   "bar.clipping": "裁切中",
+  "bar.collection_one": "{count} 個收藏集",
+  "bar.collection_other": "{count} 個收藏集",
   "bar.currentVolume": "目前音量",
   "bar.deleteOriginal": "刪除原始檔案",
   "bar.dragToMove": "拖曳以移動",

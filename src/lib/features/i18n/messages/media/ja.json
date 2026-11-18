@@ -10,6 +10,8 @@
   "bar.audioDetails": "長さ · ビットレート · ファイルサイズ",
   "bar.clipSegments": "クリップセグメント",
   "bar.clipping": "クリップ中",
+  "bar.collection_one": "{count} コレクション",
+  "bar.collection_other": "{count} コレクション",
   "bar.currentVolume": "現在の音量",
   "bar.deleteOriginal": "元ファイルを削除",
   "bar.dragToMove": "ドラッグして移動",

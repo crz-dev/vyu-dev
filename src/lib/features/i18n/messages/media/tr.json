@@ -10,6 +10,8 @@
   "bar.audioDetails": "Süre · Bit hızı · Dosya boyutu",
   "bar.clipSegments": "Klip bölümleri",
   "bar.clipping": "Kırpılma",
+  "bar.collection_one": "{count} koleksiyon",
+  "bar.collection_other": "{count} koleksiyon",
   "bar.currentVolume": "Geçerli ses düzeyi",
   "bar.deleteOriginal": "Orijinali sil",
   "bar.dragToMove": "Taşımak için sürükle",
