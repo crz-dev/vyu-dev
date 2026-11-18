@@ -19,6 +19,8 @@
   "bar.file_other": "{count} 个文件",
   "bar.fullscreen": "全屏",
   "bar.fullscreenAria": "切换全屏",
+  "bar.folders": "文件夹",
+  "bar.foldersAria": "显示或隐藏文件夹",
   "bar.headers": "标题",
   "bar.labels": "标签",
   "bar.labelsAria": "切换名称",

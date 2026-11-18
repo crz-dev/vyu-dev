@@ -19,6 +19,8 @@
   "bar.file_other": "파일 {count}개",
   "bar.fullscreen": "전체 화면",
   "bar.fullscreenAria": "전체 화면 전환",
+  "bar.folders": "폴더",
+  "bar.foldersAria": "폴더 표시 전환",
   "bar.headers": "머리글",
   "bar.labels": "라벨",
   "bar.labelsAria": "이름 전환",

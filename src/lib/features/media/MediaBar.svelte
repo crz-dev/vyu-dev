@@ -6,7 +6,6 @@
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
   import ViewMenu from "$lib/features/navigation/ViewMenu.svelte";
   import { library } from "$lib/features/library/library.svelte";
-  import { SORT_MODES } from "$lib/shared/constants";
   import type { SortMode } from "$lib/shared/constants";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
@@ -20,35 +19,6 @@
     return label ? ` (${label})` : "";
   }
 
-  const SORT_LABEL_KEYS: Record<string, string> = {
-    name: "menus.sort.name",
-    "date-modified": "menus.sort.date-modified",
-    size: "menus.sort.size",
-    type: "menus.sort.type",
-  };
-
-  const BASE_SORT_MODES = $derived(
-    SORT_MODES.map((mode) => ({
-      value: mode.value,
-      label: t(SORT_LABEL_KEYS[mode.value] ?? "menus.sort.name"),
-    })),
-  );
-
-  const RECENTS_SORT_MODES = $derived([
-    { value: "date-opened", label: t("media.bar.sortDateOpened") },
-    ...BASE_SORT_MODES,
-  ]);
-
-  const COLLECTIONS_SORT_MODES = $derived([
-    { value: "date-created", label: t("media.bar.sortDateCreated") },
-    ...BASE_SORT_MODES,
-  ]);
-
-  const FAVORITES_SORT_MODES = $derived([
-    { value: "date-favorited", label: t("media.bar.sortDateFavorited") },
-    ...BASE_SORT_MODES,
-  ]);
-
   function toggleDividers() {
     library.setDividersOn(!library.dividersOn);
   }
@@ -57,15 +27,9 @@
     library.setNamesOn(!library.namesOn);
   }
 
-  const SORT_ICONS: Record<string, string> = {
-    name: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>`,
-    "date-modified": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-    size: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
-    type: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
-    "date-opened": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-    "date-created": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>`,
-    "date-favorited": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-  };
+  function toggleFolders() {
+    library.setShowFolders(!library.showFolders);
+  }
 
   const VIEW_ICONS: Record<string, string> = {
     grid: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>`,
@@ -81,10 +45,6 @@
   let filePositionTooltipVisible = $state(true);
   let sortMenuX = $state(0);
   let sortMenuY = $state(0);
-
-  let libSortMenuVisible = $state(false);
-  let libSortMenuX = $state(0);
-  let libSortMenuY = $state(0);
 
   let viewMenuVisible = $state(false);
   let viewMenuX = $state(0);
@@ -246,7 +206,6 @@
   let previousLibraryOpen: boolean | null = null;
   $effect(() => {
     if (previousLibraryOpen !== null && previousLibraryOpen !== libraryOpen) {
-      libSortMenuVisible = false;
       viewMenuVisible = false;
       closeSortMenu();
     }
@@ -412,20 +371,6 @@
     toggleSortMenu();
   }
 
-  function handleLibSortClick(e: MouseEvent) {
-    e.stopPropagation();
-    const btn = e.currentTarget as HTMLElement;
-    const rect = btn.getBoundingClientRect();
-    libSortMenuX = rect.left + rect.width / 2;
-    libSortMenuY = rect.top;
-    libSortMenuVisible = !libSortMenuVisible;
-  }
-
-  function handleLibSortChange(mode: SortMode, desc: boolean) {
-    library.setSortMode(mode, desc);
-    libSortMenuVisible = false;
-  }
-
   function handleViewMenuClick(e: MouseEvent) {
     e.stopPropagation();
     const btn = e.currentTarget as HTMLElement;
@@ -499,30 +444,51 @@
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
-        class="fs-btn lib-sort-toggle tooltip-above-shift-right"
-        class:menu-active={libSortMenuVisible}
-        data-tooltip={t("media.bar.sortBy")}
-        onmousedown={handleLibSortClick}
-        aria-label={t("media.bar.sortByAria")}
-        aria-haspopup="menu"
-        aria-expanded={libSortMenuVisible}
+        class="fs-btn tooltip-above"
+        class:is-on={library.showFolders}
+        data-tooltip={t("media.bar.folders")}
+        onclick={toggleFolders}
+        aria-label={t("media.bar.foldersAria")}
+        aria-pressed={library.showFolders}
       >
-        {#key library.sortMode}
-          <span class="icon-swap" in:scale={{ duration: 150, start: 0.6 }}>
-            {@html SORT_ICONS[library.sortMode] || SORT_ICONS.name}
-          </span>
-        {/key}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          ><path
+            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /></svg
+        >
       </button>
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
-        class="fs-btn underline-btn tooltip-above"
-        class:underline-active={library.dividersOn}
+        class="fs-btn tooltip-above"
+        class:is-on={library.dividersOn}
         data-tooltip={t("media.bar.sectionHeaders")}
         onclick={toggleDividers}
         aria-label={t("media.bar.toggleDividersAria")}
+        aria-pressed={library.dividersOn}
       >
-        {t("media.bar.headers")}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          ><rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="2"
+            stroke="currentColor"
+            stroke-width="2"
+          /><line
+            x1="3"
+            y1="9"
+            x2="21"
+            y2="9"
+            stroke="currentColor"
+            stroke-width="2"
+          /></svg
+        >
       </button>
     </div>
   </div>
@@ -768,13 +734,30 @@
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
       <button
-        class="fs-btn underline-btn tooltip-above"
-        class:underline-active={library.namesOn}
+        class="fs-btn tooltip-above"
+        class:is-on={library.namesOn}
         data-tooltip={t("media.bar.fileLabels")}
         onclick={toggleNames}
         aria-label={t("media.bar.labelsAria")}
+        aria-pressed={library.namesOn}
       >
-        {t("media.bar.labels")}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          ><path
+            d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          /><line
+            x1="7"
+            y1="7"
+            x2="7.01"
+            y2="7"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          /></svg
+        >
       </button>
     </div>
     <div class="icon-slot" class:hidden={!libraryOpen}>
@@ -814,28 +797,6 @@
   {sortMode}
   {sortDesc}
   {onSortChange}
-/>
-
-<SortMenu
-  visible={libSortMenuVisible}
-  onClose={() => (libSortMenuVisible = false)}
-  x={libSortMenuX}
-  y={libSortMenuY}
-  sortMode={library.sortMode}
-  sortDesc={library.sortDesc}
-  onSortChange={handleLibSortChange}
-  modes={library.activeTab === "recents"
-    ? RECENTS_SORT_MODES
-    : library.activeTab === "collections"
-      ? COLLECTIONS_SORT_MODES
-      : library.activeTab === "favorites"
-        ? FAVORITES_SORT_MODES
-        : BASE_SORT_MODES}
-  separatorIndex={library.activeTab === "recents" ||
-  library.activeTab === "collections" ||
-  library.activeTab === "favorites"
-    ? 0
-    : -1}
 />
 
 <ViewMenu
@@ -1035,14 +996,14 @@
         justify-content: space-between;
       }
 
-      /* Match the viewer bar: 28px icon buttons and 4px group gaps, flush with
-         the bar's 8px padding. */
-      .bottombar.library-mode .underline-btn {
-        padding: 0 8px;
-        font-size: 12px;
-        line-height: 1;
-        justify-content: center;
-        min-width: 28px;
+      .bottombar.library-mode .bottombar-left,
+      .bottombar.library-mode .bottombar-right {
+        gap: 4px;
+      }
+
+      /* View toggles (folders / headers / labels) read white when enabled. */
+      .bottombar .fs-btn.is-on {
+        color: var(--text-primary);
       }
 
       .lib-view-toggle {

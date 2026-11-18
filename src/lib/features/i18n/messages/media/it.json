@@ -20,6 +20,8 @@
   "bar.file_other": "{count} file",
   "bar.fullscreen": "Schermo intero",
   "bar.fullscreenAria": "attiva/disattiva schermo intero",
+  "bar.folders": "Cartelle",
+  "bar.foldersAria": "Mostra o nascondi cartelle",
   "bar.headers": "Intestazioni",
   "bar.labels": "Etichette",
   "bar.labelsAria": "mostra/nascondi nomi",

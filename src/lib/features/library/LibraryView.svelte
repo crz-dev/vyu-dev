@@ -5,6 +5,8 @@
     AUDIO_EXTS,
     DOCUMENT_EXTS,
     ALL_EXTS_SET,
+    SORT_MODES,
+    type SortMode,
   } from "$lib/shared/constants";
   import {
     getFileExt,
@@ -27,6 +29,7 @@
     matchesLibrarySearch,
     parseLibrarySearch,
   } from "$lib/features/library/search";
+  import SortMenu from "$lib/features/navigation/SortMenu.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import type { BatchStatItem } from "$lib/shared/types";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -132,6 +135,9 @@
   let filterHintTimer: ReturnType<typeof setTimeout> | undefined;
   let searchRight = $state(8);
   let searchDismissed = $state(false);
+  let sortMenuVisible = $state(false);
+  let sortMenuX = $state(0);
+  let sortMenuY = $state(0);
   const searchExpanded = $derived(
     searchOpen || (library.searchActive && !filterOpen && !searchDismissed),
   );
@@ -164,6 +170,46 @@
       icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
     },
   ];
+
+  const SORT_LABEL_KEYS: Record<string, string> = {
+    name: "menus.sort.name",
+    "date-modified": "menus.sort.date-modified",
+    size: "menus.sort.size",
+    type: "menus.sort.type",
+  };
+
+  const BASE_SORT_MODES = $derived(
+    SORT_MODES.map((mode) => ({
+      value: mode.value,
+      label: t(SORT_LABEL_KEYS[mode.value] ?? "menus.sort.name"),
+    })),
+  );
+
+  const RECENTS_SORT_MODES = $derived([
+    { value: "date-opened", label: t("media.bar.sortDateOpened") },
+    ...BASE_SORT_MODES,
+  ]);
+
+  const COLLECTIONS_SORT_MODES = $derived([
+    { value: "date-created", label: t("media.bar.sortDateCreated") },
+    ...BASE_SORT_MODES,
+  ]);
+
+  const FAVORITES_SORT_MODES = $derived([
+    { value: "date-favorited", label: t("media.bar.sortDateFavorited") },
+    ...BASE_SORT_MODES,
+  ]);
+
+  const SORT_ICONS: Record<string, string> = {
+    name: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>`,
+    "date-modified": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    size: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>`,
+    type: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    "date-opened": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    "date-created": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>`,
+    "date-favorited": `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  };
+
   let observer: IntersectionObserver | null = null;
   let mounted = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
@@ -1295,6 +1341,19 @@
       return;
     }
     library.setFileKindVisible(kind, !library.fileFilters[kind]);
+  }
+
+  function handleSortClick(e: MouseEvent) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    sortMenuX = rect.left + rect.width / 2;
+    sortMenuY = rect.bottom;
+    sortMenuVisible = !sortMenuVisible;
+  }
+
+  function handleSortChange(mode: SortMode, desc: boolean) {
+    library.setSortMode(mode, desc);
+    sortMenuVisible = false;
   }
 
   // The hint bubble is anchored to the card; drop it when the card closes.
@@ -2443,11 +2502,26 @@
       </div>
     {/if}
 
+    <button
+      class="lib-sort-toggle fs-btn tooltip-below"
+      class:menu-active={sortMenuVisible}
+      style="right: {searchRight + 72}px;"
+      inert={filterOpen}
+      data-tooltip={t("media.bar.sortBy")}
+      onmousedown={handleSortClick}
+      aria-label={t("media.bar.sortByAria")}
+      aria-haspopup="menu"
+      aria-expanded={sortMenuVisible}
+    >
+      {@html SORT_ICONS[library.sortMode] || SORT_ICONS.name}
+    </button>
+
     <div
       class="lib-filter"
       class:expanded={filterOpen}
       class:no-motion={appearance.reducedMotion}
       style="right: {searchRight + 36}px;"
+      inert={searchExpanded}
       role="group"
       aria-label={t("library.filter.aria")}
       onfocusout={handleFilterFocusOut}
@@ -2585,6 +2659,29 @@
       {/if}
     </div>
   </div>
+
+  <SortMenu
+    visible={sortMenuVisible}
+    onClose={() => (sortMenuVisible = false)}
+    x={sortMenuX}
+    y={sortMenuY}
+    placement="down"
+    sortMode={library.sortMode}
+    sortDesc={library.sortDesc}
+    onSortChange={handleSortChange}
+    modes={library.activeTab === "recents"
+      ? RECENTS_SORT_MODES
+      : library.activeTab === "collections"
+        ? COLLECTIONS_SORT_MODES
+        : library.activeTab === "favorites"
+          ? FAVORITES_SORT_MODES
+          : BASE_SORT_MODES}
+    separatorIndex={library.activeTab === "recents" ||
+    library.activeTab === "collections" ||
+    library.activeTab === "favorites"
+      ? 0
+      : -1}
+  />
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
@@ -5249,8 +5346,14 @@
     background: var(--bg-primary, #0b0b0b);
   }
 
-  /* Right-side cluster: the cards sit next to the search and open leftwards.
-     row-reverse is permanent so the funnel never reorders while a card closes. */
+  /* Right-side cluster: sort, filter and search, all anchored from the right. */
+  .lib-sort-toggle {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    transform: translateY(-50%);
+  }
+
   .lib-filter {
     position: absolute;
     top: 50%;

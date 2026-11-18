@@ -20,6 +20,8 @@
   "bar.file_other": "{count} archivos",
   "bar.fullscreen": "Pantalla completa",
   "bar.fullscreenAria": "alternar pantalla completa",
+  "bar.folders": "Carpetas",
+  "bar.foldersAria": "Mostrar u ocultar carpetas",
   "bar.headers": "Encabezados",
   "bar.labels": "Etiquetas",
   "bar.labelsAria": "alternar nombres",

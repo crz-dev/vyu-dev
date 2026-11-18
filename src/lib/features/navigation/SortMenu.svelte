@@ -17,18 +17,21 @@
     onSortChange,
     modes = SORT_MODES,
     separatorIndex = -1,
+    placement = "up",
   }: {
     visible: boolean;
     onClose: () => void;
     /** Trigger center X in viewport pixels. */
     x: number;
-    /** Trigger top Y in viewport pixels. */
+    /** Trigger top Y (placement "up") or bottom Y ("down") in viewport pixels. */
     y: number;
     sortMode: SortMode;
     sortDesc: boolean;
     onSortChange: (mode: SortMode, desc: boolean) => void;
     modes?: ReadonlyArray<{ value: string; label: string }>;
     separatorIndex?: number;
+    /** Open above the trigger (default) or below it. */
+    placement?: "up" | "down";
   } = $props();
 
   const SORT_LABELS: Record<string, string> = {
@@ -65,7 +68,12 @@
     const maxLeft = Math.max(margin, window.innerWidth - width - margin);
     const maxTop = Math.max(margin, window.innerHeight - height - margin);
     const left = Math.max(margin, Math.min(x - width / 2, maxLeft));
-    const top = Math.max(margin, Math.min(y - gap - height, maxTop));
+    const top = Math.max(
+      margin,
+      placement === "down"
+        ? Math.min(y + gap, maxTop)
+        : Math.min(y - gap - height, maxTop),
+    );
 
     menu.style.left = `${left}px`;
     menu.style.top = `${top}px`;

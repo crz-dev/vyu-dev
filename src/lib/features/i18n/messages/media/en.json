@@ -20,6 +20,8 @@
   "bar.file_other": "{count} files",
   "bar.fullscreen": "Fullscreen",
   "bar.fullscreenAria": "toggle fullscreen",
+  "bar.folders": "Folders",
+  "bar.foldersAria": "Toggle folders",
   "bar.headers": "Headers",
   "bar.labels": "Labels",
   "bar.labelsAria": "toggle names",

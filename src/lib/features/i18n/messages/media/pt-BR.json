@@ -20,6 +20,8 @@
   "bar.file_other": "{count} arquivos",
   "bar.fullscreen": "Tela cheia",
   "bar.fullscreenAria": "alternar tela cheia",
+  "bar.folders": "Pastas",
+  "bar.foldersAria": "Mostrar ou ocultar pastas",
   "bar.headers": "Cabeçalhos",
   "bar.labels": "Rótulos",
   "bar.labelsAria": "alternar nomes",

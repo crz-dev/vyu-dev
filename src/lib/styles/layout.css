@@ -1087,23 +1087,6 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   gap: 6px;
 }
 
-/* Toggle buttons (Dividers / Names) */
-.underline-btn {
-  width: auto;
-  padding: 0 8px;
-  font-size: 11px;
-  font-family: var(--font-family);
-  font-weight: 500;
-  white-space: nowrap;
-  transition:
-    color 0.2s,
-    background-color 0.15s ease,
-    transform 0.15s ease;
-}
-.underline-btn.underline-active {
-  color: var(--text-primary);
-}
-
 /* Divider section headers */
 .divider-header {
   font-family: var(--font-family);

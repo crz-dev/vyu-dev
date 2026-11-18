@@ -20,6 +20,8 @@
   "bar.file_other": "{count} fichiers",
   "bar.fullscreen": "Plein écran",
   "bar.fullscreenAria": "basculer le plein écran",
+  "bar.folders": "Dossiers",
+  "bar.foldersAria": "Afficher ou masquer les dossiers",
   "bar.headers": "En-têtes",
   "bar.labels": "Libellés",
   "bar.labelsAria": "afficher ou masquer les noms",
