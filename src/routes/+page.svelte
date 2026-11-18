@@ -962,6 +962,26 @@
       const libraryOpen = menuStore.libraryOpen;
       const target = e.target as Element | null;
 
+      // Library tab cycling. This lives at the page level so it still works
+      // when focus is on the top or bottom bar.
+      if (
+        libraryOpen &&
+        e.key === "Tab" &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey &&
+        !isTypingTarget(e.target) &&
+        !libraryPropertiesOpen &&
+        document.querySelector(
+          ".delete-overlay, .library-dialog-overlay, [role='dialog']",
+        ) === null
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        library.cycleActiveTab(e.shiftKey ? -1 : 1);
+        return;
+      }
+
       // WebView2 owns Ctrl+F; suppress its find bar before anything else.
       if (isCtrlF) {
         e.preventDefault();

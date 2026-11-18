@@ -327,6 +327,12 @@ function createLibrary() {
     activeTab = tab;
   }
 
+  function cycleActiveTab(direction: -1 | 1) {
+    const index = TAB_ORDER.indexOf(activeTab);
+    const next = (index + direction + TAB_ORDER.length) % TAB_ORDER.length;
+    setActiveTab(TAB_ORDER[next]);
+  }
+
   let saveRecentFilesTimer: ReturnType<typeof setTimeout> | undefined;
 
   function flushRecentSave() {
@@ -850,6 +856,7 @@ function createLibrary() {
       return tabDirection;
     },
     setActiveTab,
+    cycleActiveTab,
     get recentFiles() {
       return recentFiles;
     },

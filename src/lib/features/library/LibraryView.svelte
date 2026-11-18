@@ -18,6 +18,7 @@
   import { tick, untrack } from "svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { isTypingTarget } from "$lib/features/keybinds/keybindUtils";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     getSections,
@@ -172,6 +173,7 @@
 
   let mounted = $state(false);
   let destroyed = false;
+  let keyboardCursorHidden = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
   let renderDividers = $state(library.dividersOn);
@@ -1467,6 +1469,61 @@
     setHighlight(highlightIndex + direction);
   }
 
+  function moveHighlightVertically(direction: -1 | 1) {
+    if (library.viewMode !== "grid" && library.viewMode !== "river") {
+      moveHighlight(direction);
+      return;
+    }
+    if (sortedFiles.length === 0 || !scrollEl) return;
+
+    const currentPath = sortedFiles[highlightIndex];
+    if (!currentPath) return;
+    const currentEl = scrollEl.querySelector<HTMLElement>(
+      `[data-path="${cssAttr(currentPath)}"]`,
+    );
+    if (!currentEl) {
+      // The virtualized grid may not have the current row mounted.
+      moveHighlight(direction);
+      return;
+    }
+
+    const fileSet = new Set(sortedFiles);
+    const currentRect = currentEl.getBoundingClientRect();
+    const currentCenterX = currentRect.left + currentRect.width / 2;
+    let bestPath: string | null = null;
+    let bestRowDistance = Infinity;
+    let bestCenterDistance = Infinity;
+
+    for (const el of scrollEl.querySelectorAll<HTMLElement>("[data-path]")) {
+      if (el === currentEl) continue;
+      const path = el.dataset.path;
+      if (!path || !fileSet.has(path)) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) continue;
+      const rowDistance =
+        direction < 0
+          ? currentRect.top - rect.bottom
+          : rect.top - currentRect.bottom;
+      if (rowDistance <= 0) continue;
+      const centerDistance = Math.abs(
+        rect.left + rect.width / 2 - currentCenterX,
+      );
+      const sameRow = Math.abs(rowDistance - bestRowDistance) < 1;
+      if (
+        rowDistance < bestRowDistance - 1 ||
+        (sameRow && centerDistance < bestCenterDistance)
+      ) {
+        bestRowDistance = rowDistance;
+        bestCenterDistance = centerDistance;
+        bestPath = path;
+      }
+    }
+
+    if (!bestPath) return;
+    const nextIndex = sortedFiles.indexOf(bestPath);
+    if (nextIndex !== -1) setHighlight(nextIndex);
+  }
+
   function jumpToEdge(last: boolean) {
     setHighlight(last ? sortedFiles.length - 1 : 0);
   }
@@ -1545,20 +1602,6 @@
       run(() => void deleteLibrarySelection());
       return;
     }
-    if (
-      keybindStore.matches("library-up", e) ||
-      keybindStore.matches("library-left", e)
-    ) {
-      run(() => moveHighlight(-1));
-      return;
-    }
-    if (
-      keybindStore.matches("library-down", e) ||
-      keybindStore.matches("library-right", e)
-    ) {
-      run(() => moveHighlight(1));
-      return;
-    }
   }
 
   function handleGlobalMouseDown(e: MouseEvent) {
@@ -1584,13 +1627,76 @@
     if (hadSearchFocus) viewEl?.focus({ preventScroll: true });
   }
 
+  function hideKeyboardCursor() {
+    keyboardCursorHidden = true;
+  }
+
+  function showKeyboardCursor() {
+    if (keyboardCursorHidden) keyboardCursorHidden = false;
+  }
+
+  $effect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("library-keyboard-nav", keyboardCursorHidden);
+    return () => root.classList.remove("library-keyboard-nav");
+  });
+
+  function isLibraryNavigationAllowed(e: KeyboardEvent): boolean {
+    if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return false;
+    if (e.defaultPrevented) return false;
+    if (isTypingTarget(e.target)) return false;
+    if (menuStore.isAnyOpenExceptLibrary) return false;
+    if (libCtxMenu.visible || colCtxMenu.visible) return false;
+    return (
+      document.querySelector(
+        ".library-dialog-overlay, .delete-overlay, [role='dialog'], [role='menu'], .context-menu, .sort-menu, .select-menu.open",
+      ) === null
+    );
+  }
+
   function handleGlobalKeydown(e: KeyboardEvent) {
-    if (e.key !== "Escape") return;
-    if (!libCtxMenu.visible && !colCtxMenu.visible) return;
-    e.preventDefault();
-    e.stopPropagation();
-    forceCloseLibCtxMenu();
-    forceCloseColCtxMenu();
+    if (e.key === "Escape" && (libCtxMenu.visible || colCtxMenu.visible)) {
+      e.preventDefault();
+      e.stopPropagation();
+      forceCloseLibCtxMenu();
+      forceCloseColCtxMenu();
+      return;
+    }
+
+    const isUp = keybindStore.matches("library-up", e);
+    const isDown = keybindStore.matches("library-down", e);
+    const isLeft = keybindStore.matches("library-left", e);
+    const isRight = keybindStore.matches("library-right", e);
+    if (!isUp && !isDown && !isLeft && !isRight) return;
+    if (!isLibraryNavigationAllowed(e)) return;
+
+    if (isUp) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideKeyboardCursor();
+      moveHighlightVertically(-1);
+      return;
+    }
+    if (isDown) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideKeyboardCursor();
+      moveHighlightVertically(1);
+      return;
+    }
+    if (isLeft) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideKeyboardCursor();
+      moveHighlight(-1);
+      return;
+    }
+    if (isRight) {
+      e.preventDefault();
+      e.stopPropagation();
+      hideKeyboardCursor();
+      moveHighlight(1);
+    }
   }
 
   // Virtualization tracking
@@ -2316,6 +2422,8 @@
 <svelte:window
   onmousedown={handleGlobalMouseDown}
   onclick={handleGlobalClick}
+  onpointermove={showKeyboardCursor}
+  onpointerdown={showKeyboardCursor}
   onkeydowncapture={handleGlobalKeydown}
 />
 
@@ -7135,5 +7243,11 @@
     pointer-events: none;
     z-index: 10;
     border-radius: 6px;
+  }
+  /* Hide the pointer while navigating with the keyboard. Any pointer
+     movement or press restores it. */
+  :global(html.library-keyboard-nav),
+  :global(html.library-keyboard-nav *) {
+    cursor: none !important;
   }
 </style>
