@@ -88,12 +88,10 @@ export interface LibraryViewInfo {
   kind: LibraryViewKind;
   path: string | null;
   name: string;
-  parent: string | null;
   fileCount: number;
   folderCount: number;
   totalSize: number;
   loading: boolean;
-  createdMs: number | null;
   modifiedMs: number | null;
   typeCounts: LibraryTypeCounts;
   collectionCount: number;

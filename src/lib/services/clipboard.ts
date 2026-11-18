@@ -137,13 +137,9 @@ export async function copyViewPropertiesToClipboard(
     }
     if (info.kind === "folder") {
       lines.push(
-        `Created: ${privacyMode ? masked : formatMetaDate(info.createdMs)}`,
-      );
-      lines.push(
         `Modified: ${privacyMode ? masked : formatMetaDate(info.modifiedMs)}`,
       );
       if (!privacyMode) {
-        lines.push(`Folder: ${info.parent || "Unknown"}`);
         lines.push(`Path: ${info.path || "Unknown"}`);
       }
     }

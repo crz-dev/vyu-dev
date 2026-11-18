@@ -475,12 +475,10 @@ function createLibrary() {
         kind: "collections",
         path: null,
         name: "",
-        parent: null,
         fileCount: 0,
         folderCount: 0,
         totalSize: 0,
         loading: false,
-        createdMs: null,
         modifiedMs: null,
         typeCounts: emptyTypeCounts(),
         collectionCount: source.collections.length,
@@ -497,12 +495,10 @@ function createLibrary() {
       kind: source.kind,
       path,
       name: path ? getFileName(path) : "",
-      parent: path ? getParentFolder(path) : null,
       fileCount: files.length,
       folderCount: isFolder ? source.folders.length : 0,
       totalSize: 0,
       loading: files.length > 0 || isFolder,
-      createdMs: null,
       modifiedMs: null,
       typeCounts: countFileTypes(files),
       collectionCount: 0,
@@ -527,13 +523,11 @@ function createLibrary() {
       ]);
       if (requestId !== viewInfoRequestId) return;
       const folderStat = isFolder ? stats[0] : undefined;
-      const created = folderStat?.birthtime_ms;
       const modified = folderStat?.mtime_ms;
       viewInfo = {
         ...base,
         totalSize: size,
         loading: false,
-        createdMs: created && created > 0 ? created : null,
         modifiedMs: modified && modified > 0 ? modified : null,
       };
     })();

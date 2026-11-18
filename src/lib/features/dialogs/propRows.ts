@@ -6,7 +6,7 @@ function bouncePropRow(event: MouseEvent | KeyboardEvent): void {
   )
     return;
   const row = (event.target as HTMLElement | null)?.closest<HTMLElement>(
-    ".props-row",
+    ".props-row, [data-copyable]",
   );
   if (!row) return;
   row.classList.remove("props-row-copied");

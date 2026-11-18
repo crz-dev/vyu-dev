@@ -1379,7 +1379,7 @@
         library.clearSearch();
       } else {
         searchOpen = false;
-        viewEl?.focus();
+        viewEl?.focus({ preventScroll: true });
       }
       return;
     }
@@ -1402,7 +1402,7 @@
     dismissSearch();
     // A click on a non-focusable area leaves focus on the body; hand it back
     // to the library so arrow-key navigation keeps working.
-    if (!next || next === document.body) viewEl?.focus();
+    if (!next || next === document.body) viewEl?.focus({ preventScroll: true });
   }
 
   // Ctrl+F (and the keybind action) bump the nonce instead of holding focus
@@ -1420,8 +1420,11 @@
 
   // Filtering rewrites the list under the highlight, so restart navigation
   // from the top instead of leaving it on an off-screen index.
+  let lastSearchQuery = library.searchQuery;
   $effect(() => {
-    library.searchQuery;
+    const query = library.searchQuery;
+    if (query === lastSearchQuery) return;
+    lastSearchQuery = query;
     highlightIndex = 0;
     scrollTop = 0;
     scrollEl?.scrollTo({ top: 0, behavior: "instant" });
@@ -1508,7 +1511,7 @@
       if (library.searchActive) {
         library.clearSearch();
         searchOpen = false;
-        viewEl?.focus();
+        viewEl?.focus({ preventScroll: true });
         return;
       }
       if (isViewingCollection) {
@@ -1578,7 +1581,7 @@
       return;
     const hadSearchFocus = searchEl.contains(document.activeElement);
     dismissSearch();
-    if (hadSearchFocus) viewEl?.focus();
+    if (hadSearchFocus) viewEl?.focus({ preventScroll: true });
   }
 
   function handleGlobalKeydown(e: KeyboardEvent) {
@@ -1741,10 +1744,11 @@
 
   $effect(() => {
     library.activeTab;
-    scrollTop = 0;
-    if (scrollEl) {
-      scrollEl.scrollTo({ top: 0, behavior: "instant" });
-    }
+    if (!scrollEl) return;
+    // The shared scroll container can clamp when the next tab is shorter.
+    // Mirror the real position so virtualization stays in sync without
+    // resetting the viewport.
+    scrollTop = scrollEl.scrollTop;
   });
 
   // Every rendered cell asks the shared service for its thumbnail. For the
@@ -2025,23 +2029,40 @@
   });
 
   // Filmstrip: scroll-to-current, wheel scroll, highlight tracking, section labels
+  let lastScrollTab = library.activeTab;
+  let lastScrollIndex = -1;
+  let lastScrollPath: string | undefined;
+  let lastScrollMode: string | null = null;
+  let lastScrollDensity = -1;
   $effect(() => {
     if (!scrollEl) return;
-    void library.viewMode;
-    void library.activeTab;
-    void currentIndex;
-    void library.density;
+    const tab = library.activeTab;
+    const viewMode = library.viewMode;
+    const index = currentIndex;
+    const density = library.density;
+    const currentPath =
+      index >= 0 && index < fileList.length ? fileList[index] : undefined;
+    const tabChanged = tab !== lastScrollTab;
+    const shouldScroll =
+      index !== lastScrollIndex ||
+      currentPath !== lastScrollPath ||
+      viewMode !== lastScrollMode ||
+      density !== lastScrollDensity;
+    lastScrollTab = tab;
+    lastScrollIndex = index;
+    lastScrollPath = currentPath;
+    lastScrollMode = viewMode;
+    lastScrollDensity = density;
 
-    if (library.viewMode !== "filmstrip") {
+    if (viewMode !== "filmstrip") {
       filmstripReadyKey = "";
-      // Grid/list: scroll current file into view
-      if (
-        fileList.length > 0 &&
-        currentIndex >= 0 &&
-        currentIndex < fileList.length
-      ) {
+      // Grid/list: keep the current file in view, but never move the viewport
+      // vertically while a tab swipe is animating or when unrelated state
+      // changes cause this effect to run again.
+      if (tabChanged || !shouldScroll) return;
+      if (currentPath) {
         const el = scrollEl.querySelector(
-          `[data-path="${cssAttr(fileList[currentIndex])}"]`,
+          `[data-path="${cssAttr(currentPath)}"]`,
         ) as HTMLElement | null;
         if (el)
           el.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
