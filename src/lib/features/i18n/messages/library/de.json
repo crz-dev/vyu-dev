@@ -40,7 +40,7 @@
   "filter.aria": "Dateien nach Typ filtern",
   "filter.tooltip": "Filtern",
   "header.off": "Aus",
-  "header.recentsLimitTooltip": "Limit für Zuletzt verwendet – ältere Dateien werden nach Anzahl oder Alter entfernt",
+  "header.recentsLimitTooltip": "Limit für Zuletzt verwendet (ältere Dateien werden nach Anzahl oder Alter entfernt)",
   "list.addFavorite": "Zu Favoriten hinzufügen...",
   "list.dateModified": "Geändert",
   "list.name": "Name",

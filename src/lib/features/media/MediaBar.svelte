@@ -501,8 +501,6 @@
       <button
         class="fs-btn lib-sort-toggle tooltip-above-shift-right"
         class:menu-active={libSortMenuVisible}
-        style:width={libraryOpen ? "auto" : undefined}
-        style:padding={libraryOpen ? "0 11px" : undefined}
         data-tooltip={t("media.bar.sortBy")}
         onmousedown={handleLibSortClick}
         aria-label={t("media.bar.sortByAria")}
@@ -520,8 +518,6 @@
       <button
         class="fs-btn underline-btn tooltip-above"
         class:underline-active={library.dividersOn}
-        style:padding={libraryOpen ? "0 3px" : undefined}
-        style:font-size={libraryOpen ? "12px" : undefined}
         data-tooltip={t("media.bar.sectionHeaders")}
         onclick={toggleDividers}
         aria-label={t("media.bar.toggleDividersAria")}
@@ -774,8 +770,6 @@
       <button
         class="fs-btn underline-btn tooltip-above"
         class:underline-active={library.namesOn}
-        style:padding={libraryOpen ? "0 3px" : undefined}
-        style:font-size={libraryOpen ? "12px" : undefined}
         data-tooltip={t("media.bar.fileLabels")}
         onclick={toggleNames}
         aria-label={t("media.bar.labelsAria")}
@@ -787,8 +781,6 @@
       <button
         class="lib-view-toggle fs-btn tooltip-above-shift-left"
         class:menu-active={viewMenuVisible}
-        style:width={libraryOpen ? "auto" : undefined}
-        style:padding={libraryOpen ? "0 11px" : undefined}
         data-tooltip={t("media.bar.viewMode")}
         onmousedown={handleViewMenuClick}
         aria-label={t("media.bar.viewMode")}
@@ -1043,22 +1035,14 @@
         justify-content: space-between;
       }
 
-      .bottombar.library-mode .bottombar-left {
-        gap: 1px;
-      }
-
-      .bottombar.library-mode .bottombar-right {
-        gap: 1px;
-      }
-
-      .bottombar.library-mode .fs-btn {
-        width: auto;
-        padding: 0 11px;
-      }
-
+      /* Match the viewer bar: 28px icon buttons and 4px group gaps, flush with
+         the bar's 8px padding. */
       .bottombar.library-mode .underline-btn {
-        padding: 0 3px;
+        padding: 0 8px;
         font-size: 12px;
+        line-height: 1;
+        justify-content: center;
+        min-width: 28px;
       }
 
       .lib-view-toggle {

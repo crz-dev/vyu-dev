@@ -40,7 +40,7 @@
   "filter.aria": "종류별로 파일 필터",
   "filter.tooltip": "필터",
   "header.off": "꺼짐",
-  "header.recentsLimitTooltip": "최근 항목 제한 — 오래된 파일은 개수나 기간에 따라 제외됩니다",
+  "header.recentsLimitTooltip": "최근 항목 제한 (오래된 파일은 개수나 기간에 따라 제외됩니다)",
   "list.addFavorite": "즐겨찾기에 추가...",
   "list.dateModified": "수정한 날짜",
   "list.name": "이름",

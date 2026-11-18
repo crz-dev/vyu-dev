@@ -130,12 +130,11 @@
   let filterOpen = $state(false);
   let filterHintVisible = $state(false);
   let filterHintTimer: ReturnType<typeof setTimeout> | undefined;
-  let filterLeft = $state(11);
   let searchRight = $state(8);
+  let searchDismissed = $state(false);
   const searchExpanded = $derived(
-    searchOpen || (library.searchActive && !filterOpen),
+    searchOpen || (library.searchActive && !filterOpen && !searchDismissed),
   );
-  const controlsOpen = $derived(filterOpen || searchExpanded);
   const hiddenFilterCount = $derived(
     Object.values(library.fileFilters).filter((visible) => !visible).length,
   );
@@ -1234,7 +1233,14 @@
   }
 
   function focusSearch() {
+    if (searchExpanded) {
+      searchDismissed = true;
+      searchOpen = false;
+      searchInputEl?.blur();
+      return;
+    }
     filterOpen = false;
+    searchDismissed = false;
     searchOpen = true;
     requestAnimationFrame(() => {
       searchInputEl?.focus();
@@ -1243,6 +1249,7 @@
   }
 
   function clearSearch() {
+    searchDismissed = false;
     library.clearSearch();
     searchInputEl?.focus();
   }
@@ -1301,20 +1308,12 @@
     };
   });
 
-  // Mirror the topbar's app button and close button so both header controls sit
-  // exactly under them, independent of topbar padding or button metrics.
+  // Keep the search control aligned to the topbar's close button.
   $effect(() => {
     const sync = () => {
-      const appBtn = document.querySelector<HTMLElement>("[data-topbar-app]");
       const closeBtn = document.querySelector<HTMLElement>(
         "[data-topbar-close]",
       );
-      if (appBtn) {
-        const rect = appBtn.getBoundingClientRect();
-        if (rect.width > 0) {
-          filterLeft = Math.round(rect.left + rect.width / 2 - 14);
-        }
-      }
       if (closeBtn) {
         const rect = closeBtn.getBoundingClientRect();
         if (rect.width > 0) {
@@ -1358,6 +1357,7 @@
   $effect(() => {
     if (library.searchFocusNonce === 0) return;
     filterOpen = false;
+    searchDismissed = false;
     searchOpen = true;
     requestAnimationFrame(() => {
       searchInputEl?.focus();
@@ -2164,7 +2164,6 @@
   class="library-view"
   tabindex="-1"
   bind:this={viewEl}
-  style="--lib-header-inset: {filterLeft + 6}px;"
   onkeydown={handleKeydown}
   onclick={() => {
     confirmRename();
@@ -2176,7 +2175,6 @@
 >
   <div
     class="library-tabs"
-    class:controls-open={controlsOpen}
     class:no-motion={appearance.reducedMotion}
     bind:this={tabsEl}
   >
@@ -2187,68 +2185,6 @@
       aria-hidden="true"
       style={`top: ${tabHighlight.top}px; height: ${tabHighlight.height}px; width: ${tabHighlight.width}px; transform: translateX(${tabHighlight.left}px);`}
     ></span>
-    <div
-      class="lib-filter"
-      class:expanded={filterOpen}
-      class:no-motion={appearance.reducedMotion}
-      style="left: {filterLeft}px;"
-      role="group"
-      aria-label={t("library.filter.aria")}
-      onfocusout={handleFilterFocusOut}
-      onkeydown={handleFilterKeydown}
-    >
-      <button
-        bind:this={filterBtnEl}
-        class="lib-filter-toggle tooltip-below-start tooltip-gap-lg"
-        data-tooltip={t("library.filter.tooltip")}
-        aria-label={t("library.filter.aria")}
-        aria-expanded={filterOpen}
-        onclick={toggleFilterRow}
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-        </svg>
-        {#if hiddenFilterCount > 0 && !filterOpen}
-          <span class="lib-filter-dot" aria-hidden="true"></span>
-        {/if}
-      </button>
-      <span class="lib-filter-divider" aria-hidden="true"></span>
-      <div class="lib-filter-chips" inert={!filterOpen}>
-        {#each filterKinds as meta (meta.kind)}
-          <button
-            class="lib-filter-chip tooltip-below-start tooltip-gap-lg"
-            class:on={library.fileFilters[meta.kind]}
-            class:tooltip-hidden={filterHintVisible &&
-              isFilterKindLocked(meta.kind)}
-            data-tooltip={t(meta.labelKey)}
-            aria-label={t(meta.labelKey)}
-            aria-pressed={library.fileFilters[meta.kind]}
-            aria-disabled={isFilterKindLocked(meta.kind)}
-            onmouseenter={() => {
-              if (isFilterKindLocked(meta.kind)) showFilterHint();
-            }}
-            onmouseleave={() => (filterHintVisible = false)}
-            onclick={() => toggleFilterKind(meta.kind)}
-          >
-            {@html meta.icon}
-          </button>
-        {/each}
-      </div>
-      {#if filterHintVisible}
-        <span class="lib-filter-hint" role="status"
-          >{t("settings.library.fileTypes.hint")}</span
-        >
-      {/if}
-    </div>
     <button
       class="library-tab"
       data-tab="library"
@@ -2280,123 +2216,77 @@
       onclick={() => library.setActiveTab("favorites")}
       >{t("library.tabs.favorites")}</button
     >
+  </div>
 
-    <div
-      class="library-search"
-      class:expanded={searchExpanded}
-      class:no-motion={appearance.reducedMotion}
-      role="search"
-      aria-label={t("library.search.aria")}
-      style="right: {searchRight}px;"
-      onfocusout={handleSearchFocusOut}
-    >
-      <button
-        class="library-search-toggle tooltip-below-end tooltip-gap-lg"
-        data-tooltip={`${t("library.search.open")}${shortcutSuffix("library-search")}`}
-        aria-label={t("library.search.aria")}
-        aria-expanded={searchExpanded}
-        onclick={focusSearch}
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="11" cy="11" r="7" />
-          <path d="M21 21l-4.35-4.35" />
-        </svg>
-        {#if library.searchActive && !searchExpanded}
-          <span class="library-search-dot" aria-hidden="true"></span>
-        {/if}
-      </button>
-      <input
-        bind:this={searchInputEl}
-        class="library-search-input"
-        type="search"
-        data-library-search
-        value={library.searchQuery}
-        placeholder={t("library.search.placeholder")}
-        aria-label={t("library.search.aria")}
-        aria-hidden={!searchExpanded}
-        tabindex={searchExpanded ? 0 : -1}
-        autocomplete="off"
-        spellcheck="false"
-        oninput={(e) => library.setSearchQuery(e.currentTarget.value)}
-        onkeydown={handleSearchKeydown}
-      />
-      {#if library.searchActive}
-        <span class="library-search-count" aria-live="polite" aria-atomic="true"
-          >{t("library.search.count", {
-            shown: searchResultCount,
-            total: searchTotal,
-          })}</span
-        >
-        <button
-          class="library-search-clear tooltip-below-end tooltip-gap-lg"
-          data-tooltip={t("library.search.clear")}
-          aria-label={t("library.search.clear")}
-          onclick={clearSearch}
-        >
+  <div class="library-toolbar">
+    {#if library.activeTab === "collections"}
+      <div class="library-collection-header">
+        {#if isViewingCollection}
+          {#each breadcrumb as seg, i}
+            {#if i > 0}
+              <span class="library-breadcrumb-sep">/</span>
+            {/if}
+            <button
+              class="library-breadcrumb-segment"
+              class:active={i === breadcrumb.length - 1}
+              onclick={() =>
+                seg.path === null
+                  ? library.closeCollection()
+                  : i === breadcrumb.length - 1
+                    ? invokeOpenDirectory(seg.path)
+                    : library.openCollection(seg.path)}
+            >
+              {#if i === 0}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><path
+                    d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                  /></svg
+                >
+              {/if}
+              {seg.label}
+              {#if i === breadcrumb.length - 1}
+                <span class="library-header-count">({collectionItemCount})</span
+                >
+              {/if}
+            </button>
+          {/each}
+        {:else}
           <svg
-            width="10"
-            height="10"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            stroke-width="2.5"
+            stroke-width="1.5"
             stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path
+              d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+            /></svg
           >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
-      {/if}
-    </div>
-  </div>
+          <span class="library-breadcrumb-segment active"
+            >{t("library.tabs.collections")}
+            <span class="library-header-count"
+              >({sortedCollections.length})</span
+            ></span
+          >
+        {/if}
+      </div>
+    {/if}
 
-  {#if library.activeTab === "collections"}
-    <div class="library-collection-header">
-      {#if isViewingCollection}
-        {#each breadcrumb as seg, i}
-          {#if i > 0}
-            <span class="library-breadcrumb-sep">/</span>
-          {/if}
-          <button
-            class="library-breadcrumb-segment"
-            class:active={i === breadcrumb.length - 1}
-            onclick={() =>
-              seg.path === null
-                ? library.closeCollection()
-                : i === breadcrumb.length - 1
-                  ? invokeOpenDirectory(seg.path)
-                  : library.openCollection(seg.path)}
-          >
-            {#if i === 0}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path
-                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                /></svg
-              >
-            {/if}
-            {seg.label}
-            {#if i === breadcrumb.length - 1}
-              <span class="library-header-count">({collectionItemCount})</span>
-            {/if}
-          </button>
-        {/each}
-      {:else}
+    {#if library.activeTab === "recents"}
+      <div
+        class="library-collection-header tooltip-ctrl tooltip-ctrl-right"
+        data-tooltip={t("library.header.recentsLimitTooltip")}
+      >
         <svg
           width="16"
           height="16"
@@ -2406,144 +2296,52 @@
           stroke-width="1.5"
           stroke-linecap="round"
           stroke-linejoin="round"
-          ><path
-            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+          ><circle cx="12" cy="12" r="10" /><polyline
+            points="12 6 12 12 16 14"
           /></svg
         >
         <span class="library-breadcrumb-segment active"
-          >{t("library.tabs.collections")}
-          <span class="library-header-count">({sortedCollections.length})</span
+          >{t("library.tabs.recents")}
+          {#if library.recentsDisabled || library.privacyMode}
+            <span class="library-header-count">({t("library.header.off")})</span
+            >
+          {:else}
+            <button
+              class="library-header-count"
+              class:warning={recentFilesWarning}
+              onclick={openRecentsSettings}
+              >({displayFilesRaw.length}/{library.recentFilesLimit})</button
+            >
+          {/if}
+        </span>
+      </div>
+    {/if}
+
+    {#if library.activeTab === "favorites"}
+      <div class="library-collection-header">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          ><polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+          /></svg
+        >
+        <span class="library-breadcrumb-segment active"
+          >{t("library.tabs.favorites")}
+          <span class="library-header-count">({displayFiles.length})</span
           ></span
         >
-      {/if}
-    </div>
-  {/if}
+      </div>
+    {/if}
 
-  {#if library.activeTab === "recents"}
-    <div class="library-collection-header">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><circle cx="12" cy="12" r="10" /><polyline
-          points="12 6 12 12 16 14"
-        /></svg
-      >
-      <span class="library-breadcrumb-segment active"
-        >{t("library.tabs.recents")}
-        {#if library.recentsDisabled || library.privacyMode}
-          <span class="library-header-count">({t("library.header.off")})</span>
-        {:else}
-          <button
-            class="library-header-count tooltip-ctrl"
-            class:warning={recentFilesWarning}
-            data-tooltip={t("library.header.recentsLimitTooltip")}
-            onclick={openRecentsSettings}
-            >({displayFilesRaw.length}/{library.recentFilesLimit})</button
-          >
-        {/if}
-      </span>
-    </div>
-  {/if}
-
-  {#if library.activeTab === "favorites"}
-    <div class="library-collection-header">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><polygon
-          points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-        /></svg
-      >
-      <span class="library-breadcrumb-segment active"
-        >{t("library.tabs.favorites")}
-        <span class="library-header-count">({displayFiles.length})</span></span
-      >
-    </div>
-  {/if}
-
-  {#if library.activeTab === "library" && !libraryDirPath}
-    <div class="library-collection-header">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        ><rect x="3" y="3" width="7" height="7" /><rect
-          x="14"
-          y="3"
-          width="7"
-          height="7"
-        /><rect x="14" y="14" width="7" height="7" /><rect
-          x="3"
-          y="14"
-          width="7"
-          height="7"
-        /></svg
-      >
-      <span class="library-breadcrumb-segment active"
-        >{t("library.tabs.library")}</span
-      >
-    </div>
-  {/if}
-
-  {#if library.activeTab === "library" && libraryDirPath}
-    <div class="library-collection-header">
-      {#if libraryBreadcrumb.length > 0}
-        {#each libraryBreadcrumb as seg, i}
-          {#if i > 0}
-            <span class="library-breadcrumb-sep">/</span>
-          {/if}
-          <button
-            class="library-breadcrumb-segment"
-            class:active={i === libraryBreadcrumb.length - 1}
-            onclick={() =>
-              i === libraryBreadcrumb.length - 1
-                ? invokeOpenDirectory(seg.path)
-                : (libraryDirPath = seg.path)}
-          >
-            {#if i === 0}
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><rect x="3" y="3" width="7" height="7" /><rect
-                  x="14"
-                  y="3"
-                  width="7"
-                  height="7"
-                /><rect x="14" y="14" width="7" height="7" /><rect
-                  x="3"
-                  y="14"
-                  width="7"
-                  height="7"
-                /></svg
-              >
-            {/if}
-            {i === 0 ? libraryRootName : seg.label}
-          </button>
-        {/each}
-      {:else}
+    {#if library.activeTab === "library" && !libraryDirPath}
+      <div class="library-collection-header">
         <svg
           width="16"
           height="16"
@@ -2565,16 +2363,228 @@
             height="7"
           /></svg
         >
-        <button
-          class="library-breadcrumb-segment active"
-          onclick={() => invokeOpenDirectory(libraryDirPath!)}
-          >{libraryRootName}
-          <span class="library-header-count">({displayFiles.length})</span
-          ></button
+        <span class="library-breadcrumb-segment active"
+          >{t("library.tabs.library")}</span
+        >
+      </div>
+    {/if}
+
+    {#if library.activeTab === "library" && libraryDirPath}
+      <div class="library-collection-header">
+        {#if libraryBreadcrumb.length > 0}
+          {#each libraryBreadcrumb as seg, i}
+            {#if i > 0}
+              <span class="library-breadcrumb-sep">/</span>
+            {/if}
+            <button
+              class="library-breadcrumb-segment"
+              class:active={i === libraryBreadcrumb.length - 1}
+              onclick={() =>
+                i === libraryBreadcrumb.length - 1
+                  ? invokeOpenDirectory(seg.path)
+                  : (libraryDirPath = seg.path)}
+            >
+              {#if i === 0}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect x="3" y="3" width="7" height="7" /><rect
+                    x="14"
+                    y="3"
+                    width="7"
+                    height="7"
+                  /><rect x="14" y="14" width="7" height="7" /><rect
+                    x="3"
+                    y="14"
+                    width="7"
+                    height="7"
+                  /></svg
+                >
+              {/if}
+              {i === 0 ? libraryRootName : seg.label}
+            </button>
+          {/each}
+        {:else}
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><rect x="3" y="3" width="7" height="7" /><rect
+              x="14"
+              y="3"
+              width="7"
+              height="7"
+            /><rect x="14" y="14" width="7" height="7" /><rect
+              x="3"
+              y="14"
+              width="7"
+              height="7"
+            /></svg
+          >
+          <button
+            class="library-breadcrumb-segment active"
+            onclick={() => invokeOpenDirectory(libraryDirPath!)}
+            >{libraryRootName}
+            <span class="library-header-count">({displayFiles.length})</span
+            ></button
+          >
+        {/if}
+      </div>
+    {/if}
+
+    <div
+      class="lib-filter"
+      class:expanded={filterOpen}
+      class:no-motion={appearance.reducedMotion}
+      style="right: {searchRight + 36}px;"
+      role="group"
+      aria-label={t("library.filter.aria")}
+      onfocusout={handleFilterFocusOut}
+      onkeydown={handleFilterKeydown}
+    >
+      <button
+        bind:this={filterBtnEl}
+        class="lib-filter-toggle tooltip-below"
+        data-tooltip={t("library.filter.tooltip")}
+        aria-label={t("library.filter.aria")}
+        aria-expanded={filterOpen}
+        onclick={toggleFilterRow}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+        {#if hiddenFilterCount > 0}
+          <span class="lib-filter-dot" aria-hidden="true"></span>
+        {/if}
+      </button>
+      <span class="lib-filter-divider" aria-hidden="true"></span>
+      <div class="lib-filter-chips" inert={!filterOpen}>
+        {#each filterKinds as meta (meta.kind)}
+          <button
+            class="lib-filter-chip tooltip-below"
+            class:on={library.fileFilters[meta.kind]}
+            class:tooltip-hidden={filterHintVisible &&
+              isFilterKindLocked(meta.kind)}
+            data-tooltip={t(meta.labelKey)}
+            aria-label={t(meta.labelKey)}
+            aria-pressed={library.fileFilters[meta.kind]}
+            aria-disabled={isFilterKindLocked(meta.kind)}
+            onmouseenter={() => {
+              if (isFilterKindLocked(meta.kind)) showFilterHint();
+            }}
+            onmouseleave={() => (filterHintVisible = false)}
+            onclick={() => toggleFilterKind(meta.kind)}
+          >
+            {@html meta.icon}
+          </button>
+        {/each}
+      </div>
+      {#if filterHintVisible}
+        <span class="lib-filter-hint" role="status"
+          >{t("settings.library.fileTypes.hint")}</span
         >
       {/if}
     </div>
-  {/if}
+
+    <div
+      class="library-search"
+      class:expanded={searchExpanded}
+      class:no-motion={appearance.reducedMotion}
+      role="search"
+      aria-label={t("library.search.aria")}
+      style="right: {searchRight}px;"
+      onfocusout={handleSearchFocusOut}
+    >
+      <button
+        class="library-search-toggle tooltip-below-end"
+        data-tooltip={`${t("library.search.open")}${shortcutSuffix("library-search")}`}
+        aria-label={t("library.search.aria")}
+        aria-expanded={searchExpanded}
+        onclick={focusSearch}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+        {#if library.searchActive}
+          <span class="library-search-dot" aria-hidden="true"></span>
+        {/if}
+      </button>
+      <input
+        bind:this={searchInputEl}
+        class="library-search-input"
+        type="search"
+        data-library-search
+        value={library.searchQuery}
+        placeholder={t("library.search.placeholder")}
+        aria-label={t("library.search.aria")}
+        aria-hidden={!searchExpanded}
+        tabindex={searchExpanded ? 0 : -1}
+        autocomplete="off"
+        spellcheck="false"
+        oninput={(e) => {
+          searchDismissed = false;
+          library.setSearchQuery(e.currentTarget.value);
+        }}
+        onkeydown={handleSearchKeydown}
+      />
+      {#if library.searchActive && searchExpanded}
+        <span class="library-search-count" aria-live="polite" aria-atomic="true"
+          >{t("library.search.count", {
+            shown: searchResultCount,
+            total: searchTotal,
+          })}</span
+        >
+        <button
+          class="library-search-clear tooltip-below-end"
+          data-tooltip={t("library.search.clear")}
+          aria-label={t("library.search.clear")}
+          onclick={clearSearch}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      {/if}
+    </div>
+  </div>
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
@@ -5189,19 +5199,6 @@
     transition-duration: 0ms;
   }
 
-  /* An expanded header control can reach the centred tabs at any width (large
-     font scale, narrow window). The highlight pill always yields; labels dim
-     only where the row is genuinely tight. */
-  .library-tabs.controls-open .library-tab-highlight {
-    opacity: 0;
-  }
-
-  @media (max-width: 880px) {
-    .library-tabs.controls-open .library-tab {
-      opacity: 0.35;
-    }
-  }
-
   .library-tab:hover {
     background: var(--bg-secondary, #111);
     color: var(--text-secondary, #ccc);
@@ -5219,10 +5216,8 @@
     color: #fff;
   }
 
-  /* Search sits absolutely so the centered tab row and the tab-highlight
-     measurements stay untouched while the field grows. The left/right offsets
-     are measured from the topbar app and close buttons at runtime; the values
-     here are the fallback before measurement. */
+  /* Search sits absolutely in the toolbar row; the right offset is measured
+     from the topbar close button at runtime (8px is the pre-measure fallback). */
   .library-search {
     position: absolute;
     top: 50%;
@@ -5234,14 +5229,15 @@
     gap: 6px;
     width: 28px;
     height: 30px;
-    padding: 0;
+    /* Right inset is reserved for the icon, so the field grows leftwards while
+       the magnifier stays put. */
+    padding: 0 32px 0 4px;
     border: 0.5px solid transparent;
     border-radius: 8px;
     background: transparent;
     box-sizing: border-box;
     transition:
       width 200ms cubic-bezier(0.65, 0, 0.35, 1),
-      padding 200ms cubic-bezier(0.65, 0, 0.35, 1),
       background 160ms ease,
       border-color 160ms ease;
   }
@@ -5249,36 +5245,30 @@
   .library-search.expanded {
     /* Scales with the window: 170px on a narrow window, ~340px on a wide one. */
     width: clamp(170px, 60px + 18vw, 340px);
-    padding: 0 4px;
     border-color: var(--bg-border, #2a2a2a);
     background: var(--bg-primary, #0b0b0b);
   }
 
-  .library-search:not(.expanded) {
-    gap: 0;
-  }
-
-  /* Mirrors the search: the collapsed box is centered under the topbar app
-     button and grows to the right into a type-filter card. */
+  /* Right-side cluster: the cards sit next to the search and open leftwards.
+     row-reverse is permanent so the funnel never reorders while a card closes. */
   .lib-filter {
     position: absolute;
     top: 50%;
-    left: 11px;
     z-index: 2;
     transform: translateY(-50%);
     display: flex;
+    flex-direction: row-reverse;
     align-items: center;
     gap: 4px;
     width: 28px;
     height: 30px;
-    padding: 0;
+    padding: 0 32px 0 4px;
     border: 0.5px solid transparent;
     border-radius: 8px;
     background: transparent;
     box-sizing: border-box;
     transition:
       width 200ms cubic-bezier(0.65, 0, 0.35, 1),
-      padding 200ms cubic-bezier(0.65, 0, 0.35, 1),
       background 160ms ease,
       border-color 160ms ease;
   }
@@ -5286,7 +5276,6 @@
   .lib-filter.expanded {
     /* Scales with the window: ~176px on a narrow window, 280px on a wide one. */
     width: clamp(176px, 70px + 11vw, 280px);
-    padding: 0 4px;
     border-color: var(--bg-border, #2a2a2a);
     background: var(--bg-primary, #0b0b0b);
   }
@@ -5301,8 +5290,10 @@
   }
 
   .lib-filter-toggle {
-    position: relative;
-    flex: 0 0 28px;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     display: grid;
     place-items: center;
     width: 28px;
@@ -5345,7 +5336,7 @@
     height: 16px;
     background: var(--bg-border, #2a2a2a);
     opacity: 0;
-    transition: opacity 100ms ease;
+    transition: opacity 140ms ease;
   }
 
   .lib-filter.expanded .lib-filter-divider {
@@ -5362,7 +5353,7 @@
     min-width: 0;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 100ms ease;
+    transition: opacity 140ms ease;
   }
 
   .lib-filter.expanded .lib-filter-chips {
@@ -5420,7 +5411,16 @@
     height: 4px;
     border-radius: 50%;
     background: var(--accent-blue, #3b82f6);
-    animation: lib-filter-dot-in 120ms ease both;
+    opacity: 0;
+    transform: scale(0.5);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  .lib-filter:not(.expanded) .lib-filter-dot {
+    opacity: 1;
+    transform: none;
   }
 
   .lib-filter-hint {
@@ -5463,18 +5463,7 @@
   }
 
   .lib-filter.no-motion .lib-filter-dot {
-    animation: none;
-  }
-
-  @keyframes lib-filter-dot-in {
-    from {
-      opacity: 0;
-      transform: scale(0.5);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+    transition: none;
   }
 
   /* Keep both header buttons clear of the centred tabs on narrow windows. */
@@ -5512,8 +5501,10 @@
   }
 
   .library-search-toggle {
-    position: relative;
-    flex: 0 0 28px;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     display: grid;
     place-items: center;
     width: 28px;
@@ -5556,7 +5547,7 @@
     font-family: var(--font-family);
     font-size: 12px;
     opacity: 0;
-    transition: opacity 120ms ease;
+    transition: opacity 160ms ease;
   }
 
   .library-search.expanded .library-search-input {
@@ -5590,11 +5581,20 @@
     height: 4px;
     border-radius: 50%;
     background: var(--accent-blue, #3b82f6);
-    animation: lib-filter-dot-in 120ms ease both;
+    opacity: 0;
+    transform: scale(0.5);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+  }
+
+  .library-search:not(.expanded) .library-search-dot {
+    opacity: 1;
+    transform: none;
   }
 
   .library-search.no-motion .library-search-dot {
-    animation: none;
+    transition: none;
   }
 
   @keyframes library-search-count-in {
@@ -5739,12 +5739,22 @@
     cursor: pointer;
   }
 
-  /* Collection header / breadcrumb. The leading icon is centred under the
-     filter button: 16px icon vs a 28px button, so the inset is filterLeft + 6. */
+  /* The expanded search paints over the filter on its own (same z-order, later
+     in the DOM), so no opacity trick is needed and closing stays fluid. */
+  .library-toolbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 32px;
+    flex-shrink: 0;
+  }
+
+  /* Collection header / breadcrumb, left-aligned in its toolbar row. */
   .library-collection-header {
     font-family: var(--font-family);
     font-size: 15px;
-    padding: 8px 24px 8px var(--lib-header-inset, 18px);
+    padding: 8px 24px;
     display: flex;
     align-items: center;
     gap: 6px;

@@ -40,7 +40,7 @@
   "filter.aria": "Filter files by type",
   "filter.tooltip": "Filter",
   "header.off": "Off",
-  "header.recentsLimitTooltip": "Recents limit — older files drop off by count or age",
+  "header.recentsLimitTooltip": "Recents limit (older files drop off by count or age)",
   "list.addFavorite": "Add to favorites...",
   "list.dateModified": "Date Modified",
   "list.name": "Name",

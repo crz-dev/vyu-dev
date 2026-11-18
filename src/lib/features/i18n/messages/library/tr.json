@@ -40,7 +40,7 @@
   "filter.aria": "Dosyaları türe göre filtrele",
   "filter.tooltip": "Filtrele",
   "header.off": "Kapalı",
-  "header.recentsLimitTooltip": "Son dosya sınırı — eski dosyalar sayıya veya yaşa göre düşer",
+  "header.recentsLimitTooltip": "Son dosya sınırı (eski dosyalar sayıya veya yaşa göre düşer)",
   "list.addFavorite": "Favorilere ekle...",
   "list.dateModified": "Değiştirilme tarihi",
   "list.name": "Ad",

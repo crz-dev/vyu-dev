@@ -40,7 +40,7 @@
   "filter.aria": "按类型筛选文件",
   "filter.tooltip": "筛选",
   "header.off": "已关闭",
-  "header.recentsLimitTooltip": "最近使用上限 — 较早的文件会按数量或时间被移除",
+  "header.recentsLimitTooltip": "最近使用上限 (较早的文件会按数量或时间被移除)",
   "list.addFavorite": "添加到收藏...",
   "list.dateModified": "修改日期",
   "list.name": "名称",

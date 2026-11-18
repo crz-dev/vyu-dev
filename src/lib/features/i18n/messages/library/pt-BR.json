@@ -40,7 +40,7 @@
   "filter.aria": "Filtrar arquivos por tipo",
   "filter.tooltip": "Filtrar",
   "header.off": "Desativado",
-  "header.recentsLimitTooltip": "Limite de recentes — arquivos mais antigos saem por quantidade ou idade",
+  "header.recentsLimitTooltip": "Limite de recentes (arquivos mais antigos saem por quantidade ou idade)",
   "list.addFavorite": "Adicionar aos favoritos...",
   "list.dateModified": "Data de modificação",
   "list.name": "Nome",

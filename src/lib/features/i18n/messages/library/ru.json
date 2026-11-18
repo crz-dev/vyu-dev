@@ -40,7 +40,7 @@
   "filter.aria": "Фильтр файлов по типу",
   "filter.tooltip": "Фильтр",
   "header.off": "Выкл.",
-  "header.recentsLimitTooltip": "Лимит недавних — старые файлы исчезают по количеству или сроку",
+  "header.recentsLimitTooltip": "Лимит недавних (старые файлы исчезают по количеству или сроку)",
   "list.addFavorite": "Добавить в избранное...",
   "list.dateModified": "Дата изменения",
   "list.name": "Имя",
