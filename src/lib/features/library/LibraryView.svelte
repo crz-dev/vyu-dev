@@ -15,7 +15,7 @@
   } from "$lib/services/files";
   import { cubicInOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -74,6 +74,8 @@
   const t = locale.t;
   const tp = locale.tp;
   const swipeDuration = $derived(appearance.reducedMotion ? 0 : 240);
+  const headerMotionMs = $derived(appearance.reducedMotion ? 0 : 180);
+  const labelMotionMs = $derived(appearance.reducedMotion ? 0 : 160);
 
   function shortcutSuffix(id: string): string {
     const label = keybindStore.label(id);
@@ -172,6 +174,8 @@
   let mounted = $state(false);
   let imageDims = $state<Record<string, { w: number; h: number }>>({});
   let highlightIndex = $state(0);
+  let renderDividers = $state(library.dividersOn);
+  let headersExiting = $state(false);
   let filmstripReady = $state(false);
   let filmstripReadyKey = "";
   let filmstripLastDensity = -1;
@@ -328,7 +332,7 @@
   const gridRowStep = $derived(gridRowHeight + GRID_GAP);
 
   const flatGridItems = $derived.by(() => {
-    if (library.viewMode !== "grid" || library.dividersOn) return null;
+    if (library.viewMode !== "grid" || renderDividers) return null;
     const items: { type: "folder" | "file"; path: string }[] = [];
     if (library.activeTab === "favorites") {
       items.push({ type: "file", path: "__add_favorite__" });
@@ -580,7 +584,7 @@
   );
 
   const sections = $derived(
-    library.dividersOn
+    renderDividers
       ? getSections(
           library.activeTab === "library"
             ? library.sortDesc
@@ -653,7 +657,7 @@
 
   const collectionSections = $derived.by(() => {
     const cols = sortedCollections;
-    if (!library.dividersOn || cols.length === 0) {
+    if (!renderDividers || cols.length === 0) {
       return [{ label: "", items: cols }];
     }
 
@@ -776,7 +780,7 @@
   });
 
   const displaySections = $derived(
-    library.dividersOn && sections.length > 0
+    renderDividers && sections.length > 0
       ? sections
       : library.activeTab === "library"
         ? [
@@ -1379,6 +1383,31 @@
     highlightIndex = 0;
     scrollTop = 0;
     scrollEl?.scrollTo({ top: 0, behavior: "instant" });
+  });
+
+  // Keep the section headers mounted through their exit animation before
+  // swapping back to the virtualized grid.
+  $effect(() => {
+    if (library.dividersOn) {
+      if (!renderDividers) {
+        const before = captureCellRects();
+        renderDividers = true;
+        headersExiting = false;
+        void tick().then(() => animateCellShift(before));
+      } else {
+        headersExiting = false;
+      }
+      return;
+    }
+    if (!renderDividers) return;
+    headersExiting = true;
+    const timer = setTimeout(() => {
+      const before = captureCellRects();
+      renderDividers = false;
+      headersExiting = false;
+      void tick().then(() => animateCellShift(before));
+    }, headerMotionMs + 20);
+    return () => clearTimeout(timer);
   });
 
   function setHighlight(index: number) {
@@ -2074,6 +2103,40 @@
     return path.replace(/\\/g, "\\\\");
   }
 
+  function captureCellRects(): Map<string, DOMRect> {
+    const rects = new Map<string, DOMRect>();
+    const cells = scrollEl?.querySelectorAll<HTMLElement>("[data-path]");
+    if (!cells) return rects;
+    for (const cell of cells) {
+      const path = cell.dataset.path;
+      if (path) rects.set(path, cell.getBoundingClientRect());
+    }
+    return rects;
+  }
+
+  // FLIP the visible cells so header layout changes read as movement instead
+  // of an instant reflow.
+  function animateCellShift(previous: Map<string, DOMRect>) {
+    if (appearance.reducedMotion || !scrollEl || previous.size === 0) return;
+    const cells = scrollEl.querySelectorAll<HTMLElement>("[data-path]");
+    for (const cell of cells) {
+      const path = cell.dataset.path;
+      const before = path ? previous.get(path) : undefined;
+      if (!before) continue;
+      const after = cell.getBoundingClientRect();
+      const dx = before.left - after.left;
+      const dy = before.top - after.top;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
+      cell.animate(
+        [
+          { transform: `translate(${dx}px, ${dy}px)` },
+          { transform: "translate(0, 0)" },
+        ],
+        { duration: 220, easing: "cubic-bezier(0.22, 0.9, 0.3, 1)" },
+      );
+    }
+  }
+
   function scrollHighlightIntoView() {
     const path = sortedFiles[highlightIndex];
     if (!path || !scrollEl) return;
@@ -2707,7 +2770,7 @@
           {/if}
           {#if showFileGrid && !searchHasNoResults}
             {#if library.viewMode === "grid"}
-              {#if gridVirtualRange && !library.dividersOn}
+              {#if gridVirtualRange && !renderDividers}
                 <!-- Virtualized grid (no dividers) -->
                 <div
                   class="library-grid"
@@ -2847,7 +2910,12 @@
                           <div class="library-placeholder"></div>
                         {/if}
                         {#if library.namesOn}
-                          <div class="file-name-label">{displayName(path)}</div>
+                          <div
+                            class="file-name-label"
+                            transition:fly={{ y: 8, duration: labelMotionMs }}
+                          >
+                            {displayName(path)}
+                          </div>
                         {/if}
                         <div
                           class="library-checkbox"
@@ -3032,7 +3100,11 @@
                   {/if}
                   {#each displaySections as section (section.label || "all")}
                     {#if section.label}
-                      <div class="divider-header" style="grid-column: 1 / -1;">
+                      <div
+                        class="divider-header"
+                        class:exiting={headersExiting}
+                        style="grid-column: 1 / -1;"
+                      >
                         {section.label}
                       </div>
                     {/if}
@@ -3085,7 +3157,10 @@
                             <div class="library-placeholder"></div>
                           {/if}
                           {#if library.namesOn}
-                            <div class="file-name-label">
+                            <div
+                              class="file-name-label"
+                              transition:fly={{ y: 8, duration: labelMotionMs }}
+                            >
                               {displayName(path)}
                             </div>
                           {/if}
@@ -3275,6 +3350,7 @@
                   {#if section.label}
                     <div
                       class="divider-header"
+                      class:exiting={headersExiting}
                       style="width: 100%; flex-shrink: 0;"
                     >
                       {section.label}
@@ -3355,7 +3431,12 @@
                           <div class="river-placeholder"></div>
                         {/if}
                         {#if library.namesOn}
-                          <div class="file-name-label">{displayName(path)}</div>
+                          <div
+                            class="file-name-label"
+                            transition:fly={{ y: 8, duration: labelMotionMs }}
+                          >
+                            {displayName(path)}
+                          </div>
                         {/if}
                         <div
                           class="library-checkbox"
@@ -3508,7 +3589,10 @@
                 {/if}
                 {#each filmstripSections as section (section.label || "all")}
                   {#if section.label}
-                    <div class="filmstrip-divider">
+                    <div
+                      class="filmstrip-divider"
+                      class:exiting={headersExiting}
+                    >
                       <span class="filmstrip-divider-label"
                         >{section.label}</span
                       >
@@ -3586,7 +3670,12 @@
                         <div class="filmstrip-placeholder"></div>
                       {/if}
                       {#if library.namesOn}
-                        <div class="file-name-label">{displayName(path)}</div>
+                        <div
+                          class="file-name-label"
+                          transition:fly={{ y: 8, duration: labelMotionMs }}
+                        >
+                          {displayName(path)}
+                        </div>
                       {/if}
                       <div
                         class="library-checkbox"
@@ -3903,7 +3992,10 @@
                 {/if}
                 {#each displaySections as section (section.label || "all")}
                   {#if section.label}
-                    <div class="list-divider-row">
+                    <div
+                      class="list-divider-row"
+                      class:exiting={headersExiting}
+                    >
                       {section.label}
                     </div>
                   {/if}
@@ -4252,7 +4344,11 @@
               </div>
               {#each collectionSections as section (section.label || "all")}
                 {#if section.label}
-                  <div class="divider-header" style="grid-column: 1 / -1;">
+                  <div
+                    class="divider-header"
+                    class:exiting={headersExiting}
+                    style="grid-column: 1 / -1;"
+                  >
                     {section.label}
                   </div>
                 {/if}
@@ -5167,7 +5263,6 @@
     margin: 4px 8px;
   }
 
-  .library-grid,
   .library-river,
   .library-list {
     animation: ss-fade-in 140ms ease-out both;
@@ -6002,6 +6097,33 @@
     padding: 10px 0 6px;
     position: relative;
     justify-content: flex-start;
+    animation: filmstrip-divider-in 180ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+
+  @keyframes filmstrip-divider-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .filmstrip-divider.exiting {
+    animation: filmstrip-divider-out 180ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+
+  @keyframes filmstrip-divider-out {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
   }
 
   .filmstrip-divider::after {
