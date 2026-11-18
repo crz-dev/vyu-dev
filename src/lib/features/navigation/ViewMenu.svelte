@@ -248,6 +248,16 @@
 {/if}
 
 <style>
+  /* Mirrors the sort menu that opens on the opposite side of the bar: the
+     header and option icons sit flush right. */
+  .sort-menu-header {
+    justify-content: flex-end;
+  }
+
+  .sort-menu-item {
+    flex-direction: row-reverse;
+  }
+
   .view-density-wrap {
     padding: 6px 10px;
   }

@@ -22,8 +22,6 @@
   "bar.file_other": "{count} файла",
   "bar.fullscreen": "Полный экран",
   "bar.fullscreenAria": "переключить полный экран",
-  "bar.folders": "Папки",
-  "bar.foldersAria": "Показать или скрыть папки",
   "bar.headers": "Заголовки",
   "bar.labels": "Подписи",
   "bar.labelsAria": "переключить названия",

@@ -19,8 +19,6 @@
   "bar.file_other": "{count} 個のファイル",
   "bar.fullscreen": "全画面表示",
   "bar.fullscreenAria": "全画面表示を切り替え",
-  "bar.folders": "フォルダー",
-  "bar.foldersAria": "フォルダーの表示を切り替え",
   "bar.headers": "見出し",
   "bar.labels": "ラベル",
   "bar.labelsAria": "名前を切り替え",

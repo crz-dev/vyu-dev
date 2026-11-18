@@ -197,7 +197,7 @@
   "sort.descending": "Descending",
   "sort.name": "Name",
   "sort.size": "Size",
-  "sort.title": "Sort files by",
+  "sort.title": "Sort by...",
   "sort.type": "Type",
   "thumbnail.openFile": "Open file",
   "view.filmstrip": "Filmstrip",
@@ -208,5 +208,5 @@
   "view.setMedium": "Set size to medium",
   "view.setSmall": "Set size to small",
   "view.thumbnailSize": "Thumbnail size",
-  "view.title": "View"
+  "view.title": "View in..."
 }
