@@ -15,6 +15,7 @@
   } from "$lib/services/files";
   import { cubicInOut } from "svelte/easing";
   import { fly } from "svelte/transition";
+  import { untrack } from "svelte";
   import { library } from "$lib/features/library/library.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -122,6 +123,7 @@
 
   let scrollEl: HTMLDivElement | null = $state(null);
   let viewEl: HTMLDivElement | null = $state(null);
+  let searchEl: HTMLDivElement | null = $state(null);
   let searchInputEl: HTMLInputElement | null = $state(null);
   let searchOpen = $state(false);
   const searchTokens = $derived(parseLibrarySearch(library.searchQuery));
@@ -135,6 +137,7 @@
   const searchExpanded = $derived(
     searchOpen || (library.searchActive && !filterOpen && !searchDismissed),
   );
+  const searchExtrasVisible = $derived(library.searchActive && searchExpanded);
   const hiddenFilterCount = $derived(
     Object.values(library.fileFilters).filter((visible) => !visible).length,
   );
@@ -370,15 +373,8 @@
   });
 
   const activePaths = $derived.by(() => {
-    if (library.viewMode === "filmstrip") {
-      if (highlightIndex >= 0 && highlightIndex < sortedFiles.length) {
-        return new Set([sortedFiles[highlightIndex]]);
-      }
-      return new Set<string>();
-    }
-    return currentIndex >= 0 && currentIndex < fileList.length
-      ? new Set([fileList[currentIndex]])
-      : new Set<string>();
+    const path = sortedFiles[highlightIndex];
+    return path ? new Set([path]) : new Set<string>();
   });
 
   const isPlaceholderTab = $derived(
@@ -1228,8 +1224,7 @@
   }
 
   function openHighlighted() {
-    if (library.searchActive && sortedFiles.length === 0) return;
-    const path = sortedFiles[highlightIndex] ?? fileList[currentIndex];
+    const path = sortedFiles[highlightIndex];
     if (path) onSelect(path);
   }
 
@@ -1250,10 +1245,10 @@
   }
 
   function clearSearch() {
-    searchDismissed = false;
-    searchOpen = true;
+    searchDismissed = true;
+    searchOpen = false;
     library.clearSearch();
-    searchInputEl?.focus();
+    viewEl?.focus({ preventScroll: true });
   }
 
   function toggleFilterRow() {
@@ -1348,10 +1343,20 @@
     }
   }
 
+  function dismissSearch() {
+    searchOpen = false;
+    // Keep the query and its filtered results; only close the input. The
+    // active search button stays highlighted.
+    searchDismissed = true;
+  }
+
   function handleSearchFocusOut(e: FocusEvent) {
     const next = e.relatedTarget as Node | null;
     if (next && (e.currentTarget as HTMLElement).contains(next)) return;
-    if (!library.searchActive) searchOpen = false;
+    dismissSearch();
+    // A click on a non-focusable area leaves focus on the body; hand it back
+    // to the library so arrow-key navigation keeps working.
+    if (!next || next === document.body) viewEl?.focus();
   }
 
   // Ctrl+F (and the keybind action) bump the nonce instead of holding focus
@@ -1376,34 +1381,20 @@
     scrollEl?.scrollTo({ top: 0, behavior: "instant" });
   });
 
-  function moveHighlight(direction: -1 | 1) {
+  function setHighlight(index: number) {
     if (sortedFiles.length === 0) return;
-    if (library.viewMode === "filmstrip") {
-      lastManualHighlight = performance.now();
-      highlightIndex = Math.max(
-        0,
-        Math.min(sortedFiles.length - 1, highlightIndex + direction),
-      );
-      scrollToFilmstripCell(sortedFiles[highlightIndex]);
-      return;
-    }
-    const idx = Math.max(
-      0,
-      Math.min(fileList.length - 1, currentIndex + direction),
-    );
-    if (idx !== currentIndex) onSelect(fileList[idx]);
+    const next = Math.max(0, Math.min(sortedFiles.length - 1, index));
+    if (next === highlightIndex) return;
+    highlightIndex = next;
+    scrollHighlightIntoView();
+  }
+
+  function moveHighlight(direction: -1 | 1) {
+    setHighlight(highlightIndex + direction);
   }
 
   function jumpToEdge(last: boolean) {
-    if (sortedFiles.length === 0) return;
-    if (library.viewMode === "filmstrip") {
-      lastManualHighlight = performance.now();
-      highlightIndex = last ? sortedFiles.length - 1 : 0;
-      scrollToFilmstripCell(sortedFiles[highlightIndex]);
-      return;
-    }
-    const path = last ? fileList[fileList.length - 1] : fileList[0];
-    if (path) onSelect(path);
+    setHighlight(last ? sortedFiles.length - 1 : 0);
   }
 
   async function deleteLibrarySelection() {
@@ -1471,7 +1462,7 @@
       run(() => jumpToEdge(true));
       return;
     }
-    if (keybindStore.matches("library-open", e)) {
+    if (keybindStore.matches("library-open", e) || e.key === " ") {
       if (target?.closest("button, [role='button'], a")) return;
       run(openHighlighted);
       return;
@@ -1494,15 +1485,6 @@
       run(() => moveHighlight(1));
       return;
     }
-
-    // Preserve the filmstrip Space alias alongside the configurable Enter key.
-    if (
-      library.viewMode === "filmstrip" &&
-      e.key === " " &&
-      !target?.closest("button, [role='button'], a")
-    ) {
-      run(openHighlighted);
-    }
   }
 
   function handleGlobalMouseDown(e: MouseEvent) {
@@ -1511,6 +1493,21 @@
     if (target?.closest(".context-menu")) return;
     closeLibCtxMenu();
     closeColCtxMenu();
+  }
+
+  function handleGlobalClick(e: MouseEvent) {
+    if (!library.searchActive && !searchExpanded) return;
+    const target = e.target as HTMLElement | null;
+    if (
+      !searchEl ||
+      !target ||
+      searchEl.contains(target) ||
+      target.closest(".context-menu")
+    )
+      return;
+    const hadSearchFocus = searchEl.contains(document.activeElement);
+    dismissSearch();
+    if (hadSearchFocus) viewEl?.focus();
   }
 
   function handleGlobalKeydown(e: KeyboardEvent) {
@@ -1915,16 +1912,21 @@
     };
   });
 
-  // Sync filmstrip highlight to current file (separate from scroll effect)
+  // Keep the library selector on the current file when the list changes;
+  // arrow navigation then moves it without touching the viewer.
   $effect(() => {
-    if (library.viewMode !== "filmstrip") return;
     void currentIndex;
-    if (currentIndex >= 0 && currentIndex < fileList.length) {
-      const idx = sortedFiles.indexOf(fileList[currentIndex]);
-      if (idx >= 0) highlightIndex = idx;
-    } else {
-      highlightIndex = 0;
-    }
+    void library.activeTab;
+    void library.activeCollectionPath;
+    void library.sortMode;
+    void library.sortDesc;
+    const files = untrack(() => sortedFiles);
+    const currentPath =
+      currentIndex >= 0 && currentIndex < fileList.length
+        ? fileList[currentIndex]
+        : undefined;
+    const idx = currentPath ? files.indexOf(currentPath) : -1;
+    highlightIndex = idx >= 0 ? idx : 0;
   });
 
   // Filmstrip: scroll-to-current, wheel scroll, highlight tracking, section labels
@@ -2072,6 +2074,43 @@
     return path.replace(/\\/g, "\\\\");
   }
 
+  function scrollHighlightIntoView() {
+    const path = sortedFiles[highlightIndex];
+    if (!path || !scrollEl) return;
+    if (library.viewMode === "filmstrip") {
+      lastManualHighlight = performance.now();
+      scrollToFilmstripCell(path);
+      return;
+    }
+    const selector = `[data-path="${cssAttr(path)}"]`;
+    const focusCell = () => {
+      const el = scrollEl?.querySelector(selector) as HTMLElement | null;
+      if (!el) return false;
+      el.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
+      el.focus({ preventScroll: true });
+      return true;
+    };
+    if (focusCell()) return;
+    // The virtualized grid only renders the visible rows, so move the scroll
+    // window first and focus the cell once it exists.
+    if (library.viewMode === "grid" && gridVirtualRange) {
+      const row = Math.floor(highlightIndex / gridColCount);
+      const rowTop = row * gridRowStep;
+      const rowBottom = rowTop + gridRowStep;
+      const viewTop = scrollEl.scrollTop;
+      const viewHeight = scrollEl.clientHeight;
+      let target = viewTop;
+      if (rowTop < viewTop) target = rowTop;
+      else if (rowBottom > viewTop + viewHeight)
+        target = rowBottom - viewHeight;
+      if (target !== viewTop) {
+        scrollEl.scrollTop = target;
+        scrollTop = target;
+      }
+      requestAnimationFrame(focusCell);
+    }
+  }
+
   function scrollToFilmstripCell(path: string) {
     const strip = scrollEl?.querySelector(
       ".library-filmstrip",
@@ -2126,6 +2165,7 @@
 
 <svelte:window
   onmousedown={handleGlobalMouseDown}
+  onclick={handleGlobalClick}
   onkeydowncapture={handleGlobalKeydown}
 />
 
@@ -2514,24 +2554,23 @@
       role="search"
       aria-label={t("library.search.aria")}
       style="right: {searchRight}px;"
+      bind:this={searchEl}
       onfocusout={handleSearchFocusOut}
     >
-      <button
-        class="library-search-toggle tooltip-below-end"
-        class:is-on={library.searchActive}
-        data-tooltip={library.searchActive
-          ? t("library.search.clear")
-          : `${t("library.search.open")}${shortcutSuffix("library-search")}`}
-        aria-label={library.searchActive
-          ? t("library.search.clear")
-          : t("library.search.aria")}
-        aria-expanded={library.searchActive ? undefined : searchExpanded}
-        onclick={library.searchActive ? clearSearch : focusSearch}
-      >
-        {#if library.searchActive}
+      {#if searchExtrasVisible}
+        <button
+          class="library-search-clear tooltip-below-start"
+          transition:fly={{
+            x: -6,
+            duration: appearance.reducedMotion ? 0 : 200,
+          }}
+          data-tooltip={t("library.search.clear")}
+          aria-label={t("library.search.clear")}
+          onclick={clearSearch}
+        >
           <svg
-            width="12"
-            height="12"
+            width="10"
+            height="10"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -2540,22 +2579,8 @@
           >
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
-        {:else}
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-        {/if}
-      </button>
+        </button>
+      {/if}
       <input
         bind:this={searchInputEl}
         class="library-search-input"
@@ -2574,14 +2599,43 @@
         }}
         onkeydown={handleSearchKeydown}
       />
-      {#if library.searchActive && searchExpanded}
-        <span class="library-search-count" aria-live="polite" aria-atomic="true"
+      {#if searchExtrasVisible}
+        <span
+          class="library-search-count"
+          transition:fly={{
+            x: 6,
+            duration: appearance.reducedMotion ? 0 : 200,
+          }}
+          aria-live="polite"
+          aria-atomic="true"
           >{t("library.search.count", {
             shown: searchResultCount,
             total: searchTotal,
           })}</span
         >
       {/if}
+      <button
+        class="library-search-toggle tooltip-below-end"
+        class:is-on={library.searchActive}
+        data-tooltip={`${t("library.search.open")}${shortcutSuffix("library-search")}`}
+        aria-label={t("library.search.aria")}
+        aria-expanded={searchExpanded}
+        onclick={focusSearch}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -5225,7 +5279,6 @@
     transform: translateY(-50%);
     display: flex;
     align-items: center;
-    gap: 6px;
     width: 28px;
     height: 30px;
     /* Right inset is reserved for the icon, so the field grows leftwards while
@@ -5485,6 +5538,12 @@
     transition: none;
   }
 
+  .library-search.no-motion .library-search-input,
+  .library-search.no-motion .library-search-clear,
+  .library-search.no-motion .library-search-count {
+    transition: none;
+  }
+
   .library-search-toggle {
     position: absolute;
     right: 0;
@@ -5546,12 +5605,16 @@
     font-family: var(--font-family);
     font-size: 12px;
     opacity: 0;
-    transition: opacity 160ms ease;
+    transform: translateX(-4px);
+    transition:
+      opacity 200ms ease,
+      transform 200ms cubic-bezier(0.65, 0, 0.35, 1);
   }
 
   .library-search.expanded .library-search-input {
     opacity: 1;
-    transition-delay: 60ms;
+    transform: none;
+    transition-delay: 50ms;
   }
 
   .library-search-input::placeholder {
@@ -5563,28 +5626,40 @@
   }
 
   .library-search-count {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-left: 6px;
+    overflow: hidden;
     color: var(--text-hint, #555);
     font-family: var(--font-family);
     font-size: 11px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    animation: library-search-count-in 140ms ease both;
   }
 
-  @keyframes library-search-count-in {
-    from {
-      opacity: 0;
-      transform: translateX(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+  .library-search-clear {
+    flex: 0 1 18px;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    min-width: 0;
+    height: 18px;
+    margin-right: 2px;
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--text-muted, #888);
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
   }
 
-  .library-search.no-motion .library-search-count {
-    animation: none;
+  .library-search-clear:hover {
+    background: var(--bg-elevated, #1a1a1a);
+    color: var(--text-primary, #fff);
   }
 
   .library-search-empty {

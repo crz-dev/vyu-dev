@@ -1075,12 +1075,6 @@
         gap: 4px;
       }
 
-      /* View toggles (headers / labels) highlight when enabled. */
-      .bottombar .fs-btn.is-on {
-        background: var(--bg-elevated);
-        color: var(--text-primary);
-      }
-
       .lib-view-toggle {
         line-height: 0;
       }

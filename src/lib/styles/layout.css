@@ -746,6 +746,10 @@ main:not(.fullscreen).thumbnail-bar-open {
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.05);
 }
+.fs-btn.is-on {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
 .fs-btn:active {
   transform: scale(0.96);
 }
