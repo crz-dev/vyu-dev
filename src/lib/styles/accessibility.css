@@ -84,6 +84,21 @@ html:not([data-a11y-focus-highlight="true"]):not([data-a11y-focus="true"])
   box-shadow: none !important;
 }
 
+/* Focus rings drawn on a wrapper or sibling of the focused control. */
+html:not([data-a11y-focus-highlight="true"]):not([data-a11y-focus="true"])
+  .pip-volume:focus-within,
+html:not([data-a11y-focus-highlight="true"]):not([data-a11y-focus="true"])
+  .delete-confirm-dialog
+  .delete-toggles
+  .toggle-row
+  input:focus-visible
+  + .toggle-track,
+html:not([data-a11y-focus-highlight="true"]):not([data-a11y-focus="true"])
+  .empty:focus-visible
+  .empty-icon-frame {
+  box-shadow: none !important;
+}
+
 /* Bold text */
 html[data-a11y-bold="true"]
   :where(
