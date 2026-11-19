@@ -136,11 +136,12 @@
 
   // Keep the empty-state filename in the current language when no file is open.
   $effect(() => {
-    if (!filePath) fileName = t("shell.noFileOpen");
+    if (!filePath && !isRemote) fileName = t("shell.noFileOpen");
   });
   let isVideo = $state(false);
   let isAudio = $state(false);
   let isPdf = $state(false);
+  let isRemote = $state(false);
   let cdColor = $state("var(--green)");
   let cdColorIndex = $state(0);
   let showCdColorPicker = $state(false);
@@ -227,7 +228,7 @@
   let previousTrackPath = "";
 
   $effect(() => {
-    const path = isVideo && !isGifVideo ? filePath : "";
+    const path = isVideo && !isGifVideo && !isRemote ? filePath : "";
     if (path === previousTrackPath) return;
     previousTrackPath = path;
     menuStore.audioTrackMenuOpen = false;
@@ -767,6 +768,7 @@
     setIsVideo: (v) => (isVideo = v),
     setIsAudio: (v) => (isAudio = v),
     setIsPdf: (v) => (isPdf = v),
+    setIsRemote: (v) => (isRemote = v),
     setFileList: (v) => (fileList = v),
     setCurrentIndex: (v) => (currentIndex = v),
     setFileSize: (v) => (fileSize = v),
@@ -805,6 +807,7 @@
     getCropContainerEl: () => cropContainerEl,
     getSortMode: () => sort.mode,
     getSortDesc: () => sort.desc,
+    getIsRemote: () => isRemote,
     getPlaybackUI: () => playbackUI,
     getViewerEl: () => viewerEl,
     getViewerContentSize,
@@ -818,6 +821,8 @@
   });
   const {
     loadFile,
+    openUrl,
+    handleRemoteError,
     navigate,
     navigateToIndex,
     navigateToEdge,
@@ -1377,6 +1382,7 @@
     fileName,
     fileSrc,
     filePath,
+    isRemote,
     fileList,
     currentIndex,
     isVideo,
@@ -1552,6 +1558,7 @@
     rawDurationSecs: { get: () => rawDurationSecs },
     playbackUI,
     loadFile,
+    openUrl,
     setDragDropActive: (active) => (dragDropActive = active),
     openLibrary: () => (menuStore.libraryOpen = true),
     saveResumePosition: saveCurrentPosition,
@@ -1909,6 +1916,7 @@
       {isPdf}
       {fileName}
       {filePath}
+      {isRemote}
       bind:viewerEl
       bind:imageEl
       bind:videoEl
@@ -1976,6 +1984,7 @@
       {removeResumePoint}
       {handlePrevClick}
       {handleNextClick}
+      onRemoteError={handleRemoteError}
       {toggleTimer}
       {currentTimeDisplay}
       {durationDisplay}

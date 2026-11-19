@@ -4,6 +4,12 @@
   import Controls from "$lib/components/Controls.svelte";
   import SubtitleOverlay from "$lib/features/viewer/SubtitleOverlay.svelte";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+  import {
+    attachHls,
+    canPlayHlsNatively,
+    type HlsHandle,
+  } from "$lib/features/media/hls";
+  import { isHlsUrl } from "$lib/shared/mediaKind";
   import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
@@ -11,6 +17,7 @@
 
   let {
     fileSrc,
+    isRemote,
     tracks,
     videoEl = $bindable(null),
     onVideoLoad,
@@ -33,6 +40,7 @@
     currentIndex,
   }: {
     fileSrc: string;
+    isRemote: boolean;
     tracks: TrackSelectionStore;
     videoEl: HTMLVideoElement | null;
     onVideoLoad: () => void;
@@ -57,6 +65,40 @@
 
   let videoInnerEl = $state<HTMLDivElement | null>(null);
   let subtitleTrackEl = $state<HTMLTrackElement | null>(null);
+  let hlsHandle: HlsHandle | null = null;
+
+  const isHlsSource = $derived(isHlsUrl(fileSrc));
+  const nativeHls = $derived(!!videoEl && canPlayHlsNatively(videoEl));
+  const useHlsJs = $derived(isHlsSource && !nativeHls);
+
+  $effect(() => {
+    const el = videoEl;
+    const url = fileSrc;
+    if (!el || !url || !isHlsUrl(url) || canPlayHlsNatively(el)) return;
+
+    let disposed = false;
+    void attachHls(el, url, onVideoError)
+      .then((handle) => {
+        if (disposed) {
+          handle?.destroy();
+          return;
+        }
+        if (!handle) {
+          onVideoError();
+          return;
+        }
+        hlsHandle = handle;
+      })
+      .catch(() => {
+        if (!disposed) onVideoError();
+      });
+
+    return () => {
+      disposed = true;
+      hlsHandle?.destroy();
+      hlsHandle = null;
+    };
+  });
 
   function handleSubtitleLoad() {
     if (subtitleTrackEl) subtitleTrackEl.track.mode = "hidden";
@@ -87,10 +129,10 @@
         <!-- svelte-ignore a11y_media_has_caption -->
         <video
           bind:this={videoEl}
-          src={tracks.activeVideoSrc || fileSrc}
-          crossorigin="anonymous"
+          src={useHlsJs ? undefined : tracks.activeVideoSrc || fileSrc}
+          crossorigin={isRemote ? undefined : "anonymous"}
           preload="metadata"
-          autoplay={playbackPrefs.autoplay || slideshowActive}
+          autoplay={playbackPrefs.autoplay || slideshowActive || isRemote}
           onloadedmetadata={onVideoLoad}
           onerror={onVideoError}
           onended={onMediaEnded}

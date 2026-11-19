@@ -35,6 +35,7 @@
     isPdf,
     fileName,
     filePath,
+    isRemote,
     viewerEl = $bindable(null),
     imageEl = $bindable(null),
     videoEl = $bindable(null),
@@ -102,6 +103,7 @@
     removeResumePoint,
     handlePrevClick,
     handleNextClick,
+    onRemoteError,
     toggleTimer,
     currentTimeDisplay,
     durationDisplay,
@@ -132,6 +134,7 @@
     isPdf: boolean;
     fileName: string;
     filePath: string;
+    isRemote: boolean;
     viewerEl: HTMLElement | null;
     imageEl: HTMLImageElement | null;
     videoEl: HTMLVideoElement | null;
@@ -198,6 +201,7 @@
     removeResumePoint: () => void;
     handlePrevClick: () => void;
     handleNextClick: () => void;
+    onRemoteError: () => void;
     toggleTimer: () => void;
     currentTimeDisplay: () => string;
     durationDisplay: string;
@@ -507,10 +511,16 @@
     {:else if fileSrc && isVideo}
       <VideoView
         {fileSrc}
+        {isRemote}
         {tracks}
         bind:videoEl
         {onVideoLoad}
         onVideoError={() => {
+          if (!fileSrc) return;
+          if (isRemote) {
+            onRemoteError();
+            return;
+          }
           if (!tracks.onVideoSourceError()) corruption.onVideoError(videoEl);
         }}
         {onMediaEnded}
@@ -567,13 +577,18 @@
         {fileSrc}
         {filePath}
         {fileName}
+        {isRemote}
         bind:cdColor
         bind:cdColorIndex
         bind:showCdColorPicker
         {coverArtSrc}
         bind:audioEl
         {onAudioLoad}
-        onAudioError={() => corruption.onAudioError(audioEl)}
+        onAudioError={() => {
+          if (!fileSrc) return;
+          if (isRemote) onRemoteError();
+          else corruption.onAudioError(audioEl);
+        }}
         onAudioEnded={onMediaEnded}
         bind:playing
         loopMode={loopModeStore.loopMode}
@@ -673,7 +688,8 @@
         </span>
         <span class="empty-copy">
           <span class="empty-text">Open a file</span>
-          <span class="empty-hint">Drag &amp; drop or paste an image</span>
+          <span class="empty-hint">Drag &amp; drop or paste a file or link</span
+          >
         </span>
       </button>
     {/if}

@@ -441,7 +441,7 @@
         class="filename filename-btn"
         onmouseenter={showFilenameTooltip}
         onmouseleave={hideFilenameTooltip}
-        onclick={(e) => fileSrc && startEditing(e.currentTarget)}
+        onclick={(e) => filePath && fileSrc && startEditing(e.currentTarget)}
         aria-label={t("menus.app.renameFile")}
         ><Marquee
           text={fileName}

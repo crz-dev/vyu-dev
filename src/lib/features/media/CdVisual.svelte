@@ -8,6 +8,7 @@
   let {
     progress = 0,
     audioEl,
+    isRemote = false,
     duration,
     currentTime,
     onScrubStart,
@@ -20,6 +21,7 @@
   }: {
     progress: number;
     audioEl: () => HTMLAudioElement | null;
+    isRemote?: boolean;
     duration: number;
     currentTime: number;
     onScrubStart: (e: MouseEvent | TouchEvent) => void;
@@ -122,7 +124,7 @@
 
   $effect(() => {
     const el = audioEl();
-    if (!el) return;
+    if (!el || isRemote) return;
 
     // Connect audio to shared equalizer engine (idempotent)
     eqEngine.connectMediaElement(el);

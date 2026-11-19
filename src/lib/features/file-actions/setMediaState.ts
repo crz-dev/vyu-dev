@@ -10,6 +10,7 @@ export interface SetMediaStateSetters {
   setIsVideo: (v: boolean) => void;
   setIsAudio: (v: boolean) => void;
   setIsPdf: (v: boolean) => void;
+  setIsRemote: (v: boolean) => void;
   setFileList: (v: string[]) => void;
   setCurrentIndex: (v: number) => void;
   setFileSize: (v: string) => void;
@@ -51,6 +52,7 @@ export function createSetMediaState(s: SetMediaStateSetters) {
       });
     }
     if (data.isPdf !== undefined) s.setIsPdf(data.isPdf);
+    if (data.isRemote !== undefined) s.setIsRemote(data.isRemote);
     if (data.fileList !== undefined) s.setFileList(data.fileList);
     if (data.currentIndex !== undefined) s.setCurrentIndex(data.currentIndex);
     if (data.fileSize !== undefined) s.setFileSize(data.fileSize);

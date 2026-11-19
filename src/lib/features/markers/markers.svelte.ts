@@ -171,7 +171,9 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
   }
 
   function saveTimestamps() {
-    writeTimestamps(deps.getFilePath(), markerStore.timestamps);
+    const path = deps.getFilePath();
+    if (!path) return;
+    writeTimestamps(path, markerStore.timestamps);
   }
 
   function getTimestampById(id: string): VideoMarker | undefined {
@@ -217,7 +219,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     markerStore.tsEditMenu = { ...markerStore.tsEditMenu, visible: false };
     clearABLoop();
     timeline.clearTimestamps((v) => (markerStore.timestamps = v));
-    deleteTimestamps(deps.getFilePath());
+    const path = deps.getFilePath();
+    if (path) deleteTimestamps(path);
   }
 
   function updateTimestampTitle(id: string, title: string) {

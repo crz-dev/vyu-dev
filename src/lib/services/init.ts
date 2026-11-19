@@ -42,6 +42,7 @@ export interface InitState {
     setPlaybackSpeed: (v: number) => void;
   };
   loadFile: (path: string) => Promise<void>;
+  openUrl: (url: string) => Promise<boolean>;
   setDragDropActive: (active: boolean) => void;
   openLibrary: () => void;
   saveResumePosition: () => void;
@@ -198,7 +199,10 @@ export function setupInit(s: InitState) {
     window.addEventListener("keyup", s.handleKeyup);
     window.addEventListener("mousedown", s.handleGlobalMouseDown);
 
-    const handlePaste = createPasteHandler({ loadFile: s.loadFile });
+    const handlePaste = createPasteHandler({
+      loadFile: s.loadFile,
+      openUrl: s.openUrl,
+    });
 
     window.addEventListener("paste", handlePaste);
 

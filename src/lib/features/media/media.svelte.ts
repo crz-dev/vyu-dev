@@ -45,6 +45,7 @@ export interface MediaState {
   isVideo: boolean;
   isAudio: boolean;
   isPdf: boolean;
+  isRemote: boolean;
   fileList: string[];
   currentIndex: number;
   fileSize: string;
@@ -391,6 +392,7 @@ export function createMedia(
       isVideo,
       isAudio,
       isPdf,
+      isRemote: false,
       fileSize: "",
       fileSizeBytes: 0,
       fileDimensions: "",
@@ -478,6 +480,62 @@ export function createMedia(
     return true;
   }
 
+  // Remote sources (http/https) bypass the local pipeline: no stat, folder
+  // listing, recents, resume, or track inspection. The URL itself is the src.
+  async function displayRemote(
+    url: string,
+    set: (data: Partial<MediaState>) => void,
+    remote: { isVideo: boolean; name: string },
+  ): Promise<boolean> {
+    const gen = ++loadGen;
+    clearTimeout(loadingTimer);
+    finishLoadingCalled = false;
+
+    onBeforeSwitch("");
+    releaseMediaResources();
+    previousWasImage = false;
+
+    set({
+      filePath: "",
+      fileSrc: "",
+      fileName: remote.name,
+      isVideo: remote.isVideo,
+      isAudio: !remote.isVideo,
+      isPdf: false,
+      isRemote: true,
+      fileList: [],
+      currentIndex: 0,
+      fileSize: "",
+      fileSizeBytes: 0,
+      fileDimensions: "",
+      fileCreated: "",
+      fileModified: "",
+      fileInfoLoading: true,
+      isLoadingFile: true,
+      loadingFadingOut: false,
+      imageRotation: 0,
+      imageFlipped: false,
+      imageNaturalWidth: 0,
+      imageNaturalHeight: 0,
+      rawCurrentSecs: 0,
+      rawDurationSecs: 0,
+      progress: 0,
+      playing: false,
+      timestamps: [],
+      clipBoundaries: [],
+      resumePoint: null,
+    });
+    onReset();
+
+    // Media elements must be recreated between sources; commit the cleared
+    // src before assigning the remote URL.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (gen !== loadGen) return false;
+
+    set({ fileSrc: url });
+    return true;
+  }
+
   async function loadFile(
     path: string,
     set: (data: Partial<MediaState>) => void,
@@ -530,6 +588,7 @@ export function createMedia(
 
   function closeFile(set: (data: Partial<MediaState>) => void): void {
     onBeforeSwitch("");
+    loadGen++;
     clearTimeout(loadingTimer);
     finishLoadingCalled = false;
     previousWasImage = false;
@@ -547,6 +606,7 @@ export function createMedia(
       isVideo: false,
       isAudio: false,
       isPdf: false,
+      isRemote: false,
       fileList: [],
       currentIndex: 0,
       playing: false,
@@ -602,7 +662,7 @@ export function createMedia(
       fileDimensions: `${videoEl.videoWidth} × ${videoEl.videoHeight}`,
       fileInfoLoading: false,
       rawCurrentSecs: 0,
-      rawDurationSecs: videoEl.duration || 0,
+      rawDurationSecs: Number.isFinite(videoEl.duration) ? videoEl.duration : 0,
       progress: 0,
       playing: !videoEl.paused,
     });
@@ -621,6 +681,7 @@ export function createMedia(
 
   return {
     displayFile,
+    displayRemote,
     loadFile,
     navigate,
     navigateToEdge,

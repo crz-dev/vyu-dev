@@ -109,9 +109,10 @@ export async function performMultiDelete(deps: MultiDeleteActionsDeps) {
 
 export function createDeleteActions(deps: DeleteActionsDeps) {
   async function performDelete() {
+    const pathToDelete = deps.getFilePath();
+    if (!pathToDelete) return;
     deleteStore.deleteConfirm = false;
     if (deleteStore.deleteNoAsk) saveSkipDeleteConfirmation();
-    const pathToDelete = deps.getFilePath();
     const prevList = [...deps.getFileList()];
     const prevIndex = deps.getCurrentIndex();
     deps.closeFile();
@@ -139,6 +140,7 @@ export function createDeleteActions(deps: DeleteActionsDeps) {
 
   function ctxDelete(closeContextMenu: () => void) {
     closeContextMenu();
+    if (!deps.getFilePath()) return;
     if (loadSkipDeleteConfirmation()) void performDelete();
     else deleteStore.deleteConfirm = true;
   }

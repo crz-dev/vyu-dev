@@ -184,6 +184,12 @@
   margin: 4px 4px;
 }
 
+/* Remote sources hide file-only actions, which can leave adjacent separators. */
+.context-menu:not(.lib-ctx) .ctx-sep:last-child,
+.context-menu:not(.lib-ctx) .ctx-sep:has(+ .ctx-sep) {
+  display: none;
+}
+
 /* ── Unified toast system ─────────────────────────────── */
 .toast-stack {
   position: fixed;

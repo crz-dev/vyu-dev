@@ -260,6 +260,7 @@ export interface MenuActionsDeps {
 
 export function createMenuActions(deps: MenuActionsDeps) {
   function openEditMenu() {
+    if (!deps.getFilePath()) return;
     deps.closeContextMenu();
     deps.setEditingFilePath(deps.getFilePath());
     menuStore.editMenuVisible = true;
@@ -270,6 +271,7 @@ export function createMenuActions(deps: MenuActionsDeps) {
   }
 
   function openMarkupMenu() {
+    if (!deps.getFilePath()) return;
     deps.closeContextMenu();
     menuStore.markupMenuVisible = true;
   }

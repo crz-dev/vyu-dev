@@ -7,7 +7,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 - **Frontend:** `src/` — Svelte 5 runes, TypeScript strict, SvelteKit static SPA, no SSR. One page route (`+page.svelte`); `+layout` and `+error` are scaffolding only.
 - **Backend:** `src-tauri/src/` — Tauri 2 + Rust, Windows-only, Win32 APIs. `lib.rs` is startup, plugin registration, command wiring, and window lifecycle only.
 - **Shared backend:** `util.rs`, `types.rs`, `constants.rs`, `state/`, `database/`.
-- **Privacy boundary:** the webview CSP uses `connect-src 'self'` (`tauri.conf.json`), so frontend code cannot make arbitrary network requests. The SongRec sidecar (supplied at build time) and the user-initiated update check in `commands/system.rs` are the only components that make network requests; external-app and browser launches are user-initiated.
+- **Privacy boundary:** the webview CSP permits `http(s)` for `media-src` and `connect-src` so user-supplied links and HLS segments can load. Vyu itself makes no automatic network requests besides the user-initiated update check in `commands/system.rs`; the SongRec sidecar (supplied at build time) is the only other network component, and external-app/browser launches are user-initiated.
 
 ## Composition and data flow
 
@@ -87,6 +87,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Playback bridge (toggle, volume, speed)                | `features/media/playbackBridge.ts`                                             |
 | Playback position polling                              | `features/media/playbackPoller.svelte.ts`                                      |
 | Playback helpers (on-ended, frame-step)                | `features/media/playbackHelpers.ts`                                            |
+| HLS playback (lazy hls.js)                             | `features/media/hls.ts`                                                        |
 | Timeline scrubbing                                     | `features/media/scrubbing.svelte.ts`                                           |
 | Loop mode                                              | `features/media/loopMode.svelte.ts`                                            |
 | Timer display                                          | `features/media/timer.svelte.ts`                                               |
@@ -266,8 +267,10 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Thumbnail eviction counter is atomic and best-effort                  | Avoids full directory scans on the hot path; `get_thumbnail_cache_size` resyncs it. |
 | Inflight dedup keyed by `{hash}_{size}` (no mtime)                    | Allows metadata stat inside `spawn_blocking`.                                       |
 | FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified   | Reproducible provisioning.                                                          |
-| Webview CSP restricts `connect-src` to `self`                         | Prevents frontend telemetry/network access.                                         |
-| Update checks run in the Rust backend only                            | CSP stays locked down; the request is user-initiated and never automatic.           |
+| Webview CSP restricts network access to media playback                | User links and HLS segments must load; no telemetry or automatic requests.          |
+| Remote links play in-stream; nothing is cached or persisted           | No recents, resume, markers, clips, or track inspection for http(s) sources.        |
+| HLS uses lazily imported hls.js with workers disabled                 | WebView2 has no native HLS; disabling workers avoids `worker-src blob:`.            |
+| Update checks run in the Rust backend only                            | The webview never issues the update request; it stays user-initiated.               |
 | Keybind conflicts are scoped to viewer/library/PDF                    | Arrow keys stay natural in each view; global actions conflict with every context.   |
 | Escape, Backspace, and plain Delete are reserved                      | Escape closes, and Backspace/Delete clear a binding while recording.                |
 | `system.json` is read before the webview is created                   | GPU args and single-instance registration cannot change at runtime.                 |

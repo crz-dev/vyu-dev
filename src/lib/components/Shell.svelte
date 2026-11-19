@@ -48,6 +48,7 @@
     fileName,
     fileSrc,
     filePath,
+    isRemote,
     fileList,
     currentIndex,
     isVideo,
@@ -252,6 +253,7 @@
     isVideo: boolean;
     isAudio: boolean;
     isPdf: boolean;
+    isRemote: boolean;
     playing: boolean;
     getMediaEl: () => HTMLMediaElement | null;
     clearTimestamps: () => void;
@@ -950,6 +952,7 @@
     {isVideo}
     {isAudio}
     {isPdf}
+    {isRemote}
     {pdfPageCount}
     {pdfVersion}
     {pdfPageSize}

@@ -60,6 +60,19 @@ pub async fn get_clipboard_file_path() -> Option<String> {
         .unwrap_or(None)
 }
 
+#[tauri::command]
+pub async fn get_clipboard_text() -> Option<String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        let mut clipboard = arboard::Clipboard::new().ok()?;
+        clipboard
+            .get_text()
+            .ok()
+            .filter(|text| !text.trim().is_empty())
+    })
+    .await
+    .unwrap_or(None)
+}
+
 fn get_clipboard_file_path_sync() -> Option<String> {
     #[cfg(target_os = "windows")]
     {

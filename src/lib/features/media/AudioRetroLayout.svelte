@@ -23,6 +23,7 @@
   let {
     fileName,
     filePath,
+    isRemote,
     cdColor,
     coverArtSrc,
     playing,
@@ -77,6 +78,7 @@
   }: {
     fileName: string;
     filePath: string;
+    isRemote: boolean;
     cdColor: string;
     coverArtSrc: string;
     playing: boolean;
@@ -212,6 +214,7 @@
   <CdVisual
     {progress}
     {audioEl}
+    {isRemote}
     duration={rawDurationSecs}
     currentTime={rawCurrentSecs}
     onScrubStart={startDiscScrubbing}

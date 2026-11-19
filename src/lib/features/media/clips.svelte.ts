@@ -62,7 +62,9 @@ export function createClips(deps: ClipsDeps) {
   function _save() {
     clearTimeout(_saveTimer);
     _saveTimer = setTimeout(() => {
-      writeClipBoundaries(deps.getFilePath(), clipBoundaries);
+      const path = deps.getFilePath();
+      if (!path) return;
+      writeClipBoundaries(path, clipBoundaries);
     }, 300);
   }
 
@@ -104,7 +106,8 @@ export function createClips(deps: ClipsDeps) {
 
   function clearBoundaries() {
     clipBoundaries = [];
-    deleteClipBoundaries(deps.getFilePath());
+    const path = deps.getFilePath();
+    if (path) deleteClipBoundaries(path);
   }
 
   function updateBoundaryTitle(id: string, title: string) {
@@ -199,6 +202,7 @@ export function createClips(deps: ClipsDeps) {
   }
 
   async function triggerSegments() {
+    if (!deps.getFilePath()) return;
     const ready = deps.ensureFfprobe ? await deps.ensureFfprobe() : true;
     if (!ready) return;
     loadPrefs();

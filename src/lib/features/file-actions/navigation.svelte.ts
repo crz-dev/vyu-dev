@@ -23,6 +23,7 @@ import {
 import {
   isAudio as pathIsAudio,
   isVideo as pathIsVideo,
+  classifyMediaUrl,
 } from "$lib/shared/mediaKind";
 import { backgroundAudio } from "$lib/features/media/backgroundAudio.svelte";
 import { requestThumbnail } from "$lib/services/thumbnailCache.svelte";
@@ -81,6 +82,7 @@ export interface NavigationDeps extends SetMediaStateSetters {
   getCropContainerEl: () => HTMLElement | null;
   getSortMode: () => SortMode;
   getSortDesc: () => boolean;
+  getIsRemote: () => boolean;
   getPlaybackUI: () => ReturnType<typeof createPlaybackUI>;
   getViewerEl: () => HTMLElement | null;
   getViewerContentSize: () => { width: number; height: number };
@@ -152,6 +154,7 @@ export function createNavigation(deps: NavigationDeps) {
   let skipTimes: number[] = [];
   let burstInFlight = false;
   let burstSteps = 0;
+  let remoteErrorHandled = false;
 
   // Thumbnail generation is a full decode in Rust per file. Run it when the
   // app is idle so it cannot compete with the first image decode.
@@ -324,6 +327,60 @@ export function createNavigation(deps: NavigationDeps) {
       media.prefetchAdjacent(files, loadedIndex);
       warmThumbnails(files, loadedIndex);
     }
+  }
+
+  async function openUrl(raw: string): Promise<boolean> {
+    const result = classifyMediaUrl(raw);
+    if (result.kind === "site") {
+      showToast({
+        message: locale.t("shell.online.siteUnsupported"),
+        color: "grey",
+        duration: 6500,
+      });
+      return false;
+    }
+    if (result.kind === "unsupported") {
+      showToast({
+        message: locale.t("shell.online.notMedia"),
+        color: "grey",
+        duration: 5000,
+      });
+      return false;
+    }
+
+    slideshow.stop();
+    editing.exitCropMode();
+    if (!menuStore.effectsMenuVisible) closeVisualizers();
+    folderWatcher.stopWatching();
+    skipTimes = [];
+    remoteErrorHandled = false;
+    deps.setMediaProps(null);
+    deps.setMediaPropsLoading(false);
+    deps.setCoverArtSrc("");
+    deps.setCdColor("var(--green)");
+    deps.setCdColorIndex(0);
+    corruption.reset();
+
+    const loaded = await media.displayRemote(raw.trim(), setMediaState, {
+      isVideo: result.kind === "video",
+      name: result.name,
+    });
+    if (!loaded) return false;
+
+    deps.setFileList([]);
+    deps.setCurrentIndex(0);
+    return true;
+  }
+
+  async function handleRemoteError() {
+    if (!deps.getIsRemote() || remoteErrorHandled) return;
+    remoteErrorHandled = true;
+    showToast({
+      message: locale.t("shell.online.loadFailed"),
+      color: "red",
+      duration: 6000,
+    });
+    closeFile();
   }
 
   // True once the user is skipping faster than files can settle: from then on
@@ -568,16 +625,17 @@ export function createNavigation(deps: NavigationDeps) {
     } else {
       maybeResume(audioEl);
     }
-    if (playbackPrefs.autoplay) {
+    const autoplay = playbackPrefs.autoplay || deps.getIsRemote();
+    if (autoplay) {
       audioEl.play().catch(() => {});
     }
     setMediaState({
       fileDimensions: "",
       fileInfoLoading: false,
       rawCurrentSecs: 0,
-      rawDurationSecs: audioEl.duration || 0,
+      rawDurationSecs: Number.isFinite(audioEl.duration) ? audioEl.duration : 0,
       progress: 0,
-      playing: playbackPrefs.autoplay && !audioEl.paused,
+      playing: autoplay && !audioEl.paused,
     });
     if (deps.getIsLoadingFile()) media.finishLoading(setMediaState);
     if (slideshow.active) slideshow.onMediaLoaded();
@@ -619,6 +677,8 @@ export function createNavigation(deps: NavigationDeps) {
 
   return {
     loadFile,
+    openUrl,
+    handleRemoteError,
     navigate,
     navigateToIndex,
     navigateToEdge,

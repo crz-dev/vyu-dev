@@ -100,6 +100,7 @@ pub fn run() {
             restore_backup,
             clear_backups,
             get_clipboard_file_path,
+            get_clipboard_text,
             export_cropped_media,
             export_edited_media,
             convert_media,

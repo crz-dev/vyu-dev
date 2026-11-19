@@ -22,6 +22,9 @@ importers:
       "@tauri-apps/plugin-opener":
         specifier: ^2
         version: 2.5.3
+      hls.js:
+        specifier: ^1.7.4
+        version: 1.7.4
       pdfjs-dist:
         specifier: ^4.10.38
         version: 4.10.38
@@ -1017,6 +1020,12 @@ packages:
     engines: { node: ^8.16.0 || ^10.6.0 || >=11.0.0 }
     os: [darwin]
 
+  hls.js@1.7.4:
+    resolution:
+      {
+        integrity: sha512-3GlxGdPvT2YHvQYOt+yOzT/DEior/qJVNIylHA77kgeoBTdQQqi70GwefNEUmHQeNGyjC8U62+bruqW/Tpm+tg==,
+      }
+
   is-reference@3.0.3:
     resolution:
       {
@@ -1690,6 +1699,8 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  hls.js@1.7.4: {}
 
   is-reference@3.0.3:
     dependencies:

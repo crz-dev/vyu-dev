@@ -16,6 +16,7 @@
     fileSrc,
     filePath,
     fileName,
+    isRemote,
     cdColor = $bindable(),
     cdColorIndex = $bindable(),
     showCdColorPicker = $bindable(),
@@ -83,6 +84,7 @@
     fileSrc: string;
     filePath: string;
     fileName: string;
+    isRemote: boolean;
     cdColor: string;
     cdColorIndex: number;
     showCdColorPicker: boolean;
@@ -242,9 +244,9 @@
   <audio
     bind:this={audioEl}
     src={fileSrc}
-    crossorigin="anonymous"
+    crossorigin={isRemote ? undefined : "anonymous"}
     preload="metadata"
-    autoplay={playbackPrefs.autoplay}
+    autoplay={playbackPrefs.autoplay || isRemote}
     onloadedmetadata={onAudioLoad}
     onerror={onAudioError}
     onended={onAudioEnded}
@@ -267,6 +269,7 @@
           <AudioRetroLayout
             {fileName}
             {filePath}
+            {isRemote}
             {cdColor}
             {coverArtSrc}
             {playing}
@@ -323,6 +326,7 @@
           <AudioModernLayout
             {fileName}
             {filePath}
+            {isRemote}
             {cdColor}
             {coverArtSrc}
             {playing}

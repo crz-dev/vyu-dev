@@ -303,6 +303,10 @@ export async function invokeGetClipboardFilePath(): Promise<string | null> {
   return invoke("get_clipboard_file_path");
 }
 
+export async function invokeGetClipboardText(): Promise<string | null> {
+  return invoke("get_clipboard_text");
+}
+
 export async function invokeExportCroppedMedia(
   path: string,
   outputPath: string,

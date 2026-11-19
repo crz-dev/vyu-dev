@@ -23,6 +23,7 @@
   let {
     fileName,
     filePath,
+    isRemote,
     cdColor,
     coverArtSrc,
     playing,
@@ -76,6 +77,7 @@
   }: {
     fileName: string;
     filePath: string;
+    isRemote: boolean;
     cdColor: string;
     coverArtSrc: string;
     playing: boolean;
@@ -190,7 +192,7 @@
 
   $effect(() => {
     const el = audioEl();
-    if (!el) return;
+    if (!el || isRemote) return;
     eqEngine.connectMediaElement(el);
   });
 </script>

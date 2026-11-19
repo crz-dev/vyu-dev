@@ -1,6 +1,9 @@
 import { save } from "@tauri-apps/plugin-dialog";
+import { isTypingTarget } from "$lib/features/keybinds/keybindUtils";
+import { isRemoteUrl } from "$lib/shared/mediaKind";
 import {
   invokeGetClipboardFilePath,
+  invokeGetClipboardText,
   invokeCopyFile,
   invokeWriteTempFile,
 } from "$lib/features/media/api";
@@ -12,10 +15,12 @@ import { locale } from "$lib/features/i18n/locale.svelte";
 
 export interface PasteDeps {
   loadFile: (path: string) => Promise<void>;
+  openUrl: (url: string) => Promise<boolean>;
 }
 
 export function createPasteHandler(deps: PasteDeps) {
   return async function handlePaste(e: ClipboardEvent) {
+    if (isTypingTarget(e.target)) return;
     const mediaItem = Array.from(e.clipboardData?.items ?? []).find(
       (item) =>
         item.kind === "file" &&
@@ -91,7 +96,13 @@ export function createPasteHandler(deps: PasteDeps) {
       }
     } catch {}
 
-    const text = e.clipboardData?.getData("text/plain")?.trim();
+    // WebView2's paste event has no data outside editable contexts, so the
+    // clipboard text is read through the backend when the event is empty.
+    const eventText = e.clipboardData?.getData("text/plain")?.trim();
+    const text =
+      eventText ||
+      (await invokeGetClipboardText().catch(() => null))?.trim() ||
+      "";
     if (text) {
       const lines = text.split(/\r?\n/).map((l) =>
         l
@@ -106,7 +117,13 @@ export function createPasteHandler(deps: PasteDeps) {
           return l;
         }
       });
+      const url = decoded.find((l) => isRemoteUrl(l));
+      if (url) {
+        await deps.openUrl(url);
+        return;
+      }
       const match = decoded.find((l) => {
+        if (l.includes("://")) return false;
         const ext = getFileExt(l);
         return ALL_EXTS_SET.has(ext);
       });

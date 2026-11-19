@@ -49,6 +49,7 @@
     isVideo,
     isAudio,
     isPdf,
+    isRemote,
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
@@ -124,6 +125,7 @@
     isVideo: boolean;
     isAudio: boolean;
     isPdf: boolean;
+    isRemote: boolean;
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
@@ -850,51 +852,53 @@
           >
           {t("dialogs.dialog.menu.copyPage")}
         </button>
-        <button
-          class="ctx-item green"
-          onclick={ctxShare}
-          role="menuitem"
-          style="animation-delay: 55ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="18"
-              cy="5"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="6"
-              cy="12"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="18"
-              cy="19"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><line
-              x1="8.59"
-              y1="13.51"
-              x2="15.42"
-              y2="17.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><line
-              x1="15.41"
-              y1="6.51"
-              x2="8.59"
-              y2="10.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item green"
+            onclick={ctxShare}
+            role="menuitem"
+            style="animation-delay: 55ms"
           >
-          {t("dialogs.dialog.menu.share")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="18"
+                cy="5"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="6"
+                cy="12"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="18"
+                cy="19"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><line
+                x1="8.59"
+                y1="13.51"
+                x2="15.42"
+                y2="17.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><line
+                x1="15.41"
+                y1="6.51"
+                x2="8.59"
+                y2="10.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.share")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
         <button
           class="ctx-item blue"
@@ -921,165 +925,177 @@
           >
           {t("dialogs.dialog.menu.search")}
         </button>
-        <button
-          class="ctx-item blue"
-          onclick={ctxMarkup}
-          role="menuitem"
-          style="animation-delay: 165ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M12 20h9"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item blue"
+            onclick={ctxMarkup}
+            role="menuitem"
+            style="animation-delay: 165ms"
           >
-          {t("dialogs.dialog.menu.markup")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M12 20h9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.markup")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxShowInExplorer}
-          role="menuitem"
-          style="animation-delay: 220ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-              stroke="currentColor"
-              stroke-width="2"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxShowInExplorer}
+            role="menuitem"
+            style="animation-delay: 220ms"
           >
-          {t("dialogs.dialog.menu.showInExplorer")}
-        </button>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxProperties}
-          role="menuitem"
-          style="animation-delay: 275ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-            /><path
-              d="M12 10.5V16"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                stroke="currentColor"
+                stroke-width="2"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.showInExplorer")}
+          </button>
+        {/if}
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxProperties}
+            role="menuitem"
+            style="animation-delay: 275ms"
           >
-          {t("dialogs.dialog.menu.properties")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+              /><path
+                d="M12 10.5V16"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            >
+            {t("dialogs.dialog.menu.properties")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item red"
-          onclick={ctxDelete}
-          role="menuitem"
-          style="animation-delay: 330ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="3 6 5 6 21 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M19 6l-1 14H6L5 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item red"
+            onclick={ctxDelete}
+            role="menuitem"
+            style="animation-delay: 330ms"
           >
-          {t("dialogs.dialog.menu.delete")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.delete")}
+          </button>
+        {/if}
       {:else if isAudio}
-        <button
-          class="ctx-item green"
-          onclick={ctxCopyPath}
-          role="menuitem"
-          style="animation-delay: 0ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item green"
+            onclick={ctxCopyPath}
+            role="menuitem"
+            style="animation-delay: 0ms"
           >
-          {t("dialogs.dialog.menu.copyPath")}
-        </button>
-        <button
-          class="ctx-item green"
-          onclick={ctxShare}
-          role="menuitem"
-          style="animation-delay: 55ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="18"
-              cy="5"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="6"
-              cy="12"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="18"
-              cy="19"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><line
-              x1="8.59"
-              y1="13.51"
-              x2="15.42"
-              y2="17.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><line
-              x1="15.41"
-              y1="6.51"
-              x2="8.59"
-              y2="10.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.copyPath")}
+          </button>
+        {/if}
+        {#if !isRemote}
+          <button
+            class="ctx-item green"
+            onclick={ctxShare}
+            role="menuitem"
+            style="animation-delay: 55ms"
           >
-          {t("dialogs.dialog.menu.share")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="18"
+                cy="5"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="6"
+                cy="12"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="18"
+                cy="19"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><line
+                x1="8.59"
+                y1="13.51"
+                x2="15.42"
+                y2="17.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><line
+                x1="15.41"
+                y1="6.51"
+                x2="8.59"
+                y2="10.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.share")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
         <button
           class="ctx-item blue"
@@ -1122,75 +1138,81 @@
           {t("dialogs.dialog.menu.equalizer")}
         </button>
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxShowInExplorer}
-          role="menuitem"
-          style="animation-delay: 220ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-              stroke="currentColor"
-              stroke-width="2"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxShowInExplorer}
+            role="menuitem"
+            style="animation-delay: 220ms"
           >
-          {t("dialogs.dialog.menu.showInExplorer")}
-        </button>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxProperties}
-          role="menuitem"
-          style="animation-delay: 275ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-            /><path
-              d="M12 10.5V16"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                stroke="currentColor"
+                stroke-width="2"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.showInExplorer")}
+          </button>
+        {/if}
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxProperties}
+            role="menuitem"
+            style="animation-delay: 275ms"
           >
-          {t("dialogs.dialog.menu.properties")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+              /><path
+                d="M12 10.5V16"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            >
+            {t("dialogs.dialog.menu.properties")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item red"
-          onclick={ctxDelete}
-          role="menuitem"
-          style="animation-delay: 330ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="3 6 5 6 21 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M19 6l-1 14H6L5 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item red"
+            onclick={ctxDelete}
+            role="menuitem"
+            style="animation-delay: 330ms"
           >
-          {t("dialogs.dialog.menu.delete")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.delete")}
+          </button>
+        {/if}
       {:else if !isVideo}
         <button
           class="ctx-item green"
@@ -1216,183 +1238,195 @@
           >
           {t("dialogs.dialog.menu.copyImage")}
         </button>
-        <button
-          class="ctx-item green"
-          onclick={ctxShare}
-          role="menuitem"
-          style="animation-delay: 55ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="18"
-              cy="5"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="6"
-              cy="12"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="18"
-              cy="19"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><line
-              x1="8.59"
-              y1="13.51"
-              x2="15.42"
-              y2="17.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><line
-              x1="15.41"
-              y1="6.51"
-              x2="8.59"
-              y2="10.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item green"
+            onclick={ctxShare}
+            role="menuitem"
+            style="animation-delay: 55ms"
           >
-          {t("dialogs.dialog.menu.share")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="18"
+                cy="5"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="6"
+                cy="12"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="18"
+                cy="19"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><line
+                x1="8.59"
+                y1="13.51"
+                x2="15.42"
+                y2="17.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><line
+                x1="15.41"
+                y1="6.51"
+                x2="8.59"
+                y2="10.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.share")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item blue"
-          onclick={ctxEdit}
-          role="menuitem"
-          style="animation-delay: 110ms"
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><line x1="21" y1="4" x2="14" y2="4" /><line
-              x1="10"
-              y1="4"
-              x2="3"
-              y2="4"
-            /><line x1="21" y1="12" x2="12" y2="12" /><line
-              x1="8"
-              y1="12"
-              x2="3"
-              y2="12"
-            /><line x1="21" y1="20" x2="16" y2="20" /><line
-              x1="12"
-              y1="20"
-              x2="3"
-              y2="20"
-            /><line x1="14" y1="2" x2="14" y2="6" /><line
-              x1="8"
-              y1="10"
-              x2="8"
-              y2="14"
-            /><line x1="16" y1="18" x2="16" y2="22" /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item blue"
+            onclick={ctxEdit}
+            role="menuitem"
+            style="animation-delay: 110ms"
           >
-          {t("dialogs.dialog.menu.edit")}
-        </button>
-        <button
-          class="ctx-item blue"
-          onclick={ctxMarkup}
-          role="menuitem"
-          style="animation-delay: 165ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M12 20h9"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-            /></svg
+              ><line x1="21" y1="4" x2="14" y2="4" /><line
+                x1="10"
+                y1="4"
+                x2="3"
+                y2="4"
+              /><line x1="21" y1="12" x2="12" y2="12" /><line
+                x1="8"
+                y1="12"
+                x2="3"
+                y2="12"
+              /><line x1="21" y1="20" x2="16" y2="20" /><line
+                x1="12"
+                y1="20"
+                x2="3"
+                y2="20"
+              /><line x1="14" y1="2" x2="14" y2="6" /><line
+                x1="8"
+                y1="10"
+                x2="8"
+                y2="14"
+              /><line x1="16" y1="18" x2="16" y2="22" /></svg
+            >
+            {t("dialogs.dialog.menu.edit")}
+          </button>
+        {/if}
+        {#if !isRemote}
+          <button
+            class="ctx-item blue"
+            onclick={ctxMarkup}
+            role="menuitem"
+            style="animation-delay: 165ms"
           >
-          {t("dialogs.dialog.menu.markup")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M12 20h9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.markup")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxShowInExplorer}
-          role="menuitem"
-          style="animation-delay: 220ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-              stroke="currentColor"
-              stroke-width="2"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxShowInExplorer}
+            role="menuitem"
+            style="animation-delay: 220ms"
           >
-          {t("dialogs.dialog.menu.showInExplorer")}
-        </button>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxProperties}
-          role="menuitem"
-          style="animation-delay: 275ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-            /><path
-              d="M12 10.5V16"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                stroke="currentColor"
+                stroke-width="2"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.showInExplorer")}
+          </button>
+        {/if}
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxProperties}
+            role="menuitem"
+            style="animation-delay: 275ms"
           >
-          {t("dialogs.dialog.menu.properties")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+              /><path
+                d="M12 10.5V16"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            >
+            {t("dialogs.dialog.menu.properties")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item red"
-          onclick={ctxDelete}
-          role="menuitem"
-          style="animation-delay: 330ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="3 6 5 6 21 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M19 6l-1 14H6L5 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item red"
+            onclick={ctxDelete}
+            role="menuitem"
+            style="animation-delay: 330ms"
           >
-          {t("dialogs.dialog.menu.delete")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.delete")}
+          </button>
+        {/if}
       {:else}
         <button
           class="ctx-item green"
@@ -1418,91 +1452,95 @@
           >
           {t("dialogs.dialog.menu.copyFrame")}
         </button>
-        <button
-          class="ctx-item green"
-          onclick={ctxShare}
-          role="menuitem"
-          style="animation-delay: 55ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="18"
-              cy="5"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="6"
-              cy="12"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><circle
-              cx="18"
-              cy="19"
-              r="3"
-              stroke="currentColor"
-              stroke-width="2"
-            /><line
-              x1="8.59"
-              y1="13.51"
-              x2="15.42"
-              y2="17.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><line
-              x1="15.41"
-              y1="6.51"
-              x2="8.59"
-              y2="10.49"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item green"
+            onclick={ctxShare}
+            role="menuitem"
+            style="animation-delay: 55ms"
           >
-          {t("dialogs.dialog.menu.share")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="18"
+                cy="5"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="6"
+                cy="12"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><circle
+                cx="18"
+                cy="19"
+                r="3"
+                stroke="currentColor"
+                stroke-width="2"
+              /><line
+                x1="8.59"
+                y1="13.51"
+                x2="15.42"
+                y2="17.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><line
+                x1="15.41"
+                y1="6.51"
+                x2="8.59"
+                y2="10.49"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.share")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item blue"
-          onclick={ctxEdit}
-          role="menuitem"
-          style="animation-delay: 110ms"
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            ><line x1="21" y1="4" x2="14" y2="4" /><line
-              x1="10"
-              y1="4"
-              x2="3"
-              y2="4"
-            /><line x1="21" y1="12" x2="12" y2="12" /><line
-              x1="8"
-              y1="12"
-              x2="3"
-              y2="12"
-            /><line x1="21" y1="20" x2="16" y2="20" /><line
-              x1="12"
-              y1="20"
-              x2="3"
-              y2="20"
-            /><line x1="14" y1="2" x2="14" y2="6" /><line
-              x1="8"
-              y1="10"
-              x2="8"
-              y2="14"
-            /><line x1="16" y1="18" x2="16" y2="22" /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item blue"
+            onclick={ctxEdit}
+            role="menuitem"
+            style="animation-delay: 110ms"
           >
-          {t("dialogs.dialog.menu.edit")}
-        </button>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><line x1="21" y1="4" x2="14" y2="4" /><line
+                x1="10"
+                y1="4"
+                x2="3"
+                y2="4"
+              /><line x1="21" y1="12" x2="12" y2="12" /><line
+                x1="8"
+                y1="12"
+                x2="3"
+                y2="12"
+              /><line x1="21" y1="20" x2="16" y2="20" /><line
+                x1="12"
+                y1="20"
+                x2="3"
+                y2="20"
+              /><line x1="14" y1="2" x2="14" y2="6" /><line
+                x1="8"
+                y1="10"
+                x2="8"
+                y2="14"
+              /><line x1="16" y1="18" x2="16" y2="22" /></svg
+            >
+            {t("dialogs.dialog.menu.edit")}
+          </button>
+        {/if}
         <button
           class="ctx-item blue"
           onclick={ctxEqualizer}
@@ -1520,43 +1558,47 @@
           {t("dialogs.dialog.menu.equalizer")}
         </button>
         <div class="ctx-sep"></div>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxShowInExplorer}
-          role="menuitem"
-          style="animation-delay: 220ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><path
-              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
-              stroke="currentColor"
-              stroke-width="2"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxShowInExplorer}
+            role="menuitem"
+            style="animation-delay: 220ms"
           >
-          {t("dialogs.dialog.menu.showInExplorer")}
-        </button>
-        <button
-          class="ctx-item yellow"
-          onclick={ctxProperties}
-          role="menuitem"
-          style="animation-delay: 275ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              stroke-width="2"
-            /><path
-              d="M12 10.5V16"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                stroke="currentColor"
+                stroke-width="2"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.showInExplorer")}
+          </button>
+        {/if}
+        {#if !isRemote}
+          <button
+            class="ctx-item yellow"
+            onclick={ctxProperties}
+            role="menuitem"
+            style="animation-delay: 275ms"
           >
-          {t("dialogs.dialog.menu.properties")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="currentColor"
+                stroke-width="2"
+              /><path
+                d="M12 10.5V16"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg
+            >
+            {t("dialogs.dialog.menu.properties")}
+          </button>
+        {/if}
         <div class="ctx-sep"></div>
         {#if timestamps.length > 0 || clipBoundaries.length > 0 || resumePoint !== null}
           <button
@@ -1596,37 +1638,39 @@
               : t("dialogs.dialog.menu.deleteMarkers")}
           </button>
         {/if}
-        <button
-          class="ctx-item red"
-          onclick={ctxDelete}
-          role="menuitem"
-          style="animation-delay: 330ms"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-            ><polyline
-              points="3 6 5 6 21 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M19 6l-1 14H6L5 6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M10 11v6M14 11v6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /><path
-              d="M9 6V4h6v2"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            /></svg
+        {#if !isRemote}
+          <button
+            class="ctx-item red"
+            onclick={ctxDelete}
+            role="menuitem"
+            style="animation-delay: 330ms"
           >
-          {t("dialogs.dialog.menu.delete")}
-        </button>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><polyline
+                points="3 6 5 6 21 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 6l-1 14H6L5 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M10 11v6M14 11v6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M9 6V4h6v2"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
+            >
+            {t("dialogs.dialog.menu.delete")}
+          </button>
+        {/if}
       {/if}
     </div>
   </div>

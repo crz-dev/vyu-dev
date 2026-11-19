@@ -12,7 +12,7 @@
 
 ---
 
-Vyu opens images, videos, audios, and more — with real editing, clipping, converting, and format support built in. No telemetry, no accounts, no extensions needed. Everything works out of the box and stays on your machine offline. It's the much needed replacement for Windows Photos and ancient-looking viewers.
+Vyu opens images, videos, audios, and more — with real editing, clipping, converting, and format support built in. No telemetry, no accounts, no extensions needed. Everything works out of the box offline; local media stays on your machine, and links you choose to open are fetched from their host. It's the much needed replacement for Windows Photos and ancient-looking viewers.
 
 ## Features
 
