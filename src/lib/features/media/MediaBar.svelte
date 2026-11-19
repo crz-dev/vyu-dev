@@ -552,7 +552,12 @@
           aria-haspopup="dialog"
         >
           {#if info.kind === "collections"}
-            {tp("media.bar.collection", info.collectionCount)}
+            {t("media.bar.collectionBreakdown", {
+              custom: info.customCollectionCount,
+              linked: info.linkedCollectionCount,
+            })}
+          {:else if info.kind === "favorites"}
+            {tp("media.bar.favorite", info.fileCount)}
           {:else}
             {tp("media.bar.file", info.fileCount)}
             {#if info.loading}

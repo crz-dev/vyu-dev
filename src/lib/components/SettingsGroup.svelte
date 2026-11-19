@@ -5,10 +5,14 @@
   let {
     label,
     icon = "",
+    id = "",
+    flash = false,
     children,
   }: {
     label: string;
     icon?: string;
+    id?: string;
+    flash?: boolean;
     children: Snippet;
   } = $props();
 </script>
@@ -21,6 +25,6 @@
   {/if}
   {label}
 </p>
-<div class="settings-card has-child">
+<div id={id || undefined} class="settings-card has-child" class:flash>
   {@render children()}
 </div>

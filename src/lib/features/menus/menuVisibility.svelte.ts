@@ -8,6 +8,7 @@ function createMenuVisibilityStore() {
   let settingsOpen = $state(false);
   let settingsInstance = $state(0);
   let settingsSection = $state<string | null>(null);
+  let settingsGroup = $state<string | null>(null);
   let accessibilityOpen = $state(false);
   let accessibilityInstance = $state(0);
   let helpOpen = $state(false);
@@ -78,16 +79,21 @@ function createMenuVisibilityStore() {
     get settingsInstance() {
       return settingsInstance;
     },
-    openSettingsAt(section: string) {
+    openSettingsAt(section: string, group?: string) {
       settingsSection = section;
+      settingsGroup = group ?? null;
       if (!settingsOpen) settingsInstance++;
       settingsOpen = true;
     },
     get settingsSection() {
       return settingsSection;
     },
+    get settingsGroup() {
+      return settingsGroup;
+    },
     clearSettingsSection() {
       settingsSection = null;
+      settingsGroup = null;
     },
     get accessibilityOpen() {
       return accessibilityOpen;
@@ -232,6 +238,7 @@ function createMenuVisibilityStore() {
       appDropdownVisible = false;
       settingsOpen = false;
       settingsSection = null;
+      settingsGroup = null;
       accessibilityOpen = false;
       helpOpen = false;
       aboutOpen = false;

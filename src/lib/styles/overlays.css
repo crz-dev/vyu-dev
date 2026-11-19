@@ -2646,6 +2646,21 @@
   box-shadow: inset 0 0 0 0.5px var(--yellow-border-subtle);
 }
 
+.settings-card.flash {
+  position: relative;
+}
+
+.settings-card.flash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  opacity: 0;
+  pointer-events: none;
+  animation: settingsFlash 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
 .settings-card.has-child {
   margin: 2px 0;
   background: var(--bg-secondary);

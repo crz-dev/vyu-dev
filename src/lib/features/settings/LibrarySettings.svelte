@@ -5,7 +5,13 @@
   import { showToast } from "$lib/components/toast.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
-  let { flash = false }: { flash?: boolean } = $props();
+  let {
+    flash = false,
+    flashGroup = null,
+  }: {
+    flash?: boolean;
+    flashGroup?: string | null;
+  } = $props();
 
   const t = locale.t;
 
@@ -185,7 +191,12 @@
     </SettingsRow>
   </SettingsGroup>
 
-  <SettingsGroup label={t("settings.library.group.history")} icon="clock">
+  <SettingsGroup
+    label={t("settings.library.group.recents")}
+    icon="clock"
+    id="settings-group-recents"
+    flash={flashGroup === "recents"}
+  >
     <SettingsRow
       label={t("settings.library.recents.label")}
       hint={library.recentsDisabled

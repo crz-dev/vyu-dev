@@ -441,7 +441,7 @@
 
   function openRecentsSettings() {
     saveLastDialogSection("settings", "library");
-    menuStore.settingsOpen = true;
+    menuStore.openSettingsAt("library", "recents");
   }
 
   const isShowingFolders = $derived(isViewingCollection && library.showFolders);
@@ -2584,7 +2584,7 @@
 
     {#if library.activeTab === "recents"}
       <div
-        class="library-collection-header tooltip-ctrl tooltip-ctrl-right"
+        class="library-collection-header tooltip-ctrl tooltip-right"
         data-tooltip={t("library.header.recentsLimitTooltip")}
       >
         <svg
@@ -4621,7 +4621,10 @@
                         </div>
                       {/if}
                     </div>
-                    <div class="library-collection-name">
+                    <div
+                      class="file-name-label"
+                      class:label-renaming={renamingPath === col.path}
+                    >
                       {#if renamingPath === col.path}
                         <!-- svelte-ignore a11y_autofocus -->
                         <input
@@ -4644,7 +4647,7 @@
                           }}
                         />
                       {:else}
-                        <span>{col.name}</span>
+                        {col.name}
                       {/if}
                     </div>
                     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -4861,6 +4864,7 @@
           </svg>
           {t("library.context.moveTo")}
         </button>
+        <div class="ctx-sep"></div>
         <button
           class="ctx-item blue"
           onclick={ctxCollect}
@@ -4894,6 +4898,7 @@
           >
           {t("library.context.collect")}
         </button>
+        <div class="ctx-sep"></div>
         <button
           class="ctx-item yellow"
           onclick={ctxFavorite}
@@ -6081,6 +6086,12 @@
     flex-shrink: 0;
   }
 
+  /* The 24px trailing padding would otherwise push the right-side recents
+     tooltip away from the count; keep the standard 6px gap. */
+  .library-collection-header.tooltip-right::after {
+    left: calc(100% - 18px);
+  }
+
   .library-breadcrumb-segment {
     background: none;
     border: none;
@@ -6171,17 +6182,19 @@
   }
 
   .library-collection-content {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    max-width: 100%;
     overflow: hidden;
   }
 
   .library-collection-thumb {
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
+    display: block;
   }
 
   .library-collection-placeholder {
@@ -6191,15 +6204,8 @@
     color: var(--blue-light);
   }
 
-  .library-collection-name {
-    font-family: var(--font-family);
-    font-size: 11px;
-    color: var(--text-primary, #fff);
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 90%;
+  .label-renaming {
+    pointer-events: auto;
   }
 
   .library-rename-input {

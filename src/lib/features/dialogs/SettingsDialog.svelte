@@ -49,7 +49,6 @@
   const t = locale.t;
 
   const requestedSection = menuStore.settingsSection;
-  if (requestedSection) menuStore.clearSettingsSection();
 
   let activeSection = $state(
     requestedSection ??
@@ -59,15 +58,21 @@
   );
   let contentEl = $state<HTMLDivElement | null>(null);
   let flashId = $state<string | null>(null);
+  let flashGroupId = $state<string | null>(null);
   let isScrolling = $state(false);
   let searchQuery = $state("");
   let searchResults = $state<SettingsSearchResult[]>([]);
   let searchScrollTop = 0;
   let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
   let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+  let flashGroupTimeout: ReturnType<typeof setTimeout> | null = null;
+  let groupFlashFallback: ReturnType<typeof setTimeout> | null = null;
+  let pendingGroupFlash: string | null = null;
 
   onDestroy(() => {
     settingsSearchState.active = false;
+    if (flashGroupTimeout) clearTimeout(flashGroupTimeout);
+    if (groupFlashFallback) clearTimeout(groupFlashFallback);
   });
 
   $effect(() => {
@@ -77,24 +82,27 @@
   });
 
   $effect(() => {
-    if (settingsOpen) {
-      requestAnimationFrame(() => {
-        const el = document.getElementById(`settings-section-${activeSection}`);
-        if (el) {
-          el.scrollIntoView({ block: "start" });
-        }
-      });
-    }
+    if (!settingsOpen) return;
+    if (menuStore.settingsSection) return;
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`settings-section-${activeSection}`);
+      if (el) {
+        el.scrollIntoView({ block: "start" });
+      }
+    });
   });
 
-  // Jump to a section requested after the dialog is already open (e.g. from
-  // the shortcut cheat sheet).
+  // Jump to a section or group requested from elsewhere (e.g. the shortcut
+  // cheat sheet or the library's recents count). The request stays set until
+  // settings closes so a remounting dialog still sees it.
   $effect(() => {
     if (!settingsOpen) return;
     const section = menuStore.settingsSection;
     if (!section) return;
-    menuStore.clearSettingsSection();
-    void scrollToSection(section);
+    const group = menuStore.settingsGroup;
+    void tick().then(() => {
+      requestAnimationFrame(() => void scrollToSection(section, group));
+    });
   });
 
   const sections = $derived(
@@ -173,6 +181,35 @@
     }, 900);
   }
 
+  function flashGroup(id: string) {
+    if (flashGroupTimeout) clearTimeout(flashGroupTimeout);
+    flashGroupId = id;
+    flashGroupTimeout = setTimeout(() => {
+      if (flashGroupId === id) flashGroupId = null;
+    }, 900);
+  }
+
+  // Start the group highlight once the smooth scroll settles, otherwise it
+  // plays while the card is still off-screen.
+  function flashGroupAfterScroll(group: string) {
+    const content = contentEl;
+    if (!content) return;
+    if (groupFlashFallback) clearTimeout(groupFlashFallback);
+    pendingGroupFlash = group;
+    const run = () => {
+      content.removeEventListener("scrollend", run);
+      if (groupFlashFallback) {
+        clearTimeout(groupFlashFallback);
+        groupFlashFallback = null;
+      }
+      if (pendingGroupFlash !== group) return;
+      pendingGroupFlash = null;
+      flashGroup(group);
+    };
+    content.addEventListener("scrollend", run);
+    groupFlashFallback = setTimeout(run, 1200);
+  }
+
   function setSearchQuery(value: string) {
     const wasActive = searchActive;
     if (!wasActive && value.trim() && contentEl) {
@@ -200,7 +237,7 @@
     if (contentEl) contentEl.scrollTop = searchScrollTop;
   }
 
-  async function scrollToSection(id: string) {
+  async function scrollToSection(id: string, group: string | null = null) {
     if (searchActive) {
       searchQuery = "";
       settingsSearchState.active = false;
@@ -210,11 +247,22 @@
     activeSection = id;
     if (scrollTimeout) clearTimeout(scrollTimeout);
     if (flashTimeout) clearTimeout(flashTimeout);
+    if (groupFlashFallback) {
+      clearTimeout(groupFlashFallback);
+      groupFlashFallback = null;
+    }
+    pendingGroupFlash = null;
     isScrolling = true;
-    const el = document.getElementById(`settings-section-${id}`);
-    if (el && contentEl) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      flashSection(id);
+    const target = document.getElementById(
+      group ? `settings-group-${group}` : `settings-section-${id}`,
+    );
+    if (target && contentEl) {
+      target.scrollIntoView({
+        behavior: "smooth",
+        block: group ? "center" : "start",
+      });
+      if (group) flashGroupAfterScroll(group);
+      else flashSection(id);
     }
     scrollTimeout = setTimeout(() => {
       isScrolling = false;
@@ -558,7 +606,10 @@
           <PlaybackSettings flash={flashId === "playback"} />
           <EditorSettings flash={flashId === "editor"} />
           <ProcessSettings flash={flashId === "process"} />
-          <LibrarySettings flash={flashId === "library"} />
+          <LibrarySettings
+            flash={flashId === "library"}
+            flashGroup={flashGroupId}
+          />
 
           <!-- System -->
           <SystemSettings flash={flashId === "system"} />

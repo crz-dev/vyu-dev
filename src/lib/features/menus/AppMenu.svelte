@@ -532,7 +532,7 @@
         />
       </svg>
     </button>
-    {#if filePath}
+    {#if filePath && !libraryOpen}
       <button
         class="wc-btn pip-btn tooltip-below"
         class:active={pipActive}
