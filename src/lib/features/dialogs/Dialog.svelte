@@ -910,6 +910,7 @@
           {t("dialogs.dialog.menu.copyPage")}
         </button>
         {@render queueMenuItem()}
+
         <div class="ctx-sep"></div>
         <button
           class="ctx-item blue"
@@ -1250,6 +1251,7 @@
           {t("dialogs.dialog.menu.copyImage")}
         </button>
         {@render queueMenuItem()}
+
         <div class="ctx-sep"></div>
         {#if !isRemote}
           <button
@@ -1441,6 +1443,7 @@
           {t("dialogs.dialog.menu.copyFrame")}
         </button>
         {@render queueMenuItem()}
+
         <div class="ctx-sep"></div>
         {#if !isRemote}
           <button

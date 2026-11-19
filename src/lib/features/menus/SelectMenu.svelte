@@ -50,6 +50,41 @@
     onClose();
   }
 
+  function startMenuDrag(e: MouseEvent) {
+    e.preventDefault();
+    onMoved?.();
+    const menu = (e.currentTarget as HTMLElement).closest(
+      ".select-menu",
+    ) as HTMLElement | null;
+    if (!menu) return;
+    const menuEl = menu;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect = menuEl.getBoundingClientRect();
+    const startLeft = rect.left;
+    const startTop = rect.top;
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    const savedTransition = menuEl.style.transition;
+    menuEl.style.transition = "none";
+
+    function onMouseMove(ev: MouseEvent) {
+      menuEl.style.left = `${Math.max(0, Math.min(startLeft + ev.clientX - startX, maxLeft))}px`;
+      menuEl.style.top = `${Math.max(0, Math.min(startTop + ev.clientY - startY, maxTop))}px`;
+      menuEl.style.bottom = "auto";
+      menuEl.style.transform = "none";
+    }
+
+    function onMouseUp() {
+      menuEl.style.transition = savedTransition;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    }
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }
+
   async function moveFiles() {
     const dir = await open({ directory: true });
     if (!dir) return;
@@ -87,6 +122,12 @@
     library.closeCollection();
     library.setCollectMode(true);
     library.setActiveTab("collections");
+  }
+
+  function setCollectMove(move: boolean) {
+    if (library.deleteOriginalAfterCopy !== move) {
+      library.toggleDeleteOriginalAfterCopy();
+    }
   }
 
   let allQueued = $derived.by(() => {
@@ -159,68 +200,33 @@
 </script>
 
 <div class="select-menu" class:open={visible}>
-  <div
-    class="ctx-drag"
-    role="button"
-    tabindex="0"
-    aria-label={t("menus.common.dragToMove")}
-    onmousedown={(e) => {
-      e.preventDefault();
-      onMoved?.();
-      const menu = (e.currentTarget as HTMLElement).closest(
-        ".select-menu",
-      ) as HTMLElement;
-      if (!menu) return;
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const rect = menu.getBoundingClientRect();
-      const startLeft = rect.left;
-      const startTop = rect.top;
-      const savedTransition = menu.style.transition;
-      menu.style.transition = "none";
-
-      function onMouseMove(ev: MouseEvent) {
-        menu.style.left = `${startLeft + ev.clientX - startX}px`;
-        menu.style.top = `${startTop + ev.clientY - startY}px`;
-        menu.style.bottom = "auto";
-        menu.style.transform = "none";
-      }
-
-      function onMouseUp() {
-        menu.style.transition = savedTransition;
-        window.removeEventListener("mousemove", onMouseMove);
-        window.removeEventListener("mouseup", onMouseUp);
-      }
-
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-    }}
-  >
+  <div class="ctx-drag">
     <div class="select-all-card" class:collect-mode={library.collectMode}>
       {#if library.collectMode}
-        <div class="toggle-wrapper">
-          <button
-            class="delete-toggle"
-            class:active={library.deleteOriginalAfterCopy}
-            onclick={(e) => {
-              e.stopPropagation();
-              library.toggleDeleteOriginalAfterCopy();
-            }}
-            onmousedown={(e) => e.stopPropagation()}
-            aria-label={library.deleteOriginalAfterCopy
-              ? t("menus.select.deleteOriginal")
-              : t("menus.select.copyOriginal")}
+        <button
+          class="ctx-pin tooltip-above-shift-right"
+          data-tooltip={t("menus.select.backToActions")}
+          onclick={(e) => {
+            e.stopPropagation();
+            library.exitCollectMode();
+          }}
+          onmousedown={(e) => e.stopPropagation()}
+          aria-label={t("menus.select.backToActions")}
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
-            <span class="toggle-track">
-              <span class="toggle-knob"></span>
-            </span>
-          </button>
-          <span class="toggle-tooltip"
-            >{library.deleteOriginalAfterCopy
-              ? t("menus.select.deleteOriginal")
-              : t("menus.select.copyOriginal")}</span
-          >
-        </div>
+            <path d="M9 14L4 9l5-5" />
+            <path d="M20 20v-7a4 4 0 00-4-4H4" />
+          </svg>
+        </button>
       {:else}
         <button
           class="select-all-btn"
@@ -235,7 +241,13 @@
         </button>
       {/if}
     </div>
-    <span class="ctx-drag-title">
+    <span
+      class="ctx-drag-title select-drag-handle"
+      role="button"
+      tabindex="0"
+      aria-label={t("menus.common.dragToMove")}
+      onmousedown={startMenuDrag}
+    >
       <span class="ctx-dots">
         <span class="ctx-dot"></span>
         <span class="ctx-dot"></span>
@@ -257,7 +269,7 @@
       </span>
     </span>
     <button
-      class="ctx-close tooltip-below"
+      class="ctx-close tooltip-above-shift-left"
       data-tooltip={t("menus.common.close")}
       onclick={(e) => {
         e.stopPropagation();
@@ -280,29 +292,93 @@
     </button>
   </div>
   {#if library.collectMode}
-    <div class="edit-menu-card">
-      <div class="collect-prompt">
-        {t("menus.select.collectPrompt")}
-      </div>
-      <button
-        class="edit-menu-btn green sub collect-move-btn"
-        onclick={moveFiles}
-      >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+    <div class="edit-menu-card collect-panel">
+      <div class="collect-section">
+        <span class="collect-section-icon">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"
+            />
+            <line x1="12" y1="11" x2="12" y2="17" />
+            <line x1="9" y1="14" x2="15" y2="14" />
+          </svg>
+        </span>
+        <div class="collect-section-copy">
+          <span class="collect-section-title"
+            >{t("menus.select.collectTitle")}</span
+          >
+          <p class="collect-section-hint">
+            {t("menus.select.collectPrompt")}
+          </p>
+        </div>
+        <div
+          class="collect-mode-options"
+          role="group"
+          aria-label={t("menus.select.collectAction")}
         >
-          <path d="M22 2 11 13" />
-          <path d="M22 2 15 22 11 13 2 9 22 2" />
-        </svg>
-        <span>{t("menus.select.moveToFolder")}</span>
-      </button>
+          <button
+            class="collect-mode-btn"
+            class:active={!library.deleteOriginalAfterCopy}
+            onclick={() => setCollectMove(false)}
+            aria-pressed={!library.deleteOriginalAfterCopy}
+          >
+            {t("menus.select.copy")}
+          </button>
+          <button
+            class="collect-mode-btn move"
+            class:active={library.deleteOriginalAfterCopy}
+            onclick={() => setCollectMove(true)}
+            aria-pressed={library.deleteOriginalAfterCopy}
+          >
+            {t("menus.select.move")}
+          </button>
+        </div>
+      </div>
+
+      <div class="collect-divider"></div>
+
+      <div class="collect-section">
+        <span class="collect-section-icon yellow">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+            />
+            <path d="M11 13h6" />
+            <path d="M14 10l3 3-3 3" />
+          </svg>
+        </span>
+        <div class="collect-section-copy">
+          <span class="collect-section-title"
+            >{t("menus.select.moveToFolderTitle")}</span
+          >
+          <p class="collect-section-hint">
+            {t("menus.select.moveToFolderHint")}
+          </p>
+        </div>
+        <button class="collect-folder-btn" onclick={moveFiles}>
+          <span>{t("menus.select.chooseFolder")}</span>
+        </button>
+      </div>
     </div>
   {:else}
     <div class="edit-menu-card">
@@ -431,10 +507,22 @@
     justify-content: center;
     align-items: center;
     position: relative;
+    cursor: default;
   }
 
   .select-menu .ctx-drag:hover {
     background: transparent;
+  }
+
+  .select-menu .select-drag-handle,
+  .select-menu .select-drag-handle * {
+    cursor: grab;
+    user-select: none;
+  }
+
+  .select-menu .select-drag-handle:active,
+  .select-menu .select-drag-handle:active * {
+    cursor: grabbing;
   }
 
   .select-menu .ctx-close {
@@ -474,92 +562,123 @@
     color: var(--text-primary, #fff);
   }
 
-  .collect-prompt {
-    padding: 10px 8px;
-    text-align: center;
-    color: var(--accent-blue, #3b82f6);
-    font-family: var(--font-family);
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  .collect-move-btn {
-    width: 100%;
-    margin-top: 4px;
-  }
-
   .select-all-card.collect-mode {
     border: none;
     background: transparent;
     padding: 0;
   }
 
-  .toggle-wrapper {
-    position: relative;
-  }
-
-  .delete-toggle {
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
+  .collect-panel {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .collect-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .collect-section-icon {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
     align-items: center;
-    border-radius: 10px;
+    justify-content: center;
+    margin-top: 1px;
+    color: var(--blue-light);
   }
 
-  .toggle-track {
-    width: 24px;
-    height: 12px;
-    border-radius: 10px;
-    background: var(--accent-blue, #3b82f6);
-    position: relative;
-    transition: background 0.15s;
-    display: block;
+  .collect-section-icon.yellow {
+    color: var(--yellow-soft);
   }
 
-  .delete-toggle.active .toggle-track {
-    background: var(--accent-red, #ef4444);
+  .collect-section-copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
   }
 
-  .toggle-knob {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #fff;
-    transition: left 0.15s;
-    display: block;
-  }
-
-  .delete-toggle.active .toggle-knob {
-    left: 14px;
-  }
-
-  .toggle-tooltip {
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--bg-elevated);
-    color: var(--text-muted);
-    font-size: 11px;
+  .collect-section-title {
     font-family: var(--font-family);
-    white-space: nowrap;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 0.5px solid var(--bg-border);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    transition-delay: 0.4s;
-    z-index: 9999;
-    line-height: normal;
+    font-size: 10px;
+    color: var(--text-primary);
   }
 
-  .toggle-wrapper:hover .toggle-tooltip {
-    opacity: 1;
+  .collect-section-hint {
+    margin: 0;
+    font-family: var(--font-family);
+    font-size: 9px;
+    line-height: 1.35;
+    color: var(--text-hint);
+  }
+
+  .collect-divider {
+    height: 0;
+    border-top: 0.5px solid var(--bg-elevated);
+    margin: 1px 0;
+  }
+
+  .collect-mode-options {
+    flex-shrink: 0;
+    width: 104px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    margin-top: 1px;
+    padding: 2px;
+    border: 0.5px solid var(--bg-border);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+  }
+
+  .collect-mode-btn {
+    min-width: 0;
+    padding: 3px 2px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--text-muted);
+    font-family: var(--font-family);
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .collect-mode-btn.active {
+    background: var(--blue-bg-hover);
+    color: var(--blue-light);
+  }
+
+  .collect-mode-btn.move.active {
+    background: var(--yellow-bg-default);
+    color: var(--yellow-soft);
+  }
+
+  .collect-folder-btn {
+    flex-shrink: 0;
+    width: 104px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+    padding: 5px 8px;
+    border: 0.5px solid var(--yellow-border);
+    border-radius: 6px;
+    background: var(--yellow-bg-default);
+    color: var(--yellow-soft);
+    font-family: var(--font-family);
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  .collect-folder-btn:hover {
+    background: var(--yellow-bg-active);
   }
 </style>

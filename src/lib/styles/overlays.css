@@ -1192,7 +1192,7 @@
   position: relative;
 }
 .share-header-bar > svg {
-  color: var(--green);
+  color: var(--yellow);
   flex-shrink: 0;
 }
 .share-header-bar .delete-title {

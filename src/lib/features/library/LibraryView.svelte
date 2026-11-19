@@ -5278,35 +5278,8 @@
         <div class="library-dialog-body">
           <div class="edit-menu-card">
             <button
-              class="library-dialog-option library-dialog-option-yellow"
-              style={addCollAnimStyle(0)}
-              onclick={addCollection}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                />
-              </svg>
-              <span>{t("library.dialog.syncFolder")}</span>
-            </button>
-          </div>
-          <div class="library-dialog-or">
-            <span class="library-dialog-or-line"></span>
-            <span class="library-dialog-or-text">{t("library.dialog.or")}</span>
-            <span class="library-dialog-or-line"></span>
-          </div>
-          <div class="edit-menu-card">
-            <button
               class="library-dialog-option library-dialog-option-blue"
+              style={addCollAnimStyle(0)}
               onclick={confirmCreateCollection}
             >
               <svg
@@ -5385,6 +5358,34 @@
                 {/if}
               </button>
             </div>
+          </div>
+          <div class="library-dialog-or">
+            <span class="library-dialog-or-line"></span>
+            <span class="library-dialog-or-text">{t("library.dialog.or")}</span>
+            <span class="library-dialog-or-line"></span>
+          </div>
+          <div class="edit-menu-card">
+            <button
+              class="library-dialog-option library-dialog-option-yellow"
+              style={addCollAnimStyle(1)}
+              onclick={addCollection}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              <span>{t("library.dialog.syncFolder")}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -5563,10 +5564,6 @@
     opacity: 1;
   }
 
-  .library-tab-highlight.collect-mode {
-    background: var(--accent-blue, #3b82f6);
-  }
-
   .library-tab {
     position: relative;
     z-index: 1;
@@ -5613,7 +5610,7 @@
   }
 
   .library-tab.collect-mode {
-    color: #fff;
+    color: var(--accent-blue, #3b82f6);
   }
 
   /* Search sits absolutely in the toolbar row; the right offset is measured
@@ -6081,11 +6078,6 @@
 
   .library-placeholder-card.collect-mode {
     border-color: var(--accent-blue, #3b82f6);
-  }
-
-  .library-placeholder-card.collect-mode svg {
-    color: var(--accent-blue, #3b82f6);
-    opacity: 1;
   }
 
   .river-fav-placeholder,

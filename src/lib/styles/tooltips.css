@@ -126,6 +126,11 @@
 .menu-open .edit-menu [data-tooltip]:hover::after {
   opacity: 1 !important;
 }
+.menu-open .select-menu [data-tooltip]:hover::after {
+  opacity: 1 !important;
+  transition: opacity 0.15s ease !important;
+  transition-delay: 0.4s !important;
+}
 .edit-menu-wrapper.close-target-hover .ctx-close::after,
 .markup-menu-wrapper.close-target-hover .ctx-close::after {
   opacity: 1 !important;

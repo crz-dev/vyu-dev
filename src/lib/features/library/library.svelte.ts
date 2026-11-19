@@ -226,6 +226,7 @@ function createLibrary() {
 
   let selectedPaths = $state<Record<string, boolean>>({});
   let collectMode = $state(false);
+  let collectReturnTab = $state<LibraryTab>("library");
   let deleteOriginalAfterCopy = $state(false);
 
   // Scan trigger — increment to force directory re-scan
@@ -795,8 +796,17 @@ function createLibrary() {
   }
 
   function setCollectMode(v: boolean) {
+    if (v && !collectMode) collectReturnTab = activeTab;
     collectMode = v;
     if (!v) deleteOriginalAfterCopy = false;
+  }
+
+  function exitCollectMode() {
+    if (!collectMode) return;
+    const tab = collectReturnTab;
+    collectMode = false;
+    deleteOriginalAfterCopy = false;
+    setActiveTab(tab);
   }
 
   async function copySelectedToCollection(colPath: string) {
@@ -1012,6 +1022,7 @@ function createLibrary() {
       deleteOriginalAfterCopy = !deleteOriginalAfterCopy;
     },
     setCollectMode,
+    exitCollectMode,
     copySelectedToCollection,
     setCollectionThumbnail,
   };
