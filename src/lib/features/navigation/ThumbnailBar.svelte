@@ -10,6 +10,7 @@
   import { library } from "$lib/features/library/library.svelte";
   import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
@@ -111,6 +112,7 @@
   $effect(() => {
     if (!visible) {
       afterOpen = false;
+      cancelWheelScroll();
       return;
     }
     if (afterOpen) return;
@@ -136,9 +138,60 @@
     }
   }
 
+  // Smooth wheel scrolling: accumulate a target so rapid trackpad events add
+  // up, then ease toward it. Wheel pans the strip only; it never selects a
+  // file. Arrow keys remain file skipping.
+  let wheelTarget: number | null = null;
+  let wheelRaf = 0;
+  const WHEEL_EASE = 0.22;
+
+  function cancelWheelScroll() {
+    if (wheelRaf) cancelAnimationFrame(wheelRaf);
+    wheelRaf = 0;
+    wheelTarget = null;
+  }
+
+  function onWheel(e: WheelEvent) {
+    if (!trackEl) return;
+    const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    if (delta === 0) return;
+    e.preventDefault();
+    let px = delta;
+    if (e.deltaMode === 1) px *= ITEM_STEP;
+    else if (e.deltaMode === 2) px *= trackEl.clientWidth;
+    const max = Math.max(0, trackEl.scrollWidth - trackEl.clientWidth);
+    const base = wheelTarget ?? trackEl.scrollLeft;
+    const target = Math.max(0, Math.min(max, base + px));
+    if (appearance.reducedMotion) {
+      cancelWheelScroll();
+      trackEl.scrollLeft = target;
+      return;
+    }
+    wheelTarget = target;
+    if (!wheelRaf) wheelRaf = requestAnimationFrame(stepWheel);
+  }
+
+  function stepWheel() {
+    wheelRaf = 0;
+    if (!trackEl || wheelTarget === null) return;
+    const diff = wheelTarget - trackEl.scrollLeft;
+    if (Math.abs(diff) < 0.5) {
+      trackEl.scrollLeft = wheelTarget;
+      wheelTarget = null;
+      return;
+    }
+    trackEl.scrollLeft += diff * WHEEL_EASE;
+    wheelRaf = requestAnimationFrame(stepWheel);
+  }
+
+  $effect(() => {
+    return cancelWheelScroll;
+  });
+
   // Scroll active item into view when currentIndex changes (and bar is already open)
   $effect(() => {
     if (!afterOpen || !trackEl) return;
+    cancelWheelScroll();
     const el = trackEl.querySelector(
       `[data-index="${currentIndex}"]`,
     ) as HTMLElement | null;
@@ -186,6 +239,7 @@
     bind:this={trackEl}
     bind:clientWidth={trackWidth}
     onscroll={onScroll}
+    onwheel={onWheel}
   >
     <!-- Left spacer so the first visible item aligns as if all items are rendered -->
     <div
