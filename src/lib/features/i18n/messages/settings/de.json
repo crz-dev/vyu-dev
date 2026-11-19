@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "Tastenkürzel-Übersicht",
   "keybinds.actions.toggleLibrary.description": "Bibliotheks-Overlay ein- oder ausblenden",
   "keybinds.actions.toggleLibrary.label": "Bibliothek umschalten",
+  "keybinds.actions.togglePip.description": "Bild-in-Bild-Fenster umschalten",
+  "keybinds.actions.togglePip.label": "Bild-in-Bild",
   "keybinds.actions.toggleSleepTimer.description": "Sleep-Timer mit der eingestellten Dauer starten oder löschen",
   "keybinds.actions.toggleSleepTimer.label": "Sleep-Timer umschalten",
   "keybinds.actions.toggleSlideshow.description": "Diashow starten oder stoppen",

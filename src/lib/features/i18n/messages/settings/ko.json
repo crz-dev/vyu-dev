@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "단축키 요약",
   "keybinds.actions.toggleLibrary.description": "라이브러리 오버레이를 표시하거나 숨깁니다",
   "keybinds.actions.toggleLibrary.label": "라이브러리 전환",
+  "keybinds.actions.togglePip.description": "화면 속 화면 전환",
+  "keybinds.actions.togglePip.label": "화면 속 화면",
   "keybinds.actions.toggleSleepTimer.description": "설정된 길이로 수면 타이머를 시작하거나 해제합니다",
   "keybinds.actions.toggleSleepTimer.label": "수면 타이머 전환",
   "keybinds.actions.toggleSlideshow.description": "슬라이드쇼 재생을 시작하거나 중지합니다",

@@ -51,6 +51,16 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     behavior: "tap",
   },
   {
+    id: "toggle-pip",
+    label: "settings.keybinds.actions.togglePip.label",
+    description: "settings.keybinds.actions.togglePip.description",
+    category: "app",
+    context: "global",
+    defaultBinding: key("p", { ctrl: true, shift: true }),
+    allowRepeat: false,
+    behavior: "tap",
+  },
+  {
     id: "show-shortcuts",
     label: "settings.keybinds.actions.showShortcuts.label",
     description: "settings.keybinds.actions.showShortcuts.description",

@@ -33,6 +33,7 @@
   "markers.loopB": "Döngü B",
   "markers.resume": "Devam et",
   "noFileOpen": "Açık dosya yok",
+  "pip.failed": "Resim içinde resim açılamadı",
   "sleep.cleared": "Uyku zamanlayıcısı temizlendi",
   "sleep.set": "Uyku zamanlayıcısı {count} dk olarak ayarlandı",
   "sleep.stoppedPlayback": "Uyku zamanlayıcısı oynatmayı durdurdu",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "Dizini aç",
   "viewer.pdf.previousMatch": "Önceki eşleşme",
   "viewer.pdf.textCopied": "Metin kopyalandı",
+  "viewer.pip.exit": "Resim içinde resimden çık",
+  "viewer.pip.next": "Sonraki dosya",
+  "viewer.pip.previous": "Önceki dosya",
+  "viewer.pip.progress": "Oynatma konumu",
+  "viewer.pip.scroll": "Okumak için kaydırın",
   "viewer.subtitles": "Altyazılar"
 }

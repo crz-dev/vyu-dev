@@ -6,6 +6,8 @@
   "app.minimize": "Simge durumuna küçült",
   "app.open": "Uygulama menüsünü aç",
   "app.openFile": "Dosya aç",
+  "app.pip": "Resim içinde resim",
+  "app.pipExit": "Resim içinde resimden çık",
   "app.renameFile": "Dosyayı yeniden adlandır",
   "app.toast.fileRenamed": "Dosya yeniden adlandırıldı",
   "app.toast.folderRenamed": "Klasör yeniden adlandırıldı",

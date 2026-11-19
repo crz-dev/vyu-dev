@@ -53,6 +53,10 @@ export function invokeGetSystemConfig(): Promise<SystemConfig> {
   return invoke("get_system_config");
 }
 
+export function invokeSetPipActive(active: boolean): Promise<void> {
+  return invoke("set_pip_active", { active });
+}
+
 export function invokeGetRuntimeInfo(): Promise<RuntimeInfo> {
   return invoke("get_runtime_info");
 }

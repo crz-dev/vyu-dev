@@ -33,6 +33,7 @@
   "markers.loopB": "반복 B",
   "markers.resume": "이어보기",
   "noFileOpen": "열린 파일 없음",
+  "pip.failed": "화면 속 화면을 시작할 수 없습니다",
   "sleep.cleared": "수면 타이머를 해제했습니다",
   "sleep.set": "수면 타이머를 {count}분으로 설정했습니다",
   "sleep.stoppedPlayback": "수면 타이머가 재생을 중지했습니다",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "색인 열기",
   "viewer.pdf.previousMatch": "이전 일치",
   "viewer.pdf.textCopied": "텍스트를 복사했습니다",
+  "viewer.pip.exit": "화면 속 화면 종료",
+  "viewer.pip.next": "다음 파일",
+  "viewer.pip.previous": "이전 파일",
+  "viewer.pip.progress": "재생 위치",
+  "viewer.pip.scroll": "스크롤하여 보기",
   "viewer.subtitles": "자막"
 }

@@ -8,6 +8,7 @@ use crate::state::system::{
     save_config, SystemConfig, SystemState, DEFAULT_CACHE_LIMIT_MB, MAX_CACHE_LIMIT_MB,
     MIN_CACHE_LIMIT_MB,
 };
+use crate::state::window::PipActive;
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const CONTEXT_KINDS: [&str; 5] = ["image", "video", "audio", "document", ".pdf"];
@@ -105,6 +106,13 @@ where
 #[tauri::command]
 pub fn get_system_config(state: State<'_, SystemState>) -> Result<SystemConfig, String> {
     lock_config(&state)
+}
+
+/// Marks the window as being in picture-in-picture mode so the mini geometry
+/// is not persisted as the user's normal window state.
+#[tauri::command]
+pub fn set_pip_active(state: State<'_, PipActive>, active: bool) {
+    state.0.store(active, Ordering::Relaxed);
 }
 
 #[tauri::command]

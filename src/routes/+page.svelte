@@ -95,6 +95,7 @@
   import { createViewerEffects } from "$lib/features/viewer/viewerEffects.svelte";
   import { createViewerStyle } from "$lib/features/viewer/viewerStyle.svelte";
   import ViewerArea from "$lib/features/viewer/ViewerArea.svelte";
+  import { pip, type PipMedia } from "$lib/features/viewer/pip.svelte";
   import {
     createDeleteActions,
     performMultiDelete,
@@ -168,6 +169,8 @@
   let rawDurationSecs = $state(0);
   let imageNaturalWidth = $state(0);
   let imageNaturalHeight = $state(0);
+  let videoNaturalWidth = $state(0);
+  let videoNaturalHeight = $state(0);
   let volume = $state(1);
   let hoverZone = $state("none");
   let dragDropActive = $state(false);
@@ -299,6 +302,7 @@
     fitPdfToScreen: (width, height) => pdf.fitToScreen(width, height),
     getThumbnailBarVisible: () => thumbnailBarVisible,
     getIsFullscreen: () => viewer.state.isFullscreen,
+    getPipActive: () => pip.state.active,
   });
   $effect(viewerFx.setVideoElEffect);
   $effect(viewerFx.resizeObserverEffect);
@@ -327,6 +331,144 @@
     handleViewerScroll,
     toggleFullscreen,
   } = viewerFx;
+
+  const pipAvailable = $derived(
+    !!fileSrc &&
+      !anyMenuOpen &&
+      !editing.cropMode &&
+      !markup.hasUnapplied &&
+      !markup.drawActive &&
+      !markup.highlightActive &&
+      !markup.textActive &&
+      !markup.selectActive &&
+      !markup.removeActive,
+  );
+
+  let pipZoomSnapshot: {
+    zoomLevel: number;
+    baseZoomLevel: number;
+    translateX: number;
+    translateY: number;
+    zoomLocked: boolean;
+  } | null = null;
+
+  function pipMediaSnapshot(): PipMedia {
+    let kind: PipMedia["kind"] = "image";
+    let width = imageNaturalWidth;
+    let height = imageNaturalHeight;
+    if (isVideo) {
+      kind = "video";
+      width = videoNaturalWidth;
+      height = videoNaturalHeight;
+    } else if (isAudio) {
+      kind = "audio";
+      width = 0;
+      height = 0;
+    } else if (isPdf) {
+      kind = "pdf";
+      const page = pdf.state.pages[0];
+      width = page?.width ?? 0;
+      height = page?.height ?? 0;
+    }
+    return {
+      kind,
+      width,
+      height,
+      rotation: editing.snapshot.rotation,
+    };
+  }
+
+  function captureViewerZoomForPip() {
+    pipZoomSnapshot = {
+      zoomLevel: viewer.state.zoomLevel,
+      baseZoomLevel: viewer.state.baseZoomLevel,
+      translateX: viewer.state.translateX,
+      translateY: viewer.state.translateY,
+      zoomLocked: viewer.state.zoomLocked,
+    };
+    viewer.state.zoomLocked = false;
+    viewer.state.zoomLevel = viewer.state.baseZoomLevel;
+    viewer.state.translateX = 0;
+    viewer.state.translateY = 0;
+  }
+
+  function restoreViewerZoomAfterPip() {
+    if (!pipZoomSnapshot) return;
+    const saved = pipZoomSnapshot;
+    pipZoomSnapshot = null;
+    viewer.state.zoomLocked = saved.zoomLocked;
+    viewer.state.zoomLevel = saved.zoomLevel;
+    viewer.state.baseZoomLevel = saved.baseZoomLevel;
+    viewer.state.translateX = saved.translateX;
+    viewer.state.translateY = saved.translateY;
+  }
+
+  let pipToggleInFlight = false;
+
+  async function handleTogglePip() {
+    if (pipToggleInFlight || pip.busy) return;
+    pipToggleInFlight = true;
+    try {
+      if (pip.state.active) {
+        await pip.exit();
+        return;
+      }
+      if (!pipAvailable) return;
+      if (viewer.state.isFullscreen) toggleFullscreen();
+      captureViewerZoomForPip();
+      const entered = await pip.enter(pipMediaSnapshot());
+      if (!entered && !pip.state.active) {
+        restoreViewerZoomAfterPip();
+        showToast({ message: t("shell.pip.failed"), color: "red" });
+      } else if (entered && (anyMenuOpen || !fileSrc)) {
+        await pip.exit();
+      }
+    } finally {
+      pipToggleInFlight = false;
+    }
+  }
+
+  function handleToggleFullscreen() {
+    if (pip.state.active) {
+      void pip.exit().then(() => {
+        if (!pip.state.active) toggleFullscreen();
+      });
+      return;
+    }
+    toggleFullscreen();
+  }
+
+  $effect(() => {
+    if (!pip.state.active) {
+      restoreViewerZoomAfterPip();
+      return;
+    }
+    const media = pipMediaSnapshot();
+    void pip.fitTo(media);
+  });
+
+  $effect(() => {
+    if (pip.state.active && !fileSrc) void pip.exit();
+  });
+
+  $effect(() => {
+    if (pip.state.active && anyMenuOpen) void pip.exit();
+  });
+
+  $effect(() => {
+    if (
+      pip.state.active &&
+      (editing.cropMode ||
+        markup.hasUnapplied ||
+        markup.drawActive ||
+        markup.highlightActive ||
+        markup.textActive ||
+        markup.selectActive ||
+        markup.removeActive)
+    ) {
+      void pip.exit();
+    }
+  });
 
   const getMediaEl = () => (isVideo ? videoEl : isAudio ? audioEl : null);
 
@@ -689,6 +831,10 @@
 
   function handleVideoLoad() {
     onVideoLoad();
+    if (videoEl) {
+      videoNaturalWidth = videoEl.videoWidth;
+      videoNaturalHeight = videoEl.videoHeight;
+    }
     trackSelection.restorePlaybackAfterSourceLoad(videoEl);
   }
 
@@ -754,6 +900,8 @@
     createFileOpenActions({ loadFile });
   const { startPan, startDrag } = createPanDrag({
     getIsVideo: () => isVideo,
+    getPipActive: () => pip.state.active,
+    exitPip: () => void pip.exit(),
     toggleFullscreen,
     togglePlay,
   });
@@ -767,7 +915,10 @@
   function shouldSeekMedia(): boolean {
     return (
       isTimedMedia() &&
-      (isAudio || hoverZone === "video" || viewer.state.isFullscreen)
+      (isAudio ||
+        hoverZone === "video" ||
+        viewer.state.isFullscreen ||
+        pip.state.active)
     );
   }
 
@@ -841,10 +992,13 @@
     },
     isFullscreen: () => viewer.state.isFullscreen,
     exitFullscreen: toggleFullscreen,
+    isPip: () => pip.state.active,
+    exitPip: () => void pip.exit(),
     actions: {
       "open-file": openFileDialog,
       "close-file": closeFile,
       "toggle-library": () => (menuStore.libraryOpen = !menuStore.libraryOpen),
+      "toggle-pip": () => void handleTogglePip(),
       "library-search": () => {
         if (!menuStore.libraryOpen) return;
         library.requestSearchFocus();
@@ -862,7 +1016,7 @@
         togglePlay();
         playAudioCue(wasPlaying ? "pause" : "play");
       },
-      fullscreen: toggleFullscreen,
+      fullscreen: handleToggleFullscreen,
       "next-file": () => {
         void navigate(1);
         playAudioCue("navigate");
@@ -1028,6 +1182,7 @@
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (pip.state.active) return;
     const target = e.target as HTMLElement;
     if (target.closest("button, .progress-bar, .fs-progress")) return;
     if (!fileSrc) return;
@@ -1622,7 +1777,10 @@
   viewerStateIsFullscreen={viewer.state.isFullscreen}
   viewerFsControlsVisible={viewer.state.fsControlsVisible}
   viewerResetFsTimer={viewer.resetFsTimer}
-  viewerToggleFullscreen={toggleFullscreen}
+  viewerToggleFullscreen={handleToggleFullscreen}
+  pipActive={pip.state.active}
+  {pipAvailable}
+  togglePip={handleTogglePip}
   zoomLevel={viewer.state.zoomLevel}
   zoomLocked={viewer.state.zoomLocked}
   toggleZoomLock={handleToggleZoomLock}
@@ -1788,7 +1946,7 @@
       {closeWindow}
       {startPan}
       {handleViewerScroll}
-      {toggleFullscreen}
+      toggleFullscreen={handleToggleFullscreen}
       {fsPillEl}
       {onImageLoad}
       onVideoLoad={handleVideoLoad}
@@ -1865,6 +2023,6 @@
   onended={backgroundAudio.handleEnded}
 ></audio>
 
-{#if backgroundAudio.active}
+{#if backgroundAudio.active && !pip.state.active}
   <NowPlayingPill />
 {/if}

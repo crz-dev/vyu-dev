@@ -4,6 +4,8 @@
   import VideoView from "./VideoView.svelte";
   import PDFView from "./PDFView.svelte";
   import FullscreenOverlay from "./FullscreenOverlay.svelte";
+  import PipOverlay from "./PipOverlay.svelte";
+  import { pip } from "./pip.svelte";
   import AudioPlayer from "$lib/features/media/AudioPlayer.svelte";
   import {
     VOLUME_SEGMENTS,
@@ -418,6 +420,7 @@
     bind:this={viewerEl}
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
+    onmousemove={pip.state.active ? pip.notifyPointerActivity : undefined}
     onwheel={isPdf || isAudio ? undefined : handleViewerScroll}
     onmousedown={!markup.drawActive &&
     !markup.selectActive &&
@@ -431,13 +434,15 @@
     }}
     ontouchmove={isAudio ? undefined : viewer.handleTouchZoom}
     ontouchend={isAudio ? undefined : viewer.handleTouchEnd}
-    style="cursor: {markup.drawActive ||
-    markup.selectActive ||
-    markup.removeActive
-      ? markup.cursorStyle
-      : !isVideo
-        ? style.panCursor
-        : 'default'}"
+    style="cursor: {pip.state.active &&
+    appearance.cursorAutoHide &&
+    !pip.state.controlsVisible
+      ? 'none'
+      : markup.drawActive || markup.selectActive || markup.removeActive
+        ? markup.cursorStyle
+        : !isVideo
+          ? style.panCursor
+          : 'default'}"
     role="presentation"
   >
     {#if fileSrc && !isVideo && !isAudio && !isPdf}
@@ -634,6 +639,27 @@
       >
         <img src={staleFrameSrc} alt="" decoding="async" />
       </div>
+    {/if}
+    {#if pip.state.active && fileSrc}
+      <PipOverlay
+        {fileName}
+        {currentIndex}
+        fileListLength={fileList.length}
+        {isVideo}
+        {isAudio}
+        {isPdf}
+        {isGifVideo}
+        {playing}
+        {progress}
+        {currentTimeDisplay}
+        {durationDisplay}
+        {isScrubbing}
+        {coverArtSrc}
+        {cdColor}
+        {navigate}
+        {togglePlay}
+        {startScrubbing}
+      />
     {/if}
   </div>
   <div

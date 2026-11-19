@@ -33,6 +33,7 @@
   "markers.loopB": "Loop B",
   "markers.resume": "Fortsetzen",
   "noFileOpen": "Keine Datei geöffnet",
+  "pip.failed": "Bild-in-Bild konnte nicht geöffnet werden",
   "sleep.cleared": "Sleep-Timer gelöscht",
   "sleep.set": "Sleep-Timer auf {count} Min. gesetzt",
   "sleep.stoppedPlayback": "Sleep-Timer hat die Wiedergabe gestoppt",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "Index öffnen",
   "viewer.pdf.previousMatch": "Vorheriger Treffer",
   "viewer.pdf.textCopied": "Text kopiert",
+  "viewer.pip.exit": "Bild-in-Bild beenden",
+  "viewer.pip.next": "Nächste Datei",
+  "viewer.pip.previous": "Vorherige Datei",
+  "viewer.pip.progress": "Wiedergabeposition",
+  "viewer.pip.scroll": "Zum Lesen scrollen",
   "viewer.subtitles": "Untertitel"
 }

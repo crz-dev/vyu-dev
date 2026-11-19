@@ -33,6 +33,7 @@
   "markers.loopB": "ループ B",
   "markers.resume": "再開",
   "noFileOpen": "ファイルが開かれていません",
+  "pip.failed": "ピクチャーインピクチャーを開始できませんでした",
   "sleep.cleared": "スリープタイマーを解除しました",
   "sleep.set": "スリープタイマーを {count} 分に設定しました",
   "sleep.stoppedPlayback": "スリープタイマーにより再生を停止しました",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "索引を開く",
   "viewer.pdf.previousMatch": "前の一致",
   "viewer.pdf.textCopied": "テキストをコピーしました",
+  "viewer.pip.exit": "ピクチャーインピクチャーを終了",
+  "viewer.pip.next": "次のファイル",
+  "viewer.pip.previous": "前のファイル",
+  "viewer.pip.progress": "再生位置",
+  "viewer.pip.scroll": "スクロールして表示",
   "viewer.subtitles": "字幕"
 }

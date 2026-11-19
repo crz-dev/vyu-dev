@@ -33,6 +33,7 @@
   "markers.loopB": "Boucle B",
   "markers.resume": "Reprendre",
   "noFileOpen": "Aucun fichier ouvert",
+  "pip.failed": "Impossible d'activer l'image dans l'image",
   "sleep.cleared": "Minuteur d’arrêt effacé",
   "sleep.set": "Minuteur réglé sur {count} min",
   "sleep.stoppedPlayback": "Le minuteur d’arrêt a arrêté la lecture",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "Ouvrir l’index",
   "viewer.pdf.previousMatch": "Correspondance précédente",
   "viewer.pdf.textCopied": "Texte copié",
+  "viewer.pip.exit": "Quitter l'image dans l'image",
+  "viewer.pip.next": "Fichier suivant",
+  "viewer.pip.previous": "Fichier précédent",
+  "viewer.pip.progress": "Position de lecture",
+  "viewer.pip.scroll": "Faites défiler pour lire",
   "viewer.subtitles": "Sous-titres"
 }

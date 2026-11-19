@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "快捷键速查表",
   "keybinds.actions.toggleLibrary.description": "显示或隐藏媒体库浮层",
   "keybinds.actions.toggleLibrary.label": "切换媒体库",
+  "keybinds.actions.togglePip.description": "切换画中画窗口",
+  "keybinds.actions.togglePip.label": "画中画",
   "keybinds.actions.toggleSleepTimer.description": "按设定时长启动睡眠定时器或将其清除",
   "keybinds.actions.toggleSleepTimer.label": "切换睡眠定时器",
   "keybinds.actions.toggleSlideshow.description": "开始或停止幻灯片播放",

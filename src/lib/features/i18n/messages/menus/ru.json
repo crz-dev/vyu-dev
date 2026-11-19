@@ -6,6 +6,8 @@
   "app.minimize": "Свернуть",
   "app.open": "Открыть меню приложения",
   "app.openFile": "Открыть файл",
+  "app.pip": "Картинка в картинке",
+  "app.pipExit": "Выйти из режима «картинка в картинке»",
   "app.renameFile": "Переименовать файл",
   "app.toast.fileRenamed": "Файл переименован",
   "app.toast.folderRenamed": "Папка переименована",

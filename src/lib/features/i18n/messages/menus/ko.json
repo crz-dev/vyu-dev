@@ -6,6 +6,8 @@
   "app.minimize": "최소화",
   "app.open": "앱 메뉴 열기",
   "app.openFile": "파일 열기",
+  "app.pip": "화면 속 화면",
+  "app.pipExit": "화면 속 화면 종료",
   "app.renameFile": "파일 이름 변경",
   "app.toast.fileRenamed": "파일 이름이 변경되었습니다",
   "app.toast.folderRenamed": "폴더 이름이 변경되었습니다",

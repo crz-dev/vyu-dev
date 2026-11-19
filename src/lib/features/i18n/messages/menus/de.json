@@ -6,6 +6,8 @@
   "app.minimize": "Minimieren",
   "app.open": "App-Menü öffnen",
   "app.openFile": "Datei öffnen",
+  "app.pip": "Bild-in-Bild",
+  "app.pipExit": "Bild-in-Bild beenden",
   "app.renameFile": "Datei umbenennen",
   "app.toast.fileRenamed": "Datei umbenannt",
   "app.toast.folderRenamed": "Ordner umbenannt",

@@ -437,6 +437,8 @@
   "keybinds.actions.showShortcuts.label": "快速鍵一覽表",
   "keybinds.actions.toggleLibrary.description": "顯示或隱藏媒體庫覆蓋層",
   "keybinds.actions.toggleLibrary.label": "切換媒體庫",
+  "keybinds.actions.togglePip.description": "切換子母畫面視窗",
+  "keybinds.actions.togglePip.label": "子母畫面",
   "keybinds.actions.toggleSleepTimer.description": "以設定的長度啟動睡眠定時器，或將其清除",
   "keybinds.actions.toggleSleepTimer.label": "切換睡眠定時器",
   "keybinds.actions.toggleSlideshow.description": "開始或停止幻燈片播放",

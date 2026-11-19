@@ -29,6 +29,9 @@
     minimizeWindow,
     maximizeWindow,
     closeWindow,
+    pipActive = false,
+    pipAvailable = false,
+    onTogglePip,
     dropdownVisible,
     onToggleDropdown,
     onCloseDropdown,
@@ -55,6 +58,9 @@
     minimizeWindow: () => void;
     maximizeWindow: () => void;
     closeWindow: () => void;
+    pipActive?: boolean;
+    pipAvailable?: boolean;
+    onTogglePip?: () => void;
     dropdownVisible: boolean;
     onToggleDropdown: () => void;
     onCloseDropdown: () => void;
@@ -523,6 +529,42 @@
           stroke="currentColor"
           stroke-width="1.2"
           stroke-linecap="round"
+        />
+      </svg>
+    </button>
+    <button
+      class="wc-btn pip-btn tooltip-below"
+      class:active={pipActive}
+      data-tooltip={t(pipActive ? "menus.app.pipExit" : "menus.app.pip")}
+      onclick={onTogglePip}
+      disabled={!pipAvailable}
+      aria-label={t(pipActive ? "menus.app.pipExit" : "menus.app.pip")}
+      aria-pressed={pipActive}
+    >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 10 10"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="1"
+          y="1.4"
+          width="8"
+          height="6.2"
+          rx="0.8"
+          stroke="currentColor"
+          stroke-width="1.1"
+        />
+        <rect
+          x="4.3"
+          y="3.8"
+          width="4.7"
+          height="3.8"
+          rx="0.6"
+          stroke="currentColor"
+          stroke-width="1.1"
         />
       </svg>
     </button>

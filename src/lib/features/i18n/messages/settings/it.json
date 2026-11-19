@@ -439,6 +439,8 @@
   "keybinds.actions.showShortcuts.label": "Riepilogo scorciatoie",
   "keybinds.actions.toggleLibrary.description": "Mostra o nascondi l'overlay della libreria",
   "keybinds.actions.toggleLibrary.label": "Attiva/disattiva libreria",
+  "keybinds.actions.togglePip.description": "Attiva/disattiva la finestra immagine nell'immagine",
+  "keybinds.actions.togglePip.label": "Immagine nell'immagine",
   "keybinds.actions.toggleSleepTimer.description": "Avvia il timer di spegnimento con la durata configurata o cancellalo",
   "keybinds.actions.toggleSleepTimer.label": "Attiva/disattiva timer di spegnimento",
   "keybinds.actions.toggleSlideshow.description": "Avvia o interrompi la presentazione",

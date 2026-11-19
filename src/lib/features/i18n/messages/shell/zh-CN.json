@@ -33,6 +33,7 @@
   "markers.loopB": "循环 B",
   "markers.resume": "继续",
   "noFileOpen": "未打开文件",
+  "pip.failed": "无法进入画中画",
   "sleep.cleared": "睡眠定时器已清除",
   "sleep.set": "睡眠定时器已设为 {count} 分钟",
   "sleep.stoppedPlayback": "睡眠定时器已停止播放",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "打开索引",
   "viewer.pdf.previousMatch": "上一个匹配",
   "viewer.pdf.textCopied": "文本已复制",
+  "viewer.pip.exit": "退出画中画",
+  "viewer.pip.next": "下一个文件",
+  "viewer.pip.previous": "上一个文件",
+  "viewer.pip.progress": "播放位置",
+  "viewer.pip.scroll": "滚动阅读",
   "viewer.subtitles": "字幕"
 }

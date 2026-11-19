@@ -37,6 +37,7 @@
   "markers.loopB": "Повтор B",
   "markers.resume": "Продолжить",
   "noFileOpen": "Файл не открыт",
+  "pip.failed": "Не удалось включить «картинка в картинке»",
   "sleep.cleared": "Таймер сна сброшен",
   "sleep.set": "Таймер сна установлен на {count} мин",
   "sleep.stoppedPlayback": "Таймер сна остановил воспроизведение",
@@ -95,5 +96,10 @@
   "viewer.pdf.openIndex": "Открыть указатель",
   "viewer.pdf.previousMatch": "Предыдущее совпадение",
   "viewer.pdf.textCopied": "Текст скопирован",
+  "viewer.pip.exit": "Выйти из режима «картинка в картинке»",
+  "viewer.pip.next": "Следующий файл",
+  "viewer.pip.previous": "Предыдущий файл",
+  "viewer.pip.progress": "Позиция воспроизведения",
+  "viewer.pip.scroll": "Прокрутите для чтения",
   "viewer.subtitles": "Субтитры"
 }

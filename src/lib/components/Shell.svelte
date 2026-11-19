@@ -111,6 +111,9 @@
     minimizeWindow,
     maximizeWindow,
     closeWindow,
+    pipActive,
+    pipAvailable,
+    togglePip,
     appDropdownVisible,
     toggleAppDropdown,
     closeAppDropdown,
@@ -310,6 +313,9 @@
     minimizeWindow: () => void;
     maximizeWindow: () => void;
     closeWindow: () => void;
+    pipActive: boolean;
+    pipAvailable: boolean;
+    togglePip: () => void;
     appDropdownVisible: boolean;
     toggleAppDropdown: () => void;
     closeAppDropdown: () => void;
@@ -502,7 +508,9 @@
   const selectMenuVisible = $derived(libraryOpen && library.selectedCount > 0);
   // Minimized while nothing is open, but the enabled state is kept so the
   // bar returns when another file/folder is opened.
-  const thumbnailBarShown = $derived(thumbnailBarVisible && fileList.length > 0);
+  const thumbnailBarShown = $derived(
+    thumbnailBarVisible && fileList.length > 0,
+  );
   let selectMenuMoved = $state(false);
 
   $effect(() => {
@@ -772,8 +780,9 @@
 <main
   bind:this={mainEl}
   class:fullscreen={viewerStateIsFullscreen}
+  class:pip={pipActive}
   class:menu-open={anyMenuOpen}
-  class:thumbnail-bar-open={thumbnailBarShown}
+  class:thumbnail-bar-open={thumbnailBarShown && !pipActive}
   class:is-audio={isAudio}
   class:library-mode={libraryOpen}
   class:fs-controls-hidden={viewerStateIsFullscreen &&
@@ -798,6 +807,9 @@
     {minimizeWindow}
     {maximizeWindow}
     {closeWindow}
+    {pipActive}
+    {pipAvailable}
+    onTogglePip={togglePip}
     dropdownVisible={appDropdownVisible}
     onToggleDropdown={toggleAppDropdown}
     onCloseDropdown={closeAppDropdown}
@@ -924,7 +936,7 @@
   <ThumbnailBar
     {fileList}
     {currentIndex}
-    visible={thumbnailBarShown}
+    visible={thumbnailBarShown && !pipActive}
     {onSelect}
     fullscreen={viewerStateIsFullscreen}
   />

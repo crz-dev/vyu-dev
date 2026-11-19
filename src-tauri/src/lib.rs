@@ -150,6 +150,7 @@ pub fn run() {
             delete_collection_folder,
             get_initial_file,
             get_system_config,
+            set_pip_active,
             get_system_restart_status,
             get_runtime_info,
             get_windows_accessibility,
@@ -203,6 +204,7 @@ pub fn run() {
             }
 
             app.manage(types::ThumbState::new());
+            app.manage(state::window::PipActive::default());
 
             util::cleanup_vyu_temp();
 

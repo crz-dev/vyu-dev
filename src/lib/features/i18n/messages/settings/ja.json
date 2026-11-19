@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "ショートカット一覧",
   "keybinds.actions.toggleLibrary.description": "ライブラリのオーバーレイを表示または非表示にします",
   "keybinds.actions.toggleLibrary.label": "ライブラリを切り替え",
+  "keybinds.actions.togglePip.description": "ピクチャーインピクチャーウィンドウを切り替え",
+  "keybinds.actions.togglePip.label": "ピクチャーインピクチャー",
   "keybinds.actions.toggleSleepTimer.description": "設定した長さでスリープタイマーを開始、または解除します",
   "keybinds.actions.toggleSleepTimer.label": "スリープタイマーを切り替え",
   "keybinds.actions.toggleSlideshow.description": "スライドショーの再生を開始または停止します",

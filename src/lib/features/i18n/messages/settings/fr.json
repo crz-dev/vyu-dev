@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "Aide-mémoire des raccourcis",
   "keybinds.actions.toggleLibrary.description": "Affiche ou masque la superposition de la bibliothèque",
   "keybinds.actions.toggleLibrary.label": "Afficher/masquer la bibliothèque",
+  "keybinds.actions.togglePip.description": "Basculer la fenêtre d'image dans l'image",
+  "keybinds.actions.togglePip.label": "Image dans l'image",
   "keybinds.actions.toggleSleepTimer.description": "Démarre le minuteur avec la durée configurée ou l’annule",
   "keybinds.actions.toggleSleepTimer.label": "Activer/désactiver le minuteur",
   "keybinds.actions.toggleSlideshow.description": "Démarre ou arrête le diaporama",

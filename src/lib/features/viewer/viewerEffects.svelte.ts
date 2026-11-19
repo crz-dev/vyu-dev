@@ -15,6 +15,7 @@ export interface ViewerEffectsDeps {
   fitPdfToScreen: (width: number, height: number) => void;
   getThumbnailBarVisible: () => boolean;
   getIsFullscreen: () => boolean;
+  getPipActive: () => boolean;
 }
 
 export function createViewerEffects(deps: ViewerEffectsDeps) {
@@ -163,6 +164,7 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
     cachedViewerEl = null;
     void deps.getThumbnailBarVisible();
     void deps.getIsFullscreen();
+    void deps.getPipActive();
     void editing.snapshot.rotation;
     if (deps.getViewerEl() && deps.getFileSrc() && deps.getIsPdf()) {
       refitPdfIfNeeded();

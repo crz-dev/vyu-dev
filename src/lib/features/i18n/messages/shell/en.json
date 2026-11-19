@@ -33,6 +33,7 @@
   "markers.loopB": "Loop B",
   "markers.resume": "Resume",
   "noFileOpen": "No file open",
+  "pip.failed": "Could not enter picture in picture",
   "sleep.cleared": "Sleep timer cleared",
   "sleep.set": "Sleep timer set for {count} min",
   "sleep.stoppedPlayback": "Sleep timer stopped playback",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "Open index",
   "viewer.pdf.previousMatch": "Previous match",
   "viewer.pdf.textCopied": "Text copied",
+  "viewer.pip.exit": "Exit picture in picture",
+  "viewer.pip.next": "Next file",
+  "viewer.pip.previous": "Previous file",
+  "viewer.pip.progress": "Playback position",
+  "viewer.pip.scroll": "Scroll to read",
   "viewer.subtitles": "Subtitles"
 }

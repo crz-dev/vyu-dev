@@ -7,6 +7,17 @@ use tauri::{Manager, PhysicalPosition, PhysicalSize, Position, Size};
 use crate::constants::WINDOW_STATE_FILE;
 use crate::types::SavedWindowState;
 
+/// Set while the window is in picture-in-picture mode. The mini geometry must
+/// never replace the user's real window geometry on disk.
+#[derive(Default)]
+pub struct PipActive(pub AtomicBool);
+
+pub fn is_pip_active(app: &tauri::AppHandle) -> bool {
+    app.try_state::<PipActive>()
+        .map(|state| state.0.load(Ordering::Relaxed))
+        .unwrap_or(false)
+}
+
 pub fn window_state_path(app: &tauri::AppHandle) -> Option<PathBuf> {
     app.path()
         .app_config_dir()
@@ -21,7 +32,7 @@ pub fn load_window_state(app: &tauri::AppHandle) -> Option<SavedWindowState> {
 }
 
 pub fn persist_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool>) {
-    if skip.load(Ordering::Relaxed) {
+    if skip.load(Ordering::Relaxed) || is_pip_active(&window.app_handle()) {
         return;
     }
 

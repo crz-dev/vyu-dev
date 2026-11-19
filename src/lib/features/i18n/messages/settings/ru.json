@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "Список сочетаний клавиш",
   "keybinds.actions.toggleLibrary.description": "Показать или скрыть наложение библиотеки",
   "keybinds.actions.toggleLibrary.label": "Переключить библиотеку",
+  "keybinds.actions.togglePip.description": "Переключить окно «картинка в картинке»",
+  "keybinds.actions.togglePip.label": "Картинка в картинке",
   "keybinds.actions.toggleSleepTimer.description": "Запустить таймер сна с заданной длительностью или сбросить его",
   "keybinds.actions.toggleSleepTimer.label": "Переключить таймер сна",
   "keybinds.actions.toggleSlideshow.description": "Запустить или остановить слайд-шоу",

@@ -8,6 +8,8 @@ export interface KeybindActions {
   closeDialogs: () => void;
   isFullscreen: () => boolean;
   exitFullscreen: () => void;
+  isPip: () => boolean;
+  exitPip: () => void;
   actions: Record<string, () => void>;
   holdActions?: Record<string, { start: () => void; end: () => void }>;
 }
@@ -101,6 +103,12 @@ export function createKeybindHandler(deps: KeybindActions) {
     if (e.key === "Escape" && deps.isFullscreen()) {
       e.preventDefault();
       deps.exitFullscreen();
+      return;
+    }
+
+    if (e.key === "Escape" && deps.isPip()) {
+      e.preventDefault();
+      deps.exitPip();
       return;
     }
 

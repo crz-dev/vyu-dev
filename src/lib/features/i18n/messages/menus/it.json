@@ -6,6 +6,8 @@
   "app.minimize": "Riduci a icona",
   "app.open": "Apri menu app",
   "app.openFile": "Apri file",
+  "app.pip": "Immagine nell'immagine",
+  "app.pipExit": "Esci da immagine nell'immagine",
   "app.renameFile": "Rinomina file",
   "app.toast.fileRenamed": "File rinominato",
   "app.toast.folderRenamed": "Cartella rinominata",

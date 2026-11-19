@@ -6,6 +6,8 @@
   "app.minimize": "最小化",
   "app.open": "アプリメニューを開く",
   "app.openFile": "ファイルを開く",
+  "app.pip": "ピクチャーインピクチャー",
+  "app.pipExit": "ピクチャーインピクチャーを終了",
   "app.renameFile": "ファイル名を変更",
   "app.toast.fileRenamed": "ファイル名を変更しました",
   "app.toast.folderRenamed": "フォルダ名を変更しました",

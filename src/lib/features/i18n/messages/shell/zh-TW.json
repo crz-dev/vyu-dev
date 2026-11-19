@@ -31,6 +31,7 @@
   "markers.loopB": "循環 B",
   "markers.resume": "繼續",
   "noFileOpen": "未開啟檔案",
+  "pip.failed": "無法進入子母畫面",
   "sleep.cleared": "睡眠定時器已清除",
   "sleep.set": "睡眠定時器設為 {count} 分鐘",
   "sleep.stoppedPlayback": "睡眠定時器已停止播放",
@@ -89,5 +90,10 @@
   "viewer.pdf.openIndex": "開啟索引",
   "viewer.pdf.previousMatch": "上一個相符項目",
   "viewer.pdf.textCopied": "文字已複製",
+  "viewer.pip.exit": "退出子母畫面",
+  "viewer.pip.next": "下一個檔案",
+  "viewer.pip.previous": "上一個檔案",
+  "viewer.pip.progress": "播放位置",
+  "viewer.pip.scroll": "捲動以閱讀",
   "viewer.subtitles": "字幕"
 }

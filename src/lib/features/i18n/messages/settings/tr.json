@@ -439,6 +439,8 @@
   "keybinds.actions.showShortcuts.label": "Kısayol referansı",
   "keybinds.actions.toggleLibrary.description": "Kitaplık katmanını göster veya gizle",
   "keybinds.actions.toggleLibrary.label": "Kitaplığı aç/kapat",
+  "keybinds.actions.togglePip.description": "Resim içinde resim penceresini aç/kapat",
+  "keybinds.actions.togglePip.label": "Resim içinde resim",
   "keybinds.actions.toggleSleepTimer.description": "Uyku zamanlayıcısını yapılandırılmış süreyle başlat veya temizle",
   "keybinds.actions.toggleSleepTimer.label": "Uyku zamanlayıcısını aç/kapat",
   "keybinds.actions.toggleSlideshow.description": "Slayt gösterisini başlat veya durdur",

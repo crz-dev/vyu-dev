@@ -4,6 +4,8 @@ import { accessibility } from "$lib/features/menus/accessibility.svelte";
 
 export interface PanDragDeps {
   getIsVideo: () => boolean;
+  getPipActive: () => boolean;
+  exitPip: () => void;
   toggleFullscreen: () => void;
   togglePlay: () => void;
 }
@@ -17,7 +19,7 @@ export function createPanDrag(deps: PanDragDeps) {
     if (e.button !== 0) return;
     if (
       (e.target as HTMLElement).closest(
-        "button, .video-controls, .fs-controls, .fs-topbar, .fs-nav-left, .fs-nav-right, .fs-file-count-pill, .context-menu, .delete-overlay",
+        "button, .video-controls, .fs-controls, .fs-topbar, .fs-nav-left, .fs-nav-right, .fs-file-count-pill, .context-menu, .delete-overlay, .pip-progress, .pip-audio-progress, .pip-bar",
       )
     )
       return;
@@ -43,6 +45,19 @@ export function createPanDrag(deps: PanDragDeps) {
         }
         return;
       }
+      if (deps.getPipActive()) {
+        if (viewer.state.zoomLevel > viewer.state.baseZoomLevel) {
+          const sensitivity = accessibility.reducePanSensitivity ? 0.5 : 1;
+          viewer.setTranslation(
+            dragStart.tx + dx * sensitivity,
+            dragStart.ty + dy * sensitivity,
+          );
+        } else if (!nativeDragStarted) {
+          nativeDragStarted = true;
+          void getCurrentWindow().startDragging();
+        }
+        return;
+      }
       if (viewer.state.zoomLevel > viewer.state.baseZoomLevel) {
         const sensitivity = accessibility.reducePanSensitivity ? 0.5 : 1;
         viewer.setTranslation(
@@ -60,14 +75,22 @@ export function createPanDrag(deps: PanDragDeps) {
         if (deps.getIsVideo()) {
           if (timeSinceLast < 300) {
             clearTimeout(pendingPlay);
-            deps.toggleFullscreen();
+            if (deps.getPipActive()) {
+              deps.exitPip();
+            } else {
+              deps.toggleFullscreen();
+            }
             lastLeftClickTime = 0;
           } else {
             pendingPlay = setTimeout(deps.togglePlay, 150);
           }
         } else {
           if (timeSinceLast < 300) {
-            deps.toggleFullscreen();
+            if (deps.getPipActive()) {
+              deps.exitPip();
+            } else {
+              deps.toggleFullscreen();
+            }
             lastLeftClickTime = 0;
           }
         }

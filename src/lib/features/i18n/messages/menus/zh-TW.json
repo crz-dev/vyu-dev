@@ -6,6 +6,8 @@
   "app.minimize": "最小化",
   "app.open": "開啟應用程式選單",
   "app.openFile": "開啟檔案",
+  "app.pip": "子母畫面",
+  "app.pipExit": "退出子母畫面",
   "app.renameFile": "重新命名檔案",
   "app.toast.fileRenamed": "檔案已重新命名",
   "app.toast.folderRenamed": "資料夾已重新命名",

@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "Folha de atalhos",
   "keybinds.actions.toggleLibrary.description": "Mostra ou oculta a sobreposição da biblioteca",
   "keybinds.actions.toggleLibrary.label": "Alternar biblioteca",
+  "keybinds.actions.togglePip.description": "Alternar a janela de imagem em imagem",
+  "keybinds.actions.togglePip.label": "Imagem em imagem",
   "keybinds.actions.toggleSleepTimer.description": "Inicia o temporizador com a duração configurada ou o cancela",
   "keybinds.actions.toggleSleepTimer.label": "Alternar temporizador de sono",
   "keybinds.actions.toggleSlideshow.description": "Inicia ou para a apresentação",

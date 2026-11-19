@@ -443,6 +443,8 @@
   "keybinds.actions.showShortcuts.label": "Shortcut cheat sheet",
   "keybinds.actions.toggleLibrary.description": "Show or hide the library overlay",
   "keybinds.actions.toggleLibrary.label": "Toggle library",
+  "keybinds.actions.togglePip.description": "Toggle the picture-in-picture window",
+  "keybinds.actions.togglePip.label": "Picture in picture",
   "keybinds.actions.toggleSleepTimer.description": "Start the sleep timer with the configured length, or clear it",
   "keybinds.actions.toggleSleepTimer.label": "Toggle sleep timer",
   "keybinds.actions.toggleSlideshow.description": "Start or stop slideshow playback",

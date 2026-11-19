@@ -42,6 +42,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Danger Zone / destructive ops   | `features/danger/*`, `commands/system.rs`, `commands/database.rs`                                      |
 | Share, save-as, conversion      | `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/conversion.rs` |
 | Playback / media bar            | `features/media/playback*.ts`, `features/media/MediaBar.svelte`, `features/media/media.svelte.ts`      |
+| Picture-in-picture              | `features/viewer/pip.svelte.ts`, `features/viewer/PipOverlay.svelte`                                   |
 | Audio/subtitle track selection  | `features/media/tracks.svelte.ts`, `features/media/PlaybackControls.svelte`, `commands/tracks.rs`      |
 | Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
 | Clips                           | `features/media/clips.svelte.ts`, `commands/clips.rs`                                                  |
@@ -70,6 +71,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | Open/close, navigate, media loading logic              | `features/media/media.svelte.ts`                                               |
 | Zoom, pan, fit, fullscreen                             | `features/viewer/viewer.svelte.ts`                                             |
+| Picture-in-picture window mode                         | `features/viewer/pip.svelte.ts`, `features/viewer/PipOverlay.svelte`           |
 | Image/video/PDF views                                  | `features/viewer/*`                                                            |
 | Pan, drag interaction                                  | `features/viewer/panDrag.ts`                                                   |
 | Viewer effects (resize, refit)                         | `features/viewer/viewerEffects.svelte.ts`                                      |
@@ -274,6 +276,7 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | `vacuum_database` runs in `spawn_blocking`                            | `VACUUM` rewrites the DB and must not block the UI/command thread.                  |
 | Diagnostics omit the current media path                               | Reports stay safe to share; explicit file-metadata copy includes the path.          |
 | Safe-mode restart reuses `--restart-delay`                            | The single-instance release must finish before the new process starts.              |
+| Window state is not written while PiP is active                       | The mini geometry must never replace the user's normal window state.                |
 | Danger Zone actions never delete user media                           | Destructive settings clear Vyu data, caches, backups or installation files only.    |
 | Global marker clears update the DB and current in-memory stores       | Avoids stale timestamps/clips after clearing every file.                            |
 | Profile switching captures live `vyu-*` keys and reloads              | Guarantees every settings store reinitializes from the target profile.              |

@@ -33,6 +33,7 @@
   "markers.loopB": "Loop B",
   "markers.resume": "Retomar",
   "noFileOpen": "Nenhum arquivo aberto",
+  "pip.failed": "Não foi possível ativar imagem em imagem",
   "sleep.cleared": "Temporizador limpo",
   "sleep.set": "Temporizador definido para {count} min",
   "sleep.stoppedPlayback": "O temporizador parou a reprodução",
@@ -91,5 +92,10 @@
   "viewer.pdf.openIndex": "Abrir índice",
   "viewer.pdf.previousMatch": "Correspondência anterior",
   "viewer.pdf.textCopied": "Texto copiado",
+  "viewer.pip.exit": "Sair de imagem em imagem",
+  "viewer.pip.next": "Próximo arquivo",
+  "viewer.pip.previous": "Arquivo anterior",
+  "viewer.pip.progress": "Posição de reprodução",
+  "viewer.pip.scroll": "Role para ler",
   "viewer.subtitles": "Legendas"
 }

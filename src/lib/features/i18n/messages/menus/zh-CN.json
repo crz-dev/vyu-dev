@@ -6,6 +6,8 @@
   "app.minimize": "最小化",
   "app.open": "打开应用菜单",
   "app.openFile": "打开文件",
+  "app.pip": "画中画",
+  "app.pipExit": "退出画中画",
   "app.renameFile": "重命名文件",
   "app.toast.fileRenamed": "文件已重命名",
   "app.toast.folderRenamed": "文件夹已重命名",
