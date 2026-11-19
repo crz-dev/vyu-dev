@@ -6147,7 +6147,7 @@
 .library-mode .edit-menu-wrapper,
 .library-mode .markup-menu-wrapper,
 .library-mode .equalizer-wrapper,
-.library-mode .slideshow-menu {
+.library-mode .queue-menu {
   display: none !important;
 }
 

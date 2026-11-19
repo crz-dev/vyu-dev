@@ -33,6 +33,15 @@ function createQueue() {
     items = items.filter((item) => item !== path);
   }
 
+  function move(from: number, to: number) {
+    if (from === to || from < 0 || to < 0) return;
+    if (from >= items.length || to >= items.length) return;
+    const next = [...items];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    items = next;
+  }
+
   function clear() {
     items = [];
   }
@@ -123,6 +132,7 @@ function createQueue() {
     configure,
     enqueue,
     remove,
+    move,
     clear,
     has,
     replacePath,
