@@ -89,9 +89,24 @@
     library.setActiveTab("collections");
   }
 
+  let allQueued = $derived.by(() => {
+    void selectedCount;
+    const paths = getPaths();
+    return paths.length > 0 && paths.every((path) => queue.has(path));
+  });
+
   function queueSelected() {
     const paths = getPaths();
     if (paths.length === 0) return;
+    if (allQueued) {
+      for (const path of paths) queue.remove(path);
+      showToast({
+        message: tp("menus.select.unqueued", paths.length),
+        color: "grey",
+      });
+      handleClose();
+      return;
+    }
     const added = queue.enqueue(paths);
     showToast({
       message: added
@@ -310,7 +325,11 @@
             <circle cx="4" cy="12" r="1" />
             <circle cx="4" cy="18" r="1" />
           </svg>
-          <span>{t("menus.select.queue")}</span>
+          <span
+            >{allQueued
+              ? t("menus.select.unqueue")
+              : t("menus.select.queue")}</span
+          >
         </button>
         <button class="edit-menu-btn blue sub" onclick={activateCollectMode}>
           <svg

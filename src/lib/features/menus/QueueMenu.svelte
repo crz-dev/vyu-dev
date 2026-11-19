@@ -1,5 +1,7 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import { queue } from "$lib/features/media/queue.svelte";
   import { getFileName, getParentFolder } from "$lib/services/files";
@@ -14,11 +16,13 @@
     onClose,
     fileList = [],
     currentIndex = 0,
+    thumbnailBarVisible = false,
   }: {
     visible: boolean;
     onClose: () => void;
     fileList?: string[];
     currentIndex?: number;
+    thumbnailBarVisible?: boolean;
   } = $props();
 
   let pinned = $state(false);
@@ -33,6 +37,8 @@
   let dragIndex = $state<number | null>(null);
   let dropIndex = $state<number | null>(null);
   let dragPointerId: number | null = null;
+  let clearConfirm = $state(false);
+  let clearTimer: ReturnType<typeof setTimeout> | undefined;
 
   let intervalTrackEl: HTMLDivElement | null = $state(null);
   let intervalDragging = $state(false);
@@ -71,6 +77,8 @@
   $effect(() => {
     if (!visible) {
       showScrollbar = false;
+      clearConfirm = false;
+      if (clearTimer) clearTimeout(clearTimer);
       return;
     }
     showScrollbar = false;
@@ -87,9 +95,24 @@
     return () => cancelAnimationFrame(frame);
   });
 
+  let showEmpty = $state(queue.length === 0);
+
+  $effect(() => {
+    if (queue.length > 0) {
+      showEmpty = false;
+      return;
+    }
+    if (showEmpty) return;
+    const timer = setTimeout(() => {
+      showEmpty = true;
+    }, 220);
+    return () => clearTimeout(timer);
+  });
+
   $effect(() => {
     return () => {
       if (scrollHideTimer) clearTimeout(scrollHideTimer);
+      if (clearTimer) clearTimeout(clearTimer);
     };
   });
 
@@ -138,7 +161,17 @@
   }
 
   function intervalPct(value: number): number {
-    return ((value - 1) / 9) * 100;
+    if (value <= 5) {
+      return ((value - 1) / 4) * 50;
+    }
+    return 50 + ((value - 5) / 5) * 50;
+  }
+
+  function intervalFromPct(pct: number): number {
+    if (pct <= 50) {
+      return 1 + (pct / 50) * 4;
+    }
+    return 5 + ((pct - 50) / 50) * 5;
   }
 
   function updateIntervalFromX(clientX: number) {
@@ -150,7 +183,7 @@
     );
     slideshow.intervalSec = Math.max(
       1,
-      Math.min(10, Math.round(1 + (pct / 100) * 9)),
+      Math.min(10, Math.round(intervalFromPct(pct))),
     );
   }
 
@@ -197,6 +230,7 @@
 
   $effect(() => {
     if (!visible || !menuElement) return;
+    void thumbnailBarVisible;
     const frame = requestAnimationFrame(clampMenuPosition);
     return () => cancelAnimationFrame(frame);
   });
@@ -247,6 +281,16 @@
   }
 
   function clearQueue() {
+    if (!clearConfirm) {
+      clearConfirm = true;
+      if (clearTimer) clearTimeout(clearTimer);
+      clearTimer = setTimeout(() => {
+        clearConfirm = false;
+      }, 3000);
+      return;
+    }
+    if (clearTimer) clearTimeout(clearTimer);
+    clearConfirm = false;
     queue.clear();
     slideshow.stop();
   }
@@ -283,9 +327,10 @@
 {#if visible}
   <div
     class="queue-menu edit-menu"
+    class:above-thumbnails={thumbnailBarVisible}
     class:pinned
     bind:this={menuElement}
-    transition:fly={{ y: 10, duration: 150, opacity: 0.08 }}
+    transition:fly={{ y: 8, duration: 180, opacity: 0.05 }}
   >
     <div
       class="ctx-drag"
@@ -324,9 +369,9 @@
       }}
     >
       <button
-        class="ctx-pin tooltip-below"
+        class="ctx-pin"
         class:active={pinned}
-        data-tooltip={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
+        title={pinned ? t("menus.common.unpin") : t("menus.common.pin")}
         onclick={(e) => {
           e.stopPropagation();
           pinned = !pinned;
@@ -367,8 +412,8 @@
         </span>
       </span>
       <button
-        class="ctx-close tooltip-below"
-        data-tooltip={t("menus.common.close")}
+        class="ctx-close"
+        title={t("menus.common.close")}
         onclick={(e) => {
           e.stopPropagation();
           onClose();
@@ -391,88 +436,99 @@
     </div>
 
     <div class="edit-menu-card queue-body">
-      {#if queue.length === 0}
-        <div class="queue-empty">
-          <span class="queue-empty-title">{t("menus.queue.empty")}</span>
-        </div>
-      {:else}
-        <div class="queue-list-wrap">
-          <div
-            class="queue-list"
-            role="list"
-            bind:this={listEl}
-            onscroll={handleListScroll}
-          >
-            {#each queue.items as path, index (path)}
-              <div
-                class="queue-row"
-                class:dragging={dragIndex === index}
-                class:drop-target={dropIndex === index && dragIndex !== index}
-                role="listitem"
+      <div class="queue-list-wrap">
+        <div
+          class="queue-list"
+          role="list"
+          bind:this={listEl}
+          onscroll={handleListScroll}
+        >
+          {#each queue.items as path, index (path)}
+            <div
+              class="queue-row"
+              class:dragging={dragIndex === index}
+              class:drop-target={dropIndex === index && dragIndex !== index}
+              role="listitem"
+              in:fly={{
+                y: 6,
+                duration: 160,
+                delay: Math.min(index, 10) * 16,
+                opacity: 0,
+                easing: cubicOut,
+              }}
+              out:fly={{ y: -10, duration: 180, opacity: 0, easing: cubicOut }}
+              animate:flip={{ duration: 220, easing: cubicOut }}
+            >
+              <span
+                class="queue-drag-handle"
+                role="button"
+                tabindex="-1"
+                aria-label={t("menus.queue.reorder")}
+                title={t("menus.queue.reorder")}
+                onpointerdown={(e) => handleDragPointerDown(e, index)}
+                onpointermove={handleDragPointerMove}
+                onpointerup={handleDragPointerUp}
+                onpointercancel={handleDragPointerUp}
               >
-                <span
-                  class="queue-drag-handle"
-                  role="button"
-                  tabindex="-1"
-                  aria-label={t("menus.queue.reorder")}
-                  onpointerdown={(e) => handleDragPointerDown(e, index)}
-                  onpointermove={handleDragPointerMove}
-                  onpointerup={handleDragPointerUp}
-                  onpointercancel={handleDragPointerUp}
+                <svg
+                  width="8"
+                  height="12"
+                  viewBox="0 0 8 12"
+                  fill="currentColor"
+                  aria-hidden="true"
                 >
-                  <svg
-                    width="8"
-                    height="12"
-                    viewBox="0 0 8 12"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <circle cx="2" cy="2" r="1" />
-                    <circle cx="6" cy="2" r="1" />
-                    <circle cx="2" cy="6" r="1" />
-                    <circle cx="6" cy="6" r="1" />
-                    <circle cx="2" cy="10" r="1" />
-                    <circle cx="6" cy="10" r="1" />
-                  </svg>
-                </span>
-                <span class="queue-index">{index + 1}</span>
-                <button
-                  class="queue-row-main"
-                  onclick={() => playQueued(path)}
-                  data-tooltip={t("menus.queue.playNow")}
+                  <circle cx="2" cy="2" r="1" />
+                  <circle cx="6" cy="2" r="1" />
+                  <circle cx="2" cy="6" r="1" />
+                  <circle cx="6" cy="6" r="1" />
+                  <circle cx="2" cy="10" r="1" />
+                  <circle cx="6" cy="10" r="1" />
+                </svg>
+              </span>
+              <span class="queue-index">{index + 1}</span>
+              <button
+                class="queue-row-main"
+                onclick={() => playQueued(path)}
+                title={t("menus.queue.playNow")}
+              >
+                <span class="queue-row-name">{getFileName(path)}</span>
+                <span class="queue-row-folder">{folderLabel(path)}</span>
+              </button>
+              <button
+                class="queue-row-remove"
+                onclick={() => removeQueued(path)}
+                aria-label={t("menus.queue.remove")}
+                title={t("menus.queue.remove")}
+              >
+                <svg
+                  width="9"
+                  height="9"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg
                 >
-                  <span class="queue-row-name">{getFileName(path)}</span>
-                  <span class="queue-row-folder">{folderLabel(path)}</span>
-                </button>
-                <button
-                  class="queue-row-remove"
-                  onclick={() => removeQueued(path)}
-                  aria-label={t("menus.queue.remove")}
-                  data-tooltip={t("menus.queue.remove")}
-                >
-                  <svg
-                    width="9"
-                    height="9"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    ><path d="M18 6L6 18M6 6l12 12" /></svg
-                  >
-                </button>
-              </div>
-            {/each}
-          </div>
-          <div
-            class="queue-scrollbar"
-            class:visible={showScrollbar}
-            aria-hidden="true"
-          >
-            <span
-              style="top: {scrollThumbTop}px; height: {scrollThumbHeight}px;"
-            ></span>
-          </div>
+              </button>
+            </div>
+          {/each}
+        </div>
+        <div
+          class="queue-scrollbar"
+          class:visible={showScrollbar}
+          aria-hidden="true"
+        >
+          <span style="top: {scrollThumbTop}px; height: {scrollThumbHeight}px;"
+          ></span>
+        </div>
+      </div>
+
+      {#if showEmpty}
+        <div
+          class="queue-empty"
+          in:fly={{ y: -4, duration: 160, opacity: 0, easing: cubicOut }}
+        >
+          <span class="queue-empty-title">{t("menus.queue.empty")}</span>
         </div>
       {/if}
 
@@ -499,7 +555,11 @@
             </button>
           {/if}
           {#if queue.length > 0}
-            <button class="queue-utility-btn danger" onclick={clearQueue}>
+            <button
+              class="queue-utility-btn danger"
+              class:confirm={clearConfirm}
+              onclick={clearQueue}
+            >
               <svg
                 width="10"
                 height="10"
@@ -516,7 +576,11 @@
                 <path d="M10 11v6M14 11v6" />
                 <path d="M9 6V4h6v2" />
               </svg>
-              <span>{t("menus.queue.clear")}</span>
+              <span
+                >{clearConfirm
+                  ? t("menus.queue.confirmClear")
+                  : t("menus.queue.clear")}</span
+              >
             </button>
           {/if}
         </div>

@@ -487,6 +487,7 @@
           onClose={closeQueueMenu}
           {fileList}
           {currentIndex}
+          {thumbnailBarVisible}
         />
       </div>
       {#if fileSrc}

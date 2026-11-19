@@ -5302,6 +5302,19 @@ main.menu-open .subtitle-overlay {
   left: 8px;
   z-index: 1100;
   width: min(232px, calc(100vw - 24px));
+  transition: bottom 180ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.queue-menu.above-thumbnails {
+  bottom: calc(36px + 82px + 8px);
+}
+
+.queue-menu .ctx-drag {
+  animation: none;
+}
+
+.queue-menu .queue-body {
+  animation: queueCardIn 180ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
 }
 
 .queue-body {
@@ -5366,7 +5379,9 @@ main.menu-open .subtitle-overlay {
   min-height: 28px;
   border-radius: 5px;
   padding: 2px 2px 2px 1px;
-  transition: background 0.12s ease;
+  transition:
+    background 0.12s ease,
+    box-shadow 0.12s ease;
 }
 
 .queue-row:hover {
@@ -5378,7 +5393,7 @@ main.menu-open .subtitle-overlay {
 }
 
 .queue-row.drop-target {
-  box-shadow: inset 0 2px 0 var(--blue-light);
+  box-shadow: inset 0 2px 0 var(--green, #4ade80);
 }
 
 .queue-drag-handle {
@@ -5523,6 +5538,12 @@ main.menu-open .subtitle-overlay {
   background: var(--red-bg-default);
 }
 
+.queue-utility-btn.confirm {
+  color: var(--red-soft);
+  border-color: var(--red-border);
+  background: var(--red-bg-default);
+}
+
 .queue-interval-row {
   display: flex;
   flex-direction: column;
@@ -5639,6 +5660,17 @@ main.menu-open .subtitle-overlay {
   cursor: default;
 }
 
+@keyframes queueCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .queue-empty {
   display: flex;
   flex-direction: column;
@@ -5657,11 +5689,38 @@ main.menu-open .subtitle-overlay {
 }
 
 .thumbnail-item.queued {
-  box-shadow: inset 0 0 0 2px var(--green, #4ade80);
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 3px var(--green, #4ade80),
+    0 0 0 1px rgba(74, 222, 128, 0.35);
 }
 
 .thumbnail-item.queued.active {
-  box-shadow: inset 0 0 0 2px var(--green, #4ade80);
+  box-shadow:
+    inset 0 0 0 3px var(--green, #4ade80),
+    0 0 0 1px rgba(74, 222, 128, 0.35);
+}
+
+.thumbnail-queue-badge {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: #4ade80;
+  border: 0.5px solid rgba(0, 0, 0, 0.28);
+  color: #052e16;
+  font-family: var(--font-family);
+  font-size: 8px;
+  font-weight: 500;
+  line-height: 13px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Sleep timer menu / indicator ─────────────────── */

@@ -50,6 +50,11 @@ function createQueue() {
     return items.includes(path);
   }
 
+  function position(path: string): number {
+    const index = items.indexOf(path);
+    return index === -1 ? 0 : index + 1;
+  }
+
   function replacePath(oldPath: string, newPath: string) {
     if (!oldPath || !newPath || oldPath === newPath) return;
     items = items.map((item) => (item === oldPath ? newPath : item));
@@ -135,6 +140,7 @@ function createQueue() {
     move,
     clear,
     has,
+    position,
     replacePath,
     replacePrefix,
     playNext,

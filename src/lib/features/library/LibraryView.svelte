@@ -1117,6 +1117,14 @@
   function ctxQueue() {
     const path = libCtxMenu.path;
     closeLibCtxMenu();
+    if (queue.has(path)) {
+      queue.remove(path);
+      showToast({
+        message: t("library.toasts.removedFromQueue"),
+        color: "grey",
+      });
+      return;
+    }
     const added = queue.enqueue([path]);
     showToast({
       message: added
@@ -3070,6 +3078,11 @@
                           }
                         }}
                       >
+                        {#if queue.has(path)}
+                          <span class="library-queue-badge"
+                            >{queue.position(path)}</span
+                          >
+                        {/if}
                         {#if thumbFor(path)}
                           <img
                             class="library-thumb"
@@ -3339,6 +3352,11 @@
                             }
                           }}
                         >
+                          {#if queue.has(path)}
+                            <span class="library-queue-badge"
+                              >{queue.position(path)}</span
+                            >
+                          {/if}
                           {#if thumbFor(path)}
                             <img
                               class="library-thumb"
@@ -3598,6 +3616,11 @@
                           }
                         }}
                       >
+                        {#if queue.has(path)}
+                          <span class="library-queue-badge"
+                            >{queue.position(path)}</span
+                          >
+                        {/if}
                         {#if thumbFor(path)}
                           <img
                             class="river-thumb"
@@ -3841,6 +3864,11 @@
                         }
                       }}
                     >
+                      {#if queue.has(path)}
+                        <span class="library-queue-badge"
+                          >{queue.position(path)}</span
+                        >
+                      {/if}
                       {#if thumbFor(path)}
                         <img
                           class="filmstrip-thumb"
@@ -4295,6 +4323,11 @@
                           </span>
                         </span>
                         <span class="list-col list-col-thumb">
+                          {#if queue.has(path)}
+                            <span class="library-queue-badge"
+                              >{queue.position(path)}</span
+                            >
+                          {/if}
                           {#if thumbFor(path)}
                             <img
                               class="list-thumb"
@@ -4864,7 +4897,9 @@
             <circle cx="4" cy="12" r="1" />
             <circle cx="4" cy="18" r="1" />
           </svg>
-          {t("library.context.queue")}
+          {queue.has(libCtxMenu.path)
+            ? t("library.context.removeFromQueue")
+            : t("library.context.queue")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -6602,11 +6637,35 @@
   .library-cell.queued,
   .river-cell.queued,
   .filmstrip-cell.queued {
-    box-shadow: inset 0 0 0 2px var(--green, #4ade80);
+    box-shadow:
+      inset 0 0 0 3px var(--green, #4ade80),
+      0 0 0 1px rgba(74, 222, 128, 0.35);
   }
 
   .list-row.queued {
-    box-shadow: inset 2px 0 0 var(--green, #4ade80);
+    box-shadow: inset 3px 0 0 var(--green, #4ade80);
+  }
+
+  .library-queue-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #4ade80;
+    border: 0.5px solid rgba(0, 0, 0, 0.28);
+    color: #052e16;
+    font-family: var(--font-family);
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 15px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    z-index: 3;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   }
 
   .library-thumb {
@@ -6888,6 +6947,7 @@
   }
 
   .list-col-thumb {
+    position: relative;
     width: var(--list-thumb);
     height: var(--list-thumb);
     flex-shrink: 0;

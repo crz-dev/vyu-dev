@@ -278,6 +278,9 @@
         oncontextmenu={(e) => handleQueueToggle(e, item.path)}
         aria-label={t("menus.thumbnail.openFile")}
       >
+        {#if queue.has(item.path)}
+          <span class="thumbnail-queue-badge">{queue.position(item.path)}</span>
+        {/if}
         {#if getCached(item.path, THUMB_SIZE)}
           <img
             src={getCached(item.path, THUMB_SIZE)}
