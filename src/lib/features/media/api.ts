@@ -203,6 +203,12 @@ export async function invokeGetMediaTracks(
   return invoke("get_media_tracks", { path });
 }
 
+export async function invokeGetMediaChapters(
+  path: string,
+): Promise<import("$lib/shared/types").MediaChapter[]> {
+  return invoke("get_media_chapters", { path });
+}
+
 export async function invokePrepareAudioTrack(
   path: string,
   streamIndex: number,

@@ -81,6 +81,7 @@ export function createSetMediaState(s: SetMediaStateSetters) {
     if (data.progress !== undefined) s.setProgress(data.progress);
     if (data.playing !== undefined) s.setPlaying(data.playing);
     if (data.timestamps !== undefined) markerStore.timestamps = data.timestamps;
+    if (data.chapters !== undefined) markerStore.chapters = data.chapters;
     if (data.clipBoundaries !== undefined) s.setBoundaries(data.clipBoundaries);
     if (data.resumePoint !== undefined)
       markerStore.resumePoint = data.resumePoint;

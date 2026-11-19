@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { VideoMarker, ClipBoundary, ClipPair } from "$lib/shared/types";
+  import type { VideoMarker, ClipBoundary, ClipPair, MediaChapter } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import {
     getWaveformPeaks,
@@ -22,6 +22,7 @@
     resumePoint = null,
     onScrubStart,
     clipPairs = [],
+    chapters = [],
     abLoopRegion = null,
     clipMarkerJustDragged = false,
     timestampDragJustEnded = false,
@@ -58,7 +59,7 @@
     resumePoint?: number | null;
     onScrubStart: (e: MouseEvent) => void;
     clipPairs?: ClipPair[];
-    abLoopRegion?: { start: number; end: number } | null;
+    chapters?: MediaChapter[];    abLoopRegion?: { start: number; end: number } | null;
     clipMarkerJustDragged?: boolean;
     timestampDragJustEnded?: boolean;
     loopMarkerJustDragged?: boolean;
@@ -86,6 +87,8 @@
   const NUM_PEAKS = WAVEFORM_PEAK_COUNT;
 
   let canvasEl = $state<HTMLCanvasElement | null>(null);
+  let hoveredChapterIndex = $state(-1);
+  let hoverX = $state(0);
   let peaks = $state<Float32Array | null>(null);
   let decodeFailed = $state(false);
   let cachedCanvasW = 0;
@@ -272,6 +275,19 @@
   class="audio-waveform-bar"
   class:editor-open={editorOpen}
   onmousedown={onScrubStart}
+  onmousemove={(e) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const p = ((e.clientX - rect.left) / rect.width) * 100;
+    const time = (p / 100) * durationSecs;
+    hoveredChapterIndex =
+      durationSecs > 0
+        ? chapters.findIndex((c, i) =>
+            time >= c.start && (time < c.end || i === chapters.length - 1),
+          )
+        : -1;
+    hoverX = e.clientX - rect.left;
+  }}
+  onmouseleave={() => (hoveredChapterIndex = -1)}
   role="button"
   tabindex="0"
   aria-label={t("media.waveform.seek")}
@@ -497,6 +513,29 @@
       })}
     ></div>
   {/if}
+  {#each chapters as ch, i (ch.start)}
+    {#if i > 0}
+      <div
+        class="audio-chapter-divider"
+        style="left: {pct(ch.start)}%"
+        aria-hidden="true"
+      ></div>
+    {/if}
+  {/each}
+  {#if hoveredChapterIndex >= 0}
+    {@const ch = chapters[hoveredChapterIndex]}
+    <div
+      class="audio-chapter-highlight"
+      style="left: {pct(ch.start)}%; width: {pct(ch.end) - pct(ch.start)}%"
+      aria-hidden="true"
+    ></div>
+    <div class="ts-tooltip white scrubber-tooltip audio-chapter-tooltip" style="left: {pct((ch.start + ch.end) / 2)}%; top: -8px;">
+      <span class="audio-chapter-tooltip-title">{ch.title}</span>
+      <span class="audio-chapter-tooltip-time"
+        >{formatTime?.(ch.start) ?? ""} – {formatTime?.(ch.end) ?? ""}</span
+      >
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -573,5 +612,54 @@
     width: 100%;
     height: 32px;
     display: block;
+  }
+
+  .audio-chapter-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 2;
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  .audio-chapter-highlight {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.18);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .audio-chapter-tooltip {
+    position: absolute;
+    bottom: 100%;
+    transform: translateX(-50%);
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+    backdrop-filter: blur(8px);
+    border: 0.5px solid color-mix(in srgb, var(--text-primary) 20%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .audio-chapter-tooltip-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .audio-chapter-tooltip-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
   }
 </style>

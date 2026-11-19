@@ -415,6 +415,94 @@ pub async fn prepare_external_subtitle(
         .map_err(|e| format!("External subtitle preparation task failed: {e}"))?
 }
 
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaChapter {
+    pub start: f64,
+    pub end: f64,
+    pub title: String,
+}
+
+fn probe_chapters(path: &str) -> Result<Value, String> {
+    if !Path::new(path).is_file() {
+        return Err("Media file does not exist".into());
+    }
+    let output = ffprobe_command()
+        .args(["-v", "error", "-show_chapters", "-of", "json", path])
+        .output()
+        .map_err(|e| format!("Failed to run ffprobe: {e}"))?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+    serde_json::from_slice(&output.stdout).map_err(|e| format!("Invalid ffprobe output: {e}"))
+}
+
+fn chapters_from_probe(value: &Value) -> Vec<MediaChapter> {
+    let mut out = Vec::new();
+    let chapters = value
+        .get("chapters")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or_default();
+    for (i, ch) in chapters.iter().enumerate() {
+        let time_base = ch
+            .get("time_base")
+            .and_then(Value::as_str)
+            .unwrap_or("1/1");
+        let (num, den) = parse_time_base(time_base);
+        let start = ch
+            .get("start_time")
+            .and_then(Value::as_str)
+            .and_then(|s| s.parse::<f64>().ok())
+            .or_else(|| {
+                ch.get("start")
+                    .and_then(Value::as_i64)
+                    .map(|v| v as f64 / (num as f64 / den as f64).max(f64::EPSILON))
+            })
+            .unwrap_or(0.0);
+        let end = ch
+            .get("end_time")
+            .and_then(Value::as_str)
+            .and_then(|s| s.parse::<f64>().ok())
+            .or_else(|| {
+                ch.get("end")
+                    .and_then(Value::as_i64)
+                    .map(|v| v as f64 / (num as f64 / den as f64).max(f64::EPSILON))
+            })
+            .unwrap_or(start);
+        let title = ch
+            .get("tags")
+            .and_then(|t| t.get("title"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("Chapter {}", i + 1));
+        if end > start {
+            out.push(MediaChapter { start, end, title });
+        }
+    }
+    out.sort_by(|a, b| a.start.total_cmp(&b.start));
+    out
+}
+
+fn parse_time_base(s: &str) -> (i64, i64) {
+    let mut parts = s.split('/');
+    let n = parts.next().and_then(|x| x.parse().ok()).unwrap_or(1);
+    let d = parts.next().and_then(|x| x.parse().ok()).unwrap_or(1);
+    (n, d)
+}
+
+#[tauri::command]
+pub async fn get_media_chapters(path: String) -> Result<Vec<MediaChapter>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let probe = probe_chapters(&path)?;
+        Ok(chapters_from_probe(&probe))
+    })
+    .await
+    .map_err(|e| format!("Chapter inspection task failed: {e}"))?
+}
+
 #[cfg(test)]
 mod tests {
     use super::{catalog_from_probe, is_text_subtitle_codec};

@@ -17,6 +17,12 @@ export interface ClipBoundary {
   title?: string;
 }
 
+export interface MediaChapter {
+  start: number;
+  end: number;
+  title: string;
+}
+
 export interface ClipPair {
   start: number;
   end: number;

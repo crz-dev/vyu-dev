@@ -631,7 +631,7 @@
       clipPairs: clips.clipPairs,
       clipBoundaries: clips.clipBoundaries,
       timestamps: markerStore.timestamps,
-      abLoopRegion: markerStore.abLoopRegion,
+      chapters: markerStore.chapters,      abLoopRegion: markerStore.abLoopRegion,
       loopStart: markerStore.loopStart,
       loopEnd: markerStore.loopEnd,
       resumePoint: markerStore.resumePoint,

@@ -6,7 +6,7 @@ import {
 } from "$lib/services/database";
 import { deleteResumePoint as deleteLocalResumePoint } from "$lib/services/storage";
 import type { LoopMode } from "$lib/shared/constants";
-import type { ClipBoundary, VideoMarker } from "$lib/shared/types";
+import type { ClipBoundary, MediaChapter, VideoMarker } from "$lib/shared/types";
 import { locale } from "$lib/features/i18n/locale.svelte";
 
 const timeline = createTimeline();
@@ -33,6 +33,7 @@ export interface MarkerEditMenu {
 
 function createMarkerStore() {
   let timestamps = $state<VideoMarker[]>([]);
+  let chapters = $state<MediaChapter[]>([]);
   let resumePoint = $state<number | null>(null);
   let loopStart = $state<number | null>(null);
   let loopEnd = $state<number | null>(null);
@@ -67,6 +68,12 @@ function createMarkerStore() {
     },
     set timestamps(v: VideoMarker[]) {
       timestamps = v;
+    },
+    get chapters() {
+      return chapters;
+    },
+    set chapters(v: MediaChapter[]) {
+      chapters = v;
     },
     get resumePoint() {
       return resumePoint;

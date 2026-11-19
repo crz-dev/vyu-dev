@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ClipBoundary, ClipPair, VideoMarker } from "$lib/shared/types";
+  import type { ClipBoundary, ClipPair, MediaChapter, VideoMarker } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import {
     cancelPendingTimelinePreviews,
@@ -21,6 +21,7 @@
     clipPairs,
     clipBoundaries,
     timestamps,
+    chapters = [],
     abLoopRegion,
     loopStart,
     loopEnd,
@@ -59,7 +60,7 @@
     clipPairs: ClipPair[];
     clipBoundaries: ClipBoundary[];
     timestamps: VideoMarker[];
-    abLoopRegion: { start: number; end: number } | null;
+    chapters?: MediaChapter[];    abLoopRegion: { start: number; end: number } | null;
     loopStart: number | null;
     loopEnd: number | null;
     resumePoint: number | null;
@@ -106,6 +107,13 @@
   const clipPairPrefix = $derived(fullscreen ? "fspair" : "pair");
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
   const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
+  const hoveredChapterIndex = $derived.by(() => {
+    if (!chapters || chapters.length === 0 || durationSecs <= 0) return -1;
+    const time = (previewPct / 100) * durationSecs;
+    return chapters.findIndex((c, i) =>
+      time >= c.start && (time < c.end || i === chapters.length - 1),
+    );
+  });
   // Integer percentage keeps the accessibility tree stable at playback rate.
   const ariaProgress = $derived(Math.round(clampedProgress));
   const showResumeMarker = $derived(
@@ -394,7 +402,7 @@
     role="presentation"
     aria-hidden="true"
   ></div>
-  {#if showPreview && !tsEditMenuVisible}
+  {#if showPreview && !tsEditMenuVisible && hoveredChapterIndex < 0}
     <div
       class="ts-tooltip white scrubber-tooltip timeline-preview"
       style="left: {previewLeftPct}%; top: -12px;"
@@ -634,6 +642,41 @@
         : t("shell.timeline.timestampAt", { time: formatTime(ts.time) })}
     ></div>
   {/each}
+   {#each chapters as ch, i (ch.start)}
+     {#if i > 0}
+       <div
+         class="chapter-divider"
+         style="left: {getTimestampPct(ch.start)}%"
+         aria-hidden="true"
+       ></div>
+     {/if}
+   {/each}
+   {#if hoveredChapterIndex >= 0}
+     {@const ch = chapters[hoveredChapterIndex]}
+     <div
+       class="chapter-highlight"
+       style="left: {getTimestampPct(ch.start)}%; width: {getTimestampPct(
+         ch.end,
+       ) - getTimestampPct(ch.start)}%;"
+       aria-hidden="true"
+     ></div>
+   {/if}
+   {#if hoveredChapterIndex >= 0 && !tsEditMenuVisible}
+     {@const ch = chapters[hoveredChapterIndex]}
+     <div
+       class="ts-tooltip white scrubber-tooltip chapter-tooltip"
+       style="left: {Math.min(
+         95,
+         Math.max(5, getTimestampPct((ch.start + ch.end) / 2)),
+       )}%; top: -12px;"
+       aria-hidden="true"
+     >
+       <span class="chapter-tooltip-title">{ch.title}</span>
+       <span class="chapter-tooltip-time"
+         >{formatTime(ch.start)} – {formatTime(ch.end)}</span
+       >
+     </div>
+   {/if}
 </div>
 
 <style>
@@ -681,5 +724,45 @@
 
   .timeline-preview-time {
     font-variant-numeric: tabular-nums;
+  }
+
+  .chapter-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--bg-border);
+    z-index: 2;
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  .chapter-highlight {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+    z-index: 1;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  .chapter-tooltip {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 8px;
+  }
+
+  .chapter-tooltip-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .chapter-tooltip-time {
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
   }
 </style>

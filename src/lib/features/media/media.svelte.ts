@@ -6,7 +6,7 @@ import {
   getParentFolder,
   clearFolderCache,
 } from "$lib/services/files";
-import { prepareDisplayPath } from "$lib/features/media/api";
+import { prepareDisplayPath, invokeGetMediaChapters } from "$lib/features/media/api";
 import { getFileMetadataLight } from "$lib/services/database";
 import {
   readTimestamps as lsReadTimestamps,
@@ -20,7 +20,7 @@ import {
   isBrowserUnsupportedImage,
   needsRemux,
 } from "$lib/shared/mediaKind";
-import type { VideoMarker, ClipBoundary } from "$lib/shared/types";
+import type { VideoMarker, ClipBoundary, MediaChapter } from "$lib/shared/types";
 import { formatMetaDate, getMetaValue } from "$lib/shared/fileMeta";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 import { fxEngine } from "$lib/features/effects/effects-engine";
@@ -66,6 +66,7 @@ export interface MediaState {
   playing: boolean;
   timestamps: VideoMarker[];
   clipBoundaries: ClipBoundary[];
+  chapters: MediaChapter[];
   resumePoint: number | null;
 }
 
@@ -76,6 +77,7 @@ interface PrefetchEntry {
   meta?: {
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
+    chapters: MediaChapter[];
     resumePoint: number | null;
   };
 }
@@ -229,9 +231,12 @@ export function createMedia(
   async function prefetchFile(path: string, preloadPixels = true) {
     if (prefetchCache.has(path)) return;
     try {
-      const [displayPath, metaResult] = await Promise.all([
+      const [displayPath, metaResult, chaptersResult] = await Promise.all([
         prepareDisplayPath(path).catch(() => undefined),
         getFileMetadataLight(path).catch(() => null),
+        (pathIsVideo(path) || pathIsAudio(path))
+          ? invokeGetMediaChapters(path).catch(() => [] as MediaChapter[])
+          : Promise.resolve([] as MediaChapter[]),
       ]);
 
       const entry: PrefetchEntry = { at: Date.now() };
@@ -243,6 +248,7 @@ export function createMedia(
       if (metaResult) {
         const timestamps: VideoMarker[] = [];
         const clipBoundaries: ClipBoundary[] = [];
+        const chapters: MediaChapter[] = [...(chaptersResult ?? [])];
         let resumePoint: number | null = null;
 
         if (metaResult.timestamp_data) {
@@ -258,13 +264,14 @@ export function createMedia(
           resumePoint = metaResult.last_position;
         }
 
-        entry.meta = { timestamps, clipBoundaries, resumePoint };
+        entry.meta = { timestamps, clipBoundaries, chapters, resumePoint };
       } else if (pathIsVideo(path) || pathIsAudio(path)) {
         // Cache the "no row yet" case so displaying this file doesn't repeat
         // the query. Fall back exactly like displayFile does.
         entry.meta = {
           timestamps: lsReadTimestamps(path),
           clipBoundaries: pathIsVideo(path) ? lsReadClipBoundaries(path) : [],
+          chapters: chaptersResult ?? [],
           resumePoint: lsLoadResumePoint(path),
         };
       }
@@ -351,11 +358,13 @@ export function createMedia(
     // Batch metadata fetch — use cached or fresh
     let timestamps: VideoMarker[] = [];
     let clipBoundaries: ClipBoundary[] = [];
+    let chapters: MediaChapter[] = [];
     let resumePoint: number | null = null;
 
     if (cached?.meta && !refresh) {
       timestamps = cached.meta.timestamps;
       clipBoundaries = cached.meta.clipBoundaries;
+      chapters = cached.meta.chapters ?? [];
       resumePoint = cached.meta.resumePoint;
     } else if (isVideo || isAudio) {
       try {
@@ -386,6 +395,11 @@ export function createMedia(
       }
     }
 
+    if ((isVideo || isAudio) && chapters.length === 0) {
+      chapters = await invokeGetMediaChapters(path).catch(() => []);
+      if (gen !== loadGen) return false;
+    }
+
     const nextState: Partial<MediaState> = {
       filePath: path,
       fileName: getFileName(path),
@@ -407,6 +421,7 @@ export function createMedia(
       playing: false,
       timestamps,
       clipBoundaries,
+      chapters,
       resumePoint:
         playbackPrefs.resumeMode === "off" ||
         (resumePoint !== null && resumePoint < playbackPrefs.resumeThreshold)
@@ -523,6 +538,7 @@ export function createMedia(
       playing: false,
       timestamps: [],
       clipBoundaries: [],
+      chapters: [],
       resumePoint: null,
     });
     onReset();
@@ -626,6 +642,7 @@ export function createMedia(
       imageNaturalHeight: 0,
       timestamps: [],
       clipBoundaries: [],
+      chapters: [],
       resumePoint: null,
     });
   }
