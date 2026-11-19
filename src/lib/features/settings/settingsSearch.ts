@@ -414,6 +414,13 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
   ],
   "reduce transparency": ["opaque", "solid", "blur", "glass", "transparent"],
   "strong focus rings": ["keyboard", "outline", "focus", "accessible"],
+  "highlight focused controls": [
+    "keyboard",
+    "outline",
+    "focus",
+    "highlight",
+    "motor",
+  ],
   "bold text": ["weight", "font", "thick", "readability"],
   "text spacing": ["line", "letter", "spacing", "readability", "dyslexia"],
   "larger viewer controls": ["player", "media", "controls", "bigger"],

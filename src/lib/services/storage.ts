@@ -1460,6 +1460,14 @@ export function saveA11yFocusRings(enabled: boolean): void {
   saveA11yBoolean("focus-rings", enabled);
 }
 
+export function loadA11yFocusHighlight(): boolean {
+  return loadA11yBoolean("focus-highlight");
+}
+
+export function saveA11yFocusHighlight(enabled: boolean): void {
+  saveA11yBoolean("focus-highlight", enabled);
+}
+
 export function loadA11yBoldText(): boolean {
   return loadA11yBoolean("bold-text");
 }

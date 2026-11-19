@@ -77,8 +77,10 @@ export function createKeybindHandler(deps: KeybindActions) {
     }
 
     const context = deps.getContext();
+    // PDFs share the viewer actions (file skipping, fullscreen, file
+    // operations). PDF page and find keys are handled by the PDF view.
     const contexts: KeybindContext[] =
-      context === "viewer" ? ["global", "viewer"] : ["global"];
+      context === "library" ? ["global"] : ["global", "viewer"];
     const action = keybindStore.actionForEvent(e, contexts);
 
     if (action) {

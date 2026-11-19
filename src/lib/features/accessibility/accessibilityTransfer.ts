@@ -23,6 +23,7 @@ export function exportAccessibilitySettings(): AccessibilityExport {
     version: 1,
     colorBlindMode: accessibility.colorBlindMode,
     focusRings: accessibility.focusRings,
+    focusHighlight: accessibility.focusHighlight,
     boldText: accessibility.boldText,
     textSpacing: accessibility.textSpacing,
     reduceTransparency: accessibility.reduceTransparency,
@@ -93,6 +94,7 @@ export function applyAccessibilityImport(raw: unknown): void {
   }
 
   setBoolean(data, "focusRings", accessibility.setFocusRings);
+  setBoolean(data, "focusHighlight", accessibility.setFocusHighlight);
   setBoolean(data, "boldText", accessibility.setBoldText);
   setBoolean(data, "textSpacing", accessibility.setTextSpacing);
   setBoolean(data, "reduceTransparency", accessibility.setReduceTransparency);
@@ -212,6 +214,7 @@ export function resetAccessibilitySection(section: AccessibilitySection): void {
       accessibility.setLargeScrollbars(false);
       accessibility.setLargeTimeline(false);
       accessibility.setAlwaysShowControls(false);
+      accessibility.setFocusHighlight(false);
       accessibility.setReducePanSensitivity(false);
       playbackPrefs.setSeekStep(5);
       setSkipDeleteConfirmations(false);

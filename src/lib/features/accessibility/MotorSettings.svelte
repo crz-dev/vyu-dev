@@ -136,6 +136,26 @@
     icon="shield"
   >
     <SettingsRow
+      label={t("settings.accessibility.motor.focusHighlight.label")}
+      hint={t("settings.accessibility.motor.focusHighlight.hint")}
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            aria-label={t("settings.accessibility.motor.focusHighlight.aria")}
+            checked={accessibility.focusHighlight}
+            onchange={(e) =>
+              accessibility.setFocusHighlight(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={accessibility.focusHighlight}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
       label={t("settings.accessibility.motor.shortcutSheet.label")}
       hint={t("settings.accessibility.motor.shortcutSheet.hint")}
     >

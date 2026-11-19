@@ -5,6 +5,7 @@ import {
   loadA11yBalance,
   loadA11yBoldText,
   loadA11yBoostDialogue,
+  loadA11yFocusHighlight,
   loadA11yFocusMode,
   loadA11yFocusRings,
   loadA11yGrayscale,
@@ -30,6 +31,7 @@ import {
   saveA11yBalance,
   saveA11yBoldText,
   saveA11yBoostDialogue,
+  saveA11yFocusHighlight,
   saveA11yFocusMode,
   saveA11yFocusRings,
   saveA11yGrayscale,
@@ -77,6 +79,7 @@ function createAccessibility() {
   let colorBlindMode = $state<ColorBlindMode>(saved);
 
   let focusRings = $state(loadA11yFocusRings());
+  let focusHighlight = $state(loadA11yFocusHighlight());
   let boldText = $state(loadA11yBoldText());
   let textSpacing = $state(loadA11yTextSpacing());
   let reduceTransparency = $state(loadA11yReduceTransparency());
@@ -110,6 +113,7 @@ function createAccessibility() {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
     root.dataset.a11yFocus = focusRings ? "true" : "false";
+    root.dataset.a11yFocusHighlight = focusHighlight ? "true" : "false";
     root.dataset.a11yBold = boldText ? "true" : "false";
     root.dataset.a11ySpacing = textSpacing ? "true" : "false";
     root.dataset.a11yOpaque = reduceTransparency ? "true" : "false";
@@ -131,6 +135,12 @@ function createAccessibility() {
   function setFocusRings(enabled: boolean) {
     focusRings = enabled;
     saveA11yFocusRings(enabled);
+    applyRootAttributes();
+  }
+
+  function setFocusHighlight(enabled: boolean) {
+    focusHighlight = enabled;
+    saveA11yFocusHighlight(enabled);
     applyRootAttributes();
   }
 
@@ -315,6 +325,7 @@ function createAccessibility() {
   function reset() {
     setColorBlindMode("none");
     setFocusRings(false);
+    setFocusHighlight(false);
     setBoldText(false);
     setTextSpacing(false);
     setReduceTransparency(false);
@@ -349,6 +360,9 @@ function createAccessibility() {
     },
     get focusRings() {
       return focusRings;
+    },
+    get focusHighlight() {
+      return focusHighlight;
     },
     get boldText() {
       return boldText;
@@ -427,6 +441,7 @@ function createAccessibility() {
     },
     setColorBlindMode,
     setFocusRings,
+    setFocusHighlight,
     setBoldText,
     setTextSpacing,
     setReduceTransparency,

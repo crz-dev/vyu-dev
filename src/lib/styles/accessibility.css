@@ -76,6 +76,14 @@ html[data-a11y-focus="true"] .settings-action-btn:focus-visible {
   box-shadow: 0 0 0 2px var(--bg-primary);
 }
 
+/* Keyboard focus highlight — off by default, opt in from Motor settings.
+   Strong focus rings stay opt-in and still render when enabled. */
+html:not([data-a11y-focus-highlight="true"]):not([data-a11y-focus="true"])
+  :focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Bold text */
 html[data-a11y-bold="true"]
   :where(
