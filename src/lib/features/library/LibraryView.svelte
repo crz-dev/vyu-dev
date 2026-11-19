@@ -486,6 +486,13 @@
     }
   }
 
+  async function openLibraryFolder() {
+    const dir = await open({ directory: true });
+    if (typeof dir !== "string") return;
+    libraryDirPath = dir;
+    libraryBasePath = dir;
+  }
+
   const libraryRootName = $derived(
     libraryBasePath ? getFileName(libraryBasePath) : "",
   );
@@ -4383,167 +4390,215 @@
 
           {#if library.activeTab === "favorites" && displayFiles.length === 0 && !searchHasNoResults}
             <div class="library-empty">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                opacity="0.3"
-              >
-                <ellipse cx="9.5" cy="10" rx="1.5" ry="2.2" />
-                <ellipse cx="14.5" cy="10" rx="1.5" ry="2.2" />
-                <path
-                  d="M12 2a9 8 0 0 0-9 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a9 8 0 0 0-9-8z"
-                />
-              </svg>
-              <span
-                >{library.favorites.length > 0
-                  ? t("library.empty.favoritesFiltered")
-                  : t("library.empty.favoritesNone")}</span
-              >
+              <div class="library-empty-art is-favorites" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path
+                    d="M32 8C20.4 8 11 17.4 11 29v25q5-4 11 0 5 4 10 0 5-4 10 0 5 4 11 0V29C53 17.4 43.6 8 32 8z"
+                    fill="currentColor"
+                    fill-opacity="0.1"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="25" cy="27" r="2.6" fill="var(--yellow)" />
+                  <circle cx="39" cy="27" r="2.6" fill="var(--yellow)" />
+                  <ellipse
+                    cx="20.5"
+                    cy="33"
+                    rx="3"
+                    ry="1.8"
+                    fill="var(--yellow)"
+                    fill-opacity="0.45"
+                  />
+                  <ellipse
+                    cx="43.5"
+                    cy="33"
+                    rx="3"
+                    ry="1.8"
+                    fill="var(--yellow)"
+                    fill-opacity="0.45"
+                  />
+                  <path
+                    d="M28.5 33.5c2 1.8 5 1.8 7 0"
+                    stroke="var(--yellow)"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+              <div class="library-empty-copy">
+                {#if library.favorites.length > 0}
+                  <span>{t("library.empty.favoritesFiltered")}</span>
+                {:else}
+                  <span>{t("library.empty.favoritesNone")}</span>
+                  <span class="library-empty-hint"
+                    >{t("library.empty.favoritesHint")}</span
+                  >
+                {/if}
+              </div>
             </div>
           {/if}
 
           {#if library.activeTab === "recents" && displayFiles.length === 0 && !searchHasNoResults}
             <div class="library-empty">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                opacity="0.3"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              <span
-                >{library.privacyMode
-                  ? t("library.empty.recentsPrivacy")
-                  : library.recentsDisabled
-                    ? t("library.empty.recentsOff")
-                    : library.getRecentPaths().length > 0
-                      ? t("library.empty.recentsFiltered")
-                      : t("library.empty.recentsNone")}</span
-              >
+              <div class="library-empty-art is-recents" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none" opacity="0.55">
+                  <circle
+                    cx="32"
+                    cy="33"
+                    r="19"
+                    fill="currentColor"
+                    fill-opacity="0.08"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                  />
+                  <path
+                    d="M32 17v3M48 33h-3M32 49v-3M16 33h3"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    opacity="0.4"
+                  />
+                  <path
+                    d="M32 33l-6.5-8"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    opacity="0.75"
+                  />
+                  <path
+                    d="M32 33l8-6"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    opacity="0.55"
+                  />
+                  <path
+                    d="M32 33V18.5"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    opacity="0.7"
+                  />
+                  <circle cx="32" cy="33" r="2.4" fill="currentColor" />
+                </svg>
+              </div>
+              <div class="library-empty-copy">
+                {#if library.privacyMode}
+                  <span>{t("library.empty.recentsPrivacy")}</span>
+                {:else if library.recentsDisabled}
+                  <span>{t("library.empty.recentsOff")}</span>
+                {:else if library.getRecentPaths().length > 0}
+                  <span>{t("library.empty.recentsFiltered")}</span>
+                {:else}
+                  <span>{t("library.empty.recentsNone")}</span>
+                  <span class="library-empty-hint"
+                    >{t("library.empty.recentsHint")}</span
+                  >
+                {/if}
+              </div>
             </div>
           {/if}
 
           {#if library.activeTab === "library" && !libraryDirPath && displayFiles.length === 0 && currentFolderPaths.length === 0 && !searchHasNoResults}
             <div class="library-empty">
-              <div class="library-empty-icons">
-                <svg
-                  class="library-empty-icon library-empty-icon-top"
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  opacity="0.3"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-                <svg
-                  class="library-empty-icon library-empty-icon-bl"
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  opacity="0.3"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <polygon points="10 8 16 12 10 16 10 8" />
-                </svg>
-                <svg
-                  class="library-empty-icon library-empty-icon-br"
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  opacity="0.3"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <ellipse cx="9" cy="16" rx="2" ry="1.5" />
-                  <ellipse cx="15" cy="14.5" rx="2" ry="1.5" />
-                  <line x1="11" y1="16" x2="11" y2="8" />
-                  <line x1="17" y1="14.5" x2="17" y2="6.5" />
-                  <line x1="11" y1="8" x2="17" y2="6.5" />
-                </svg>
-              </div>
-              <span
-                >{fileList.length > 0
-                  ? t("library.empty.filesFiltered")
-                  : t("library.empty.folderEmpty")}</span
-              >
+              <button class="empty" onclick={openLibraryFolder}>
+                <span class="empty-icon-frame" aria-hidden="true">
+                  <svg
+                    class="empty-glyph"
+                    width="26"
+                    height="26"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span class="empty-add">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M5 1.5v7M1.5 5h7"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </span>
+                </span>
+                <span class="empty-copy">
+                  <span class="empty-text">{t("library.empty.openFolder")}</span
+                  >
+                  <span class="empty-hint"
+                    >{t("library.empty.openFolderHint")}</span
+                  >
+                </span>
+              </button>
             </div>
           {/if}
 
           {#if isViewingCollection && displayFiles.length === 0 && currentFolderPaths.length === 0 && !searchHasNoResults}
             <div class="library-empty">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                opacity="0.3"
-              >
-                <path
-                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                />
-              </svg>
-              <span
-                >{collectionFiles.length > 0
-                  ? t("library.empty.filesFiltered")
-                  : t("library.empty.folderEmpty")}</span
-              >
+              <div class="library-empty-art is-folder" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path
+                    d="M6 26a4 4 0 0 1 4-4h11.8a3 3 0 0 1 2.4 1.2l2.8 3.8a3 3 0 0 0 2.4 1.2H54a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"
+                    fill="currentColor"
+                    fill-opacity="0.08"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M20 38h4M30 38h4M40 38h4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    opacity="0.4"
+                  />
+                </svg>
+              </div>
+              <div class="library-empty-copy">
+                <span
+                  >{collectionFiles.length > 0
+                    ? t("library.empty.filesFiltered")
+                    : t("library.empty.folderEmpty")}</span
+                >
+              </div>
             </div>
           {/if}
           {#if library.activeTab === "library" && libraryDirPath && displayFiles.length === 0 && currentFolderPaths.length === 0 && !searchHasNoResults}
             <div class="library-empty">
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                opacity="0.3"
-              >
-                <path
-                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                />
-              </svg>
-              <span
-                >{libraryDirFiles.length > 0
-                  ? t("library.empty.filesFiltered")
-                  : t("library.empty.folderEmpty")}</span
-              >
+              <div class="library-empty-art is-folder" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path
+                    d="M6 26a4 4 0 0 1 4-4h11.8a3 3 0 0 1 2.4 1.2l2.8 3.8a3 3 0 0 0 2.4 1.2H54a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"
+                    fill="currentColor"
+                    fill-opacity="0.08"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M20 38h4M30 38h4M40 38h4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    opacity="0.4"
+                  />
+                </svg>
+              </div>
+              <div class="library-empty-copy">
+                <span
+                  >{libraryDirFiles.length > 0
+                    ? t("library.empty.filesFiltered")
+                    : t("library.empty.folderEmpty")}</span
+                >
+              </div>
             </div>
           {/if}
 
@@ -4724,22 +4779,52 @@
             </div>
             {#if library.collections.length === 0}
               <div class="library-empty">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  opacity="0.3"
+                <div
+                  class="library-empty-art is-collections"
+                  aria-hidden="true"
                 >
-                  <path
-                    d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                  />
-                </svg>
-                <span>{t("library.empty.collectionsNone")}</span>
+                  <svg viewBox="0 0 64 64" fill="none">
+                    <rect
+                      x="22"
+                      y="13"
+                      width="23"
+                      height="15"
+                      rx="3"
+                      transform="rotate(-9 33.5 20.5)"
+                      fill="currentColor"
+                      fill-opacity="0.08"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linejoin="round"
+                    />
+                    <rect
+                      x="23"
+                      y="10"
+                      width="23"
+                      height="15"
+                      rx="3"
+                      transform="rotate(7 34.5 17.5)"
+                      fill="currentColor"
+                      fill-opacity="0.08"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M6 26a4 4 0 0 1 4-4h11.8a3 3 0 0 1 2.4 1.2l2.8 3.8a3 3 0 0 0 2.4 1.2H54a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"
+                      fill="var(--blue-bg-subtle)"
+                      stroke="var(--blue)"
+                      stroke-width="2.2"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="library-empty-copy">
+                  <span>{t("library.empty.collectionsNone")}</span>
+                  <span class="library-empty-hint"
+                    >{t("library.empty.collectionsHint")}</span
+                  >
+                </div>
               </div>
             {/if}
           {/if}
@@ -7009,36 +7094,79 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 4px;
     pointer-events: none;
     color: var(--text-muted, #888);
     font-size: 14px;
     font-family: var(--font-family);
   }
 
-  .library-empty-icons {
+  .library-empty .empty {
+    pointer-events: auto;
+  }
+
+  .library-empty-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    max-width: 280px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .library-empty-copy > span:first-child {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .library-empty-hint {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .library-empty-art {
     position: relative;
     width: 96px;
     height: 96px;
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
   }
 
-  .library-empty-icon {
+  .library-empty-art::before {
+    content: "";
     position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      var(--art-tint, var(--green-bg-subtle)) 0%,
+      transparent 70%
+    );
   }
 
-  .library-empty-icon-top {
-    left: 24px;
-    top: 0;
+  .library-empty-art svg {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    overflow: visible;
   }
 
-  .library-empty-icon-bl {
-    left: 0;
-    top: 48px;
+  .library-empty-art.is-favorites {
+    --art-tint: var(--yellow-bg-faint);
   }
 
-  .library-empty-icon-br {
-    left: 48px;
-    top: 48px;
+  .library-empty-art.is-recents {
+    --art-tint: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  }
+
+  .library-empty-art.is-collections {
+    --art-tint: var(--blue-bg-subtle);
+  }
+
+  .library-empty-art.is-folder {
+    --art-tint: var(--green-bg-subtle);
   }
 
   /* Collection dialog overlay */
