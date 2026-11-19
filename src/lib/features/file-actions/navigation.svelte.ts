@@ -54,11 +54,11 @@ import {
 import type { PdfState } from "$lib/features/viewer/pdf.svelte";
 
 const PREV_DOUBLE_CLICK_MS = 1200;
-// Rapid skips are coalesced: only the first press loads immediately, later
-// presses are applied once that load finishes. Neighbour warming (metadata IPC
-// plus image decode) is deferred until the burst settles so files the user
-// skipped past are never fetched or decoded.
-const NAV_SETTLE_MS = 280;
+// Single skips load immediately so files keep sliding in. Only a sustained run
+// of skips collapses the target list: after this many presses inside the
+// window, files skipped past stop loading and neighbour warmups are dropped.
+const SKIP_BURST_WINDOW_MS = 550;
+const SKIP_BURST_THRESHOLD = 4;
 
 // Visualizers are floating windows that must close when the file changes.
 // closeAll() is a no-op when nothing is open.
@@ -148,10 +148,10 @@ export function createNavigation(deps: NavigationDeps) {
   let switching = false;
   let switchTimer: ReturnType<typeof setTimeout> | undefined;
   let thumbnailWarmGen = 0;
-  let navigateInFlight = false;
-  let queuedSteps = 0;
-  let lastNavAt = 0;
-  let prefetchTimer: ReturnType<typeof setTimeout> | undefined;
+  // Times of recent skip presses; see SKIP_BURST_THRESHOLD.
+  let skipTimes: number[] = [];
+  let burstInFlight = false;
+  let burstSteps = 0;
 
   // Thumbnail generation is a full decode in Rust per file. Run it when the
   // app is idle so it cannot compete with the first image decode.
@@ -299,8 +299,7 @@ export function createNavigation(deps: NavigationDeps) {
   async function loadFile(path: string, refresh = false) {
     slideshow.stop();
     editing.exitCropMode();
-    clearTimeout(prefetchTimer);
-    prefetchTimer = undefined;
+    skipTimes = [];
     if (refresh) forgetTrackCatalog(path);
     let loadedIndex = -1;
     await media.loadFile(
@@ -327,74 +326,80 @@ export function createNavigation(deps: NavigationDeps) {
     }
   }
 
-  function prefetchAroundCurrent() {
-    const list = deps.getFileList();
-    const index = deps.getCurrentIndex();
-    if (list.length === 0 || index < 0) return;
-    media.prefetchAdjacent(list, index);
-  }
-
-  // Skipping has paused: warm the neighbours right away so the next skip stays
-  // instant. Mid-burst, wait for the burst to settle instead.
-  function schedulePrefetch() {
+  // True once the user is skipping faster than files can settle: from then on
+  // intermediate targets are folded into a single jump.
+  function isSkipBurst(): boolean {
     const now = Date.now();
-    const settled = queuedSteps === 0 && now - lastNavAt > NAV_SETTLE_MS;
-    lastNavAt = now;
-    clearTimeout(prefetchTimer);
-    prefetchTimer = undefined;
-    if (settled) {
-      prefetchAroundCurrent();
-      return;
-    }
-    prefetchTimer = setTimeout(() => {
-      prefetchTimer = undefined;
-      prefetchAroundCurrent();
-    }, NAV_SETTLE_MS);
+    skipTimes = skipTimes.filter((t) => now - t < SKIP_BURST_WINDOW_MS);
+    skipTimes.push(now);
+    return skipTimes.length >= SKIP_BURST_THRESHOLD;
   }
 
-  async function navigate(direction: number) {
-    if (deps.getFileList().length === 0) return;
-    // A load is already running: fold this press into it rather than starting
-    // another load for a file the user is skipping past.
-    if (navigateInFlight) {
-      queuedSteps += direction;
-      return;
-    }
+  async function navigateStep(
+    direction: number,
+    warmNeighbours: boolean,
+  ): Promise<boolean> {
     if (!menuStore.effectsMenuVisible) {
       closeVisualizers();
     }
     slideshow.stop();
     editing.exitCropMode();
-    navigateInFlight = true;
+    try {
+      const next = await media.navigate(
+        direction,
+        deps.getFileList(),
+        deps.getCurrentIndex(),
+        setMediaState,
+      );
+      if (next === null) return false;
+      deps.setCurrentIndex(next);
+      library.addRecent(deps.getFileList()[next]);
+      if (warmNeighbours) {
+        media.prefetchAdjacent(deps.getFileList(), next);
+      }
+      return true;
+    } catch (e) {
+      console.error("Navigation failed:", e);
+      return false;
+    }
+  }
+
+  async function navigate(direction: number) {
+    if (deps.getFileList().length === 0) return;
+    if (!isSkipBurst()) {
+      // Normal skip: load right away (concurrent with any older load, which
+      // media.svelte.ts supersedes) so the next file appears instantly.
+      await navigateStep(direction, true);
+      return;
+    }
+    // Burst: a load is already running, so only remember how far to jump.
+    if (burstInFlight) {
+      burstSteps += direction;
+      return;
+    }
+    burstInFlight = true;
     let step = direction;
     try {
       while (step !== 0) {
         const fileList = deps.getFileList();
-        if (fileList.length === 0) return;
+        const len = fileList.length;
+        if (len === 0) return;
         // Wrap accumulated steps so a held key cannot produce an index outside
         // the list, and so a full loop back to the current file is a no-op.
-        const len = fileList.length;
         const delta = ((step % len) + len) % len;
-        if (delta === 0 && step !== direction) return;
-        queuedSteps = 0;
-        const next = await media.navigate(
-          delta,
-          fileList,
-          deps.getCurrentIndex(),
-          setMediaState,
-        );
-        if (next === null) return;
-        deps.setCurrentIndex(next);
-        library.addRecent(fileList[next]);
-        schedulePrefetch();
-        step = queuedSteps;
+        if (delta === 0) return;
+        burstSteps = 0;
+        if (!(await navigateStep(delta, false))) return;
+        step = burstSteps;
       }
-    } catch (e) {
-      console.error("Navigation failed:", e);
     } finally {
-      navigateInFlight = false;
-      queuedSteps = 0;
+      burstInFlight = false;
+      burstSteps = 0;
     }
+    // The burst has settled on a file; warm the neighbours now so the next
+    // single skip is instant again.
+    const index = deps.getCurrentIndex();
+    if (index >= 0) media.prefetchAdjacent(deps.getFileList(), index);
   }
 
   async function navigateToIndex(index: number) {
@@ -408,7 +413,7 @@ export function createNavigation(deps: NavigationDeps) {
     deps.setCurrentIndex(index);
     await media.displayFile(fileList[index], setMediaState);
     library.addRecent(fileList[index]);
-    schedulePrefetch();
+    media.prefetchAdjacent(fileList, index);
   }
 
   async function navigateToEdge(first: boolean) {
@@ -426,7 +431,7 @@ export function createNavigation(deps: NavigationDeps) {
     if (next === null) return;
     deps.setCurrentIndex(next);
     library.addRecent(deps.getFileList()[next]);
-    schedulePrefetch();
+    media.prefetchAdjacent(deps.getFileList(), next);
   }
 
   async function navigateToAudioFile(direction: number) {
@@ -445,7 +450,7 @@ export function createNavigation(deps: NavigationDeps) {
         editing.exitCropMode();
         deps.setCurrentIndex(idx);
         await media.displayFile(fileList[idx], setMediaState);
-        schedulePrefetch();
+        media.prefetchAdjacent(fileList, idx);
         return;
       }
       idx = (idx + direction + fileList.length) % fileList.length;
@@ -481,8 +486,6 @@ export function createNavigation(deps: NavigationDeps) {
     slideshow.stop();
     folderWatcher.stopWatching();
     clearTimeout(deps.getPendingPlay());
-    clearTimeout(prefetchTimer);
-    prefetchTimer = undefined;
     markerStore.resumeTooltipVisible = false;
     editing.cleanup();
     markup.cleanup();
@@ -611,7 +614,7 @@ export function createNavigation(deps: NavigationDeps) {
     editing.exitCropMode();
     deps.setCurrentIndex(nextIndex);
     await media.displayFile(deps.getFileList()[nextIndex], setMediaState);
-    schedulePrefetch();
+    media.prefetchAdjacent(deps.getFileList(), nextIndex);
   }
 
   return {
