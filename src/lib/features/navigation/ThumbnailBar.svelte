@@ -8,6 +8,8 @@
     requestThumbnails,
   } from "$lib/services/thumbnailCache.svelte";
   import { library } from "$lib/features/library/library.svelte";
+  import { queue } from "$lib/features/media/queue.svelte";
+  import { showToast as showToastMessage } from "$lib/components/toast.svelte";
   import ThumbnailGenToast from "$lib/components/ThumbnailGenToast.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
@@ -216,6 +218,21 @@
     if (index === currentIndex) return;
     onSelect(index);
   }
+
+  function handleQueueToggle(e: MouseEvent, path: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (queue.has(path)) {
+      queue.remove(path);
+      showToastMessage({ message: t("menus.queue.removed"), color: "grey" });
+      return;
+    }
+    queue.enqueue([path]);
+    showToastMessage({
+      message: t("menus.queue.addedOne"),
+      color: "green",
+    });
+  }
 </script>
 
 <div
@@ -252,11 +269,13 @@
       <button
         class="thumbnail-item"
         class:active={item.index === currentIndex}
+        class:queued={queue.has(item.path)}
         class:privacy-blur={library.privacyMode}
         data-path={item.path}
         data-index={item.index}
         style="width: {ITEM_W}px; height: {ITEM_W}px;"
         onclick={() => handleClick(item.index)}
+        oncontextmenu={(e) => handleQueueToggle(e, item.path)}
         aria-label={t("menus.thumbnail.openFile")}
       >
         {#if getCached(item.path, THUMB_SIZE)}

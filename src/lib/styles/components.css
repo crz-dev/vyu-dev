@@ -5258,3 +5258,614 @@ main.menu-open .subtitle-overlay {
 :where(button:not(:disabled):hover svg) {
   transform: scale(1.04);
 }
+
+/* ── Queue / playback ─────────────────────────────── */
+
+.queue-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.queue-btn {
+  position: relative;
+}
+
+.queue-btn-count {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 3px;
+  border-radius: 6px;
+  background: var(--green-bg-default, rgba(74, 222, 128, 0.18));
+  border: 0.5px solid var(--green-border, rgba(74, 222, 128, 0.45));
+  color: var(--green-soft, #86efac);
+  font-family: var(--font-family);
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.queue-menu {
+  width: min(244px, calc(100vw - 24px));
+  padding: 6px;
+}
+
+.queue-header-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: var(--font-family);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.queue-title-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--green-bg-default, rgba(74, 222, 128, 0.18));
+  border: 0.5px solid var(--green-border, rgba(74, 222, 128, 0.45));
+  color: var(--green-soft, #86efac);
+  font-size: 9px;
+  line-height: 15px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.queue-list {
+  max-height: 168px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-shimmer) transparent;
+}
+
+.queue-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.queue-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.queue-list::-webkit-scrollbar-thumb {
+  background: var(--bg-shimmer);
+  border-radius: 3px;
+}
+
+.queue-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-hint);
+}
+
+.queue-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 28px;
+  border-radius: 5px;
+  padding: 2px 2px 2px 1px;
+  transition: background 0.12s ease;
+}
+
+.queue-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.queue-index {
+  width: 14px;
+  flex: 0 0 14px;
+  text-align: right;
+  font-family: var(--font-family);
+  font-size: 9px;
+  color: var(--text-hint);
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-row-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 1px 2px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.queue-row-name,
+.queue-row-folder {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-row-name {
+  font-family: var(--font-family);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.queue-row-folder {
+  font-family: var(--font-family);
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--text-hint);
+}
+
+.queue-row-remove {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0.5px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-hint);
+  cursor: pointer;
+}
+
+.queue-row-remove:hover {
+  background: var(--red-bg-default, rgba(248, 113, 113, 0.15));
+  border-color: var(--red-border, rgba(248, 113, 113, 0.4));
+  color: var(--red-soft, #fca5a5);
+}
+
+.queue-utility-row {
+  display: flex;
+  gap: 4px;
+}
+
+.queue-utility-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 5px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 9px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-utility-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-dim);
+}
+
+.queue-utility-btn.danger:hover {
+  color: var(--red-soft);
+  border-color: var(--red-border);
+  background: var(--red-bg-default);
+}
+
+.queue-interval-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.queue-control-label {
+  font-family: var(--font-family);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-hint);
+}
+
+.queue-interval-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  flex: 1;
+  max-width: 148px;
+}
+
+.queue-interval-btn {
+  padding: 3px 0;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 9px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-interval-btn.active {
+  border-color: var(--blue-light-border);
+  background: var(--blue-bg-hover);
+  color: var(--blue-light);
+}
+
+.queue-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+}
+
+.queue-actions.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.queue-action-btn {
+  min-width: 0;
+  border-radius: 6px;
+  border: 0.5px solid;
+  font-family: var(--font-family);
+  font-size: 11px;
+  padding: 6px 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    color 0.16s,
+    border-color 0.16s,
+    opacity 0.16s;
+}
+
+.queue-action-btn.play {
+  background: var(--green-bg-default);
+  border-color: var(--green-border);
+  color: var(--green-soft);
+}
+
+.queue-action-btn.play:hover {
+  background: var(--green-bg-active);
+}
+
+.queue-action-btn.pause {
+  background: var(--yellow-bg-default);
+  border-color: var(--yellow-border);
+  color: var(--yellow-soft);
+}
+
+.queue-action-btn.pause:hover {
+  background: var(--yellow-bg-active);
+}
+
+.queue-action-btn.stop {
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
+  color: var(--red-soft);
+}
+
+.queue-action-btn.stop:hover {
+  background: var(--red-bg-active);
+}
+
+.queue-action-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.queue-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 8px;
+  border: 0.5px dashed var(--bg-border);
+  border-radius: 6px;
+  text-align: center;
+  font-family: var(--font-family);
+}
+
+.queue-empty-title {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.queue-empty-hint {
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--text-hint);
+}
+
+.thumbnail-item.queued {
+  box-shadow: inset 0 0 0 2px var(--green, #4ade80);
+}
+
+.thumbnail-item.queued.active {
+  box-shadow: inset 0 0 0 2px var(--green, #4ade80);
+}
+
+/* ── Sleep timer menu / indicator ─────────────────── */
+
+.sleep-timer-menu {
+  position: fixed;
+  right: 12px;
+  bottom: 76px;
+  z-index: 1200;
+  width: min(276px, calc(100vw - 24px));
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 9px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+}
+
+.sleep-timer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 5px;
+  border-bottom: 0.5px solid var(--bg-elevated);
+}
+
+.sleep-timer-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-family);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.sleep-timer-close {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-hint);
+  cursor: pointer;
+}
+
+.sleep-timer-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.sleep-timer-countdown {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sleep-timer-remaining {
+  font-family: var(--font-family);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--blue-light);
+}
+
+.sleep-timer-hint {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-hint);
+}
+
+.sleep-timer-presets {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+
+.sleep-preset-btn {
+  padding: 4px 0;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.sleep-preset-btn.active {
+  border-color: var(--blue-light-border);
+  background: var(--blue-bg-hover);
+  color: var(--blue-light);
+}
+
+.sleep-timer-slider {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sleep-timer-slider input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--blue-light);
+}
+
+.sleep-timer-minutes {
+  min-width: 42px;
+  text-align: right;
+  font-family: var(--font-family);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sleep-timer-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sleep-timer-option.on {
+  color: var(--text-primary);
+  border-color: var(--blue-light-border);
+}
+
+.sleep-timer-switch {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--bg-border);
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.sleep-timer-option.on .sleep-timer-switch {
+  background: var(--green-bg-active, rgba(74, 222, 128, 0.5));
+}
+
+.sleep-timer-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.sleep-timer-option.on .sleep-timer-knob {
+  transform: translateX(10px);
+  background: var(--text-primary);
+}
+
+.sleep-timer-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.sleep-timer-start,
+.sleep-timer-stop {
+  flex: 1;
+  padding: 6px 5px;
+  border: 0.5px solid;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sleep-timer-start {
+  background: var(--green-bg-default);
+  border-color: var(--green-border);
+  color: var(--green-soft);
+}
+
+.sleep-timer-start:hover {
+  background: var(--green-bg-active);
+}
+
+.sleep-timer-stop {
+  background: var(--red-bg-default);
+  border-color: var(--red-border);
+  color: var(--red-soft);
+}
+
+.sleep-timer-stop:hover {
+  background: var(--red-bg-active);
+}
+
+.sleep-timer-indicator {
+  position: fixed;
+  right: 12px;
+  bottom: 44px;
+  z-index: 1190;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px 4px 7px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.sleep-timer-indicator:hover {
+  color: var(--text-primary);
+}
+
+.sleep-timer-indicator.closing {
+  color: var(--yellow-soft);
+  border-color: var(--yellow-border);
+}
+
+.sleep-timer-power {
+  margin-left: -1px;
+  color: var(--yellow-soft);
+}
+
+main.fullscreen .sleep-timer-indicator {
+  bottom: 64px;
+}
+
+main.fullscreen .sleep-timer-menu {
+  bottom: 96px;
+}

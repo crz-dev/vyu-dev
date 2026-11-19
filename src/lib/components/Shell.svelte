@@ -25,6 +25,8 @@
   import AboutDialog from "$lib/features/dialogs/AboutDialog.svelte";
   import FeedbackDialog from "$lib/features/dialogs/FeedbackDialog.svelte";
   import ShortcutCheatSheet from "$lib/features/keybinds/ShortcutCheatSheet.svelte";
+  import SleepTimerMenu from "$lib/features/menus/SleepTimerMenu.svelte";
+  import SleepTimerIndicator from "$lib/components/SleepTimerIndicator.svelte";
   import DebugOverlay from "$lib/features/debug/DebugOverlay.svelte";
   import { debugPrefs } from "$lib/features/debug/debugPrefs.svelte";
   import ToastStack from "$lib/components/ToastStack.svelte";
@@ -89,9 +91,9 @@
     toggleClipDeleteOriginal,
     toggleClipMergeSegments,
     clipJobLabel,
-    toggleSlideshowMenu,
-    slideshowMenuVisible,
-    closeSlideshowMenu,
+    toggleQueueMenu,
+    queueMenuVisible,
+    closeQueueMenu,
     toggleThumbnailBar,
     sortMode,
     sortDesc,
@@ -102,7 +104,6 @@
     navigate,
     onRenamed,
     onFolderRenamed,
-    onFileMoved,
     onFolderMoved,
     startDrag,
     showFilenameTooltip,
@@ -289,9 +290,9 @@
     toggleClipDeleteOriginal: () => void;
     toggleClipMergeSegments: () => void;
     clipJobLabel: string;
-    toggleSlideshowMenu: () => void;
-    slideshowMenuVisible: boolean;
-    closeSlideshowMenu: () => void;
+    toggleQueueMenu: () => void;
+    queueMenuVisible: boolean;
+    closeQueueMenu: () => void;
     toggleThumbnailBar: () => void;
     sortMode: SortMode;
     sortDesc: boolean;
@@ -301,7 +302,6 @@
     onSortChange: (mode: SortMode, desc: boolean) => void;
     onRenamed: (newPath: string) => Promise<void>;
     onFolderRenamed?: (newFolderPath: string) => void;
-    onFileMoved?: (oldPath: string, newPath: string) => void | Promise<void>;
     onFolderMoved?: (
       oldFolderPath: string,
       newFolderPath: string,
@@ -842,7 +842,6 @@
             {fileList}
             {currentIndex}
             selectMode={library.selectedCount > 0}
-            {onFileMoved}
             {onFolderMoved}
             onSelect={async (path) => {
               const idx = fileList.indexOf(path);
@@ -868,6 +867,7 @@
   </div>
 
   <MediaBar
+    {fileList}
     fileListLength={fileList.length}
     {currentIndex}
     {fileDimensions}
@@ -902,9 +902,9 @@
     {toggleClipDeleteOriginal}
     {toggleClipMergeSegments}
     {clipJobLabel}
-    {toggleSlideshowMenu}
-    {slideshowMenuVisible}
-    {closeSlideshowMenu}
+    {toggleQueueMenu}
+    {queueMenuVisible}
+    {closeQueueMenu}
     {thumbnailBarVisible}
     {toggleThumbnailBar}
     {sortMode}
@@ -994,7 +994,6 @@
     {ctxEffects}
     {ctxEqualizer}
     {ctxShowInExplorer}
-    {ctxProperties}
     {ctxSearchPdf}
     {ctxShare}
     {ctxDelete}
@@ -1037,6 +1036,14 @@
 
   <ToastStack />
   <VisualAlert />
+
+  <SleepTimerMenu
+    visible={menuStore.sleepTimerMenuVisible}
+    onClose={() => (menuStore.sleepTimerMenuVisible = false)}
+  />
+  <SleepTimerIndicator
+    onOpen={() => (menuStore.sleepTimerMenuVisible = true)}
+  />
 
   <EditMenu
     visible={editMenuVisible}

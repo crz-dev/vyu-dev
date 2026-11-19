@@ -67,6 +67,7 @@
   import { viewer } from "$lib/features/viewer/viewer.svelte";
   import { editing } from "$lib/features/editing/editing.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
+  import { queue } from "$lib/features/media/queue.svelte";
   import { markup } from "$lib/features/markup/markup.svelte";
 
   import { showToast } from "$lib/components/toast.svelte";
@@ -210,8 +211,10 @@
     closeEffectsMenu,
     openEqualizerMenu,
     closeEqualizerMenu,
-    toggleSlideshowMenu,
-    closeSlideshowMenu,
+    toggleQueueMenu,
+    closeQueueMenu,
+    toggleSleepTimerMenu,
+    closeSleepTimerMenu,
   } = menuActions;
   const menuBindings = createMenuBindings();
   const runLoadMediaProperties = () =>
@@ -852,9 +855,10 @@
     trackSelection.restorePlaybackAfterSourceLoad(videoEl);
   }
 
+  queue.configure((path, opts) => loadFile(path, false, opts));
+
   slideshow.bind(
-    () => fileList,
-    () => currentIndex,
+    () => filePath,
     advanceSlide,
     () => (isVideo ? videoEl : isAudio ? audioEl : null),
   );
@@ -862,6 +866,7 @@
     slideshow,
     loopModeStore,
     setPlaying: (v) => (playing = v),
+    playNextQueued: () => queue.playNext(),
     navigate,
     getFileList: () => fileList,
     getCurrentIndex: () => currentIndex,
@@ -869,6 +874,17 @@
     media,
     setMediaState,
   });
+  // A pending queue is an explicit "play next" request. Stop native looping
+  // while items remain so the ended event can advance the queue.
+  $effect(() => {
+    const shouldLoop =
+      loopModeStore.loopMode === "loop" &&
+      queue.length === 0 &&
+      !slideshow.active;
+    if (videoEl) videoEl.loop = shouldLoop;
+    if (audioEl) audioEl.loop = shouldLoop;
+  });
+
   $effect(() => {
     try {
       if (filePath && isPdf && pdfContainerEl) {
@@ -952,19 +968,6 @@
       !editing.cropMode &&
       (editing.getHasEdits() || editing.getCropBounds() !== null)
     );
-  }
-
-  function toggleSleepTimer() {
-    if (sleepTimer.active) {
-      sleepTimer.clear();
-      showToast({ message: t("shell.sleep.cleared"), color: "grey" });
-    } else {
-      sleepTimer.start(sleepTimer.minutes);
-      showToast({
-        message: t("shell.sleep.set", { count: sleepTimer.minutes }),
-        color: "blue",
-      });
-    }
   }
 
   function keybindContext(): "pdf" | "library" | "viewer" {
@@ -1095,9 +1098,18 @@
       "delete-file": () => void performDelete(),
       "copy-path": () => void propsCopyPath(),
       "export-edits": () => void handleExportEdits(),
-      "toggle-slideshow": () =>
-        slideshow.active ? slideshow.stop() : slideshow.start(),
-      "toggle-sleep-timer": toggleSleepTimer,
+      "toggle-slideshow": () => {
+        if (slideshow.active) {
+          slideshow.stop();
+          return;
+        }
+        if (queue.length > 0) {
+          void queue.startPlayback();
+          return;
+        }
+        menuStore.queueMenuVisible = true;
+      },
+      "toggle-sleep-timer": toggleSleepTimerMenu,
     },
     holdActions: {
       compare: {
@@ -1355,8 +1367,11 @@
       get equalizerMenuVisible() {
         return menuStore.equalizerMenuVisible;
       },
-      get slideshowMenuVisible() {
-        return menuStore.slideshowMenuVisible;
+      get queueMenuVisible() {
+        return menuStore.queueMenuVisible;
+      },
+      get sleepTimerMenuVisible() {
+        return menuStore.sleepTimerMenuVisible;
       },
       get appDropdownVisible() {
         return menuStore.appDropdownVisible;
@@ -1374,7 +1389,8 @@
     closeMarkupMenu,
     closeEffectsMenu,
     closeEqualizerMenu,
-    closeSlideshowMenu,
+    closeQueueMenu,
+    closeSleepTimerMenu,
     closeTimestampEditor,
   });
 
@@ -1407,8 +1423,8 @@
     anyMenuOpen,
     thumbnailBarVisible,
     adjustZoom: viewer.adjustZoom,
-    toggleSlideshowMenu,
-    closeSlideshowMenu,
+    toggleQueueMenu,
+    closeQueueMenu,
     toggleThumbnailBar,
     onSortChange,
     navigate,
@@ -1472,6 +1488,7 @@
     library.migrateFilePath(oldPath, newPath);
     editing.migratePath(oldPath, newPath);
     markup.migratePath(oldPath, newPath);
+    queue.replacePath(oldPath, newPath);
     migrateFilePathStorage(oldPath, newPath);
     clearFolderCache(getParentFolder(oldPath));
     clearFolderCache(getParentFolder(newPath));
@@ -1491,6 +1508,7 @@
     library.migrateFolderPath(oldFolder, newFolder);
     editing.migrateFolderPath(oldFolder, newFolder);
     markup.migrateFolderPath(oldFolder, newFolder);
+    queue.replacePrefix(oldFolder, newFolder);
     migrateFolderPathStorage(oldFolder, newFolder);
     clearFolderCache(oldFolder);
     clearFolderCache(newFolder);
@@ -1722,6 +1740,10 @@
     backgroundAudio.stop();
     slideshow.stop();
     playing = false;
+    if (sleepTimer.closeApp) {
+      void closeWindow();
+      return;
+    }
     showToast({
       message: t("shell.sleep.stoppedPlayback"),
       color: "grey",
@@ -1809,7 +1831,7 @@
   toggleClipDeleteOriginal={clips.toggleDeleteOriginal}
   toggleClipMergeSegments={clips.toggleMergeSegments}
   clipJobLabel={clips.clipJobLabel}
-  slideshowMenuVisible={menuStore.slideshowMenuVisible}
+  queueMenuVisible={menuStore.queueMenuVisible}
   sortMode={sort.mode}
   sortDesc={sort.desc}
   sortMenuVisible={sort.menuVisible}
@@ -1837,7 +1859,6 @@
   onFolderRenamed={async (newFolderPath: string) => {
     await migrateFolderPathState(getParentFolder(filePath), newFolderPath);
   }}
-  onFileMoved={migrateFilePathState}
   onFolderMoved={migrateFolderPathState}
   onSelect={navigateToIndex}
   {loadFile}

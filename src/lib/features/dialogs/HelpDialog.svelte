@@ -95,8 +95,8 @@
         },
         {
           icon: "playCircle",
-          titleKey: "dialogs.help.features.slideshow.title",
-          bodyKey: "dialogs.help.features.slideshow.body",
+          titleKey: "dialogs.help.features.queue.title",
+          bodyKey: "dialogs.help.features.queue.body",
           keys: ["toggle-slideshow", "toggle-sleep-timer"],
         },
         {

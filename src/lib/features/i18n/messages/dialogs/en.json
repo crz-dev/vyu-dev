@@ -235,6 +235,8 @@
   "help.features.editing.title": "Edit and markup",
   "help.features.markers.body": "Mark the current moment while playing, then jump back to it later.",
   "help.features.markers.title": "Markers",
+  "help.features.queue.body": "Build an up-next list, auto-play it with your interval and transitions, or stop after a timer.",
+  "help.features.queue.title": "Queue and sleep timer",
   "help.features.slideshow.body": "Auto-play a folder with your interval and transitions, or stop after a timer.",
   "help.features.slideshow.title": "Slideshow and sleep timer",
   "help.footer.next": "Next",

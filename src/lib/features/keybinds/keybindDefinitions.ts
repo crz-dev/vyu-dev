@@ -294,8 +294,8 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "toggle-slideshow",
-    label: "settings.keybinds.actions.toggleSlideshow.label",
-    description: "settings.keybinds.actions.toggleSlideshow.description",
+    label: "settings.keybinds.actions.toggleQueuePlayback.label",
+    description: "settings.keybinds.actions.toggleQueuePlayback.description",
     category: "slideshow",
     context: "viewer",
     defaultBinding: key("s"),
@@ -304,10 +304,10 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
   },
   {
     id: "toggle-sleep-timer",
-    label: "settings.keybinds.actions.toggleSleepTimer.label",
-    description: "settings.keybinds.actions.toggleSleepTimer.description",
+    label: "settings.keybinds.actions.openSleepTimer.label",
+    description: "settings.keybinds.actions.openSleepTimer.description",
     category: "slideshow",
-    context: "viewer",
+    context: "global",
     defaultBinding: key("s", { shift: true }),
     allowRepeat: false,
     behavior: "tap",
@@ -459,7 +459,7 @@ export const KEYBIND_CATEGORY_LABELS: Record<KeybindCategory, string> = {
   editing: "settings.keybinds.category.editing",
   library: "settings.keybinds.category.library",
   pdf: "settings.keybinds.category.pdf",
-  slideshow: "settings.keybinds.category.slideshow",
+  slideshow: "settings.keybinds.category.queue",
 };
 
 export const KEYBIND_CATEGORY_ICONS: Record<KeybindCategory, string> = {

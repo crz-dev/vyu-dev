@@ -10,7 +10,6 @@
     getFileExt,
     getFileName,
     getParentFolder,
-    joinPath,
     typeRank,
   } from "$lib/services/files";
   import { cubicInOut } from "svelte/easing";
@@ -37,7 +36,6 @@
     invokeOpenWithDialog,
     invokeOpenDirectory,
     invokeTrashFile,
-    invokeRenameFile,
     invokeBatchStat,
     invokeCreateCollectionFolder,
     invokeDeleteCollectionFolder,
@@ -46,6 +44,7 @@
   import { showToast } from "$lib/components/toast.svelte";
   import { maskFileName } from "$lib/shared/privacy";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
+  import { queue } from "$lib/features/media/queue.svelte";
   import { saveLastDialogSection } from "$lib/services/storage";
   import { computeContextMenuPosition } from "$lib/services/session";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
@@ -56,7 +55,6 @@
     currentIndex,
     onSelect,
     onClose,
-    onFileMoved,
     onFolderMoved,
     selectMode = false,
   }: {
@@ -64,7 +62,6 @@
     currentIndex: number;
     onSelect: (path: string) => void;
     onClose: () => void;
-    onFileMoved?: (oldPath: string, newPath: string) => void | Promise<void>;
     onFolderMoved?: (
       oldFolderPath: string,
       newFolderPath: string,
@@ -1117,21 +1114,16 @@
     }
   }
 
-  async function ctxMoveTo() {
+  function ctxQueue() {
     const path = libCtxMenu.path;
     closeLibCtxMenu();
-    try {
-      const destDir = await open({ directory: true });
-      if (!destDir) return;
-      const fileName = getFileName(path);
-      const destPath = joinPath(destDir as string, fileName);
-      await invokeRenameFile(path, destPath);
-      await onFileMoved?.(path, destPath);
-      library.triggerRescan();
-      showToast({ message: t("library.toasts.fileMoved"), color: "green" });
-    } catch {
-      showToast({ message: t("library.toasts.moveFailed"), color: "red" });
-    }
+    const added = queue.enqueue([path]);
+    showToast({
+      message: added
+        ? t("library.toasts.queued")
+        : t("library.toasts.alreadyQueued"),
+      color: added ? "green" : "grey",
+    });
   }
 
   function ctxCollect() {
@@ -1167,6 +1159,7 @@
     closeLibCtxMenu();
     try {
       await invokeTrashFile(path);
+      queue.remove(path);
       library.triggerRescan();
       showToast({ message: t("library.toasts.fileDeleted"), color: "red" });
     } catch {
@@ -3050,6 +3043,7 @@
                         class="library-cell"
                         class:active
                         class:selected
+                        class:queued={queue.has(path)}
                         class:names-on={library.namesOn}
                         class:privacy-blur={library.privacyMode}
                         data-path={path}
@@ -3318,6 +3312,7 @@
                           class="library-cell"
                           class:active
                           class:selected
+                          class:queued={queue.has(path)}
                           class:names-on={library.namesOn}
                           class:privacy-blur={library.privacyMode}
                           data-path={path}
@@ -3574,6 +3569,7 @@
                         class="river-cell"
                         class:active
                         class:selected
+                        class:queued={queue.has(path)}
                         class:names-on={library.namesOn}
                         class:privacy-blur={library.privacyMode}
                         data-path={path}
@@ -3813,6 +3809,7 @@
                       class="filmstrip-cell"
                       class:active
                       class:selected
+                      class:queued={queue.has(path)}
                       class:names-on={library.namesOn}
                       class:privacy-blur={library.privacyMode}
                       data-path={path}
@@ -4218,6 +4215,7 @@
                         class="list-row"
                         class:active
                         class:selected
+                        class:queued={queue.has(path)}
                         class:even={idx % 2 === 0}
                         class:privacy-blur={library.privacyMode}
                         data-path={path}
@@ -4845,7 +4843,7 @@
       <div class="edit-menu-card">
         <button
           class="ctx-item green"
-          onclick={ctxMoveTo}
+          onclick={ctxQueue}
           role="menuitem"
           style="animation-delay: 0ms"
         >
@@ -4859,10 +4857,14 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M22 2 11 13" />
-            <path d="M22 2 15 22 11 13 2 9 22 2" />
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="16" y2="18" />
+            <circle cx="4" cy="6" r="1" />
+            <circle cx="4" cy="12" r="1" />
+            <circle cx="4" cy="18" r="1" />
           </svg>
-          {t("library.context.moveTo")}
+          {t("library.context.queue")}
         </button>
         <div class="ctx-sep"></div>
         <button
@@ -6595,6 +6597,16 @@
 
   .library-cell.active.selected {
     border-color: var(--yellow, #f5c518);
+  }
+
+  .library-cell.queued,
+  .river-cell.queued,
+  .filmstrip-cell.queued {
+    box-shadow: inset 0 0 0 2px var(--green, #4ade80);
+  }
+
+  .list-row.queued {
+    box-shadow: inset 2px 0 0 var(--green, #4ade80);
   }
 
   .library-thumb {

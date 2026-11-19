@@ -1,8 +1,9 @@
 <script lang="ts">
   import { fly, scale } from "svelte/transition";
-  import SlideshowMenu from "$lib/features/menus/SlideshowMenu.svelte";
+  import QueueMenu from "$lib/features/menus/QueueMenu.svelte";
   import SelectMenu from "$lib/features/menus/SelectMenu.svelte";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
+  import { queue } from "$lib/features/media/queue.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
   import ViewMenu from "$lib/features/navigation/ViewMenu.svelte";
   import { library } from "$lib/features/library/library.svelte";
@@ -113,6 +114,7 @@
   });
 
   let {
+    fileList,
     fileListLength,
     currentIndex,
     fileDimensions,
@@ -148,9 +150,9 @@
     toggleClipDeleteOriginal,
     toggleClipMergeSegments,
     clipJobLabel,
-    toggleSlideshowMenu,
-    slideshowMenuVisible,
-    closeSlideshowMenu,
+    toggleQueueMenu,
+    queueMenuVisible,
+    closeQueueMenu,
     thumbnailBarVisible,
     toggleThumbnailBar,
     sortMode,
@@ -179,6 +181,7 @@
     onCloseSelectMenu,
     onSelectMenuMoved,
   }: {
+    fileList: string[];
     fileListLength: number;
     currentIndex: number;
     fileDimensions: string;
@@ -214,9 +217,9 @@
     toggleClipDeleteOriginal: () => void;
     toggleClipMergeSegments: () => void;
     clipJobLabel: string;
-    toggleSlideshowMenu: () => void;
-    slideshowMenuVisible: boolean;
-    closeSlideshowMenu: () => void;
+    toggleQueueMenu: () => void;
+    queueMenuVisible: boolean;
+    closeQueueMenu: () => void;
     thumbnailBarVisible: boolean;
     toggleThumbnailBar: () => void;
     sortMode: SortMode;
@@ -447,14 +450,14 @@
 <div class="bottombar" class:library-mode={libraryOpen}>
   <div class="bottombar-left">
     <div class="icon-slot" class:hidden={libraryOpen}>
-      <div class="slideshow-anchor">
+      <div class="queue-anchor">
         <button
-          class="fs-btn tooltip-above-shift-right"
+          class="fs-btn queue-btn tooltip-above-shift-right"
           class:active={slideshow.active}
-          class:menu-active={slideshowMenuVisible}
-          data-tooltip={t("media.bar.slideshow")}
-          onclick={toggleSlideshowMenu}
-          aria-label={t("media.bar.slideshowAria")}
+          class:menu-active={queueMenuVisible}
+          data-tooltip={t("media.bar.queue")}
+          onclick={toggleQueueMenu}
+          aria-label={t("media.bar.queueAria")}
         >
           <svg
             width="14"
@@ -466,14 +469,22 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-            <line x1="8" y1="21" x2="16" y2="21" />
-            <line x1="12" y1="17" x2="12" y2="21" />
+            <line x1="3" y1="6" x2="14" y2="6" />
+            <line x1="3" y1="12" x2="14" y2="12" />
+            <line x1="3" y1="18" x2="10" y2="18" />
+            <polygon points="17 8 23 12 17 16 17 8" />
           </svg>
+          {#if queue.length > 0}
+            <span class="queue-btn-count"
+              >{queue.length > 99 ? "99+" : queue.length}</span
+            >
+          {/if}
         </button>
-        <SlideshowMenu
-          visible={slideshowMenuVisible}
-          onClose={closeSlideshowMenu}
+        <QueueMenu
+          visible={queueMenuVisible}
+          onClose={closeQueueMenu}
+          {fileList}
+          {currentIndex}
         />
       </div>
       {#if fileSrc}

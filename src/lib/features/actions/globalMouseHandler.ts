@@ -5,7 +5,8 @@ export function createGlobalMouseHandler(deps: {
     markupMenuVisible: boolean;
     effectsMenuVisible: boolean;
     equalizerMenuVisible: boolean;
-    slideshowMenuVisible: boolean;
+    queueMenuVisible: boolean;
+    sleepTimerMenuVisible: boolean;
     appDropdownVisible: boolean;
     libraryOpen: boolean;
   };
@@ -14,7 +15,8 @@ export function createGlobalMouseHandler(deps: {
   closeMarkupMenu: () => void;
   closeEffectsMenu: () => void;
   closeEqualizerMenu: () => void;
-  closeSlideshowMenu: () => void;
+  closeQueueMenu: () => void;
+  closeSleepTimerMenu: () => void;
   closeTimestampEditor: () => void;
 }) {
   return function handleGlobalMouseDown(e: MouseEvent) {
@@ -55,13 +57,19 @@ export function createGlobalMouseHandler(deps: {
     )
       deps.closeEqualizerMenu();
     if (
-      deps.menuStore.slideshowMenuVisible &&
+      deps.menuStore.queueMenuVisible &&
       e.button === 2 &&
-      !target.closest(".slideshow-menu") &&
-      !target.closest(".slideshow-btn") &&
-      !document.querySelector(".slideshow-menu.pinned")
+      !target.closest(".queue-menu") &&
+      !target.closest(".queue-btn") &&
+      !document.querySelector(".queue-menu.pinned")
     )
-      deps.closeSlideshowMenu();
+      deps.closeQueueMenu();
+    if (
+      deps.menuStore.sleepTimerMenuVisible &&
+      !target.closest(".sleep-timer-menu") &&
+      !target.closest(".sleep-timer-indicator")
+    )
+      deps.closeSleepTimerMenu();
     if (
       deps.markerStore.tsEditMenu.visible &&
       !target.closest(".ts-edit-menu") &&

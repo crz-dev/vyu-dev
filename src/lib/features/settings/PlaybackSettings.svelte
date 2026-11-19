@@ -49,6 +49,9 @@
   $effect(() => {
     relativeSeekPreview = playbackPrefs.relativeSeekStep;
   });
+  $effect(() => {
+    sleepMinutesPreview = sleepTimer.minutes;
+  });
 
   function formatResumeThreshold(seconds: number): string {
     if (seconds <= 0) return t("settings.playback.threshold.any");

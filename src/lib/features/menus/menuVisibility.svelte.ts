@@ -3,7 +3,8 @@ function createMenuVisibilityStore() {
   let markupMenuVisible = $state(false);
   let effectsMenuVisible = $state(false);
   let equalizerMenuVisible = $state(false);
-  let slideshowMenuVisible = $state(false);
+  let queueMenuVisible = $state(false);
+  let sleepTimerMenuVisible = $state(false);
   let appDropdownVisible = $state(false);
   let settingsOpen = $state(false);
   let settingsInstance = $state(0);
@@ -29,7 +30,7 @@ function createMenuVisibilityStore() {
     markupMenuVisible: boolean;
     effectsMenuVisible: boolean;
     equalizerMenuVisible: boolean;
-    slideshowMenuVisible: boolean;
+    queueMenuVisible: boolean;
   } | null = null;
 
   return {
@@ -57,11 +58,17 @@ function createMenuVisibilityStore() {
     set equalizerMenuVisible(v: boolean) {
       equalizerMenuVisible = v;
     },
-    get slideshowMenuVisible() {
-      return slideshowMenuVisible;
+    get queueMenuVisible() {
+      return queueMenuVisible;
     },
-    set slideshowMenuVisible(v: boolean) {
-      slideshowMenuVisible = v;
+    set queueMenuVisible(v: boolean) {
+      queueMenuVisible = v;
+    },
+    get sleepTimerMenuVisible() {
+      return sleepTimerMenuVisible;
+    },
+    set sleepTimerMenuVisible(v: boolean) {
+      sleepTimerMenuVisible = v;
     },
     get appDropdownVisible() {
       return appDropdownVisible;
@@ -171,7 +178,8 @@ function createMenuVisibilityStore() {
         markupMenuVisible ||
         effectsMenuVisible ||
         equalizerMenuVisible ||
-        slideshowMenuVisible ||
+        queueMenuVisible ||
+        sleepTimerMenuVisible ||
         appDropdownVisible ||
         settingsOpen ||
         accessibilityOpen ||
@@ -192,7 +200,8 @@ function createMenuVisibilityStore() {
         markupMenuVisible ||
         effectsMenuVisible ||
         equalizerMenuVisible ||
-        slideshowMenuVisible ||
+        queueMenuVisible ||
+        sleepTimerMenuVisible ||
         appDropdownVisible ||
         settingsOpen ||
         accessibilityOpen ||
@@ -212,13 +221,14 @@ function createMenuVisibilityStore() {
         markupMenuVisible,
         effectsMenuVisible,
         equalizerMenuVisible,
-        slideshowMenuVisible,
+        queueMenuVisible,
       };
       editMenuVisible = false;
       markupMenuVisible = false;
       effectsMenuVisible = false;
       equalizerMenuVisible = false;
-      slideshowMenuVisible = false;
+      queueMenuVisible = false;
+      sleepTimerMenuVisible = false;
     },
     restoreViewerMenus() {
       if (!savedViewerMenus) return;
@@ -226,7 +236,7 @@ function createMenuVisibilityStore() {
       markupMenuVisible = savedViewerMenus.markupMenuVisible;
       effectsMenuVisible = savedViewerMenus.effectsMenuVisible;
       equalizerMenuVisible = savedViewerMenus.equalizerMenuVisible;
-      slideshowMenuVisible = savedViewerMenus.slideshowMenuVisible;
+      queueMenuVisible = savedViewerMenus.queueMenuVisible;
       savedViewerMenus = null;
     },
     closeAll() {
@@ -234,7 +244,8 @@ function createMenuVisibilityStore() {
       markupMenuVisible = false;
       effectsMenuVisible = false;
       equalizerMenuVisible = false;
-      slideshowMenuVisible = false;
+      queueMenuVisible = false;
+      sleepTimerMenuVisible = false;
       appDropdownVisible = false;
       settingsOpen = false;
       settingsSection = null;
@@ -298,12 +309,20 @@ export function createMenuActions(deps: MenuActionsDeps) {
     menuStore.equalizerMenuVisible = false;
   }
 
-  function toggleSlideshowMenu() {
-    menuStore.slideshowMenuVisible = !menuStore.slideshowMenuVisible;
+  function toggleQueueMenu() {
+    menuStore.queueMenuVisible = !menuStore.queueMenuVisible;
   }
 
-  function closeSlideshowMenu() {
-    menuStore.slideshowMenuVisible = false;
+  function closeQueueMenu() {
+    menuStore.queueMenuVisible = false;
+  }
+
+  function toggleSleepTimerMenu() {
+    menuStore.sleepTimerMenuVisible = !menuStore.sleepTimerMenuVisible;
+  }
+
+  function closeSleepTimerMenu() {
+    menuStore.sleepTimerMenuVisible = false;
   }
 
   return {
@@ -315,8 +334,10 @@ export function createMenuActions(deps: MenuActionsDeps) {
     closeEffectsMenu,
     openEqualizerMenu,
     closeEqualizerMenu,
-    toggleSlideshowMenu,
-    closeSlideshowMenu,
+    toggleQueueMenu,
+    closeQueueMenu,
+    toggleSleepTimerMenu,
+    closeSleepTimerMenu,
   };
 }
 

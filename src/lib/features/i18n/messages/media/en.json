@@ -28,6 +28,8 @@
   "bar.labelsAria": "toggle names",
   "bar.mediaDetails": "Resolution · File size",
   "bar.mergeSegments": "Merge Segments",
+  "bar.queue": "Queue",
+  "bar.queueAria": "Open queue",
   "bar.muted": "Muted",
   "bar.noFileOpen": "no file open",
   "bar.openPropertiesAria": "Open file properties",

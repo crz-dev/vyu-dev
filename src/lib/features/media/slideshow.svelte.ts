@@ -1,205 +1,111 @@
-import { isPdf, isTimedMedia, isVideo, isAudio } from "$lib/shared/mediaKind";
+import { isPdf, isTimedMedia } from "$lib/shared/mediaKind";
 
-export type SlideshowOrder = "next" | "shuffle";
-export type SlideshowVideoMode = "skip" | "full";
-export type SlideshowTransition = "none" | "fade" | "slide";
+export type QueueTransition = "none" | "fade" | "slide";
 
+/**
+ * Queue playback engine. The queue owns the sequence; this store only decides
+ * when to advance and which transition to use. Images advance on the interval,
+ * timed media advances when it ends, and PDFs are skipped.
+ */
 export function createSlideshow() {
   let active = $state(false);
   let paused = $state(false);
   let intervalSec = $state(5);
-  let order = $state<SlideshowOrder>("next");
-  let videoMode = $state<SlideshowVideoMode>("skip");
-  let transition = $state<SlideshowTransition>("none");
+  let transition = $state<QueueTransition>("none");
 
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let pendingVideoEl: HTMLMediaElement | null = null;
-  let pendingVideoHandler: (() => void) | null = null;
-  let shuffledIndices: number[] = [];
-  let shufflePos = 0;
+  let pendingMediaEl: HTMLMediaElement | null = null;
+  let pendingMediaHandler: (() => void) | null = null;
 
   let bound = {
-    getFileList: () => [] as string[],
-    getCurrentIndex: () => 0,
-    advanceFn: (_: number) => {},
+    getCurrentPath: () => "",
+    advance: () => {},
     getMediaEl: () => null as HTMLMediaElement | null,
   };
 
   function bind(
-    getFileList: () => string[],
-    getCurrentIndex: () => number,
-    advanceFn: (nextIndex: number) => void,
+    getCurrentPath: () => string,
+    advanceFn: () => void,
     getMediaEl: () => HTMLMediaElement | null,
   ) {
-    bound = { getFileList, getCurrentIndex, advanceFn, getMediaEl };
+    bound = { getCurrentPath, advance: advanceFn, getMediaEl };
   }
 
-  function clearVideoListener() {
-    if (pendingVideoEl && pendingVideoHandler) {
-      pendingVideoEl.removeEventListener("ended", pendingVideoHandler);
+  function clearMediaListener() {
+    if (pendingMediaEl && pendingMediaHandler) {
+      pendingMediaEl.removeEventListener("ended", pendingMediaHandler);
     }
-    pendingVideoEl = null;
-    pendingVideoHandler = null;
+    pendingMediaEl = null;
+    pendingMediaHandler = null;
   }
 
-  function buildShuffle(fileList: string[], currentIndex: number) {
-    shuffledIndices = Array.from({ length: fileList.length }, (_, i) => i);
-    for (let i = shuffledIndices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledIndices[i], shuffledIndices[j]] = [
-        shuffledIndices[j],
-        shuffledIndices[i],
-      ];
-    }
-    shufflePos = shuffledIndices.indexOf(currentIndex);
-    if (shufflePos === -1) shufflePos = 0;
+  function clearTimer() {
+    clearTimeout(timer);
+    timer = undefined;
   }
 
-  function getNextIndex(fileList: string[], currentIndex: number): number {
-    if (fileList.length <= 1) return 0;
-    if (order === "shuffle") {
-      for (let offset = 1; offset < fileList.length; offset++) {
-        const pos = (shufflePos + offset) % shuffledIndices.length;
-        const idx = shuffledIndices[pos];
-        if (
-          !isPdf(fileList[idx]) &&
-          !isAudio(fileList[idx]) &&
-          !(isVideo(fileList[idx]) && videoMode === "skip")
-        ) {
-          shufflePos = pos;
-          return idx;
-        }
-      }
-      shufflePos = (shufflePos + 1) % shuffledIndices.length;
-      return shuffledIndices[shufflePos];
-    }
-    for (let offset = 1; offset < fileList.length; offset++) {
-      const idx = (currentIndex + offset) % fileList.length;
-      if (
-        !isPdf(fileList[idx]) &&
-        !isAudio(fileList[idx]) &&
-        !(isVideo(fileList[idx]) && videoMode === "skip")
-      ) {
-        return idx;
-      }
-    }
-    return (currentIndex + 1) % fileList.length;
+  function advance() {
+    if (!active || paused) return;
+    clearTimer();
+    clearMediaListener();
+    bound.advance();
   }
 
   function schedule() {
     if (!active || paused) return;
-    const fileList = bound.getFileList();
-    const currentIndex = bound.getCurrentIndex();
-    if (fileList.length === 0) return;
-    const path = fileList[currentIndex];
-    const timed = isTimedMedia(path);
-    const document = isPdf(path);
+    clearTimer();
+    clearMediaListener();
 
-    // Always skip documents (PDFs) in slideshow
-    if (document) {
-      if (fileList.length === 1) {
-        stop();
-        return;
-      }
-      const nextIndex = getNextIndex(fileList, currentIndex);
-      timer = setTimeout(() => {
-        if (!active || paused) return;
-        bound.advanceFn(nextIndex);
-      }, 0);
+    const path = bound.getCurrentPath();
+    if (!path) {
+      stop();
       return;
     }
 
-    if (timed && videoMode === "skip") {
-      if (fileList.length === 1) {
-        timer = setTimeout(() => {
-          if (!active || paused) return;
-          bound.advanceFn(0);
-        }, intervalSec * 1000);
-        return;
-      }
-      const nextIndex = getNextIndex(fileList, currentIndex);
-      timer = setTimeout(() => {
-        if (!active || paused) return;
-        bound.advanceFn(nextIndex);
-      }, 0);
+    if (isPdf(path)) {
+      timer = setTimeout(advance, 0);
       return;
     }
 
-    if (timed && videoMode === "full") {
+    const isGif = /\.gif$/i.test(path);
+    if (isTimedMedia(path) && !isGif) {
       const mediaEl = bound.getMediaEl();
       if (mediaEl) {
         mediaEl.loop = false;
-        clearVideoListener();
         const handler = () => {
-          clearVideoListener();
+          clearMediaListener();
           if (!active || paused) return;
-          const nextIndex = getNextIndex(fileList, currentIndex);
-          bound.advanceFn(nextIndex);
+          advance();
         };
-        pendingVideoEl = mediaEl;
-        pendingVideoHandler = handler;
+        pendingMediaEl = mediaEl;
+        pendingMediaHandler = handler;
         mediaEl.addEventListener("ended", handler);
         return;
       }
-      timer = setTimeout(() => {
-        if (!active || paused) return;
-        const nextIndex = getNextIndex(fileList, currentIndex);
-        bound.advanceFn(nextIndex);
-      }, intervalSec * 1000);
+      timer = setTimeout(advance, intervalSec * 1000);
       return;
     }
 
-    timer = setTimeout(() => {
-      if (!active || paused) return;
-      const nextIndex = getNextIndex(fileList, currentIndex);
-      bound.advanceFn(nextIndex);
-    }, intervalSec * 1000);
+    timer = setTimeout(advance, intervalSec * 1000);
   }
 
   function restartIfActive() {
-    if (active && !paused) {
-      clearTimeout(timer);
-      timer = undefined;
-      clearVideoListener();
-      schedule();
-    }
+    if (active && !paused) schedule();
   }
 
   function start() {
     stop();
-    const fileList = bound.getFileList();
-    const currentIndex = bound.getCurrentIndex();
-    if (fileList.length === 0) return;
-
-    // Skip past files that would be skipped (PDFs, audio always; video only in "skip" mode)
-    let targetIndex = currentIndex;
-    for (let i = 0; i < fileList.length; i++) {
-      const path = fileList[targetIndex];
-      const document = isPdf(path);
-      if (
-        !document &&
-        !isAudio(path) &&
-        !(isVideo(path) && videoMode === "skip")
-      )
-        break;
-      targetIndex = (targetIndex + 1) % fileList.length;
-    }
-    if (targetIndex !== currentIndex) {
-      bound.advanceFn(targetIndex);
-    }
-
+    if (!bound.getCurrentPath()) return;
     active = true;
     paused = false;
-    if (order === "shuffle") buildShuffle(fileList, targetIndex);
     schedule();
   }
 
   function pause() {
     if (!active) return;
     paused = true;
-    clearTimeout(timer);
-    timer = undefined;
-    clearVideoListener();
+    clearTimer();
+    clearMediaListener();
   }
 
   function resume() {
@@ -211,17 +117,12 @@ export function createSlideshow() {
   function stop() {
     active = false;
     paused = false;
-    clearTimeout(timer);
-    timer = undefined;
-    clearVideoListener();
-    shuffledIndices = [];
+    clearTimer();
+    clearMediaListener();
   }
 
   function onMediaLoaded() {
     if (!active || paused) return;
-    clearTimeout(timer);
-    timer = undefined;
-    clearVideoListener();
     schedule();
   }
 
@@ -239,29 +140,10 @@ export function createSlideshow() {
       intervalSec = v;
       restartIfActive();
     },
-    get order() {
-      return order;
-    },
-    set order(v: SlideshowOrder) {
-      order = v;
-      if (v === "shuffle") {
-        const fileList = bound.getFileList();
-        const currentIndex = bound.getCurrentIndex();
-        buildShuffle(fileList, currentIndex);
-      }
-      restartIfActive();
-    },
-    get videoMode() {
-      return videoMode;
-    },
-    set videoMode(v: SlideshowVideoMode) {
-      videoMode = v;
-      restartIfActive();
-    },
     get transition() {
       return transition;
     },
-    set transition(v: SlideshowTransition) {
+    set transition(v: QueueTransition) {
       transition = v;
     },
     bind,

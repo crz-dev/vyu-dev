@@ -1,7 +1,13 @@
+import {
+  loadSleepTimerCloseApp,
+  saveSleepTimerCloseApp,
+} from "$lib/services/storage";
+
 function createSleepTimer() {
   let endAt = $state<number | null>(null);
   let remainingSecs = $state(0);
   let minutes = $state(30);
+  let closeApp = $state(loadSleepTimerCloseApp());
   let interval: ReturnType<typeof setInterval> | null = null;
   let onExpire: (() => void) | null = null;
 
@@ -64,6 +70,13 @@ function createSleepTimer() {
     },
     get label() {
       return formatRemaining();
+    },
+    get closeApp() {
+      return closeApp;
+    },
+    setCloseApp(value: boolean) {
+      closeApp = value;
+      saveSleepTimerCloseApp(value);
     },
     start,
     clear,

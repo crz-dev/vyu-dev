@@ -447,6 +447,14 @@ export function deleteResumePoint(filePath: string): void {
   localStorage.removeItem(`vyu-resume-${filePath}`);
 }
 
+export function loadSleepTimerCloseApp(): boolean {
+  return localStorage.getItem("vyu-sleep-close-app") === "true";
+}
+
+export function saveSleepTimerCloseApp(value: boolean): void {
+  localStorage.setItem("vyu-sleep-close-app", String(value));
+}
+
 export function loadLoopMode(): LoopMode {
   return (localStorage.getItem("vyu-loop-mode") as LoopMode) ?? "loop";
 }

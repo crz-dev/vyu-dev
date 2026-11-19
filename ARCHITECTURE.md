@@ -83,6 +83,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Playback preferences                                   | `features/media/playbackPrefs.svelte.ts`                                       |
 | Process / conversion preferences                       | `features/media/conversionPrefs.svelte.ts`                                     |
 | Sleep timer                                            | `features/media/sleepTimer.svelte.ts`                                          |
+| Queue / up-next list                                   | `features/media/queue.svelte.ts`                                               |
 | Background audio in Library                            | `features/media/backgroundAudio.svelte.ts`, `components/NowPlayingPill.svelte` |
 | Playback bridge (toggle, volume, speed)                | `features/media/playbackBridge.ts`                                             |
 | Playback position polling                              | `features/media/playbackPoller.svelte.ts`                                      |
@@ -93,7 +94,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Timer display                                          | `features/media/timer.svelte.ts`                                               |
 | Clips                                                  | `features/media/clips.svelte.ts`                                               |
 | Media bar / clip controls                              | `features/media/MediaBar.svelte`                                               |
-| Slideshow                                              | `features/media/slideshow.svelte.ts`                                           |
+| Queue playback (interval, transitions)                 | `features/media/slideshow.svelte.ts`                                           |
 | Corruption detection                                   | `features/media/corruption.svelte.ts`                                          |
 | FFmpeg helpers (install, ffprobe, props)               | `features/media/ffmpeg.ts`                                                     |
 | CD color per file                                      | `features/media/cdColor.ts`                                                    |
@@ -204,7 +205,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 
 **localStorage (app settings + fallback)** — `services/storage.ts`.
 
-- App-wide keys: `vyu-{name}`. System preferences use `vyu-system-*` (window behavior, power behavior, external app paths, last file). Keybinds use `vyu-keybinds` (versioned per-action bindings). The debug overlay toggle uses `vyu-debug-overlay`.
+- App-wide keys: `vyu-{name}`. System preferences use `vyu-system-*` (window behavior, power behavior, external app paths, last file). Keybinds use `vyu-keybinds` (versioned per-action bindings). The debug overlay toggle uses `vyu-debug-overlay`; the sleep-timer close-at-end option uses `vyu-sleep-close-app`.
 - Legacy/fallback per-file keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
 - SQLite is primary after migration (`migrateFromLocalStorage`). User updates to resume position, EQ settings, and CD color are still dual-written to localStorage as fallback. Timestamps and clips use SQLite; their localStorage values are read only when the DB row is missing or the query fails.
 - Do not add new per-file localStorage keys; use SQLite.
@@ -282,6 +283,10 @@ Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_I
 | Window state is not written while PiP is active                       | The mini geometry must never replace the user's normal window state.                |
 | Danger Zone actions never delete user media                           | Destructive settings clear Vyu data, caches, backups or installation files only.    |
 | Global marker clears update the DB and current in-memory stores       | Avoids stale timestamps/clips after clearing every file.                            |
+| Queue is session-only and stores absolute paths                       | Supports cross-folder playback without persisting a stale list across restarts.     |
+| Queue playback takes precedence over loop while items remain          | An explicit queue entry means “play next”; native looping resumes when it empties.  |
+| Queue playback is the only slideshow-style mode                       | The viewer toolbar exposes one queue menu; images advance on its interval setting.  |
+| Sleep timer close-at-end uses the normal window close path            | Lets existing close cleanup and window-state persistence run.                       |
 | Profile switching captures live `vyu-*` keys and reloads              | Guarantees every settings store reinitializes from the target profile.              |
 | Factory Reset clears the database and reinitializes preferences       | Leaves media files on disk untouched.                                               |
 | Bundled FFmpeg removal requires restart or reinstall                  | The startup-resolved binary path and PATH fallback are not re-evaluated at runtime. |

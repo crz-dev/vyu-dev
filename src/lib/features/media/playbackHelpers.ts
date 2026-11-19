@@ -5,6 +5,7 @@ export function createOnMediaEnded(deps: {
   slideshow: { active: boolean };
   loopModeStore: { loopMode: string };
   setPlaying: (v: boolean) => void;
+  playNextQueued: () => Promise<boolean>;
   navigate: (dir: number) => void;
   getFileList: () => string[];
   getCurrentIndex: () => number;
@@ -21,6 +22,7 @@ export function createOnMediaEnded(deps: {
 }) {
   return async function onMediaEnded() {
     if (deps.slideshow.active) return;
+    if (await deps.playNextQueued()) return;
     const mode = deps.loopModeStore.loopMode;
     if (mode === "stop") {
       deps.setPlaying(false);

@@ -6,6 +6,7 @@ import { markup } from "$lib/features/markup/markup.svelte";
 import { markerStore } from "$lib/features/markers/markers.svelte";
 import { viewer } from "$lib/features/viewer/viewer.svelte";
 import { slideshow } from "$lib/features/media/slideshow.svelte";
+import { queue } from "$lib/features/media/queue.svelte";
 import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
 import {
@@ -299,8 +300,12 @@ export function createNavigation(deps: NavigationDeps) {
     },
   });
 
-  async function loadFile(path: string, refresh = false) {
-    slideshow.stop();
+  async function loadFile(
+    path: string,
+    refresh = false,
+    opts?: { preservePlayback?: boolean },
+  ) {
+    if (!opts?.preservePlayback) slideshow.stop();
     editing.exitCropMode();
     skipTimes = [];
     if (refresh) forgetTrackCatalog(path);
@@ -422,6 +427,9 @@ export function createNavigation(deps: NavigationDeps) {
   }
 
   async function navigate(direction: number) {
+    if (direction > 0 && queue.length > 0) {
+      if (await queue.playNext({ preservePlayback: slideshow.active })) return;
+    }
     if (deps.getFileList().length === 0) return;
     if (!isSkipBurst()) {
       // Normal skip: load right away (concurrent with any older load, which
@@ -531,7 +539,10 @@ export function createNavigation(deps: NavigationDeps) {
     deps.setLastPrevClickTime(now);
   }
 
-  function handleNextClick() {
+  async function handleNextClick() {
+    if (queue.length > 0) {
+      if (await queue.playNext({ preservePlayback: slideshow.active })) return;
+    }
     navigateToAudioFile(1);
   }
 
@@ -667,12 +678,9 @@ export function createNavigation(deps: NavigationDeps) {
     }
   }
 
-  async function advanceSlide(nextIndex: number) {
-    if (deps.getFileList().length === 0) return;
-    editing.exitCropMode();
-    deps.setCurrentIndex(nextIndex);
-    await media.displayFile(deps.getFileList()[nextIndex], setMediaState);
-    media.prefetchAdjacent(deps.getFileList(), nextIndex);
+  async function advanceSlide() {
+    const played = await queue.playNext({ preservePlayback: true });
+    if (!played) slideshow.stop();
   }
 
   return {

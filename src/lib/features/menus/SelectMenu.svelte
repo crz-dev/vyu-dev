@@ -6,6 +6,7 @@
     performMultiDelete,
   } from "$lib/features/file-actions/deleteFile.svelte";
   import { invokeRenameFile } from "$lib/features/media/api";
+  import { queue } from "$lib/features/media/queue.svelte";
   import { showToast } from "$lib/components/toast.svelte";
   import { getFileName } from "$lib/services/files";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -60,12 +61,14 @@
         const fileName = getFileName(p);
         const dest = `${dir}\\${fileName}`;
         await invokeRenameFile(p, dest);
+        queue.replacePath(p, dest);
         successCount++;
       } catch {
         failCount++;
       }
     }
     if (successCount > 0) {
+      library.triggerRescan();
       showToast({
         message: tp("menus.select.moved", successCount),
         color: "green",
@@ -84,6 +87,19 @@
     library.closeCollection();
     library.setCollectMode(true);
     library.setActiveTab("collections");
+  }
+
+  function queueSelected() {
+    const paths = getPaths();
+    if (paths.length === 0) return;
+    const added = queue.enqueue(paths);
+    showToast({
+      message: added
+        ? tp("menus.select.queued", added)
+        : t("menus.select.alreadyQueued"),
+      color: added ? "green" : "grey",
+    });
+    handleClose();
   }
 
   function toggleFavorite() {
@@ -253,11 +269,30 @@
       <div class="collect-prompt">
         {t("menus.select.collectPrompt")}
       </div>
+      <button
+        class="edit-menu-btn green sub collect-move-btn"
+        onclick={moveFiles}
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M22 2 11 13" />
+          <path d="M22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+        <span>{t("menus.select.moveToFolder")}</span>
+      </button>
     </div>
   {:else}
     <div class="edit-menu-card">
       <div class="edit-menu-row">
-        <button class="edit-menu-btn green sub" onclick={moveFiles}>
+        <button class="edit-menu-btn green sub" onclick={queueSelected}>
           <svg
             width="13"
             height="13"
@@ -268,10 +303,14 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M22 2 11 13" />
-            <path d="M22 2 15 22 11 13 2 9 22 2" />
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="16" y2="18" />
+            <circle cx="4" cy="6" r="1" />
+            <circle cx="4" cy="12" r="1" />
+            <circle cx="4" cy="18" r="1" />
           </svg>
-          <span>{t("menus.select.moveTo")}</span>
+          <span>{t("menus.select.queue")}</span>
         </button>
         <button class="edit-menu-btn blue sub" onclick={activateCollectMode}>
           <svg
@@ -423,6 +462,11 @@
     font-family: var(--font-family);
     font-size: 12px;
     line-height: 1.5;
+  }
+
+  .collect-move-btn {
+    width: 100%;
+    margin-top: 4px;
   }
 
   .select-all-card.collect-mode {
