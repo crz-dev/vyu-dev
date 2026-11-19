@@ -19,7 +19,7 @@ export function createPanDrag(deps: PanDragDeps) {
     if (e.button !== 0) return;
     if (
       (e.target as HTMLElement).closest(
-        "button, .video-controls, .fs-controls, .fs-topbar, .fs-nav-left, .fs-nav-right, .fs-file-count-pill, .context-menu, .delete-overlay, .pip-progress, .pip-audio-progress, .pip-bar",
+        "button, .video-controls, .fs-controls, .fs-topbar, .fs-nav-left, .fs-nav-right, .fs-file-count-pill, .context-menu, .delete-overlay, .pip-progress, .pip-audio-progress, .pip-bar, .pip-volume",
       )
     )
       return;
@@ -72,6 +72,7 @@ export function createPanDrag(deps: PanDragDeps) {
         const now = Date.now();
         const timeSinceLast = now - lastLeftClickTime;
         lastLeftClickTime = now;
+
         if (deps.getIsVideo()) {
           if (timeSinceLast < 300) {
             clearTimeout(pendingPlay);

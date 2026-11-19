@@ -17,9 +17,22 @@ main.pip .thumbnail-bar {
   display: none;
 }
 
+main.pip .toast-stack {
+  display: none;
+}
+
+/* Slide transition used around the native window geometry change. The audio
+   stage is the visible content, so only the control layers fade out. */
+.pip-overlay.transitioning:not(.audio) {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
 main.pip .viewer {
   padding: 0;
   background: #000;
+  contain: layout style;
 }
 
 main.pip .video-controls {
@@ -98,17 +111,13 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
     inset 0 -48px 48px -32px rgba(0, 0, 0, 0.6);
 }
 
-.pip-fade,
-.pip-audio-row,
-.pip-audio-progress {
+.pip-fade {
   transition:
     opacity 170ms ease,
     transform 220ms cubic-bezier(0.22, 0.9, 0.3, 1);
 }
 
-.pip-overlay:not(.controls-visible) .pip-fade,
-.pip-overlay:not(.controls-visible) .pip-audio-row,
-.pip-overlay:not(.controls-visible) .pip-audio-progress {
+.pip-overlay:not(.controls-visible) .pip-fade {
   opacity: 0;
   pointer-events: none;
 }
@@ -190,7 +199,7 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 
 .pip-top-controls {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 2px;
   margin-left: auto;
   pointer-events: auto;
@@ -233,12 +242,12 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   height: 26px;
 }
 
-.pip-overlay.audio .pip-icon-btn {
+.pip-overlay.audio .pip-close-btn {
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(0, 0, 0, 0.24);
 }
 
-.pip-overlay.audio .pip-icon-btn:hover:not(:disabled) {
+.pip-overlay.audio .pip-close-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.14);
 }
 
@@ -254,69 +263,111 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 
 .pip-volume {
   position: relative;
+  flex-shrink: 0;
+  width: 26px;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.pip-volume.open {
+  background: rgba(10, 10, 12, 0.58);
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26);
+}
+
+.pip-volume:focus-within {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.pip-volume .pip-icon-btn {
+  width: 100%;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.pip-volume.open .pip-icon-btn,
+.pip-volume.open .pip-icon-btn:hover:not(:disabled) {
+  background: transparent;
+  color: #fff;
 }
 
 .pip-volume-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 6;
-  width: 92px;
-  padding: 7px 9px;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 16, 18, 0.9);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(12px);
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
   opacity: 0;
-  transform: translateY(-3px);
   pointer-events: none;
   transition:
-    opacity 150ms ease,
-    transform 180ms ease;
+    height 180ms ease,
+    padding 180ms ease,
+    opacity 150ms ease;
 }
 
-.pip-volume:hover .pip-volume-panel,
-.pip-volume:focus-within .pip-volume-panel {
+.pip-volume.open .pip-volume-panel {
+  height: 88px;
+  padding: 8px 0 7px;
   opacity: 1;
-  transform: translateY(0);
   pointer-events: auto;
 }
 
-.pip-volume-slider {
-  display: block;
+.pip-volume-track {
+  position: relative;
   width: 100%;
-  height: 14px;
-  margin: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
+  height: 100%;
+  display: flex;
+  justify-content: center;
   cursor: pointer;
+  touch-action: none;
 }
 
-.pip-volume-slider::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.8) 0 var(--volume),
-    rgba(255, 255, 255, 0.2) var(--volume) 100%
-  );
+.pip-volume-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
 }
 
-.pip-volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
+.pip-volume-fill {
+  position: absolute;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.pip-volume-knob {
+  position: absolute;
+  left: 50%;
   width: 9px;
   height: 9px;
-  margin-top: -3px;
-  border-radius: 50%;
+  border-radius: 1px;
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, 50%) rotate(45deg);
+  pointer-events: none;
 }
 
-.pip-volume-slider:focus-visible {
+.pip-volume-track:focus-visible {
   outline: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
 /* Side skip buttons */
@@ -332,7 +383,6 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   border-radius: 7px;
   background: rgba(10, 10, 12, 0.42);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(10px);
   color: rgba(255, 255, 255, 0.82);
   display: flex;
   align-items: center;
@@ -385,7 +435,6 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   background: rgba(10, 10, 12, 0.58);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(14px);
   pointer-events: auto;
 }
 
@@ -443,7 +492,7 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 }
 
 .pip-audio-progress {
-  height: 12px;
+  height: 18px;
   flex: none;
   width: 100%;
 }
@@ -475,12 +524,12 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 .pip-progress-knob {
   position: absolute;
   top: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  transform: translate(-50%, -50%) scale(0.7);
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.7);
   opacity: 0;
   pointer-events: none;
   transition:
@@ -493,7 +542,7 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 .pip-progress.scrubbing .pip-progress-knob,
 .pip-audio-progress.scrubbing .pip-progress-knob {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 
 /* Compact audio card */
@@ -504,7 +553,7 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 74px 12px 14px;
+  padding: 12px 14px;
   overflow: hidden;
   background: #0b0c0e;
   pointer-events: auto;
@@ -512,13 +561,10 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 
 .pip-audio-backdrop {
   position: absolute;
-  inset: -22%;
+  inset: 0;
   background-size: cover;
   background-position: center;
-  filter: blur(28px) saturate(1.1) brightness(0.5);
-  transform: scale(1.18);
-  opacity: 0.88;
-  animation: pipBackdropDrift 26s ease-in-out infinite alternate;
+  opacity: 0.38;
   pointer-events: none;
 }
 
@@ -611,30 +657,35 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   gap: 8px;
 }
 
+.pip-audio-row .pip-time {
+  font-size: 11px;
+}
+
 .pip-audio-buttons {
   display: flex;
   align-items: center;
   gap: 2px;
 }
 
+.pip-audio-buttons .pip-icon-btn {
+  width: 28px;
+  height: 28px;
+}
+
 @media (max-width: 360px) {
   .pip-audio-stage {
-    padding: 8px 66px 8px 10px;
+    padding: 10px;
     gap: 10px;
   }
 
   .pip-audio-art {
-    width: 72px;
-    height: 72px;
+    width: 76px;
+    height: 76px;
     border-radius: 9px;
   }
 
   .pip-audio-title {
     font-size: 12px;
-  }
-
-  .pip-audio-row .pip-time:first-child {
-    display: none;
   }
 }
 
@@ -653,15 +704,6 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes pipBackdropDrift {
-  from {
-    transform: scale(1.18) translate3d(-1.5%, -1%, 0);
-  }
-  to {
-    transform: scale(1.26) translate3d(1.5%, 1%, 0);
   }
 }
 

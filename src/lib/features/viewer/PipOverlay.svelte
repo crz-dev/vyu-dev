@@ -1,5 +1,6 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
+  import { fly } from "svelte/transition";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -60,6 +61,26 @@
     Math.round(Math.max(0, Math.min(1, muted ? 0 : volume)) * 100),
   );
   const silent = $derived(muted || volume === 0);
+  let volumeOpen = $state(false);
+  let volumeDragging = $state(false);
+  let volumeHovered = false;
+  let volumeCloseTimer: ReturnType<typeof setTimeout> | undefined;
+  let volumeTrackEl = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    if (!pip.state.controlsVisible && volumeOpen) {
+      volumeOpen = false;
+      clearTimeout(volumeCloseTimer);
+    }
+  });
+
+  $effect(() => {
+    if (!(isVideo || isAudio) && volumeOpen) {
+      volumeOpen = false;
+      clearTimeout(volumeCloseTimer);
+      pip.setControlsPinned(false);
+    }
+  });
   const audioBackdrop = $derived(
     coverArtSrc
       ? `background-image: url(${JSON.stringify(coverArtSrc)});`
@@ -96,14 +117,78 @@
     startScrubbing(e);
   }
 
-  function onVolumeInput(e: Event) {
-    setVolume(Number((e.currentTarget as HTMLInputElement).value));
+  function openVolumePanel() {
+    clearTimeout(volumeCloseTimer);
+    volumeHovered = true;
+    volumeOpen = true;
+    pip.setControlsPinned(true);
+  }
+
+  function scheduleCloseVolumePanel() {
+    volumeHovered = false;
+    if (volumeDragging) return;
+    clearTimeout(volumeCloseTimer);
+    volumeCloseTimer = setTimeout(() => {
+      volumeOpen = false;
+      pip.setControlsPinned(false);
+    }, 240);
+  }
+
+  function onVolumeFocusOut(e: FocusEvent) {
+    const next = e.relatedTarget;
+    if (
+      next instanceof Node &&
+      e.currentTarget instanceof HTMLElement &&
+      e.currentTarget.contains(next)
+    ) {
+      return;
+    }
+    scheduleCloseVolumePanel();
+  }
+
+  function setVolumeFromClientY(clientY: number) {
+    const el = volumeTrackEl;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.height <= 0) return;
+    const ratio = 1 - (clientY - rect.top) / rect.height;
+    setVolume(Math.max(0, Math.min(1, ratio)));
+  }
+
+  function startVolumeDrag(e: PointerEvent) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    volumeDragging = true;
+    openVolumePanel();
+    setVolumeFromClientY(e.clientY);
+    const onMove = (ev: PointerEvent) => setVolumeFromClientY(ev.clientY);
+    const onUp = () => {
+      volumeDragging = false;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      if (!volumeHovered) scheduleCloseVolumePanel();
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  function onVolumeKey(e: KeyboardEvent) {
+    const step = 0.05;
+    if (e.key === "ArrowUp" || e.key === "ArrowRight") {
+      e.preventDefault();
+      setVolume(Math.min(1, volume + step));
+    } else if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      setVolume(Math.max(0, volume - step));
+    }
   }
 </script>
 
 <div
   class="pip-overlay"
   class:controls-visible={pip.state.controlsVisible}
+  class:transitioning={pip.state.transitioning}
   class:audio={isAudio}
   class:pdf={isPdf}
   class:bar={showTimedBar || (isVideo && isGifVideo)}
@@ -131,62 +216,85 @@
     {/if}
 
     <div class="pip-top-controls">
-      <div class="pip-volume">
-        <button
-          class="pip-icon-btn"
-          onclick={toggleMute}
-          aria-label={silent
-            ? t("media.playback.unmute")
-            : t("media.playback.mute")}
+      {#if isVideo || isAudio}
+        <div
+          class="pip-volume"
+          class:open={volumeOpen}
+          role="group"
+          aria-label={t("media.bar.volumeControlsAria")}
+          onpointerenter={openVolumePanel}
+          onpointerleave={scheduleCloseVolumePanel}
+          onfocusin={openVolumePanel}
+          onfocusout={onVolumeFocusOut}
+          in:fly={{ x: 8, duration: 160 }}
+          out:fly={{ x: 8, duration: 120 }}
         >
-          {#if silent}
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
+          <button
+            class="pip-icon-btn"
+            onclick={toggleMute}
+            aria-label={silent
+              ? t("media.playback.unmute")
+              : t("media.playback.mute")}
+          >
+            {#if silent}
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M11 5 6 9H3v6h3l5 4V5z" />
+                <path d="m16 9 5 6M21 9l-5 6" />
+              </svg>
+            {:else}
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M11 5 6 9H3v6h3l5 4V5z" />
+                <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                <path d="M18.5 6a9 9 0 0 1 0 12" />
+              </svg>
+            {/if}
+          </button>
+          <div class="pip-volume-panel">
+            <div
+              class="pip-volume-track"
+              bind:this={volumeTrackEl}
+              onpointerdown={startVolumeDrag}
+              role="slider"
+              tabindex="0"
+              aria-label={t("media.playback.volumeSlider")}
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={volumePercent}
+              aria-valuetext={`${volumePercent}%`}
+              onkeydown={onVolumeKey}
             >
-              <path d="M11 5 6 9H3v6h3l5 4V5z" />
-              <path d="m16 9 5 6M21 9l-5 6" />
-            </svg>
-          {:else}
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.7"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M11 5 6 9H3v6h3l5 4V5z" />
-              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-              <path d="M18.5 6a9 9 0 0 1 0 12" />
-            </svg>
-          {/if}
-        </button>
-        <div class="pip-volume-panel">
-          <input
-            class="pip-volume-slider"
-            style="--volume: {volumePercent}%"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={silent ? 0 : volume}
-            oninput={onVolumeInput}
-            aria-label={t("media.playback.volumeSlider")}
-            aria-valuetext={`${volumePercent}%`}
-          />
+              <div
+                class="pip-volume-fill"
+                style="height: {volumePercent}%"
+              ></div>
+              <div
+                class="pip-volume-knob"
+                style="bottom: {volumePercent}%"
+              ></div>
+            </div>
+          </div>
         </div>
-      </div>
+      {/if}
 
       <button
         class="pip-icon-btn pip-close-btn"
@@ -292,7 +400,7 @@
               </svg>
             </button>
             <button
-              class="pip-play-btn"
+              class="pip-icon-btn"
               onclick={togglePlay}
               aria-label={playing
                 ? t("media.playback.pauseAria")
@@ -300,22 +408,29 @@
             >
               {#if playing}
                 <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 12 12"
-                  fill="currentColor"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <rect x="2" y="1.5" width="3" height="9" rx="1" />
-                  <rect x="7" y="1.5" width="3" height="9" rx="1" />
+                  <path d="M9 5v14M15 5v14" />
                 </svg>
               {:else}
                 <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 12 12"
-                  fill="currentColor"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 >
-                  <path d="M3 1.6v8.8L10 6z" />
+                  <path d="M8 5l11 7-11 7V5z" />
                 </svg>
               {/if}
             </button>

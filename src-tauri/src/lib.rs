@@ -151,6 +151,7 @@ pub fn run() {
             get_initial_file,
             get_system_config,
             set_pip_active,
+            set_window_bounds,
             get_system_restart_status,
             get_runtime_info,
             get_windows_accessibility,

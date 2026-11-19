@@ -2,13 +2,16 @@ import {
   currentMonitor,
   getCurrentWindow,
   LogicalSize,
-  PhysicalPosition,
-  PhysicalSize,
   primaryMonitor,
   type Monitor,
+  type PhysicalPosition,
+  type PhysicalSize,
 } from "@tauri-apps/api/window";
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import { invokeSetPipActive } from "$lib/features/system/api";
+import {
+  invokeSetPipActive,
+  invokeSetWindowBounds,
+} from "$lib/features/system/api";
 import { appearance } from "$lib/features/theme/appearance.svelte";
 
 export type PipMediaKind = "image" | "video" | "audio" | "pdf";
@@ -39,6 +42,8 @@ const MAX_HEIGHT_FRACTION = 0.62;
 const CONFIG_MIN_SIZE = new LogicalSize(400, 300);
 const CONTROL_HIDE_MS = 1600;
 const RESIZE_SUPPRESS_MS = 500;
+const SLIDE_MS = 240;
+const FIT_SLIDE_MS = 190;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -57,6 +62,7 @@ function effectiveAspect(media: PipMedia): number {
 function createPip() {
   const state = $state({
     active: false,
+    transitioning: false,
     controlsVisible: true,
     userSized: false,
   });
@@ -64,6 +70,7 @@ function createPip() {
   let busy = false;
   let pinned = false;
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
+  let lastPointerActivity = 0;
   let unlistenResize: UnlistenFn | null = null;
   let snapshot: GeometrySnapshot | null = null;
   let applying = false;
@@ -89,7 +96,11 @@ function createPip() {
   }
 
   function notifyPointerActivity() {
-    if (state.active) showControls();
+    if (!state.active) return;
+    const now = performance.now();
+    if (now - lastPointerActivity < 80) return;
+    lastPointerActivity = now;
+    showControls();
   }
 
   function setControlsPinned(value: boolean) {
@@ -127,22 +138,36 @@ function createPip() {
     return 1 - Math.pow(1 - t, 3);
   }
 
-  async function animateBounds(target: BoundsTarget, duration = 230) {
-    const win = getCurrentWindow();
-    const snapStart = async () => {
-      applying = true;
-      suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
-      try {
-        await win.setSize(new PhysicalSize(target.width, target.height));
-        await win.setPosition(new PhysicalPosition(target.x, target.y));
-      } finally {
-        applying = false;
-        suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
-      }
-    };
+  function touchResizeSuppression() {
+    suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+  }
 
+  async function applyBounds(target: BoundsTarget) {
+    applying = true;
+    touchResizeSuppression();
+    try {
+      await invokeSetWindowBounds(
+        target.x,
+        target.y,
+        target.width,
+        target.height,
+      );
+    } finally {
+      applying = false;
+      touchResizeSuppression();
+    }
+  }
+
+  // Slides the native window between bounds. Only the window moves: the PiP
+  // layout is already applied, so the webview renders the media full-bleed and
+  // the chrome is out of the tree while the geometry steps.
+  async function animateBounds(
+    target: BoundsTarget,
+    duration = SLIDE_MS,
+  ): Promise<void> {
+    const win = getCurrentWindow();
     if (appearance.reducedMotion || duration <= 0) {
-      await snapStart();
+      await applyBounds(target);
       return;
     }
 
@@ -151,59 +176,43 @@ function createPip() {
       win.innerSize().catch(() => null),
     ]);
     if (!startPosition || !startSize) {
-      await snapStart();
+      await applyBounds(target);
       return;
     }
 
     const start = performance.now();
-    const moving = target.x !== startPosition.x || target.y !== startPosition.y;
     applying = true;
-    suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+    touchResizeSuppression();
+
     try {
       await new Promise<void>((resolve) => {
         const step = async () => {
           const t = Math.min(1, (performance.now() - start) / duration);
           const eased = easeOutCubic(t);
-          const width = Math.round(
-            startSize.width + (target.width - startSize.width) * eased,
-          );
-          const height = Math.round(
-            startSize.height + (target.height - startSize.height) * eased,
-          );
-          const x = Math.round(
-            startPosition.x + (target.x - startPosition.x) * eased,
-          );
-          const y = Math.round(
-            startPosition.y + (target.y - startPosition.y) * eased,
-          );
-          try {
-            await win.setSize(new PhysicalSize(width, height));
-            if (moving) {
-              await win.setPosition(new PhysicalPosition(x, y));
-            }
-          } catch {
-            // Keep the animation going; the final frame is authoritative.
-          }
+          touchResizeSuppression();
+          await invokeSetWindowBounds(
+            Math.round(startPosition.x + (target.x - startPosition.x) * eased),
+            Math.round(startPosition.y + (target.y - startPosition.y) * eased),
+            Math.round(
+              startSize.width + (target.width - startSize.width) * eased,
+            ),
+            Math.round(
+              startSize.height + (target.height - startSize.height) * eased,
+            ),
+          ).catch(() => {});
           if (t < 1) {
-            requestAnimationFrame(step);
+            requestAnimationFrame(() => void step());
           } else {
             resolve();
           }
         };
-        requestAnimationFrame(step);
+        requestAnimationFrame(() => void step());
       });
       // Guarantee the final geometry even if an intermediate frame failed.
-      await win
-        .setSize(new PhysicalSize(target.width, target.height))
-        .catch(() => {});
-      if (moving) {
-        await win
-          .setPosition(new PhysicalPosition(target.x, target.y))
-          .catch(() => {});
-      }
+      await applyBounds(target);
     } finally {
       applying = false;
-      suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+      touchResizeSuppression();
     }
   }
 
@@ -274,15 +283,12 @@ function createPip() {
       work.position.y + work.size.height - physicalHeight,
     );
 
-    await animateBounds(
-      {
-        x: Math.round(x),
-        y: Math.round(y),
-        width: physicalWidth,
-        height: physicalHeight,
-      },
-      260,
-    );
+    await animateBounds({
+      x: Math.round(x),
+      y: Math.round(y),
+      width: physicalWidth,
+      height: physicalHeight,
+    });
   }
 
   async function applyFittedGeometry(media: PipMedia) {
@@ -295,44 +301,47 @@ function createPip() {
     const margin = Math.round(MARGIN * scale);
     const work = monitor.workArea;
 
-    const position = await win.outerPosition().catch(() => null);
+    const [position, currentSize] = await Promise.all([
+      win.outerPosition().catch(() => null),
+      win.innerSize().catch(() => null),
+    ]);
     const currentX = position?.x ?? work.position.x;
     const currentY = position?.y ?? work.position.y;
+    // Keep the card's bottom-right corner fixed so growing media extends up.
+    const anchorRight = currentX + (currentSize?.width ?? physicalWidth);
+    const anchorBottom = currentY + (currentSize?.height ?? physicalHeight);
+    const desiredX = anchorRight - physicalWidth;
+    const desiredY = anchorBottom - physicalHeight;
     const minX = work.position.x + margin;
     const minY = work.position.y + margin;
     const maxX = work.position.x + work.size.width - physicalWidth - margin;
     const maxY = work.position.y + work.size.height - physicalHeight - margin;
     const x =
       maxX >= minX
-        ? clamp(currentX, minX, maxX)
+        ? clamp(desiredX, minX, maxX)
         : clamp(
-            currentX,
+            desiredX,
             work.position.x,
             work.position.x + work.size.width - physicalWidth,
           );
     const y =
       maxY >= minY
-        ? clamp(currentY, minY, maxY)
+        ? clamp(desiredY, minY, maxY)
         : clamp(
-            currentY,
+            desiredY,
             work.position.y,
             work.position.y + work.size.height - physicalHeight,
           );
 
-    const currentSize = await win.innerSize().catch(() => null);
     if (
       physicalWidth === 0 ||
       physicalHeight === 0 ||
       (currentSize &&
         Math.abs(physicalWidth - currentSize.width) < 1 &&
-        Math.abs(physicalHeight - currentSize.height) < 1)
+        Math.abs(physicalHeight - currentSize.height) < 1 &&
+        Math.abs(x - currentX) < 1 &&
+        Math.abs(y - currentY) < 1)
     ) {
-      // Geometry already matches; only correct a clamped position if needed.
-      if (x !== currentX || y !== currentY) {
-        await win
-          .setPosition(new PhysicalPosition(Math.round(x), Math.round(y)))
-          .catch(() => {});
-      }
       return;
     }
 
@@ -343,7 +352,7 @@ function createPip() {
         width: physicalWidth,
         height: physicalHeight,
       },
-      190,
+      FIT_SLIDE_MS,
     );
   }
 
@@ -389,15 +398,12 @@ function createPip() {
       await win.unmaximize().catch(() => {});
     }
     if (saved?.size && saved.position) {
-      await animateBounds(
-        {
-          x: saved.position.x,
-          y: saved.position.y,
-          width: saved.size.width,
-          height: saved.size.height,
-        },
-        240,
-      );
+      await animateBounds({
+        x: saved.position.x,
+        y: saved.position.y,
+        width: saved.size.width,
+        height: saved.size.height,
+      });
     } else {
       if (saved?.size) await win.setSize(saved.size).catch(() => {});
       if (saved?.position)
@@ -426,6 +432,8 @@ function createPip() {
           "Could not set the picture-in-picture window-state guard",
         );
       }
+
+      if (!appearance.reducedMotion) state.transitioning = true;
 
       // Unmaximize first so the saved geometry is the window's real restored
       // bounds, not the maximized bounds. Otherwise a later manual unmaximize
@@ -461,11 +469,13 @@ function createPip() {
       await win.setAlwaysOnTop(true);
       await applyInitialGeometry(media);
       await startResizeTracking();
+      state.transitioning = false;
       showControls();
       return true;
     } catch (e) {
       console.error("Failed to enter PiP:", e);
       state.active = false;
+      state.transitioning = false;
       unlistenResize?.();
       unlistenResize = null;
       await restoreSavedGeometry(snapshot).catch(() => {});
@@ -485,6 +495,7 @@ function createPip() {
     unlistenResize = null;
     clearTimeout(hideTimer);
     pinned = false;
+    state.transitioning = !appearance.reducedMotion;
 
     try {
       // Restore geometry while the persistence guard is still active so the
@@ -497,6 +508,7 @@ function createPip() {
       state.active = false;
       state.userSized = false;
       lastApplied = "";
+      state.transitioning = false;
       await setPipFlag(false);
       busy = false;
     }

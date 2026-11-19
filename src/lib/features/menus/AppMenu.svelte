@@ -532,41 +532,45 @@
         />
       </svg>
     </button>
-    <button
-      class="wc-btn pip-btn tooltip-below"
-      class:active={pipActive}
-      data-tooltip={t(pipActive ? "menus.app.pipExit" : "menus.app.pip")}
-      onclick={onTogglePip}
-      disabled={!pipAvailable}
-      aria-label={t(pipActive ? "menus.app.pipExit" : "menus.app.pip")}
-      aria-pressed={pipActive}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 10 10"
-        fill="none"
-        aria-hidden="true"
+    {#if filePath}
+      <button
+        class="wc-btn pip-btn tooltip-below"
+        class:active={pipActive}
+        data-tooltip={t(pipActive ? "menus.app.pipExit" : "menus.app.pip")}
+        onclick={onTogglePip}
+        disabled={!pipAvailable}
+        aria-label={t(pipActive ? "menus.app.pipExit" : "menus.app.pip")}
+        aria-pressed={pipActive}
+        in:fly={{ y: -6, duration: 160 }}
+        out:fly={{ y: -6, duration: 120 }}
       >
-        <rect
-          x="1"
-          y="1.8"
-          width="8"
-          height="6.4"
-          rx="0.75"
-          stroke="currentColor"
-          stroke-width="1.2"
-        />
-        <rect
-          x="4.6"
-          y="4.4"
-          width="3.9"
-          height="3"
-          rx="0.5"
-          fill="currentColor"
-        />
-      </svg>
-    </button>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          aria-hidden="true"
+        >
+          <rect
+            x="1"
+            y="1.8"
+            width="8"
+            height="6.4"
+            rx="0.75"
+            stroke="currentColor"
+            stroke-width="1.2"
+          />
+          <rect
+            x="4.6"
+            y="4.4"
+            width="3.9"
+            height="3"
+            rx="0.5"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+    {/if}
     <button
       class="wc-btn tooltip-below"
       data-tooltip={t("menus.app.maximize")}

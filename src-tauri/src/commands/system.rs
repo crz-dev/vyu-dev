@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, State};
 
 use crate::state::system::{
     save_config, SystemConfig, SystemState, DEFAULT_CACHE_LIMIT_MB, MAX_CACHE_LIMIT_MB,
@@ -113,6 +113,24 @@ pub fn get_system_config(state: State<'_, SystemState>) -> Result<SystemConfig, 
 #[tauri::command]
 pub fn set_pip_active(state: State<'_, PipActive>, active: bool) {
     state.0.store(active, Ordering::Relaxed);
+}
+
+/// Applies size and position in one call so the PiP slide costs a single IPC
+/// round trip per frame instead of two racing ones.
+#[tauri::command]
+pub fn set_window_bounds(
+    window: tauri::Window,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    window
+        .set_size(PhysicalSize::new(width, height))
+        .map_err(|e| e.to_string())?;
+    window
+        .set_position(PhysicalPosition::new(x, y))
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

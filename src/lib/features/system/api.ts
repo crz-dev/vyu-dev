@@ -57,6 +57,15 @@ export function invokeSetPipActive(active: boolean): Promise<void> {
   return invoke("set_pip_active", { active });
 }
 
+export function invokeSetWindowBounds(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): Promise<void> {
+  return invoke("set_window_bounds", { x, y, width, height });
+}
+
 export function invokeGetRuntimeInfo(): Promise<RuntimeInfo> {
   return invoke("get_runtime_info");
 }
