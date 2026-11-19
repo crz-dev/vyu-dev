@@ -1,0 +1,672 @@
+/* ── Picture in picture ─────────────────────────────────────────────── */
+
+.wc-btn.pip-btn.active {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.wc-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+main.pip .topbar,
+main.pip .bottombar,
+main.pip .sidebar,
+main.pip .thumbnail-bar {
+  display: none;
+}
+
+main.pip .viewer {
+  padding: 0;
+  background: #000;
+}
+
+main.pip .video-controls {
+  display: none;
+}
+
+main.pip .video-wrapper,
+main.pip .video-wrapper:hover {
+  outline-color: transparent;
+}
+
+main.pip .audio-customize-card,
+main.pip .audio-swap-container,
+main.pip .cd-color-picker {
+  display: none;
+}
+
+main.pip .pdf-find-bar,
+main.pip .pdf-page-panel,
+main.pip .pdf-page-label {
+  display: none;
+}
+
+main.pip .content {
+  background-color: #000;
+}
+
+main.pip .stale-frame {
+  padding: 0;
+}
+
+/* Media swaps fade in so kind changes do not read as a hard cut. */
+main.pip .viewer.pip-swap > .media-container,
+main.pip .viewer.pip-swap > .video-wrapper,
+main.pip .viewer.pip-swap > .audio-wrapper,
+main.pip .viewer.pip-swap > .pdf-viewer {
+  animation: pipMediaIn 260ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+main.pip .viewer.pip-audio-swap .pip-audio-stage {
+  animation: pipMediaIn 260ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+.pip-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 160;
+  pointer-events: none;
+  color: #fff;
+  font-family: var(--font-family);
+  user-select: none;
+  animation: pipOverlayIn 220ms ease-out both;
+}
+
+.pip-overlay,
+.pip-overlay * {
+  box-sizing: border-box;
+}
+
+.pip-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.055);
+  pointer-events: none;
+  transition: box-shadow 220ms ease;
+}
+
+.pip-overlay.controls-visible::after {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11);
+}
+
+.pip-overlay.bar.controls-visible::after {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.11),
+    inset 0 -48px 48px -32px rgba(0, 0, 0, 0.6);
+}
+
+.pip-fade,
+.pip-audio-row,
+.pip-audio-progress {
+  transition:
+    opacity 170ms ease,
+    transform 220ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.pip-overlay:not(.controls-visible) .pip-fade,
+.pip-overlay:not(.controls-visible) .pip-audio-row,
+.pip-overlay:not(.controls-visible) .pip-audio-progress {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pip-overlay:not(.controls-visible) .pip-top {
+  transform: translateY(-5px);
+}
+
+.pip-overlay:not(.controls-visible) .pip-bar {
+  transform: translateY(8px);
+}
+
+/* Top row: filename on the left, volume and restore on the right. */
+
+.pip-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  height: 46px;
+  padding: 8px 9px 0 11px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.pip-overlay:not(.audio) .pip-top {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.62),
+    rgba(0, 0, 0, 0.2) 58%,
+    transparent
+  );
+}
+
+.pip-overlay.pdf .pip-top {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.pip-overlay.pdf .pip-top:active {
+  cursor: grabbing;
+}
+
+.pip-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  max-width: calc(100% - 80px);
+  padding: 2px 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+.pip-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pip-file-position {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.46);
+  font-variant-numeric: tabular-nums;
+}
+
+.pip-file-position::before {
+  content: "·";
+  margin-right: 7px;
+  opacity: 0.65;
+}
+
+.pip-top-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  pointer-events: auto;
+}
+
+.pip-icon-btn {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 120ms ease;
+}
+
+.pip-icon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+}
+
+.pip-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.pip-icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pip-close-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.pip-overlay.audio .pip-icon-btn {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.pip-overlay.audio .pip-icon-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.pip-nav:focus-visible,
+.pip-play-btn:focus-visible,
+.pip-icon-btn:focus-visible,
+.pip-audio-art:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+/* Volume flyout */
+
+.pip-volume {
+  position: relative;
+  display: flex;
+}
+
+.pip-volume-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 6;
+  width: 92px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 16, 18, 0.9);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: translateY(-3px);
+  pointer-events: none;
+  transition:
+    opacity 150ms ease,
+    transform 180ms ease;
+}
+
+.pip-volume:hover .pip-volume-panel,
+.pip-volume:focus-within .pip-volume-panel {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.pip-volume-slider {
+  display: block;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pip-volume-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.8) 0 var(--volume),
+    rgba(255, 255, 255, 0.2) var(--volume) 100%
+  );
+}
+
+.pip-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 9px;
+  height: 9px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.pip-volume-slider:focus-visible {
+  outline: none;
+}
+
+/* Side skip buttons */
+
+.pip-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(10, 10, 12, 0.42);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translateY(-50%);
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    opacity 170ms ease,
+    transform 220ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.pip-nav:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.pip-nav-left {
+  left: 8px;
+}
+
+.pip-nav-right {
+  right: 8px;
+}
+
+.pip-overlay:not(.controls-visible) .pip-nav-left {
+  transform: translateY(-50%) translateX(-7px);
+}
+
+.pip-overlay:not(.controls-visible) .pip-nav-right {
+  transform: translateY(-50%) translateX(7px);
+}
+
+/* Playback bar */
+
+.pip-bar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: rgba(10, 10, 12, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.pip-bar-compact {
+  left: auto;
+  right: 9px;
+  height: auto;
+  padding: 4px;
+}
+
+.pip-time {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+.pip-play-btn {
+  flex-shrink: 0;
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    transform 120ms ease;
+}
+
+.pip-play-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pip-play-btn:active {
+  transform: scale(0.92);
+}
+
+.pip-progress,
+.pip-audio-progress {
+  position: relative;
+  flex: 1;
+  min-width: 24px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.pip-audio-progress {
+  height: 12px;
+  flex: none;
+  width: 100%;
+}
+
+.pip-progress::before,
+.pip-audio-progress::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-50%);
+}
+
+.pip-progress-fill {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.pip-progress-knob {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%) scale(0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.pip-progress:hover .pip-progress-knob,
+.pip-audio-progress:hover .pip-progress-knob,
+.pip-progress.scrubbing .pip-progress-knob,
+.pip-audio-progress.scrubbing .pip-progress-knob {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Compact audio card */
+
+.pip-audio-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 74px 12px 14px;
+  overflow: hidden;
+  background: #0b0c0e;
+  pointer-events: auto;
+}
+
+.pip-audio-backdrop {
+  position: absolute;
+  inset: -22%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) saturate(1.1) brightness(0.5);
+  transform: scale(1.18);
+  opacity: 0.88;
+  animation: pipBackdropDrift 26s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.pip-audio-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      100deg,
+      rgba(5, 6, 8, 0.62),
+      rgba(5, 6, 8, 0.16) 62%,
+      rgba(5, 6, 8, 0.46)
+    ),
+    radial-gradient(120% 140% at 0% 50%, rgba(0, 0, 0, 0.42), transparent 62%);
+  pointer-events: none;
+}
+
+.pip-audio-art {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+  color: rgba(255, 255, 255, 0.46);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 220ms cubic-bezier(0.22, 0.9, 0.3, 1),
+    box-shadow 220ms ease;
+}
+
+.pip-audio-art:hover {
+  transform: translateY(-1px) scale(1.012);
+  box-shadow:
+    0 15px 32px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.pip-audio-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.pip-audio-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pip-audio-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pip-audio-title {
+  min-width: 0;
+  flex: 1;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.pip-audio-marquee {
+  width: 100%;
+}
+
+.pip-audio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pip-audio-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 360px) {
+  .pip-audio-stage {
+    padding: 8px 66px 8px 10px;
+    gap: 10px;
+  }
+
+  .pip-audio-art {
+    width: 72px;
+    height: 72px;
+    border-radius: 9px;
+  }
+
+  .pip-audio-title {
+    font-size: 12px;
+  }
+
+  .pip-audio-row .pip-time:first-child {
+    display: none;
+  }
+}
+
+@keyframes pipOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pipMediaIn {
+  from {
+    opacity: 0.15;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pipBackdropDrift {
+  from {
+    transform: scale(1.18) translate3d(-1.5%, -1%, 0);
+  }
+  to {
+    transform: scale(1.26) translate3d(1.5%, 1%, 0);
+  }
+}
+
+[data-reduce-motion="true"] .pip-overlay,
+[data-reduce-motion="true"] .pip-overlay * {
+  animation: none !important;
+  transition: none !important;
+}

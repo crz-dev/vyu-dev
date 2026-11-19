@@ -336,7 +336,6 @@
     !!fileSrc &&
       !anyMenuOpen &&
       !editing.cropMode &&
-      !markup.hasUnapplied &&
       !markup.drawActive &&
       !markup.highlightActive &&
       !markup.textActive &&
@@ -420,7 +419,7 @@
       if (!entered && !pip.state.active) {
         restoreViewerZoomAfterPip();
         showToast({ message: t("shell.pip.failed"), color: "red" });
-      } else if (entered && (anyMenuOpen || !fileSrc)) {
+      } else if (entered && (anyMenuOpen || !filePath)) {
         await pip.exit();
       }
     } finally {
@@ -439,6 +438,15 @@
   }
 
   $effect(() => {
+    // Do not carry a previous video's aspect into a new file.
+    filePath;
+    untrack(() => {
+      videoNaturalWidth = 0;
+      videoNaturalHeight = 0;
+    });
+  });
+
+  $effect(() => {
     if (!pip.state.active) {
       restoreViewerZoomAfterPip();
       return;
@@ -448,7 +456,9 @@
   });
 
   $effect(() => {
-    if (pip.state.active && !fileSrc) void pip.exit();
+    // Navigation briefly clears fileSrc while audio/video elements are torn
+    // down. Only close PiP when there is genuinely no file open.
+    if (pip.state.active && !filePath) void pip.exit();
   });
 
   $effect(() => {
@@ -459,7 +469,6 @@
     if (
       pip.state.active &&
       (editing.cropMode ||
-        markup.hasUnapplied ||
         markup.drawActive ||
         markup.highlightActive ||
         markup.textActive ||

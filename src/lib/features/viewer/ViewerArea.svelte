@@ -228,6 +228,50 @@
     appearance.reducedMotion ? "none" : slideshow.transition,
   );
 
+  const pipKind = $derived(
+    isVideo ? "video" : isAudio ? "audio" : isPdf ? "pdf" : "image",
+  );
+  let pipSwap = $state(false);
+  let pipAudioSwap = $state(false);
+  let pipSwapTimer: ReturnType<typeof setTimeout> | undefined;
+  let lastPipSrc = "";
+  let lastPipKind = "";
+
+  $effect(() => {
+    const active = pip.state.active;
+    const src = fileSrc;
+    const kind = pipKind;
+    if (!active) {
+      clearTimeout(pipSwapTimer);
+      pipSwap = false;
+      pipAudioSwap = false;
+      lastPipSrc = src;
+      lastPipKind = kind;
+      return;
+    }
+    // Wait for the new source so the fade runs on the element that mounts.
+    if (!src) return;
+    if (lastPipSrc && src !== lastPipSrc) {
+      // The audio layout is an overlay, so the existing file transition on the
+      // hidden audio wrapper is not visible. Animate the card itself.
+      if (kind === "audio") {
+        pipAudioSwap = true;
+        clearTimeout(pipSwapTimer);
+        pipSwapTimer = setTimeout(() => (pipAudioSwap = false), 280);
+      } else if (
+        appearance.fileTransition === "none" &&
+        !(kind === "image" && lastPipKind === "image")
+      ) {
+        pipSwap = true;
+        clearTimeout(pipSwapTimer);
+        pipSwapTimer = setTimeout(() => (pipSwap = false), 280);
+      }
+    }
+    lastPipSrc = src;
+    lastPipKind = kind;
+    return () => clearTimeout(pipSwapTimer);
+  });
+
   // A fitted copy of the outgoing image, shown while the next image decodes.
   // Keeps the viewer from flashing its background between images.
   let staleFrameSrc = $state("");
@@ -417,6 +461,8 @@
   </div>
   <div
     class="viewer"
+    class:pip-swap={pipSwap && pip.state.active}
+    class:pip-audio-swap={pipAudioSwap && pip.state.active}
     bind:this={viewerEl}
     onmouseenter={() => (hoverZone = "sidebar")}
     onmouseleave={() => (hoverZone = "none")}
@@ -585,7 +631,7 @@
         bind:cassetteInfoRowEl
         {audioMarkerProps}
       />
-    {:else}
+    {:else if !pip.state.active}
       <button
         class="empty"
         class:drag-active={dragDropActive}
@@ -640,7 +686,7 @@
         <img src={staleFrameSrc} alt="" decoding="async" />
       </div>
     {/if}
-    {#if pip.state.active && fileSrc}
+    {#if pip.state.active && filePath}
       <PipOverlay
         {fileName}
         {currentIndex}
@@ -655,10 +701,13 @@
         {durationDisplay}
         {isScrubbing}
         {coverArtSrc}
-        {cdColor}
+        {volume}
+        {muted}
         {navigate}
         {togglePlay}
         {startScrubbing}
+        {setVolume}
+        {toggleMute}
       />
     {/if}
   </div>

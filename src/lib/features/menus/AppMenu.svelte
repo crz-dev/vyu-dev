@@ -550,21 +550,20 @@
       >
         <rect
           x="1"
-          y="1.4"
+          y="1.8"
           width="8"
-          height="6.2"
-          rx="0.8"
+          height="6.4"
+          rx="0.75"
           stroke="currentColor"
-          stroke-width="1.1"
+          stroke-width="1.2"
         />
         <rect
-          x="4.3"
-          y="3.8"
-          width="4.7"
-          height="3.8"
-          rx="0.6"
-          stroke="currentColor"
-          stroke-width="1.1"
+          x="4.6"
+          y="4.4"
+          width="3.9"
+          height="3"
+          rx="0.5"
+          fill="currentColor"
         />
       </svg>
     </button>

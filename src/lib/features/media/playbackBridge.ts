@@ -30,7 +30,9 @@ export function createPlaybackBridge(deps: PlaybackBridgeDeps) {
 
   function toggleMute() {
     const next = !deps.getMuted();
-    playback.toggleMute(deps.setMuted, deps.getMuted());
+    const mediaEl = deps.getMediaEl();
+    if (mediaEl) mediaEl.muted = next;
+    deps.setMuted(next);
     backgroundAudio.setMuted(next);
   }
 

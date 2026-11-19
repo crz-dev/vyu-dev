@@ -116,6 +116,97 @@ function createPip() {
     }
   }
 
+  type BoundsTarget = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+
+  function easeOutCubic(t: number): number {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  async function animateBounds(target: BoundsTarget, duration = 230) {
+    const win = getCurrentWindow();
+    const snapStart = async () => {
+      applying = true;
+      suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+      try {
+        await win.setSize(new PhysicalSize(target.width, target.height));
+        await win.setPosition(new PhysicalPosition(target.x, target.y));
+      } finally {
+        applying = false;
+        suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+      }
+    };
+
+    if (appearance.reducedMotion || duration <= 0) {
+      await snapStart();
+      return;
+    }
+
+    const [startPosition, startSize] = await Promise.all([
+      win.outerPosition().catch(() => null),
+      win.innerSize().catch(() => null),
+    ]);
+    if (!startPosition || !startSize) {
+      await snapStart();
+      return;
+    }
+
+    const start = performance.now();
+    const moving = target.x !== startPosition.x || target.y !== startPosition.y;
+    applying = true;
+    suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+    try {
+      await new Promise<void>((resolve) => {
+        const step = async () => {
+          const t = Math.min(1, (performance.now() - start) / duration);
+          const eased = easeOutCubic(t);
+          const width = Math.round(
+            startSize.width + (target.width - startSize.width) * eased,
+          );
+          const height = Math.round(
+            startSize.height + (target.height - startSize.height) * eased,
+          );
+          const x = Math.round(
+            startPosition.x + (target.x - startPosition.x) * eased,
+          );
+          const y = Math.round(
+            startPosition.y + (target.y - startPosition.y) * eased,
+          );
+          try {
+            await win.setSize(new PhysicalSize(width, height));
+            if (moving) {
+              await win.setPosition(new PhysicalPosition(x, y));
+            }
+          } catch {
+            // Keep the animation going; the final frame is authoritative.
+          }
+          if (t < 1) {
+            requestAnimationFrame(step);
+          } else {
+            resolve();
+          }
+        };
+        requestAnimationFrame(step);
+      });
+      // Guarantee the final geometry even if an intermediate frame failed.
+      await win
+        .setSize(new PhysicalSize(target.width, target.height))
+        .catch(() => {});
+      if (moving) {
+        await win
+          .setPosition(new PhysicalPosition(target.x, target.y))
+          .catch(() => {});
+      }
+    } finally {
+      applying = false;
+      suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+    }
+  }
+
   function sizeFor(
     media: PipMedia,
     monitor: Monitor,
@@ -166,7 +257,6 @@ function createPip() {
       );
       return;
     }
-    const win = getCurrentWindow();
     const { width, height, scale } = sizeFor(media, monitor);
     const physicalWidth = Math.round(width * scale);
     const physicalHeight = Math.round(height * scale);
@@ -184,15 +274,15 @@ function createPip() {
       work.position.y + work.size.height - physicalHeight,
     );
 
-    applying = true;
-    suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
-    try {
-      await win.setSize(new PhysicalSize(physicalWidth, physicalHeight));
-      await win.setPosition(new PhysicalPosition(Math.round(x), Math.round(y)));
-    } finally {
-      applying = false;
-      suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
-    }
+    await animateBounds(
+      {
+        x: Math.round(x),
+        y: Math.round(y),
+        width: physicalWidth,
+        height: physicalHeight,
+      },
+      260,
+    );
   }
 
   async function applyFittedGeometry(media: PipMedia) {
@@ -202,35 +292,59 @@ function createPip() {
     const { width, height, scale } = sizeFor(media, monitor);
     const physicalWidth = Math.round(width * scale);
     const physicalHeight = Math.round(height * scale);
+    const margin = Math.round(MARGIN * scale);
     const work = monitor.workArea;
 
     const position = await win.outerPosition().catch(() => null);
     const currentX = position?.x ?? work.position.x;
     const currentY = position?.y ?? work.position.y;
-    const x = clamp(
-      currentX,
-      work.position.x,
-      work.position.x + work.size.width - physicalWidth,
-    );
-    const y = clamp(
-      currentY,
-      work.position.y,
-      work.position.y + work.size.height - physicalHeight,
-    );
+    const minX = work.position.x + margin;
+    const minY = work.position.y + margin;
+    const maxX = work.position.x + work.size.width - physicalWidth - margin;
+    const maxY = work.position.y + work.size.height - physicalHeight - margin;
+    const x =
+      maxX >= minX
+        ? clamp(currentX, minX, maxX)
+        : clamp(
+            currentX,
+            work.position.x,
+            work.position.x + work.size.width - physicalWidth,
+          );
+    const y =
+      maxY >= minY
+        ? clamp(currentY, minY, maxY)
+        : clamp(
+            currentY,
+            work.position.y,
+            work.position.y + work.size.height - physicalHeight,
+          );
 
-    applying = true;
-    suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
-    try {
-      await win.setSize(new PhysicalSize(physicalWidth, physicalHeight));
+    const currentSize = await win.innerSize().catch(() => null);
+    if (
+      physicalWidth === 0 ||
+      physicalHeight === 0 ||
+      (currentSize &&
+        Math.abs(physicalWidth - currentSize.width) < 1 &&
+        Math.abs(physicalHeight - currentSize.height) < 1)
+    ) {
+      // Geometry already matches; only correct a clamped position if needed.
       if (x !== currentX || y !== currentY) {
-        await win.setPosition(
-          new PhysicalPosition(Math.round(x), Math.round(y)),
-        );
+        await win
+          .setPosition(new PhysicalPosition(Math.round(x), Math.round(y)))
+          .catch(() => {});
       }
-    } finally {
-      applying = false;
-      suppressResizeUntil = performance.now() + RESIZE_SUPPRESS_MS;
+      return;
     }
+
+    await animateBounds(
+      {
+        x: Math.round(x),
+        y: Math.round(y),
+        width: physicalWidth,
+        height: physicalHeight,
+      },
+      190,
+    );
   }
 
   function mediaKey(media: PipMedia): string {
@@ -239,6 +353,9 @@ function createPip() {
 
   async function fitTo(media: PipMedia) {
     if (!state.active || busy || state.userSized) return;
+    if (media.kind !== "audio" && (media.width <= 0 || media.height <= 0)) {
+      return;
+    }
     const key = mediaKey(media);
     if (key === lastApplied) return;
     lastApplied = key;
@@ -268,16 +385,25 @@ function createPip() {
   async function restoreSavedGeometry(saved: GeometrySnapshot | null) {
     const win = getCurrentWindow();
     await win.setResizable(true).catch(() => {});
-    await win.setMinSize(CONFIG_MIN_SIZE).catch(() => {});
     if (await win.isMaximized().catch(() => false)) {
       await win.unmaximize().catch(() => {});
     }
-    if (saved?.size) {
-      await win.setSize(saved.size).catch(() => {});
+    if (saved?.size && saved.position) {
+      await animateBounds(
+        {
+          x: saved.position.x,
+          y: saved.position.y,
+          width: saved.size.width,
+          height: saved.size.height,
+        },
+        240,
+      );
+    } else {
+      if (saved?.size) await win.setSize(saved.size).catch(() => {});
+      if (saved?.position)
+        await win.setPosition(saved.position).catch(() => {});
     }
-    if (saved?.position) {
-      await win.setPosition(saved.position).catch(() => {});
-    }
+    await win.setMinSize(CONFIG_MIN_SIZE).catch(() => {});
     await win.setAlwaysOnTop(saved?.wasAlwaysOnTop ?? false).catch(() => {});
     if (saved?.wasMaximized) {
       await win.maximize().catch(() => {});
