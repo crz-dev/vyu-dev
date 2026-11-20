@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from "svelte/transition";
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
   import AudioTrackMenu from "$lib/features/media/AudioTrackMenu.svelte";
@@ -589,14 +590,71 @@
           {/key}
         </button>
         {#if volumeSliderMode && (volumeHovered || volumeDragging)}
-          <div
-            class="retro-slider-container"
-            class:muted={muted || volume === 0}
-            role="presentation"
-            onmouseenter={showVolumeOverlay}
-          >
+          {#if compact}
             <div
-              class="retro-slider-track-vertical"
+              class="retro-slider-container overlay-vertical"
+              class:muted={muted || volume === 0}
+              in:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+              out:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+              role="presentation"
+              onmouseenter={showVolumeOverlay}
+            >
+              <div
+                class="retro-slider-track-vertical"
+                bind:this={volumeTrackEl}
+                role="slider"
+                tabindex="0"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(volumeSliderValue * 100)}
+                aria-label={t("media.playback.volumeSlider")}
+                onpointerdown={(e) => {
+                  if (volumeTrackEl)
+                    startVolumeSliderDrag(e, volumeTrackEl, true);
+                }}
+                oncontextmenu={handleVolumeRightClick}
+                onmouseenter={() =>
+                  showVolumeSliderTooltip(volumeTrackEl, true)}
+                onmouseleave={hideVolumeSliderTooltip}
+              >
+                <div
+                  class="retro-slider-fill-vertical"
+                  style="height: {volumeSliderValue * 100}%"
+                ></div>
+                {#each [0, 50, 100] as pct}
+                  <div
+                    class="retro-slider-marker-vertical"
+                    style="bottom: {pct}%"
+                    onpointerdown={(e) => e.stopPropagation()}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      handleVolumeSliderChange(pct / 100);
+                    }}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleVolumeSliderChange(pct / 100);
+                      }
+                    }}
+                    role="button"
+                    tabindex="0"
+                    aria-label={t("media.playback.setVolumeTo", {
+                      percent: pct,
+                    })}
+                  ></div>
+                {/each}
+                <div
+                  class="retro-slider-scrubber-vertical"
+                  style="bottom: {volumeSliderValue * 100}%"
+                ></div>
+              </div>
+            </div>
+          {:else}
+            <div
+              class="playback-slider-track overlay-slider"
+              class:muted={muted || volume === 0}
+              in:fly|global={{ x: -8, duration: 150, opacity: 0 }}
+              out:fly|global={{ x: -8, duration: 150, opacity: 0 }}
               bind:this={volumeTrackEl}
               role="slider"
               tabindex="0"
@@ -605,21 +663,20 @@
               aria-valuenow={Math.round(volumeSliderValue * 100)}
               aria-label={t("media.playback.volumeSlider")}
               onpointerdown={(e) => {
-                if (volumeTrackEl)
-                  startVolumeSliderDrag(e, volumeTrackEl, true);
+                if (volumeTrackEl) startVolumeSliderDrag(e, volumeTrackEl);
               }}
               oncontextmenu={handleVolumeRightClick}
-              onmouseenter={() => showVolumeSliderTooltip(volumeTrackEl, true)}
+              onmouseenter={() => showVolumeSliderTooltip(volumeTrackEl)}
               onmouseleave={hideVolumeSliderTooltip}
             >
               <div
-                class="retro-slider-fill-vertical"
-                style="height: {volumeSliderValue * 100}%"
+                class="playback-slider-fill"
+                style="width: {volumeSliderValue * 100}%"
               ></div>
               {#each [0, 50, 100] as pct}
                 <div
-                  class="retro-slider-marker-vertical"
-                  style="bottom: {pct}%"
+                  class="playback-slider-marker"
+                  style="left: {pct}%"
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => {
                     e.stopPropagation();
@@ -639,17 +696,45 @@
                 ></div>
               {/each}
               <div
-                class="retro-slider-scrubber-vertical"
-                style="bottom: {volumeSliderValue * 100}%"
+                class="playback-slider-scrubber"
+                style="left: {volumeSliderValue * 100}%"
               ></div>
             </div>
-          </div>
+          {/if}
         {:else if volumeHovered || volumeDragging}
-          <div class="retro-diamonds-wrapper">
+          {#if compact}
             <div
-              class="volume-diamonds"
-              onmousedown={(e) => startVolumeDrag(e, true)}
-              onmousemove={(e) => handleVolumeDiamondHover(e, true)}
+              class="retro-diamonds-wrapper overlay-vertical"
+              in:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+              out:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+            >
+              <div
+                class="volume-diamonds"
+                onmousedown={(e) => startVolumeDrag(e, true)}
+                onmousemove={(e) => handleVolumeDiamondHover(e, true)}
+                role="presentation"
+              >
+                {#each Array(volumeSegments) as _, i}
+                  <button
+                    class="volume-diamond"
+                    class:filled={i < Math.round(volume * volumeSegments)}
+                    class:muted-diamond={muted}
+                    style="--i: {i}"
+                    onclick={() => setVolume((i + 1) / volumeSegments)}
+                    aria-label={t("media.playback.setVolume", {
+                      percent: Math.round(((i + 1) / volumeSegments) * 100),
+                    })}
+                  ></button>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <div
+              class="volume-diamonds overlay-diamonds"
+              in:fly|global={{ x: -8, duration: 150, opacity: 0 }}
+              out:fly|global={{ x: -8, duration: 150, opacity: 0 }}
+              onmousedown={startVolumeDrag}
+              onmousemove={handleVolumeDiamondHover}
               role="presentation"
             >
               {#each Array(volumeSegments) as _, i}
@@ -665,7 +750,7 @@
                 ></button>
               {/each}
             </div>
-          </div>
+          {/if}
         {/if}
       </div>
     </div>
@@ -741,13 +826,67 @@
           {/if}
         </button>
         {#if speedSliderMode && (speedHovered || speedDragging)}
-          <div
-            class="retro-slider-container"
-            role="presentation"
-            onmouseenter={showSpeedOverlay}
-          >
+          {#if compact}
             <div
-              class="retro-slider-track-vertical"
+              class="retro-slider-container overlay-vertical"
+              in:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+              out:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+              role="presentation"
+              onmouseenter={showSpeedOverlay}
+            >
+              <div
+                class="retro-slider-track-vertical"
+                bind:this={speedTrackEl}
+                role="slider"
+                tabindex="0"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(speedSliderValue * 100)}
+                aria-label={t("media.playback.speedSlider")}
+                onpointerdown={(e) => {
+                  if (speedTrackEl) startSpeedSliderDrag(e, speedTrackEl, true);
+                }}
+                oncontextmenu={handleSpeedRightClick}
+                onmouseenter={() => showSpeedSliderTooltip(speedTrackEl, true)}
+                onmouseleave={hideSpeedSliderTooltip}
+              >
+                <div
+                  class="retro-slider-fill-vertical"
+                  style="height: {speedSliderValue * 100}%"
+                ></div>
+                {#each speedStepMarkers as marker}
+                  <div
+                    class="retro-slider-marker-vertical"
+                    style="bottom: {marker.pct}%"
+                    onpointerdown={(e) => e.stopPropagation()}
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      setPlaybackSpeed(marker.step);
+                    }}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setPlaybackSpeed(marker.step);
+                      }
+                    }}
+                    role="button"
+                    tabindex="0"
+                    aria-label={t("media.playback.setSpeedTo", {
+                      speed: marker.step,
+                    })}
+                  ></div>
+                {/each}
+                <div
+                  class="retro-slider-scrubber-vertical"
+                  style="bottom: {speedSliderValue * 100}%"
+                ></div>
+              </div>
+            </div>
+          {:else}
+            <div
+              class="playback-slider-track overlay-slider"
+              in:fly|global={{ x: 8, duration: 150, opacity: 0 }}
+              out:fly|global={{ x: 8, duration: 150, opacity: 0 }}
               bind:this={speedTrackEl}
               role="slider"
               tabindex="0"
@@ -756,20 +895,20 @@
               aria-valuenow={Math.round(speedSliderValue * 100)}
               aria-label={t("media.playback.speedSlider")}
               onpointerdown={(e) => {
-                if (speedTrackEl) startSpeedSliderDrag(e, speedTrackEl, true);
+                if (speedTrackEl) startSpeedSliderDrag(e, speedTrackEl);
               }}
               oncontextmenu={handleSpeedRightClick}
-              onmouseenter={() => showSpeedSliderTooltip(speedTrackEl, true)}
+              onmouseenter={() => showSpeedSliderTooltip(speedTrackEl)}
               onmouseleave={hideSpeedSliderTooltip}
             >
               <div
-                class="retro-slider-fill-vertical"
-                style="height: {speedSliderValue * 100}%"
+                class="playback-slider-fill"
+                style="width: {speedSliderValue * 100}%"
               ></div>
               {#each speedStepMarkers as marker}
                 <div
-                  class="retro-slider-marker-vertical"
-                  style="bottom: {marker.pct}%"
+                  class="playback-slider-marker"
+                  style="left: {marker.pct}%"
                   onpointerdown={(e) => e.stopPropagation()}
                   onclick={(e) => {
                     e.stopPropagation();
@@ -789,17 +928,47 @@
                 ></div>
               {/each}
               <div
-                class="retro-slider-scrubber-vertical"
-                style="bottom: {speedSliderValue * 100}%"
+                class="playback-slider-scrubber"
+                style="left: {speedSliderValue * 100}%"
               ></div>
             </div>
-          </div>
+          {/if}
         {:else if speedHovered || speedDragging}
-          <div class="retro-diamonds-wrapper">
+          {#if compact}
             <div
-              class="speed-diamonds"
-              onmousedown={(e) => startSpeedDrag(e, true)}
-              onmousemove={(e) => handleSpeedDiamondHover(e, true)}
+              class="retro-diamonds-wrapper overlay-vertical"
+              in:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+              out:fly|global={{ y: 8, duration: 150, opacity: 0 }}
+            >
+              <div
+                class="speed-diamonds"
+                onmousedown={(e) => startSpeedDrag(e, true)}
+                onmousemove={(e) => handleSpeedDiamondHover(e, true)}
+                role="presentation"
+              >
+                {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
+                  {@const selectedIdx = nearestSpeedStepIndex(playbackSpeed)}
+                  {@const dist = Math.abs(i - selectedIdx)}
+                  <button
+                    class="speed-diamond"
+                    class:filled={dist === 0}
+                    class:grey={dist === 1}
+                    class:dim={dist === 2}
+                    class:hidden={dist >= 3}
+                    style="--i: {6 - i}"
+                    onclick={() => setPlaybackSpeed(step)}
+                    aria-label={t("media.playback.setSpeed", { speed: step })}
+                  ></button>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <div
+              class="speed-diamonds overlay-diamonds"
+              in:fly|global={{ x: 8, duration: 150, opacity: 0 }}
+              out:fly|global={{ x: 8, duration: 150, opacity: 0 }}
+              onmousedown={startSpeedDrag}
+              onmousemove={handleSpeedDiamondHover}
               role="presentation"
             >
               {#each [0.25, 0.5, 0.75, 1, 1.25, 2, 3] as step, i}
@@ -817,7 +986,7 @@
                 ></button>
               {/each}
             </div>
-          </div>
+          {/if}
         {/if}
       </div>
       {#if !isAudio && !isGifVideo}

@@ -96,8 +96,16 @@
   "viewer.pdf.previousMatch": "이전 일치",
   "viewer.pdf.textCopied": "텍스트를 복사했습니다",
   "viewer.pip.exit": "화면 속 화면 종료",
+  "viewer.pip.fitAudio": "오디오에 맞춤",
+  "viewer.pip.fitImage": "이미지에 맞춤",
+  "viewer.pip.fitPdf": "페이지에 맞춤",
+  "viewer.pip.fitVideo": "동영상에 맞춤",
+  "viewer.pip.lockSize": "크기 고정",
+  "viewer.pip.menu": "화면 속 화면 옵션",
   "viewer.pip.next": "다음 파일",
   "viewer.pip.previous": "이전 파일",
   "viewer.pip.progress": "재생 위치",
+  "viewer.pip.restoreWindow": "창 복원",
+  "viewer.pip.snapCorner": "다음 모서리",
   "viewer.subtitles": "자막"
 }

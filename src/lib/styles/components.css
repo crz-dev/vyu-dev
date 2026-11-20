@@ -348,11 +348,61 @@
   margin-inline: auto;
 }
 
-/* Volume/speed popovers reuse the music layout's vertical panels, so they open
-   upward instead of widening the control row. */
+/* Compact video and fullscreen volume/speed popovers reuse the music layout's
+   vertical panels, so they open upward instead of widening the control row. */
 .video-controls .retro-slider-container,
 .fs-controls .retro-slider-container {
   animation: uiOverlayFadeIn 140ms ease both;
+}
+
+/* Wide video overlay: sliders and diamond bars open inline to the sides and
+   stay flat so they do not cover the video with a card. The compact layout
+   keeps the vertical popovers, where there is no horizontal room. */
+.video-controls .overlay-slider {
+  width: 100px;
+}
+.video-controls .overlay-slider.muted {
+  pointer-events: auto;
+}
+.video-controls .overlay-diamonds {
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  /* The overlay uses Svelte fly transitions for both opening and closing. */
+  animation: none;
+}
+.video-controls .overlay-vertical {
+  /* Svelte owns the popover motion, including the close. */
+  animation: none;
+}
+/* Right-click swaps the slider for the diamond bar in place. Both forms share
+   one grid cell so the outgoing one crossfades without pushing the other
+   sideways while its fly transition runs. */
+.video-controls .volume-control,
+.video-controls .speed-control {
+  display: grid;
+}
+.video-controls .volume-control {
+  grid-template-columns: 34px auto;
+}
+.video-controls .speed-control {
+  grid-template-columns: auto 34px;
+}
+.video-controls .volume-control > .overlay-slider,
+.video-controls .volume-control > .overlay-diamonds {
+  grid-area: 1 / 2;
+  justify-self: start;
+}
+.video-controls .speed-control > .speed-btn {
+  grid-area: 1 / 2;
+}
+/* Speed sits at the right end, so pin its popovers to the cell's right edge to
+   keep them next to the button while the other form is still fading out. */
+.video-controls .speed-control > .overlay-slider,
+.video-controls .speed-control > .overlay-diamonds {
+  grid-area: 1 / 1;
+  justify-self: end;
 }
 
 .ctrl-btn {

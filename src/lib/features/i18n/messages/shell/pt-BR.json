@@ -96,8 +96,16 @@
   "viewer.pdf.previousMatch": "Correspondência anterior",
   "viewer.pdf.textCopied": "Texto copiado",
   "viewer.pip.exit": "Sair de imagem em imagem",
+  "viewer.pip.fitAudio": "Ajustar ao áudio",
+  "viewer.pip.fitImage": "Ajustar à imagem",
+  "viewer.pip.fitPdf": "Ajustar à página",
+  "viewer.pip.fitVideo": "Ajustar ao vídeo",
+  "viewer.pip.lockSize": "Bloquear tamanho",
+  "viewer.pip.menu": "Opções de imagem em imagem",
   "viewer.pip.next": "Próximo arquivo",
   "viewer.pip.previous": "Arquivo anterior",
   "viewer.pip.progress": "Posição de reprodução",
+  "viewer.pip.restoreWindow": "Restaurar janela",
+  "viewer.pip.snapCorner": "Próximo canto",
   "viewer.subtitles": "Legendas"
 }

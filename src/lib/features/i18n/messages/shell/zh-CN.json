@@ -96,8 +96,16 @@
   "viewer.pdf.previousMatch": "上一个匹配",
   "viewer.pdf.textCopied": "文本已复制",
   "viewer.pip.exit": "退出画中画",
+  "viewer.pip.fitAudio": "适应音频",
+  "viewer.pip.fitImage": "适应图片",
+  "viewer.pip.fitPdf": "适应页面",
+  "viewer.pip.fitVideo": "适应视频",
+  "viewer.pip.lockSize": "锁定大小",
+  "viewer.pip.menu": "画中画选项",
   "viewer.pip.next": "下一个文件",
   "viewer.pip.previous": "上一个文件",
   "viewer.pip.progress": "播放位置",
+  "viewer.pip.restoreWindow": "恢复窗口",
+  "viewer.pip.snapCorner": "下一个角落",
   "viewer.subtitles": "字幕"
 }

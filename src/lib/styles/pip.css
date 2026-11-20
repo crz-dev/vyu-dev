@@ -87,6 +87,56 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   animation: pipOverlayIn 220ms ease-out both;
 }
 
+.pip-overlay .context-menu {
+  pointer-events: auto;
+}
+
+.pip-menu {
+  width: max-content;
+  min-width: 160px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 3px 4px 4px;
+  gap: 1px;
+}
+
+.pip-menu .ctx-item {
+  padding: 6px 9px;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-secondary);
+  animation: none;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.pip-menu .ctx-item:hover {
+  background: color-mix(in srgb, var(--text-primary) 11%, transparent);
+  color: var(--text-primary);
+}
+
+.pip-menu .ctx-item[aria-checked="true"] {
+  background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+  color: var(--text-primary);
+}
+
+.pip-menu .ctx-item[aria-checked="true"]:hover {
+  background: color-mix(in srgb, var(--text-primary) 17%, transparent);
+}
+
+.pip-menu .ctx-sep {
+  margin: 3px 2px;
+}
+
+.pip-menu-check {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
+  width: 11px;
+}
+
 .pip-overlay,
 .pip-overlay * {
   box-sizing: border-box;

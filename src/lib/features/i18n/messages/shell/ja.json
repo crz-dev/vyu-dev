@@ -96,8 +96,16 @@
   "viewer.pdf.previousMatch": "前の一致",
   "viewer.pdf.textCopied": "テキストをコピーしました",
   "viewer.pip.exit": "ピクチャーインピクチャーを終了",
+  "viewer.pip.fitAudio": "音声に合わせる",
+  "viewer.pip.fitImage": "画像に合わせる",
+  "viewer.pip.fitPdf": "ページに合わせる",
+  "viewer.pip.fitVideo": "動画に合わせる",
+  "viewer.pip.lockSize": "サイズを固定",
+  "viewer.pip.menu": "ピクチャーインピクチャーのオプション",
   "viewer.pip.next": "次のファイル",
   "viewer.pip.previous": "前のファイル",
   "viewer.pip.progress": "再生位置",
+  "viewer.pip.restoreWindow": "ウィンドウを復元",
+  "viewer.pip.snapCorner": "次の隅",
   "viewer.subtitles": "字幕"
 }

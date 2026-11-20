@@ -100,8 +100,16 @@
   "viewer.pdf.previousMatch": "Предыдущее совпадение",
   "viewer.pdf.textCopied": "Текст скопирован",
   "viewer.pip.exit": "Выйти из режима «картинка в картинке»",
+  "viewer.pip.fitAudio": "По размеру аудио",
+  "viewer.pip.fitImage": "По размеру изображения",
+  "viewer.pip.fitPdf": "По размеру страницы",
+  "viewer.pip.fitVideo": "По размеру видео",
+  "viewer.pip.lockSize": "Заблокировать размер",
+  "viewer.pip.menu": "Параметры картинки в картинке",
   "viewer.pip.next": "Следующий файл",
   "viewer.pip.previous": "Предыдущий файл",
   "viewer.pip.progress": "Позиция воспроизведения",
+  "viewer.pip.restoreWindow": "Восстановить окно",
+  "viewer.pip.snapCorner": "Следующий угол",
   "viewer.subtitles": "Субтитры"
 }

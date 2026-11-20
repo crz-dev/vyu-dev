@@ -338,7 +338,6 @@
 
   const pipAvailable = $derived(
     !!fileSrc &&
-      !anyMenuOpen &&
       !editing.cropMode &&
       !markup.drawActive &&
       !markup.highlightActive &&
@@ -417,13 +416,20 @@
         return;
       }
       if (!pipAvailable) return;
+      // Menus are anchored to the full window; close them before the window
+      // collapses into PiP.
+      contextMenuStore.close();
+      menuStore.closeAll();
+      menuStore.loopMenuOpen = false;
+      menuStore.audioTrackMenuOpen = false;
+      menuStore.subtitleMenuOpen = false;
       if (viewer.state.isFullscreen) toggleFullscreen();
       captureViewerZoomForPip();
       const entered = await pip.enter(pipMediaSnapshot());
       if (!entered && !pip.state.active) {
         restoreViewerZoomAfterPip();
         showToast({ message: t("shell.pip.failed"), color: "red" });
-      } else if (entered && (anyMenuOpen || !filePath)) {
+      } else if (entered && !filePath) {
         await pip.exit();
       }
     } finally {
@@ -1209,8 +1215,18 @@
   function openContextMenu(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (pip.state.active) return;
     const target = e.target as HTMLElement;
+    if (pip.state.active) {
+      if (
+        target.closest(
+          "button, .context-menu, .pip-progress, .pip-audio-progress, .pip-volume, .pip-nav",
+        )
+      ) {
+        return;
+      }
+      pip.openMenu(e.clientX, e.clientY);
+      return;
+    }
     if (target.closest("button, .progress-bar, .fs-progress")) return;
     if (!fileSrc) return;
     pdfRightClickedCanvas = target.closest(

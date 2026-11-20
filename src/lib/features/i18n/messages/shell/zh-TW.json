@@ -94,8 +94,16 @@
   "viewer.pdf.previousMatch": "上一個相符項目",
   "viewer.pdf.textCopied": "文字已複製",
   "viewer.pip.exit": "退出子母畫面",
+  "viewer.pip.fitAudio": "符合音訊",
+  "viewer.pip.fitImage": "符合圖片",
+  "viewer.pip.fitPdf": "符合頁面",
+  "viewer.pip.fitVideo": "符合影片",
+  "viewer.pip.lockSize": "鎖定大小",
+  "viewer.pip.menu": "子母畫面選項",
   "viewer.pip.next": "下一個檔案",
   "viewer.pip.previous": "上一個檔案",
   "viewer.pip.progress": "播放位置",
+  "viewer.pip.restoreWindow": "還原視窗",
+  "viewer.pip.snapCorner": "下一個角落",
   "viewer.subtitles": "字幕"
 }

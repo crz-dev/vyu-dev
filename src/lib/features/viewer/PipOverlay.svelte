@@ -57,6 +57,15 @@
     fileListLength > 0 ? `${currentIndex + 1} / ${fileListLength}` : "",
   );
   const showTimedBar = $derived(isVideo && !isGifVideo);
+  const fitLabel = $derived(
+    isVideo
+      ? t("shell.viewer.pip.fitVideo")
+      : isAudio
+        ? t("shell.viewer.pip.fitAudio")
+        : isPdf
+          ? t("shell.viewer.pip.fitPdf")
+          : t("shell.viewer.pip.fitImage"),
+  );
   const volumePercent = $derived(
     Math.round(Math.max(0, Math.min(1, muted ? 0 : volume)) * 100),
   );
@@ -66,6 +75,48 @@
   let volumeHovered = false;
   let volumeCloseTimer: ReturnType<typeof setTimeout> | undefined;
   let volumeTrackEl = $state<HTMLDivElement | null>(null);
+  let menuEl = $state<HTMLDivElement | null>(null);
+  let menuX = $state(0);
+  let menuY = $state(0);
+
+  $effect(() => {
+    if (!pip.state.menuOpen) return;
+    menuX = pip.state.menuX;
+    menuY = pip.state.menuY;
+  });
+
+  $effect(() => {
+    if (!pip.state.menuOpen) return;
+    const el = menuEl;
+    if (!el) return;
+    const maxX = Math.max(8, window.innerWidth - el.offsetWidth - 8);
+    const maxY = Math.max(8, window.innerHeight - el.offsetHeight - 8);
+    menuX = Math.max(8, Math.min(pip.state.menuX, maxX));
+    menuY = Math.max(8, Math.min(pip.state.menuY, maxY));
+  });
+
+  $effect(() => {
+    if (!pip.state.menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (menuEl?.contains(e.target as Node)) return;
+      pip.closeMenu();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
+      pip.closeMenu();
+    };
+    const onBlur = () => pip.closeMenu();
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("blur", onBlur);
+    };
+  });
 
   $effect(() => {
     if (!pip.state.controlsVisible && volumeOpen) {
@@ -546,5 +597,131 @@
         />
       </svg>
     </button>
+  {/if}
+
+  {#if pip.state.menuOpen}
+    <div
+      class="context-menu pip-menu"
+      bind:this={menuEl}
+      style="left: {menuX}px; top: {menuY}px;"
+      transition:fly={{ y: -4, duration: 160, opacity: 0.08 }}
+      role="menu"
+      tabindex="-1"
+      aria-label={t("shell.viewer.pip.menu")}
+      oncontextmenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onmousedown={(e) => e.stopPropagation()}
+    >
+      <button
+        class="ctx-item"
+        role="menuitemcheckbox"
+        aria-checked={pip.state.sizeLocked}
+        onclick={() => {
+          pip.closeMenu();
+          void pip.toggleSizeLock();
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <rect
+            x="5"
+            y="11"
+            width="14"
+            height="10"
+            rx="2"
+            stroke="currentColor"
+            stroke-width="2"
+          />
+          <path
+            d="M8 11V7a4 4 0 018 0v4"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        {t("shell.viewer.pip.lockSize")}
+        <span class="pip-menu-check" aria-hidden="true">
+          {#if pip.state.sizeLocked}
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M3.5 8.5l3 3 6-7"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          {/if}
+        </span>
+      </button>
+      <div class="ctx-sep"></div>
+      <button
+        class="ctx-item"
+        role="menuitem"
+        onclick={() => {
+          pip.closeMenu();
+          void pip.snapToNextCorner();
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {t("shell.viewer.pip.snapCorner")}
+      </button>
+      <button
+        class="ctx-item"
+        role="menuitem"
+        onclick={() => {
+          pip.closeMenu();
+          void pip.resetSize();
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {fitLabel}
+      </button>
+      <button
+        class="ctx-item"
+        role="menuitem"
+        onclick={() => {
+          pip.closeMenu();
+          void pip.exit();
+        }}
+      >
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+          <rect
+            x="2"
+            y="2"
+            width="12"
+            height="12"
+            rx="2.5"
+            stroke="currentColor"
+            stroke-width="1.4"
+          />
+          <path
+            d="M6 10l4-4M6.4 6H10v3.6"
+            stroke="currentColor"
+            stroke-width="1.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {t("shell.viewer.pip.restoreWindow")}
+      </button>
+    </div>
   {/if}
 </div>

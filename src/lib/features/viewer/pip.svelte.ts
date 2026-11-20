@@ -65,10 +65,15 @@ function createPip() {
     transitioning: false,
     controlsVisible: true,
     userSized: false,
+    sizeLocked: false,
+    menuOpen: false,
+    menuX: 0,
+    menuY: 0,
   });
 
   let busy = false;
   let pinned = false;
+  let lastMedia: PipMedia | null = null;
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
   let lastPointerActivity = 0;
   let unlistenResize: UnlistenFn | null = null;
@@ -125,6 +130,25 @@ function createPip() {
       console.error("Failed to update PiP window-state guard:", e);
       return false;
     }
+  }
+
+  function openMenu(x: number, y: number) {
+    state.menuX = x;
+    state.menuY = y;
+    state.menuOpen = true;
+  }
+
+  function closeMenu() {
+    if (state.menuOpen) state.menuOpen = false;
+  }
+
+  async function toggleSizeLock(): Promise<void> {
+    if (!state.active || busy) return;
+    state.sizeLocked = !state.sizeLocked;
+    if (state.sizeLocked || !lastMedia) return;
+    state.userSized = false;
+    lastApplied = "";
+    await fitTo(lastMedia, true);
   }
 
   type BoundsTarget = {
@@ -360,8 +384,10 @@ function createPip() {
     return `${media.kind}:${Math.round(media.width)}x${Math.round(media.height)}:${media.rotation ?? 0}`;
   }
 
-  async function fitTo(media: PipMedia) {
-    if (!state.active || busy || state.userSized) return;
+  async function fitTo(media: PipMedia, force = false) {
+    lastMedia = media;
+    if (!state.active || busy) return;
+    if (!force && (state.userSized || state.sizeLocked)) return;
     if (media.kind !== "audio" && (media.width <= 0 || media.height <= 0)) {
       return;
     }
@@ -369,13 +395,73 @@ function createPip() {
     if (key === lastApplied) return;
     lastApplied = key;
     const run = async () => {
-      if (!state.active || state.userSized || key !== lastApplied) return;
+      if (!state.active || key !== lastApplied) return;
+      if (!force && (state.userSized || state.sizeLocked)) return;
       await applyFittedGeometry(media);
     };
     fitQueue = fitQueue.then(run, run).catch((e) => {
       console.error("Failed to fit PiP window:", e);
     });
     await fitQueue;
+  }
+
+  async function resetSize(): Promise<void> {
+    if (!state.active || busy || !lastMedia) return;
+    state.userSized = false;
+    lastApplied = "";
+    await fitTo(lastMedia, true);
+  }
+
+  async function snapToNextCorner(): Promise<void> {
+    if (!state.active || busy) return;
+    await fitQueue;
+    const monitor = await targetMonitor();
+    if (!monitor) return;
+    const win = getCurrentWindow();
+    const [position, size] = await Promise.all([
+      win.outerPosition().catch(() => null),
+      win.innerSize().catch(() => null),
+    ]);
+    if (!position || !size) return;
+
+    const scale = monitor.scaleFactor * appearance.uiScale;
+    const margin = Math.round(MARGIN * scale);
+    const work = monitor.workArea;
+    const minX = work.position.x + margin;
+    const minY = work.position.y + margin;
+    const maxX = work.position.x + work.size.width - size.width - margin;
+    const maxY = work.position.y + work.size.height - size.height - margin;
+    const left = maxX >= minX ? minX : work.position.x;
+    const right =
+      maxX >= minX ? maxX : work.position.x + work.size.width - size.width;
+    const top = maxY >= minY ? minY : work.position.y;
+    const bottom =
+      maxY >= minY ? maxY : work.position.y + work.size.height - size.height;
+
+    const corners = [
+      { x: right, y: bottom },
+      { x: left, y: bottom },
+      { x: left, y: top },
+      { x: right, y: top },
+    ];
+    let nearest = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    corners.forEach((corner, index) => {
+      const dx = position.x - corner.x;
+      const dy = position.y - corner.y;
+      const distance = dx * dx + dy * dy;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = index;
+      }
+    });
+    const target = corners[(nearest + 1) % corners.length];
+    await animateBounds({
+      x: Math.round(target.x),
+      y: Math.round(target.y),
+      width: size.width,
+      height: size.height,
+    });
   }
 
   async function startResizeTracking() {
@@ -419,6 +505,8 @@ function createPip() {
   async function enter(media: PipMedia): Promise<boolean> {
     if (state.active || busy) return false;
     busy = true;
+    closeMenu();
+    lastMedia = media;
     const win = getCurrentWindow();
     try {
       const [wasMaximized, wasAlwaysOnTop] = await Promise.all([
@@ -456,6 +544,7 @@ function createPip() {
 
       state.active = true;
       state.userSized = false;
+      state.sizeLocked = false;
       state.controlsVisible = true;
       lastApplied = mediaKey(media);
 
@@ -490,6 +579,7 @@ function createPip() {
   async function exit(): Promise<void> {
     if (!state.active || busy) return;
     busy = true;
+    closeMenu();
     const saved = snapshot;
     unlistenResize?.();
     unlistenResize = null;
@@ -507,6 +597,7 @@ function createPip() {
       snapshot = null;
       state.active = false;
       state.userSized = false;
+      state.sizeLocked = false;
       lastApplied = "";
       state.transitioning = false;
       await setPipFlag(false);
@@ -531,6 +622,11 @@ function createPip() {
     exit,
     toggle,
     fitTo,
+    resetSize,
+    snapToNextCorner,
+    toggleSizeLock,
+    openMenu,
+    closeMenu,
     showControls,
     hideControlsSoon,
     notifyPointerActivity,

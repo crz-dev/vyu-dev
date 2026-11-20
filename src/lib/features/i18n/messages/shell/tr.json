@@ -96,8 +96,16 @@
   "viewer.pdf.previousMatch": "Önceki eşleşme",
   "viewer.pdf.textCopied": "Metin kopyalandı",
   "viewer.pip.exit": "Resim içinde resimden çık",
+  "viewer.pip.fitAudio": "Sese sığdır",
+  "viewer.pip.fitImage": "Görsele sığdır",
+  "viewer.pip.fitPdf": "Sayfaya sığdır",
+  "viewer.pip.fitVideo": "Videoya sığdır",
+  "viewer.pip.lockSize": "Boyutu kilitle",
+  "viewer.pip.menu": "Resim içinde resim seçenekleri",
   "viewer.pip.next": "Sonraki dosya",
   "viewer.pip.previous": "Önceki dosya",
   "viewer.pip.progress": "Oynatma konumu",
+  "viewer.pip.restoreWindow": "Pencereyi geri yükle",
+  "viewer.pip.snapCorner": "Sonraki köşe",
   "viewer.subtitles": "Altyazılar"
 }
