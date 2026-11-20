@@ -31,6 +31,8 @@
   "bar.noFileOpen": "未開啟檔案",
   "bar.openPropertiesAria": "開啟檔案屬性",
   "bar.pin": "釘選",
+  "bar.queue": "佇列",
+  "bar.queueAria": "開啟佇列",
   "bar.sectionHeaders": "區段標題",
   "bar.slideshow": "幻燈片",
   "bar.slideshowAria": "切換幻燈片選單",

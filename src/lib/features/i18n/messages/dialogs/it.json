@@ -235,6 +235,8 @@
   "help.features.editing.title": "Modifica e annotazioni",
   "help.features.markers.body": "Segna il momento durante la riproduzione e torna lì dopo.",
   "help.features.markers.title": "Marcatori",
+  "help.features.queue.body": "Crea un elenco dei prossimi elementi, riproducilo automaticamente con il tuo intervallo e le transizioni, oppure interrompilo dopo un timer.",
+  "help.features.queue.title": "Coda e timer di spegnimento",
   "help.features.slideshow.body": "Riproduci una cartella con intervallo e transizioni, o fermati con un timer.",
   "help.features.slideshow.title": "Presentazione e timer",
   "help.footer.next": "Avanti",

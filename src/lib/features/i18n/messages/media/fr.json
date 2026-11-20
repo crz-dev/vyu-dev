@@ -32,6 +32,8 @@
   "bar.noFileOpen": "aucun fichier ouvert",
   "bar.openPropertiesAria": "Ouvrir les propriétés du fichier",
   "bar.pin": "Épingler",
+  "bar.queue": "File d’attente",
+  "bar.queueAria": "Ouvrir la file d’attente",
   "bar.sectionHeaders": "En-têtes de section",
   "bar.slideshow": "Diaporama",
   "bar.slideshowAria": "ouvrir le menu du diaporama",

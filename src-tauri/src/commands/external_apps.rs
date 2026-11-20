@@ -624,5 +624,10 @@ fn get_media_properties_sync(path: String) -> Result<crate::types::MediaProperti
 
 #[tauri::command]
 pub fn open_devtools(window: tauri::WebviewWindow) {
+    // Devtools are only available in debug builds; release builds compile this
+    // to a no-op because the `devtools` feature is not enabled.
+    #[cfg(debug_assertions)]
     window.open_devtools();
+    #[cfg(not(debug_assertions))]
+    let _ = window;
 }

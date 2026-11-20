@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { theme } from "$lib/features/theme/theme.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import "../app.css";
 

@@ -8,7 +8,9 @@
   "context.favorite": "В избранное",
   "context.moveTo": "Переместить в",
   "context.pin": "Закрепить",
+  "context.queue": "Очередь",
   "context.removeCollection": "Удалить коллекцию",
+  "context.removeFromQueue": "Удалить из очереди",
   "context.rename": "Переименовать",
   "context.showInExplorer": "Показать в проводнике",
   "context.unfavorite": "Убрать из избранного",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Избранное",
   "tabs.library": "Библиотека",
   "tabs.recents": "Недавние",
+  "toasts.alreadyQueued": "Уже в очереди",
   "toasts.copyFailed_few": "Не удалось скопировать {count} файла",
   "toasts.copyFailed_many": "Не удалось скопировать {count} файлов",
   "toasts.copyFailed_one": "Не удалось скопировать {count} файл",
@@ -121,5 +124,7 @@
   "toasts.filesDeleted_one": "Файл удалён",
   "toasts.filesDeleted_other": "Удалено {count} файла",
   "toasts.moveFailed": "Не удалось переместить файл",
-  "toasts.openWithFailed": "Не удалось открыть диалог «Открыть с помощью»"
+  "toasts.openWithFailed": "Не удалось открыть диалог «Открыть с помощью»",
+  "toasts.queued": "Добавлено в очередь",
+  "toasts.removedFromQueue": "Удалено из очереди"
 }

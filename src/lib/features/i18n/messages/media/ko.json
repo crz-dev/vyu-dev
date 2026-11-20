@@ -31,6 +31,8 @@
   "bar.noFileOpen": "열린 파일 없음",
   "bar.openPropertiesAria": "파일 속성 열기",
   "bar.pin": "고정",
+  "bar.queue": "대기열",
+  "bar.queueAria": "대기열 열기",
   "bar.sectionHeaders": "섹션 머리글",
   "bar.slideshow": "슬라이드쇼",
   "bar.slideshowAria": "슬라이드쇼 메뉴 전환",

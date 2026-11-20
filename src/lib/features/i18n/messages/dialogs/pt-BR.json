@@ -235,6 +235,8 @@
   "help.features.editing.title": "Edição e anotações",
   "help.features.markers.body": "Marca o momento durante a reprodução e volta nele depois.",
   "help.features.markers.title": "Marcadores",
+  "help.features.queue.body": "Crie uma lista de próximos itens, reproduza-a automaticamente com seu intervalo e transições, ou pare após um temporizador.",
+  "help.features.queue.title": "Fila e temporizador de sono",
   "help.features.slideshow.body": "Reproduza uma pasta com intervalo e transições, ou pare com um timer.",
   "help.features.slideshow.title": "Apresentação e timer",
   "help.footer.next": "Próximo",

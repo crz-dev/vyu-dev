@@ -8,7 +8,9 @@
   "context.favorite": "Favorit",
   "context.moveTo": "Verschieben nach",
   "context.pin": "Anheften",
+  "context.queue": "Warteschlange",
   "context.removeCollection": "Sammlung entfernen",
+  "context.removeFromQueue": "Aus der Warteschlange entfernen",
   "context.rename": "Umbenennen",
   "context.showInExplorer": "Im Explorer anzeigen",
   "context.unfavorite": "Aus Favoriten entfernen",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Favoriten",
   "tabs.library": "Bibliothek",
   "tabs.recents": "Zuletzt verwendet",
+  "toasts.alreadyQueued": "Bereits in der Warteschlange",
   "toasts.copyFailed_one": "Kopieren von {count} Datei fehlgeschlagen",
   "toasts.copyFailed_other": "Kopieren von {count} Dateien fehlgeschlagen",
   "toasts.copySuccess_one": "{count} Datei in die Sammlung kopiert",
@@ -115,5 +118,7 @@
   "toasts.filesDeleted_one": "Datei gelöscht",
   "toasts.filesDeleted_other": "{count} Dateien gelöscht",
   "toasts.moveFailed": "Verschieben der Datei fehlgeschlagen",
-  "toasts.openWithFailed": "Dialog „Öffnen mit“ konnte nicht geöffnet werden"
+  "toasts.openWithFailed": "Dialog „Öffnen mit“ konnte nicht geöffnet werden",
+  "toasts.queued": "Zur Warteschlange hinzugefügt",
+  "toasts.removedFromQueue": "Aus der Warteschlange entfernt"
 }

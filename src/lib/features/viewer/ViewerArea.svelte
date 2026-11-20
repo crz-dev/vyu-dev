@@ -613,7 +613,8 @@
         {startScrubbing}
         {clips}
         timestamps={markerStore.timestamps}
-        chapters={markerStore.chapters}        loopStart={markerStore.loopStart}
+        chapters={markerStore.chapters}
+        loopStart={markerStore.loopStart}
         loopEnd={markerStore.loopEnd}
         resumePoint={markerStore.resumePoint}
         tsEditMenuVisible={markerStore.tsEditMenu.visible}

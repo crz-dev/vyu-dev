@@ -233,6 +233,8 @@
   "help.features.editing.title": "编辑与标注",
   "help.features.markers.body": "播放时标记位置，之后可以跳回。",
   "help.features.markers.title": "标记",
+  "help.features.queue.body": "创建接下来的播放列表，按照设定的间隔和切换效果自动播放，或在定时器结束后停止。",
+  "help.features.queue.title": "队列与睡眠定时器",
   "help.features.slideshow.body": "按间隔和切换自动播放文件夹，或用定时停止。",
   "help.features.slideshow.title": "幻灯片与睡眠定时",
   "help.footer.next": "下一个",

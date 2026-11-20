@@ -237,6 +237,8 @@
   "help.features.editing.title": "Édition et annotations",
   "help.features.markers.body": "Marque l'instant pendant la lecture, pour y revenir plus tard.",
   "help.features.markers.title": "Repères",
+  "help.features.queue.body": "Créez une liste de lecture à venir, lancez-la automatiquement avec votre intervalle et vos transitions, ou arrêtez-la après un minuteur.",
+  "help.features.queue.title": "File d’attente et minuteur de sommeil",
   "help.features.slideshow.body": "Lisez un dossier avec intervalle et transitions, ou arrêtez après un minuteur.",
   "help.features.slideshow.title": "Diaporama et minuteur",
   "help.footer.next": "Suivant",

@@ -45,7 +45,8 @@
     startScrubbing,
     clips,
     timestamps,
-  chapters = [],    loopStart,
+    chapters = [],
+    loopStart,
     loopEnd,
     resumePoint,
     tsEditMenuVisible,
@@ -101,7 +102,8 @@
       clipBoundaries: ClipBoundary[];
     };
     timestamps: VideoMarker[];
-    chapters?: import("$lib/shared/types").MediaChapter[];    loopStart: number | null;
+    chapters?: import("$lib/shared/types").MediaChapter[];
+    loopStart: number | null;
     loopEnd: number | null;
     resumePoint: number | null;
     tsEditMenuVisible: boolean;

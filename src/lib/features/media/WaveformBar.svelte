@@ -1,5 +1,10 @@
 <script lang="ts">
-  import type { VideoMarker, ClipBoundary, ClipPair, MediaChapter } from "$lib/shared/types";
+  import type {
+    VideoMarker,
+    ClipBoundary,
+    ClipPair,
+    MediaChapter,
+  } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import {
     getWaveformPeaks,
@@ -59,7 +64,8 @@
     resumePoint?: number | null;
     onScrubStart: (e: MouseEvent) => void;
     clipPairs?: ClipPair[];
-    chapters?: MediaChapter[];    abLoopRegion?: { start: number; end: number } | null;
+    chapters?: MediaChapter[];
+    abLoopRegion?: { start: number; end: number } | null;
     clipMarkerJustDragged?: boolean;
     timestampDragJustEnded?: boolean;
     loopMarkerJustDragged?: boolean;
@@ -281,8 +287,9 @@
     const time = (p / 100) * durationSecs;
     hoveredChapterIndex =
       durationSecs > 0
-        ? chapters.findIndex((c, i) =>
-            time >= c.start && (time < c.end || i === chapters.length - 1),
+        ? chapters.findIndex(
+            (c, i) =>
+              time >= c.start && (time < c.end || i === chapters.length - 1),
           )
         : -1;
     hoverX = e.clientX - rect.left;
@@ -529,7 +536,10 @@
       style="left: {pct(ch.start)}%; width: {pct(ch.end) - pct(ch.start)}%"
       aria-hidden="true"
     ></div>
-    <div class="ts-tooltip white scrubber-tooltip audio-chapter-tooltip" style="left: {pct((ch.start + ch.end) / 2)}%; top: -8px;">
+    <div
+      class="ts-tooltip white scrubber-tooltip audio-chapter-tooltip"
+      style="left: {pct((ch.start + ch.end) / 2)}%; top: -8px;"
+    >
       <span class="audio-chapter-tooltip-title">{ch.title}</span>
       <span class="audio-chapter-tooltip-time"
         >{formatTime?.(ch.start) ?? ""} – {formatTime?.(ch.end) ?? ""}</span

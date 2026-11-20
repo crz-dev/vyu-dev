@@ -233,6 +233,8 @@
   "help.features.editing.title": "編輯與標註",
   "help.features.markers.body": "播放時標記位置，之後可以跳回。",
   "help.features.markers.title": "標記",
+  "help.features.queue.body": "建立接下來的播放清單，依照設定的間隔與轉場效果自動播放，或在計時器結束後停止。",
+  "help.features.queue.title": "佇列與睡眠定時器",
   "help.features.slideshow.body": "依間隔和轉換自動播放資料夾，或用計時停止。",
   "help.features.slideshow.title": "幻燈片與睡眠計時",
   "help.footer.next": "下一個",

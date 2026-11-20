@@ -31,6 +31,8 @@
   "bar.noFileOpen": "ファイルが開かれていません",
   "bar.openPropertiesAria": "ファイルのプロパティを開く",
   "bar.pin": "固定",
+  "bar.queue": "キュー",
+  "bar.queueAria": "キューを開く",
   "bar.sectionHeaders": "セクション見出し",
   "bar.slideshow": "スライドショー",
   "bar.slideshowAria": "スライドショーメニューを切り替え",

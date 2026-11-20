@@ -12,7 +12,8 @@ export interface TimelineProps {
   clipPairs: { startId: string; endId: string }[];
   clipBoundaries: ClipBoundary[];
   timestamps: VideoMarker[];
-  chapters?: import("$lib/shared/types").MediaChapter[];  abLoopRegion: { start: number; end: number } | null;
+  chapters?: import("$lib/shared/types").MediaChapter[];
+  abLoopRegion: { start: number; end: number } | null;
   loopStart: number | null;
   loopEnd: number | null;
   resumePoint: number | null;

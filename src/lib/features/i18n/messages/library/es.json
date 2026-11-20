@@ -8,7 +8,9 @@
   "context.favorite": "Favorito",
   "context.moveTo": "Mover a",
   "context.pin": "Fijar",
+  "context.queue": "Cola",
   "context.removeCollection": "Quitar colección",
+  "context.removeFromQueue": "Quitar de la cola",
   "context.rename": "Renombrar",
   "context.showInExplorer": "Mostrar en el explorador",
   "context.unfavorite": "Quitar de favoritos",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Favoritos",
   "tabs.library": "Biblioteca",
   "tabs.recents": "Recientes",
+  "toasts.alreadyQueued": "Ya está en la cola",
   "toasts.copyFailed_one": "No se pudo copiar {count} archivo",
   "toasts.copyFailed_other": "No se pudieron copiar {count} archivos",
   "toasts.copySuccess_one": "{count} archivo copiado a la colección",
@@ -115,5 +118,7 @@
   "toasts.filesDeleted_one": "Archivo eliminado",
   "toasts.filesDeleted_other": "{count} archivos eliminados",
   "toasts.moveFailed": "No se pudo mover el archivo",
-  "toasts.openWithFailed": "No se pudo abrir el diálogo Abrir con"
+  "toasts.openWithFailed": "No se pudo abrir el diálogo Abrir con",
+  "toasts.queued": "Añadido a la cola",
+  "toasts.removedFromQueue": "Quitado de la cola"
 }

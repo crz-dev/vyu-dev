@@ -8,7 +8,9 @@
   "context.favorite": "즐겨찾기",
   "context.moveTo": "이동 위치",
   "context.pin": "고정",
+  "context.queue": "대기열",
   "context.removeCollection": "컬렉션 제거",
+  "context.removeFromQueue": "대기열에서 제거",
   "context.rename": "이름 바꾸기",
   "context.showInExplorer": "탐색기에서 보기",
   "context.unfavorite": "즐겨찾기 해제",
@@ -99,6 +101,7 @@
   "tabs.favorites": "즐겨찾기",
   "tabs.library": "라이브러리",
   "tabs.recents": "최근 항목",
+  "toasts.alreadyQueued": "이미 대기열에 있음",
   "toasts.copyFailed_other": "{count}개 파일을 복사하지 못했습니다",
   "toasts.copySuccess_other": "{count}개 파일을 컬렉션에 복사했습니다",
   "toasts.collectionCreateFailed": "컬렉션 폴더를 만들 수 없습니다",
@@ -112,5 +115,7 @@
   "toasts.fileMoved": "파일 이동됨",
   "toasts.filesDeleted_other": "{count}개 파일을 삭제했습니다",
   "toasts.moveFailed": "파일을 이동하지 못했습니다",
-  "toasts.openWithFailed": "“연결 프로그램” 대화 상자를 열지 못했습니다"
+  "toasts.openWithFailed": "“연결 프로그램” 대화 상자를 열지 못했습니다",
+  "toasts.queued": "대기열에 추가됨",
+  "toasts.removedFromQueue": "대기열에서 제거됨"
 }

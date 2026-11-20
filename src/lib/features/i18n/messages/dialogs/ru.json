@@ -239,6 +239,8 @@
   "help.features.editing.title": "Правка и разметка",
   "help.features.markers.body": "Ставит метку во время воспроизведения, чтобы вернуться к ней позже.",
   "help.features.markers.title": "Метки",
+  "help.features.queue.body": "Создайте список следующих файлов, воспроизводите его автоматически с заданным интервалом и переходами или останавливайте по таймеру.",
+  "help.features.queue.title": "Очередь и таймер сна",
   "help.features.slideshow.body": "Показ папки с интервалом и переходами или остановка по таймеру.",
   "help.features.slideshow.title": "Слайд-шоу и таймер",
   "help.footer.next": "Далее",

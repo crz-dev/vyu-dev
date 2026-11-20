@@ -36,6 +36,8 @@
   "bar.noFileOpen": "файл не открыт",
   "bar.openPropertiesAria": "Открыть свойства файла",
   "bar.pin": "Закрепить",
+  "bar.queue": "Очередь",
+  "bar.queueAria": "Открыть очередь",
   "bar.sectionHeaders": "Заголовки разделов",
   "bar.slideshow": "Слайд-шоу",
   "bar.slideshowAria": "переключить меню слайд-шоу",

@@ -235,6 +235,8 @@
   "help.features.editing.title": "Düzenleme ve işaretleme",
   "help.features.markers.body": "Oynatırken anı işaretler, sonra oraya dönersiniz.",
   "help.features.markers.title": "İşaretler",
+  "help.features.queue.body": "Sıradaki öğeler listesi oluşturun, aralık ve geçişlerinizle otomatik oynatın veya bir zamanlayıcıdan sonra durdurun.",
+  "help.features.queue.title": "Kuyruk ve uyku zamanlayıcısı",
   "help.features.slideshow.body": "Klasörü aralık ve geçişlerle oynatın veya zamanlayıcıyla durdurun.",
   "help.features.slideshow.title": "Slayt ve uyku zamanlayıcısı",
   "help.footer.next": "İleri",

@@ -8,7 +8,9 @@
   "context.favorite": "Aggiungi ai preferiti",
   "context.moveTo": "Sposta in",
   "context.pin": "Fissa",
+  "context.queue": "Coda",
   "context.removeCollection": "Rimuovi raccolta",
+  "context.removeFromQueue": "Rimuovi dalla coda",
   "context.rename": "Rinomina",
   "context.showInExplorer": "Mostra in Esplora file",
   "context.unfavorite": "Rimuovi dai preferiti",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Preferiti",
   "tabs.library": "Libreria",
   "tabs.recents": "Recenti",
+  "toasts.alreadyQueued": "Già in coda",
   "toasts.copyFailed_one": "Impossibile copiare {count} file",
   "toasts.copyFailed_other": "Impossibile copiare {count} file",
   "toasts.copySuccess_one": "{count} file copiato nella raccolta",
@@ -115,5 +118,7 @@
   "toasts.filesDeleted_one": "File eliminato",
   "toasts.filesDeleted_other": "{count} file eliminati",
   "toasts.moveFailed": "Impossibile spostare il file",
-  "toasts.openWithFailed": "Impossibile aprire la finestra Apri con"
+  "toasts.openWithFailed": "Impossibile aprire la finestra Apri con",
+  "toasts.queued": "Aggiunto alla coda",
+  "toasts.removedFromQueue": "Rimosso dalla coda"
 }

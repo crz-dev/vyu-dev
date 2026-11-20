@@ -235,6 +235,8 @@
   "help.features.editing.title": "Edición y anotaciones",
   "help.features.markers.body": "Marca el momento mientras reproduces y vuelve a él después.",
   "help.features.markers.title": "Marcas",
+  "help.features.queue.body": "Crea una lista de próximos elementos, reprodúcela automáticamente con tu intervalo y transiciones, o detenla tras un temporizador.",
+  "help.features.queue.title": "Cola y temporizador de suspensión",
   "help.features.slideshow.body": "Reproduce una carpeta con intervalo y transiciones, o para con un temporizador.",
   "help.features.slideshow.title": "Presentación y temporizador",
   "help.footer.next": "Siguiente",

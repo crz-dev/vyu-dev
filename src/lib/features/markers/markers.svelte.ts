@@ -6,7 +6,11 @@ import {
 } from "$lib/services/database";
 import { deleteResumePoint as deleteLocalResumePoint } from "$lib/services/storage";
 import type { LoopMode } from "$lib/shared/constants";
-import type { ClipBoundary, MediaChapter, VideoMarker } from "$lib/shared/types";
+import type {
+  ClipBoundary,
+  MediaChapter,
+  VideoMarker,
+} from "$lib/shared/types";
 import { locale } from "$lib/features/i18n/locale.svelte";
 
 const timeline = createTimeline();

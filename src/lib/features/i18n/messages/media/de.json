@@ -32,6 +32,8 @@
   "bar.noFileOpen": "keine Datei geöffnet",
   "bar.openPropertiesAria": "Dateieigenschaften öffnen",
   "bar.pin": "Anheften",
+  "bar.queue": "Warteschlange",
+  "bar.queueAria": "Warteschlange öffnen",
   "bar.sectionHeaders": "Abschnittsüberschriften",
   "bar.slideshow": "Diashow",
   "bar.slideshowAria": "Diashow-Menü umschalten",

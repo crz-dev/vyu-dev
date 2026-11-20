@@ -8,7 +8,9 @@
   "context.favorite": "お気に入り",
   "context.moveTo": "移動先",
   "context.pin": "ピン留め",
+  "context.queue": "キュー",
   "context.removeCollection": "コレクションを削除",
+  "context.removeFromQueue": "キューから削除",
   "context.rename": "名前を変更",
   "context.showInExplorer": "エクスプローラーで表示",
   "context.unfavorite": "お気に入りから外す",
@@ -99,6 +101,7 @@
   "tabs.favorites": "お気に入り",
   "tabs.library": "ライブラリ",
   "tabs.recents": "最近",
+  "toasts.alreadyQueued": "すでにキューにあります",
   "toasts.copyFailed_other": "{count} 件のファイルをコピーできませんでした",
   "toasts.copySuccess_other": "{count} 件のファイルをコレクションにコピーしました",
   "toasts.collectionCreateFailed": "コレクションフォルダーを作成できませんでした",
@@ -112,5 +115,7 @@
   "toasts.fileMoved": "ファイルを移動しました",
   "toasts.filesDeleted_other": "{count} 件のファイルを削除しました",
   "toasts.moveFailed": "ファイルを移動できませんでした",
-  "toasts.openWithFailed": "「アプリから開く」を開けませんでした"
+  "toasts.openWithFailed": "「アプリから開く」を開けませんでした",
+  "toasts.queued": "キューに追加しました",
+  "toasts.removedFromQueue": "キューから削除しました"
 }

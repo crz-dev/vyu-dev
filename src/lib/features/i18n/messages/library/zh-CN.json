@@ -8,7 +8,9 @@
   "context.favorite": "收藏",
   "context.moveTo": "移动到",
   "context.pin": "固定",
+  "context.queue": "队列",
   "context.removeCollection": "移除收藏集",
+  "context.removeFromQueue": "从队列中移除",
   "context.rename": "重命名",
   "context.showInExplorer": "在资源管理器中显示",
   "context.unfavorite": "取消收藏",
@@ -99,6 +101,7 @@
   "tabs.favorites": "收藏",
   "tabs.library": "媒体库",
   "tabs.recents": "最近使用",
+  "toasts.alreadyQueued": "已在队列中",
   "toasts.copyFailed_other": "无法复制 {count} 个文件",
   "toasts.copySuccess_other": "已将 {count} 个文件复制到收藏集",
   "toasts.collectionCreateFailed": "无法创建收藏集文件夹",
@@ -112,5 +115,7 @@
   "toasts.fileMoved": "文件已移动",
   "toasts.filesDeleted_other": "已删除 {count} 个文件",
   "toasts.moveFailed": "移动文件失败",
-  "toasts.openWithFailed": "无法打开“打开方式”对话框"
+  "toasts.openWithFailed": "无法打开“打开方式”对话框",
+  "toasts.queued": "已添加到队列",
+  "toasts.removedFromQueue": "已从队列中移除"
 }

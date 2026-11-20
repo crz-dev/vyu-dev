@@ -1,5 +1,10 @@
 <script lang="ts">
-  import type { ClipBoundary, ClipPair, MediaChapter, VideoMarker } from "$lib/shared/types";
+  import type {
+    ClipBoundary,
+    ClipPair,
+    MediaChapter,
+    VideoMarker,
+  } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import {
     cancelPendingTimelinePreviews,
@@ -60,7 +65,8 @@
     clipPairs: ClipPair[];
     clipBoundaries: ClipBoundary[];
     timestamps: VideoMarker[];
-    chapters?: MediaChapter[];    abLoopRegion: { start: number; end: number } | null;
+    chapters?: MediaChapter[];
+    abLoopRegion: { start: number; end: number } | null;
     loopStart: number | null;
     loopEnd: number | null;
     resumePoint: number | null;
@@ -110,8 +116,8 @@
   const hoveredChapterIndex = $derived.by(() => {
     if (!chapters || chapters.length === 0 || durationSecs <= 0) return -1;
     const time = (previewPct / 100) * durationSecs;
-    return chapters.findIndex((c, i) =>
-      time >= c.start && (time < c.end || i === chapters.length - 1),
+    return chapters.findIndex(
+      (c, i) => time >= c.start && (time < c.end || i === chapters.length - 1),
     );
   });
   // Integer percentage keeps the accessibility tree stable at playback rate.
@@ -642,41 +648,41 @@
         : t("shell.timeline.timestampAt", { time: formatTime(ts.time) })}
     ></div>
   {/each}
-   {#each chapters as ch, i (ch.start)}
-     {#if i > 0}
-       <div
-         class="chapter-divider"
-         style="left: {getTimestampPct(ch.start)}%"
-         aria-hidden="true"
-       ></div>
-     {/if}
-   {/each}
-   {#if hoveredChapterIndex >= 0}
-     {@const ch = chapters[hoveredChapterIndex]}
-     <div
-       class="chapter-highlight"
-       style="left: {getTimestampPct(ch.start)}%; width: {getTimestampPct(
-         ch.end,
-       ) - getTimestampPct(ch.start)}%;"
-       aria-hidden="true"
-     ></div>
-   {/if}
-   {#if hoveredChapterIndex >= 0 && !tsEditMenuVisible}
-     {@const ch = chapters[hoveredChapterIndex]}
-     <div
-       class="ts-tooltip white scrubber-tooltip chapter-tooltip"
-       style="left: {Math.min(
-         95,
-         Math.max(5, getTimestampPct((ch.start + ch.end) / 2)),
-       )}%; top: -12px;"
-       aria-hidden="true"
-     >
-       <span class="chapter-tooltip-title">{ch.title}</span>
-       <span class="chapter-tooltip-time"
-         >{formatTime(ch.start)} – {formatTime(ch.end)}</span
-       >
-     </div>
-   {/if}
+  {#each chapters as ch, i (ch.start)}
+    {#if i > 0}
+      <div
+        class="chapter-divider"
+        style="left: {getTimestampPct(ch.start)}%"
+        aria-hidden="true"
+      ></div>
+    {/if}
+  {/each}
+  {#if hoveredChapterIndex >= 0}
+    {@const ch = chapters[hoveredChapterIndex]}
+    <div
+      class="chapter-highlight"
+      style="left: {getTimestampPct(ch.start)}%; width: {getTimestampPct(
+        ch.end,
+      ) - getTimestampPct(ch.start)}%;"
+      aria-hidden="true"
+    ></div>
+  {/if}
+  {#if hoveredChapterIndex >= 0 && !tsEditMenuVisible}
+    {@const ch = chapters[hoveredChapterIndex]}
+    <div
+      class="ts-tooltip white scrubber-tooltip chapter-tooltip"
+      style="left: {Math.min(
+        95,
+        Math.max(5, getTimestampPct((ch.start + ch.end) / 2)),
+      )}%; top: -12px;"
+      aria-hidden="true"
+    >
+      <span class="chapter-tooltip-title">{ch.title}</span>
+      <span class="chapter-tooltip-time"
+        >{formatTime(ch.start)} – {formatTime(ch.end)}</span
+      >
+    </div>
+  {/if}
 </div>
 
 <style>

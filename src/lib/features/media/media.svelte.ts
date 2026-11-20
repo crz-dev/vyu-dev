@@ -6,7 +6,10 @@ import {
   getParentFolder,
   clearFolderCache,
 } from "$lib/services/files";
-import { prepareDisplayPath, invokeGetMediaChapters } from "$lib/features/media/api";
+import {
+  prepareDisplayPath,
+  invokeGetMediaChapters,
+} from "$lib/features/media/api";
 import { getFileMetadataLight } from "$lib/services/database";
 import {
   readTimestamps as lsReadTimestamps,
@@ -20,7 +23,11 @@ import {
   isBrowserUnsupportedImage,
   needsRemux,
 } from "$lib/shared/mediaKind";
-import type { VideoMarker, ClipBoundary, MediaChapter } from "$lib/shared/types";
+import type {
+  VideoMarker,
+  ClipBoundary,
+  MediaChapter,
+} from "$lib/shared/types";
 import { formatMetaDate, getMetaValue } from "$lib/shared/fileMeta";
 import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
 import { fxEngine } from "$lib/features/effects/effects-engine";
@@ -234,7 +241,7 @@ export function createMedia(
       const [displayPath, metaResult, chaptersResult] = await Promise.all([
         prepareDisplayPath(path).catch(() => undefined),
         getFileMetadataLight(path).catch(() => null),
-        (pathIsVideo(path) || pathIsAudio(path))
+        pathIsVideo(path) || pathIsAudio(path)
           ? invokeGetMediaChapters(path).catch(() => [] as MediaChapter[])
           : Promise.resolve([] as MediaChapter[]),
       ]);

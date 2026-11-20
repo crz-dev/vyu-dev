@@ -8,7 +8,9 @@
   "context.favorite": "Favori",
   "context.moveTo": "Déplacer vers",
   "context.pin": "Épingler",
+  "context.queue": "File d’attente",
   "context.removeCollection": "Retirer la collection",
+  "context.removeFromQueue": "Retirer de la file d’attente",
   "context.rename": "Renommer",
   "context.showInExplorer": "Afficher dans l'explorateur",
   "context.unfavorite": "Retirer des favoris",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Favoris",
   "tabs.library": "Bibliothèque",
   "tabs.recents": "Récents",
+  "toasts.alreadyQueued": "Déjà dans la file d’attente",
   "toasts.copyFailed_one": "Impossible de copier {count} fichier",
   "toasts.copyFailed_other": "Impossible de copier {count} fichiers",
   "toasts.copySuccess_one": "{count} fichier copié dans la collection",
@@ -115,5 +118,7 @@
   "toasts.filesDeleted_one": "Fichier supprimé",
   "toasts.filesDeleted_other": "{count} fichiers supprimés",
   "toasts.moveFailed": "Impossible de déplacer le fichier",
-  "toasts.openWithFailed": "Impossible d'ouvrir la boîte de dialogue Ouvrir avec"
+  "toasts.openWithFailed": "Impossible d'ouvrir la boîte de dialogue Ouvrir avec",
+  "toasts.queued": "Ajouté à la file d’attente",
+  "toasts.removedFromQueue": "Retiré de la file d’attente"
 }

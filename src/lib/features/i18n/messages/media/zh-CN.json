@@ -31,6 +31,8 @@
   "bar.noFileOpen": "未打开文件",
   "bar.openPropertiesAria": "打开文件属性",
   "bar.pin": "固定",
+  "bar.queue": "队列",
+  "bar.queueAria": "打开队列",
   "bar.sectionHeaders": "分区标题",
   "bar.slideshow": "幻灯片",
   "bar.slideshowAria": "切换幻灯片菜单",

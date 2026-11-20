@@ -8,7 +8,9 @@
   "context.favorite": "Favorito",
   "context.moveTo": "Mover para",
   "context.pin": "Fixar",
+  "context.queue": "Fila",
   "context.removeCollection": "Remover coleção",
+  "context.removeFromQueue": "Remover da fila",
   "context.rename": "Renomear",
   "context.showInExplorer": "Mostrar no explorador",
   "context.unfavorite": "Remover dos favoritos",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Favoritos",
   "tabs.library": "Biblioteca",
   "tabs.recents": "Recentes",
+  "toasts.alreadyQueued": "Já está na fila",
   "toasts.copyFailed_one": "Falha ao copiar {count} arquivo",
   "toasts.copyFailed_other": "Falha ao copiar {count} arquivos",
   "toasts.copySuccess_one": "{count} arquivo copiado para a coleção",
@@ -115,5 +118,7 @@
   "toasts.filesDeleted_one": "Arquivo excluído",
   "toasts.filesDeleted_other": "{count} arquivos excluídos",
   "toasts.moveFailed": "Falha ao mover o arquivo",
-  "toasts.openWithFailed": "Falha ao abrir a caixa Abrir com"
+  "toasts.openWithFailed": "Falha ao abrir a caixa Abrir com",
+  "toasts.queued": "Adicionado à fila",
+  "toasts.removedFromQueue": "Removido da fila"
 }

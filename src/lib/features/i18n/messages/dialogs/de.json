@@ -235,6 +235,8 @@
   "help.features.editing.title": "Bearbeiten und Markieren",
   "help.features.markers.body": "Setzt während der Wiedergabe eine Marke, zu der du später springst.",
   "help.features.markers.title": "Marken",
+  "help.features.queue.body": "Erstelle eine Warteschlange, spiele sie automatisch mit deinem Intervall und deinen Übergängen ab oder stoppe sie nach einem Timer.",
+  "help.features.queue.title": "Warteschlange und Sleep-Timer",
   "help.features.slideshow.body": "Ordner automatisch mit Intervall und Übergängen abspielen oder per Timer stoppen.",
   "help.features.slideshow.title": "Diashow und Sleep-Timer",
   "help.footer.next": "Weiter",

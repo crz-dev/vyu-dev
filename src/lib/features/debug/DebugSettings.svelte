@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
+  import { dev } from "$app/environment";
   import { save } from "@tauri-apps/plugin-dialog";
   import { showToast } from "$lib/components/toast.svelte";
   import SettingsGroupIcon from "$lib/components/SettingsGroupIcon.svelte";
@@ -420,25 +421,27 @@
             >
           </div>
         </div>
-        <div class="settings-row settings-subrow">
-          <div class="settings-label-col">
-            <div class="settings-label-text">
-              <span class="settings-label"
-                >{t("settings.debug.row.devtools")}</span
-              >
-              <span class="settings-hint"
-                >{t("settings.debug.row.devtools.hint")}</span
+        {#if dev}
+          <div class="settings-row settings-subrow">
+            <div class="settings-label-col">
+              <div class="settings-label-text">
+                <span class="settings-label"
+                  >{t("settings.debug.row.devtools")}</span
+                >
+                <span class="settings-hint"
+                  >{t("settings.debug.row.devtools.hint")}</span
+                >
+              </div>
+            </div>
+            <div class="settings-control">
+              <button
+                class="settings-action-btn"
+                onclick={() => void invokeOpenDevTools()}
+                >{t("settings.debug.button.open")}</button
               >
             </div>
           </div>
-          <div class="settings-control">
-            <button
-              class="settings-action-btn"
-              onclick={() => void invokeOpenDevTools()}
-              >{t("settings.debug.button.open")}</button
-            >
-          </div>
-        </div>
+        {/if}
         <div class="settings-row settings-subrow">
           <div class="settings-label-col">
             <div class="settings-label-text">

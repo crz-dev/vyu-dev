@@ -32,6 +32,8 @@
   "bar.noFileOpen": "nenhum arquivo aberto",
   "bar.openPropertiesAria": "Abrir propriedades do arquivo",
   "bar.pin": "Fixar",
+  "bar.queue": "Fila",
+  "bar.queueAria": "Abrir a fila",
   "bar.sectionHeaders": "Cabeçalhos de seção",
   "bar.slideshow": "Apresentação",
   "bar.slideshowAria": "alternar menu de apresentação",

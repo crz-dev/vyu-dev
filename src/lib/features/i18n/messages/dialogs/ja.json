@@ -233,6 +233,8 @@
   "help.features.editing.title": "編集と注釈",
   "help.features.markers.body": "再生中に位置を付け、あとでそこへ戻れます。",
   "help.features.markers.title": "マーカー",
+  "help.features.queue.body": "次の項目リストを作成し、設定した間隔と切り替えで自動再生するか、タイマー後に停止します。",
+  "help.features.queue.title": "キューとスリープタイマー",
   "help.features.slideshow.body": "間隔と切り替えでフォルダーを自動再生、タイマーで停止。",
   "help.features.slideshow.title": "スライドとスリープ",
   "help.footer.next": "次へ",

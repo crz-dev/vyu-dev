@@ -8,7 +8,9 @@
   "context.favorite": "加入我的最愛",
   "context.moveTo": "移動到",
   "context.pin": "釘選",
+  "context.queue": "佇列",
   "context.removeCollection": "移除收藏集",
+  "context.removeFromQueue": "從佇列中移除",
   "context.rename": "重新命名",
   "context.showInExplorer": "在檔案總管中顯示",
   "context.unfavorite": "取消我的最愛",
@@ -99,6 +101,7 @@
   "tabs.favorites": "我的最愛",
   "tabs.library": "媒體庫",
   "tabs.recents": "最近使用",
+  "toasts.alreadyQueued": "已在佇列中",
   "toasts.copyFailed_other": "無法複製 {count} 個檔案",
   "toasts.copySuccess_other": "已將 {count} 個檔案複製到收藏集",
   "toasts.collectionCreateFailed": "無法建立收藏集資料夾",
@@ -112,5 +115,7 @@
   "toasts.fileMoved": "檔案已移動",
   "toasts.filesDeleted_other": "已刪除 {count} 個檔案",
   "toasts.moveFailed": "移動檔案失敗",
-  "toasts.openWithFailed": "無法開啟「開啟方式」對話方塊"
+  "toasts.openWithFailed": "無法開啟「開啟方式」對話方塊",
+  "toasts.queued": "已新增至佇列",
+  "toasts.removedFromQueue": "已從佇列中移除"
 }

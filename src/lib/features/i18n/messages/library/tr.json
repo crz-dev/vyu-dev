@@ -8,7 +8,9 @@
   "context.favorite": "Favorilere ekle",
   "context.moveTo": "Taşı",
   "context.pin": "Sabitle",
+  "context.queue": "Kuyruk",
   "context.removeCollection": "Koleksiyonu kaldır",
+  "context.removeFromQueue": "Kuyruktan çıkar",
   "context.rename": "Yeniden adlandır",
   "context.showInExplorer": "Gezginde göster",
   "context.unfavorite": "Favorilerden çıkar",
@@ -99,6 +101,7 @@
   "tabs.favorites": "Favoriler",
   "tabs.library": "Kitaplık",
   "tabs.recents": "Son dosyalar",
+  "toasts.alreadyQueued": "Zaten kuyrukta",
   "toasts.copyFailed_one": "{count} dosya kopyalanamadı",
   "toasts.copyFailed_other": "{count} dosya kopyalanamadı",
   "toasts.copySuccess_one": "{count} dosya koleksiyona kopyalandı",
@@ -115,5 +118,7 @@
   "toasts.filesDeleted_one": "Dosya silindi",
   "toasts.filesDeleted_other": "{count} dosya silindi",
   "toasts.moveFailed": "Dosya taşınamadı",
-  "toasts.openWithFailed": "Birlikte aç iletişim kutusu açılamadı"
+  "toasts.openWithFailed": "Birlikte aç iletişim kutusu açılamadı",
+  "toasts.queued": "Kuyruğa eklendi",
+  "toasts.removedFromQueue": "Kuyruktan çıkarıldı"
 }
