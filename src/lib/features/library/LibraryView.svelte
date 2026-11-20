@@ -7094,7 +7094,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 0;
     pointer-events: none;
     color: var(--text-muted, #888);
     font-size: 14px;
@@ -7110,6 +7110,7 @@
     flex-direction: column;
     align-items: center;
     gap: 3px;
+    margin-top: -4px;
     max-width: 280px;
     text-align: center;
     line-height: 1.4;
