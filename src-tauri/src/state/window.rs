@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
-use tauri::{Manager, PhysicalPosition, PhysicalSize, Position, Size};
+use tauri::{LogicalSize, Manager, PhysicalPosition, PhysicalSize, Position, Size};
 
 use crate::constants::WINDOW_STATE_FILE;
 use crate::types::SavedWindowState;
@@ -99,6 +99,29 @@ fn position_on_monitor(window: &tauri::WebviewWindow, x: i32, y: i32) -> bool {
         let wy = y as i64;
         wx >= left - SLACK && wx < right + SLACK && wy >= top - SLACK && wy < bottom + SLACK
     })
+}
+
+/// Restores the normal geometry persisted when PiP started. A webview reload
+/// leaves the PiP-sized window behind with the guard still set, so the
+/// frontend calls this on startup to land back on the user's real bounds.
+pub fn recover_pip_window(window: &tauri::WebviewWindow) -> bool {
+    let Some(state) = window.app_handle().try_state::<PipActive>() else {
+        return false;
+    };
+    if !state.0.load(Ordering::Relaxed) {
+        return false;
+    }
+
+    let skip = Arc::new(AtomicBool::new(false));
+    restore_window_state(window, &skip);
+    // Clear the guard only after the geometry is back so the restore frames are
+    // not persisted in between.
+    state.0.store(false, Ordering::Relaxed);
+
+    // PiP lowers the limit while it is active. Mirrors tauri.conf.json.
+    let _ = window.set_min_size(Some(Size::Logical(LogicalSize::new(400.0, 300.0))));
+    let _ = window.set_background_color(None);
+    true
 }
 
 pub fn restore_window_state(window: &tauri::WebviewWindow, skip: &Arc<AtomicBool>) {

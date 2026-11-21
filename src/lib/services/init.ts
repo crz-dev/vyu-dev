@@ -5,7 +5,10 @@ import { exists } from "@tauri-apps/plugin-fs";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
-import { invokeCheckForUpdates } from "$lib/features/system/api";
+import {
+  invokeCheckForUpdates,
+  invokeRecoverPipWindow,
+} from "$lib/features/system/api";
 import { showToast } from "$lib/components/toast.svelte";
 import { locale } from "$lib/features/i18n/locale.svelte";
 import {
@@ -69,6 +72,11 @@ export function setupInit(s: InitState) {
     );
     s.clips.loadPrefs();
     powerStatus.start();
+    // A webview reload during PiP leaves the window at mini geometry; restore
+    // the bounds saved when PiP started before the app settles.
+    invokeRecoverPipWindow().catch((e) => {
+      console.error("Failed to restore window after PiP reload:", e);
+    });
     systemPrefs.setAlwaysOnTop(systemPrefs.alwaysOnTop);
 
     (async () => {

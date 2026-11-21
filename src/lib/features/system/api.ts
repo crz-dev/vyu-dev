@@ -61,6 +61,10 @@ export function invokeSetPipBackground(active: boolean): Promise<void> {
   return invoke("set_pip_background", { active });
 }
 
+export function invokeRecoverPipWindow(): Promise<boolean> {
+  return invoke("recover_pip_window");
+}
+
 export function invokeSetWindowBounds(
   x: number,
   y: number,

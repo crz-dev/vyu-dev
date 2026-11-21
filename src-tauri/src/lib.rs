@@ -154,6 +154,7 @@ pub fn run() {
             get_system_config,
             set_pip_active,
             set_pip_background,
+            recover_pip_window,
             set_window_bounds,
             animate_window_bounds,
             get_system_restart_status,

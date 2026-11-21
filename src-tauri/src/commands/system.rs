@@ -109,10 +109,22 @@ pub fn get_system_config(state: State<'_, SystemState>) -> Result<SystemConfig, 
 }
 
 /// Marks the window as being in picture-in-picture mode so the mini geometry
-/// is not persisted as the user's normal window state.
+/// is not persisted as the user's normal window state. The normal bounds are
+/// written on activation, before the guard blocks writes, so closing or
+/// restarting during PiP still reopens at the pre-PiP geometry.
 #[tauri::command]
-pub fn set_pip_active(state: State<'_, PipActive>, active: bool) {
+pub fn set_pip_active(window: tauri::WebviewWindow, state: State<'_, PipActive>, active: bool) {
+    if active && !state.0.load(Ordering::Relaxed) {
+        let skip = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        crate::state::window::persist_window_state(&window, &skip);
+    }
     state.0.store(active, Ordering::Relaxed);
+}
+
+/// Restores the pre-PiP window geometry after a webview reload interrupted PiP.
+#[tauri::command]
+pub fn recover_pip_window(window: tauri::WebviewWindow) -> bool {
+    crate::state::window::recover_pip_window(&window)
 }
 
 /// Keeps the surface behind the webview black while PiP transitions run, so the
