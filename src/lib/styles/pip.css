@@ -10,10 +10,10 @@
   pointer-events: none;
 }
 
-main.pip .topbar,
-main.pip .bottombar,
-main.pip .sidebar,
-main.pip .thumbnail-bar {
+main.pip:not(.pip-entering) .topbar,
+main.pip:not(.pip-entering) .bottombar,
+main.pip:not(.pip-entering) .sidebar,
+main.pip:not(.pip-entering) .thumbnail-bar {
   display: none;
 }
 
@@ -21,38 +21,112 @@ main.pip .toast-stack {
   display: none;
 }
 
-/* Slide transition used around the native window geometry change. The audio
-   stage is the visible content, so only the control layers fade out. */
-.pip-overlay.transitioning:not(.audio) {
-  animation: none;
-  opacity: 0;
+/* Enter: the app chrome dissolves while the normal layout is still in place,
+   so removing it from the tree at the hand-off is invisible. */
+main.pip.pip-entering .topbar,
+main.pip.pip-entering .bottombar,
+main.pip.pip-entering .sidebar,
+main.pip.pip-entering .thumbnail-bar {
+  animation: pipChromeOut 80ms ease-out both;
   pointer-events: none;
 }
 
+main.pip.pip-entering .content,
+main.pip.pip-entering .viewer {
+  transition: background-color 100ms ease-out;
+}
+
+/* Exit expansion: the app layout is back, but its chrome is held invisible
+   while the media settles into the viewer and the window grows around it. */
+main.pip-expanding .topbar,
+main.pip-expanding .bottombar,
+main.pip-expanding .sidebar,
+main.pip-expanding .thumbnail-bar,
+main.pip-expanding .video-controls,
+main.pip-expanding .audio-customize-card,
+main.pip-expanding .audio-swap-container,
+main.pip-expanding .cd-color-picker,
+main.pip-expanding .pdf-find-bar,
+main.pip-expanding .pdf-page-panel,
+main.pip-expanding .pdf-page-label {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none;
+}
+
+/* The flip scales the media past the viewer while it settles, so let it
+   overflow the layout until the expansion ends. */
+main.pip-expanding .content,
+main.pip-expanding .viewer {
+  overflow: visible;
+  transition: background-color 160ms ease-out;
+}
+
+.pip-expand-overflow {
+  overflow: visible !important;
+}
+
+/* Return: the PiP layout is still mounted, but the media is pinned at its
+   final viewer rect and the window grows underneath it. Use the app surface
+   colour so the expanding area does not read as a black card frame. */
+main.pip.pip-returning .content,
+main.pip.pip-returning .viewer {
+  background-color: var(--bg-primary);
+  transition: background-color 160ms ease-out;
+}
+
+/* The pinned media is positioned by custom properties on the root element. */
+html.pip-exit-pin .viewer > .media-container,
+html.pip-exit-pin .viewer > .video-wrapper,
+html.pip-exit-pin .viewer > .audio-wrapper,
+html.pip-exit-pin .viewer > .pdf-viewer {
+  position: fixed !important;
+  left: var(--pip-pin-left) !important;
+  top: var(--pip-pin-top) !important;
+  width: var(--pip-pin-width) !important;
+  height: var(--pip-pin-height) !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  z-index: 140;
+  pointer-events: none;
+}
+
+/* Reveal: the app chrome fades in around the already-settled media. */
+main.pip-revealing .topbar,
+main.pip-revealing .bottombar,
+main.pip-revealing .sidebar,
+main.pip-revealing .thumbnail-bar {
+  animation: pipChromeIn 130ms ease-out both;
+}
+
 main.pip .viewer {
-  padding: 0;
   background: #000;
   contain: layout style;
 }
 
-main.pip .video-controls {
+main.pip:not(.pip-entering) .viewer {
+  padding: 0;
+}
+
+main.pip:not(.pip-entering) .video-controls {
   display: none;
 }
 
-main.pip .video-wrapper,
-main.pip .video-wrapper:hover {
+main.pip:not(.pip-entering) .video-wrapper,
+main.pip:not(.pip-entering) .video-wrapper:hover {
   outline-color: transparent;
 }
 
-main.pip .audio-customize-card,
-main.pip .audio-swap-container,
-main.pip .cd-color-picker {
+main.pip:not(.pip-entering) .audio-customize-card,
+main.pip:not(.pip-entering) .audio-swap-container,
+main.pip:not(.pip-entering) .cd-color-picker {
   display: none;
 }
 
-main.pip .pdf-find-bar,
-main.pip .pdf-page-panel,
-main.pip .pdf-page-label {
+main.pip:not(.pip-entering) .pdf-find-bar,
+main.pip:not(.pip-entering) .pdf-page-panel,
+main.pip:not(.pip-entering) .pdf-page-label {
   display: none;
 }
 
@@ -60,7 +134,7 @@ main.pip .content {
   background-color: #000;
 }
 
-main.pip .stale-frame {
+main.pip:not(.pip-entering) .stale-frame {
   padding: 0;
 }
 
@@ -76,6 +150,16 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   animation: pipMediaIn 260ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
 }
 
+/* Lift: the media starts near its pre-PiP size, so the layout hand-off reads
+   as the media growing toward the viewer instead of snapping. */
+main.pip.pip-moving .viewer > .media-container,
+main.pip.pip-moving .viewer > .video-wrapper,
+main.pip.pip-moving .viewer > .audio-wrapper,
+main.pip.pip-moving .viewer > .pdf-viewer,
+main.pip.pip-moving .pip-audio-stage {
+  animation: pipMediaLift 160ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
 .pip-overlay {
   position: absolute;
   inset: 0;
@@ -84,7 +168,34 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   color: #fff;
   font-family: var(--font-family);
   user-select: none;
-  animation: pipOverlayIn 220ms ease-out both;
+  transition: opacity 170ms ease-out;
+}
+
+/* Entering/moving: only the media is visible while the window transforms.
+   Audio keeps its stage visible because the stage is the media. */
+.pip-overlay.entering {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pip-overlay.exiting,
+.pip-overlay.returning,
+.pip-overlay.expanding {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: 70ms;
+}
+
+.pip-overlay.moving:not(.audio) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pip-overlay.moving .pip-top,
+.pip-overlay.moving .pip-bar,
+.pip-overlay.moving .pip-nav {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .pip-overlay .context-menu {
@@ -739,12 +850,24 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
   }
 }
 
-@keyframes pipOverlayIn {
+@keyframes pipChromeOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pipChromeIn {
   from {
     opacity: 0;
   }
+}
+
+@keyframes pipMediaLift {
+  from {
+    transform: scale(0.92);
+  }
   to {
-    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -759,6 +882,26 @@ main.pip .viewer.pip-audio-swap .pip-audio-stage {
 
 [data-reduce-motion="true"] .pip-overlay,
 [data-reduce-motion="true"] .pip-overlay * {
+  animation: none !important;
+  transition: none !important;
+}
+
+[data-reduce-motion="true"] main.pip .topbar,
+[data-reduce-motion="true"] main.pip .bottombar,
+[data-reduce-motion="true"] main.pip .sidebar,
+[data-reduce-motion="true"] main.pip .thumbnail-bar,
+[data-reduce-motion="true"] main.pip-revealing .topbar,
+[data-reduce-motion="true"] main.pip-revealing .bottombar,
+[data-reduce-motion="true"] main.pip-revealing .sidebar,
+[data-reduce-motion="true"] main.pip-revealing .thumbnail-bar,
+[data-reduce-motion="true"] main.pip-expanding .content,
+[data-reduce-motion="true"] main.pip-expanding .viewer,
+[data-reduce-motion="true"] main.pip .viewer,
+[data-reduce-motion="true"] main.pip .viewer > .media-container,
+[data-reduce-motion="true"] main.pip .viewer > .video-wrapper,
+[data-reduce-motion="true"] main.pip .viewer > .audio-wrapper,
+[data-reduce-motion="true"] main.pip .viewer > .pdf-viewer,
+[data-reduce-motion="true"] main.pip .pip-audio-stage {
   animation: none !important;
   transition: none !important;
 }

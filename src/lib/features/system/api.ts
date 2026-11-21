@@ -57,6 +57,10 @@ export function invokeSetPipActive(active: boolean): Promise<void> {
   return invoke("set_pip_active", { active });
 }
 
+export function invokeSetPipBackground(active: boolean): Promise<void> {
+  return invoke("set_pip_background", { active });
+}
+
 export function invokeSetWindowBounds(
   x: number,
   y: number,
@@ -64,6 +68,16 @@ export function invokeSetWindowBounds(
   height: number,
 ): Promise<void> {
   return invoke("set_window_bounds", { x, y, width, height });
+}
+
+export function invokeAnimateWindowBounds(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  durationMs: number,
+): Promise<void> {
+  return invoke("animate_window_bounds", { x, y, width, height, durationMs });
 }
 
 export function invokeGetRuntimeInfo(): Promise<RuntimeInfo> {

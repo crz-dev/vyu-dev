@@ -239,7 +239,11 @@
 <div
   class="pip-overlay"
   class:controls-visible={pip.state.controlsVisible}
-  class:transitioning={pip.state.transitioning}
+  class:entering={pip.state.phase === "entering"}
+  class:moving={pip.state.phase === "moving"}
+  class:exiting={pip.state.phase === "exiting"}
+  class:returning={pip.state.phase === "returning"}
+  class:expanding={pip.state.phase === "expanding"}
   class:audio={isAudio}
   class:pdf={isPdf}
   class:bar={showTimedBar || (isVideo && isGifVideo)}

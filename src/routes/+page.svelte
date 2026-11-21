@@ -307,6 +307,7 @@
     getThumbnailBarVisible: () => thumbnailBarVisible,
     getIsFullscreen: () => viewer.state.isFullscreen,
     getPipActive: () => pip.state.active,
+    getPipPhase: () => pip.state.phase,
   });
   $effect(viewerFx.setVideoElEffect);
   $effect(viewerFx.resizeObserverEffect);
@@ -424,8 +425,10 @@
       menuStore.audioTrackMenuOpen = false;
       menuStore.subtitleMenuOpen = false;
       if (viewer.state.isFullscreen) toggleFullscreen();
-      captureViewerZoomForPip();
-      const entered = await pip.enter(pipMediaSnapshot());
+      const entered = await pip.enter(
+        pipMediaSnapshot(),
+        captureViewerZoomForPip,
+      );
       if (!entered && !pip.state.active) {
         restoreViewerZoomAfterPip();
         showToast({ message: t("shell.pip.failed"), color: "red" });
@@ -1834,6 +1837,7 @@
   viewerResetFsTimer={viewer.resetFsTimer}
   viewerToggleFullscreen={handleToggleFullscreen}
   pipActive={pip.state.active}
+  pipPhase={pip.state.phase}
   {pipAvailable}
   togglePip={handleTogglePip}
   zoomLevel={viewer.state.zoomLevel}

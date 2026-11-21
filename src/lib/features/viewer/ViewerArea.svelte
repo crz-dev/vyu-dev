@@ -5,7 +5,7 @@
   import PDFView from "./PDFView.svelte";
   import FullscreenOverlay from "./FullscreenOverlay.svelte";
   import PipOverlay from "./PipOverlay.svelte";
-  import { pip } from "./pip.svelte";
+  import { pip, PIP_EXPAND_MS } from "./pip.svelte";
   import AudioPlayer from "$lib/features/media/AudioPlayer.svelte";
   import {
     VOLUME_SEGMENTS,
@@ -274,6 +274,144 @@
     lastPipSrc = src;
     lastPipKind = kind;
     return () => clearTimeout(pipSwapTimer);
+  });
+
+  // Remember where the media sits in the normal viewer before PiP takes over,
+  // so the card can return to that rect on exit.
+  $effect.pre(() => {
+    if (pip.state.phase !== "entering") return;
+    const target = viewerEl?.querySelector<HTMLElement>(
+      ".media-container, .video-wrapper, .audio-wrapper, .pdf-viewer",
+    );
+    if (!target) {
+      pip.setMediaRect(null);
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+    pip.setMediaRect({
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+  });
+
+  // On exit the media is anchored at its final viewer rect while the window
+  // grows back around it. Pinning it with fixed positioning (the window origin
+  // is the saved position and does not move during the growth) and sliding it
+  // from the app origin to its rect avoids any layout-dependent scaling.
+  let pipPinAnimation: Animation | null = null;
+
+  function clearPipPin() {
+    const root = document.documentElement;
+    root.classList.remove("pip-exit-pin");
+    root.style.removeProperty("--pip-pin-left");
+    root.style.removeProperty("--pip-pin-top");
+    root.style.removeProperty("--pip-pin-width");
+    root.style.removeProperty("--pip-pin-height");
+    pipPinAnimation?.cancel();
+    pipPinAnimation = null;
+  }
+
+  $effect(() => {
+    if (pip.state.phase !== "returning") {
+      clearPipPin();
+      return;
+    }
+    const rect = pip.getMediaRect();
+    const target = viewerEl?.querySelector<HTMLElement>(
+      ".media-container, .video-wrapper, .audio-wrapper, .pdf-viewer",
+    );
+    if (!rect || !target || rect.width <= 0 || rect.height <= 0) return;
+
+    const root = document.documentElement;
+    root.style.setProperty("--pip-pin-left", `${rect.left}px`);
+    root.style.setProperty("--pip-pin-top", `${rect.top}px`);
+    root.style.setProperty("--pip-pin-width", `${rect.width}px`);
+    root.style.setProperty("--pip-pin-height", `${rect.height}px`);
+    root.classList.add("pip-exit-pin");
+
+    pipPinAnimation?.cancel();
+    pipPinAnimation = target.animate(
+      [
+        { transform: `translate(${-rect.left}px, ${-rect.top}px)` },
+        { transform: "none" },
+      ],
+      {
+        duration: PIP_EXPAND_MS,
+        easing: "cubic-bezier(0.65, 0, 0.35, 1)",
+        fill: "both",
+      },
+    );
+
+    return clearPipPin;
+  });
+
+  // Fallback only: when no usable media rect was captured, the layout switch
+  // happens at full size and this small flip hides the inset correction.
+  let pipExpandFrom: DOMRect | null = null;
+  let pipExpandAnimation: Animation | null = null;
+
+  $effect.pre(() => {
+    if (pip.state.phase !== "expanding") {
+      pipExpandFrom = null;
+      return;
+    }
+    const target = viewerEl?.querySelector<HTMLElement>(
+      ".media-container, .video-wrapper, .audio-wrapper, .pdf-viewer",
+    );
+    pipExpandFrom = target?.getBoundingClientRect() ?? null;
+  });
+
+  $effect(() => {
+    if (pip.state.phase !== "expanding") {
+      pipExpandAnimation?.cancel();
+      pipExpandAnimation = null;
+      return;
+    }
+    const from = pipExpandFrom;
+    pipExpandFrom = null;
+    if (!from) return;
+    const target = viewerEl?.querySelector<HTMLElement>(
+      ".media-container, .video-wrapper, .audio-wrapper, .pdf-viewer",
+    );
+    if (!target) return;
+    const to = target.getBoundingClientRect();
+    if (to.width <= 0 || to.height <= 0 || from.width <= 0) return;
+    // Animate from the untransformed layout box so the element's own fit zoom
+    // is preserved; the last keyframe is the element's current transform.
+    const layoutWidth = target.offsetWidth || to.width;
+    const layoutHeight = target.offsetHeight || to.height;
+    if (layoutWidth <= 0 || layoutHeight <= 0) return;
+    const scaleX = from.width / layoutWidth;
+    const scaleY = from.height / layoutHeight;
+    // A degenerate app layout (very narrow media in a tiny window) would need
+    // an absurd upscale; leave the media at its layout rect instead of zooming.
+    if (
+      !Number.isFinite(scaleX) ||
+      !Number.isFinite(scaleY) ||
+      scaleX > 6 ||
+      scaleY > 6
+    ) {
+      return;
+    }
+    const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+    const computed = getComputedStyle(target).transform;
+    const endTransform = computed && computed !== "none" ? computed : "none";
+    pipExpandAnimation?.cancel();
+    pipExpandAnimation = target.animate(
+      [
+        {
+          transform: `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY})`,
+        },
+        { transform: endTransform },
+      ],
+      {
+        duration: PIP_EXPAND_MS,
+        easing: "cubic-bezier(0.65, 0, 0.35, 1)",
+      },
+    );
   });
 
   // A fitted copy of the outgoing image, shown while the next image decodes.

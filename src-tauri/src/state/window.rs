@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use tauri::{Manager, PhysicalPosition, PhysicalSize, Position, Size};
 
@@ -11,6 +11,17 @@ use crate::types::SavedWindowState;
 /// never replace the user's real window geometry on disk.
 #[derive(Default)]
 pub struct PipActive(pub AtomicBool);
+
+/// Generation counter for window geometry animations. A newer request
+/// supersedes a running one so overlapping PiP moves never fight for the frame.
+#[derive(Default, Clone)]
+pub struct WindowAnimation(pub Arc<AtomicU64>);
+
+impl WindowAnimation {
+    pub fn next(&self) -> u64 {
+        self.0.fetch_add(1, Ordering::SeqCst) + 1
+    }
+}
 
 pub fn is_pip_active(app: &tauri::AppHandle) -> bool {
     app.try_state::<PipActive>()

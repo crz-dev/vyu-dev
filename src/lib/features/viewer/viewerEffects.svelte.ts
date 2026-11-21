@@ -1,4 +1,5 @@
 import { viewer } from "./viewer.svelte";
+import type { PipPhase } from "./pip.svelte";
 import { editing } from "$lib/features/editing/editing.svelte";
 
 export interface ViewerEffectsDeps {
@@ -16,6 +17,7 @@ export interface ViewerEffectsDeps {
   getThumbnailBarVisible: () => boolean;
   getIsFullscreen: () => boolean;
   getPipActive: () => boolean;
+  getPipPhase: () => PipPhase;
 }
 
 export function createViewerEffects(deps: ViewerEffectsDeps) {
@@ -137,6 +139,11 @@ export function createViewerEffects(deps: ViewerEffectsDeps) {
       rafId = requestAnimationFrame(() => {
         rafId = null;
         try {
+          // The exit-to-viewer transition pins the media at its final rect;
+          // refitting during that window would rescale the pinned content. The
+          // reveal also restores the saved zoom, so leave it alone.
+          const phase = deps.getPipPhase();
+          if (phase === "returning" || phase === "revealing") return;
           cachedViewerEl = null;
           if (deps.getFileSrc() && deps.getIsPdf()) {
             refitPdfIfNeeded();

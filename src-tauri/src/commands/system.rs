@@ -1,14 +1,14 @@
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, State};
 
 use crate::state::system::{
     save_config, SystemConfig, SystemState, DEFAULT_CACHE_LIMIT_MB, MAX_CACHE_LIMIT_MB,
     MIN_CACHE_LIMIT_MB,
 };
-use crate::state::window::PipActive;
+use crate::state::window::{PipActive, WindowAnimation};
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const CONTEXT_KINDS: [&str; 5] = ["image", "video", "audio", "document", ".pdf"];
@@ -115,22 +115,199 @@ pub fn set_pip_active(state: State<'_, PipActive>, active: bool) {
     state.0.store(active, Ordering::Relaxed);
 }
 
-/// Applies size and position in one call so the PiP slide costs a single IPC
-/// round trip per frame instead of two racing ones.
+/// Keeps the surface behind the webview black while PiP transitions run, so the
+/// geometry animation does not flash the default background between frames.
 #[tauri::command]
-pub fn set_window_bounds(
-    window: tauri::Window,
+pub fn set_pip_background(window: tauri::Window, active: bool) {
+    let color = active.then_some(tauri::window::Color(0, 0, 0, 255));
+    let _ = window.set_background_color(color);
+}
+
+/// Sets position and size in one native call. Doing them as two separate
+/// window updates renders a resized frame at the old position first, which
+/// reads as flicker/ghosting while the window is animating.
+#[cfg(target_os = "windows")]
+fn write_native_bounds(
+    hwnd: windows::Win32::Foundation::HWND,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+) -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowPos, SWP_NOACTIVATE, SWP_NOZORDER,
+    };
+
+    unsafe {
+        SetWindowPos(
+            hwnd,
+            None,
+            x,
+            y,
+            width.max(1) as i32,
+            height.max(1) as i32,
+            SWP_NOZORDER | SWP_NOACTIVATE,
+        )
+        .is_ok()
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn apply_native_bounds(
+    window: &tauri::Window,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+) -> bool {
+    match window.hwnd() {
+        Ok(hwnd) => write_native_bounds(hwnd, x, y, width, height),
+        Err(_) => false,
+    }
+}
+
+fn apply_window_bounds(
+    window: &tauri::Window,
     x: i32,
     y: i32,
     width: u32,
     height: u32,
 ) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    if apply_native_bounds(window, x, y, width, height) {
+        return Ok(());
+    }
+
     window
-        .set_size(PhysicalSize::new(width, height))
+        .set_size(PhysicalSize::new(width.max(1), height.max(1)))
         .map_err(|e| e.to_string())?;
     window
         .set_position(PhysicalPosition::new(x, y))
         .map_err(|e| e.to_string())
+}
+
+// Eases in and out so the window starts gently instead of bolting out of the
+// corner, and settles without a hard stop.
+fn ease_in_out_cubic(t: f64) -> f64 {
+    if t < 0.5 {
+        4.0 * t * t * t
+    } else {
+        let t = -2.0 * t + 2.0;
+        1.0 - t * t * t / 2.0
+    }
+}
+
+/// Applies size and position in one call. Supersedes any running animation.
+#[tauri::command]
+pub fn set_window_bounds(
+    window: tauri::Window,
+    animation: State<'_, WindowAnimation>,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+) -> Result<(), String> {
+    animation.next();
+    apply_window_bounds(&window, x, y, width, height)
+}
+
+/// Slides the native window to the target bounds. The loop runs off the
+/// webview thread, so frame pacing is not limited by one IPC round trip per
+/// frame. A newer geometry request cancels the running animation.
+#[tauri::command]
+pub async fn animate_window_bounds(
+    window: tauri::Window,
+    animation: State<'_, WindowAnimation>,
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    duration_ms: u64,
+) -> Result<(), String> {
+    let generation = animation.next();
+    let token = animation.0.clone();
+
+    if duration_ms == 0 {
+        return apply_window_bounds(&window, x, y, width, height);
+    }
+
+    let (Ok(start_position), Ok(start_size)) =
+        (window.outer_position(), window.inner_size())
+    else {
+        return apply_window_bounds(&window, x, y, width, height);
+    };
+
+    #[cfg(target_os = "windows")]
+    let native_hwnd = window.hwnd().ok().map(|hwnd| hwnd.0 as isize);
+
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let duration = Duration::from_millis(duration_ms.max(1));
+        let started = Instant::now();
+        let start_x = start_position.x as f64;
+        let start_y = start_position.y as f64;
+        let start_width = start_size.width as f64;
+        let start_height = start_size.height as f64;
+        let frame_interval = Duration::from_millis(16);
+        let mut deadline = started;
+
+        loop {
+            if token.load(Ordering::SeqCst) != generation {
+                return Ok(());
+            }
+
+            let progress = (started.elapsed().as_secs_f64() / duration.as_secs_f64()).min(1.0);
+            let eased = ease_in_out_cubic(progress);
+            let frame_width = (start_width + (width as f64 - start_width) * eased).round();
+            let frame_height = (start_height + (height as f64 - start_height) * eased).round();
+            let frame_x = (start_x + (x as f64 - start_x) * eased).round();
+            let frame_y = (start_y + (y as f64 - start_y) * eased).round();
+
+            // Resolve the handle once so the per-frame path is a single native
+            // window update instead of a runtime round trip plus two updates.
+            let mut applied = false;
+            #[cfg(target_os = "windows")]
+            if let Some(raw) = native_hwnd {
+                applied = write_native_bounds(
+                    windows::Win32::Foundation::HWND(raw as *mut core::ffi::c_void),
+                    frame_x as i32,
+                    frame_y as i32,
+                    frame_width as u32,
+                    frame_height as u32,
+                );
+            }
+            if !applied {
+                let _ = window.set_size(PhysicalSize::new(
+                    (frame_width as u32).max(1),
+                    (frame_height as u32).max(1),
+                ));
+                let _ =
+                    window.set_position(PhysicalPosition::new(frame_x as i32, frame_y as i32));
+            }
+
+            if progress >= 1.0 {
+                break;
+            }
+
+            // Keep a steady cadence without adding the sleep on top of the
+            // window calls: when the calls are slower than the interval the
+            // loop simply runs at whatever rate the OS accepts.
+            deadline += frame_interval;
+            let now = Instant::now();
+            if deadline > now {
+                std::thread::sleep(deadline - now);
+            } else {
+                deadline = now;
+            }
+        }
+
+        if token.load(Ordering::SeqCst) == generation {
+            apply_window_bounds(&window, x, y, width, height)
+        } else {
+            Ok(())
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

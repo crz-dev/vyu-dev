@@ -40,6 +40,7 @@
     MediaProperties,
   } from "$lib/shared/types";
   import type { ClipDeleteConfirmState } from "$lib/features/media/clips.svelte";
+  import type { PipPhase } from "$lib/features/viewer/pip.svelte";
   import type {
     MarkerTooltip,
     MarkerEditMenu,
@@ -114,6 +115,7 @@
     maximizeWindow,
     closeWindow,
     pipActive,
+    pipPhase,
     pipAvailable,
     togglePip,
     appDropdownVisible,
@@ -316,6 +318,7 @@
     maximizeWindow: () => void;
     closeWindow: () => void;
     pipActive: boolean;
+    pipPhase: PipPhase;
     pipAvailable: boolean;
     togglePip: () => void;
     appDropdownVisible: boolean;
@@ -782,9 +785,15 @@
 <main
   bind:this={mainEl}
   class:fullscreen={viewerStateIsFullscreen}
-  class:pip={pipActive}
+  class:pip={pipActive && pipPhase !== "expanding"}
+  class:pip-entering={pipPhase === "entering"}
+  class:pip-moving={pipPhase === "moving"}
+  class:pip-returning={pipPhase === "returning"}
+  class:pip-expanding={pipPhase === "expanding"}
+  class:pip-revealing={pipPhase === "revealing"}
   class:menu-open={anyMenuOpen}
-  class:thumbnail-bar-open={thumbnailBarShown && !pipActive}
+  class:thumbnail-bar-open={thumbnailBarShown &&
+    (!pipActive || pipPhase === "entering" || pipPhase === "expanding")}
   class:is-audio={isAudio}
   class:library-mode={libraryOpen}
   class:fs-controls-hidden={viewerStateIsFullscreen &&
@@ -828,9 +837,11 @@
 
   <div
     bind:this={filterEl}
+    class:pip-expand-overflow={pipPhase === "expanding"}
     style="flex: 1; display: flex; flex-direction: column; overflow: hidden;"
   >
     <div
+      class:pip-expand-overflow={pipPhase === "expanding"}
       style="flex: 1; display: grid; grid-template: 1fr / 1fr; overflow: hidden;"
     >
       {#if libraryOpen}
@@ -858,6 +869,7 @@
       {:else}
         <div
           transition:fade={{ duration: viewFadeMs }}
+          class:pip-expand-overflow={pipPhase === "expanding"}
           style="grid-area: 1 / 1; display: flex; flex-direction: column; overflow: hidden;"
         >
           {@render children?.()}
@@ -938,7 +950,8 @@
   <ThumbnailBar
     {fileList}
     {currentIndex}
-    visible={thumbnailBarShown && !pipActive}
+    visible={thumbnailBarShown &&
+      (!pipActive || pipPhase === "entering" || pipPhase === "expanding")}
     {onSelect}
     fullscreen={viewerStateIsFullscreen}
   />
