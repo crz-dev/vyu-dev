@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "windows"))]
 use std::process::Command;
 
 use crate::constants::{BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST, BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST};
@@ -756,6 +756,130 @@ pub fn get_ffmpeg_info() -> FfmpegInfo {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn read_registry_string(
+    hkey: windows::Win32::System::Registry::HKEY,
+    subkey: &str,
+    value: Option<&str>,
+) -> Option<String> {
+    use windows::core::{HSTRING, PCWSTR};
+    use windows::Win32::System::Registry::{RegGetValueW, RRF_RT_REG_SZ};
+
+    let subkey_wide = HSTRING::from(subkey);
+    let value_wide = value.map(HSTRING::from);
+    let value_ptr = value_wide
+        .as_ref()
+        .map(|v| PCWSTR::from_raw(v.as_ptr()))
+        .unwrap_or(PCWSTR::null());
+    let mut size = 0u32;
+    let status = unsafe {
+        RegGetValueW(
+            hkey,
+            &subkey_wide,
+            value_ptr,
+            RRF_RT_REG_SZ,
+            None,
+            None,
+            Some(&mut size),
+        )
+    };
+    if status.0 != 0 || size == 0 {
+        return None;
+    }
+    let mut buffer = vec![0u16; (size as usize / 2).max(1)];
+    let status = unsafe {
+        RegGetValueW(
+            hkey,
+            &subkey_wide,
+            value_ptr,
+            RRF_RT_REG_SZ,
+            None,
+            Some(buffer.as_mut_ptr() as *mut core::ffi::c_void),
+            Some(&mut size),
+        )
+    };
+    if status.0 != 0 {
+        return None;
+    }
+    let end = buffer.iter().position(|c| *c == 0).unwrap_or(buffer.len());
+    Some(String::from_utf16_lossy(&buffer[..end]))
+}
+
+#[cfg(target_os = "windows")]
+fn default_browser_executable() -> Option<String> {
+    use windows::Win32::System::Registry::{HKEY_CLASSES_ROOT, HKEY_CURRENT_USER};
+
+    // Prefer https: Windows can leave http pinned to Edge even when the user
+    // chose another default browser.
+    let prog_id = read_registry_string(
+        HKEY_CURRENT_USER,
+        r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice",
+        Some("ProgId"),
+    )
+    .or_else(|| {
+        read_registry_string(
+            HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice",
+            Some("ProgId"),
+        )
+    })?;
+    let command = read_registry_string(
+        HKEY_CLASSES_ROOT,
+        &format!(r"{prog_id}\shell\open\command"),
+        None,
+    )?;
+    let command = command.trim();
+    let executable = if let Some(rest) = command.strip_prefix('"') {
+        rest.split('"').next()?
+    } else {
+        command.split_whitespace().next()?
+    };
+    if Path::new(executable).is_file() {
+        Some(executable.to_string())
+    } else {
+        None
+    }
+}
+
+fn extract_video_frame_sync(path: &str, time_secs: f64) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir().join("Vyu-temp").join("frames");
+    fs::create_dir_all(&temp_dir).map_err(|e| format!("Failed to create frame dir: {e}"))?;
+    let output_path = unique_path(temp_dir.join(format!("frame-{}.png", hash_path_xxh3(path))));
+    let output = output_path.to_string_lossy().to_string();
+    let timestamp = time_secs.max(0.0).to_string();
+    let result = ffmpeg_command()
+        .args([
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-ss",
+            timestamp.as_str(),
+            "-i",
+            path,
+            "-frames:v",
+            "1",
+            &output,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to start ffmpeg: {e}"))?;
+    if !result.status.success() {
+        return Err(String::from_utf8_lossy(&result.stderr).trim().to_string());
+    }
+    Ok(output)
+}
+
+#[tauri::command]
+pub async fn extract_video_frame(path: String, time_secs: f64) -> Result<String, String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || extract_video_frame_sync(&path, time_secs))
+        .await
+        .map_err(|e| format!("Thread join error: {e}"))?
+}
+
 /// Open in browser
 #[tauri::command]
 pub async fn open_in_browser(path: String) -> Result<(), String> {
@@ -763,6 +887,10 @@ pub async fn open_in_browser(path: String) -> Result<(), String> {
     if !p.exists() {
         return Err("File does not exist".into());
     }
+
+    #[cfg(target_os = "windows")]
+    let browser =
+        default_browser_executable().ok_or_else(|| "NO_DEFAULT_BROWSER".to_string())?;
 
     let path_clone = path.clone();
     let converted = tauri::async_runtime::spawn_blocking(move || convert_for_browser(&path_clone))
@@ -775,24 +903,16 @@ pub async fn open_in_browser(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let web_path = open_path
+            .replace('%', "%25")
             .replace('\\', "/")
+            .replace(' ', "%20")
             .replace('#', "%23")
             .replace('?', "%3F");
         let url = format!("file:///{}", web_path);
-        let wide_url = windows::core::HSTRING::from(&url);
-        unsafe {
-            let hinst = windows::Win32::UI::Shell::ShellExecuteW(
-                None,
-                windows::core::w!("open"),
-                &wide_url,
-                None,
-                None,
-                windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT,
-            );
-            if hinst.is_invalid() {
-                return Err("Failed to open in browser".into());
-            }
-        }
+        Command::new(browser)
+            .arg(url)
+            .spawn()
+            .map_err(|e| format!("Failed to open in browser: {e}"))?;
         return Ok(());
     }
     #[cfg(target_os = "linux")]

@@ -13,11 +13,14 @@
     invokeSetWallpaper,
     invokeSetLockScreen,
     invokeCreateDesktopShortcut,
+    invokeOpenDefaultApp,
+    invokeShareFile,
     invokeOpenInPhotos,
     invokeOpenInPaint,
     invokeOpenInVlc,
     invokeOpenInSpotify,
     invokeOpenInBrowser,
+    invokeExtractVideoFrame,
     invokeOpenWithDialog,
     invokeConvertMedia,
     invokeConvertAudioToWaveformVideo,
@@ -34,6 +37,7 @@
   import { library } from "$lib/features/library/library.svelte";
   import { bouncePropRows } from "./propRows";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+  import { invokeOpenDefaultAppsSettings } from "$lib/features/system/api";
   import { obscurePath } from "$lib/shared/privacy";
   import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -43,6 +47,10 @@
     showFloatingTooltip,
   } from "$lib/services/session";
   import { getFileExt, getParentFolder, joinPath } from "$lib/services/files";
+  import {
+    BROWSER_UNSUPPORTED_IMAGE_EXTS,
+    BROWSER_UNSUPPORTED_VIDEO_EXTS,
+  } from "$lib/shared/constants";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   let {
@@ -51,6 +59,7 @@
     isAudio,
     isPdf,
     isRemote,
+    getMediaEl,
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
@@ -126,6 +135,7 @@
     isAudio: boolean;
     isPdf: boolean;
     isRemote: boolean;
+    getMediaEl: () => HTMLMediaElement | null;
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
@@ -279,6 +289,59 @@
     return parts.slice(-2).join("/");
   }
 
+  const SHARE_ACTION_TOOLTIP_ID = "share-action-tooltip";
+
+  function saveAsTip(format: string): string {
+    return t("dialogs.dialog.share.tooltip.saveAsFormat", { format });
+  }
+
+  function shareTipTarget(event: Event): HTMLElement | null {
+    return event.target instanceof Element
+      ? event.target.closest<HTMLElement>("[data-share-tip]")
+      : null;
+  }
+
+  function relatedShareTipTarget(event: Event): HTMLElement | null {
+    const related = (event as MouseEvent | FocusEvent).relatedTarget;
+    return related instanceof Element
+      ? related.closest<HTMLElement>("[data-share-tip]")
+      : null;
+  }
+
+  function shareTipDelegation(node: HTMLElement) {
+    function show(event: Event) {
+      const target = shareTipTarget(event);
+      if (!target || target === relatedShareTipTarget(event)) return;
+      const text = target.dataset.shareTip;
+      if (!text) return;
+      hideFloatingTooltip("share-dest-tooltip");
+      showFloatingTooltip(
+        SHARE_ACTION_TOOLTIP_ID,
+        target.getBoundingClientRect(),
+        text,
+        "above",
+      );
+    }
+    function hide(event: Event) {
+      const target = shareTipTarget(event);
+      if (!target || target === relatedShareTipTarget(event)) return;
+      hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+    }
+    node.addEventListener("mouseover", show);
+    node.addEventListener("mouseout", hide);
+    node.addEventListener("focusin", show);
+    node.addEventListener("focusout", hide);
+    return {
+      destroy() {
+        node.removeEventListener("mouseover", show);
+        node.removeEventListener("mouseout", hide);
+        node.removeEventListener("focusin", show);
+        node.removeEventListener("focusout", hide);
+        hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+      },
+    };
+  }
+
   async function pickShareOutputDir() {
     hideFloatingTooltip("share-dest-tooltip");
     const dir = await open({
@@ -310,9 +373,46 @@
       // Preserving the source timestamp is best-effort.
     }
   }
+  type ShareConfirmKind = "browser" | "wallpaper" | "lockScreen" | "desktop";
+
   let shareConverting = $state(false);
   let convertingFormat = $state<string | undefined>(undefined);
   let convertProgress = $state<number>(0);
+  let shareConfirm = $state<ShareConfirmKind | null>(null);
+  let shareConfirmTime = $state(0);
+  let shareConfirmBrowserFormat = $state<"WebP" | "WebM" | null>(null);
+  const shareConfirmTitle = $derived(
+    shareConfirm === "browser"
+      ? t("dialogs.dialog.share.confirm.browserTitle")
+      : shareConfirm === "wallpaper"
+        ? t("dialogs.dialog.share.confirm.wallpaperTitle")
+        : shareConfirm === "lockScreen"
+          ? t("dialogs.dialog.share.confirm.lockScreenTitle")
+          : shareConfirm === "desktop"
+            ? t("dialogs.dialog.share.confirm.desktopTitle")
+            : "",
+  );
+  const shareConfirmBody = $derived(
+    shareConfirm === "browser"
+      ? t("dialogs.dialog.share.confirm.browserConvertBody", {
+          format: shareConfirmBrowserFormat ?? "WebP",
+        })
+      : shareConfirm === "wallpaper"
+        ? t(
+            isVideo
+              ? "dialogs.dialog.share.confirm.wallpaperVideoBody"
+              : "dialogs.dialog.share.confirm.wallpaperBody",
+          )
+        : shareConfirm === "lockScreen"
+          ? t(
+              isVideo
+                ? "dialogs.dialog.share.confirm.lockScreenVideoBody"
+                : "dialogs.dialog.share.confirm.lockScreenBody",
+            )
+          : shareConfirm === "desktop"
+            ? t("dialogs.dialog.share.confirm.desktopBody")
+            : "",
+  );
   let contextMenuElement = $state<HTMLDivElement | null>(null);
 
   function clampContextMenuPosition() {
@@ -333,6 +433,9 @@
   $effect(() => {
     if (!shareOpen) {
       hideFloatingTooltip("share-dest-tooltip");
+      hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+      shareConfirm = null;
+      shareConfirmBrowserFormat = null;
       shareConverting = false;
       convertingFormat = undefined;
       convertProgress = 0;
@@ -362,8 +465,20 @@
   }
 
   async function openInDefaultApp() {
-    const { openPath } = await import("@tauri-apps/plugin-opener");
-    await openPath(filePath);
+    await invokeOpenDefaultApp(filePath);
+  }
+
+  async function handleShareFile() {
+    try {
+      await invokeShareFile(filePath);
+    } catch (e) {
+      console.error("Share action failed:", e);
+      showToast({
+        message: t("dialogs.dialog.toast.actionFailed"),
+        color: "red",
+      });
+    }
+    closeShare();
   }
 
   function printPdf() {
@@ -426,7 +541,37 @@
       const appNotFoundMatch = msg.match(
         /^APP_NOT_FOUND:(.+?):(https?:\/\/.+)$/,
       );
-      if (appNotFoundMatch) {
+      if (msg.startsWith("NO_DEFAULT_APP")) {
+        showToast({
+          message: t("dialogs.dialog.toast.noDefaultApp"),
+          color: "red",
+          duration: 5000,
+          actions: [
+            {
+              label: t("dialogs.dialog.toast.openDefaultApps"),
+              variant: "accent",
+              onClick: () => {
+                void invokeOpenDefaultAppsSettings().catch(() => {});
+              },
+            },
+          ],
+        });
+      } else if (msg.startsWith("NO_DEFAULT_BROWSER")) {
+        showToast({
+          message: t("dialogs.dialog.toast.noDefaultBrowser"),
+          color: "red",
+          duration: 5000,
+          actions: [
+            {
+              label: t("dialogs.dialog.toast.openDefaultApps"),
+              variant: "accent",
+              onClick: () => {
+                void invokeOpenDefaultAppsSettings().catch(() => {});
+              },
+            },
+          ],
+        });
+      } else if (appNotFoundMatch) {
         const appName = appNotFoundMatch[1];
         const installUrl = appNotFoundMatch[2];
         showToast({
@@ -452,27 +597,87 @@
     closeShare();
   }
 
-  async function handleSetWallpaper() {
-    if (isVideo || isPdf) {
-      try {
-        const { openPath } = await import("@tauri-apps/plugin-opener");
-        await openPath(filePath);
-        showToast({
-          message: t("dialogs.dialog.toast.openedDefault"),
-          color: "green",
-        });
-      } catch {
-        showToast({
-          message: t("dialogs.dialog.toast.openFailed"),
-          color: "red",
-        });
-      }
-      closeShare();
+  function browserConversionFormat(): "WebP" | "WebM" | null {
+    const ext = fileExt().toLowerCase().replace(".", "");
+    if (BROWSER_UNSUPPORTED_IMAGE_EXTS.has(ext)) return "WebP";
+    if (BROWSER_UNSUPPORTED_VIDEO_EXTS.has(ext)) return "WebM";
+    return null;
+  }
+
+  async function openInBrowserDirect() {
+    await shareAction(
+      () => invokeOpenInBrowser(filePath),
+      t("dialogs.dialog.share.toast.browser"),
+    );
+  }
+
+  function requestBrowserOpen() {
+    const format = browserConversionFormat();
+    if (!format) {
+      void openInBrowserDirect();
+      return;
+    }
+    shareConfirmBrowserFormat = format;
+    requestShareConfirm("browser");
+  }
+
+  function requestShareConfirm(kind: ShareConfirmKind) {
+    hideFloatingTooltip("share-dest-tooltip");
+    hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+    shareConfirmTime = getMediaEl()?.currentTime ?? 0;
+    shareConfirm = kind;
+  }
+
+  async function runShareConfirm() {
+    const kind = shareConfirm;
+    if (!kind) return;
+    shareConfirm = null;
+    if (kind === "browser") {
+      await openInBrowserDirect();
+    } else if (kind === "wallpaper") {
+      await setShareWallpaper();
+    } else if (kind === "lockScreen") {
+      await setShareLockScreen();
+    } else {
+      await shareAction(
+        () => invokeCreateDesktopShortcut(filePath),
+        t("dialogs.dialog.share.toast.shortcutCreated"),
+      );
+    }
+  }
+
+  async function setShareWallpaper() {
+    if (isVideo) {
+      await shareAction(async () => {
+        const frame = await invokeExtractVideoFrame(filePath, shareConfirmTime);
+        await invokeSetWallpaper(frame);
+      }, t("dialogs.dialog.toast.wallpaperSet"));
+      return;
+    }
+    if (isPdf) {
+      await shareAction(
+        () => invokeOpenDefaultApp(filePath),
+        t("dialogs.dialog.toast.openedDefault"),
+      );
       return;
     }
     await shareAction(
       () => invokeSetWallpaper(filePath),
       t("dialogs.dialog.toast.wallpaperSet"),
+    );
+  }
+
+  async function setShareLockScreen() {
+    if (isVideo) {
+      await shareAction(async () => {
+        const frame = await invokeExtractVideoFrame(filePath, shareConfirmTime);
+        await invokeSetLockScreen(frame);
+      }, t("dialogs.dialog.share.toast.lockScreenSet"));
+      return;
+    }
+    await shareAction(
+      () => invokeSetLockScreen(filePath),
+      t("dialogs.dialog.share.toast.lockScreenSet"),
     );
   }
 
@@ -970,40 +1175,26 @@
             style="animation-delay: 165ms"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><circle
-                cx="18"
-                cy="5"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="6"
-                cy="12"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="18"
-                cy="19"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><line
-                x1="8.59"
-                y1="13.51"
-                x2="15.42"
-                y2="17.49"
+              ><path
+                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+                stroke-linejoin="round"
               /><line
-                x1="15.41"
-                y1="6.51"
-                x2="8.59"
-                y2="10.49"
+                x1="9"
+                y1="12"
+                x2="21"
+                y2="12"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+              /><polyline
+                points="16 7 21 12 16 17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -1135,40 +1326,26 @@
             style="animation-delay: 165ms"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><circle
-                cx="18"
-                cy="5"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="6"
-                cy="12"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="18"
-                cy="19"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><line
-                x1="8.59"
-                y1="13.51"
-                x2="15.42"
-                y2="17.49"
+              ><path
+                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+                stroke-linejoin="round"
               /><line
-                x1="15.41"
-                y1="6.51"
-                x2="8.59"
-                y2="10.49"
+                x1="9"
+                y1="12"
+                x2="21"
+                y2="12"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+              /><polyline
+                points="16 7 21 12 16 17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -1327,40 +1504,26 @@
             style="animation-delay: 165ms"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><circle
-                cx="18"
-                cy="5"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="6"
-                cy="12"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="18"
-                cy="19"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><line
-                x1="8.59"
-                y1="13.51"
-                x2="15.42"
-                y2="17.49"
+              ><path
+                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+                stroke-linejoin="round"
               /><line
-                x1="15.41"
-                y1="6.51"
-                x2="8.59"
-                y2="10.49"
+                x1="9"
+                y1="12"
+                x2="21"
+                y2="12"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+              /><polyline
+                points="16 7 21 12 16 17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -1511,40 +1674,26 @@
             style="animation-delay: 165ms"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-              ><circle
-                cx="18"
-                cy="5"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="6"
-                cy="12"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><circle
-                cx="18"
-                cy="19"
-                r="3"
-                stroke="currentColor"
-                stroke-width="2"
-              /><line
-                x1="8.59"
-                y1="13.51"
-                x2="15.42"
-                y2="17.49"
+              ><path
+                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+                stroke-linejoin="round"
               /><line
-                x1="15.41"
-                y1="6.51"
-                x2="8.59"
-                y2="10.49"
+                x1="9"
+                y1="12"
+                x2="21"
+                y2="12"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
+              /><polyline
+                points="16 7 21 12 16 17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -2645,7 +2794,12 @@
       if (e.target === e.currentTarget) closeShare();
     }}
   >
-    <div class="delete-dialog share-dialog" role="dialog" aria-modal="true">
+    <div
+      class="delete-dialog share-dialog"
+      role="dialog"
+      aria-modal="true"
+      use:shareTipDelegation
+    >
       <div class="share-header-bar">
         <svg
           width="18"
@@ -2657,11 +2811,9 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <circle cx="18" cy="5" r="3" />
-          <circle cx="6" cy="12" r="3" />
-          <circle cx="18" cy="19" r="3" />
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          <path d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4" />
+          <line x1="9" y1="12" x2="21" y2="12" />
+          <polyline points="16 7 21 12 16 17" />
         </svg>
         <div>
           <p class="delete-title">{t("dialogs.dialog.share.title")}</p>
@@ -2671,6 +2823,7 @@
           class="dialog-close-x"
           onclick={closeShare}
           aria-label={t("dialogs.dialog.share.close")}
+          data-share-tip={t("dialogs.dialog.share.tooltip.close")}
         >
           <svg
             viewBox="0 0 24 24"
@@ -2703,7 +2856,11 @@
           </p>
           <div class="share-grid share-grid-4">
             {#if isVideo || isAudio}
-              <button class="share-btn" onclick={() => {}}>
+              <button
+                class="share-btn"
+                data-share-tip={t("dialogs.dialog.share.tooltip.cast")}
+                onclick={() => {}}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M2 16.1A5 5 0 015.9 20M2 12.05A9 9 0 019.95 20M2 8V6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2h-6"
@@ -2726,6 +2883,7 @@
             {:else}
               <button
                 class="share-btn"
+                data-share-tip={t("dialogs.dialog.share.tooltip.printer")}
                 onclick={() =>
                   shareAction(
                     () => invokePrintFile(filePath),
@@ -2760,11 +2918,8 @@
             {/if}
             <button
               class="share-btn"
-              onclick={() =>
-                shareAction(
-                  () => openInDefaultApp(),
-                  t("dialogs.dialog.share.toast.sharedViaDevice"),
-                )}
+              data-share-tip={t("dialogs.dialog.share.tooltip.device")}
+              onclick={handleShareFile}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><path
@@ -2789,6 +2944,7 @@
             {#if isAudio}
               <button
                 class="share-btn"
+                data-share-tip={t("dialogs.dialog.share.tooltip.bluetooth")}
                 onclick={() =>
                   shareAction(
                     () => invokeSendBluetooth(filePath),
@@ -2807,7 +2963,11 @@
                 {t("dialogs.dialog.share.bluetooth")}
               </button>
             {:else}
-              <button class="share-btn" onclick={handleSetWallpaper}>
+              <button
+                class="share-btn"
+                data-share-tip={t("dialogs.dialog.share.tooltip.wallpaper")}
+                onclick={() => requestShareConfirm("wallpaper")}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><rect
                     x="3"
@@ -2840,7 +3000,11 @@
               </button>
             {/if}
             {#if isAudio}
-              <button class="share-btn" onclick={handleShazam}>
+              <button
+                class="share-btn"
+                data-share-tip={t("dialogs.dialog.share.tooltip.shazam")}
+                onclick={handleShazam}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><path
                     d="M9 18V5l12-2v13"
@@ -2867,11 +3031,8 @@
             {:else}
               <button
                 class="share-btn"
-                onclick={() =>
-                  shareAction(
-                    () => invokeSetLockScreen(filePath),
-                    t("dialogs.dialog.share.toast.lockScreenSet"),
-                  )}
+                data-share-tip={t("dialogs.dialog.share.tooltip.lockScreen")}
+                onclick={() => requestShareConfirm("lockScreen")}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><rect
@@ -2894,11 +3055,8 @@
             {/if}
             <button
               class="share-btn"
-              onclick={() =>
-                shareAction(
-                  () => invokeCreateDesktopShortcut(filePath),
-                  t("dialogs.dialog.share.toast.shortcutCreated"),
-                )}
+              data-share-tip={t("dialogs.dialog.share.tooltip.desktop")}
+              onclick={() => requestShareConfirm("desktop")}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><rect
@@ -2932,8 +3090,6 @@
           </div>
         </div>
 
-        <div class="ctx-sep"></div>
-
         <div class="share-section">
           <p class="share-section-label">
             <svg
@@ -2959,6 +3115,7 @@
           <div class="share-grid share-grid-4">
             <button
               class="share-btn-circle"
+              data-share-tip={t("dialogs.dialog.share.tooltip.openDefault")}
               onclick={() =>
                 shareAction(
                   () => openInDefaultApp(),
@@ -2994,6 +3151,9 @@
             {#if isAudio}
               <button
                 class="share-btn-circle"
+                data-share-tip={t("dialogs.dialog.share.tooltip.openApp", {
+                  app: "Spotify",
+                })}
                 onclick={() =>
                   shareAction(
                     () =>
@@ -3033,6 +3193,9 @@
             {:else}
               <button
                 class="share-btn-circle"
+                data-share-tip={t("dialogs.dialog.share.tooltip.openApp", {
+                  app: t("dialogs.dialog.share.photos"),
+                })}
                 onclick={() =>
                   shareAction(
                     () => invokeOpenInPhotos(filePath),
@@ -3067,6 +3230,9 @@
             {#if !isVideo && !isAudio}
               <button
                 class="share-btn-circle"
+                data-share-tip={t("dialogs.dialog.share.tooltip.openApp", {
+                  app: t("dialogs.dialog.share.paint"),
+                })}
                 onclick={() =>
                   shareAction(
                     () =>
@@ -3097,6 +3263,9 @@
             {:else}
               <button
                 class="share-btn-circle"
+                data-share-tip={t("dialogs.dialog.share.tooltip.openApp", {
+                  app: "VLC",
+                })}
                 onclick={() =>
                   shareAction(
                     () =>
@@ -3128,11 +3297,10 @@
             {/if}
             <button
               class="share-btn-circle"
-              onclick={() =>
-                shareAction(
-                  () => invokeOpenInBrowser(filePath),
-                  t("dialogs.dialog.share.toast.browser"),
-                )}
+              data-share-tip={t("dialogs.dialog.share.tooltip.openApp", {
+                app: t("dialogs.dialog.share.browser"),
+              })}
+              onclick={requestBrowserOpen}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                 ><circle
@@ -3158,6 +3326,7 @@
             </button>
             <button
               class="share-btn-circle"
+              data-share-tip={t("dialogs.dialog.share.tooltip.chooseApp")}
               onclick={() =>
                 shareAction(
                   () => invokeOpenWithDialog(filePath),
@@ -3176,8 +3345,6 @@
             </button>
           </div>
         </div>
-
-        <div class="ctx-sep"></div>
 
         {#if !isPdf}
           <div class="share-section">
@@ -3201,16 +3368,19 @@
               <div class="share-grid share-grid-3">
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("MP4")}
                   onclick={() => handleSaveAs("mp4")}
                   disabled={shareConverting}>MP4</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("MKV")}
                   onclick={() => handleSaveAs("mkv")}
                   disabled={shareConverting}>MKV</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("WebM")}
                   onclick={() => handleSaveAs("webm")}
                   disabled={shareConverting}>WebM</button
                 >
@@ -3218,16 +3388,21 @@
               <div class="share-grid share-grid-3">
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("MP3")}
                   onclick={() => handleSaveAs("mp3")}
                   disabled={shareConverting}>MP3</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("GIF")}
                   onclick={() => handleSaveAs("gif")}
                   disabled={shareConverting}>GIF</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={t(
+                    "dialogs.dialog.share.tooltip.chooseFormat",
+                  )}
                   onclick={handleSaveAsOther}
                   disabled={shareConverting}
                   >{t("dialogs.dialog.share.otherFormat")}</button
@@ -3237,16 +3412,19 @@
               <div class="share-grid share-grid-3">
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("MP3")}
                   onclick={() => handleSaveAs("mp3")}
                   disabled={shareConverting}>MP3</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("WAV")}
                   onclick={() => handleSaveAs("wav")}
                   disabled={shareConverting}>WAV</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("FLAC")}
                   onclick={() => handleSaveAs("flac")}
                   disabled={shareConverting}>FLAC</button
                 >
@@ -3256,17 +3434,22 @@
                   class="share-btn-wide"
                   class:converting={convertingFormat === "mp4"}
                   style:--progress="{convertProgress}%"
+                  data-share-tip={saveAsTip("MP4")}
                   onclick={() => handleSaveAs("mp4")}
                   disabled={shareConverting && convertingFormat !== "mp4"}
                   >MP4</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("Opus")}
                   onclick={() => handleSaveAs("opus")}
                   disabled={shareConverting}>Opus</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={t(
+                    "dialogs.dialog.share.tooltip.chooseFormat",
+                  )}
                   onclick={handleSaveAsOther}
                   disabled={shareConverting}
                   >{t("dialogs.dialog.share.otherFormat")}</button
@@ -3276,16 +3459,19 @@
               <div class="share-grid share-grid-3">
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("JPG")}
                   onclick={() => handleSaveAs("jpg")}
                   disabled={shareConverting}>JPG</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("PNG")}
                   onclick={() => handleSaveAs("png")}
                   disabled={shareConverting}>PNG</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("WebP")}
                   onclick={() => handleSaveAs("webp")}
                   disabled={shareConverting}>WebP</button
                 >
@@ -3293,16 +3479,21 @@
               <div class="share-grid share-grid-3">
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("PSD")}
                   onclick={() => handleSaveAs("psd")}
                   disabled={shareConverting}>PSD</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={saveAsTip("PDF")}
                   onclick={() => handleSaveAs("pdf")}
                   disabled={shareConverting}>PDF</button
                 >
                 <button
                   class="share-btn-wide"
+                  data-share-tip={t(
+                    "dialogs.dialog.share.tooltip.chooseFormat",
+                  )}
                   onclick={handleSaveAsOther}
                   disabled={shareConverting}
                   >{t("dialogs.dialog.share.otherFormat")}</button
@@ -3322,11 +3513,14 @@
               t("dialogs.dialog.share.outputFolder")}
             onclick={pickShareOutputDir}
             onmouseenter={(e) => {
-              if (!conversionPrefs.outputDir) return;
+              const path = conversionPrefs.outputDir;
+              hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
               showFloatingTooltip(
                 "share-dest-tooltip",
                 e.currentTarget.getBoundingClientRect(),
-                conversionPrefs.outputDir,
+                path
+                  ? `${t("dialogs.dialog.share.tooltip.outputFolder")} — ${path}`
+                  : t("dialogs.dialog.share.tooltip.outputFolder"),
                 "above",
               );
             }}
@@ -3358,10 +3552,40 @@
                 : t("dialogs.dialog.share.outputFolder")}
             </span>
           </button>
+          <span
+            class="share-dest-clear-slot"
+            class:is-open={!!conversionPrefs.outputDir}
+          >
+            <button
+              class="share-dest-btn share-dest-clear"
+              data-share-tip={t("dialogs.dialog.share.clearOutputFolder")}
+              aria-label={t("dialogs.dialog.share.clearOutputFolder")}
+              tabindex={conversionPrefs.outputDir ? 0 : -1}
+              onclick={() => {
+                hideFloatingTooltip("share-dest-tooltip");
+                hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+                conversionPrefs.setOutputDir("");
+              }}
+            >
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+            </button>
+          </span>
           <button
-            class="share-delete-toggle tooltip-above"
+            class="share-delete-toggle"
             class:is-on={shareDeleteOriginal}
-            data-tooltip={t("dialogs.dialog.share.moveOriginalToTrash")}
+            data-share-tip={t("dialogs.dialog.share.moveOriginalToTrash")}
             aria-label={t("dialogs.dialog.share.moveOriginalToTrash")}
             onclick={() =>
               conversionPrefs.setDeleteOriginal(
@@ -3394,4 +3618,77 @@
     class="filename-tooltip share-dest-path-tooltip"
     style="position: fixed; opacity: 0; left: 0; top: 0; pointer-events: none; z-index: 9999"
   ></div>
+  <div
+    id="share-action-tooltip"
+    class="filename-tooltip share-action-tooltip"
+    style="position: fixed; opacity: 0; left: 0; top: 0; pointer-events: none; z-index: 9999"
+  ></div>
+  {#if shareConfirm}
+    <div
+      class="delete-overlay share-confirm-overlay"
+      out:fade={{ duration: overlayFadeMs }}
+      role="presentation"
+      onmousedown={(e) => {
+        if (e.target === e.currentTarget) shareConfirm = null;
+      }}
+    >
+      <div
+        class="delete-dialog edit-confirm-dialog share-confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        onmousedown={(e) => e.stopPropagation()}
+      >
+        <div class="edit-confirm-header">
+          <div class="edit-confirm-header-left">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              style="color: var(--yellow)"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 10.5V16" />
+              <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+            </svg>
+            <div>
+              <p class="delete-title">{shareConfirmTitle}</p>
+              <p class="delete-subtitle">{fileName}</p>
+            </div>
+          </div>
+          <button
+            class="edit-confirm-header-close"
+            onclick={() => (shareConfirm = null)}
+            aria-label={t("common.close")}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="edit-confirm-body-box">{shareConfirmBody}</div>
+        <div class="edit-confirm-actions edit-confirm-actions-horizontal">
+          <button class="delete-cancel" onclick={() => (shareConfirm = null)}
+            >{t("common.cancel")}</button
+          >
+          <button class="edit-confirm-btn-primary" onclick={runShareConfirm}
+            >{t("common.confirm")}</button
+          >
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}

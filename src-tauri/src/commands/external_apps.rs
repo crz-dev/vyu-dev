@@ -1,4 +1,6 @@
 use serde::Serialize;
+#[cfg(target_os = "windows")]
+use std::cell::RefCell;
 use std::fs;
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
@@ -6,9 +8,24 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 #[cfg(target_os = "windows")]
 use windows::core::Interface;
+#[cfg(target_os = "windows")]
+use windows::ApplicationModel::DataTransfer::{DataRequestedEventArgs, DataTransferManager};
+#[cfg(target_os = "windows")]
+use windows::Foundation::TypedEventHandler;
+#[cfg(target_os = "windows")]
+use windows::Storage::{IStorageItem, StorageFile};
+#[cfg(target_os = "windows")]
+use windows::Win32::UI::Shell::IDataTransferManagerInterop;
+#[cfg(target_os = "windows")]
+use windows_collections::IIterable;
 
 use crate::constants::CREATE_NO_WINDOW;
 use crate::util::{canonicalize_path, ffprobe_command};
+
+#[cfg(target_os = "windows")]
+thread_local! {
+    static SHARE_MANAGER: RefCell<Option<DataTransferManager>> = RefCell::new(None);
+}
 
 #[derive(Serialize)]
 pub struct SongIdentification {
@@ -115,6 +132,121 @@ pub fn print_file(path: String) -> Result<(), String> {
         return Err("Printing is only supported on Windows.".into());
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn open_in_default_app(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let wide_path = windows::core::HSTRING::from(&path);
+        let result = unsafe {
+            windows::Win32::UI::Shell::ShellExecuteW(
+                None,
+                windows::core::w!("open"),
+                &wide_path,
+                None,
+                None,
+                windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT,
+            )
+        };
+        if result.is_invalid() || result.0 as isize <= 32 {
+            return Err("NO_DEFAULT_APP".into());
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        return Err("Opening files is only supported on Windows.".into());
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn show_windows_share(
+    window: &tauri::WebviewWindow,
+    path: &str,
+    title: &str,
+) -> Result<(), String> {
+    let _ = unsafe {
+        windows::Win32::System::WinRT::RoInitialize(
+            windows::Win32::System::WinRT::RO_INIT_MULTITHREADED,
+        )
+    };
+    let hwnd = window
+        .hwnd()
+        .map_err(|e| format!("Failed to get window handle: {e}"))?;
+    let interop: IDataTransferManagerInterop =
+        windows::core::factory::<DataTransferManager, IDataTransferManagerInterop>()
+            .map_err(|e| format!("Failed to get share manager: {e}"))?;
+    let manager: DataTransferManager = unsafe { interop.GetForWindow(hwnd) }
+        .map_err(|e| format!("Failed to create share manager: {e}"))?;
+
+    let share_path = path.to_string();
+    let share_title = title.to_string();
+    let handler = TypedEventHandler::<DataTransferManager, DataRequestedEventArgs>::new(
+        move |_, args| {
+            let args = args.ok()?;
+            let request = args.Request()?;
+            let data = request.Data()?;
+            data.Properties()?
+                .SetTitle(&windows::core::HSTRING::from(share_title.clone()))?;
+            let wide_path = windows::core::HSTRING::from(share_path.clone());
+            let file_result = (|| -> windows::core::Result<()> {
+                let file = StorageFile::GetFileFromPathAsync(&wide_path)?.get()?;
+                let items: IIterable<IStorageItem> =
+                    vec![Some(file.cast::<IStorageItem>()?)].into();
+                data.SetStorageItems(&items, true)?;
+                Ok(())
+            })();
+            if file_result.is_err() {
+                data.SetText(&wide_path)?;
+            }
+            Ok(())
+        },
+    );
+    manager
+        .DataRequested(&handler)
+        .map_err(|e| format!("Failed to listen for share data: {e}"))?;
+    SHARE_MANAGER.with(|slot| {
+        *slot.borrow_mut() = Some(manager);
+    });
+    unsafe { interop.ShowShareUIForWindow(hwnd) }
+        .map_err(|e| format!("Failed to open share UI: {e}"))
+}
+
+#[tauri::command]
+pub async fn share_file(window: tauri::WebviewWindow, path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    if !p.exists() {
+        return Err("File does not exist".into());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let title = p
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("File")
+            .to_string();
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        let share_window = window.clone();
+        window
+            .run_on_main_thread(move || {
+                let result = show_windows_share(&share_window, &path, &title);
+                let _ = tx.send(result);
+            })
+            .map_err(|e| format!("Failed to show share UI: {e}"))?;
+        return rx
+            .await
+            .map_err(|e| format!("Share UI did not start: {e}"))?;
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = window;
+        return Err("Sharing is only supported on Windows.".into());
+    }
 }
 
 #[tauri::command]

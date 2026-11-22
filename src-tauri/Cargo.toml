@@ -29,12 +29,20 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 jpeg-decoder = "0.3"
 arboard = "3"
 rusqlite = { version = "0.31", features = ["bundled"] }
+windows-collections = "0.2"
 windows = { version = "0.61", features = [
+    "ApplicationModel_DataTransfer",
+    "Foundation",
+    "Foundation_Collections",
+    "Storage",
+    "Storage_Streams",
+    "Win32_Foundation",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
     "Win32_System_Com",
     "Win32_System_Power",
     "Win32_System_Registry",
+    "Win32_System_WinRT",
 ] }
 futures = "0.3.32"
 lopdf = "0.34"

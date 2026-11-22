@@ -159,6 +159,7 @@ Authoritative reference for ownership, data flow, persistence, and non-obvious i
 | Database persistence (SQLite)      | `database/` (Rust), `services/database.ts` (frontend)                    |
 | Collection directory operations    | `commands/collections.rs`                                                |
 | Sidecar binary execution (SongRec) | `commands/external_apps.rs`                                              |
+| External app launch / native share | `commands/external_apps.rs`, `commands/conversion.rs`                    |
 | Window state persistence           | `state::window`                                                          |
 | Thumbnail generation, cache, dedup | `commands/thumbnail.rs`                                                  |
 | Display cache / cover art          | `commands/display.rs`                                                    |

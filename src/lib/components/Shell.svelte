@@ -966,6 +966,7 @@
     {isAudio}
     {isPdf}
     {isRemote}
+    {getMediaEl}
     {pdfPageCount}
     {pdfVersion}
     {pdfPageSize}

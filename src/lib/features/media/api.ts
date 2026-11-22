@@ -1078,6 +1078,14 @@ export async function invokeCreateDesktopShortcut(path: string): Promise<void> {
   return invoke("create_desktop_shortcut", { path });
 }
 
+export async function invokeOpenDefaultApp(path: string): Promise<void> {
+  return invoke("open_in_default_app", { path });
+}
+
+export async function invokeShareFile(path: string): Promise<void> {
+  return invoke("share_file", { path });
+}
+
 export async function invokeOpenInPhotos(path: string): Promise<void> {
   return invoke("open_in_photos", { path });
 }
@@ -1105,6 +1113,13 @@ export async function invokeOpenInSpotify(
 
 export async function invokeOpenInBrowser(path: string): Promise<void> {
   return invoke("open_in_browser", { path });
+}
+
+export async function invokeExtractVideoFrame(
+  path: string,
+  timeSecs: number,
+): Promise<string> {
+  return invoke("extract_video_frame", { path, timeSecs });
 }
 
 export async function invokeOpenWithDialog(path: string): Promise<void> {

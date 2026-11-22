@@ -120,6 +120,16 @@ export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([
   "gpr",
 ]);
 
+export const BROWSER_UNSUPPORTED_VIDEO_EXTS = new Set([
+  "mkv",
+  "avi",
+  "mov",
+  "wmv",
+  "mpeg",
+  "mpg",
+  "m4v",
+]);
+
 // ── Remux formats ──
 
 export const REMUX_VIDEO_EXTS = new Set(["ts", "m2ts"]);
