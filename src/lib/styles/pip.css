@@ -905,3 +905,23 @@ main.pip.pip-moving .pip-audio-stage {
   animation: none !important;
   transition: none !important;
 }
+
+/* Slider click animation for the PiP volume and progress controls. */
+.slider-click-anim .pip-volume-fill {
+  transition: height 180ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.slider-click-anim .pip-volume-knob {
+  transition: bottom 180ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.slider-click-anim .pip-progress-fill {
+  transition: width 180ms cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.slider-click-anim .pip-progress-knob {
+  transition:
+    left 180ms cubic-bezier(0.22, 0.9, 0.3, 1),
+    opacity 150ms ease,
+    transform 150ms ease;
+}

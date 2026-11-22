@@ -48,6 +48,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - **Theme, appearance, accessibility:** `features/{theme,accessibility}/*`, `features/menus/accessibility.svelte.ts`, `styles/*`.
 - **Add/remove a media format:** `shared/constants.ts`, `src-tauri/src/constants.rs`, `shared/mediaKind.ts`, `commands/{thumbnail,display,conversion}.rs`, and file associations in `src-tauri/tauri.conf.json`.
 - **App shell, dialogs, shared UI:** `components/*`, `features/dialogs/*`, `shared/pageProps.ts`.
+- **Slider click animation:** `services/sliderAnimation.ts` installs the delegated pointer behavior for native and custom sliders; slider transition styles live in `styles/components.css` and `styles/pip.css`.
 
 ### Rust command map
 

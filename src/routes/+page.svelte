@@ -46,6 +46,7 @@
     migrateFolderPathStorage,
   } from "$lib/services/storage";
   import { loadMediaProperties } from "$lib/features/media/ffmpeg";
+  import { installSliderAnimations } from "$lib/services/sliderAnimation";
   import {
     invokeOpenDirectory,
     invokeCleanupTempFolder,
@@ -139,6 +140,8 @@
   $effect(() => {
     if (!filePath && !isRemote) fileName = t("shell.noFileOpen");
   });
+  // Delegated click animation for native and custom sliders.
+  $effect(() => installSliderAnimations());
   let isVideo = $state(false);
   let isAudio = $state(false);
   let isPdf = $state(false);

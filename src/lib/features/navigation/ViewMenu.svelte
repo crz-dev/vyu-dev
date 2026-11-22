@@ -353,6 +353,17 @@
     transform: translate(-50%, -50%) rotate(45deg) scale(1.28);
   }
 
+  :global(.slider-click-anim) .view-density-fill {
+    transition: width 180ms cubic-bezier(0.22, 0.9, 0.3, 1);
+  }
+
+  :global(.slider-click-anim) .view-density-scrubber {
+    transition:
+      left 180ms cubic-bezier(0.22, 0.9, 0.3, 1),
+      opacity 0.2s,
+      transform 0.15s ease;
+  }
+
   .view-density-icon {
     color: var(--text-muted);
     display: flex;
