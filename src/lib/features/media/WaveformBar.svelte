@@ -6,6 +6,7 @@
     MediaChapter,
   } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     getWaveformPeaks,
     setWaveformPeaks,
@@ -95,6 +96,12 @@
   let canvasEl = $state<HTMLCanvasElement | null>(null);
   let hoveredChapterIndex = $state(-1);
   let hoverPct = $state(0);
+  let displayedProgress = $state(0);
+  let progressAnimRaf: number | null = null;
+  const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
+  const renderedProgress = $derived(
+    Math.max(0, Math.min(100, displayedProgress)),
+  );
   let peaks = $state<Float32Array | null>(null);
   let decodeFailed = $state(false);
   let cachedCanvasW = 0;
@@ -222,7 +229,7 @@
       drawBackground(w, h, dpr);
     }
 
-    const clipX = Math.min(Math.max(progress, 0), 100) * 0.01 * w;
+    const clipX = Math.min(Math.max(renderedProgress, 0), 100) * 0.01 * w;
     if (bgCanvas && playedCanvas) {
       if (chapters.length > 0 && durationSecs > 0) {
         drawChaptered(w, h, dpr, clipX, ctx);
@@ -301,7 +308,7 @@
 
   $effect(() => {
     peaks;
-    progress;
+    renderedProgress;
     chapters;
     durationSecs;
     requestAnimationFrame(draw);
@@ -335,12 +342,99 @@
     ro.observe(canvas.parentElement!);
     return () => ro.disconnect();
   });
+
+  let scrubMoveListener: ((e: MouseEvent) => void) | null = null;
+  let scrubEndListener: (() => void) | null = null;
+
+  function removeScrubListeners() {
+    if (scrubMoveListener) {
+      window.removeEventListener("mousemove", scrubMoveListener);
+      scrubMoveListener = null;
+    }
+    if (scrubEndListener) {
+      window.removeEventListener("mouseup", scrubEndListener);
+      scrubEndListener = null;
+    }
+  }
+
+  function stopProgressAnimation(snap = false) {
+    if (progressAnimRaf !== null) {
+      cancelAnimationFrame(progressAnimRaf);
+      progressAnimRaf = null;
+    }
+    if (snap) displayedProgress = clampedProgress;
+  }
+
+  function animateProgressTo(targetPct: number) {
+    stopProgressAnimation();
+    const target = Math.max(0, Math.min(100, targetPct));
+    const start = renderedProgress;
+    const delta = target - start;
+    if (appearance.reducedMotion || Math.abs(delta) < 0.2) {
+      displayedProgress = target;
+      return;
+    }
+    const duration = Math.min(260, 140 + Math.abs(delta) * 1.2);
+    let startedAt: number | null = null;
+    let lastT = 0;
+    const step = (now: number) => {
+      if (startedAt === null) startedAt = now;
+      const rawT = Math.min(1, (now - startedAt) / duration);
+      // Never skip more than a fifth per frame so a stalled frame cannot turn
+      // the whole tween into a jump.
+      const t = Math.min(rawT, lastT + 0.2);
+      lastT = t;
+      if (t >= 1) {
+        progressAnimRaf = null;
+        displayedProgress = Math.max(0, Math.min(100, progress));
+        return;
+      }
+      const eased = 1 - Math.pow(1 - t, 3);
+      displayedProgress = start + delta * eased;
+      progressAnimRaf = requestAnimationFrame(step);
+    };
+    progressAnimRaf = requestAnimationFrame(step);
+  }
+
+  function handleScrubStart(e: MouseEvent) {
+    if (e.button !== 0) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (rect.width > 0) {
+      animateProgressTo(((e.clientX - rect.left) / rect.width) * 100);
+    }
+    const downClientX = e.clientX;
+    let scrubMoved = false;
+    removeScrubListeners();
+    scrubMoveListener = (ev: MouseEvent) => {
+      if (!scrubMoved && Math.abs(ev.clientX - downClientX) > 3) {
+        scrubMoved = true;
+        stopProgressAnimation(true);
+      }
+    };
+    scrubEndListener = () => removeScrubListeners();
+    window.addEventListener("mousemove", scrubMoveListener);
+    window.addEventListener("mouseup", scrubEndListener);
+    onScrubStart(e);
+  }
+
+  $effect(() => {
+    const target = clampedProgress;
+    if (progressAnimRaf !== null) return;
+    displayedProgress = target;
+  });
+
+  $effect(() => {
+    return () => {
+      stopProgressAnimation();
+      removeScrubListeners();
+    };
+  });
 </script>
 
 <div
   class="audio-waveform-bar"
   class:editor-open={editorOpen}
-  onmousedown={onScrubStart}
+  onmousedown={handleScrubStart}
   onmousemove={(e) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const p = ((e.clientX - rect.left) / rect.width) * 100;
@@ -375,7 +469,7 @@
       ></div>
     {/each}
   {/if}
-  <div class="audio-progress-playhead" style="left: {progress}%"></div>
+  <div class="audio-progress-playhead" style="left: {renderedProgress}%"></div>
 
   {#if abLoopRegion}
     <div
