@@ -64,26 +64,26 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 
 **SQLite — primary per-file store.** `src-tauri/src/database/` + `services/database.ts`.
 
-- Database: `%APPDATA%/com.vyu.desktop/vyu.db`. WAL mode, one `Mutex<Connection>`, migrations in `database/migrations.rs`.
-- Tables: `settings` and `file_metadata` (last position, timestamps, clips, EQ, CD color, last viewed).
-- The frontend wrapper caches metadata and positions in memory. Migrations are additive; never edit an applied migration in place.
+- Database lives under the app data directory. WAL mode, a single connection, and versioned migrations in the database module.
+- Stores per-file metadata: resume positions, timestamps, clips, EQ, CD color, and last viewed.
+- Migrations are additive; never edit an applied migration in place.
 
 **localStorage — app settings and fallback.** `services/storage.ts`.
 
-- App-wide keys use `vyu-{name}`; system/window/power/external-app/last-file keys use `vyu-system-*`. Keybinds use `vyu-keybinds`, the debug overlay uses `vyu-debug-overlay`, and the sleep-timer close option uses `vyu-sleep-close-app`.
-- Legacy per-file fallback keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
-- SQLite is primary after `migrateFromLocalStorage`. Timestamps and clips use SQLite; localStorage is read only when the DB row is absent or the query fails. Resume points, EQ, and CD color are still dual-written when the user changes them.
+- App settings use the `vyu-*` namespace; system, window, power, and external-app settings use `vyu-system-*`.
+- Legacy per-file fallback keys use `vyu-ts-`, `vyu-clips-`, `vyu-resume-`, `vyu-eq-`, and `vyu-cd-color-`, each suffixed by the file path.
+- SQLite is primary after the one-time localStorage migration. Timestamps and clips use SQLite; localStorage is read only when the DB row is absent or the query fails. Resume points, EQ, and CD color are still dual-written when the user changes them.
 
-**Profiles.** Live `vyu-*` keys are the active profile; inactive profiles are snapshots in `vyu-profiles-registry-v1`. Switching captures the live keys, applies the target snapshot, and reloads the webview. Device/window keys and per-file SQLite metadata stay shared; library and accessibility settings can be scoped per profile.
+**Profiles.** Live `vyu-*` keys are the active profile; inactive profiles are snapshots in a versioned registry. Switching captures the live keys, applies the target snapshot, and reloads the webview. Device/window keys and per-file SQLite metadata stay shared; library and accessibility settings can be scoped per profile.
 
 **Other runtime paths.**
 
-- Edit backups: `%APPDATA%/com.vyu.desktop/backups` (opt-in via File Backups).
-- Window state: app config dir / `window-state.json`.
-- System startup config: app config dir / `system.json` (GPU, single instance, launch minimized, cache limit). It is read before the webview exists.
-- Caches: `%LOCALAPPDATA%/com.vyu.desktop/{thumbnails,displays,cover_art}`. Thumbnail soft limit defaults to 500 MB; display cache to 2 GB.
-- Temp: `%TEMP%/Vyu-temp/`.
-- Registry: launch at login (installed builds only) at `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Vyu`; Explorer context menu under `HKCU\Software\Classes\SystemFileAssociations\{image,video,audio,document,.pdf}\shell\Vyu`.
+- Edit backups live under the app data directory (opt-in via File Backups).
+- Window state is stored in the app config directory.
+- System config (`system.json` in the app config directory) holds GPU, single instance, launch, and cache settings. It is read before the webview exists.
+- Thumbnail, display, and cover-art caches live under the app cache directory. Thumbnail and display caches are bounded; the thumbnail limit is configurable.
+- Temp files live under the system temp directory.
+- Launch at login (installed builds only) and the Explorer context menu are registry-backed.
 
 ## Media and caches
 
@@ -91,9 +91,9 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - Thumbnail requests go through `services/thumbnailCache.svelte.ts`, the single queue/cache. Do not bypass it from the library or thumbnail bar.
 - Prepared audio tracks and extracted WebVTT use the display cache; active audio-track variants are pinned so playback is not interrupted. Thumbnail and display caches evict best-effort at their soft limits.
 - Audio-track switching remuxes a cached single-audio rendition because WebView2 cannot reliably select embedded audio tracks. Embedded text subtitles are extracted as WebVTT; bitmap subtitles are unsupported.
-- FFmpeg is pinned to 9.0.1 Essentials and SHA-256-verified by `scripts/dl-ffmpeg.ps1`. It is resolved at startup from app resources with a PATH fallback in dev; use `util::ffmpeg_command`/`ffprobe_command` rather than hardcoded paths. `src-tauri/resources/` is generated.
-- Concurrency is bounded by semaphores: 16 image, 2 video/FFmpeg/RAW, 2 audio, 1 preview. Preview frames skip the library thumbnail queue.
-- Stat-based sorting uses one `batch_stat` IPC call; do not add per-file stat loops. Library reactive stats use `$state<Record>`, not `Map`, so Svelte proxy tracking works.
+- FFmpeg is pinned and SHA-256-verified. It is resolved at startup from app resources with a PATH fallback in dev; use `util::ffmpeg_command`/`ffprobe_command` rather than hardcoded paths. `src-tauri/resources/` is generated.
+- Concurrency is bounded by semaphores with separate image, video/RAW/FFmpeg, audio, and preview lanes. Preview frames skip the library thumbnail queue.
+- Stat-based sorting uses one `batch_stat` IPC call; do not add per-file stat loops. Library reactive stats must remain proxy-friendly (`$state<Record>` rather than `Map`).
 
 ## Playback, viewer, and window
 
@@ -112,8 +112,8 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 
 ## Files and lifecycle
 
-- `watchImmediate()` with a 300 ms debounce; events within the first second of a watch are ignored. Do not rely on the watcher for immediate post-write updates.
+- `watchImmediate()` is debounced, and the initial watch event is ignored. Do not rely on the watcher for immediate post-write updates.
 - On external change: rescan, re-sort, keep the current file if present, otherwise load the nearest remaining file or close the viewer.
 - `displayFile` uses a load generation counter; `onBeforeSwitch` saves the current position, and `onReset` resets zoom, editing, and markup for the next file.
 - Cross-volume renames fall back to copy+delete on `ERROR_NOT_SAME_DEVICE` (error 17).
-- Temp files and directories must use unique hash-based paths per operation; clean them up after failures where practical.
+- Temp files and directories must use unique per-operation paths; clean them up after failures where practical.

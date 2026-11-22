@@ -4,7 +4,7 @@ Windows-only local media viewer: Tauri 2 + Rust backend, Svelte 5 runes + strict
 
 ## Before editing
 
-- Read the relevant `ARCHITECTURE.md` section; `README.md` covers setup and `CONTRIBUTING.md` covers licensing (code PRs are not accepted).
+- Read the relevant `ARCHITECTURE.md` section; `README.md` covers setup.
 - Find the existing owner, read its implementation, and trace callers. Changes often cross `+page.svelte` → feature module → service → Tauri command.
 - Prefer the smallest change that follows existing patterns. Do not refactor, rename, or reformat unrelated code.
 - Code is authoritative; if a change makes documentation wrong, update the relevant section.
