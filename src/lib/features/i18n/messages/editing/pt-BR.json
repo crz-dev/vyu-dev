@@ -27,7 +27,7 @@
   "toast.applying": "Aplicando edições...",
   "toast.clearedNoBackup": "Edições apagadas — sem backup",
   "toast.exportFailed": "Falha ao exportar o arquivo",
-  "toast.exported": "Exportado!",
+  "toast.exported": "Clonado!",
   "toast.exporting": "Exportando...",
   "toast.noEdits": "Nenhuma edição para exportar",
   "toast.nothingToUndo": "Nada para desfazer",

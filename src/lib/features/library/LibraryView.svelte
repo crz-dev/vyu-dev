@@ -7,6 +7,7 @@
     ALL_EXTS_SET,
   } from "$lib/shared/constants";
   import {
+    anchorCloneCopies,
     getFileExt,
     getFileName,
     getParentFolder,
@@ -609,6 +610,9 @@
       }
       return desc ? -cmp : cmp;
     });
+    if (mode === "name" || mode === "size" || mode === "type") {
+      return anchorCloneCopies(files);
+    }
     return files;
   });
 

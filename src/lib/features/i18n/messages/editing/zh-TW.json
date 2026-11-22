@@ -27,7 +27,7 @@
   "toast.applying": "正在套用編輯...",
   "toast.clearedNoBackup": "已清除編輯 - 沒有備份",
   "toast.exportFailed": "無法匯出檔案",
-  "toast.exported": "已匯出！",
+  "toast.exported": "已複製！",
   "toast.exporting": "正在匯出...",
   "toast.noEdits": "沒有可匯出的編輯",
   "toast.nothingToUndo": "沒有可復原的操作",

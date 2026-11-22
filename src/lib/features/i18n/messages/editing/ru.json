@@ -27,7 +27,7 @@
   "toast.applying": "Применение изменений...",
   "toast.clearedNoBackup": "Изменения удалены — резервной копии нет",
   "toast.exportFailed": "Не удалось экспортировать файл",
-  "toast.exported": "Экспортировано!",
+  "toast.exported": "Клонировано!",
   "toast.exporting": "Экспорт...",
   "toast.noEdits": "Нет изменений для экспорта",
   "toast.nothingToUndo": "Нечего отменять",

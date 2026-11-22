@@ -27,7 +27,7 @@
   "toast.applying": "Bearbeitungen werden angewendet...",
   "toast.clearedNoBackup": "Bearbeitungen gelöscht – keine Sicherung",
   "toast.exportFailed": "Datei konnte nicht exportiert werden",
-  "toast.exported": "Exportiert!",
+  "toast.exported": "Geklont!",
   "toast.exporting": "Wird exportiert...",
   "toast.noEdits": "Keine Bearbeitungen zum Exportieren",
   "toast.nothingToUndo": "Nichts rückgängig zu machen",

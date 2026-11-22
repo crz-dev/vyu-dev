@@ -52,28 +52,6 @@
     return parts.slice(-2).join("/");
   }
 
-  async function pickOutputDir(kind: "image" | "video") {
-    const current =
-      kind === "image" ? editing.imageOutputDir : editing.videoOutputDir;
-    const dir = await open({
-      directory: true,
-      defaultPath: current || undefined,
-    });
-    if (!dir) return;
-    if (kind === "image") editing.setImageOutputDir(dir as string);
-    else editing.setVideoOutputDir(dir as string);
-  }
-
-  function clearOutputDir(kind: "image" | "video") {
-    if (kind === "image") editing.setImageOutputDir("");
-    else editing.setVideoOutputDir("");
-  }
-
-  function setAutoOpenExport(enabled: boolean) {
-    editing.setAutoOpenImageExport(enabled);
-    editing.setAutoOpenVideoExport(enabled);
-  }
-
   function setKeepOriginalDate(enabled: boolean) {
     editing.setKeepImageOriginalDate(enabled);
     editing.setKeepVideoOriginalDate(enabled);
@@ -293,35 +271,6 @@
     </SettingsRow>
 
     <SettingsRow
-      label={t("settings.editor.imageOutput.label")}
-      hint={t("settings.editor.imageOutput.hint")}
-    >
-      {#snippet control()}
-        <div class="settings-control-inline">
-          <button
-            class="settings-action-btn"
-            class:blue={!!editing.imageOutputDir}
-            class:is-empty={!editing.imageOutputDir}
-            title={editing.imageOutputDir ||
-              t("settings.editor.imageOutput.label")}
-            aria-label={t("settings.editor.imageOutput.label")}
-            onclick={() => pickOutputDir("image")}
-          >
-            {shortFolderPath(editing.imageOutputDir)}
-          </button>
-          {#if editing.imageOutputDir}
-            <button
-              class="settings-action-btn"
-              title={t("settings.editor.useSourceFolder")}
-              onclick={() => clearOutputDir("image")}
-              >{t("settings.editor.clear")}</button
-            >
-          {/if}
-        </div>
-      {/snippet}
-    </SettingsRow>
-
-    <SettingsRow
       label={t("settings.editor.videoFormat.label")}
       hint={editing.videoFormat === "original"
         ? t("settings.editor.videoFormat.hint.original")
@@ -381,59 +330,9 @@
         </div>
       {/snippet}
     </SettingsRow>
-
-    <SettingsRow
-      label={t("settings.editor.videoOutput.label")}
-      hint={t("settings.editor.videoOutput.hint")}
-    >
-      {#snippet control()}
-        <div class="settings-control-inline">
-          <button
-            class="settings-action-btn"
-            class:blue={!!editing.videoOutputDir}
-            class:is-empty={!editing.videoOutputDir}
-            title={editing.videoOutputDir ||
-              t("settings.editor.videoOutput.label")}
-            aria-label={t("settings.editor.videoOutput.label")}
-            onclick={() => pickOutputDir("video")}
-          >
-            {shortFolderPath(editing.videoOutputDir)}
-          </button>
-          {#if editing.videoOutputDir}
-            <button
-              class="settings-action-btn"
-              title={t("settings.editor.useSourceFolder")}
-              onclick={() => clearOutputDir("video")}
-              >{t("settings.editor.clear")}</button
-            >
-          {/if}
-        </div>
-      {/snippet}
-    </SettingsRow>
   </SettingsGroup>
 
   <SettingsGroup label={t("settings.editor.group.behavior")} icon="refresh">
-    <SettingsRow
-      label={t("settings.editor.autoOpen.label")}
-      hint={t("settings.editor.autoOpen.hint")}
-    >
-      {#snippet control()}
-        <label class="toggle-row">
-          <input
-            type="checkbox"
-            checked={editing.autoOpenImageExport && editing.autoOpenVideoExport}
-            onchange={(e) => setAutoOpenExport(e.currentTarget.checked)}
-          />
-          <span
-            class="toggle-track"
-            class:on={editing.autoOpenImageExport &&
-              editing.autoOpenVideoExport}
-            ><span class="toggle-thumb"></span></span
-          >
-        </label>
-      {/snippet}
-    </SettingsRow>
-
     <SettingsRow
       label={t("settings.editor.keepDate.label")}
       hint={t("settings.editor.keepDate.hint")}

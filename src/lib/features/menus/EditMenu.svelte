@@ -444,7 +444,7 @@
       out:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     >
       <button
-        class="edit-action-btn red tooltip-ctrl"
+        class="edit-action-btn red tooltip-ctrl tooltip-left"
         class:confirming={resetConfirming}
         disabled={!canReset}
         onclick={() => {
@@ -466,8 +466,8 @@
         data-tooltip={resetConfirming
           ? t("menus.edit.confirmRestore")
           : hasEdits
-            ? t("menus.common.reset")
-            : t("menus.edit.restoreOriginal")}
+            ? t("menus.edit.tooltip.reset")
+            : t("menus.edit.tooltip.restore")}
         aria-label={resetConfirming
           ? t("menus.edit.confirmRestore")
           : hasEdits
@@ -515,11 +515,11 @@
         {/if}
       </button>
       <button
-        class="edit-action-btn blue tooltip-ctrl"
+        class="edit-action-btn blue tooltip-ctrl tooltip-left"
         class:inactive={!canUndo}
         disabled={!canUndo}
         onclick={onUndo}
-        data-tooltip={t("menus.common.undo")}
+        data-tooltip={t("menus.edit.tooltip.undo")}
         aria-label={t("menus.common.undo")}
       >
         <svg
@@ -1254,11 +1254,11 @@
       out:fly={{ y: -26, duration: 190, opacity: 0.08 }}
     >
       <button
-        class="edit-action-btn yellow tooltip-ctrl"
+        class="edit-action-btn yellow tooltip-ctrl tooltip-right"
         disabled={!hasEdits}
         onclick={onExport}
-        data-tooltip={t("menus.common.export")}
-        aria-label={t("menus.common.export")}
+        data-tooltip={t("menus.edit.tooltip.clone")}
+        aria-label={t("menus.common.clone")}
       >
         <svg
           width="14"
@@ -1270,17 +1270,20 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="17,8 12,3 7,8" />
-          <line x1="12" y1="3" x2="12" y2="15" />
+          <path
+            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+          />
+          <path d="M14 2v6h6" />
+          <path d="M9 15h6" />
+          <path d="M12 12v6" />
         </svg>
-        <span class="edit-action-label">{t("menus.common.export")}</span>
+        <span class="edit-action-label">{t("menus.common.clone")}</span>
       </button>
       <button
-        class="edit-action-btn green tooltip-ctrl"
+        class="edit-action-btn green tooltip-ctrl tooltip-right"
         disabled={!hasEdits}
         onclick={onApply}
-        data-tooltip={t("menus.common.apply")}
+        data-tooltip={t("menus.edit.tooltip.apply")}
         aria-label={t("menus.common.apply")}
       >
         <svg

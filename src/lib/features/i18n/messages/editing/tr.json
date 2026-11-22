@@ -27,7 +27,7 @@
   "toast.applying": "Düzenlemeler uygulanıyor...",
   "toast.clearedNoBackup": "Düzenlemeler temizlendi - yedek yok",
   "toast.exportFailed": "Dosya dışa aktarılamadı",
-  "toast.exported": "Dışa aktarıldı!",
+  "toast.exported": "Klonlandı!",
   "toast.exporting": "Dışa aktarılıyor...",
   "toast.noEdits": "Dışa aktarılacak düzenleme yok",
   "toast.nothingToUndo": "Geri alınacak işlem yok",

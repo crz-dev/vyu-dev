@@ -27,7 +27,7 @@
   "toast.applying": "편집을 적용하는 중...",
   "toast.clearedNoBackup": "편집이 지워졌습니다(백업 없음)",
   "toast.exportFailed": "파일을 내보내지 못했습니다",
-  "toast.exported": "내보냈습니다!",
+  "toast.exported": "복제됨!",
   "toast.exporting": "내보내는 중...",
   "toast.noEdits": "내보낼 편집이 없습니다",
   "toast.nothingToUndo": "되돌릴 작업이 없습니다",

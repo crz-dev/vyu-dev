@@ -27,7 +27,7 @@
   "toast.applying": "Applicazione delle modifiche...",
   "toast.clearedNoBackup": "Modifiche cancellate - nessun backup",
   "toast.exportFailed": "Impossibile esportare il file",
-  "toast.exported": "Esportato!",
+  "toast.exported": "Clonato!",
   "toast.exporting": "Esportazione...",
   "toast.noEdits": "Nessuna modifica da esportare",
   "toast.nothingToUndo": "Niente da annullare",

@@ -27,7 +27,7 @@
   "toast.applying": "Application des retouches...",
   "toast.clearedNoBackup": "Retouches effacées — aucune sauvegarde",
   "toast.exportFailed": "Impossible d’exporter le fichier",
-  "toast.exported": "Exporté !",
+  "toast.exported": "Cloné !",
   "toast.exporting": "Exportation...",
   "toast.noEdits": "Aucune retouche à exporter",
   "toast.nothingToUndo": "Rien à annuler",

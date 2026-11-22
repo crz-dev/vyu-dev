@@ -45,7 +45,7 @@ async function sortFileList(
     const sorted = [...list].sort((a, b) =>
       a.localeCompare(b, undefined, { sensitivity: "base" }),
     );
-    return desc ? sorted.reverse() : sorted;
+    return anchorCloneCopies(desc ? sorted.reverse() : sorted);
   }
 
   // Modes that need file stats — batch-query via single IPC call
@@ -89,7 +89,89 @@ async function sortFileList(
   });
 
   const sorted = entries.map((e) => e.path);
-  return desc ? sorted.reverse() : sorted;
+  const ordered = desc ? sorted.reverse() : sorted;
+  return mode === "size" || mode === "type"
+    ? anchorCloneCopies(ordered)
+    : ordered;
+}
+
+/**
+ * Clone exports are named `<stem>_edited.<ext>` (or `<stem>_edited(N).<ext>`).
+ * Keep each clone directly after the file it came from so it appears to the
+ * right of its source in name, size, and type sorts.
+ */
+const CLONE_STEM_RE = /^(.*)_edited(?:\(\d+\))?$/;
+
+function splitFileName(filePath: string): {
+  folder: string;
+  stem: string;
+  ext: string;
+} {
+  const name = getFileName(filePath);
+  const dot = name.lastIndexOf(".");
+  return {
+    folder: getParentFolder(filePath).toLowerCase(),
+    stem: dot > 0 ? name.slice(0, dot) : name,
+    ext: dot > 0 ? name.slice(dot + 1).toLowerCase() : "",
+  };
+}
+
+export function anchorCloneCopies(list: string[]): string[] {
+  if (list.length < 2) return list;
+
+  const rootKeyByClone = new Map<string, string>();
+  const cloneExtByPath = new Map<string, string>();
+  const rootsByKey = new Map<string, string[]>();
+
+  for (const path of list) {
+    const { folder, stem, ext } = splitFileName(path);
+    let rootStem = stem;
+    let isClone = false;
+    let match = rootStem.match(CLONE_STEM_RE);
+    while (match) {
+      isClone = true;
+      rootStem = match[1];
+      match = rootStem.match(CLONE_STEM_RE);
+    }
+
+    if (isClone) {
+      rootKeyByClone.set(path, `${folder}\0${rootStem.toLowerCase()}`);
+      cloneExtByPath.set(path, ext);
+      continue;
+    }
+
+    const key = `${folder}\0${stem.toLowerCase()}`;
+    const roots = rootsByKey.get(key) ?? [];
+    roots.push(path);
+    rootsByKey.set(key, roots);
+  }
+
+  const clonesByRoot = new Map<string, string[]>();
+  const anchored = new Set<string>();
+  for (const path of list) {
+    const key = rootKeyByClone.get(path);
+    if (!key) continue;
+    const roots = rootsByKey.get(key);
+    if (!roots || roots.length === 0) continue;
+
+    const ext = cloneExtByPath.get(path);
+    const root = roots.find((p) => getFileExt(p) === ext) ?? roots[0];
+    const clones = clonesByRoot.get(root) ?? [];
+    clones.push(path);
+    clonesByRoot.set(root, clones);
+    anchored.add(path);
+  }
+
+  if (anchored.size === 0) return list;
+
+  const result: string[] = [];
+  for (const path of list) {
+    if (anchored.has(path)) continue;
+    result.push(path);
+    const clones = clonesByRoot.get(path);
+    if (clones) result.push(...clones);
+  }
+  return result;
 }
 
 export function typeRank(ext: string): number {

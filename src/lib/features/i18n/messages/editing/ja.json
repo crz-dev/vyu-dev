@@ -27,7 +27,7 @@
   "toast.applying": "編集を適用しています...",
   "toast.clearedNoBackup": "編集を消去しました（バックアップなし）",
   "toast.exportFailed": "ファイルを書き出せませんでした",
-  "toast.exported": "書き出しました",
+  "toast.exported": "クローンしました！",
   "toast.exporting": "書き出しています...",
   "toast.noEdits": "書き出す編集がありません",
   "toast.nothingToUndo": "元に戻す操作はありません",

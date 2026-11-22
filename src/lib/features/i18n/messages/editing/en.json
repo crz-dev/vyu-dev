@@ -27,7 +27,7 @@
   "toast.applying": "Applying edits...",
   "toast.clearedNoBackup": "Edits cleared - no backup",
   "toast.exportFailed": "Failed to export file",
-  "toast.exported": "Exported!",
+  "toast.exported": "Cloned!",
   "toast.exporting": "Exporting...",
   "toast.noEdits": "No edits to export",
   "toast.nothingToUndo": "Nothing to undo",

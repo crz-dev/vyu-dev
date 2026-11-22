@@ -1,6 +1,5 @@
-import { save } from "@tauri-apps/plugin-dialog";
 import { exists, stat } from "@tauri-apps/plugin-fs";
-import { getFileExt, joinPath } from "$lib/services/files";
+import { getFileExt, getParentFolder, joinPath } from "$lib/services/files";
 import { editing } from "$lib/features/editing/editing.svelte";
 import { conversionPrefs } from "$lib/features/media/conversionPrefs.svelte";
 import { markup } from "$lib/features/markup/markup.svelte";
@@ -383,6 +382,8 @@ export function createEditActions(deps: EditActionsDeps) {
       const ext = getFileExt(filePath);
       const isVideo = deps.getIsVideo();
       const videoEl = deps.getVideoEl();
+      const pngOverride =
+        !isVideo && editDialogStore.exportFormatOverride === "png";
       const targetExt = isVideo
         ? editing.videoFormat === "original"
           ? ext
@@ -390,42 +391,18 @@ export function createEditActions(deps: EditActionsDeps) {
         : editing.imageFormat === "original"
           ? ext
           : editing.imageFormat;
-      const overrideExt =
-        editDialogStore.exportFormatOverride === "png" ? "png" : targetExt;
-      const defaultName =
-        fileName.replace(/\.[^.]+$/, "") + "_edited." + overrideExt;
-      const outputDir = isVideo
-        ? editing.videoOutputDir
-        : editing.imageOutputDir;
-      let defaultPath = defaultName;
-      if (outputDir) {
-        try {
-          if (await exists(outputDir)) {
-            defaultPath = joinPath(outputDir, defaultName);
-          }
-        } catch {
-          // fall back to the source folder
-        }
+      const overrideExt = pngOverride ? "png" : targetExt;
+      const stem = fileName.replace(/\.[^.]+$/, "") + "_edited";
+      const outputDir = getParentFolder(filePath);
+      let outputPath = joinPath(outputDir, `${stem}.${overrideExt}`);
+      let copyIndex = 1;
+      while (await exists(outputPath)) {
+        outputPath = joinPath(
+          outputDir,
+          `${stem}(${copyIndex}).${overrideExt}`,
+        );
+        copyIndex++;
       }
-
-      const outputPath = await save({
-        defaultPath,
-        filters: isVideo
-          ? [
-              {
-                name: locale.t("editing.filter.video"),
-                extensions: [overrideExt],
-              },
-            ]
-          : [
-              {
-                name: locale.t("editing.filter.image"),
-                extensions: [overrideExt],
-              },
-            ],
-      });
-
-      if (!outputPath) return;
 
       editDialogStore.exportFormatOverride = null;
 
@@ -437,10 +414,7 @@ export function createEditActions(deps: EditActionsDeps) {
       });
 
       const s = editing.snapshot;
-      const qualityFormat =
-        editDialogStore.exportFormatOverride === "png"
-          ? "png"
-          : editing.imageFormat;
+      const qualityFormat = pngOverride ? "png" : editing.imageFormat;
       const quality = editing.imageQualityFor(qualityFormat) / 100;
       if (isVideo) {
         if (!videoEl || videoEl.videoWidth <= 0 || videoEl.videoHeight <= 0) {
@@ -460,6 +434,7 @@ export function createEditActions(deps: EditActionsDeps) {
       }
 
       editing.isExporting = false;
+      editing.clearEdits();
       unsavedToastDismissed = true;
       hideUnsavedToast();
       updateToast(toastId, {
@@ -474,15 +449,10 @@ export function createEditActions(deps: EditActionsDeps) {
           },
         ],
       });
-      const autoOpen = isVideo
-        ? editing.autoOpenVideoExport
-        : editing.autoOpenImageExport;
-      if (autoOpen) {
-        try {
-          await deps.loadFile(outputPath);
-        } catch (e) {
-          console.error("Failed to auto-open export:", e);
-        }
+      try {
+        await deps.loadFile(outputPath);
+      } catch (e) {
+        console.error("Failed to open exported clone:", e);
       }
     } catch (err) {
       editing.isExporting = false;
