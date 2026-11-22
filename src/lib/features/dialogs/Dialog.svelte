@@ -1176,25 +1176,27 @@
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               ><path
-                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
+                d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-              /><line
-                x1="9"
-                y1="12"
-                x2="21"
-                y2="12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><polyline
-                points="16 7 21 12 16 17"
+              /><path
+                d="m12 15-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+              /><path
+                d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -1327,25 +1329,27 @@
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               ><path
-                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
+                d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-              /><line
-                x1="9"
-                y1="12"
-                x2="21"
-                y2="12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><polyline
-                points="16 7 21 12 16 17"
+              /><path
+                d="m12 15-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+              /><path
+                d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -1437,36 +1441,34 @@
             role="menuitem"
             style="animation-delay: 110ms"
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><line x1="21" y1="4" x2="14" y2="4" /><line
-                x1="10"
-                y1="4"
-                x2="3"
-                y2="4"
-              /><line x1="21" y1="12" x2="12" y2="12" /><line
-                x1="8"
-                y1="12"
-                x2="3"
-                y2="12"
-              /><line x1="21" y1="20" x2="16" y2="20" /><line
-                x1="12"
-                y1="20"
-                x2="3"
-                y2="20"
-              /><line x1="14" y1="2" x2="14" y2="6" /><line
-                x1="8"
-                y1="10"
-                x2="8"
-                y2="14"
-              /><line x1="16" y1="18" x2="16" y2="22" /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="m12 3-1.9 5.8a2 2 0 01-1.3 1.3L3 12l5.8 1.9a2 2 0 011.3 1.3L12 21l1.9-5.8a2 2 0 011.3-1.3L21 12l-5.8-1.9a2 2 0 01-1.3-1.3z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /><path
+                d="M5 3v4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M3 5h4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 17v4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M17 19h4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
             >
             {t("dialogs.dialog.menu.edit")}
           </button>
@@ -1505,25 +1507,27 @@
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               ><path
-                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
+                d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-              /><line
-                x1="9"
-                y1="12"
-                x2="21"
-                y2="12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><polyline
-                points="16 7 21 12 16 17"
+              /><path
+                d="m12 15-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+              /><path
+                d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -1615,36 +1619,34 @@
             role="menuitem"
             style="animation-delay: 110ms"
           >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><line x1="21" y1="4" x2="14" y2="4" /><line
-                x1="10"
-                y1="4"
-                x2="3"
-                y2="4"
-              /><line x1="21" y1="12" x2="12" y2="12" /><line
-                x1="8"
-                y1="12"
-                x2="3"
-                y2="12"
-              /><line x1="21" y1="20" x2="16" y2="20" /><line
-                x1="12"
-                y1="20"
-                x2="3"
-                y2="20"
-              /><line x1="14" y1="2" x2="14" y2="6" /><line
-                x1="8"
-                y1="10"
-                x2="8"
-                y2="14"
-              /><line x1="16" y1="18" x2="16" y2="22" /></svg
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              ><path
+                d="m12 3-1.9 5.8a2 2 0 01-1.3 1.3L3 12l5.8 1.9a2 2 0 011.3 1.3L12 21l1.9-5.8a2 2 0 011.3-1.3L21 12l-5.8-1.9a2 2 0 01-1.3-1.3z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /><path
+                d="M5 3v4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M3 5h4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M19 17v4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M17 19h4"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /></svg
             >
             {t("dialogs.dialog.menu.edit")}
           </button>
@@ -1675,25 +1677,27 @@
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
               ><path
-                d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4"
+                d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-              /><line
-                x1="9"
-                y1="12"
-                x2="21"
-                y2="12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              /><polyline
-                points="16 7 21 12 16 17"
+              /><path
+                d="m12 15-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+              /><path
+                d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              /><path
+                d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
               /></svg
             >
             {t("dialogs.dialog.menu.share")}
@@ -2811,9 +2815,14 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M9 4H5a2 2 0 00-2 2v12a2 2 0 002 2h4" />
-          <line x1="9" y1="12" x2="21" y2="12" />
-          <polyline points="16 7 21 12 16 17" />
+          <path
+            d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"
+          />
+          <path
+            d="m12 15-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"
+          />
+          <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+          <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
         </svg>
         <div>
           <p class="delete-title">{t("dialogs.dialog.share.title")}</p>
