@@ -31,6 +31,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - **Open, navigate, library:** `features/file-actions/*`, `features/navigation/*`, `features/library/*`, `commands/{file_ops,collections}.rs`.
 - **Properties and clipboard:** `features/actions/propertiesActions.ts`, `features/dialogs/LibraryPropertiesDialog.svelte`, `shared/fileMeta.ts`, `services/clipboard.ts`, `commands/{clipboard,external_apps}.rs`.
 - **Media loading and playback:** `features/media/media.svelte.ts`, `features/media/playback*`, `features/media/{queue,slideshow,sleepTimer,backgroundAudio}.svelte.ts`, `features/media/tracks.svelte.ts`, `features/media/{MediaBar,PlaybackControls}.svelte`, `components/NowPlayingPill.svelte`, `commands/{tracks,conversion}.rs`.
+- **Playlists and queue files:** `features/playlists/*` (m3u/m3u8/pls parse and save), `features/media/queue.svelte.ts` (restore and persist), `commands/file_ops.rs` (atomic playlist writes).
 - **Viewer, zoom, PDF, PiP:** `features/viewer/*`, `services/imagePreload.ts`, `commands/display.rs`.
 - **Editing, markup, export:** `features/editing/*`, `features/markup/*`, `commands/{editing,annotations}.rs`.
 - **Share, convert, save-as:** `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/{conversion,external_apps}.rs`.
@@ -74,6 +75,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - App settings use the `vyu-*` namespace; system, window, power, and external-app settings use `vyu-system-*`.
 - Legacy per-file fallback keys use `vyu-ts-`, `vyu-clips-`, `vyu-resume-`, `vyu-eq-`, and `vyu-cd-color-`, each suffixed by the file path.
 - SQLite is primary after the one-time localStorage migration. Timestamps and clips use SQLite; localStorage is read only when the DB row is absent or the query fails. Resume points, EQ, and CD color are still dual-written when the user changes them.
+- `vyu-queue` holds the restored up-next list; it is profile-scoped like other `vyu-*` settings.
 
 **Profiles.** Live `vyu-*` keys are the active profile; inactive profiles are snapshots in a versioned registry. Switching captures the live keys, applies the target snapshot, and reloads the webview. Device/window keys and per-file SQLite metadata stay shared; library and accessibility settings can be scoped per profile.
 
@@ -101,7 +103,8 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - `pdfjs-dist` is dynamically imported only when a PDF opens.
 - HLS uses lazy `hls.js` with workers disabled; WebView2 has no native HLS, and the CSP has no `worker-src blob:`.
 - Remote `http(s)` media plays in-stream and is not persisted: no recents, resume, markers, clips, or track inspection.
-- The up-next queue is session-only and stores absolute paths; do not persist it.
+- The up-next queue stores absolute paths and is restored from `vyu-queue` on launch; every mutation rewrites the stored list.
+- `.m3u`/`.m3u8`/`.pls` files open into the queue: relative entries resolve against the playlist folder, unsupported and remote entries are ignored, and opening replaces Up Next. Saved playlists contain absolute paths and reuse `write_file_atomic`.
 - Global marker clears update the database and the in-memory timestamp/clip stores.
 - Window state is not written while PiP is active; mini geometry must not replace normal bounds.
 - `--safe-mode` forces GPU acceleration on for recovery from a bad disabled-GPU startup.

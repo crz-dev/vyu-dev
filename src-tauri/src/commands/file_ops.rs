@@ -244,7 +244,10 @@ fn allowed_output_extension(path: &Path) -> bool {
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
-    matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "json")
+    matches!(
+        ext.as_str(),
+        "png" | "jpg" | "jpeg" | "webp" | "json" | "m3u" | "m3u8" | "pls"
+    )
 }
 
 /// Write bytes to a temporary file next to the target, then replace it atomically.
@@ -352,4 +355,26 @@ pub async fn get_files_total_size(paths: Vec<String>) -> Result<u64, String> {
         total = total.saturating_add(r.map_err(|e| format!("Thread join error: {e}"))?);
     }
     Ok(total)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::allowed_output_extension;
+    use std::path::Path;
+
+    #[test]
+    fn playlist_extensions_are_allowed_outputs() {
+        for name in ["mix.m3u", "mix.M3U8", "mix.pls"] {
+            assert!(
+                allowed_output_extension(Path::new(name)),
+                "{name} should be an allowed output"
+            );
+        }
+    }
+
+    #[test]
+    fn executable_extensions_are_rejected() {
+        assert!(!allowed_output_extension(Path::new("mix.exe")));
+        assert!(!allowed_output_extension(Path::new("mix")));
+    }
 }

@@ -1,4 +1,5 @@
 import { slideshow } from "$lib/features/media/slideshow.svelte";
+import { loadQueue, saveQueue } from "$lib/services/storage";
 
 export interface QueuePlayOptions {
   /** Keep active slideshow/queue playback running while the file loads. */
@@ -8,12 +9,17 @@ export interface QueuePlayOptions {
 type QueuePlayer = (path: string, opts?: QueuePlayOptions) => Promise<void>;
 
 function createQueue() {
-  let items = $state<string[]>([]);
+  let items = $state<string[]>(loadQueue());
   let player: QueuePlayer = async () => {};
   let advancing = false;
 
   function configure(fn: QueuePlayer) {
     player = fn;
+  }
+
+  function setItems(next: string[]) {
+    items = next;
+    saveQueue(next);
   }
 
   function enqueue(paths: string[]): number {
@@ -24,13 +30,13 @@ function createQueue() {
       seen.add(path);
       next.push(path);
     }
-    if (next.length > 0) items = [...items, ...next];
+    if (next.length > 0) setItems([...items, ...next]);
     return next.length;
   }
 
   function remove(path: string) {
     if (!items.includes(path)) return;
-    items = items.filter((item) => item !== path);
+    setItems(items.filter((item) => item !== path));
   }
 
   function move(from: number, to: number) {
@@ -39,11 +45,11 @@ function createQueue() {
     const next = [...items];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
-    items = next;
+    setItems(next);
   }
 
   function clear() {
-    items = [];
+    setItems([]);
   }
 
   function has(path: string): boolean {
@@ -57,7 +63,7 @@ function createQueue() {
 
   function replacePath(oldPath: string, newPath: string) {
     if (!oldPath || !newPath || oldPath === newPath) return;
-    items = items.map((item) => (item === oldPath ? newPath : item));
+    setItems(items.map((item) => (item === oldPath ? newPath : item)));
   }
 
   function replacePrefix(oldPrefix: string, newPrefix: string) {
@@ -66,19 +72,21 @@ function createQueue() {
       oldPrefix.endsWith("\\") || oldPrefix.endsWith("/")
         ? oldPrefix
         : `${oldPrefix}\\`;
-    items = items.map((item) => {
-      if (item === oldPrefix) return newPrefix;
-      if (item.startsWith(normalized)) {
-        return `${newPrefix}${item.slice(oldPrefix.length)}`;
-      }
-      return item;
-    });
+    setItems(
+      items.map((item) => {
+        if (item === oldPrefix) return newPrefix;
+        if (item.startsWith(normalized)) {
+          return `${newPrefix}${item.slice(oldPrefix.length)}`;
+        }
+        return item;
+      }),
+    );
   }
 
   function shift(): string | null {
     if (items.length === 0) return null;
     const path = items[0];
-    items = items.slice(1);
+    setItems(items.slice(1));
     return path;
   }
 

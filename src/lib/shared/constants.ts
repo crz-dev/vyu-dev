@@ -66,6 +66,10 @@ export const AUDIO_EXTS = [
 
 export const DOCUMENT_EXTS = ["pdf"];
 
+// Playlists are opened into the queue; they are not library media, so they stay
+// out of ALL_EXTS/ALL_EXTS_SET.
+export const PLAYLIST_EXTS = ["m3u", "m3u8", "pls"];
+
 export const ALL_EXTS = [
   ...IMAGE_EXTS,
   ...VIDEO_EXTS,

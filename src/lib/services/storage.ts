@@ -1053,6 +1053,37 @@ export function saveRecentFilesLimit(limit: number): void {
   localStorage.setItem("vyu-recent-files-limit", String(limit));
 }
 
+// ── Up Next queue ──
+
+export function loadQueue(): string[] {
+  const raw = localStorage.getItem("vyu-queue");
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const seen = new Set<string>();
+    const paths: string[] = [];
+    for (const value of parsed) {
+      if (typeof value !== "string" || !value) continue;
+      const key = value.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      paths.push(value);
+    }
+    return paths;
+  } catch {
+    return [];
+  }
+}
+
+export function saveQueue(paths: string[]): void {
+  try {
+    localStorage.setItem("vyu-queue", JSON.stringify(paths));
+  } catch (e) {
+    console.error("Failed to save queue:", e);
+  }
+}
+
 export function loadRecentsDisabled(): boolean {
   return localStorage.getItem("vyu-recents-disabled") === "true";
 }

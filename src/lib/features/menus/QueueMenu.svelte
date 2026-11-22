@@ -4,6 +4,7 @@
   import { cubicOut } from "svelte/easing";
   import { slideshow } from "$lib/features/media/slideshow.svelte";
   import { queue } from "$lib/features/media/queue.svelte";
+  import { saveQueueAsPlaylist } from "$lib/features/playlists/playlistActions";
   import { getFileName, getParentFolder } from "$lib/services/files";
   import { showToast } from "$lib/components/toast.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -39,6 +40,7 @@
   let dragPointerId: number | null = null;
   let clearConfirm = $state(false);
   let clearTimer: ReturnType<typeof setTimeout> | undefined;
+  let savingPlaylist = $state(false);
 
   let intervalTrackEl: HTMLDivElement | null = $state(null);
   let intervalDragging = $state(false);
@@ -293,6 +295,16 @@
     clearConfirm = false;
     queue.clear();
     slideshow.stop();
+  }
+
+  async function savePlaylist() {
+    if (savingPlaylist) return;
+    savingPlaylist = true;
+    try {
+      await saveQueueAsPlaylist();
+    } finally {
+      savingPlaylist = false;
+    }
   }
 
   function queueFolder() {
@@ -621,29 +633,14 @@
         </div>
       </div>
 
-      <div class="queue-actions" class:two={slideshow.active}>
-        {#if !slideshow.active}
-          <button
-            class="queue-action-btn play"
-            onclick={togglePlayback}
-            disabled={queue.length === 0}
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><polygon points="5 3 19 12 5 21 5 3" /></svg
+      <div class="queue-footer-actions">
+        <div class="queue-actions" class:two={slideshow.active}>
+          {#if !slideshow.active}
+            <button
+              class="queue-action-btn play"
+              onclick={togglePlayback}
+              disabled={queue.length === 0}
             >
-            {t("menus.queue.play")}
-          </button>
-        {:else}
-          <button class="queue-action-btn pause" onclick={togglePlayback}>
-            {#if slideshow.paused}
               <svg
                 width="12"
                 height="12"
@@ -655,8 +652,44 @@
                 stroke-linejoin="round"
                 ><polygon points="5 3 19 12 5 21 5 3" /></svg
               >
-              {t("menus.queue.resume")}
-            {:else}
+              {t("menus.queue.play")}
+            </button>
+          {:else}
+            <button class="queue-action-btn pause" onclick={togglePlayback}>
+              {#if slideshow.paused}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><polygon points="5 3 19 12 5 21 5 3" /></svg
+                >
+                {t("menus.queue.resume")}
+              {:else}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><rect x="6" y="4" width="4" height="16" /><rect
+                    x="14"
+                    y="4"
+                    width="4"
+                    height="16"
+                  /></svg
+                >
+                {t("menus.queue.pause")}
+              {/if}
+            </button>
+            <button class="queue-action-btn stop" onclick={stopPlayback}>
               <svg
                 width="12"
                 height="12"
@@ -666,17 +699,21 @@
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                ><rect x="6" y="4" width="4" height="16" /><rect
-                  x="14"
-                  y="4"
-                  width="4"
-                  height="16"
-                /></svg
+                ><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /></svg
               >
-              {t("menus.queue.pause")}
-            {/if}
-          </button>
-          <button class="queue-action-btn stop" onclick={stopPlayback}>
+              {t("menus.queue.stop")}
+            </button>
+          {/if}
+        </div>
+        {#if queue.length > 0}
+          <button
+            class="queue-save-btn tooltip-below"
+            onclick={savePlaylist}
+            disabled={savingPlaylist}
+            aria-label={t("menus.queue.savePlaylist")}
+            data-tooltip={t("menus.queue.savePlaylist")}
+            in:fly={{ y: 4, duration: 150, opacity: 0, easing: cubicOut }}
+          >
             <svg
               width="12"
               height="12"
@@ -686,9 +723,14 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              ><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /></svg
+              aria-hidden="true"
             >
-            {t("menus.queue.stop")}
+              <path
+                d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+              />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
           </button>
         {/if}
       </div>

@@ -16,6 +16,8 @@ import {
 import { visualizerStore } from "$lib/features/visualizer/visualizer-store.svelte";
 
 import { corruption } from "$lib/features/media/corruption.svelte";
+import { openPlaylistFile } from "$lib/features/playlists/playlistActions";
+import { isPlaylistPath } from "$lib/features/playlists/playlistFile";
 import {
   clearFolderCache,
   getParentFolder,
@@ -305,6 +307,10 @@ export function createNavigation(deps: NavigationDeps) {
     refresh = false,
     opts?: { preservePlayback?: boolean },
   ) {
+    if (isPlaylistPath(path)) {
+      await openPlaylistFile(path);
+      return;
+    }
     if (!opts?.preservePlayback) slideshow.stop();
     editing.exitCropMode();
     skipTimes = [];

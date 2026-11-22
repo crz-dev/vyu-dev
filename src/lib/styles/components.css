@@ -5540,6 +5540,9 @@ main.menu-open .subtitle-overlay {
 .queue-utility-row {
   display: flex;
   gap: 4px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--bg-border);
 }
 
 .queue-utility-btn {
@@ -5644,6 +5647,42 @@ main.menu-open .subtitle-overlay {
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.25),
     0 0 6px rgba(255, 255, 255, 0.35);
+}
+
+.queue-footer-actions {
+  display: flex;
+  gap: 3px;
+}
+
+.queue-footer-actions .queue-actions {
+  flex: 1;
+}
+
+.queue-save-btn {
+  width: 30px;
+  min-width: 30px;
+  align-self: stretch;
+  border: 0.5px solid var(--green-border);
+  border-radius: 6px;
+  background: var(--green-bg-default);
+  color: var(--green-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    opacity 0.16s;
+}
+
+.queue-save-btn:hover {
+  background: var(--green-bg-active);
+}
+
+.queue-save-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .queue-actions {

@@ -1,5 +1,5 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { ALL_EXTS, AUDIO_EXTS } from "$lib/shared/constants";
+import { ALL_EXTS, AUDIO_EXTS, PLAYLIST_EXTS } from "$lib/shared/constants";
 
 export interface FileOpenDeps {
   loadFile: (path: string) => Promise<void>;
@@ -9,7 +9,7 @@ export function createFileOpenActions(deps: FileOpenDeps) {
   async function openFileDialog() {
     const selected = await open({
       multiple: false,
-      filters: [{ name: "Media", extensions: ALL_EXTS }],
+      filters: [{ name: "Media", extensions: [...ALL_EXTS, ...PLAYLIST_EXTS] }],
     });
     if (selected) await deps.loadFile(selected as string);
   }
