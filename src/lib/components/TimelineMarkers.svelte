@@ -113,13 +113,7 @@
   const clipPairPrefix = $derived(fullscreen ? "fspair" : "pair");
   const clipBarName = $derived(fullscreen ? "fullscreen" : "normal");
   const clampedProgress = $derived(Math.max(0, Math.min(100, progress)));
-  const hoveredChapterIndex = $derived.by(() => {
-    if (!chapters || chapters.length === 0 || durationSecs <= 0) return -1;
-    const time = (previewPct / 100) * durationSecs;
-    return chapters.findIndex(
-      (c, i) => time >= c.start && (time < c.end || i === chapters.length - 1),
-    );
-  });
+  const hasChapters = $derived(chapters.length > 0 && durationSecs > 0);
   // Integer percentage keeps the accessibility tree stable at playback rate.
   const ariaProgress = $derived(Math.round(clampedProgress));
   const showResumeMarker = $derived(
@@ -129,6 +123,16 @@
   );
   let showPreview = $state(false);
   let previewPct = $state(0);
+  const hoveredChapterIndex = $derived.by(() => {
+    if (!showPreview || !hasChapters) return -1;
+    const time = (previewPct / 100) * durationSecs;
+    const last = chapters.length - 1;
+    return chapters.findIndex(
+      (c, i) =>
+        time >= (i === 0 ? 0 : c.start) &&
+        (time < (i === last ? durationSecs : c.end) || i === last),
+    );
+  });
   let previewSrc = $state("");
   let previewLoading = $state(false);
   let previewImageAspect = $state(0);
@@ -176,6 +180,16 @@
   const previewLeftPct = $derived(
     Math.min(100 - previewHalfPct, Math.max(previewHalfPct, previewPct)),
   );
+
+  function chapterPct(time: number): number {
+    return Math.max(0, Math.min(100, getTimestampPct(time)));
+  }
+
+  function chapterFillPct(startPct: number, endPct: number): number {
+    const span = endPct - startPct;
+    if (span <= 0) return 0;
+    return Math.max(0, Math.min(100, ((progress - startPct) / span) * 100));
+  }
 
   function clearPreviewTimer() {
     if (previewRequestTimer) {
@@ -390,6 +404,8 @@
   bind:this={barEl}
   data-clipbar={clipBarName}
   class:hide-for-gif={isGifVideo}
+  class:chaptered={hasChapters}
+  class:chapter-hover={hoveredChapterIndex >= 0}
   onmousedown={handleBarMouseDown}
   onmouseenter={handleBarHover}
   onmousemove={handleBarHover}
@@ -401,17 +417,44 @@
   aria-valuemax={100}
   tabindex="0"
 >
-  <div class={fillClass} style="width: {progress}%"></div>
+  {#if hasChapters}
+    {#each chapters as ch, i (ch.start)}
+      {@const startPct = chapterPct(ch.start)}
+      {@const endPct = chapterPct(ch.end)}
+      {@const displayStartPct = i === 0 ? 0 : startPct}
+      {@const displayEndPct = i === chapters.length - 1 ? 100 : endPct}
+      {@const gapStart = i === 0 ? 0 : 1}
+      {@const gapEnd = i === chapters.length - 1 ? 0 : 1}
+      <div
+        class="chapter-segment"
+        class:hovered={i === hoveredChapterIndex}
+        style="left: calc({displayStartPct}% + {gapStart}px); width: calc({displayEndPct -
+          displayStartPct}% - {gapStart + gapEnd}px);"
+        aria-hidden="true"
+      >
+        <div
+          class="chapter-segment-fill"
+          style="width: {chapterFillPct(displayStartPct, displayEndPct)}%"
+        ></div>
+      </div>
+    {/each}
+  {:else}
+    <div class={fillClass} style="width: {progress}%"></div>
+  {/if}
   <div
     class={playheadClass}
     style="left: {progress}%"
     role="presentation"
     aria-hidden="true"
   ></div>
-  {#if showPreview && !tsEditMenuVisible && hoveredChapterIndex < 0}
+  {#if showPreview && !tsEditMenuVisible}
+    {@const hoveredChapter =
+      hoveredChapterIndex >= 0 ? chapters[hoveredChapterIndex] : null}
     <div
       class="ts-tooltip white scrubber-tooltip timeline-preview"
-      style="left: {previewLeftPct}%; top: -12px;"
+      style="left: {hoveredChapter
+        ? Math.min(92, Math.max(8, previewPct))
+        : previewLeftPct}%; top: -12px;"
       aria-hidden="true"
     >
       {#if previewSrc}
@@ -434,7 +477,14 @@
           style="width: {previewBox.width}px; height: {previewBox.height}px"
         ></div>
       {/if}
-      <span class="timeline-preview-time">{formatTime(previewTimeSecs)}</span>
+      {#if hoveredChapter}
+        <span class="chapter-tooltip-title">{hoveredChapter.title}</span>
+      {/if}
+      <span class="timeline-preview-time"
+        >{hoveredChapter
+          ? formatTime(Math.max(0, hoveredChapter.end - hoveredChapter.start))
+          : formatTime(previewTimeSecs)}</span
+      >
     </div>
   {/if}
   {#each clipPairs as pair (`${clipPairPrefix}-${pair.startId}-${pair.endId}`)}
@@ -648,41 +698,6 @@
         : t("shell.timeline.timestampAt", { time: formatTime(ts.time) })}
     ></div>
   {/each}
-  {#each chapters as ch, i (ch.start)}
-    {#if i > 0}
-      <div
-        class="chapter-divider"
-        style="left: {getTimestampPct(ch.start)}%"
-        aria-hidden="true"
-      ></div>
-    {/if}
-  {/each}
-  {#if hoveredChapterIndex >= 0}
-    {@const ch = chapters[hoveredChapterIndex]}
-    <div
-      class="chapter-highlight"
-      style="left: {getTimestampPct(ch.start)}%; width: {getTimestampPct(
-        ch.end,
-      ) - getTimestampPct(ch.start)}%;"
-      aria-hidden="true"
-    ></div>
-  {/if}
-  {#if hoveredChapterIndex >= 0 && !tsEditMenuVisible}
-    {@const ch = chapters[hoveredChapterIndex]}
-    <div
-      class="ts-tooltip white scrubber-tooltip chapter-tooltip"
-      style="left: {Math.min(
-        95,
-        Math.max(5, getTimestampPct((ch.start + ch.end) / 2)),
-      )}%; top: -12px;"
-      aria-hidden="true"
-    >
-      <span class="chapter-tooltip-title">{ch.title}</span>
-      <span class="chapter-tooltip-time"
-        >{formatTime(ch.start)} – {formatTime(ch.end)}</span
-      >
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -732,43 +747,61 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .chapter-divider {
+  .progress-bar.chaptered,
+  .fs-progress.chaptered {
+    background: transparent;
+  }
+
+  .chapter-segment {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 2px;
     background: var(--bg-border);
-    z-index: 2;
+    border-radius: 2px;
+    overflow: hidden;
+    z-index: 0;
     pointer-events: none;
-    transform: translateX(-1px);
+    transition:
+      opacity 0.15s ease,
+      background-color 0.15s ease;
   }
 
-  .chapter-highlight {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    background: color-mix(in srgb, var(--text-primary) 14%, transparent);
-    z-index: 1;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
+  .fs-progress .chapter-segment {
+    background: rgba(255, 255, 255, 0.2);
   }
 
-  .chapter-tooltip {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    padding: 4px 8px;
+  .chapter-segment-fill {
+    height: 100%;
+    background: var(--text-primary);
+    border-radius: inherit;
+  }
+
+  .chaptered.chapter-hover .chapter-segment {
+    opacity: 0.45;
+  }
+
+  .chaptered.chapter-hover .chapter-segment.hovered {
+    opacity: 1;
+  }
+
+  .chapter-segment.hovered {
+    background: color-mix(in srgb, var(--text-primary) 28%, var(--bg-border));
+  }
+
+  .fs-progress .chapter-segment.hovered {
+    background: color-mix(
+      in srgb,
+      var(--text-primary) 42%,
+      rgba(255, 255, 255, 0.2)
+    );
   }
 
   .chapter-tooltip-title {
+    padding: 0 4px;
     font-size: 11px;
     font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .chapter-tooltip-time {
-    font-size: 10px;
-    font-variant-numeric: tabular-nums;
+    text-align: center;
+    overflow-wrap: anywhere;
     color: var(--text-muted);
   }
 </style>

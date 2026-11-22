@@ -94,7 +94,7 @@
 
   let canvasEl = $state<HTMLCanvasElement | null>(null);
   let hoveredChapterIndex = $state(-1);
-  let hoverX = $state(0);
+  let hoverPct = $state(0);
   let peaks = $state<Float32Array | null>(null);
   let decodeFailed = $state(false);
   let cachedCanvasW = 0;
@@ -221,14 +221,72 @@
     if (!bgCanvas || !playedCanvas || bgW !== w || bgH !== h) {
       drawBackground(w, h, dpr);
     }
-    if (bgCanvas && playedCanvas) {
-      ctx.drawImage(bgCanvas, 0, 0, w, h);
-    }
 
     const clipX = Math.min(Math.max(progress, 0), 100) * 0.01 * w;
-    if (playedCanvas && clipX > 0) {
-      const sliceW = Math.min(clipX, w);
-      ctx.drawImage(playedCanvas, 0, 0, sliceW * dpr, h * dpr, 0, 0, sliceW, h);
+    if (bgCanvas && playedCanvas) {
+      if (chapters.length > 0 && durationSecs > 0) {
+        drawChaptered(w, h, dpr, clipX, ctx);
+      } else {
+        ctx.drawImage(bgCanvas, 0, 0, w, h);
+        if (playedCanvas && clipX > 0) {
+          const sliceW = Math.min(clipX, w);
+          ctx.drawImage(
+            playedCanvas,
+            0,
+            0,
+            sliceW * dpr,
+            h * dpr,
+            0,
+            0,
+            sliceW,
+            h,
+          );
+        }
+      }
+    }
+  }
+
+  function drawChaptered(
+    w: number,
+    h: number,
+    dpr: number,
+    clipX: number,
+    ctx: CanvasRenderingContext2D,
+  ) {
+    if (!bgCanvas || !playedCanvas) return;
+    const gap = 2;
+    const last = chapters.length - 1;
+    for (let i = 0; i < chapters.length; i++) {
+      const ch = chapters[i];
+      const start = Math.max(0, Math.min(w, (pct(ch.start) / 100) * w));
+      const end = Math.max(start, Math.min(w, (pct(ch.end) / 100) * w));
+      const x = start + (i === 0 ? 0 : gap / 2);
+      const right = end - (i === last ? 0 : gap / 2);
+      const width = right - x;
+      if (width <= 0.5) continue;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, 0, width, h, Math.min(4, width / 2));
+      ctx.clip();
+      ctx.drawImage(bgCanvas, x * dpr, 0, width * dpr, h * dpr, x, 0, width, h);
+      if (clipX > x) {
+        const sliceW = Math.min(clipX - x, width);
+        if (sliceW > 0) {
+          ctx.drawImage(
+            playedCanvas,
+            x * dpr,
+            0,
+            sliceW * dpr,
+            h * dpr,
+            x,
+            0,
+            sliceW,
+            h,
+          );
+        }
+      }
+      ctx.restore();
     }
   }
 
@@ -244,6 +302,8 @@
   $effect(() => {
     peaks;
     progress;
+    chapters;
+    durationSecs;
     requestAnimationFrame(draw);
   });
 
@@ -292,7 +352,7 @@
               time >= c.start && (time < c.end || i === chapters.length - 1),
           )
         : -1;
-    hoverX = e.clientX - rect.left;
+    hoverPct = Math.max(0, Math.min(100, p));
   }}
   onmouseleave={() => (hoveredChapterIndex = -1)}
   role="button"
@@ -300,6 +360,21 @@
   aria-label={t("media.waveform.seek")}
 >
   <canvas bind:this={canvasEl} class="waveform-canvas"></canvas>
+  {#if hoveredChapterIndex >= 0}
+    {#each chapters as ch, i (ch.start)}
+      {@const startPct = Math.max(0, Math.min(100, pct(ch.start)))}
+      {@const endPct = Math.max(startPct, Math.min(100, pct(ch.end)))}
+      {@const gapStart = i === 0 ? 0 : 1}
+      {@const gapEnd = i === chapters.length - 1 ? 0 : 1}
+      <div
+        class="audio-chapter-shade"
+        class:hovered={i === hoveredChapterIndex}
+        style="left: calc({startPct}% + {gapStart}px); width: calc({endPct -
+          startPct}% - {gapStart + gapEnd}px)"
+        aria-hidden="true"
+      ></div>
+    {/each}
+  {/if}
   <div class="audio-progress-playhead" style="left: {progress}%"></div>
 
   {#if abLoopRegion}
@@ -520,29 +595,16 @@
       })}
     ></div>
   {/if}
-  {#each chapters as ch, i (ch.start)}
-    {#if i > 0}
-      <div
-        class="audio-chapter-divider"
-        style="left: {pct(ch.start)}%"
-        aria-hidden="true"
-      ></div>
-    {/if}
-  {/each}
   {#if hoveredChapterIndex >= 0}
     {@const ch = chapters[hoveredChapterIndex]}
     <div
-      class="audio-chapter-highlight"
-      style="left: {pct(ch.start)}%; width: {pct(ch.end) - pct(ch.start)}%"
-      aria-hidden="true"
-    ></div>
-    <div
       class="ts-tooltip white scrubber-tooltip audio-chapter-tooltip"
-      style="left: {pct((ch.start + ch.end) / 2)}%; top: -8px;"
+      style="left: {Math.min(92, Math.max(8, hoverPct))}%; top: -8px;"
+      aria-hidden="true"
     >
       <span class="audio-chapter-tooltip-title">{ch.title}</span>
       <span class="audio-chapter-tooltip-time"
-        >{formatTime?.(ch.start) ?? ""} – {formatTime?.(ch.end) ?? ""}</span
+        >{formatTime?.(Math.max(0, ch.end - ch.start)) ?? ""}</span
       >
     </div>
   {/if}
@@ -624,24 +686,19 @@
     display: block;
   }
 
-  .audio-chapter-divider {
+  .audio-chapter-shade {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 2;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--bg-secondary) 62%, transparent);
+    z-index: 0;
     pointer-events: none;
-    transform: translateX(-1px);
+    transition: background-color 0.15s ease;
   }
 
-  .audio-chapter-highlight {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.18);
-    z-index: 1;
-    pointer-events: none;
+  .audio-chapter-shade.hovered {
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
   }
 
   .audio-chapter-tooltip {
