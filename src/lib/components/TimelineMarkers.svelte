@@ -6,6 +6,7 @@
     VideoMarker,
   } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
+  import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
     cancelPendingTimelinePreviews,
     getCachedTimelinePreview,
@@ -123,6 +124,11 @@
   );
   let showPreview = $state(false);
   let previewPct = $state(0);
+  let displayedProgress = $state(0);
+  let progressAnimRaf: number | null = null;
+  const renderedProgress = $derived(
+    Math.max(0, Math.min(100, displayedProgress)),
+  );
   const hoveredChapterIndex = $derived.by(() => {
     if (!showPreview || !hasChapters) return -1;
     const time = (previewPct / 100) * durationSecs;
@@ -188,7 +194,10 @@
   function chapterFillPct(startPct: number, endPct: number): number {
     const span = endPct - startPct;
     if (span <= 0) return 0;
-    return Math.max(0, Math.min(100, ((progress - startPct) / span) * 100));
+    return Math.max(
+      0,
+      Math.min(100, ((renderedProgress - startPct) / span) * 100),
+    );
   }
 
   function clearPreviewTimer() {
@@ -302,12 +311,63 @@
     if (durationSecs > 0) updateHoverPosition(e.clientX);
   }
 
+  function stopProgressAnimation(snap = false) {
+    if (progressAnimRaf !== null) {
+      cancelAnimationFrame(progressAnimRaf);
+      progressAnimRaf = null;
+    }
+    if (snap) displayedProgress = clampedProgress;
+  }
+
+  function animateProgressTo(targetPct: number) {
+    stopProgressAnimation();
+    const target = Math.max(0, Math.min(100, targetPct));
+    const start = renderedProgress;
+    const delta = target - start;
+    if (appearance.reducedMotion || Math.abs(delta) < 0.2) {
+      displayedProgress = target;
+      return;
+    }
+    const duration = Math.min(260, 140 + Math.abs(delta) * 1.2);
+    let startedAt: number | null = null;
+    let lastT = 0;
+    const step = (now: number) => {
+      if (startedAt === null) startedAt = now;
+      const rawT = Math.min(1, (now - startedAt) / duration);
+      // Never skip more than a fifth per frame so a stalled frame cannot turn
+      // the whole tween into a jump.
+      const t = Math.min(rawT, lastT + 0.2);
+      lastT = t;
+      if (t >= 1) {
+        progressAnimRaf = null;
+        displayedProgress = Math.max(0, Math.min(100, progress));
+        return;
+      }
+      const eased = 1 - Math.pow(1 - t, 3);
+      displayedProgress = start + delta * eased;
+      progressAnimRaf = requestAnimationFrame(step);
+    };
+    progressAnimRaf = requestAnimationFrame(step);
+  }
+
   function handleBarMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
     isScrubbing = true;
+    const rect = barEl?.getBoundingClientRect();
+    if (rect && rect.width > 0) {
+      animateProgressTo(((e.clientX - rect.left) / rect.width) * 100);
+    }
     updateHoverPosition(e.clientX);
     startScrubbing(e);
-    const onScrubMove = (ev: MouseEvent) => updateHoverPosition(ev.clientX);
+    const downClientX = e.clientX;
+    let scrubMoved = false;
+    const onScrubMove = (ev: MouseEvent) => {
+      if (!scrubMoved && Math.abs(ev.clientX - downClientX) > 3) {
+        scrubMoved = true;
+        stopProgressAnimation(true);
+      }
+      updateHoverPosition(ev.clientX);
+    };
     const stopScrub = (ev: MouseEvent) => {
       isScrubbing = false;
       window.removeEventListener("mousemove", onScrubMove);
@@ -391,8 +451,15 @@
   });
 
   $effect(() => {
+    const target = clampedProgress;
+    if (progressAnimRaf !== null) return;
+    displayedProgress = target;
+  });
+
+  $effect(() => {
     return () => {
       if (previewRaf !== null) cancelAnimationFrame(previewRaf);
+      stopProgressAnimation();
       clearPreviewTimer();
       cancelPendingTimelinePreviews();
     };
@@ -439,11 +506,19 @@
       </div>
     {/each}
   {:else}
-    <div class={fillClass} style="width: {progress}%"></div>
+    <div class={fillClass} style="width: {renderedProgress}%"></div>
+    {#if showPreview && previewPct > renderedProgress}
+      <div
+        class="progress-hover-fill"
+        style="left: {renderedProgress}%; width: {previewPct -
+          renderedProgress}%"
+        aria-hidden="true"
+      ></div>
+    {/if}
   {/if}
   <div
     class={playheadClass}
-    style="left: {progress}%"
+    style="left: {renderedProgress}%"
     role="presentation"
     aria-hidden="true"
   ></div>
@@ -750,6 +825,24 @@
   .progress-bar.chaptered,
   .fs-progress.chaptered {
     background: transparent;
+  }
+
+  .progress-hover-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--text-primary) 28%, var(--bg-border));
+    border-radius: 2px;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .fs-progress .progress-hover-fill {
+    background: color-mix(
+      in srgb,
+      var(--text-primary) 28%,
+      rgba(255, 255, 255, 0.2)
+    );
   }
 
   .chapter-segment {
