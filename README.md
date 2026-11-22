@@ -12,106 +12,130 @@
 
 ---
 
-Vyu opens images, videos, audios, and more — with real editing, clipping, converting, and format support built in. No telemetry, no accounts, no extensions needed. Everything works out of the box offline; local media stays on your machine, and links you choose to open are fetched from their host. It's the much needed replacement for Windows Photos and ancient-looking viewers.
+Vyu is a Windows media viewer for images, video, audio, and PDFs. It covers the everyday playback workflow of VLC: broad format support, audio tracks and text subtitles, speed control, loops, queues, and an equalizer. Around that it adds a library, an editor, and Windows integrations beyond playback.
+
+Local playback and editing work offline. Remote media, Song ID, and the optional update check are the only features that use the network. There are no accounts, no telemetry, and no extensions.
+
+## Supported formats
+
+| Type      | Formats                                                                                            |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| Images    | JPG/JPEG, PNG, GIF, WebP, BMP, SVG, AVIF, TIFF/TIF, PSD, JXL, HEIC/HEIF                            |
+| RAW       | DNG, CR2, CR3, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, 3FR, FFF, IIQ, KDC, MEF, MOS, X3F, GPR |
+| Video     | MP4, WebM, MKV, AVI, MOV, WMV, MPEG/MPG, M4V, TS, M2TS                                             |
+| Audio     | MP3, WAV, FLAC, OGG, AAC, WMA, M4A, Opus, AIFF, ALAC                                               |
+| Documents | PDF                                                                                                |
+| Subtitles | Embedded text tracks, external SRT/WebVTT                                                          |
+| Streams   | HTTP(S) media links, HLS                                                                           |
+
+Bitmap subtitle tracks are not supported. Remote streams play in-stream; recents, resume, markers, clips, and track inspection are local-file features.
 
 ## Features
 
 ### Images
 
-<kbd>JPG</kbd> <kbd>PNG</kbd> <kbd>GIF</kbd> <kbd>WebP</kbd> <kbd>BMP</kbd> <kbd>SVG</kbd> <kbd>AVIF</kbd> <kbd>HEIC/HEIF</kbd> <kbd>TIFF</kbd> <kbd>PSD</kbd> <kbd>JXL</kbd> <kbd>20 RAW</kbd>
-
-Zoom to pixel level, pan, rotate, and flip. Adjust brightness, contrast, saturation, and hue with live preview. Crop with 16:9, 9:16, 1:1, or custom bounds. Draw, highlight, add shapes, arrows, and text. Apply edits in place or export a copy; convert formats, copy images or paths, and set as wallpaper or lock screen.
+- Open images from disk, by drag and drop, from the clipboard, or from the library.
+- Zoom to pixel level, pan, rotate, flip, fit, and go fullscreen.
+- Adjust brightness, contrast, saturation, and hue with live preview.
+- Crop with fixed ratios or custom bounds.
+- Draw, highlight, add shapes, arrows, and text.
+- Apply edits in place or export a copy; convert formats; copy the image or path; set as wallpaper or lock screen.
 
 ### Video
 
-<kbd>MP4</kbd> <kbd>WebM</kbd> <kbd>MKV</kbd> <kbd>AVI</kbd> <kbd>MOV</kbd> <kbd>WMV</kbd> <kbd>MPEG</kbd> <kbd>M4V</kbd> <kbd>TS</kbd> <kbd>M2TS</kbd>
-
-Timeline with labelled markers, A-B loop, and clip boundaries. Extract clips separately or merged. Play at 0.1x–3x, step frame by frame, or copy the current frame. Choose embedded audio tracks and text subtitles, or load matching and external SRT/WebVTT subtitles; adjust subtitle timing and size. Resume with an optional prompt and threshold, configurable seek steps, and a sleep timer. Apply rotation, flip, brightness, contrast, saturation, and hue; crop and export.
+- Timeline with labelled markers, A-B loop, and clip boundaries.
+- Export clips separately or merged.
+- Play at 0.1x to 3x, step frame by frame, or copy the current frame.
+- Select embedded audio tracks and text subtitles, or load matching and external SRT/WebVTT files.
+- Adjust subtitle timing and size, resume with an optional prompt, set seek steps, and use a sleep timer.
+- Rotate, flip, adjust color, crop, and export.
 
 ### Audio
 
-<kbd>MP3</kbd> <kbd>WAV</kbd> <kbd>FLAC</kbd> <kbd>OGG</kbd> <kbd>AAC</kbd> <kbd>WMA</kbd> <kbd>M4A</kbd> <kbd>Opus</kbd> <kbd>AIFF</kbd> <kbd>ALAC</kbd>
+- Vinyl and cassette layouts with waveform scrubbing, markers, and clip boundaries.
+- 10-band EQ with per-file settings and presets.
+- Reverb, chorus, distortion, and pitch shift.
+- Mono, stereo, surround, and 8D modes; Nightcore, Lo-Fi, 8-Bit, and Radio filters.
+- Pulse, Spectrum, Heartbeat, and Diamonds visualizers in floating windows.
+- Extract cover art.
 
-Retro vinyl and Modern cassette layouts, waveform scrubbing, markers, and clip boundaries. 10-band EQ with per-file settings and presets. Reverb, chorus, distortion, and pitch shift. Mono, stereo, surround, and 8D modes. Nightcore, Lo-Fi, 8-Bit, and Radio filters. Pulse, Spectrum, Heartbeat, and Diamonds visualizers in floating windows. Cover-art extraction.
+### Library and playback
 
-### Across the app
+- Grid, river, list, and filmstrip views.
+- Tabs for the current folder, recents, collections, and favorites.
+- Multi-select, sorting, search, section grouping, and folder watching.
+- Queue and up-next playback, including image slideshows with configurable interval, shuffle, and transitions.
+- Background audio, picture-in-picture, fullscreen, keyboard controls, sleep timer, and session persistence.
 
-- **Themes & accessibility:** dark, light, system, or OLED true black; fonts, interface scale, density, reduced motion, transparency, color-blind filters.
-- **Library:** grid, river, list, or filmstrip view. Tabs for the current folder, recents, collections, and favorites. Multi-select, sorting, and section grouping.
-- **Documents & recovery:** PDFs render page by page through pdfjs-dist on demand; integrity tools attempt FFmpeg repair of damaged media.
-- **Editing by type:** image and video edits, image/PDF markup, audio effects and EQ, and supported-format conversion.
-- **Sharing:** copy images, frames, PDF pages, or file paths; reveal in Explorer; open in Photos, Paint, VLC, Spotify, or a browser; print, send via Bluetooth, or set as wallpaper or lock screen.
-- **Slideshow:** configurable interval, shuffle, and None/Fade/Slide transitions.
-- **Keyboard:** F for fullscreen, arrows to browse or seek, space to play, L for the Library, and more.
-- **Privacy & playback:** privacy mode obscures thumbnails and paths; background audio keeps a track playing while you browse.
-- **Session persistence:** window position, playback resume points, and last-used settings.
-- **Song identification:** optional online lookup through the SongRec sidecar.
+### Editing and sharing
 
----
+- Image and video edits, image and PDF markup, audio effects and EQ, and conversion for supported formats.
+- Copy images, frames, PDF pages, or paths; reveal in Explorer.
+- Open in Photos, Paint, VLC, Spotify, or a browser; print; send via Bluetooth.
+- Set as wallpaper or lock screen; create desktop shortcuts.
 
-<div align="center">
+### Appearance and accessibility
 
-# For developers
+- Dark, light, system, or OLED true black.
+- Fonts, interface scale, density, reduced motion, transparency, and color-blind filters.
+- Privacy mode obscures thumbnails and paths.
+- Profiles keep preferences separate, with options for a shared library and shared accessibility settings.
 
-</div>
+### Documents and recovery
 
-## Design decisions
+- PDFs render page by page through pdfjs-dist only when opened.
+- Integrity tools attempt FFmpeg repair of damaged media.
+- Song ID is an optional online lookup through the SongRec sidecar.
 
-**Tauri, not Electron.** Vyu uses the system WebView instead of bundling another browser engine, which keeps the app small. The trade-off is a Rust toolchain on your machine.
+## For developers
 
-**SvelteKit as a static SPA.** `adapter-static` with `fallback: "index.html"` — no SSR or server, one page route plus layout/error scaffolding. The UI runs in the Tauri webview; pure UI can be previewed in a browser, but file and media features need the desktop runtime.
+Vyu is a Tauri 2 app. Rust handles native filesystem operations, FFmpeg, SQLite, and Windows integration. The UI is Svelte 5 and TypeScript, built as a static SvelteKit SPA and rendered in WebView2. SQLite stores per-file metadata; localStorage stores app settings.
 
-**Svelte 5 runes, no legacy reactivity.** `$state`, `$derived`, and `$effect` throughout. `let` is used for `$state`; avoid legacy `let`/`$:` reactivity.
+Ownership, data flow, and invariants live in [ARCHITECTURE.md](./ARCHITECTURE.md). Working rules and verification commands live in [AGENTS.md](./AGENTS.md).
 
-**Local SQLite plus localStorage.** Per-file metadata — timestamps, clips, resume points, EQ settings, and CD color — lives in a local SQLite database at `%APPDATA%/com.vyu.desktop/vyu.db`. App settings live in localStorage under a `vyu-` prefix. There is no server or account; clearing app data resets both.
+### How it is built
 
-**Bundled FFmpeg.** Vyu shells out to `ffmpeg` and `ffprobe` for thumbnails, remuxing, waveforms, integrity checks, conversion, and clip export. Tauri's dev/build hooks fetch the pinned FFmpeg 9.0.1 Essentials build into `src-tauri/resources` when it is missing. Internet is needed for that first fetch; `pnpm ffmpeg:ensure` repairs it manually.
+- Tauri 2 with the system WebView2 instead of Electron. The app stays small, but development needs a Rust toolchain.
+- Svelte 5 runes and strict TypeScript. `+page.svelte` is the composition root and the only application route.
+- Bundled FFmpeg handles thumbnails, remuxing, waveforms, integrity checks, conversion, and clip export. When FFmpeg is missing, the first dev or build run downloads and verifies it.
+- PDF rendering and HLS playback load lazily. Startup does not pull in pdfjs-dist or hls.js.
+- Feature modules own domain logic, services own shared infrastructure, and components render.
 
-**Custom title bar.** `decorations: false` in `tauri.conf.json` — Vyu draws its own so it blends with the theme and shows the filename for inline rename.
+### Requirements
 
-**Features live in their own modules.** Feature modules own domain logic and state. `+page.svelte` is the composition root: it wires modules together and owns page/view state. See `ARCHITECTURE.md` before changing ownership boundaries.
+- Windows with the WebView2 runtime, usually included with Windows 11 and current Windows 10.
+- Rust via [rustup.rs](https://rustup.rs), plus the MSVC C++ Build Tools.
+- Node.js and pnpm. The repository pins pnpm 11.17.0 through `packageManager`; corepack can install it.
+- Internet when FFmpeg is first fetched. The download needs Windows `tar` or 7-Zip to extract.
+- SongRec Windows binary is only needed for Song ID. Place it at `src-tauri/binaries/songrec-x86_64-pc-windows-msvc.exe`; the checked-in placeholder is not a working binary.
 
-## Tech stack
+### Commands
 
-| Layer                    | Tool                                    |
-| ------------------------ | --------------------------------------- |
-| Desktop shell            | Tauri 2                                 |
-| UI framework             | Svelte 5 (runes mode)                   |
-| Meta-framework           | SvelteKit (static SPA, no SSR)          |
-| Language                 | TypeScript (strict)                     |
-| Package manager          | pnpm                                    |
-| Video / image processing | FFmpeg 9.0.1 Essentials (bundled)       |
-| PDF rendering            | pdfjs-dist (code-split, dynamic import) |
-| Persistence              | SQLite + localStorage                   |
+| Task             | Command                                            |
+| ---------------- | -------------------------------------------------- |
+| Install          | `pnpm install`                                     |
+| Dev              | `pnpm tauri dev`                                   |
+| Frontend preview | `pnpm dev`                                         |
+| Frontend check   | `pnpm check`                                       |
+| i18n check       | `pnpm check:i18n`                                  |
+| Sidecar check    | `pnpm check:sidecar`                               |
+| Rust check       | `cargo check --manifest-path src-tauri/Cargo.toml` |
+| Rust tests       | `cargo test --manifest-path src-tauri/Cargo.toml`  |
+| Frontend build   | `pnpm build`                                       |
+| Desktop build    | `pnpm tauri build`                                 |
+| Format (writes)  | `pnpm format`                                      |
+| Format check     | `pnpm prettier --check <paths>`                    |
+| Repair FFmpeg    | `pnpm ffmpeg:ensure`                               |
 
-## Prerequisites
+- `pnpm check` covers Svelte and TypeScript. `cargo check` covers Rust.
+- `cargo test` runs Rust unit tests. There is no frontend test runner.
+- Use `pnpm build` for bundle or import changes, and reserve `pnpm tauri build` for release verification.
+- `pnpm format` rewrites the repository. `cargo fmt --check` is not currently clean.
+- The dev server is pinned to port 1420 with `strictPort`, so free that port before starting. `pnpm dev` previews the UI in a browser, but file and media features need the desktop runtime.
 
-- **Windows** with the WebView2 runtime (usually included with Windows 11 and current Windows 10).
-- **Rust** via [rustup.rs](https://rustup.rs), plus the MSVC C++ Build Tools.
-- **Node.js + pnpm** — `npm install -g pnpm` or [corepack](https://nodejs.org/api/corepack.html).
-- **FFmpeg** — downloaded automatically before `pnpm tauri dev` or `pnpm tauri build`. The first run needs internet and either Windows `tar` or 7-Zip to extract the archive.
-- **SongRec** — required only for Song ID. Place the Windows binary at `src-tauri/binaries/songrec-x86_64-pc-windows-msvc.exe` before building; the checked-in placeholder is not a working binary.
+### Project layout
 
-## Commands
-
-| Task            | Command                                            |
-| --------------- | -------------------------------------------------- |
-| Install         | `pnpm install`                                     |
-| Dev             | `pnpm tauri dev`                                   |
-| Build           | `pnpm tauri build`                                 |
-| Frontend check  | `pnpm check`                                       |
-| i18n check      | `pnpm check:i18n`                                  |
-| Rust check      | `cargo check --manifest-path src-tauri/Cargo.toml` |
-| Format (writes) | `pnpm format`                                      |
-| Repair FFmpeg   | `pnpm ffmpeg:ensure`                               |
-
-`pnpm check` covers Svelte and TypeScript; `cargo check` covers Rust. `pnpm build` verifies the frontend bundle, and `cargo test --manifest-path src-tauri/Cargo.toml` runs the Rust unit tests in `commands/` and the shared backend modules. There is no frontend test suite. For a format check without writing files, use `pnpm prettier --check <paths>`.
-
-The dev server is pinned to port **1420** (`strictPort: true`). Make sure it is free.
-
-## Project structure
-
-<pre style="background: #1e1e1e; color: #e0e0e0; text-align: left; display: inline-block;">
+```text
 src/                    # Frontend (Svelte + TypeScript)
 ├── routes/             # +page.svelte (composition root), +layout, +error
 ├── lib/features/       # Feature modules and their UI
@@ -122,19 +146,25 @@ src/                    # Frontend (Svelte + TypeScript)
 
 static/                 # Static assets
 
-src-tauri/              # Rust backend
+src-tauri/
 ├── src/commands/       # One module per domain
 ├── src/database/       # SQLite connection, models, migrations
-├── src/state/          # Window state persistence
+├── src/state/          # Window and system state
 ├── src/{lib,constants,types,util}.rs
 ├── resources/          # Provisioned FFmpeg (generated)
-├── binaries/           # SongRec sidecar (place the real binary here)
+├── binaries/           # SongRec sidecar placeholder
 ├── capabilities/       # Tauri permissions
 ├── tauri.conf.json
 └── Cargo.toml
-</pre>
+```
 
-Module ownership lives in [ARCHITECTURE.md](./ARCHITECTURE.md).
+### Working notes
+
+- Read `ARCHITECTURE.md` before changing ownership, persistence, or platform integration.
+- Do not edit generated output: `.svelte-kit/`, `build/`, `src-tauri/target/`, `src-tauri/gen/`, `src-tauri/resources/`.
+- Never commit the real SongRec binary. `pnpm check:sidecar` enforces the placeholder.
+- `pnpm tauri dev` uses real app data. Back up `%APPDATA%/com.vyu.desktop` and `%LOCALAPPDATA%/com.vyu.desktop` before testing destructive settings.
+- User-facing text is translated through `locale.t()`. Add new keys to every locale and run `pnpm check:i18n`.
 
 ## Contributing
 
