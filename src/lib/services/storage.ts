@@ -625,8 +625,8 @@ export type ResumeMode = "off" | "ask" | "always";
 
 export function loadResumeMode(): ResumeMode {
   const v = localStorage.getItem("vyu-resume-mode");
-  if (v === "off" || v === "always") return v;
-  return "ask";
+  if (v === "ask" || v === "always") return v;
+  return "off";
 }
 
 export function saveResumeMode(mode: ResumeMode): void {
