@@ -1,293 +1,119 @@
 # Architecture
 
-Authoritative reference for ownership, data flow, persistence, and non-obvious invariants. Operational rules live in `AGENTS.md`; setup and project overview live in `README.md`.
+Technical map for coding agents. Read the section relevant to the change; operational rules and verification commands are in `AGENTS.md`; setup is in `README.md`.
 
-## Boundaries
+## System shape
 
-- **Frontend:** `src/` — Svelte 5 runes, TypeScript strict, SvelteKit static SPA, no SSR. One page route (`+page.svelte`); `+layout` and `+error` are scaffolding only.
-- **Backend:** `src-tauri/src/` — Tauri 2 + Rust, Windows-only, Win32 APIs. `lib.rs` is startup, plugin registration, command wiring, and window lifecycle only.
-- **Shared backend:** `util.rs`, `types.rs`, `constants.rs`, `state/`, `database/`.
-- **Privacy boundary:** the webview CSP permits `http(s)` for `media-src` and `connect-src` so user-supplied links and HLS segments can load. Vyu itself makes no automatic network requests besides the user-initiated update check in `commands/system.rs`; the SongRec sidecar (supplied at build time) is the only other network component, and external-app/browser launches are user-initiated.
+- **Frontend** (`src/`): SvelteKit static SPA (`ssr = false`), Svelte 5 runes, TypeScript strict. `+page.svelte` is the only application route; `+layout.svelte` and `+error.svelte` are scaffolding.
+- **Backend** (`src-tauri/src/`): Tauri 2 + Rust, Windows-only. `lib.rs` handles startup, plugins, command registration, and window lifecycle. `commands/` is IPC by domain; `database/` is SQLite; `state/` holds window and system config; `util.rs`, `types.rs`, and `constants.rs` are shared.
+- **IPC**: typed wrappers in `src/lib/features/*/api.ts` and `src/lib/services/{database,files}.ts` centralize `invoke` calls.
+- **Network**: local-first. The CSP allows `http(s)` in `media-src` and `connect-src` so user-opened media, HLS segments, and remote links can load. Song ID uses the SongRec sidecar; the update check is opt-in and backend-only (`commands/system.rs`). External app and browser launches are user actions.
 
-## Composition and data flow
-
-`+page.svelte` is the composition root. It creates feature instances, owns page/view reactive state and DOM refs, and wires callbacks and derived props. It is not a stateless shell.
+## Data flow
 
 ```text
-+page.svelte
-  ├─ owns page/view state, DOM refs, feature instances
-  ├─ renders Shell.svelte and feature components
-  ├─ calls feature modules (navigation, clips, editing actions, playback UI, ...)
-  └─ feature modules
-       ├─ import services (files, database, storage, clipboard)
-       ├─ import shared constants/types/helpers
-       └─ call Tauri wrappers (features/media/api.ts, services/database.ts, services/files.ts)
-            └─ Tauri commands; fallible commands return Result<T, String>; long-running work emits progress events
++page.svelte  (composition root: page/view state, refs, feature instances, wiring)
+  ├─ feature modules (domain logic and state)
+  │    ├─ services (files, database, storage, clipboard, init)
+  │    └─ api wrappers → Tauri commands → Rust helpers / FFmpeg / Windows APIs
+  └─ Shell.svelte and feature components (orchestration, props, callbacks)
 ```
 
-- **Feature modules** own domain logic and feature state. Some are stateful singletons/factories; `features/media/media.svelte.ts` is a stateless factory that receives page-held state through callbacks.
-- **Pages and shell** may own view state and thin event wiring; domain rules belong in feature modules.
-- **Tauri wrappers** centralize IPC. `features/media/api.ts` is the main wrapper; `features/system/api.ts` owns System/OS integration IPC; `features/debug/api.ts` owns diagnostics and database-compaction IPC; `features/danger/api.ts` owns destructive maintenance IPC; `services/database.ts` owns DB IPC; `services/files.ts` owns filesystem/stat IPC. Components should not call `invoke()` directly.
-- **Async loads** use a generation counter in `media.svelte.ts` so stale results are ignored. Long-running commands emit events such as `conversion-progress` and `edit-apply-progress`.
+- `+page.svelte` creates factories, owns page/view state and DOM refs, and wires callbacks and derived props. It is not a stateless shell.
+- `features/media/media.svelte.ts` is a factory: it receives page-held state through callbacks instead of owning it.
+- Commands generally return `Result<T, String>`. Long-running work emits `conversion-progress` and `edit-apply-progress`.
+- Async loads use generation counters to discard stale results (`media.svelte.ts`, `folderWatcher.svelte.ts`). Follow that pattern for new async loaders.
 
-## Task-to-owner lookup
+## Where changes go
 
-| Task                            | Start with                                                                                             |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Settings UI / preferences       | `features/dialogs/SettingsDialog.svelte` + the owning feature store                                    |
-| UI translations                 | `features/i18n/*` (locale store + `messages/<namespace>/<locale>.json`)                                |
-| Keybinds                        | `features/keybinds/*`, `shared/keybinds.ts`, `features/keybinds/KeybindsSettings.svelte`               |
-| System / OS integration         | `features/system/*`, `commands/system.rs`, `state/system.rs`                                           |
-| Debug / diagnostics             | `features/debug/*`, `commands/system.rs`, `commands/database.rs`                                       |
-| Danger Zone / destructive ops   | `features/danger/*`, `commands/system.rs`, `commands/database.rs`                                      |
-| Share, save-as, conversion      | `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/conversion.rs` |
-| Playback / media bar            | `features/media/playback*.ts`, `features/media/MediaBar.svelte`, `features/media/media.svelte.ts`      |
-| Picture-in-picture              | `features/viewer/pip.svelte.ts`, `features/viewer/PipOverlay.svelte`                                   |
-| Audio/subtitle track selection  | `features/media/tracks.svelte.ts`, `features/media/PlaybackControls.svelte`, `commands/tracks.rs`      |
-| Editing / export                | `features/editing/*`, `commands/editing.rs`                                                            |
-| Clips                           | `features/media/clips.svelte.ts`, `commands/clips.rs`                                                  |
-| Library                         | `features/library/*`                                                                                   |
-| Profiles / settings transfer    | `features/profiles/*`, `services/storage.ts`                                                           |
-| File open / delete / navigation | `features/file-actions/*`, `features/navigation/*`, `commands/file_ops.rs`                             |
-| Persistence                     | `services/storage.ts` (prefs), `services/database.ts` (SQLite), `src-tauri/src/database/*`             |
-| Thumbnails / display            | `commands/thumbnail.rs`, `commands/display.rs`, `services/thumbnailCache.svelte.ts`                    |
+Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri/src/`.
 
-## Ownership map
+- **Open, navigate, library:** `features/file-actions/*`, `features/navigation/*`, `features/library/*`, `commands/{file_ops,collections}.rs`.
+- **Properties and clipboard:** `features/actions/propertiesActions.ts`, `features/dialogs/LibraryPropertiesDialog.svelte`, `shared/fileMeta.ts`, `services/clipboard.ts`, `commands/{clipboard,external_apps}.rs`.
+- **Media loading and playback:** `features/media/media.svelte.ts`, `features/media/playback*`, `features/media/{queue,slideshow,sleepTimer,backgroundAudio}.svelte.ts`, `features/media/tracks.svelte.ts`, `features/media/{MediaBar,PlaybackControls}.svelte`, `components/NowPlayingPill.svelte`, `commands/{tracks,conversion}.rs`.
+- **Viewer, zoom, PDF, PiP:** `features/viewer/*`, `services/imagePreload.ts`, `commands/display.rs`.
+- **Editing, markup, export:** `features/editing/*`, `features/markup/*`, `commands/{editing,annotations}.rs`.
+- **Share, convert, save-as:** `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/{conversion,external_apps}.rs`.
+- **Repair and integrity:** `features/media/corruption.svelte.ts`, `commands/integrity.rs`.
+- **Clips, markers, timeline:** `features/media/clips.svelte.ts`, `features/markers/*`, `components/TimelineMarkers.svelte`, `features/media/timelinePreview.ts`, `commands/clips.rs`.
+- **Audio effects, EQ, visualizers, CD color:** `features/{effects,equalizer,visualizer}/*`, `features/media/cdColor.ts`.
+- **Settings UI:** `features/dialogs/SettingsDialog.svelte`, `features/settings/*`, plus the store owned by the setting.
+- **Menus, context actions, window controls:** `components/Shell.svelte`, `features/menus/*`, `features/actions/*`.
+- **System, OS integration, diagnostics, danger:** `features/{system,debug,danger}/*`, `commands/{system,database}.rs`.
+- **Persistence:** `services/storage.ts`, `services/database.ts`, `src-tauri/src/database/*`.
+- **Thumbnails, display cache, cover art:** `commands/{thumbnail,display}.rs`, `services/thumbnailCache.svelte.ts`.
+- **i18n:** `features/i18n/*`, `features/i18n/messages/<namespace>/<locale>.json`.
+- **Keybinds:** `features/keybinds/*`, `shared/keybinds.ts`; labels and descriptions in `keybindDefinitions.ts` are i18n keys.
+- **Profiles and settings transfer:** `features/profiles/*`, `services/storage.ts`.
+- **Theme, appearance, accessibility:** `features/{theme,accessibility}/*`, `features/menus/accessibility.svelte.ts`, `styles/*`.
+- **Add/remove a media format:** `shared/constants.ts`, `src-tauri/src/constants.rs`, `shared/mediaKind.ts`, `commands/{thumbnail,display,conversion}.rs`, and file associations in `src-tauri/tauri.conf.json`.
+- **App shell, dialogs, shared UI:** `components/*`, `features/dialogs/*`, `shared/pageProps.ts`.
 
-### App shell and composition
+### Rust command map
 
-| Concern                                   | Module                    |
-| ----------------------------------------- | ------------------------- |
-| Composition root, page/view state, wiring | `src/routes/+page.svelte` |
-| App shell / layout                        | `components/Shell.svelte` |
-| Derived prop objects for child components | `shared/pageProps.ts`     |
-| Dialogs                                   | `features/dialogs/*`      |
-| Menus                                     | `features/menus/*`        |
-| Shared UI primitives / toast system       | `components/*`            |
+`file_ops` (stat, delete/trash, rename/copy, atomic writes, temp cleanup), `editing`/`clips`/`conversion` (FFmpeg output), `thumbnail`/`display` (caches and prepared media), `tracks` (audio, subtitles, chapters), `external_apps` (sidecar, share, open-in, properties), `system` (config, registry, window/PiP, updates, uninstall/restart), `database` (metadata, stats, vacuum, reset), `collections`, `clipboard`, `annotations` (PDF markup), and `integrity` (repair).
 
-### Features
+## Ownership and layering
 
-| Concern                                                | Module                                                                         |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| Open/close, navigate, media loading logic              | `features/media/media.svelte.ts`                                               |
-| Zoom, pan, fit, fullscreen                             | `features/viewer/viewer.svelte.ts`                                             |
-| Picture-in-picture window mode                         | `features/viewer/pip.svelte.ts`, `features/viewer/PipOverlay.svelte`           |
-| Image/video/PDF views                                  | `features/viewer/*`                                                            |
-| Pan, drag interaction                                  | `features/viewer/panDrag.ts`                                                   |
-| Viewer effects (resize, refit)                         | `features/viewer/viewerEffects.svelte.ts`                                      |
-| Viewer CSS styling                                     | `features/viewer/viewerStyle.svelte.ts`                                        |
-| Rotation, flip, brightness, crop, export               | `features/editing/editing.svelte.ts`                                           |
-| Edit/export orchestration                              | `features/editing/editActions.svelte.ts`                                       |
-| Playback                                               | `features/media/playback.svelte.ts`                                            |
-| Audio/subtitle track discovery and selection           | `features/media/tracks.svelte.ts`                                              |
-| Playback preferences                                   | `features/media/playbackPrefs.svelte.ts`                                       |
-| Process / conversion preferences                       | `features/media/conversionPrefs.svelte.ts`                                     |
-| Sleep timer                                            | `features/media/sleepTimer.svelte.ts`                                          |
-| Queue / up-next list                                   | `features/media/queue.svelte.ts`                                               |
-| Background audio in Library                            | `features/media/backgroundAudio.svelte.ts`, `components/NowPlayingPill.svelte` |
-| Playback bridge (toggle, volume, speed)                | `features/media/playbackBridge.ts`                                             |
-| Playback position polling                              | `features/media/playbackPoller.svelte.ts`                                      |
-| Playback helpers (on-ended, frame-step)                | `features/media/playbackHelpers.ts`                                            |
-| HLS playback (lazy hls.js)                             | `features/media/hls.ts`                                                        |
-| Timeline scrubbing                                     | `features/media/scrubbing.svelte.ts`                                           |
-| Loop mode                                              | `features/media/loopMode.svelte.ts`                                            |
-| Timer display                                          | `features/media/timer.svelte.ts`                                               |
-| Clips                                                  | `features/media/clips.svelte.ts`                                               |
-| Media bar / clip controls                              | `features/media/MediaBar.svelte`                                               |
-| Queue playback (interval, transitions)                 | `features/media/slideshow.svelte.ts`                                           |
-| Corruption detection                                   | `features/media/corruption.svelte.ts`                                          |
-| FFmpeg helpers (install, ffprobe, props)               | `features/media/ffmpeg.ts`                                                     |
-| CD color per file                                      | `features/media/cdColor.ts`                                                    |
-| Tauri invoke wrappers                                  | `features/media/api.ts`                                                        |
-| Markers / timeline helpers                             | `features/markers/*`                                                           |
-| Timeline                                               | `components/TimelineMarkers.svelte`, `markers/timeline.ts`                     |
-| Timeline preview frames                                | `features/media/timelinePreview.ts`                                            |
-| PDF rendering                                          | `features/viewer/pdf.svelte.ts`                                                |
-| Drawing / markup                                       | `features/markup/markup.svelte.ts`                                             |
-| Markup actions                                         | `features/markup/markupActions.ts`                                             |
-| Theme / typography                                     | `features/theme/theme.svelte.ts`                                               |
-| Interface scale, density, reduced motion, transparency | `features/theme/appearance.svelte.ts`                                          |
-| Accessibility                                          | `features/menus/accessibility.svelte.ts`, `features/accessibility/*`           |
-| Audio effects engine                                   | `features/effects/effects-engine.ts`                                           |
-| Equalizer                                              | `features/equalizer/*`                                                         |
-| Visualizer windows                                     | `features/visualizer/*`                                                        |
-| File open / delete / navigation                        | `features/file-actions/*`                                                      |
-| Clipboard paste intake                                 | `features/file-actions/paste.ts`                                               |
-| Navigation / sort / folder watcher                     | `features/navigation/*`                                                        |
-| Library view                                           | `features/library/*`                                                           |
-| Profiles, switching, settings import/export            | `features/profiles/*`, `services/storage.ts`                                   |
-| Library section grouping                               | `features/library/sections.ts`                                                 |
-| Library search matching                                | `features/library/search.ts`                                                   |
-| Window controls                                        | `features/menus/windowControls.ts`                                             |
-| Context menu state                                     | `features/menus/contextMenu.svelte.ts`                                         |
-| Menu visibility state                                  | `features/menus/menuVisibility.svelte.ts`                                      |
-| Global mouse handler                                   | `features/actions/globalMouseHandler.ts`                                       |
-| Context actions                                        | `features/actions/*`                                                           |
-| Properties actions                                     | `features/actions/propertiesActions.ts`                                        |
-| System settings                                        | `features/system/SystemSettings.svelte`                                        |
-| Debug settings / diagnostics                           | `features/debug/DebugSettings.svelte`, `features/debug/debugInfo.ts`           |
-| Debug overlay                                          | `features/debug/DebugOverlay.svelte`, `features/debug/debugPrefs.svelte.ts`    |
-| Danger Zone / destructive actions                      | `features/danger/DangerSettings.svelte`, `features/danger/api.ts`              |
-
-### Services and shared
-
-| Concern                                   | Module                                       |
-| ----------------------------------------- | -------------------------------------------- |
-| Filesystem scans / folder cache           | `services/files.ts`                          |
-| localStorage preferences                  | `services/storage.ts`                        |
-| SQLite frontend wrappers / migration      | `services/database.ts`                       |
-| Shared in-memory thumbnail cache          | `services/thumbnailCache.svelte.ts`          |
-| Decoded neighbouring-image cache          | `services/imagePreload.ts`                   |
-| Thumbnail generation indicator            | `components/ThumbnailGenToast.svelte`        |
-| Clipboard                                 | `services/clipboard.ts`                      |
-| Filename tooltip                          | `services/filenameTooltip.ts`                |
-| Session state                             | `services/session.ts`                        |
-| Initialization (drag-drop, paste, resume) | `services/init.ts`                           |
-| Toasts                                    | `components/toast.svelte.ts`                 |
-| Constants                                 | `shared/constants.ts`                        |
-| Shared types                              | `shared/types.ts`                            |
-| Keybinds                                  | `features/keybinds/*` + `shared/keybinds.ts` |
-| Media-kind detection                      | `shared/mediaKind.ts`                        |
-| File metadata formatting                  | `shared/fileMeta.ts`                         |
-| Privacy utilities                         | `shared/privacy.ts`                          |
-| Derived prop objects                      | `shared/pageProps.ts`                        |
-
-### Rust backend
-
-| Concern                            | Module                                                                   |
-| ---------------------------------- | ------------------------------------------------------------------------ |
-| Database persistence (SQLite)      | `database/` (Rust), `services/database.ts` (frontend)                    |
-| Collection directory operations    | `commands/collections.rs`                                                |
-| Sidecar binary execution (SongRec) | `commands/external_apps.rs`                                              |
-| External app launch / native share | `commands/external_apps.rs`, `commands/conversion.rs`                    |
-| Window state persistence           | `state::window`                                                          |
-| Thumbnail generation, cache, dedup | `commands/thumbnail.rs`                                                  |
-| Display cache / cover art          | `commands/display.rs`                                                    |
-| Audio/subtitle track processing    | `commands/tracks.rs`                                                     |
-| File operations / batch stat       | `commands/file_ops.rs`                                                   |
-| Media conversion                   | `commands/conversion.rs`                                                 |
-| Editing / export / backups         | `commands/editing.rs`                                                    |
-| Clips                              | `commands/clips.rs`                                                      |
-| Integrity repair                   | `commands/integrity.rs`                                                  |
-| Clipboard                          | `commands/clipboard.rs`                                                  |
-| PDF markup application             | `commands/annotations.rs`                                                |
-| DB commands / maintenance          | `commands/database.rs` (including global marker clear and factory reset) |
-| System, runtime info, restart      | `commands/system.rs`, `state/system.rs`                                  |
-| Bundled FFmpeg removal, uninstall  | `commands/system.rs`                                                     |
-| Tauri setup / command registration | `lib.rs`                                                                 |
-
-## State model
-
-- **Shared/application state:** singleton feature exports (`export const x = createX()`).
-- **Feature-local state:** owning feature module; factories when multiple instances are needed.
-- **Page/view state:** `+page.svelte` owns media/view state, dialog flags, and page-level DOM refs. This is legitimate; do not migrate it into feature modules unless the state is shared or domain-owned.
-- **Component-local presentation state:** the component that renders it.
-- **DOM references:** the component that binds the element.
-- **Composition and event wiring:** `+page.svelte` and `Shell.svelte`; keep domain rules out of them.
-- **Stateless feature factories:** allowed. `media.svelte.ts` receives state through callbacks rather than owning it.
-
-## Communication
-
-- Feature modules may import `shared/`, `services/`, and other feature modules when ownership is clear.
-- Leaf/presentational components receive props and emit callbacks.
-- Orchestration components (`Shell.svelte`, `Dialog.svelte`, `SettingsDialog.svelte`) may import feature stores directly; they are composition points, not leaf components.
-- Circular imports indicate a boundary problem.
-- `+page.svelte` imports features. Features never import `+page.svelte`.
-- Prefer the existing feature store/service over introducing a new abstraction.
+- Feature modules own domain logic and feature state. Services own shared infrastructure. Components render and wire UI.
+- Feature modules may import `shared/`, `services/`, and other feature modules when ownership is clear; prefer an existing store or service over a new abstraction.
+- State placement and module-boundary rules are in `AGENTS.md`.
+- `shared/` holds cross-feature constants, types, and helpers. It does not own application state.
 
 ## Persistence and runtime data
 
-**SQLite (primary per-file store)** — `src-tauri/src/database/` + `services/database.ts`.
+**SQLite — primary per-file store.** `src-tauri/src/database/` + `services/database.ts`.
 
-- DB: `%APPDATA%/com.vyu.desktop/vyu.db`.
-- WAL mode, single `Mutex<Connection>`, migrations in `database/migrations.rs`.
-- Stores timestamps, clip boundaries, resume positions, EQ settings, CD color, and related metadata.
-- Frontend access goes through `services/database.ts`.
+- Database: `%APPDATA%/com.vyu.desktop/vyu.db`. WAL mode, one `Mutex<Connection>`, migrations in `database/migrations.rs`.
+- Tables: `settings` and `file_metadata` (last position, timestamps, clips, EQ, CD color, last viewed).
+- The frontend wrapper caches metadata and positions in memory. Migrations are additive; never edit an applied migration in place.
 
-**localStorage (app settings + fallback)** — `services/storage.ts`.
+**localStorage — app settings and fallback.** `services/storage.ts`.
 
-- App-wide keys: `vyu-{name}`. System preferences use `vyu-system-*` (window behavior, power behavior, external app paths, last file). Keybinds use `vyu-keybinds` (versioned per-action bindings). The debug overlay toggle uses `vyu-debug-overlay`; the sleep-timer close-at-end option uses `vyu-sleep-close-app`.
-- Legacy/fallback per-file keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
-- SQLite is primary after migration (`migrateFromLocalStorage`). User updates to resume position, EQ settings, and CD color are still dual-written to localStorage as fallback. Timestamps and clips use SQLite; their localStorage values are read only when the DB row is missing or the query fails.
-- Do not add new per-file localStorage keys; use SQLite.
-- Profiles: live `vyu-*` keys are the active profile. Inactive profiles are snapshots in `vyu-profiles-registry-v1`; switching captures the live keys, applies the target snapshot, and reloads. Device/window-level keys stay shared. Profile-specific library and universal accessibility control whether library and accessibility keys are scoped per profile; per-file SQLite metadata remains global.
+- App-wide keys use `vyu-{name}`; system/window/power/external-app/last-file keys use `vyu-system-*`. Keybinds use `vyu-keybinds`, the debug overlay uses `vyu-debug-overlay`, and the sleep-timer close option uses `vyu-sleep-close-app`.
+- Legacy per-file fallback keys: `vyu-ts-{path}`, `vyu-clips-{path}`, `vyu-resume-{path}`, `vyu-eq-{path}`, `vyu-cd-color-{path}`.
+- SQLite is primary after `migrateFromLocalStorage`. Timestamps and clips use SQLite; localStorage is read only when the DB row is absent or the query fails. Resume points, EQ, and CD color are still dual-written when the user changes them.
 
-**Other runtime paths**
+**Profiles.** Live `vyu-*` keys are the active profile; inactive profiles are snapshots in `vyu-profiles-registry-v1`. Switching captures the live keys, applies the target snapshot, and reloads the webview. Device/window keys and per-file SQLite metadata stay shared; library and accessibility settings can be scoped per profile.
+
+**Other runtime paths.**
 
 - Edit backups: `%APPDATA%/com.vyu.desktop/backups` (opt-in via File Backups).
 - Window state: app config dir / `window-state.json`.
-- System startup config: app config dir / `system.json` (GPU, single instance, thumbnail cache limit). This file is read before the webview exists; do not move these values to localStorage without a replacement pre-webview source.
-- Thumbnail cache: `%LOCALAPPDATA%/com.vyu.desktop/thumbnails/` (configurable soft limit, default 500 MB).
-- Display cache: `%LOCALAPPDATA%/com.vyu.desktop/displays/` (2 GB soft limit).
-- Cover-art cache: `%LOCALAPPDATA%/com.vyu.desktop/cover_art/`.
-- Temp: `%TEMP%/Vyu-temp/` with unique hash-based paths per operation.
-- Launch at login: `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `Vyu` (release builds only).
-- Explorer context menu: `HKCU\Software\Classes\SystemFileAssociations\{image,video,audio,document,.pdf}\shell\Vyu`.
+- System startup config: app config dir / `system.json` (GPU, single instance, launch minimized, cache limit). It is read before the webview exists.
+- Caches: `%LOCALAPPDATA%/com.vyu.desktop/{thumbnails,displays,cover_art}`. Thumbnail soft limit defaults to 500 MB; display cache to 2 GB.
+- Temp: `%TEMP%/Vyu-temp/`.
+- Registry: launch at login (installed builds only) at `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Vyu`; Explorer context menu under `HKCU\Software\Classes\SystemFileAssociations\{image,video,audio,document,.pdf}\shell\Vyu`.
 
-## File watching and lifecycle
+## Media and caches
 
-- `watchImmediate()` with a 300 ms debounce.
-- Events within 1 second of starting a watch are ignored (`folderWatcher.svelte.ts`). Do not rely on the watcher for immediate post-write state updates.
-- On change: rescan, re-sort, and adjust the current index. If the current file disappeared, load the nearest remaining file or close the viewer.
-- `media.displayFile` uses a load generation counter to ignore stale async results.
-- `onBeforeSwitch` resets editing/markup state and saves the current position.
-- Temp directories/files are unique per operation. Clean up temp artifacts after failures where practical.
+- Keep mirrored extension lists in sync between `src/lib/shared/constants.ts` and `src-tauri/src/constants.rs`: `IMAGE_EXTS` ↔ `IMAGE_EXTS_RUST` (except `svg`, frontend-only), plus `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS`, `BROWSER_UNSUPPORTED_IMAGE_EXTS`, `BROWSER_UNSUPPORTED_VIDEO_EXTS`, and `REMUX_VIDEO_EXTS`. Rust-only lists need no TypeScript mirror: `FFMPEG_IMAGE_EXTS_RUST` and `RAW_IMAGE_EXTS_RUST`.
+- Thumbnail requests go through `services/thumbnailCache.svelte.ts`, the single queue/cache. Do not bypass it from the library or thumbnail bar.
+- Prepared audio tracks and extracted WebVTT use the display cache; active audio-track variants are pinned so playback is not interrupted. Thumbnail and display caches evict best-effort at their soft limits.
+- Audio-track switching remuxes a cached single-audio rendition because WebView2 cannot reliably select embedded audio tracks. Embedded text subtitles are extracted as WebVTT; bitmap subtitles are unsupported.
+- FFmpeg is pinned to 9.0.1 Essentials and SHA-256-verified by `scripts/dl-ffmpeg.ps1`. It is resolved at startup from app resources with a PATH fallback in dev; use `util::ffmpeg_command`/`ffprobe_command` rather than hardcoded paths. `src-tauri/resources/` is generated.
+- Concurrency is bounded by semaphores: 16 image, 2 video/FFmpeg/RAW, 2 audio, 1 preview. Preview frames skip the library thumbnail queue.
+- Stat-based sorting uses one `batch_stat` IPC call; do not add per-file stat loops. Library reactive stats use `$state<Record>`, not `Map`, so Svelte proxy tracking works.
 
-## Mirrored constants
+## Playback, viewer, and window
 
-Keep these synchronized:
+- `pdfjs-dist` is dynamically imported only when a PDF opens.
+- HLS uses lazy `hls.js` with workers disabled; WebView2 has no native HLS, and the CSP has no `worker-src blob:`.
+- Remote `http(s)` media plays in-stream and is not persisted: no recents, resume, markers, clips, or track inspection.
+- The up-next queue is session-only and stores absolute paths; do not persist it.
+- Global marker clears update the database and the in-memory timestamp/clip stores.
+- Window state is not written while PiP is active; mini geometry must not replace normal bounds.
+- `--safe-mode` forces GPU acceleration on for recovery from a bad disabled-GPU startup.
+- Keybind conflicts are scoped to viewer/library/PDF. Escape, Backspace, and plain Delete are reserved (close/clear binding).
+- The keep-awake monitor uses a dedicated thread because `SetThreadExecutionState` is per-thread.
+- `vacuum_database` runs in `spawn_blocking` because `VACUUM` rewrites the database.
+- Diagnostics omit the current media path unless the user explicitly copies file metadata.
+- Danger Zone and factory reset clear Vyu data, caches, backups, and installation files; they never delete user media.
 
-- `IMAGE_EXTS` ↔ `IMAGE_EXTS_RUST`, **except** `svg` is intentionally frontend-only and must stay out of the Rust list.
-- `VIDEO_EXTS` ↔ `VIDEO_EXTS_RUST`.
-- `AUDIO_EXTS` ↔ `AUDIO_EXTS_RUST`.
-- `DOCUMENT_EXTS` ↔ `DOCUMENT_EXTS_RUST`.
-- `BROWSER_UNSUPPORTED_IMAGE_EXTS` ↔ `BROWSER_UNSUPPORTED_IMAGE_EXTS_RUST`.
-- `REMUX_VIDEO_EXTS` ↔ `REMUX_VIDEO_EXTS_RUST`.
+## Files and lifecycle
 
-Rust-only lists do not need TypeScript mirrors: `FFMPEG_IMAGE_EXTS_RUST`, `RAW_IMAGE_EXTS_RUST`, `BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST`.
-
-## Known constraints
-
-| Constraint                                                            | Reason                                                                              |
-| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Library reactive caches use `$state<Record>`                          | Svelte proxy tracking depends on property access.                                   |
-| `services/thumbnailCache.svelte.ts` owns thumbnail requests           | It is the single queue/cache so library and thumbnail bar cannot diverge.           |
-| `pdfjs-dist` remains dynamic                                          | Keeps startup bundle smaller.                                                       |
-| Sort-related stat uses one batch IPC call                             | Eliminates per-call IPC overhead.                                                   |
-| Batch stat processes paths in chunks of 8                             | Limits work per blocking task; overall concurrency is not capped at 8.              |
-| Thumbnail cache evicted at a configurable soft limit (500 MB default) | Prevents unbounded disk usage while letting users trade cache size for speed.       |
-| Display cache evicted at 2 GB soft limit                              | Prevents unbounded disk usage.                                                      |
-| Prepared audio and WebVTT track files use the display cache           | Shares the existing cache and eviction policy.                                      |
-| Active audio-track variants are pinned in the display cache           | Avoids interrupting playback; a large active variant may exceed the soft limit.     |
-| Audio track switching remuxes a cached single-audio rendition         | WebView playback does not expose reliable embedded audio-track selection.           |
-| Embedded text subtitles are extracted as WebVTT                       | Native `<track>` renders them; bitmap subtitles are not supported.                  |
-| Temp paths are unique per operation                                   | Prevents concurrent-operation conflicts.                                            |
-| Cross-volume rename uses copy+delete fallback                         | Required for `ERROR_NOT_SAME_DEVICE` (error 17).                                    |
-| JPEG scale-down via `jpeg-decoder`, not `image`                       | `image` uses `zune-jpeg`, which lacks IDCT scaling.                                 |
-| Semaphores: 16 image, 2 video/FFmpeg/RAW, 2 audio, 1 preview          | Preview frames skip the library thumbnail queue.                                    |
-| Timeline previews use 2 s buckets and keyframe `pv2` keys             | Accurate attempt falls back to keyframes after 500 ms.                              |
-| Thumbnail eviction counter is atomic and best-effort                  | Avoids full directory scans on the hot path; `get_thumbnail_cache_size` resyncs it. |
-| Inflight dedup keyed by `{hash}_{size}` (no mtime)                    | Allows metadata stat inside `spawn_blocking`.                                       |
-| FFmpeg 9.0.1 Essentials is pinned; its download is SHA-256 verified   | Reproducible provisioning.                                                          |
-| Webview CSP restricts network access to media playback                | User links and HLS segments must load; no telemetry or automatic requests.          |
-| Remote links play in-stream; nothing is cached or persisted           | No recents, resume, markers, clips, or track inspection for http(s) sources.        |
-| HLS uses lazily imported hls.js with workers disabled                 | WebView2 has no native HLS; disabling workers avoids `worker-src blob:`.            |
-| Update checks run in the Rust backend only                            | The webview never issues the update request; it stays user-initiated.               |
-| Keybind conflicts are scoped to viewer/library/PDF                    | Arrow keys stay natural in each view; global actions conflict with every context.   |
-| Escape, Backspace, and plain Delete are reserved                      | Escape closes, and Backspace/Delete clear a binding while recording.                |
-| `system.json` is read before the webview is created                   | GPU args and single-instance registration cannot change at runtime.                 |
-| `--safe-mode` forces GPU acceleration on                              | Recovery path if a disabled-GPU startup renders incorrectly.                        |
-| Keep-awake uses a dedicated thread                                    | `SetThreadExecutionState` is per-thread and would expire on a command thread.       |
-| `vacuum_database` runs in `spawn_blocking`                            | `VACUUM` rewrites the DB and must not block the UI/command thread.                  |
-| Diagnostics omit the current media path                               | Reports stay safe to share; explicit file-metadata copy includes the path.          |
-| Safe-mode restart reuses `--restart-delay`                            | The single-instance release must finish before the new process starts.              |
-| Window state is not written while PiP is active                       | The mini geometry must never replace the user's normal window state.                |
-| Danger Zone actions never delete user media                           | Destructive settings clear Vyu data, caches, backups or installation files only.    |
-| Global marker clears update the DB and current in-memory stores       | Avoids stale timestamps/clips after clearing every file.                            |
-| Queue is session-only and stores absolute paths                       | Supports cross-folder playback without persisting a stale list across restarts.     |
-| Queue playback takes precedence over loop while items remain          | An explicit queue entry means “play next”; native looping resumes when it empties.  |
-| Queue playback is the only slideshow-style mode                       | The viewer toolbar exposes one queue menu; images advance on its interval setting.  |
-| Sleep timer close-at-end uses the normal window close path            | Lets existing close cleanup and window-state persistence run.                       |
-| Profile switching captures live `vyu-*` keys and reloads              | Guarantees every settings store reinitializes from the target profile.              |
-| Factory Reset clears the database and reinitializes preferences       | Leaves media files on disk untouched.                                               |
-| Bundled FFmpeg removal requires restart or reinstall                  | The startup-resolved binary path and PATH fallback are not re-evaluated at runtime. |
+- `watchImmediate()` with a 300 ms debounce; events within the first second of a watch are ignored. Do not rely on the watcher for immediate post-write updates.
+- On external change: rescan, re-sort, keep the current file if present, otherwise load the nearest remaining file or close the viewer.
+- `displayFile` uses a load generation counter; `onBeforeSwitch` saves the current position, and `onReset` resets zoom, editing, and markup for the next file.
+- Cross-volume renames fall back to copy+delete on `ERROR_NOT_SAME_DEVICE` (error 17).
+- Temp files and directories must use unique hash-based paths per operation; clean them up after failures where practical.

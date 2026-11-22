@@ -1,125 +1,82 @@
-# Vyu — Agent Notes
+# Vyu — Agent Instructions
 
-Windows desktop media viewer. Tauri 2 + Rust backend, Svelte 5 runes + TypeScript strict frontend, pnpm. Local-first: no telemetry, no accounts; media processing stays local. Optional Song ID uses the SongRec sidecar, which must be supplied at build time, and needs a connection.
-
-## Read first
-
-- `ARCHITECTURE.md` — ownership, data flow, persistence, and non-obvious constraints. Read the relevant section, not the whole file.
-- `README.md` — setup, commands, and project overview. If it conflicts with `ARCHITECTURE.md` or the code on implementation details, the code/architecture wins.
-- `CONTRIBUTING.md` — contribution and licensing policy; code PRs are not currently accepted.
+Windows-only local media viewer: Tauri 2 + Rust backend, Svelte 5 runes + strict TypeScript frontend, pnpm. Local-first: no telemetry or accounts. Network access is limited to user-opened media links, Song ID, and an opt-in update check. Frontend paths are relative to `src/lib/`; Rust paths to `src-tauri/src/` unless prefixed.
 
 ## Before editing
 
-- Inspect the relevant implementation and existing pattern before changing behavior.
-- Trace callers and data flow when a change crosses modules or the frontend/backend boundary.
-- Treat documentation as guidance; verify claims against code. Resolve uncertainty by inspection, not assumption.
+- Read the relevant `ARCHITECTURE.md` section; `README.md` covers setup and `CONTRIBUTING.md` covers licensing (code PRs are not accepted).
+- Find the existing owner, read its implementation, and trace callers. Changes often cross `+page.svelte` → feature module → service → Tauri command.
+- Prefer the smallest change that follows existing patterns. Do not refactor, rename, or reformat unrelated code.
+- Code is authoritative; if a change makes documentation wrong, update the relevant section.
 
-## Commands
+## Commands and verification
 
-| Task            | Command                                            |
-| --------------- | -------------------------------------------------- |
-| Install         | `pnpm install`                                     |
-| Dev             | `pnpm tauri dev`                                   |
-| Full build      | `pnpm tauri build`                                 |
-| Frontend check  | `pnpm check`                                       |
-| Frontend build  | `pnpm build`                                       |
-| Rust check      | `cargo check --manifest-path src-tauri/Cargo.toml` |
-| Rust tests      | `cargo test --manifest-path src-tauri/Cargo.toml`  |
-| Format (writes) | `pnpm format`                                      |
-| Format check    | `pnpm prettier --check <paths>`                    |
-| Repair FFmpeg   | `pnpm ffmpeg:ensure`                               |
+| Task              | Command                                            | Run when                          |
+| ----------------- | -------------------------------------------------- | --------------------------------- |
+| Install           | `pnpm install`                                     | first setup                       |
+| Run the app       | `pnpm tauri dev`                                   | manual UI/runtime checks          |
+| Frontend-only dev | `pnpm dev`                                         | UI preview without Tauri IPC      |
+| Frontend check    | `pnpm check`                                       | Svelte/TS changes (required)      |
+| i18n check        | `pnpm check:i18n`                                  | messages or `t()` calls change    |
+| Sidecar check     | `pnpm check:sidecar`                               | sidecar or binary changes         |
+| Rust check        | `cargo check --manifest-path src-tauri/Cargo.toml` | Rust changes                      |
+| Rust tests        | `cargo test --manifest-path src-tauri/Cargo.toml`  | testable Rust logic changes       |
+| Frontend build    | `pnpm build`                                       | imports, build config, or bundle  |
+| Desktop build     | `pnpm tauri build`                                 | release/package verification only |
+| Format check      | `pnpm prettier --check <paths>`                    | changed files                     |
+| Repair FFmpeg     | `pnpm ffmpeg:ensure`                               | FFmpeg missing or corrupt         |
 
-### Validation
-
-- Use the narrowest check that covers the change.
-- Svelte/TS change: run `pnpm check` (required).
-- Rust change: run `cargo check --manifest-path src-tauri/Cargo.toml` (required).
-- Rust logic in `util.rs`, `types.rs`, or `editing.rs`: run `cargo test --manifest-path src-tauri/Cargo.toml`; those modules have unit tests.
-- Imports/build config/bundle change: run `pnpm build`.
-- Release verification: `pnpm tauri build`; do not run it for routine edits.
-- There is no frontend test runner. Do not claim frontend tests exist.
-- `pnpm format` runs `prettier --write .` and modifies files. Prefer checking changed paths with `pnpm prettier --check <paths>`.
-- `cargo fmt --check` is not currently clean; do not use it as a gate without a separate cleanup.
-- Report commands actually run and important checks skipped.
-
-## State and ownership
-
-- **Shared/application state** → singleton feature module (`export const x = createX()`).
-- **Feature-local state** → the owning feature module; factories for multiple instances.
-- **Page/view state** → `src/routes/+page.svelte`. It is the composition root and legitimately owns media/view state, dialog flags, and wiring.
-- **Component-local presentation state** → the component that renders it.
-- **DOM references** → the component that binds the element; page-owned refs stay in `+page.svelte`.
-- **Event wiring** → `+page.svelte` / `components/Shell.svelte`; keep domain rules in feature modules.
-- Do not migrate page/view state into feature modules unless it is shared or domain-owned.
-- Leaf components receive props and emit callbacks. Orchestration components (`Shell`, `Dialog`, `SettingsDialog`) may import feature stores directly.
-- Find the owner in `ARCHITECTURE.md` first. Extend the existing module before creating one.
-
-New module only when: no existing owner, clearly distinct responsibility, and extending the current module would reduce cohesion. Do not reorganize, rename, or abstract unrelated code.
+- Use the narrowest check that can catch the problem; do not run `pnpm build` or `pnpm tauri build` for routine edits.
+- Tests live beside the code in `util.rs`, `types.rs`, `state/`, and command modules. Add focused Rust tests for testable fixes; for UI-only fixes, state the manual reproduction.
+- No frontend test runner exists.
+- `pnpm format` writes the whole repo; avoid it. `cargo fmt --check` is not clean.
+- Report commands run and important checks skipped.
 
 ## Implementation conventions
 
-- Svelte 5 runes only: `$state`, `$derived`, `$effect`. `let` for `$state`; no legacy `let`/`$:` reactivity.
-- TypeScript strict mode. Reusable UI components live in `src/lib/components/`, not `shared/`.
-- Preserve the single-page navigation model. Add a route only when a requested feature genuinely requires one and no existing view/menu/dialog path fits.
-- New top-level npm/cargo dependencies require a concrete reason.
-- Keep the main toolbar's icon set and visual design unchanged unless explicitly requested; unrelated toolbar behavior changes are allowed.
-- `pdfjs-dist` stays dynamically imported; only load it when a PDF opens.
-- Vite port 1420 with `strictPort: true`; window decorations stay off (custom title bar).
-- Prefer early returns, named functions, and terse comments only where needed.
-- Do not log expected control flow or successful operations. Report failures once at the handling boundary; do not log and rethrow.
-- User-facing copy is concise and neutral. Preserve behavior outside the requested scope; do not refactor unrelated code.
-- Reuse existing services/patterns before introducing abstractions.
+- Svelte 5 runes only: `$state`, `$derived`, `$effect`. Use `let` for `$state`; no legacy `let`/`$:` reactivity. Derive values with `$derived`; reserve `$effect` for side effects.
+- Keep the single-page model. Add a route only when no existing view, menu, or dialog path fits.
+- Frontend IPC goes through the owning wrapper (`features/*/api.ts`, `services/database.ts`, `services/files.ts`). Components never call `invoke()` directly.
+- New Tauri command: implement in `src-tauri/src/commands/<domain>.rs`, register it in `lib.rs`, expose it through a typed wrapper, and add any required plugin permission to `src-tauri/capabilities/default.json`.
+- Most styling is global CSS in `src/lib/styles/`; use existing CSS variables and `data-theme`/`data-*` attributes. Use component-scoped styles only for self-contained components. Reusable UI components live in `src/lib/components/`, not `shared/`.
+- User-facing text uses `locale.t()` / `locale.tp()` with keys in `messages/<namespace>/<locale>.json`; add each key to `en.json` and every locale in the same change, and never hardcode English or use English sentences as keys. See `src/lib/features/i18n/README.md`.
+- When adding or removing a media extension, update both `src/lib/shared/constants.ts` and `src-tauri/src/constants.rs`. The mirrored lists and the `svg` exception are documented in `ARCHITECTURE.md`.
+- Keep `pdfjs-dist` and `hls.js` as lazy imports. Do not add startup imports for them.
+- Add a dependency or abstraction only when existing code cannot solve the problem.
+- Log failures once at the handling boundary; do not log expected control flow or successes.
+- Keep the main toolbar's icon set and visual design unchanged unless explicitly requested.
+- If a behavior has multiple entry points (menu, keybind, context menu, settings), update all applicable surfaces or state why not.
 
-### Constants synchronization
+## State and ownership
 
-Keep mirrored lists in `src/lib/shared/constants.ts` and `src-tauri/src/constants.rs` in sync:
+- Shared/application state → singleton feature export (`export const x = createX()`).
+- Feature-local state → the owning feature module; use a factory when multiple instances are needed.
+- Page/view state, dialog flags, and page-level DOM refs → `src/routes/+page.svelte`. This is intentional; do not migrate it unless it becomes shared or domain-owned.
+- Component-local presentation state and DOM refs → the component that renders or binds them.
+- Leaf components receive props and callbacks. Orchestration components (`Shell.svelte`, `Dialog.svelte`, `SettingsDialog.svelte`) may import feature stores directly.
+- `+page.svelte` imports features; features never import `+page.svelte`. Circular imports indicate a boundary problem.
+- Create a module only when no existing owner fits, the responsibility is distinct, and extending the current module would reduce cohesion.
 
-- `IMAGE_EXTS` ↔ `IMAGE_EXTS_RUST`, **except** `svg` is intentionally frontend-only.
-- `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS` mirror their `*_RUST` counterparts.
-- `BROWSER_UNSUPPORTED_IMAGE_EXTS` and `REMUX_VIDEO_EXTS` mirror their Rust counterparts.
+## Persistence
 
-Rust-only lists (`FFMPEG_IMAGE_EXTS_RUST`, `RAW_IMAGE_EXTS_RUST`, `BROWSER_UNSUPPORTED_VIDEO_EXTS_RUST`) do not need TypeScript mirrors.
+- Use `services/storage.ts` for app settings and `services/database.ts` for per-file metadata.
+- Per-file metadata is SQLite-backed; add new per-file fields there with a migration, never as new localStorage keys.
+- Preserve the existing localStorage fallback and dual-write for resume points, EQ, and CD color when changing those paths.
 
-### Backend
+## Data safety
 
-- Tauri commands live in `src-tauri/src/commands/`, one file per domain.
-- Cross-volume moves use copy+delete fallback on `ERROR_NOT_SAME_DEVICE` (error 17).
-- Concurrent temp files/directories must use unique hash-based paths.
-- Sort-related `stat()` work is batched; do not add per-file IPC loops.
-- FFmpeg is pinned (9.0.1 Essentials), hash-verified, and resolved from app resources with a PATH fallback in dev. `src-tauri/resources/` is generated; do not edit it.
-
-## Persistence and files
-
-- App preferences/localStorage: `services/storage.ts`. Per-file SQLite data: `services/database.ts`. Do not call DB commands directly from components.
-- SQLite is primary for timestamps, clips, resume points, EQ, and CD color. localStorage is for app-wide settings and legacy/fallback per-file values. Do not add new per-file localStorage keys.
-- Legacy per-file prefixes and exact paths are documented in `ARCHITECTURE.md`.
-- Edit backups are opt-in via the File Backups setting.
-
-## Generated files and destructive operations
-
+- Never use real user media as a test fixture. Use synthetic files or copies under `%TEMP%`.
+- `pnpm tauri dev` uses the real app data under `%APPDATA%` and `%LOCALAPPDATA%`. Back up `%APPDATA%/com.vyu.desktop` and `%LOCALAPPDATA%/com.vyu.desktop` before testing Danger Zone, factory reset, cache clearing, uninstall, or backup deletion.
+- Prefer `trash_file` (recycle bin) for user media. Use permanent deletion only when explicitly requested.
 - Do not edit generated output: `.svelte-kit/`, `build/`, `src-tauri/target/`, `src-tauri/gen/`, `src-tauri/resources/*.exe`.
-- `src-tauri/binaries/songrec-*.exe` is a tracked sidecar placeholder; replace it with the real SongRec binary before relying on Song ID.
-- Prefer recycle-bin behavior (`trash_file`) for user media. Use permanent deletion only when explicitly requested.
-- Never use real user media as test fixtures; use temporary paths.
+- `src-tauri/binaries/songrec-*.exe` is a tracked placeholder. The real SongRec binary may be placed locally for a build but must never be committed; `pnpm check:sidecar` enforces the placeholder.
+- Do not add telemetry, accounts, or background network calls; keep the local-first CSP boundary.
+- Treat uncommitted changes as user work; never discard them.
 
-## Completion and communication
+## Finishing
 
-Before finishing:
-
-- Run the checks appropriate to the changed layer.
-- Inspect the final diff for unintended edits and unrelated formatting.
-- Report checks actually run, their results, and important checks not run.
-- Separate confirmed behavior from assumptions or unverified risks.
-- Surface important decisions, blockers, and unresolved problems.
-- Ask one focused question with concrete options only when a consequential requirement is genuinely ambiguous.
-
-Keep responses concise. Do not narrate routine exploration, enumerate every file inspected, or produce textbook/exhaustive summaries unless asked. Explain meaningful decisions or tradeoffs, validation, and remaining limitations.
-
-Default completion response:
-
-1. What changed.
-2. Important implementation details, if necessary.
-3. Validation results.
-4. Remaining limitations or unverified behavior.
-
-Plans and progress updates should be proportional to task complexity. Do not hide important problems to keep a response short.
+- Review `git diff` (including untracked files) for unrelated edits, generated output, and formatting noise.
+- Run the checks for every changed layer; do not claim tests that do not exist.
+- Report what changed, validation results, and skipped checks. Separate verified behavior from assumptions or unverified risks.
+- If ownership, persistence, or an invariant changed, update the relevant section of `ARCHITECTURE.md` instead of appending new prose.
+- Keep the final response concise: change summary, notable implementation choices, validation, and remaining limitations.
