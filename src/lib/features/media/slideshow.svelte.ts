@@ -10,7 +10,7 @@ export type QueueTransition = "none" | "fade" | "slide";
 export function createSlideshow() {
   let active = $state(false);
   let paused = $state(false);
-  let intervalSec = $state(5);
+  let intervalSec = $state(15);
   let transition = $state<QueueTransition>("none");
 
   let timer: ReturnType<typeof setTimeout> | undefined;

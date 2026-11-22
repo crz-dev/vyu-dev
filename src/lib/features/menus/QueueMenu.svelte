@@ -44,6 +44,10 @@
 
   let intervalTrackEl: HTMLDivElement | null = $state(null);
   let intervalDragging = $state(false);
+  let intervalDragPct = $state<number | null>(null);
+  let intervalVisualPct = $derived(
+    intervalDragPct ?? intervalPct(slideshow.intervalSec),
+  );
 
   function refreshScrollbarMetrics(): boolean {
     const el = listEl;
@@ -98,6 +102,9 @@
   });
 
   let showEmpty = $state(queue.length === 0);
+  let clearingQueue = $state(false);
+  let listCollapseHeight = $state<number | null>(null);
+  let clearAnimTimer: ReturnType<typeof setTimeout> | undefined;
 
   $effect(() => {
     if (queue.length > 0) {
@@ -115,6 +122,7 @@
     return () => {
       if (scrollHideTimer) clearTimeout(scrollHideTimer);
       if (clearTimer) clearTimeout(clearTimer);
+      if (clearAnimTimer) clearTimeout(clearAnimTimer);
     };
   });
 
@@ -163,17 +171,17 @@
   }
 
   function intervalPct(value: number): number {
-    if (value <= 5) {
-      return ((value - 1) / 4) * 50;
+    if (value <= 15) {
+      return ((value - 1) / 14) * 50;
     }
-    return 50 + ((value - 5) / 5) * 50;
+    return 50 + ((value - 15) / 15) * 50;
   }
 
   function intervalFromPct(pct: number): number {
     if (pct <= 50) {
-      return 1 + (pct / 50) * 4;
+      return 1 + (pct / 50) * 14;
     }
-    return 5 + ((pct - 50) / 50) * 5;
+    return 15 + ((pct - 50) / 50) * 15;
   }
 
   function updateIntervalFromX(clientX: number) {
@@ -183,9 +191,10 @@
       0,
       Math.min(100, ((clientX - rect.left) / rect.width) * 100),
     );
+    intervalDragPct = pct;
     slideshow.intervalSec = Math.max(
       1,
-      Math.min(10, Math.round(intervalFromPct(pct))),
+      Math.min(30, Math.round(intervalFromPct(pct))),
     );
   }
 
@@ -205,6 +214,7 @@
   function handleIntervalPointerUp(e: PointerEvent) {
     if (!intervalDragging) return;
     intervalDragging = false;
+    intervalDragPct = null;
     try {
       intervalTrackEl?.releasePointerCapture(e.pointerId);
     } catch {
@@ -293,8 +303,25 @@
     }
     if (clearTimer) clearTimeout(clearTimer);
     clearConfirm = false;
+    const height = listEl?.offsetHeight ?? 0;
+    // Expand the hint alongside the collapse so the card only shrinks.
+    showEmpty = true;
     queue.clear();
     slideshow.stop();
+    if (height > 0) {
+      clearingQueue = true;
+      listCollapseHeight = height;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          listCollapseHeight = 0;
+        });
+      });
+      if (clearAnimTimer) clearTimeout(clearAnimTimer);
+      clearAnimTimer = setTimeout(() => {
+        clearingQueue = false;
+        listCollapseHeight = null;
+      }, 220);
+    }
   }
 
   async function savePlaylist() {
@@ -331,6 +358,20 @@
         .split(/[\\/]/)
         .pop() ?? ""
     );
+  }
+
+  // Split long names so the head can ellipsize while the tail (including the
+  // extension) stays visible, producing a middle truncation in the row.
+  function splitQueueName(name: string): { head: string; tail: string } {
+    const dot = name.lastIndexOf(".");
+    const ext = dot > 0 ? name.slice(dot) : "";
+    const stem = ext ? name.slice(0, dot) : name;
+    if (stem.length <= 14) return { head: name, tail: "" };
+    const tailLength = Math.min(14, Math.max(8, Math.round(stem.length * 0.4)));
+    return {
+      head: stem.slice(0, stem.length - tailLength),
+      tail: `${stem.slice(stem.length - tailLength)}${ext}`,
+    };
   }
 </script>
 
@@ -448,7 +489,13 @@
     </div>
 
     <div class="edit-menu-card queue-body">
-      <div class="queue-list-wrap">
+      <div
+        class="queue-list-wrap"
+        class:collapsing={clearingQueue}
+        style:height={listCollapseHeight !== null
+          ? `${listCollapseHeight}px`
+          : undefined}
+      >
         <div
           class="queue-list"
           role="list"
@@ -456,6 +503,7 @@
           onscroll={handleListScroll}
         >
           {#each queue.items as path, index (path)}
+            {@const queueName = splitQueueName(getFileName(path))}
             <div
               class="queue-row"
               class:dragging={dragIndex === index}
@@ -503,7 +551,12 @@
                 onclick={() => playQueued(path)}
                 title={t("menus.queue.playNow")}
               >
-                <span class="queue-row-name">{getFileName(path)}</span>
+                <span class="queue-row-name">
+                  <span class="queue-name-head">{queueName.head}</span>
+                  {#if queueName.tail}<span class="queue-name-tail"
+                      >{queueName.tail}</span
+                    >{/if}
+                </span>
                 <span class="queue-row-folder">{folderLabel(path)}</span>
               </button>
               <button
@@ -536,10 +589,7 @@
       </div>
 
       {#if showEmpty}
-        <div
-          class="queue-empty"
-          in:fly={{ y: -4, duration: 160, opacity: 0, easing: cubicOut }}
-        >
+        <div class="queue-empty">
           <span class="queue-empty-title">{t("menus.queue.empty")}</span>
         </div>
       {/if}
@@ -611,7 +661,7 @@
           role="slider"
           tabindex="0"
           aria-valuemin={1}
-          aria-valuemax={10}
+          aria-valuemax={30}
           aria-valuenow={slideshow.intervalSec}
           aria-label={t("menus.slideshow.intervalAria")}
           onpointerdown={handleIntervalPointerDown}
@@ -621,11 +671,11 @@
         >
           <div
             class="color-slider-fill"
-            style="width: {intervalPct(slideshow.intervalSec)}%"
+            style="width: {intervalVisualPct}%"
           ></div>
           <div
             class="color-slider-scrubber"
-            style="left: {intervalPct(slideshow.intervalSec)}%"
+            style="left: {intervalVisualPct}%"
             role="button"
             tabindex="0"
             aria-label={t("menus.common.scrubber")}
