@@ -372,6 +372,13 @@ function createLibrary() {
     saveRecentFiles([], recentFilesLimit);
   }
 
+  function removeRecent(path: string) {
+    const next = recentFiles.filter((r) => r.path !== path);
+    if (next.length === recentFiles.length) return;
+    recentFiles = next;
+    saveRecentFiles(recentFiles, recentFilesLimit);
+  }
+
   function setRecentFilesLimit(limit: number) {
     recentFilesLimit = limit;
     saveRecentFilesLimit(limit);
@@ -819,6 +826,7 @@ function createLibrary() {
         await invokeCopyFileUnique(p, colPath);
         if (deleteOriginalAfterCopy) {
           await invokeDeleteFile(p);
+          removeRecent(p);
         }
         successCount++;
       } catch {
@@ -873,6 +881,7 @@ function createLibrary() {
     addRecent,
     flushRecentSave,
     clearRecentFiles,
+    removeRecent,
     get recentFilesLimit() {
       return recentFilesLimit;
     },

@@ -737,6 +737,7 @@
     ) {
       try {
         await invokeTrashFile(filePath);
+        library.removeRecent(filePath);
       } catch (e) {
         console.error("Failed to delete original:", e);
         showToast({

@@ -1190,6 +1190,7 @@
     try {
       await invokeTrashFile(path);
       queue.remove(path);
+      library.removeRecent(path);
       library.triggerRescan();
       showToast({ message: t("library.toasts.fileDeleted"), color: "red" });
     } catch {
@@ -1559,7 +1560,10 @@
         : [sortedFiles[highlightIndex]].filter((p): p is string => !!p);
     if (paths.length === 0) return;
     try {
-      for (const path of paths) await invokeTrashFile(path);
+      for (const path of paths) {
+        await invokeTrashFile(path);
+        library.removeRecent(path);
+      }
       library.clearSelection();
       library.triggerRescan();
       showToast({

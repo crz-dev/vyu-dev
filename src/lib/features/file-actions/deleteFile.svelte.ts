@@ -1,5 +1,6 @@
 import { invokeDeleteFile, invokeTrashFile } from "$lib/features/media/api";
 import { queue } from "$lib/features/media/queue.svelte";
+import { library } from "$lib/features/library/library.svelte";
 import {
   loadSkipDeleteConfirmation,
   saveSkipDeleteConfirmation,
@@ -92,6 +93,7 @@ export async function performMultiDelete(deps: MultiDeleteActionsDeps) {
     if (results[i].status === "fulfilled") {
       successCount++;
       queue.remove(paths[i]);
+      library.removeRecent(paths[i]);
     } else {
       failCount++;
     }
@@ -125,6 +127,7 @@ export function createDeleteActions(deps: DeleteActionsDeps) {
       if (deleteStore.deletePermanently) await invokeDeleteFile(pathToDelete);
       else await invokeTrashFile(pathToDelete);
       queue.remove(pathToDelete);
+      library.removeRecent(pathToDelete);
       showToast({
         message: deleteStore.deletePermanently
           ? locale.t("shell.files.deletedPermanently")
