@@ -1819,6 +1819,16 @@
     }
   });
 
+  // The viewer is unmounted while the library is open, so media elements never
+  // fire load events. Clear the loading border instead of leaving it spinning
+  // forever when a background load (e.g. the folder watcher advancing past a
+  // deleted file) starts while the library covers the viewer.
+  $effect(() => {
+    if (menuStore.libraryOpen && isLoadingFile) {
+      setMediaState({ isLoadingFile: false, loadingFadingOut: false });
+    }
+  });
+
   // Save/restore viewer menu state across library transitions
   let prevLibraryOpen = $state(false);
   $effect(() => {

@@ -125,12 +125,28 @@ pub fn trash_file(path: String) -> Result<(), String> {
     trash_file_inner(&p)
 }
 
+/// `SHFileOperationW` rejects extended-length (`\\?\`) paths, while
+/// `std::fs::canonicalize` always returns them on Windows. Strip the verbatim
+/// prefix so the shell API receives a normal drive or UNC path.
+#[cfg(target_os = "windows")]
+fn strip_verbatim_prefix(path: &Path) -> PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        PathBuf::from(format!(r"\\{rest}"))
+    } else if let Some(rest) = text.strip_prefix(r"\\?\") {
+        PathBuf::from(rest)
+    } else {
+        path.to_path_buf()
+    }
+}
+
 #[cfg(target_os = "windows")]
 fn trash_file_inner(p: &std::path::Path) -> Result<(), String> {
     use windows::Win32::Foundation::HWND;
     use windows::Win32::UI::Shell::{SHFileOperationW, FOF_ALLOWUNDO, FO_DELETE, SHFILEOPSTRUCTW};
 
-    let wide: Vec<u16> = OsStr::new(p.as_os_str())
+    let shell_path = strip_verbatim_prefix(p);
+    let wide: Vec<u16> = OsStr::new(shell_path.as_os_str())
         .encode_wide()
         .chain(std::iter::once(0))
         .chain(std::iter::once(0))
@@ -361,6 +377,26 @@ pub async fn get_files_total_size(paths: Vec<String>) -> Result<u64, String> {
 mod tests {
     use super::allowed_output_extension;
     use std::path::Path;
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn verbatim_paths_are_stripped_for_shell_operations() {
+        use super::strip_verbatim_prefix;
+        use std::path::PathBuf;
+
+        assert_eq!(
+            strip_verbatim_prefix(Path::new(r"\\?\C:\Media\clip.mp4")),
+            PathBuf::from(r"C:\Media\clip.mp4")
+        );
+        assert_eq!(
+            strip_verbatim_prefix(Path::new(r"\\?\UNC\server\share\clip.mp4")),
+            PathBuf::from(r"\\server\share\clip.mp4")
+        );
+        assert_eq!(
+            strip_verbatim_prefix(Path::new(r"C:\Media\clip.mp4")),
+            PathBuf::from(r"C:\Media\clip.mp4")
+        );
+    }
 
     #[test]
     fn playlist_extensions_are_allowed_outputs() {
