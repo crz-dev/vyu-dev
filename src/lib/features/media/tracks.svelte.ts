@@ -74,6 +74,7 @@ export function createTrackSelection(
   let audioTracks = $state<MediaTrack[]>([]);
   let subtitleTracks = $state<MediaTrack[]>([]);
   let sidecars = $state<SubtitleSidecar[]>([]);
+  let rescanningSidecars = $state(false);
   let selectedAudioTrackIndex = $state<number | null>(null);
   let originalAudioTrackIndex: number | null = null;
   let selectedSubtitleId = $state("off");
@@ -154,6 +155,7 @@ export function createTrackSelection(
     audioTracks = [];
     subtitleTracks = [];
     sidecars = [];
+    rescanningSidecars = false;
     selectedAudioTrackIndex = null;
     originalAudioTrackIndex = null;
     selectedSubtitleId = "off";
@@ -516,6 +518,26 @@ export function createTrackSelection(
     if (filePath) void clearSubtitlePosition(filePath);
   }
 
+  async function rescanSidecars() {
+    if (!filePath || rescanningSidecars) return;
+    const path = filePath;
+    const generation = loadGeneration;
+    rescanningSidecars = true;
+    try {
+      const matches = await findSubtitleSidecars(path).catch(
+        () => [] as SubtitleSidecar[],
+      );
+      if (generation !== loadGeneration || path !== filePath) return;
+      const byPath = new Map(
+        sidecars.map((sidecar) => [sidecar.path, sidecar]),
+      );
+      for (const sidecar of matches) byPath.set(sidecar.path, sidecar);
+      sidecars = [...byPath.values()];
+    } finally {
+      if (generation === loadGeneration) rescanningSidecars = false;
+    }
+  }
+
   function setSubtitlePreset(preset: SubtitlePreset) {
     if (preset === "custom") {
       subtitlePrefs.enableCustom();
@@ -552,6 +574,10 @@ export function createTrackSelection(
     subtitlePrefs.setBackground(background);
   }
 
+  function resetSubtitleStyle() {
+    subtitlePrefs.resetCustomStyle();
+  }
+
   return {
     get filePath() {
       return filePath;
@@ -564,6 +590,9 @@ export function createTrackSelection(
     },
     get sidecars() {
       return sidecars;
+    },
+    get rescanningSidecars() {
+      return rescanningSidecars;
     },
     get selectedAudioTrackIndex() {
       return selectedAudioTrackIndex;
@@ -617,6 +646,7 @@ export function createTrackSelection(
     adjustSubtitleDelay,
     setSubtitleOffset,
     resetSubtitlePosition,
+    rescanSidecars,
     setSubtitlePreset,
     setSubtitleUseFileStyles,
     setSubtitleCustomColor,
@@ -625,6 +655,7 @@ export function createTrackSelection(
     setSubtitleColor,
     setSubtitleOutline,
     setSubtitleBackground,
+    resetSubtitleStyle,
     releaseAllAudioVariants,
   };
 }

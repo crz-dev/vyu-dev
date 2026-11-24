@@ -250,7 +250,11 @@
 
   function handleWindowMouseDown(e: MouseEvent) {
     if (!(e.target instanceof Element)) return;
-    if (e.target.closest(".track-control-anchor, .subtitle-select-menu"))
+    if (
+      e.target.closest(
+        ".track-control-anchor, .subtitle-menu, .subtitle-select-menu",
+      )
+    )
       return;
     closeTrackMenus();
   }
@@ -997,7 +1001,6 @@
             bind:this={subtitleTrackButton}
             class="ctrl-btn track-control-btn subtitle-track-btn tooltip-ctrl"
             class:menu-active={menuStore.subtitleMenuOpen}
-            class:active={tracks.selectedSubtitleId !== "off"}
             data-tooltip={t("media.playback.subtitles")}
             aria-label={t("media.playback.subtitles")}
             aria-haspopup="menu"
@@ -1045,6 +1048,10 @@
             delayMs={tracks.subtitleDelayMs}
             subtitleStyle={tracks.subtitleStyle}
             customColors={tracks.subtitleCustomColors}
+            offsetX={tracks.subtitleOffsetX}
+            offsetY={tracks.subtitleOffsetY}
+            rescanning={tracks.rescanningSidecars}
+            anchor={subtitleTrackButton}
             onSelect={tracks.selectSubtitle}
             {onLoadSubtitle}
             onAdjustDelay={tracks.adjustSubtitleDelay}
@@ -1055,7 +1062,10 @@
             onSetColor={tracks.setSubtitleColor}
             onSetOutline={tracks.setSubtitleOutline}
             onSetBackground={tracks.setSubtitleBackground}
+            onSetOffset={tracks.setSubtitleOffset}
+            onResetStyle={tracks.resetSubtitleStyle}
             onResetPosition={tracks.resetSubtitlePosition}
+            onRescanSidecars={() => void tracks.rescanSidecars()}
           />
         </div>
       {/if}
@@ -1682,7 +1692,6 @@
           bind:this={subtitleTrackButton}
           class="fs-ctrl-btn track-control-btn subtitle-track-btn tooltip-ctrl"
           class:menu-active={menuStore.subtitleMenuOpen}
-          class:active={tracks.selectedSubtitleId !== "off"}
           data-tooltip={t("media.playback.subtitles")}
           aria-label={t("media.playback.subtitles")}
           aria-haspopup="menu"
@@ -1730,6 +1739,10 @@
           delayMs={tracks.subtitleDelayMs}
           subtitleStyle={tracks.subtitleStyle}
           customColors={tracks.subtitleCustomColors}
+          offsetX={tracks.subtitleOffsetX}
+          offsetY={tracks.subtitleOffsetY}
+          rescanning={tracks.rescanningSidecars}
+          anchor={subtitleTrackButton}
           onSelect={tracks.selectSubtitle}
           {onLoadSubtitle}
           onAdjustDelay={tracks.adjustSubtitleDelay}
@@ -1740,7 +1753,10 @@
           onSetColor={tracks.setSubtitleColor}
           onSetOutline={tracks.setSubtitleOutline}
           onSetBackground={tracks.setSubtitleBackground}
+          onSetOffset={tracks.setSubtitleOffset}
+          onResetStyle={tracks.resetSubtitleStyle}
           onResetPosition={tracks.resetSubtitlePosition}
+          onRescanSidecars={() => void tracks.rescanSidecars()}
         />
       </div>
     {/if}

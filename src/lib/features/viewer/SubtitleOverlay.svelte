@@ -414,7 +414,22 @@
 
   function shadow(width: number, color: string): string {
     const value = Math.max(0.5, width);
-    return `-${value}px -${value}px 0 ${color}, ${value}px -${value}px 0 ${color}, -${value}px ${value}px 0 ${color}, ${value}px ${value}px 0 ${color}`;
+    const radii = value > 1.5 ? [value / 3, (value * 2) / 3, value] : [value];
+    return radii
+      .flatMap((radius) => {
+        const r = Math.round(radius * 100) / 100;
+        return [
+          `0 -${r}px 0 ${color}`,
+          `0 ${r}px 0 ${color}`,
+          `-${r}px 0 0 ${color}`,
+          `${r}px 0 0 ${color}`,
+          `-${r}px -${r}px 0 ${color}`,
+          `${r}px -${r}px 0 ${color}`,
+          `-${r}px ${r}px 0 ${color}`,
+          `${r}px ${r}px 0 ${color}`,
+        ];
+      })
+      .join(", ");
   }
 
   function userOutlineWidth(): number {

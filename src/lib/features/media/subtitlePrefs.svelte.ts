@@ -116,6 +116,21 @@ function createSubtitlePrefs() {
     update({ ...style, preset: "custom", useFileStyles: false });
   }
 
+  function resetCustomStyle() {
+    update({
+      ...style,
+      preset: "custom",
+      useFileStyles: false,
+      size: "default",
+      fontFamily: "",
+      textColor: "#ffffff",
+      outline: "thin",
+      background: "soft",
+    });
+    customColors = customColors.map(() => "");
+    saveSubtitleCustomColors(customColors);
+  }
+
   return {
     get settings() {
       return style;
@@ -132,6 +147,7 @@ function createSubtitlePrefs() {
     setBackground,
     setCustomColor,
     enableCustom,
+    resetCustomStyle,
   };
 }
 

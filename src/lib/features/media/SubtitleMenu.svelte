@@ -28,6 +28,10 @@
     delayMs,
     subtitleStyle,
     customColors,
+    offsetX,
+    offsetY,
+    rescanning,
+    anchor,
     onSelect,
     onLoadSubtitle,
     onAdjustDelay,
@@ -38,7 +42,10 @@
     onSetColor,
     onSetOutline,
     onSetBackground,
+    onSetOffset,
+    onResetStyle,
     onResetPosition,
+    onRescanSidecars,
   }: {
     open: boolean;
     onClose: () => void;
@@ -51,6 +58,10 @@
     delayMs: number;
     subtitleStyle: SubtitleStyleSettings;
     customColors: string[];
+    offsetX: number;
+    offsetY: number;
+    rescanning: boolean;
+    anchor?: HTMLElement | null;
     onSelect: (id: string) => Promise<void>;
     onLoadSubtitle: () => Promise<void>;
     onAdjustDelay: (deltaMs: number) => void;
@@ -61,11 +72,17 @@
     onSetColor: (color: string) => void;
     onSetOutline: (outline: SubtitleOutline) => void;
     onSetBackground: (background: SubtitleBackground) => void;
+    onSetOffset: (x: number, y: number) => void;
+    onResetStyle: () => void;
     onResetPosition: () => void;
+    onRescanSidecars: () => void;
   } = $props();
 
-  let settingsPanel = $state<"timing" | "text" | "nearby" | null>(null);
+  let settingsPanel = $state<"timing" | "text" | "position" | "nearby" | null>(
+    null,
+  );
   let pendingId = $state<string | null>(null);
+  let positionStep = $state(1);
   let panelMeasureEl = $state<HTMLDivElement | null>(null);
   let panelHeight = $state(0);
   let panelObserver: ResizeObserver | null = null;
@@ -102,6 +119,15 @@
     { value: "solid", label: t("media.subtitles.backgroundSolid") },
   ]);
 
+  const styleIsDefault = $derived(
+    subtitleStyle.size === "default" &&
+      subtitleStyle.fontFamily === "" &&
+      subtitleStyle.textColor === "#ffffff" &&
+      subtitleStyle.outline === "thin" &&
+      subtitleStyle.background === "soft" &&
+      customColors.every((color) => color === ""),
+  );
+
   $effect(() => {
     if (!open) {
       settingsPanel = null;
@@ -131,7 +157,36 @@
     };
   });
 
-  function togglePanel(panel: "timing" | "text" | "nearby") {
+  let menuStyle = $state("");
+
+  function positionMenu() {
+    const rect = anchor?.getBoundingClientRect();
+    if (!rect) return;
+    menuStyle = `left:${Math.round(rect.left + rect.width / 2)}px;top:${Math.round(rect.top - 12)}px;`;
+  }
+
+  function portalMenu(node: HTMLElement) {
+    document.body.appendChild(node);
+    const rect = anchor?.getBoundingClientRect();
+    if (rect) {
+      node.style.left = `${Math.round(rect.left + rect.width / 2)}px`;
+      node.style.top = `${Math.round(rect.top - 12)}px`;
+    }
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
+  }
+
+  $effect(() => {
+    if (!open) return;
+    positionMenu();
+    window.addEventListener("resize", positionMenu);
+    return () => window.removeEventListener("resize", positionMenu);
+  });
+
+  function togglePanel(panel: "timing" | "text" | "position" | "nearby") {
     settingsPanel = settingsPanel === panel ? null : panel;
   }
 
@@ -152,12 +207,20 @@
     const font = subtitleStyle.fontFamily
       ? `"${subtitleStyle.fontFamily}", var(--font-family)`
       : "var(--font-family)";
+    const thickness = subtitleStyle.outline === "thick" ? 1.5 : 0.75;
     const outline =
       subtitleStyle.outline === "none"
         ? "none"
-        : subtitleStyle.outline === "thick"
-          ? "1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000"
-          : "0.5px 0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px -0.5px 0 #000";
+        : [
+            `0 -${thickness}px 0 #000`,
+            `0 ${thickness}px 0 #000`,
+            `-${thickness}px 0 0 #000`,
+            `${thickness}px 0 0 #000`,
+            `-${thickness}px -${thickness}px 0 #000`,
+            `${thickness}px -${thickness}px 0 #000`,
+            `-${thickness}px ${thickness}px 0 #000`,
+            `${thickness}px ${thickness}px 0 #000`,
+          ].join(", ");
     const background =
       subtitleStyle.background === "none"
         ? "transparent"
@@ -206,7 +269,29 @@
 
   function delayLabel(): string {
     const seconds = Math.abs(delayMs) / 1000;
-    return `${delayMs > 0 ? "+" : delayMs < 0 ? "−" : ""}${seconds.toFixed(2)}s`;
+    return `${delayMs > 0 ? "+" : delayMs < 0 ? "-" : ""}${seconds.toFixed(2)}s`;
+  }
+
+  function timingStateLabel(): string {
+    if (delayMs === 0) return t("media.subtitles.onTime");
+    const seconds = (Math.abs(delayMs) / 1000).toFixed(2);
+    return delayMs > 0
+      ? t("media.subtitles.lateBy", { seconds })
+      : t("media.subtitles.earlyBy", { seconds });
+  }
+
+  function nudge(dx: number, dy: number) {
+    onSetOffset(offsetX + dx, offsetY + dy);
+  }
+
+  function offsetLabel(value: number): string {
+    const rounded = Math.round(value);
+    return `${rounded > 0 ? "+" : ""}${rounded}%`;
+  }
+
+  function sidecarType(name: string): string {
+    const dot = name.lastIndexOf(".");
+    return dot > 0 ? name.slice(dot + 1).toUpperCase() : "";
   }
 
   async function select(id: string) {
@@ -238,7 +323,9 @@
 
 {#if open}
   <div
-    class="track-menu subtitle-menu"
+    class="track-menu subtitle-menu subtitle-menu-portal"
+    style={menuStyle}
+    use:portalMenu
     role="menu"
     aria-label={t("media.subtitles.aria")}
     out:menuOut={{ y: 8, scale: 0.9, duration: 220 }}
@@ -280,7 +367,7 @@
         />
       </svg>
     </div>
-    <div class="edit-menu-card" style={animStyle(1)}>
+    <div class="edit-menu-card subtitle-track-card" style={animStyle(1)}>
       <div class="track-menu-options">
         <button
           type="button"
@@ -396,7 +483,7 @@
 
     <div class="track-menu-divider" style={animStyle(tracks.length + 3)}></div>
     <div
-      class="track-menu-actions"
+      class="track-menu-actions subtitle-actions"
       role="group"
       aria-label={t("media.subtitles.optionsAria")}
       style={animStyle(tracks.length + 3)}
@@ -453,6 +540,32 @@
       <button
         type="button"
         class="track-menu-icon-btn tooltip-ctrl"
+        class:active={settingsPanel === "position"}
+        class:accent={offsetX !== 0 || offsetY !== 0}
+        data-tooltip={t("media.subtitles.position")}
+        aria-label={t("media.subtitles.positionAria")}
+        aria-expanded={settingsPanel === "position"}
+        onclick={() => togglePanel("position")}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 3v18M3 12h18"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+          <path
+            d="m9 6 3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="track-menu-icon-btn tooltip-ctrl"
         class:active={settingsPanel === "nearby"}
         class:accent={selectedId.startsWith("sidecar:")}
         data-tooltip={t("media.subtitles.nearby")}
@@ -468,24 +581,6 @@
             stroke-linejoin="round"
           />
         </svg>
-      </button>
-      <button
-        type="button"
-        class="track-menu-icon-btn track-menu-add-btn add tooltip-ctrl"
-        data-tooltip={t("media.subtitles.add")}
-        aria-label={t("media.subtitles.add")}
-        disabled={loading}
-        onclick={() => void loadSubtitle()}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 5v14M5 12h14"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
-        <span>{t("media.subtitles.add")}</span>
       </button>
     </div>
 
@@ -516,7 +611,7 @@
                       >{t("media.subtitles.reset")}</button
                     >
                   </div>
-                  <div class="track-menu-card">
+                  <div class="track-menu-card subtitle-timing-card">
                     <div class="track-menu-stepper subtitle-size-stepper">
                       <button
                         type="button"
@@ -534,6 +629,48 @@
                         onclick={() => onAdjustDelay(250)}>+0.25</button
                       >
                     </div>
+                    <span
+                      class="subtitle-timing-state"
+                      class:active={delayMs !== 0}>{timingStateLabel()}</span
+                    >
+                    <div class="pill-group subtitle-timing-quick">
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        aria-label={t("media.subtitles.advanceBy", {
+                          seconds: 1,
+                        })}
+                        disabled={selectedId === "off" || loading}
+                        onclick={() => onAdjustDelay(-1000)}>−1s</button
+                      >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        aria-label={t("media.subtitles.advanceBy", {
+                          seconds: 0.5,
+                        })}
+                        disabled={selectedId === "off" || loading}
+                        onclick={() => onAdjustDelay(-500)}>−0.5s</button
+                      >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        aria-label={t("media.subtitles.delayBy", {
+                          seconds: 0.5,
+                        })}
+                        disabled={selectedId === "off" || loading}
+                        onclick={() => onAdjustDelay(500)}>+0.5s</button
+                      >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        aria-label={t("media.subtitles.delayBy", {
+                          seconds: 1,
+                        })}
+                        disabled={selectedId === "off" || loading}
+                        onclick={() => onAdjustDelay(1000)}>+1s</button
+                      >
+                    </div>
                   </div>
                 </div>
               {:else if settingsPanel === "text"}
@@ -545,9 +682,10 @@
                     <button
                       type="button"
                       class="track-menu-reset"
-                      aria-label={t("media.subtitles.resetPosition")}
-                      title={t("media.subtitles.resetPosition")}
-                      onclick={onResetPosition}
+                      disabled={subtitleStyle.useFileStyles || styleIsDefault}
+                      aria-label={t("media.subtitles.resetStyle")}
+                      title={t("media.subtitles.resetStyle")}
+                      onclick={onResetStyle}
                       >{t("media.subtitles.reset")}</button
                     >
                   </div>
@@ -608,7 +746,6 @@
                           value={subtitleStyle.fontFamily}
                           options={fontOptions}
                           ariaLabel={t("media.subtitles.font")}
-                          menuMinWidth={150}
                           onchange={onSetFont}
                         />
                       </div>
@@ -696,14 +833,172 @@
                     </div>
                   {/if}
                 </div>
+              {:else if settingsPanel === "position"}
+                <div class="track-menu-setting subtitle-position-setting">
+                  <div class="track-menu-setting-head">
+                    <span class="track-menu-setting-label"
+                      >{t("media.subtitles.position")}</span
+                    >
+                    <button
+                      type="button"
+                      class="track-menu-reset"
+                      disabled={offsetX === 0 && offsetY === 0}
+                      aria-label={t("media.subtitles.resetPosition")}
+                      title={t("media.subtitles.resetPosition")}
+                      onclick={onResetPosition}
+                      >{t("media.subtitles.reset")}</button
+                    >
+                  </div>
+
+                  <div class="subtitle-position-meta">
+                    <span class="subtitle-position-readout">
+                      X {offsetLabel(offsetX)} · Y {offsetLabel(offsetY)}
+                    </span>
+                    <div
+                      class="pill-group subtitle-step-group"
+                      role="group"
+                      aria-label={t("media.subtitles.positionStep")}
+                    >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        class:active={positionStep === 1}
+                        aria-pressed={positionStep === 1}
+                        onclick={() => (positionStep = 1)}>1%</button
+                      >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        class:active={positionStep === 5}
+                        aria-pressed={positionStep === 5}
+                        onclick={() => (positionStep = 5)}>5%</button
+                      >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        class:active={positionStep === 10}
+                        aria-pressed={positionStep === 10}
+                        onclick={() => (positionStep = 10)}>10%</button
+                      >
+                      <button
+                        type="button"
+                        class="pill-btn"
+                        class:active={positionStep === 25}
+                        aria-pressed={positionStep === 25}
+                        onclick={() => (positionStep = 25)}>25%</button
+                      >
+                    </div>
+                  </div>
+
+                  <div class="subtitle-position-pad">
+                    <button
+                      type="button"
+                      class="subtitle-nudge up"
+                      aria-label={t("media.subtitles.positionUp")}
+                      onclick={() => nudge(0, -positionStep)}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="m6 14 6-6 6 6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="subtitle-nudge left"
+                      aria-label={t("media.subtitles.positionLeft")}
+                      onclick={() => nudge(-positionStep, 0)}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="m6 14 6-6 6 6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <span class="subtitle-pad-center" aria-hidden="true"></span>
+                    <button
+                      type="button"
+                      class="subtitle-nudge right"
+                      aria-label={t("media.subtitles.positionRight")}
+                      onclick={() => nudge(positionStep, 0)}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="m6 14 6-6 6 6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="subtitle-nudge down"
+                      aria-label={t("media.subtitles.positionDown")}
+                      onclick={() => nudge(0, positionStep)}
+                    >
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="m6 14 6-6 6 6"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <p class="subtitle-hint">
+                    {t("media.subtitles.positionHint")}
+                  </p>
+                </div>
               {:else}
                 <div class="track-menu-setting">
                   <div class="track-menu-setting-head">
                     <span class="track-menu-setting-label"
                       >{t("media.subtitles.nearby")}</span
                     >
+                    <button
+                      type="button"
+                      class="track-menu-reset"
+                      disabled={rescanning}
+                      aria-label={t("media.subtitles.rescan")}
+                      title={t("media.subtitles.rescan")}
+                      onclick={onRescanSidecars}
+                      >{t("media.subtitles.rescan")}</button
+                    >
                   </div>
-                  <div class="track-menu-card">
+                  <div class="track-menu-card subtitle-nearby-card">
                     {#if sidecars.length === 0}
                       <div class="track-menu-subpanel-empty">
                         <svg
@@ -764,17 +1059,33 @@
                                 scrollOnHover
                                 class="track-menu-marquee"
                               />
-                              {#if sidecar.bitmap}
-                                <span class="track-menu-option-detail"
-                                  >{t("media.subtitles.image")}</span
-                                >
-                              {/if}
                             </span>
+                            {#if sidecarType(sidecar.name)}
+                              <span class="subtitle-sidecar-type"
+                                >{sidecarType(sidecar.name)}</span
+                              >
+                            {/if}
                           </button>
                         {/each}
                       </div>
                     {/if}
                   </div>
+                  <button
+                    type="button"
+                    class="subtitle-nearby-add"
+                    disabled={loading}
+                    onclick={() => void loadSubtitle()}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 5v14M5 12h14"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                    <span>{t("media.subtitles.add")}</span>
+                  </button>
                 </div>
               {/if}
             </div>

@@ -8,13 +8,11 @@
     options,
     ariaLabel,
     onchange,
-    menuMinWidth = 0,
   }: {
     value: string;
     options: Array<{ value: string; label: string }>;
     ariaLabel: string;
     onchange: (value: string) => void;
-    menuMinWidth?: number;
   } = $props();
 
   const duration = $derived(appearance.reducedMotion ? 0 : 150);
@@ -67,10 +65,7 @@
     const spaceBelow = window.innerHeight - rect.bottom - margin;
     const spaceAbove = rect.top - margin;
     const openUp = spaceBelow < 180 && spaceAbove > spaceBelow;
-    const width = Math.min(
-      Math.max(rect.width, menuMinWidth),
-      window.innerWidth - margin * 2,
-    );
+    const width = Math.min(rect.width, window.innerWidth - margin * 2);
     const left = Math.min(
       Math.max(margin, rect.left),
       window.innerWidth - width - margin,

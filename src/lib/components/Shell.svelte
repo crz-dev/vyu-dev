@@ -792,6 +792,7 @@
   class:pip-expanding={pipPhase === "expanding"}
   class:pip-revealing={pipPhase === "revealing"}
   class:menu-open={anyMenuOpen}
+  class:subtitle-menu-open={menuStore.subtitleMenuOpen}
   class:thumbnail-bar-open={thumbnailBarShown &&
     (!pipActive || pipPhase === "entering" || pipPhase === "expanding")}
   class:is-audio={isAudio}
