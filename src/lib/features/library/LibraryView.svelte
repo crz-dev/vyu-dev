@@ -442,8 +442,6 @@
     menuStore.openSettingsAt("library", "recents");
   }
 
-  const isShowingFolders = $derived(isViewingCollection && library.showFolders);
-
   const currentFolderPaths = $derived.by(() => {
     if (!library.showFolders) return [];
     const folders = isViewingCollection ? collectionFolders : libraryDirFolders;
@@ -624,6 +622,8 @@
         : undefined,
   );
 
+  // Section grouping covers files and folders together so both sides use the
+  // same headers; the views split them back apart with files first.
   const sections = $derived(
     renderDividers
       ? getSections(
@@ -820,19 +820,30 @@
       .filter((s) => s.items.length > 0);
   });
 
+  // Files render first, folders after them. Both keep the same section labels
+  // so the headers categorize the folder rows too.
   const displaySections = $derived(
     renderDividers && sections.length > 0
       ? sections
-      : library.activeTab === "library"
-        ? [
-            {
-              label: "",
-              items: library.sortDesc
-                ? [...currentFolderPaths, ...sortedFiles]
-                : [...sortedFiles, ...currentFolderPaths],
-            },
-          ]
-        : [{ label: "", items: sortedFiles }],
+          .map((section) => ({
+            label: section.label,
+            items: section.items.filter((path) => !folderPathSet.has(path)),
+          }))
+          .filter((section) => section.items.length > 0)
+      : [{ label: "", items: sortedFiles }],
+  );
+
+  const folderSections = $derived(
+    renderDividers && sections.length > 0
+      ? sections
+          .map((section) => ({
+            label: section.label,
+            items: section.items.filter((path) => folderPathSet.has(path)),
+          }))
+          .filter((section) => section.items.length > 0)
+      : currentFolderPaths.length > 0
+        ? [{ label: "", items: currentFolderPaths }]
+        : [],
   );
 
   const allFilesSelected = $derived(
@@ -2439,10 +2450,11 @@
   onkeydowncapture={handleGlobalKeydown}
 />
 
-{#snippet folderCard(path: string, className: string)}
+{#snippet folderCard(path: string, className: string, style: string)}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class={className}
+    {style}
     role="button"
     tabindex="0"
     onclick={() => navigateToFolder(path)}
@@ -2992,7 +3004,11 @@
                   {/if}
                   {#each flatGridItems!.slice(gridVirtualRange.firstIdx, gridVirtualRange.lastIdx + 1) as item, i (item.path)}
                     {#if item.type === "folder"}
-                      {@render folderCard(item.path, "library-subfolder-card")}
+                      {@render folderCard(
+                        item.path,
+                        "library-subfolder-card",
+                        "",
+                      )}
                     {:else if item.path === "__add_favorite__"}
                       <!-- svelte-ignore a11y_no_static_element_interactions -->
                       <div
@@ -3327,7 +3343,7 @@
                     {/if}
                     {#each section.items as path (path)}
                       {#if folderPathSet.has(path)}
-                        {@render folderCard(path, "library-subfolder-card")}
+                        {@render folderCard(path, "library-subfolder-card", "")}
                       {:else}
                         {@const active = activePaths.has(path)}
                         {@const selected = library.isSelected(path)}
@@ -3500,42 +3516,24 @@
                       {/if}
                     {/each}
                   {/each}
-                  {#if isShowingFolders}
-                    {#each currentFolderPaths as folderPath (folderPath)}
-                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  {#each folderSections as section (section.label || "__folders__")}
+                    {#if section.label}
                       <div
-                        class="library-subfolder-card"
-                        role="button"
-                        tabindex="0"
-                        onclick={() => navigateToFolder(folderPath)}
-                        onkeydown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            navigateToFolder(folderPath);
-                          }
-                        }}
+                        class="divider-header"
+                        class:exiting={headersExiting}
+                        style="grid-column: 1 / -1;"
                       >
-                        <svg
-                          class="library-subfolder-icon"
-                          width="32"
-                          height="32"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="var(--yellow-soft)"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        >
-                          <path
-                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                          />
-                        </svg>
-                        <div class="library-subfolder-name">
-                          {getFileName(folderPath)}
-                        </div>
+                        {section.label}
                       </div>
+                    {/if}
+                    {#each section.items as folderPath (folderPath)}
+                      {@render folderCard(
+                        folderPath,
+                        "library-subfolder-card",
+                        "",
+                      )}
                     {/each}
-                  {/if}
+                  {/each}
                 </div>
               {/if}
             {:else if library.viewMode === "river"}
@@ -3587,6 +3585,7 @@
                       {@render folderCard(
                         path,
                         "river-cell river-subfolder-cell",
+                        "",
                       )}
                     {:else}
                       {@const active = activePaths.has(path)}
@@ -3780,6 +3779,24 @@
                         {/if}
                       </div>
                     {/if}
+                  {/each}
+                {/each}
+                {#each folderSections as section (section.label || "__folders__")}
+                  {#if section.label}
+                    <div
+                      class="divider-header"
+                      class:exiting={headersExiting}
+                      style="width: 100%; flex-shrink: 0;"
+                    >
+                      {section.label}
+                    </div>
+                  {/if}
+                  {#each section.items as folderPath (folderPath)}
+                    {@render folderCard(
+                      folderPath,
+                      "river-cell river-subfolder-cell",
+                      "",
+                    )}
                   {/each}
                 {/each}
               </div>
@@ -4029,42 +4046,25 @@
                     </div>
                   {/each}
                 {/each}
-                {#if isShowingFolders}
-                  {#each currentFolderPaths as folderPath (folderPath)}
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
+                {#each folderSections as section (section.label || "__folders__")}
+                  {#if section.label}
                     <div
-                      class="filmstrip-cell filmstrip-subfolder-cell"
-                      role="button"
-                      tabindex="0"
-                      style="height: {filmstripBase}px; min-width: {filmstripBase}px; flex-shrink: 0;"
-                      onclick={() => navigateToFolder(folderPath)}
-                      onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          navigateToFolder(folderPath);
-                        }
-                      }}
+                      class="filmstrip-divider"
+                      class:exiting={headersExiting}
                     >
-                      <svg
-                        width="32"
-                        height="32"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--yellow-soft)"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                      <span class="filmstrip-divider-label"
+                        >{section.label}</span
                       >
-                        <path
-                          d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
-                        />
-                      </svg>
-                      <div class="filmstrip-subfolder-name">
-                        {getFileName(folderPath)}
-                      </div>
                     </div>
+                  {/if}
+                  {#each section.items as folderPath (folderPath)}
+                    {@render folderCard(
+                      folderPath,
+                      "filmstrip-cell filmstrip-subfolder-cell",
+                      `height: ${filmstripBase}px; min-width: ${filmstripBase}px; flex-shrink: 0;`,
+                    )}
                   {/each}
-                {/if}
+                {/each}
               </div>
             {:else}
               <div
@@ -4245,7 +4245,11 @@
                   {/if}
                   {#each section.items as path, idx (path)}
                     {#if folderPathSet.has(path)}
-                      {@render folderCard(path, "list-row list-subfolder-row")}
+                      {@render folderCard(
+                        path,
+                        "list-row list-subfolder-row",
+                        "",
+                      )}
                     {:else}
                       {@const active = activePaths.has(path)}
                       {@const selected = library.isSelected(path)}
@@ -4386,6 +4390,23 @@
                         >
                       </div>
                     {/if}
+                  {/each}
+                {/each}
+                {#each folderSections as section (section.label || "__folders__")}
+                  {#if section.label}
+                    <div
+                      class="list-divider-row"
+                      class:exiting={headersExiting}
+                    >
+                      {section.label}
+                    </div>
+                  {/if}
+                  {#each section.items as folderPath (folderPath)}
+                    {@render folderCard(
+                      folderPath,
+                      "list-row list-subfolder-row",
+                      "",
+                    )}
                   {/each}
                 {/each}
               </div>
