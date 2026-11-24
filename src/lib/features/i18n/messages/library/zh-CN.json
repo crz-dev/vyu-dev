@@ -37,6 +37,7 @@
   "empty.favoritesNone": "没有收藏的文件",
   "empty.filesFiltered": "没有符合所选类型的文件",
   "empty.folderEmpty": "此文件夹中没有文件",
+  "empty.folderHint": "添加到此文件夹的文件会显示在这里",
   "empty.openFolder": "打开文件夹",
   "empty.openFolderHint": "选择要浏览的文件夹",
   "empty.recentsFiltered": "没有符合所选类型的最近文件",

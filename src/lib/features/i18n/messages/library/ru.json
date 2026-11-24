@@ -37,6 +37,7 @@
   "empty.favoritesNone": "Нет файлов в избранном",
   "empty.filesFiltered": "Нет файлов, соответствующих выбранным типам",
   "empty.folderEmpty": "В этой папке нет файлов",
+  "empty.folderHint": "Добавленные сюда файлы появятся здесь",
   "empty.openFolder": "Открыть папку",
   "empty.openFolderHint": "Выберите папку для просмотра",
   "empty.recentsFiltered": "Нет недавних файлов, соответствующих выбранным типам",

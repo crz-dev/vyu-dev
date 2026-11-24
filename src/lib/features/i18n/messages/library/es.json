@@ -37,6 +37,7 @@
   "empty.favoritesNone": "No hay archivos en favoritos",
   "empty.filesFiltered": "Ningún archivo coincide con los tipos seleccionados",
   "empty.folderEmpty": "No hay archivos en esta carpeta",
+  "empty.folderHint": "Los archivos añadidos a esta carpeta aparecerán aquí",
   "empty.openFolder": "Abrir una carpeta",
   "empty.openFolderHint": "Elige una carpeta para explorar",
   "empty.recentsFiltered": "Ningún archivo reciente coincide con los tipos seleccionados",

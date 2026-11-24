@@ -37,6 +37,7 @@
   "empty.favoritesNone": "Nenhum arquivo favoritado",
   "empty.filesFiltered": "Nenhum arquivo corresponde aos tipos selecionados",
   "empty.folderEmpty": "Nenhum arquivo nesta pasta",
+  "empty.folderHint": "Os arquivos adicionados a esta pasta aparecerão aqui",
   "empty.openFolder": "Abrir uma pasta",
   "empty.openFolderHint": "Escolha uma pasta para navegar",
   "empty.recentsFiltered": "Nenhum arquivo recente corresponde aos tipos selecionados",

@@ -37,6 +37,7 @@
   "empty.favoritesNone": "No files favorited",
   "empty.filesFiltered": "No files match the selected types",
   "empty.folderEmpty": "No files in this folder",
+  "empty.folderHint": "Files added to this folder will show up here",
   "empty.openFolder": "Open a folder",
   "empty.openFolderHint": "Choose a folder to browse",
   "empty.recentsFiltered": "No recent files match the selected types",

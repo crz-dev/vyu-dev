@@ -37,6 +37,7 @@
   "empty.favoritesNone": "Favorilere eklenmiş dosya yok",
   "empty.filesFiltered": "Seçili türlerle eşleşen dosya yok",
   "empty.folderEmpty": "Bu klasörde dosya yok",
+  "empty.folderHint": "Bu klasöre eklenen dosyalar burada görünecek",
   "empty.openFolder": "Klasör aç",
   "empty.openFolderHint": "Gözatmak için bir klasör seçin",
   "empty.recentsFiltered": "Seçili türlerle eşleşen son dosya yok",

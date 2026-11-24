@@ -37,6 +37,7 @@
   "empty.favoritesNone": "沒有加入我的最愛的檔案",
   "empty.filesFiltered": "沒有符合所選類型的檔案",
   "empty.folderEmpty": "此資料夾中沒有檔案",
+  "empty.folderHint": "加入此資料夾的檔案會顯示在這裡",
   "empty.openFolder": "開啟資料夾",
   "empty.openFolderHint": "選擇要瀏覽的資料夾",
   "empty.recentsFiltered": "沒有符合所選類型的最近使用檔案",

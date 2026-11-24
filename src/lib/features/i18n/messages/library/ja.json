@@ -37,6 +37,7 @@
   "empty.favoritesNone": "お気に入りのファイルはありません",
   "empty.filesFiltered": "選択した種類に一致するファイルはありません",
   "empty.folderEmpty": "このフォルダーにファイルはありません",
+  "empty.folderHint": "このフォルダーに追加したファイルがここに表示されます",
   "empty.openFolder": "フォルダーを開く",
   "empty.openFolderHint": "閲覧するフォルダーを選択",
   "empty.recentsFiltered": "選択した種類に一致する最近のファイルはありません",

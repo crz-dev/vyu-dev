@@ -37,6 +37,7 @@
   "empty.favoritesNone": "즐겨찾기한 파일이 없습니다",
   "empty.filesFiltered": "선택한 유형과 일치하는 파일이 없습니다",
   "empty.folderEmpty": "이 폴더에 파일이 없습니다",
+  "empty.folderHint": "이 폴더에 추가한 파일이 여기에 표시됩니다",
   "empty.openFolder": "폴더 열기",
   "empty.openFolderHint": "탐색할 폴더 선택",
   "empty.recentsFiltered": "선택한 유형과 일치하는 최근 파일이 없습니다",

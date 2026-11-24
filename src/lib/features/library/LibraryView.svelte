@@ -4471,7 +4471,7 @@
           {#if library.activeTab === "recents" && displayFiles.length === 0 && !searchHasNoResults}
             <div class="library-empty">
               <div class="library-empty-art is-recents" aria-hidden="true">
-                <svg viewBox="0 0 64 64" fill="none" opacity="0.55">
+                <svg viewBox="0 0 64 64" fill="none">
                   <circle
                     cx="32"
                     cy="33"
@@ -4480,36 +4480,36 @@
                     fill-opacity="0.08"
                     stroke="currentColor"
                     stroke-width="2.2"
+                    opacity="0.55"
                   />
                   <path
                     d="M32 17v3M48 33h-3M32 49v-3M16 33h3"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
-                    opacity="0.4"
+                    opacity="0.22"
                   />
                   <path
                     d="M32 33l-6.5-8"
-                    stroke="currentColor"
+                    stroke="var(--red)"
                     stroke-width="2.6"
                     stroke-linecap="round"
-                    opacity="0.75"
                   />
                   <path
                     d="M32 33l8-6"
-                    stroke="currentColor"
+                    stroke="var(--red)"
                     stroke-width="2.2"
                     stroke-linecap="round"
-                    opacity="0.55"
+                    opacity="0.8"
                   />
                   <path
                     d="M32 33V18.5"
-                    stroke="currentColor"
+                    stroke="var(--red)"
                     stroke-width="1.6"
                     stroke-linecap="round"
                     opacity="0.7"
                   />
-                  <circle cx="32" cy="33" r="2.4" fill="currentColor" />
+                  <circle cx="32" cy="33" r="2.4" fill="var(--red)" />
                 </svg>
               </div>
               <div class="library-empty-copy">
@@ -4576,18 +4576,16 @@
                 <svg viewBox="0 0 64 64" fill="none">
                   <path
                     d="M6 26a4 4 0 0 1 4-4h11.8a3 3 0 0 1 2.4 1.2l2.8 3.8a3 3 0 0 0 2.4 1.2H54a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"
-                    fill="currentColor"
-                    fill-opacity="0.08"
-                    stroke="currentColor"
+                    fill="var(--green-bg-subtle)"
+                    stroke="var(--green)"
                     stroke-width="2.2"
                     stroke-linejoin="round"
                   />
                   <path
-                    d="M20 38h4M30 38h4M40 38h4"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    d="M28 37l8 8M36 37l-8 8"
+                    stroke="var(--text-muted)"
+                    stroke-width="2.2"
                     stroke-linecap="round"
-                    opacity="0.4"
                   />
                 </svg>
               </div>
@@ -4597,6 +4595,11 @@
                     ? t("library.empty.filesFiltered")
                     : t("library.empty.folderEmpty")}</span
                 >
+                {#if collectionFiles.length === 0}
+                  <span class="library-empty-hint"
+                    >{t("library.empty.folderHint")}</span
+                  >
+                {/if}
               </div>
             </div>
           {/if}
@@ -4606,18 +4609,16 @@
                 <svg viewBox="0 0 64 64" fill="none">
                   <path
                     d="M6 26a4 4 0 0 1 4-4h11.8a3 3 0 0 1 2.4 1.2l2.8 3.8a3 3 0 0 0 2.4 1.2H54a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"
-                    fill="currentColor"
-                    fill-opacity="0.08"
-                    stroke="currentColor"
+                    fill="var(--green-bg-subtle)"
+                    stroke="var(--green)"
                     stroke-width="2.2"
                     stroke-linejoin="round"
                   />
                   <path
-                    d="M20 38h4M30 38h4M40 38h4"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    d="M28 37l8 8M36 37l-8 8"
+                    stroke="var(--text-muted)"
+                    stroke-width="2.2"
                     stroke-linecap="round"
-                    opacity="0.4"
                   />
                 </svg>
               </div>
@@ -4627,6 +4628,11 @@
                     ? t("library.empty.filesFiltered")
                     : t("library.empty.folderEmpty")}</span
                 >
+                {#if libraryDirFiles.length === 0}
+                  <span class="library-empty-hint"
+                    >{t("library.empty.folderHint")}</span
+                  >
+                {/if}
               </div>
             </div>
           {/if}
@@ -7188,7 +7194,7 @@
   }
 
   .library-empty-art.is-recents {
-    --art-tint: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    --art-tint: var(--red-bg-subtle);
   }
 
   .library-empty-art.is-collections {

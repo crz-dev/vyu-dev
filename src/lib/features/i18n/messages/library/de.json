@@ -37,6 +37,7 @@
   "empty.favoritesNone": "Keine Dateien in den Favoriten",
   "empty.filesFiltered": "Keine Dateien entsprechen den ausgewählten Typen",
   "empty.folderEmpty": "Keine Dateien in diesem Ordner",
+  "empty.folderHint": "Hinzugefügte Dateien erscheinen hier",
   "empty.openFolder": "Ordner öffnen",
   "empty.openFolderHint": "Ordner zum Durchsuchen auswählen",
   "empty.recentsFiltered": "Keine zuletzt verwendeten Dateien entsprechen den ausgewählten Typen",
