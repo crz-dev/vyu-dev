@@ -3,8 +3,15 @@
   import { slide } from "svelte/transition";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
   import { menuOut } from "$lib/features/menus/menuTransition";
-  import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
-  import type { SubtitleSize } from "$lib/features/media/tracks.svelte";
+  import type {
+    MediaTrack,
+    SubtitleBackground,
+    SubtitleOutline,
+    SubtitlePreset,
+    SubtitleSidecar,
+    SubtitleSize,
+    SubtitleStyleSettings,
+  } from "$lib/shared/types";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
@@ -19,11 +26,17 @@
     catalogLoading,
     error,
     delayMs,
-    size,
+    subtitleStyle,
     onSelect,
     onLoadSubtitle,
     onAdjustDelay,
     onSetSize,
+    onSetPreset,
+    onSetFont,
+    onSetColor,
+    onSetOutline,
+    onSetBackground,
+    onResetPosition,
   }: {
     open: boolean;
     onClose: () => void;
@@ -34,17 +47,42 @@
     catalogLoading: boolean;
     error: string;
     delayMs: number;
-    size: SubtitleSize;
+    subtitleStyle: SubtitleStyleSettings;
     onSelect: (id: string) => Promise<void>;
     onLoadSubtitle: () => Promise<void>;
     onAdjustDelay: (deltaMs: number) => void;
     onSetSize: (size: SubtitleSize) => void;
+    onSetPreset: (preset: SubtitlePreset) => void;
+    onSetFont: (font: string) => void;
+    onSetColor: (color: string) => void;
+    onSetOutline: (outline: SubtitleOutline) => void;
+    onSetBackground: (background: SubtitleBackground) => void;
+    onResetPosition: () => void;
   } = $props();
 
-  let settingsPanel = $state<"timing" | "size" | "nearby" | null>(null);
+  let settingsPanel = $state<"timing" | "text" | "nearby" | null>(null);
   let pendingId = $state<string | null>(null);
 
   const SIZE_STEPS: SubtitleSize[] = ["small", "default", "large"];
+  const FONTS = [
+    "",
+    "Segoe UI",
+    "Arial",
+    "Calibri",
+    "Verdana",
+    "Tahoma",
+    "Georgia",
+    "Times New Roman",
+    "Consolas",
+  ];
+  const PRESETS: Array<{
+    id: SubtitlePreset;
+    key: string;
+  }> = [
+    { id: "default", key: "media.subtitles.sizeDefault" },
+    { id: "highContrast", key: "media.subtitles.highContrast" },
+    { id: "yellow", key: "media.subtitles.yellow" },
+  ];
 
   $effect(() => {
     if (!open) {
@@ -53,20 +91,49 @@
     }
   });
 
-  function togglePanel(panel: "timing" | "size" | "nearby") {
+  function togglePanel(panel: "timing" | "text" | "nearby") {
     settingsPanel = settingsPanel === panel ? null : panel;
   }
 
   function stepSize(delta: number) {
-    const next = SIZE_STEPS[SIZE_STEPS.indexOf(size) + delta];
+    const next = SIZE_STEPS[SIZE_STEPS.indexOf(subtitleStyle.size) + delta];
     if (next) onSetSize(next);
+  }
+
+  function toggleFileStyles() {
+    onSetPreset(subtitleStyle.useFileStyles ? "custom" : "fileStyles");
+  }
+
+  function previewStyle(): string {
+    const font = subtitleStyle.fontFamily
+      ? `"${subtitleStyle.fontFamily}", var(--font-family)`
+      : "var(--font-family)";
+    const outline =
+      subtitleStyle.outline === "none"
+        ? "none"
+        : subtitleStyle.outline === "thick"
+          ? "1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000"
+          : "0.5px 0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px -0.5px 0 #000";
+    const background =
+      subtitleStyle.background === "none"
+        ? "transparent"
+        : subtitleStyle.background === "solid"
+          ? "rgba(0, 0, 0, 0.88)"
+          : "rgba(0, 0, 0, 0.68)";
+    const size =
+      subtitleStyle.size === "small"
+        ? 11
+        : subtitleStyle.size === "large"
+          ? 15
+          : 13;
+    return `font-family:${font};color:${subtitleStyle.textColor};text-shadow:${outline};background:${background};font-size:${size}px;`;
   }
 
   function sizeLabel(): string {
     const key =
-      size === "small"
+      subtitleStyle.size === "small"
         ? "media.subtitles.sizeSmall"
-        : size === "large"
+        : subtitleStyle.size === "large"
           ? "media.subtitles.sizeLarge"
           : "media.subtitles.sizeDefault";
     return t(key);
@@ -78,6 +145,19 @@
       track.language?.toUpperCase() ||
       t("media.subtitles.subtitleN", { n: position + 1 })
     );
+  }
+
+  function bitmapCodecLabel(track: MediaTrack): string {
+    switch (track.codec) {
+      case "hdmv_pgs_subtitle":
+        return "PGS";
+      case "dvd_subtitle":
+        return "DVD";
+      case "vobsub":
+        return "VobSub";
+      default:
+        return track.codec?.toUpperCase() ?? "";
+    }
   }
 
   function delayLabel(): string {
@@ -230,6 +310,12 @@
                 <span class="track-menu-option-detail"
                   >{t("media.subtitles.unavailable")}</span
                 >
+              {:else if track.bitmap}
+                <span class="track-menu-option-detail">
+                  {[t("media.subtitles.image"), bitmapCodecLabel(track)]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
               {:else if track.codec || (track.title && track.language)}
                 <span class="track-menu-option-detail">
                   {[
@@ -251,6 +337,11 @@
     {#if catalogLoading}
       <div class="track-menu-message" style={animStyle(1)} role="status">
         {t("media.tracks.reading")}
+      </div>
+    {/if}
+    {#if loading}
+      <div class="track-menu-message" style={animStyle(1)} role="status">
+        {t("media.subtitles.preparing")}
       </div>
     {/if}
     {#if error}
@@ -297,12 +388,13 @@
       <button
         type="button"
         class="track-menu-icon-btn tooltip-ctrl"
-        class:active={settingsPanel === "size"}
-        class:accent={size !== "default"}
-        data-tooltip={t("media.subtitles.size")}
-        aria-label={t("media.subtitles.sizeAria")}
-        aria-expanded={settingsPanel === "size"}
-        onclick={() => togglePanel("size")}
+        class:active={settingsPanel === "text"}
+        class:accent={subtitleStyle.size !== "default" ||
+          subtitleStyle.preset !== "fileStyles"}
+        data-tooltip={t("media.subtitles.textStyle")}
+        aria-label={t("media.subtitles.textStyleAria")}
+        aria-expanded={settingsPanel === "text"}
+        onclick={() => togglePanel("text")}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
           <path
@@ -389,20 +481,29 @@
               </div>
             </div>
           </div>
-        {:else if settingsPanel === "size"}
+        {:else if settingsPanel === "text"}
           <div class="track-menu-setting">
-            <div class="track-menu-setting-head">
+            <div class="track-menu-setting-head subtitle-style-head">
               <span class="track-menu-setting-label"
-                >{t("media.subtitles.size")}</span
+                >{t("media.subtitles.textStyle")}</span
+              >
+              <button
+                type="button"
+                class="track-menu-reset"
+                aria-label={t("media.subtitles.resetPosition")}
+                title={t("media.subtitles.resetPosition")}
+                onclick={onResetPosition}>{t("media.subtitles.reset")}</button
               >
             </div>
-            <div class="track-menu-card">
+
+            <div class="track-menu-field subtitle-size-row">
+              <span>{t("media.subtitles.size")}</span>
               <div class="track-menu-stepper">
                 <button
                   type="button"
                   class="track-menu-small-button"
                   aria-label={t("media.subtitles.sizeDecrease")}
-                  disabled={size === "small"}
+                  disabled={subtitleStyle.size === "small"}
                   onclick={() => stepSize(-1)}>−</button
                 >
                 <span class="track-menu-delay">{sizeLabel()}</span>
@@ -410,11 +511,123 @@
                   type="button"
                   class="track-menu-small-button"
                   aria-label={t("media.subtitles.sizeIncrease")}
-                  disabled={size === "large"}
+                  disabled={subtitleStyle.size === "large"}
                   onclick={() => stepSize(1)}>+</button
                 >
               </div>
             </div>
+
+            <div class="track-menu-field subtitle-style-toggle">
+              <span>{t("media.subtitles.fileStyles")}</span>
+              <button
+                type="button"
+                class="subtitle-toggle"
+                role="switch"
+                aria-checked={subtitleStyle.useFileStyles}
+                aria-label={t("media.subtitles.fileStyles")}
+                onclick={toggleFileStyles}
+              >
+                <span
+                  class="toggle-track"
+                  class:on={subtitleStyle.useFileStyles}
+                  ><span class="toggle-thumb"></span></span
+                >
+              </button>
+            </div>
+
+            {#if !subtitleStyle.useFileStyles}
+              <div
+                class="track-menu-presets"
+                role="group"
+                aria-label={t("media.subtitles.textStyle")}
+              >
+                {#each PRESETS as preset (preset.id)}
+                  <button
+                    type="button"
+                    class="track-menu-small-button preset"
+                    class:active={subtitleStyle.preset === preset.id}
+                    aria-pressed={subtitleStyle.preset === preset.id}
+                    title={t(preset.key)}
+                    onclick={() => onSetPreset(preset.id)}
+                    >{t(preset.key)}</button
+                  >
+                {/each}
+              </div>
+
+              <div
+                class="subtitle-style-preview"
+                style={previewStyle()}
+                aria-hidden="true"
+              >
+                {t("media.subtitles.preview")}
+              </div>
+
+              <label class="track-menu-field">
+                <span>{t("media.subtitles.font")}</span>
+                <select
+                  class="track-menu-select"
+                  value={subtitleStyle.fontFamily}
+                  onchange={(event) =>
+                    onSetFont((event.currentTarget as HTMLSelectElement).value)}
+                >
+                  {#each FONTS as font (font)}
+                    <option value={font}
+                      >{font || t("media.subtitles.fontSystem")}</option
+                    >
+                  {/each}
+                </select>
+              </label>
+              <label class="track-menu-field">
+                <span>{t("media.subtitles.textColor")}</span>
+                <input
+                  class="track-menu-color"
+                  type="color"
+                  value={subtitleStyle.textColor}
+                  oninput={(event) =>
+                    onSetColor((event.currentTarget as HTMLInputElement).value)}
+                />
+              </label>
+              <label class="track-menu-field">
+                <span>{t("media.subtitles.outline")}</span>
+                <select
+                  class="track-menu-select"
+                  value={subtitleStyle.outline}
+                  onchange={(event) =>
+                    onSetOutline(
+                      (event.currentTarget as HTMLSelectElement)
+                        .value as SubtitleOutline,
+                    )}
+                >
+                  <option value="none">{t("common.none")}</option>
+                  <option value="thin"
+                    >{t("media.subtitles.outlineThin")}</option
+                  >
+                  <option value="thick"
+                    >{t("media.subtitles.outlineThick")}</option
+                  >
+                </select>
+              </label>
+              <label class="track-menu-field">
+                <span>{t("media.subtitles.background")}</span>
+                <select
+                  class="track-menu-select"
+                  value={subtitleStyle.background}
+                  onchange={(event) =>
+                    onSetBackground(
+                      (event.currentTarget as HTMLSelectElement)
+                        .value as SubtitleBackground,
+                    )}
+                >
+                  <option value="none">{t("common.none")}</option>
+                  <option value="soft"
+                    >{t("media.subtitles.backgroundSoft")}</option
+                  >
+                  <option value="solid"
+                    >{t("media.subtitles.backgroundSolid")}</option
+                  >
+                </select>
+              </label>
+            {/if}
           </div>
         {:else}
           <div class="track-menu-setting">
@@ -474,11 +687,18 @@
                           </svg>
                         {/if}
                       </span>
-                      <Marquee
-                        text={sidecar.name}
-                        scrollOnHover
-                        class="track-menu-marquee"
-                      />
+                      <span class="track-menu-option-copy">
+                        <Marquee
+                          text={sidecar.name}
+                          scrollOnHover
+                          class="track-menu-marquee"
+                        />
+                        {#if sidecar.bitmap}
+                          <span class="track-menu-option-detail"
+                            >{t("media.subtitles.image")}</span
+                          >
+                        {/if}
+                      </span>
                     </button>
                   {/each}
                 </div>

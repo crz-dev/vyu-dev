@@ -57,6 +57,7 @@ export interface MediaTrack {
   channels: number | null;
   channelLayout: string | null;
   isDefault: boolean;
+  bitmap: boolean;
   supported: boolean;
 }
 
@@ -68,6 +69,77 @@ export interface MediaTrackCatalog {
 export interface SubtitleSidecar {
   path: string;
   name: string;
+  bitmap: boolean;
+}
+
+export interface SubtitleTextRun {
+  text: string;
+  font: string | null;
+  size: number | null;
+  color: string | null;
+  outlineColor: string | null;
+  outlineWidth: number | null;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
+
+export interface SubtitleCueImage {
+  path: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface SubtitleAnchor {
+  /** Numpad layout: 1 bottom-left, 2 bottom-center, ... 9 top-right. */
+  alignment: number;
+  /** Horizontal position as a percentage of the subtitle canvas. */
+  x: number;
+  /** Vertical position as a percentage of the subtitle canvas. */
+  y: number;
+  maxWidth: number | null;
+}
+
+export interface SubtitleCue {
+  start: number;
+  end: number;
+  lines: SubtitleTextRun[][];
+  images: SubtitleCueImage[];
+  anchor: SubtitleAnchor | null;
+  background: string | null;
+  fontSize: number | null;
+}
+
+export interface SubtitleDocument {
+  kind: "text" | "bitmap";
+  cues: SubtitleCue[];
+  images: string[];
+  canvasWidth: number;
+  canvasHeight: number;
+  playResX: number;
+  playResY: number;
+}
+
+export type SubtitleSize = "small" | "default" | "large";
+export type SubtitlePreset =
+  | "fileStyles"
+  | "default"
+  | "highContrast"
+  | "yellow"
+  | "custom";
+export type SubtitleOutline = "none" | "thin" | "thick";
+export type SubtitleBackground = "none" | "soft" | "solid";
+
+export interface SubtitleStyleSettings {
+  preset: SubtitlePreset;
+  useFileStyles: boolean;
+  size: SubtitleSize;
+  fontFamily: string;
+  textColor: string;
+  outline: SubtitleOutline;
+  background: SubtitleBackground;
 }
 
 export interface BatchStatItem {

@@ -67,7 +67,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 **SQLite — primary per-file store.** `src-tauri/src/database/` + `services/database.ts`.
 
 - Database lives under the app data directory. WAL mode, a single connection, and versioned migrations in the database module.
-- Stores per-file metadata: resume positions, timestamps, clips, EQ, CD color, and last viewed.
+- Stores per-file metadata: resume positions, timestamps, clips, EQ, CD color, subtitle position, and last viewed.
 - Migrations are additive; never edit an applied migration in place.
 
 **localStorage — app settings and fallback.** `services/storage.ts`.
@@ -92,8 +92,8 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 
 - Keep mirrored extension lists in sync between `src/lib/shared/constants.ts` and `src-tauri/src/constants.rs`: `IMAGE_EXTS` ↔ `IMAGE_EXTS_RUST` (except `svg`, frontend-only), plus `VIDEO_EXTS`, `AUDIO_EXTS`, `DOCUMENT_EXTS`, `BROWSER_UNSUPPORTED_IMAGE_EXTS`, `BROWSER_UNSUPPORTED_VIDEO_EXTS`, and `REMUX_VIDEO_EXTS`. Rust-only lists need no TypeScript mirror: `FFMPEG_IMAGE_EXTS_RUST` and `RAW_IMAGE_EXTS_RUST`.
 - Thumbnail requests go through `services/thumbnailCache.svelte.ts`, the single queue/cache. Do not bypass it from the library or thumbnail bar.
-- Prepared audio tracks and extracted WebVTT use the display cache; active audio-track variants are pinned so playback is not interrupted. Thumbnail and display caches evict best-effort at their soft limits.
-- Audio-track switching remuxes a cached single-audio rendition because WebView2 cannot reliably select embedded audio tracks. Embedded text subtitles are extracted as WebVTT; bitmap subtitles are unsupported.
+- Prepared audio tracks, extracted WebVTT/ASS, and bitmap subtitle PNG cues use the display cache; active audio-track variants and bitmap cue images are pinned so playback is not interrupted. Thumbnail and display caches evict best-effort at their soft limits.
+- Audio-track switching remuxes a cached single-audio rendition because WebView2 cannot reliably select embedded audio tracks. Embedded text subtitles are parsed to a typed cue document; ASS/SSA fonts, colours and outlines are preserved. PGS/VobSub/DVD bitmap subtitles are decoded to cached transparent PNG cues and drawn over the video; there is no burn-in or OCR.
 - FFmpeg is pinned and SHA-256-verified. It is resolved at startup from app resources with a PATH fallback in dev; use `util::ffmpeg_command`/`ffprobe_command` rather than hardcoded paths. `src-tauri/resources/` is generated.
 - Concurrency is bounded by semaphores with separate image, video/RAW/FFmpeg, audio, and preview lanes. Preview frames skip the library thumbnail queue.
 - Stat-based sorting uses one `batch_stat` IPC call; do not add per-file stat loops. Library reactive stats must remain proxy-friendly (`$state<Record>` rather than `Map`).
@@ -106,6 +106,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - The up-next queue stores absolute paths and is restored from `vyu-queue` on launch; every mutation rewrites the stored list.
 - `.m3u`/`.m3u8`/`.pls` files open into the queue: relative entries resolve against the playlist folder, unsupported and remote entries are ignored, and opening replaces Up Next. Saved playlists contain absolute paths and reuse `write_file_atomic`.
 - Global marker clears update the database and the in-memory timestamp/clip stores.
+- Subtitle appearance is a global `vyu-subtitle-style` setting; the dragged subtitle offset is per-file metadata, not localStorage.
 - Window state is not written while PiP is active; mini geometry must not replace normal bounds.
 - `--safe-mode` forces GPU acceleration on for recovery from a bad disabled-GPU startup.
 - Keybind conflicts are scoped to viewer/library/PDF. Escape, Backspace, and plain Delete are reserved (close/clear binding).

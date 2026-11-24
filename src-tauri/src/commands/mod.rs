@@ -10,6 +10,7 @@ pub mod external_apps;
 pub mod file_ops;
 pub mod integrity;
 pub mod system;
+pub mod subtitles;
 pub mod thumbnail;
 pub mod tracks;
 pub use database::*;

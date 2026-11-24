@@ -1,4 +1,9 @@
-import type { VideoMarker, ClipBoundary, CropBounds } from "$lib/shared/types";
+import type {
+  VideoMarker,
+  ClipBoundary,
+  CropBounds,
+  SubtitleStyleSettings,
+} from "$lib/shared/types";
 import {
   SORT_MODES,
   type LoopMode,
@@ -644,6 +649,77 @@ export function loadResumeThreshold(): number {
 
 export function saveResumeThreshold(seconds: number): void {
   localStorage.setItem("vyu-resume-threshold", String(seconds));
+}
+
+// ── Subtitles ──
+const DEFAULT_SUBTITLE_STYLE: SubtitleStyleSettings = {
+  preset: "fileStyles",
+  useFileStyles: true,
+  size: "default",
+  fontFamily: "",
+  textColor: "#ffffff",
+  outline: "thin",
+  background: "soft",
+};
+
+export function defaultSubtitleStyle(): SubtitleStyleSettings {
+  return { ...DEFAULT_SUBTITLE_STYLE };
+}
+
+function normalizeSubtitleStyle(
+  value: Partial<SubtitleStyleSettings>,
+): SubtitleStyleSettings {
+  const preset =
+    value.preset === "fileStyles" ||
+    value.preset === "default" ||
+    value.preset === "highContrast" ||
+    value.preset === "yellow" ||
+    value.preset === "custom"
+      ? value.preset
+      : DEFAULT_SUBTITLE_STYLE.preset;
+  const size =
+    value.size === "small" || value.size === "large"
+      ? value.size
+      : DEFAULT_SUBTITLE_STYLE.size;
+  const outline =
+    value.outline === "none" || value.outline === "thick"
+      ? value.outline
+      : DEFAULT_SUBTITLE_STYLE.outline;
+  const background =
+    value.background === "none" || value.background === "solid"
+      ? value.background
+      : DEFAULT_SUBTITLE_STYLE.background;
+  const fontFamily =
+    typeof value.fontFamily === "string" ? value.fontFamily.slice(0, 80) : "";
+  const textColor =
+    typeof value.textColor === "string" &&
+    /^#[0-9a-f]{6}$/i.test(value.textColor)
+      ? value.textColor
+      : DEFAULT_SUBTITLE_STYLE.textColor;
+  return {
+    preset,
+    useFileStyles: preset === "fileStyles",
+    size,
+    fontFamily,
+    textColor,
+    outline,
+    background,
+  };
+}
+
+export function loadSubtitleStyle(): SubtitleStyleSettings {
+  const raw = localStorage.getItem("vyu-subtitle-style");
+  if (!raw) return defaultSubtitleStyle();
+  try {
+    const parsed = JSON.parse(raw) as Partial<SubtitleStyleSettings>;
+    return normalizeSubtitleStyle(parsed);
+  } catch {
+    return defaultSubtitleStyle();
+  }
+}
+
+export function saveSubtitleStyle(style: SubtitleStyleSettings): void {
+  localStorage.setItem("vyu-subtitle-style", JSON.stringify(style));
 }
 
 export function loadAutoplay(): boolean {

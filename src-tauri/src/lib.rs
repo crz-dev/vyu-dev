@@ -89,6 +89,7 @@ pub fn run() {
             release_audio_track,
             prepare_subtitle_track,
             prepare_external_subtitle,
+            release_bitmap_subtitle,
             process_video_clips,
             rename_file,
             copy_file,

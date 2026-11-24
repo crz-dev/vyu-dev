@@ -250,7 +250,7 @@
         filters: [
           {
             name: t("shell.subtitles.filter"),
-            extensions: ["srt", "vtt"],
+            extensions: ["srt", "vtt", "ass", "ssa", "sup", "idx", "sub"],
           },
         ],
       });

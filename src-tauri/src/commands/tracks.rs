@@ -4,9 +4,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::UNIX_EPOCH;
 
 use crate::commands::display::{
-    display_cache_dir, pin_display_cache_file, record_display_cache_write, unpin_display_cache_file,
+    display_cache_dir, pin_display_cache_file, record_display_cache_write, unpin_display_cache_files,
+    unpin_display_cache_file,
 };
-use crate::types::{MediaTrack, MediaTrackCatalog};
+use crate::commands::subtitles::{self, ass, bitmap, vtt};
+use crate::types::{MediaTrack, MediaTrackCatalog, SubtitleDocument};
 use crate::util::{ffmpeg_command, ffprobe_command, hash_path_xxh3};
 use serde_json::Value;
 
@@ -47,7 +49,11 @@ fn stream_track(stream: &Value, kind: &str) -> Option<MediaTrack> {
         .and_then(Value::as_u64)
         .unwrap_or(0)
         != 0;
-    let supported = kind != "subtitle" || codec.as_deref().is_some_and(is_text_subtitle_codec);
+    let bitmap = kind == "subtitle" && codec.as_deref().is_some_and(subtitles::is_bitmap_codec);
+    let supported = kind != "subtitle"
+        || codec
+            .as_deref()
+            .is_some_and(subtitles::is_supported_codec);
 
     Some(MediaTrack {
         index,
@@ -58,15 +64,23 @@ fn stream_track(stream: &Value, kind: &str) -> Option<MediaTrack> {
         channels: stream.get("channels").and_then(Value::as_u64),
         channel_layout: value_string(stream.get("channel_layout")),
         is_default: disposition_default,
+        bitmap,
         supported,
     })
 }
 
-fn is_text_subtitle_codec(codec: &str) -> bool {
-    !matches!(
-        codec,
-        "dvd_subtitle" | "hdmv_pgs_subtitle" | "dvb_subtitle" | "dvb_teletext" | "xsub" | "vobsub"
-    )
+fn subtitle_codec(probe: &Value, index: usize) -> Option<String> {
+    probe
+        .get("streams")
+        .and_then(Value::as_array)
+        .and_then(|streams| {
+            streams.iter().find(|stream| {
+                stream.get("index").and_then(Value::as_u64) == Some(index as u64)
+            })
+        })
+        .and_then(|stream| stream.get("codec_name"))
+        .and_then(Value::as_str)
+        .map(str::to_string)
 }
 
 fn catalog_from_probe(value: &Value) -> MediaTrackCatalog {
@@ -281,65 +295,314 @@ pub async fn release_audio_track(app: tauri::AppHandle, path: String) -> Result<
     .map_err(|e| format!("Audio track release task failed: {e}"))?
 }
 
+fn ffmpeg_error(output: &std::process::Output, fallback: &str) -> String {
+    let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    if message.is_empty() {
+        fallback.into()
+    } else {
+        message
+    }
+}
+
+fn read_subtitle_text(path: &Path) -> Result<String, String> {
+    let bytes = fs::read(path).map_err(|error| format!("Failed to read subtitle file: {error}"))?;
+    if bytes.starts_with(&[0xff, 0xfe]) {
+        return Ok(decode_utf16(&bytes[2..], true));
+    }
+    if bytes.starts_with(&[0xfe, 0xff]) {
+        return Ok(decode_utf16(&bytes[2..], false));
+    }
+    Ok(String::from_utf8_lossy(&bytes).to_string())
+}
+
+fn decode_utf16(bytes: &[u8], little_endian: bool) -> String {
+    let units: Vec<u16> = bytes
+        .chunks_exact(2)
+        .map(|chunk| {
+            if little_endian {
+                u16::from_le_bytes([chunk[0], chunk[1]])
+            } else {
+                u16::from_be_bytes([chunk[0], chunk[1]])
+            }
+        })
+        .collect();
+    String::from_utf16_lossy(&units)
+}
+
+fn parse_text_document(text: &str, is_ass: bool) -> Result<SubtitleDocument, String> {
+    if is_ass {
+        let document = ass::parse(text);
+        if document.cues.is_empty() {
+            return Err("This subtitle file contains no cues".into());
+        }
+        return Ok(subtitles::text_document(
+            document.cues,
+            document.play_res_x,
+            document.play_res_y,
+        ));
+    }
+    let document = vtt::parse(text);
+    if document.cues.is_empty() {
+        return Err("This subtitle file contains no cues".into());
+    }
+    Ok(subtitles::text_document(document.cues, 1920, 1080))
+}
+
+fn extract_embedded_text(
+    app: &tauri::AppHandle,
+    path: &str,
+    stream_index: usize,
+    codec: &str,
+) -> Result<SubtitleDocument, String> {
+    let key = fingerprint(path, &format!("subtitle-{stream_index}"))?;
+    let cache_dir = display_cache_dir(app);
+    let map_subtitle = format!("0:{stream_index}");
+
+    if codec == "ass" || codec == "ssa" {
+        let output_path = cache_dir.join(format!("{key}.ass"));
+        if !output_path.is_file() {
+            let temp_path = temp_output_path(&cache_dir, &key, "ass");
+            let mut command = ffmpeg_command();
+            command.args([
+                "-nostdin",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                path,
+                "-map",
+                &map_subtitle,
+                "-c:s",
+                "copy",
+                "-f",
+                "ass",
+            ]);
+            let output = command
+                .arg(&temp_path)
+                .output()
+                .map_err(|error| format!("Failed to extract subtitle track: {error}"))?;
+            if !output.status.success() {
+                let _ = fs::remove_file(&temp_path);
+                let mut fallback = ffmpeg_command();
+                fallback.args([
+                    "-nostdin",
+                    "-y",
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    path,
+                    "-map",
+                    &map_subtitle,
+                    "-c:s",
+                    "ass",
+                    "-f",
+                    "ass",
+                ]);
+                let output = fallback
+                    .arg(&temp_path)
+                    .output()
+                    .map_err(|error| format!("Failed to extract subtitle track: {error}"))?;
+                if !output.status.success() {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(ffmpeg_error(
+                        &output,
+                        "FFmpeg could not convert the selected subtitle track",
+                    ));
+                }
+            }
+            finish_cached_output(&temp_path, &output_path)?;
+        }
+        let text = read_subtitle_text(Path::new(&output_path))?;
+        return parse_text_document(&text, true);
+    }
+
+    let output_path = cache_dir.join(format!("{key}.vtt"));
+    if !output_path.is_file() {
+        let temp_path = temp_output_path(&cache_dir, &key, "vtt");
+        let output = ffmpeg_command()
+            .args([
+                "-nostdin",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                path,
+                "-map",
+                &map_subtitle,
+                "-f",
+                "webvtt",
+                &temp_path.to_string_lossy(),
+            ])
+            .output()
+            .map_err(|error| format!("Failed to extract subtitle track: {error}"))?;
+        if !output.status.success() {
+            let _ = fs::remove_file(&temp_path);
+            return Err(ffmpeg_error(
+                &output,
+                "FFmpeg could not convert the selected subtitle track",
+            ));
+        }
+        finish_cached_output(&temp_path, &output_path)?;
+    }
+    let text = read_subtitle_text(Path::new(&output_path))?;
+    parse_text_document(&text, false)
+}
+
+fn pin_bitmap_source(source: &bitmap::BitmapSource) {
+    for image in &source.images {
+        pin_display_cache_file(Path::new(image));
+    }
+}
+
+fn bitmap_document(source: bitmap::BitmapSource) -> SubtitleDocument {
+    subtitles::bitmap_document(
+        source.cues,
+        source.images,
+        source.canvas_width,
+        source.canvas_height,
+    )
+}
+
+fn prepare_bitmap_stream(
+    app: &tauri::AppHandle,
+    path: &str,
+    stream_index: usize,
+    codec: &str,
+) -> Result<SubtitleDocument, String> {
+    let key = fingerprint(path, &format!("subtitle-{stream_index}-bitmap"))?;
+    let cache_dir = display_cache_dir(app);
+    let manifest_path = cache_dir.join(format!("{key}_subs.json"));
+    if let Some(source) = bitmap::load_manifest(&manifest_path) {
+        pin_bitmap_source(&source);
+        return Ok(bitmap_document(source));
+    }
+
+    let extension = if codec == "hdmv_pgs_subtitle" {
+        "sup"
+    } else {
+        "mks"
+    };
+    let temp_path = temp_output_path(&cache_dir, &key, extension);
+    let map_subtitle = format!("0:{stream_index}");
+    let mut command = ffmpeg_command();
+    command.args([
+        "-nostdin",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        path,
+        "-map",
+        &map_subtitle,
+        "-c:s",
+        "copy",
+    ]);
+    if extension == "sup" {
+        command.args(["-f", "sup"]);
+    } else {
+        command.args(["-strict", "-2", "-f", "matroska"]);
+    }
+    let output = command
+        .arg(&temp_path)
+        .output()
+        .map_err(|error| format!("Failed to extract subtitle track: {error}"))?;
+    if !output.status.success() {
+        let _ = fs::remove_file(&temp_path);
+        return Err(ffmpeg_error(
+            &output,
+            "FFmpeg could not extract the selected subtitle track",
+        ));
+    }
+
+    let decoded = if extension == "sup" {
+        let data = fs::read(&temp_path)
+            .map_err(|error| format!("Failed to read extracted subtitle track: {error}"))?;
+        bitmap::decode_pgs(&data, &cache_dir, &key)
+    } else {
+        let data = fs::read(&temp_path)
+            .map_err(|error| format!("Failed to read extracted subtitle track: {error}"))?;
+        bitmap::decode_vobsub_mks(&data, &cache_dir, &key)
+    };
+    let _ = fs::remove_file(&temp_path);
+    let source = decoded?;
+    let manifest_bytes = bitmap::save_manifest(&manifest_path, &source)?;
+    pin_bitmap_source(&source);
+    let image_bytes: u64 = source
+        .images
+        .iter()
+        .filter_map(|path| fs::metadata(path).ok())
+        .map(|metadata| metadata.len())
+        .sum();
+    record_display_cache_write(image_bytes.saturating_add(manifest_bytes), &cache_dir);
+    Ok(bitmap_document(source))
+}
+
+fn prepare_external_bitmap(
+    app: &tauri::AppHandle,
+    path: &Path,
+    extension: &str,
+) -> Result<SubtitleDocument, String> {
+    let path_string = path.to_string_lossy().to_string();
+    let key = fingerprint(&path_string, &format!("external-bitmap-{extension}"))?;
+    let cache_dir = display_cache_dir(app);
+    let manifest_path = cache_dir.join(format!("{key}_subs.json"));
+    if let Some(source) = bitmap::load_manifest(&manifest_path) {
+        pin_bitmap_source(&source);
+        return Ok(bitmap_document(source));
+    }
+
+    let decoded = match extension {
+        "sup" => {
+            let data = fs::read(path)
+                .map_err(|error| format!("Failed to read subtitle file: {error}"))?;
+            bitmap::decode_pgs(&data, &cache_dir, &key)
+        }
+        "idx" => {
+            let idx = read_subtitle_text(path)?;
+            let sub_path = path.with_extension("sub");
+            if !sub_path.is_file() {
+                return Err("The matching .sub file is missing".into());
+            }
+            let sub = fs::read(&sub_path)
+                .map_err(|error| format!("Failed to read subtitle file: {error}"))?;
+            bitmap::decode_vobsub_idx(&idx, sub, &cache_dir, &key)
+        }
+        _ => return Err("Choose a supported image subtitle file".into()),
+    };
+    let source = decoded?;
+    let manifest_bytes = bitmap::save_manifest(&manifest_path, &source)?;
+    pin_bitmap_source(&source);
+    let image_bytes: u64 = source
+        .images
+        .iter()
+        .filter_map(|path| fs::metadata(path).ok())
+        .map(|metadata| metadata.len())
+        .sum();
+    record_display_cache_write(image_bytes.saturating_add(manifest_bytes), &cache_dir);
+    Ok(bitmap_document(source))
+}
+
 fn prepare_subtitle_sync(
     app: &tauri::AppHandle,
     path: &str,
     stream_index: usize,
-) -> Result<String, String> {
+) -> Result<SubtitleDocument, String> {
     let probe = probe_streams(path)?;
     if !stream_exists_with_kind(&probe, stream_index, "subtitle") {
         return Err("The selected subtitle track is no longer available".into());
     }
-    let codec = probe
-        .get("streams")
-        .and_then(Value::as_array)
-        .and_then(|streams| {
-            streams.iter().find(|stream| {
-                stream.get("index").and_then(Value::as_u64) == Some(stream_index as u64)
-            })
-        })
-        .and_then(|stream| stream.get("codec_name"))
-        .and_then(Value::as_str)
-        .unwrap_or("");
-    if !is_text_subtitle_codec(codec) {
-        return Err("Image-based subtitles are not supported yet".into());
+    let codec = subtitle_codec(&probe, stream_index).unwrap_or_default();
+    if subtitles::is_bitmap_codec(&codec) {
+        return prepare_bitmap_stream(app, path, stream_index, &codec);
     }
-
-    let key = fingerprint(path, &format!("subtitle-{stream_index}"))?;
-    let cache_dir = display_cache_dir(app);
-    let output_path = cache_dir.join(format!("{key}.vtt"));
-    if output_path.is_file() {
-        return Ok(output_path.to_string_lossy().to_string());
+    if !subtitles::is_text_codec(&codec) {
+        return Err("This subtitle format is not supported".into());
     }
-    let temp_path = temp_output_path(&cache_dir, &key, "vtt");
-    let map_subtitle = format!("0:{stream_index}");
-    let output = ffmpeg_command()
-        .args([
-            "-nostdin",
-            "-y",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-i",
-            path,
-            "-map",
-            &map_subtitle,
-            "-f",
-            "webvtt",
-            &temp_path.to_string_lossy(),
-        ])
-        .output()
-        .map_err(|e| format!("Failed to extract subtitle track: {e}"))?;
-    if !output.status.success() {
-        let _ = fs::remove_file(&temp_path);
-        let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        return Err(if message.is_empty() {
-            "FFmpeg could not convert the selected subtitle track".into()
-        } else {
-            message
-        });
-    }
-    finish_cached_output(&temp_path, &output_path)
+    extract_embedded_text(app, path, stream_index, &codec)
 }
 
 #[tauri::command]
@@ -347,13 +610,16 @@ pub async fn prepare_subtitle_track(
     app: tauri::AppHandle,
     path: String,
     stream_index: usize,
-) -> Result<String, String> {
+) -> Result<SubtitleDocument, String> {
     tauri::async_runtime::spawn_blocking(move || prepare_subtitle_sync(&app, &path, stream_index))
         .await
         .map_err(|e| format!("Subtitle preparation task failed: {e}"))?
 }
 
-fn prepare_external_subtitle_sync(app: &tauri::AppHandle, path: &str) -> Result<String, String> {
+fn prepare_external_subtitle_sync(
+    app: &tauri::AppHandle,
+    path: &str,
+) -> Result<SubtitleDocument, String> {
     let input_path = Path::new(path);
     if !input_path.is_file() {
         return Err("Subtitle file does not exist".into());
@@ -364,55 +630,94 @@ fn prepare_external_subtitle_sync(app: &tauri::AppHandle, path: &str) -> Result<
         .unwrap_or("")
         .to_ascii_lowercase();
     match extension.as_str() {
-        "vtt" => return Ok(path.to_string()),
-        "srt" => {}
-        _ => return Err("Choose an SRT or WebVTT subtitle file".into()),
+        "vtt" => {
+            let text = read_subtitle_text(input_path)?;
+            parse_text_document(&text, false)
+        }
+        "ass" | "ssa" => {
+            let text = read_subtitle_text(input_path)?;
+            parse_text_document(&text, true)
+        }
+        "srt" => {
+            let key = fingerprint(path, "external-subtitle")?;
+            let cache_dir = display_cache_dir(app);
+            let output_path = cache_dir.join(format!("{key}.vtt"));
+            if !output_path.is_file() {
+                let temp_path = temp_output_path(&cache_dir, &key, "vtt");
+                let output = ffmpeg_command()
+                    .args([
+                        "-nostdin",
+                        "-y",
+                        "-hide_banner",
+                        "-loglevel",
+                        "error",
+                        "-i",
+                        path,
+                        "-map",
+                        "0:0",
+                        "-f",
+                        "webvtt",
+                        &temp_path.to_string_lossy(),
+                    ])
+                    .output()
+                    .map_err(|error| format!("Failed to convert subtitle file: {error}"))?;
+                if !output.status.success() {
+                    let _ = fs::remove_file(&temp_path);
+                    return Err(ffmpeg_error(
+                        &output,
+                        "FFmpeg could not convert the subtitle file",
+                    ));
+                }
+                finish_cached_output(&temp_path, &output_path)?;
+            }
+            let text = read_subtitle_text(Path::new(&output_path))?;
+            parse_text_document(&text, false)
+        }
+        "sup" | "idx" => prepare_external_bitmap(app, input_path, &extension),
+        "sub" => {
+            let idx_path = input_path.with_extension("idx");
+            if !idx_path.is_file() {
+                return Err("The matching .idx file is missing".into());
+            }
+            prepare_external_bitmap(app, &idx_path, "idx")
+        }
+        _ => Err("Choose an SRT, WebVTT, ASS, SUP or VobSub subtitle file".into()),
     }
-
-    let key = fingerprint(path, "external-subtitle")?;
-    let cache_dir = display_cache_dir(app);
-    let output_path = cache_dir.join(format!("{key}.vtt"));
-    if output_path.is_file() {
-        return Ok(output_path.to_string_lossy().to_string());
-    }
-    let temp_path = temp_output_path(&cache_dir, &key, "vtt");
-    let output = ffmpeg_command()
-        .args([
-            "-nostdin",
-            "-y",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-i",
-            path,
-            "-map",
-            "0:0",
-            "-f",
-            "webvtt",
-            &temp_path.to_string_lossy(),
-        ])
-        .output()
-        .map_err(|e| format!("Failed to convert subtitle file: {e}"))?;
-    if !output.status.success() {
-        let _ = fs::remove_file(&temp_path);
-        let message = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        return Err(if message.is_empty() {
-            "FFmpeg could not convert the subtitle file".into()
-        } else {
-            message
-        });
-    }
-    finish_cached_output(&temp_path, &output_path)
 }
 
 #[tauri::command]
 pub async fn prepare_external_subtitle(
     app: tauri::AppHandle,
     path: String,
-) -> Result<String, String> {
+) -> Result<SubtitleDocument, String> {
     tauri::async_runtime::spawn_blocking(move || prepare_external_subtitle_sync(&app, &path))
         .await
         .map_err(|e| format!("External subtitle preparation task failed: {e}"))?
+}
+
+#[tauri::command]
+pub async fn release_bitmap_subtitle(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let cache_dir = display_cache_dir(&app);
+        let valid: Vec<PathBuf> = paths
+            .into_iter()
+            .filter_map(|value| {
+                let path = PathBuf::from(value);
+                let is_png = path
+                    .extension()
+                    .and_then(|extension| extension.to_str())
+                    .is_some_and(|extension| extension.eq_ignore_ascii_case("png"));
+                (is_png && path.parent() == Some(cache_dir.as_path())).then_some(path)
+            })
+            .collect();
+        unpin_display_cache_files(&valid);
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("Bitmap subtitle release task failed: {e}"))?
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -505,7 +810,8 @@ pub async fn get_media_chapters(path: String) -> Result<Vec<MediaChapter>, Strin
 
 #[cfg(test)]
 mod tests {
-    use super::{catalog_from_probe, is_text_subtitle_codec};
+    use super::catalog_from_probe;
+    use crate::commands::subtitles;
 
     #[test]
     fn parses_audio_and_text_subtitle_metadata() {
@@ -538,12 +844,18 @@ mod tests {
         assert!(catalog.audio[0].is_default);
         assert_eq!(catalog.subtitles.len(), 1);
         assert!(catalog.subtitles[0].supported);
+        assert!(!catalog.subtitles[0].bitmap);
     }
 
     #[test]
-    fn marks_bitmap_subtitles_unsupported() {
-        assert!(!is_text_subtitle_codec("hdmv_pgs_subtitle"));
-        assert!(!is_text_subtitle_codec("dvd_subtitle"));
-        assert!(is_text_subtitle_codec("ass"));
+    fn marks_bitmap_subtitles_as_supported() {
+        assert!(subtitles::is_bitmap_codec("hdmv_pgs_subtitle"));
+        assert!(subtitles::is_bitmap_codec("dvd_subtitle"));
+        assert!(subtitles::is_bitmap_codec("vobsub"));
+        assert!(subtitles::is_supported_codec("hdmv_pgs_subtitle"));
+        assert!(subtitles::is_supported_codec("dvd_subtitle"));
+        assert!(!subtitles::is_supported_codec("dvb_teletext"));
+        assert!(!subtitles::is_supported_codec("xsub"));
+        assert!(subtitles::is_text_codec("ass"));
     }
 }

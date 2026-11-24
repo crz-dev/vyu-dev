@@ -5,6 +5,7 @@ import type {
   ClipJobResult,
   BatchStatItem,
   MediaTrackCatalog,
+  SubtitleDocument,
 } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
 import { arrayBufferToBase64 } from "$lib/shared/base64";
@@ -223,14 +224,20 @@ export async function invokeReleaseAudioTrack(path: string): Promise<void> {
 export async function invokePrepareSubtitleTrack(
   path: string,
   streamIndex: number,
-): Promise<string> {
+): Promise<SubtitleDocument> {
   return invoke("prepare_subtitle_track", { path, streamIndex });
 }
 
 export async function invokePrepareExternalSubtitle(
   path: string,
-): Promise<string> {
+): Promise<SubtitleDocument> {
   return invoke("prepare_external_subtitle", { path });
+}
+
+export async function invokeReleaseBitmapSubtitle(
+  paths: string[],
+): Promise<void> {
+  return invoke("release_bitmap_subtitle", { paths });
 }
 
 // ── FFmpeg ──

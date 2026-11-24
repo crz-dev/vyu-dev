@@ -31,6 +31,7 @@ pub struct MediaTrack {
     pub channels: Option<u64>,
     pub channel_layout: Option<String>,
     pub is_default: bool,
+    pub bitmap: bool,
     pub supported: bool,
 }
 
@@ -39,6 +40,73 @@ pub struct MediaTrack {
 pub struct MediaTrackCatalog {
     pub audio: Vec<MediaTrack>,
     pub subtitles: Vec<MediaTrack>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleTextRun {
+    pub text: String,
+    pub font: Option<String>,
+    pub size: Option<f32>,
+    pub color: Option<String>,
+    pub outline_color: Option<String>,
+    pub outline_width: Option<f32>,
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleCueImage {
+    pub path: String,
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleAnchor {
+    /// Numpad layout: 1 bottom-left, 2 bottom-center, ... 9 top-right.
+    pub alignment: u8,
+    /// Horizontal position as a percentage of the subtitle canvas.
+    pub x: f32,
+    /// Vertical position as a percentage of the subtitle canvas.
+    pub y: f32,
+    pub max_width: Option<f32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleCue {
+    pub start: f64,
+    pub end: f64,
+    #[serde(default)]
+    pub lines: Vec<Vec<SubtitleTextRun>>,
+    #[serde(default)]
+    pub images: Vec<SubtitleCueImage>,
+    #[serde(default)]
+    pub anchor: Option<SubtitleAnchor>,
+    #[serde(default)]
+    pub background: Option<String>,
+    #[serde(default)]
+    pub font_size: Option<f32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SubtitleDocument {
+    /// "text" or "bitmap".
+    pub kind: String,
+    pub cues: Vec<SubtitleCue>,
+    /// Cached bitmap images owned by this document; pinned while active.
+    pub images: Vec<String>,
+    pub canvas_width: u32,
+    pub canvas_height: u32,
+    pub play_res_x: u32,
+    pub play_res_y: u32,
 }
 
 #[derive(serde::Deserialize, Clone)]

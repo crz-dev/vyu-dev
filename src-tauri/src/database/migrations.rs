@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const SCHEMA_VERSION: i32 = 1;
+const SCHEMA_VERSION: i32 = 2;
 
 pub fn run(conn: &mut Connection) -> Result<(), String> {
     // The _migrations table must exist before version check. Creation is outside the migration transaction.
@@ -52,6 +52,25 @@ pub fn run(conn: &mut Connection) -> Result<(), String> {
         // Add future migrations here:
         // if current < 2 { ... }
 
+        if current < 2 {
+            let has_column = {
+                let mut stmt = tx
+                    .prepare("PRAGMA table_info(file_metadata)")
+                    .map_err(|e| format!("Migration v2 inspection failed: {e}"))?;
+                let columns = stmt
+                    .query_map([], |row| row.get::<_, String>(1))
+                    .map_err(|e| format!("Migration v2 inspection failed: {e}"))?;
+                let found = columns
+                    .filter_map(Result::ok)
+                    .any(|column| column == "subtitle_data");
+                found
+            };
+            if !has_column {
+                tx.execute_batch("ALTER TABLE file_metadata ADD COLUMN subtitle_data TEXT;")
+                    .map_err(|e| format!("Migration v2 failed: {e}"))?;
+            }
+        }
+
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -68,4 +87,37 @@ pub fn run(conn: &mut Connection) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::run;
+
+    #[test]
+    fn adds_subtitle_data_column() {
+        let mut conn = rusqlite::Connection::open_in_memory().unwrap();
+        run(&mut conn).unwrap();
+
+        let mut has_subtitle_data = false;
+        {
+            let mut stmt = conn.prepare("PRAGMA table_info(file_metadata)").unwrap();
+            let columns = stmt
+                .query_map([], |row| row.get::<_, String>(1))
+                .unwrap();
+            for column in columns {
+                if column.unwrap() == "subtitle_data" {
+                    has_subtitle_data = true;
+                }
+            }
+        }
+        assert!(has_subtitle_data);
+
+        let version: i32 = conn
+            .query_row("SELECT MAX(version) FROM _migrations", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(version, 2);
+
+        // Running again is a no-op.
+        run(&mut conn).unwrap();
+    }
 }

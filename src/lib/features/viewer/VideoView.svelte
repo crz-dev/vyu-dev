@@ -11,9 +11,6 @@
   } from "$lib/features/media/hls";
   import { isHlsUrl } from "$lib/shared/mediaKind";
   import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
-  import { locale } from "$lib/features/i18n/locale.svelte";
-
-  const t = locale.t;
 
   let {
     fileSrc,
@@ -64,7 +61,6 @@
   } = $props();
 
   let videoInnerEl = $state<HTMLDivElement | null>(null);
-  let subtitleTrackEl = $state<HTMLTrackElement | null>(null);
   let hlsHandle: HlsHandle | null = null;
 
   const isHlsSource = $derived(isHlsUrl(fileSrc));
@@ -99,14 +95,6 @@
       hlsHandle = null;
     };
   });
-
-  function handleSubtitleLoad() {
-    if (subtitleTrackEl) subtitleTrackEl.track.mode = "hidden";
-  }
-
-  $effect(() => {
-    if (subtitleTrackEl) subtitleTrackEl.track.mode = "hidden";
-  });
 </script>
 
 <div
@@ -137,18 +125,6 @@
           onerror={onVideoError}
           onended={onMediaEnded}
         >
-          {#if tracks.subtitleSrc}
-            <track
-              bind:this={subtitleTrackEl}
-              kind="subtitles"
-              src={tracks.subtitleSrc}
-              srclang="und"
-              label={tracks.selectedSubtitleLabel ||
-                t("shell.viewer.subtitles")}
-              default
-              onload={handleSubtitleLoad}
-            />
-          {/if}
         </video>
       </div>
     {/key}
@@ -167,10 +143,14 @@
 
 <SubtitleOverlay
   {videoEl}
-  trackEl={subtitleTrackEl}
+  subtitleDoc={tracks.subtitleDocument}
   delayMs={tracks.subtitleDelayMs}
-  size={tracks.subtitleSize}
+  subtitleStyle={tracks.subtitleStyle}
+  offsetX={tracks.subtitleOffsetX}
+  offsetY={tracks.subtitleOffsetY}
   resetKey={fileSrc}
   videoHovered={hoverZone === "video"}
   interactive={!drawActive}
+  onOffsetChange={tracks.setSubtitleOffset}
+  onResetPosition={tracks.resetSubtitlePosition}
 />

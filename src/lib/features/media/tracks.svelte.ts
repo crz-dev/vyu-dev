@@ -5,13 +5,27 @@ import {
   invokeReleaseAudioTrack,
   invokePrepareExternalSubtitle,
   invokePrepareSubtitleTrack,
+  invokeReleaseBitmapSubtitle,
 } from "$lib/features/media/api";
 import { findSubtitleSidecars, getFileName } from "$lib/services/files";
+import {
+  clearSubtitlePosition,
+  loadSubtitlePosition,
+  saveSubtitlePosition,
+} from "$lib/services/database";
+import { subtitlePrefs } from "$lib/features/media/subtitlePrefs.svelte";
 import { showToast } from "$lib/components/toast.svelte";
-import type { MediaTrack, SubtitleSidecar } from "$lib/shared/types";
+import type {
+  MediaTrack,
+  SubtitleBackground,
+  SubtitleDocument,
+  SubtitleOutline,
+  SubtitlePreset,
+  SubtitleSidecar,
+  SubtitleSize,
+  SubtitleStyleSettings,
+} from "$lib/shared/types";
 import { locale } from "$lib/features/i18n/locale.svelte";
-
-export type SubtitleSize = "small" | "default" | "large";
 
 interface PlaybackSnapshot {
   time: number;
@@ -63,11 +77,11 @@ export function createTrackSelection(
   let selectedAudioTrackIndex = $state<number | null>(null);
   let originalAudioTrackIndex: number | null = null;
   let selectedSubtitleId = $state("off");
-  let selectedSubtitleLabel = $state("");
   let activeVideoSrc = $state("");
-  let subtitleSrc = $state("");
+  let subtitleDocument = $state.raw<SubtitleDocument | null>(null);
+  let subtitleOffsetX = $state(0);
+  let subtitleOffsetY = $state(0);
   let subtitleDelayMs = $state(0);
-  let subtitleSize = $state<SubtitleSize>("default");
   let loadingTracks = $state(false);
   let loadingAudioTrack = $state(false);
   let loadingSubtitle = $state(false);
@@ -84,6 +98,20 @@ export function createTrackSelection(
   let awaitingAudioSourceChange = false;
   let retiredAudioVariantPaths: string[] = [];
   let resolveAudioSourceChange: (() => void) | null = null;
+  let bitmapImages: string[] = [];
+  let positionSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function releaseBitmapPaths(paths: string[]) {
+    if (paths.length > 0) {
+      void invokeReleaseBitmapSubtitle(paths).catch(() => {});
+    }
+  }
+
+  function releaseBitmapImages() {
+    const images = bitmapImages;
+    bitmapImages = [];
+    releaseBitmapPaths(images);
+  }
 
   function releaseAudioVariant(path: string) {
     void invokeReleaseAudioTrack(path).catch(() => {});
@@ -106,6 +134,11 @@ export function createTrackSelection(
     finishAudioSourceChange();
     loadGeneration++;
     subtitleGeneration++;
+    releaseBitmapImages();
+    if (positionSaveTimer) {
+      clearTimeout(positionSaveTimer);
+      positionSaveTimer = null;
+    }
     const pathsToRelease = [
       activeAudioVariantPath,
       pendingAudioVariantPath,
@@ -124,9 +157,10 @@ export function createTrackSelection(
     selectedAudioTrackIndex = null;
     originalAudioTrackIndex = null;
     selectedSubtitleId = "off";
-    selectedSubtitleLabel = "";
     activeVideoSrc = "";
-    subtitleSrc = "";
+    subtitleDocument = null;
+    subtitleOffsetX = 0;
+    subtitleOffsetY = 0;
     subtitleDelayMs = 0;
     loadingTracks = false;
     loadingAudioTrack = false;
@@ -183,9 +217,16 @@ export function createTrackSelection(
       originalAudioTrackIndex = selectedAudioTrackIndex;
       loadingTracks = false;
 
-      const preferredSubtitle = subtitleTracks.find(
-        (track) => track.isDefault && track.supported,
-      );
+      if (generation !== loadGeneration) return;
+      const position = await loadSubtitlePosition(path);
+      if (generation !== loadGeneration) return;
+      subtitleOffsetX = position?.x ?? 0;
+      subtitleOffsetY = position?.y ?? 0;
+
+      const preferredSubtitle =
+        subtitleTracks.find(
+          (track) => track.isDefault && track.supported && !track.bitmap,
+        ) ?? subtitleTracks.find((track) => track.isDefault && track.supported);
       const mediaName = getFileName(path);
       const mediaStem = mediaName
         .slice(0, mediaName.lastIndexOf("."))
@@ -357,9 +398,9 @@ export function createTrackSelection(
   async function selectSubtitle(id: string, notifyOnError = true) {
     if (id === "off") {
       subtitleGeneration++;
+      releaseBitmapImages();
       selectedSubtitleId = "off";
-      selectedSubtitleLabel = "";
-      subtitleSrc = "";
+      subtitleDocument = null;
       subtitleDelayMs = 0;
       subtitleError = "";
       loadingSubtitle = false;
@@ -372,32 +413,35 @@ export function createTrackSelection(
     loadingSubtitle = true;
     subtitleError = "";
     try {
-      let outputPath: string;
-      let label: string;
+      let document: SubtitleDocument;
       if (id.startsWith("embedded:")) {
         const index = Number(id.slice("embedded:".length));
         const track = subtitleTracks.find((item) => item.index === index);
         if (!track || !track.supported || !filePath) return;
-        outputPath = await invokePrepareSubtitleTrack(filePath, index);
-        label =
-          track.title ||
-          track.language ||
-          locale.t("media.subtitles.subtitleN", { n: index + 1 });
+        document = await invokePrepareSubtitleTrack(filePath, index);
       } else if (id.startsWith("sidecar:")) {
         const path = id.slice("sidecar:".length);
         const sidecar = sidecars.find((item) => item.path === path);
         if (!sidecar) return;
-        outputPath = await invokePrepareExternalSubtitle(path);
-        label = sidecar.name;
+        document = await invokePrepareExternalSubtitle(path);
       } else {
         return;
       }
 
-      if (generation !== loadGeneration || request !== subtitleGeneration)
+      if (generation !== loadGeneration || request !== subtitleGeneration) {
+        const current = new Set(bitmapImages);
+        releaseBitmapPaths(
+          document.images.filter((path) => !current.has(path)),
+        );
         return;
+      }
+      const nextImages = document.kind === "bitmap" ? [...document.images] : [];
+      const keep = new Set(nextImages);
+      const stale = bitmapImages.filter((path) => !keep.has(path));
+      bitmapImages = nextImages;
+      releaseBitmapPaths(stale);
       selectedSubtitleId = id;
-      selectedSubtitleLabel = label;
-      subtitleSrc = `${convertFileSrc(outputPath)}?subtitle=${++urlNonce}`;
+      subtitleDocument = document;
       subtitleDelayMs = 0;
     } catch (error) {
       if (generation === loadGeneration && request === subtitleGeneration) {
@@ -423,10 +467,16 @@ export function createTrackSelection(
     const name = path.slice(
       Math.max(path.lastIndexOf("\\"), path.lastIndexOf("/")) + 1,
     );
+    const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
     const existing = sidecars.find(
       (item) => item.path.toLowerCase() === path.toLowerCase(),
     );
-    if (!existing) sidecars = [...sidecars, { path, name }];
+    if (!existing) {
+      sidecars = [
+        ...sidecars,
+        { path, name, bitmap: ext === "sup" || ext === "idx" || ext === "sub" },
+      ];
+    }
     await selectSubtitle(`sidecar:${existing?.path ?? path}`);
   }
 
@@ -437,8 +487,61 @@ export function createTrackSelection(
     );
   }
 
+  function clampOffset(value: number): number {
+    return Math.max(-50, Math.min(50, value));
+  }
+
+  function setSubtitleOffset(x: number, y: number) {
+    const nextX = clampOffset(x);
+    const nextY = clampOffset(y);
+    subtitleOffsetX = nextX;
+    subtitleOffsetY = nextY;
+    if (positionSaveTimer) clearTimeout(positionSaveTimer);
+    positionSaveTimer = null;
+    const path = filePath;
+    if (!path) return;
+    positionSaveTimer = setTimeout(() => {
+      positionSaveTimer = null;
+      void saveSubtitlePosition(path, nextX, nextY);
+    }, 250);
+  }
+
+  function resetSubtitlePosition() {
+    if (positionSaveTimer) {
+      clearTimeout(positionSaveTimer);
+      positionSaveTimer = null;
+    }
+    subtitleOffsetX = 0;
+    subtitleOffsetY = 0;
+    if (filePath) void clearSubtitlePosition(filePath);
+  }
+
+  function setSubtitlePreset(preset: SubtitlePreset) {
+    if (preset === "custom") {
+      subtitlePrefs.enableCustom();
+      return;
+    }
+    subtitlePrefs.setPreset(preset);
+  }
+
   function setSubtitleSize(size: SubtitleSize) {
-    subtitleSize = size;
+    subtitlePrefs.setSize(size);
+  }
+
+  function setSubtitleFont(fontFamily: string) {
+    subtitlePrefs.setFontFamily(fontFamily);
+  }
+
+  function setSubtitleColor(textColor: string) {
+    subtitlePrefs.setTextColor(textColor);
+  }
+
+  function setSubtitleOutline(outline: SubtitleOutline) {
+    subtitlePrefs.setOutline(outline);
+  }
+
+  function setSubtitleBackground(background: SubtitleBackground) {
+    subtitlePrefs.setBackground(background);
   }
 
   return {
@@ -460,20 +563,23 @@ export function createTrackSelection(
     get selectedSubtitleId() {
       return selectedSubtitleId;
     },
-    get selectedSubtitleLabel() {
-      return selectedSubtitleLabel;
-    },
     get activeVideoSrc() {
       return activeVideoSrc;
     },
-    get subtitleSrc() {
-      return subtitleSrc;
+    get subtitleDocument() {
+      return subtitleDocument;
+    },
+    get subtitleOffsetX() {
+      return subtitleOffsetX;
+    },
+    get subtitleOffsetY() {
+      return subtitleOffsetY;
     },
     get subtitleDelayMs() {
       return subtitleDelayMs;
     },
-    get subtitleSize() {
-      return subtitleSize;
+    get subtitleStyle(): SubtitleStyleSettings {
+      return subtitlePrefs.settings;
     },
     get loadingTracks() {
       return loadingTracks;
@@ -498,7 +604,14 @@ export function createTrackSelection(
     selectSubtitle,
     loadExternalSubtitle,
     adjustSubtitleDelay,
+    setSubtitleOffset,
+    resetSubtitlePosition,
+    setSubtitlePreset,
     setSubtitleSize,
+    setSubtitleFont,
+    setSubtitleColor,
+    setSubtitleOutline,
+    setSubtitleBackground,
     releaseAllAudioVariants,
   };
 }

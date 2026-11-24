@@ -1,25 +1,44 @@
 <script lang="ts">
+  import { convertFileSrc } from "@tauri-apps/api/core";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
-  import type { SubtitleSize } from "$lib/features/media/tracks.svelte";
   import { viewer } from "$lib/features/viewer/viewer.svelte";
+  import { locale } from "$lib/features/i18n/locale.svelte";
+  import type {
+    SubtitleCue,
+    SubtitleCueImage,
+    SubtitleDocument,
+    SubtitleSize,
+    SubtitleStyleSettings,
+    SubtitleTextRun,
+  } from "$lib/shared/types";
 
   let {
     videoEl,
-    trackEl,
+    subtitleDoc,
     delayMs,
-    size,
+    subtitleStyle,
+    offsetX,
+    offsetY,
     resetKey,
     videoHovered,
     interactive = true,
+    onOffsetChange,
+    onResetPosition,
   }: {
     videoEl: HTMLVideoElement | null;
-    trackEl: HTMLTrackElement | null;
+    subtitleDoc: SubtitleDocument | null;
     delayMs: number;
-    size: SubtitleSize;
+    subtitleStyle: SubtitleStyleSettings;
+    offsetX: number;
+    offsetY: number;
     resetKey: string;
     videoHovered: boolean;
     interactive?: boolean;
+    onOffsetChange: (x: number, y: number) => void;
+    onResetPosition: () => void;
   } = $props();
+
+  const t = locale.t;
 
   const SIZE_FACTORS: Record<SubtitleSize, number> = {
     small: 0.85,
@@ -27,21 +46,28 @@
     large: 1.3,
   };
 
+  const FONT_FALLBACK = `var(--font-family), "Segoe UI", Arial, sans-serif`;
   const CONTROLS_GAP = 8;
+  const OFFSET_LIMIT = 50;
 
-  let activeText = $state("");
+  let activeCues = $state.raw<SubtitleCue[]>([]);
   let dragging = $state(false);
   let blockHovered = $state(false);
   let lockedInset = $state(0);
   let controlsInset = $state(0);
-  let x = $state(50);
-  let y = $state(88);
+  let defaultY = $state(88);
   let positionInitialized = false;
+  let previewOffsetX = $state(0);
+  let previewOffsetY = $state(0);
+  let positionAnnouncement = $state("");
   let videoRect = $state({ left: 0, top: 0, width: 0, height: 0 });
   let containerRect = $state({ left: 0, top: 0, width: 0, height: 0 });
 
+  const displayOffsetX = $derived(dragging ? previewOffsetX : offsetX);
+  const displayOffsetY = $derived(dragging ? previewOffsetY : offsetY);
+
   const fontSize = $derived(
-    Math.max(12, videoRect.height * 0.05 * SIZE_FACTORS[size]),
+    Math.max(12, videoRect.height * 0.05 * SIZE_FACTORS[subtitleStyle.size]),
   );
 
   const controlsVisible = $derived(
@@ -64,56 +90,55 @@
       : 100,
   );
 
-  const displayY = $derived(Math.min(y, maxY));
+  const displayY = $derived(clamp(defaultY + displayOffsetY, 0, maxY));
+
+  const activeTextCues = $derived(
+    activeCues.filter((cue) => cue.lines.length > 0),
+  );
+  const activeBitmapCues = $derived(
+    activeCues.filter((cue) => cue.images.length > 0),
+  );
+  const plainTextCues = $derived(activeTextCues.filter((cue) => !cue.anchor));
+  const positionedTextCues = $derived(
+    activeTextCues.filter((cue) => cue.anchor),
+  );
+  const plainLines = $derived(plainTextCues.flatMap((cue) => cue.lines));
+  const liveText = $derived(
+    activeTextCues
+      .map((cue) =>
+        cue.lines
+          .map((line) => line.map((run) => run.text).join(""))
+          .join("\n"),
+      )
+      .join("\n"),
+  );
 
   let frameId = 0;
+  let lastLayoutKey = "";
+  let rectSyncId = 0;
 
-  $effect(() => {
-    void resetKey;
-    x = 50;
-    y = 88;
-    positionInitialized = false;
-    scheduleRectSync();
-  });
-
-  function cleanCueText(text: string): string {
-    return text
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<[^>]*>/g, "")
-      .replace(/&lt;/gi, "<")
-      .replace(/&gt;/gi, ">")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&amp;/gi, "&")
-      .replace(/\r/g, "")
-      .trim();
+  function clamp(value: number, min: number, max: number): number {
+    return Math.min(max, Math.max(min, value));
   }
 
   function syncCues() {
     const video = videoEl;
-    const track = trackEl?.track;
-    if (!video || !track) {
-      activeText = "";
+    const doc = subtitleDoc;
+    if (!video || !doc) {
+      if (activeCues.length > 0) activeCues = [];
       return;
     }
-
     const time = video.currentTime - delayMs / 1000;
-    const cues = track.cues;
-    const parts: string[] = [];
-
-    if (cues) {
-      for (let i = 0; i < cues.length; i++) {
-        const cue = cues[i] as VTTCue;
-        if (!cue) continue;
-        const text = cue.text;
-        if (typeof text !== "string") continue;
-        if (cue.startTime <= time && time < cue.endTime) {
-          const cleaned = cleanCueText(text);
-          if (cleaned) parts.push(cleaned);
-        }
-      }
+    const next: SubtitleCue[] = [];
+    for (const cue of doc.cues) {
+      if (cue.start <= time && time < cue.end) next.push(cue);
     }
-
-    activeText = parts.join("\n");
+    if (
+      next.length !== activeCues.length ||
+      next.some((cue, index) => cue !== activeCues[index])
+    ) {
+      activeCues = next;
+    }
   }
 
   function updateRect() {
@@ -136,8 +161,6 @@
     }
 
     const viewerEl = video.closest(".viewer");
-    // Keep the subtitle box on the video itself, not the viewer, so it never
-    // spills into the letterbox beside narrow (portrait) video.
     const containerBox =
       videoBox.width > 0 && videoBox.height > 0
         ? videoBox
@@ -162,7 +185,9 @@
     if (!video) return;
 
     const controls = viewer.state.isFullscreen
-      ? document.querySelector<HTMLElement>(".fs-overlay .fs-controls")
+      ? globalThis.document.querySelector<HTMLElement>(
+          ".fs-overlay .fs-controls",
+        )
       : (video
           .closest(".video-wrapper")
           ?.querySelector<HTMLElement>(".video-controls") ?? null);
@@ -194,7 +219,7 @@
     if (positionInitialized) return;
     if (videoRect.height <= 0 || containerRect.height <= 0) return;
     const videoBottom = videoRect.top + videoRect.height;
-    y = clamp(
+    defaultY = clamp(
       ((videoBottom - containerRect.top) / containerRect.height) * 100,
       0,
       100,
@@ -202,13 +227,9 @@
     positionInitialized = true;
   }
 
-  // The video moves via CSS transforms, so reading its box is the only way to
-  // follow zoom/pan. Track the transform inputs instead of reflowing every frame.
-  let lastLayoutKey = "";
-
   function layoutKey(): string {
-    const s = viewer.state;
-    return `${s.zoomLevel}|${s.translateX}|${s.translateY}|${s.isFullscreen ? 1 : 0}`;
+    const state = viewer.state;
+    return `${state.zoomLevel}|${state.translateX}|${state.translateY}|${state.isFullscreen ? 1 : 0}`;
   }
 
   function tick() {
@@ -219,7 +240,7 @@
       lastLayoutKey = key;
       refreshMetrics();
     }
-    if (videoEl && !videoEl.paused && !videoEl.ended) {
+    if (videoEl && !videoEl.paused && !videoEl.ended && subtitleDoc) {
       frameId = requestAnimationFrame(tick);
     }
   }
@@ -236,8 +257,6 @@
     }
   }
 
-  let rectSyncId = 0;
-
   function scheduleRectSync() {
     if (rectSyncId) return;
     rectSyncId = requestAnimationFrame(() => {
@@ -253,19 +272,39 @@
   }
 
   $effect(() => {
+    void resetKey;
+    previewOffsetX = offsetX;
+    previewOffsetY = offsetY;
+    positionInitialized = false;
+    scheduleRectSync();
+  });
+
+  $effect(() => {
     void viewer.state.isFullscreen;
     scheduleRectSync();
   });
 
   $effect(() => {
+    void delayMs;
+    syncCues();
+  });
+
+  $effect(() => {
+    void subtitleDoc;
+    syncCues();
+    scheduleRectSync();
+    if (videoEl && !videoEl.paused && subtitleDoc) startLoop();
+  });
+
+  $effect(() => {
     const video = videoEl;
     if (!video) {
-      activeText = "";
+      activeCues = [];
       return;
     }
 
     const onPlay = () => {
-      if (trackElement) startLoop();
+      if (subtitleDoc) startLoop();
     };
     const onStop = () => {
       stopLoop();
@@ -286,11 +325,6 @@
       resizeObserver.observe(viewerEl);
     }
 
-    const trackElement = trackEl;
-    const track = trackElement?.track;
-    track?.addEventListener("cuechange", syncCues);
-    trackElement?.addEventListener("load", syncCues);
-
     video.addEventListener("play", onPlay);
     video.addEventListener("playing", onPlay);
     video.addEventListener("pause", onStop);
@@ -305,7 +339,7 @@
 
     syncCues();
     scheduleRectSync();
-    if (!video.paused && trackElement) startLoop();
+    if (!video.paused) startLoop();
 
     return () => {
       if (rectSyncId) {
@@ -314,8 +348,6 @@
       }
       stopLoop();
       resizeObserver?.disconnect();
-      track?.removeEventListener("cuechange", syncCues);
-      trackElement?.removeEventListener("load", syncCues);
       video.removeEventListener("play", onPlay);
       video.removeEventListener("playing", onPlay);
       video.removeEventListener("pause", onStop);
@@ -330,13 +362,116 @@
     };
   });
 
-  function clamp(value: number, min: number, max: number): number {
-    return Math.min(max, Math.max(min, value));
+  function horizontal(alignment: number): "left" | "center" | "right" {
+    const value = (alignment - 1) % 3;
+    return value === 0 ? "left" : value === 2 ? "right" : "center";
+  }
+
+  function vertical(alignment: number): "top" | "middle" | "bottom" {
+    const value = Math.floor((alignment - 1) / 3);
+    return value === 0 ? "bottom" : value === 2 ? "top" : "middle";
+  }
+
+  function anchorStyle(cue: SubtitleCue): string {
+    const anchor = cue.anchor;
+    if (!anchor) return "";
+    const x = clamp(anchor.x + displayOffsetX, 0, 100);
+    const y = clamp(anchor.y + displayOffsetY, 0, 100);
+    const h = horizontal(anchor.alignment);
+    const v = vertical(anchor.alignment);
+    const translateX = h === "left" ? "0%" : h === "center" ? "-50%" : "-100%";
+    const translateY =
+      v === "bottom" ? "-100%" : v === "middle" ? "-50%" : "0%";
+    const maxWidth = anchor.maxWidth ?? 90;
+    return `left:${x}%; top:${y}%; transform:translate(${translateX}, ${translateY}); max-width:${maxWidth}%; text-align:${h};`;
+  }
+
+  function plainStyle(cue: SubtitleCue | null): string {
+    const x = clamp(50 + displayOffsetX, 0, 100);
+    const background = blockBackground(cue);
+    return `left:${x}%; top:${displayY}%; transform:translate(-50%, -100%); max-width:90%; text-align:center; background:${background};`;
+  }
+
+  function blockBackground(cue: SubtitleCue | null): string {
+    if (subtitleStyle.useFileStyles && cue) {
+      return cue.background ?? "transparent";
+    }
+    switch (subtitleStyle.background) {
+      case "none":
+        return "transparent";
+      case "solid":
+        return "rgba(0, 0, 0, 0.88)";
+      default:
+        return "rgba(0, 0, 0, 0.68)";
+    }
+  }
+
+  function fontStack(fontFamily: string): string {
+    if (!fontFamily) return FONT_FALLBACK;
+    const safe = fontFamily.replace(/["\\\n\r]/g, "");
+    return `"${safe}", ${FONT_FALLBACK}`;
+  }
+
+  function shadow(width: number, color: string): string {
+    const value = Math.max(0.5, width);
+    return `-${value}px -${value}px 0 ${color}, ${value}px -${value}px 0 ${color}, -${value}px ${value}px 0 ${color}, ${value}px ${value}px 0 ${color}`;
+  }
+
+  function userOutlineWidth(): number {
+    return subtitleStyle.outline === "none"
+      ? 0
+      : subtitleStyle.outline === "thick"
+        ? 3
+        : 1.5;
+  }
+
+  function runStyle(run: SubtitleTextRun): string {
+    const fileStyles = subtitleStyle.useFileStyles;
+    const font =
+      fileStyles && run.font
+        ? fontStack(run.font)
+        : fontStack(subtitleStyle.fontFamily);
+    const scale =
+      containerRect.height > 0 && subtitleDoc
+        ? containerRect.height / Math.max(1, subtitleDoc.playResY)
+        : 1;
+    const size =
+      fileStyles && run.size != null
+        ? Math.max(10, run.size * scale * SIZE_FACTORS[subtitleStyle.size])
+        : fontSize;
+    const color = fileStyles
+      ? (run.color ?? subtitleStyle.textColor)
+      : subtitleStyle.textColor;
+    const authoredOutline = run.outlineWidth != null;
+    const outlineWidth =
+      fileStyles && authoredOutline
+        ? Math.max(0, run.outlineWidth! * scale)
+        : userOutlineWidth();
+    const outlineColor = fileStyles
+      ? (run.outlineColor ?? "#000000")
+      : "#000000";
+    return `font-family:${font};font-size:${size}px;color:${color};text-shadow:${outlineWidth > 0 ? shadow(outlineWidth, outlineColor) : "none"};font-weight:${run.bold ? 700 : 400};font-style:${run.italic ? "italic" : "normal"};text-decoration:${run.underline ? "underline" : "none"};`;
+  }
+
+  function imageStyle(image: SubtitleCueImage): string {
+    const width = subtitleDoc?.canvasWidth || 1920;
+    const height = subtitleDoc?.canvasHeight || 1080;
+    const left = (image.x / width) * 100 + displayOffsetX;
+    const top = (image.y / height) * 100 + displayOffsetY;
+    return `left:${left}%;top:${top}%;width:${(image.width / width) * 100}%;height:${(image.height / height) * 100}%;`;
+  }
+
+  function imageSrc(path: string): string {
+    return convertFileSrc(path);
+  }
+
+  function announcePosition(_x: number, _y: number) {
+    positionAnnouncement = t("media.subtitles.positionMoved");
   }
 
   function handleBlockEnter() {
     if (dragging) return;
-    lockedInset = displayY < y - 0.1 ? controlsInset : 0;
+    lockedInset = displayY < defaultY - 0.1 ? controlsInset : 0;
     blockHovered = true;
   }
 
@@ -344,38 +479,37 @@
     blockHovered = false;
   }
 
-  function startDrag(e: PointerEvent) {
-    if (!interactive || e.button !== 0 || !videoEl) return;
+  function startDrag(event: PointerEvent) {
+    if (!interactive || event.button !== 0 || !videoEl) return;
 
     refreshMetrics();
     const rect = videoEl.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    const block = e.currentTarget as HTMLElement;
-    e.preventDefault();
-    e.stopPropagation();
-    lockedInset = displayY < y - 0.1 ? controlsInset : 0;
+    const block = event.currentTarget as HTMLElement;
+    event.preventDefault();
+    event.stopPropagation();
+    lockedInset = displayY < defaultY - 0.1 ? controlsInset : 0;
     dragging = true;
-    const pointerId = e.pointerId;
+    previewOffsetX = offsetX;
+    previewOffsetY = offsetY;
+    const pointerId = event.pointerId;
     try {
       block.setPointerCapture(pointerId);
     } catch {
       // Pointer capture can fail if the pointer is already gone.
     }
 
-    const blockRect = block.getBoundingClientRect();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startLeft = x;
-    const startTop = displayY;
-    const halfWidth = Math.min((blockRect.width / rect.width) * 50, 50);
-    const height = Math.min((blockRect.height / rect.height) * 100, 100);
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startOffsetX = offsetX;
+    const startOffsetY = offsetY;
 
-    function move(ev: PointerEvent) {
-      const dx = ((ev.clientX - startX) / rect.width) * 100;
-      const dy = ((ev.clientY - startY) / rect.height) * 100;
-      x = clamp(startLeft + dx, halfWidth, 100 - halfWidth);
-      y = clamp(startTop + dy, height, 100);
+    function move(pointerEvent: PointerEvent) {
+      const dx = ((pointerEvent.clientX - startX) / rect.width) * 100;
+      const dy = ((pointerEvent.clientY - startY) / rect.height) * 100;
+      previewOffsetX = clamp(startOffsetX + dx, -OFFSET_LIMIT, OFFSET_LIMIT);
+      previewOffsetY = clamp(startOffsetY + dy, -OFFSET_LIMIT, OFFSET_LIMIT);
     }
 
     function end() {
@@ -385,6 +519,8 @@
       } catch {
         // Capture may already be released.
       }
+      onOffsetChange(previewOffsetX, previewOffsetY);
+      announcePosition(previewOffsetX, previewOffsetY);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", end);
@@ -394,25 +530,117 @@
     window.addEventListener("pointerup", end);
     window.addEventListener("pointercancel", end);
   }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (!interactive) return;
+    if (event.key === "Home") {
+      event.preventDefault();
+      onResetPosition();
+      previewOffsetX = 0;
+      previewOffsetY = 0;
+      positionAnnouncement = t("media.subtitles.positionReset");
+      return;
+    }
+    let dx = 0;
+    let dy = 0;
+    if (event.key === "ArrowLeft") dx = -1;
+    else if (event.key === "ArrowRight") dx = 1;
+    else if (event.key === "ArrowUp") dy = -1;
+    else if (event.key === "ArrowDown") dy = 1;
+    else return;
+    event.preventDefault();
+    const step = event.shiftKey ? 5 : 1;
+    const nextX = clamp(offsetX + dx * step, -OFFSET_LIMIT, OFFSET_LIMIT);
+    const nextY = clamp(offsetY + dy * step, -OFFSET_LIMIT, OFFSET_LIMIT);
+    onOffsetChange(nextX, nextY);
+    announcePosition(nextX, nextY);
+  }
 </script>
 
-{#if activeText && containerRect.width > 0 && containerRect.height > 0}
+{#if containerRect.width > 0 && containerRect.height > 0 && (activeTextCues.length > 0 || activeBitmapCues.length > 0)}
   <div
     class="subtitle-overlay"
     style="left: {containerRect.left}px; top: {containerRect.top}px; width: {containerRect.width}px; height: {containerRect.height}px;"
   >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="subtitle-block"
-      class:draggable={interactive}
-      class:dragging
-      style="left: {x}%; top: {displayY}%; font-size: {fontSize}px;"
-      onpointerdown={startDrag}
-      onpointerenter={handleBlockEnter}
-      onpointerleave={handleBlockLeave}
-      onmousedown={(e) => e.stopPropagation()}
-    >
-      {activeText}
-    </div>
+    {#each activeBitmapCues as cue, cueIndex (cueIndex)}
+      {#each cue.images as image (image.path)}
+        <button
+          type="button"
+          class="subtitle-image"
+          class:draggable={interactive}
+          style={imageStyle(image)}
+          tabindex={interactive ? 0 : -1}
+          aria-label={t("media.subtitles.positionAria")}
+          onpointerdown={startDrag}
+          onmousedown={(event) => event.stopPropagation()}
+          onclick={(event) => event.stopPropagation()}
+          onkeydown={handleKeyDown}
+        >
+          <img
+            class="subtitle-image-frame"
+            src={imageSrc(image.path)}
+            alt=""
+            draggable="false"
+          />
+        </button>
+      {/each}
+    {/each}
+
+    {#if plainLines.length > 0}
+      <div
+        class="subtitle-block"
+        class:draggable={interactive}
+        class:dragging
+        style={plainStyle(null)}
+        tabindex={interactive ? 0 : -1}
+        role="button"
+        aria-label={t("media.subtitles.positionAria")}
+        onpointerdown={startDrag}
+        onpointerenter={handleBlockEnter}
+        onpointerleave={handleBlockLeave}
+        onkeydown={handleKeyDown}
+        onmousedown={(event) => event.stopPropagation()}
+        onclick={(event) => event.stopPropagation()}
+      >
+        {#each plainLines as line}
+          <div class="subtitle-line">
+            {#each line as run}
+              <span style={runStyle(run)}>{run.text}</span>
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    {#each positionedTextCues as cue, index (index)}
+      <div
+        class="subtitle-block ass"
+        class:draggable={interactive}
+        class:dragging
+        style="{anchorStyle(cue)} background:{blockBackground(cue)};"
+        tabindex={interactive ? 0 : -1}
+        role="button"
+        aria-label={t("media.subtitles.positionAria")}
+        onpointerdown={startDrag}
+        onkeydown={handleKeyDown}
+        onmousedown={(event) => event.stopPropagation()}
+        onclick={(event) => event.stopPropagation()}
+      >
+        {#each cue.lines as line}
+          <div class="subtitle-line">
+            {#each line as run}
+              <span style={runStyle(run)}>{run.text}</span>
+            {/each}
+          </div>
+        {/each}
+      </div>
+    {/each}
   </div>
 {/if}
+
+<div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+  {liveText}
+</div>
+<div class="sr-only" role="status" aria-live="polite">
+  {positionAnnouncement}
+</div>

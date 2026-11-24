@@ -8,6 +8,7 @@ export interface FileMetadata {
   timestamp_data: string | null;
   clips_data: string | null;
   eq_data: string | null;
+  subtitle_data: string | null;
   cd_color: number | null;
   last_viewed: number | null;
   updated_at: number;
@@ -32,8 +33,14 @@ interface BatchEntry {
   timestamp_data: string | null;
   clips_data: string | null;
   eq_data: string | null;
+  subtitle_data: string | null;
   cd_color: number | null;
   last_viewed: number | null;
+}
+
+export interface SubtitlePosition {
+  x: number;
+  y: number;
 }
 
 const metaCache = new Map<string, FileMetadata>();
@@ -138,6 +145,7 @@ async function saveMeta(
     timestamp_data: string | null;
     clips_data: string | null;
     eq_data: string | null;
+    subtitle_data: string | null;
     cd_color: number | null;
     last_viewed: number | null;
   }>,
@@ -153,6 +161,8 @@ async function saveMeta(
         "timestamp_data" in fields ? (fields.timestamp_data ?? null) : null,
       clipsData: "clips_data" in fields ? (fields.clips_data ?? null) : null,
       eqData: "eq_data" in fields ? (fields.eq_data ?? null) : null,
+      subtitleData:
+        "subtitle_data" in fields ? (fields.subtitle_data ?? null) : null,
       cdColor: "cd_color" in fields ? (fields.cd_color ?? null) : null,
       lastViewed: "last_viewed" in fields ? (fields.last_viewed ?? null) : null,
     });
@@ -163,6 +173,7 @@ async function saveMeta(
 
 async function clearField(path: string, field: string): Promise<void> {
   if (!path) return;
+  invalidateMetaCache(path);
   try {
     await invoke("db_clear_file_metadata_field", { path, field });
   } catch (e) {
@@ -273,6 +284,50 @@ export async function saveResumePoint(
 
 export async function deleteResumePoint(filePath: string): Promise<void> {
   await clearField(filePath, "last_position");
+}
+
+// Subtitle position (percentage offset from the default block position)
+
+export async function loadSubtitlePosition(
+  filePath: string,
+): Promise<SubtitlePosition | null> {
+  if (!filePath) return null;
+  try {
+    const meta = await getMeta(filePath);
+    if (!meta?.subtitle_data) return null;
+    const parsed = JSON.parse(meta.subtitle_data) as Partial<SubtitlePosition>;
+    if (
+      typeof parsed.x !== "number" ||
+      !Number.isFinite(parsed.x) ||
+      typeof parsed.y !== "number" ||
+      !Number.isFinite(parsed.y)
+    ) {
+      return null;
+    }
+    return {
+      x: Math.min(50, Math.max(-50, parsed.x)),
+      y: Math.min(50, Math.max(-50, parsed.y)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSubtitlePosition(
+  filePath: string,
+  x: number,
+  y: number,
+): Promise<void> {
+  if (!filePath) return;
+  const position: SubtitlePosition = {
+    x: Math.min(50, Math.max(-50, x)),
+    y: Math.min(50, Math.max(-50, y)),
+  };
+  await saveMeta(filePath, { subtitle_data: JSON.stringify(position) });
+}
+
+export async function clearSubtitlePosition(filePath: string): Promise<void> {
+  await clearField(filePath, "subtitle_data");
 }
 
 // Path migration after rename/move
@@ -398,6 +453,7 @@ export async function migrateFromLocalStorage(): Promise<void> {
       timestamp_data: null,
       clips_data: null,
       eq_data: null,
+      subtitle_data: null,
       cd_color: null,
       last_viewed: null,
     };

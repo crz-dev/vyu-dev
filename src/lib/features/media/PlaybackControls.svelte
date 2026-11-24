@@ -1042,11 +1042,17 @@
             catalogLoading={tracks.loadingTracks}
             error={tracks.subtitleError || tracks.trackError}
             delayMs={tracks.subtitleDelayMs}
-            size={tracks.subtitleSize}
+            subtitleStyle={tracks.subtitleStyle}
             onSelect={tracks.selectSubtitle}
             {onLoadSubtitle}
             onAdjustDelay={tracks.adjustSubtitleDelay}
             onSetSize={tracks.setSubtitleSize}
+            onSetPreset={tracks.setSubtitlePreset}
+            onSetFont={tracks.setSubtitleFont}
+            onSetColor={tracks.setSubtitleColor}
+            onSetOutline={tracks.setSubtitleOutline}
+            onSetBackground={tracks.setSubtitleBackground}
+            onResetPosition={tracks.resetSubtitlePosition}
           />
         </div>
       {/if}
@@ -1719,11 +1725,17 @@
           catalogLoading={tracks.loadingTracks}
           error={tracks.subtitleError || tracks.trackError}
           delayMs={tracks.subtitleDelayMs}
-          size={tracks.subtitleSize}
+          subtitleStyle={tracks.subtitleStyle}
           onSelect={tracks.selectSubtitle}
           {onLoadSubtitle}
           onAdjustDelay={tracks.adjustSubtitleDelay}
           onSetSize={tracks.setSubtitleSize}
+          onSetPreset={tracks.setSubtitlePreset}
+          onSetFont={tracks.setSubtitleFont}
+          onSetColor={tracks.setSubtitleColor}
+          onSetOutline={tracks.setSubtitleOutline}
+          onSetBackground={tracks.setSubtitleBackground}
+          onResetPosition={tracks.resetSubtitlePosition}
         />
       </div>
     {/if}

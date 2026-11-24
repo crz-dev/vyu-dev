@@ -34,15 +34,25 @@ pub(crate) fn pin_display_cache_file(path: &Path) {
 }
 
 pub(crate) fn unpin_display_cache_file(path: &Path) {
-    if let Ok(mut files) = pinned_display_files().lock() {
-        files.remove(path);
+    unpin_display_cache_files(&[path.to_path_buf()]);
+}
+
+pub(crate) fn unpin_display_cache_files(paths: &[PathBuf]) {
+    if paths.is_empty() {
+        return;
     }
-    if let Some(parent) = path.parent() {
-        let size = compute_display_cache_size(parent);
-        DISPLAY_CACHE_USED.store(size, Ordering::Relaxed);
-        if size > DISPLAY_CACHE_MAX {
-            try_evict_display_cache(parent);
+    if let Ok(mut files) = pinned_display_files().lock() {
+        for path in paths {
+            files.remove(path);
         }
+    }
+    let Some(parent) = paths.first().and_then(|path| path.parent()) else {
+        return;
+    };
+    let size = compute_display_cache_size(parent);
+    DISPLAY_CACHE_USED.store(size, Ordering::Relaxed);
+    if size > DISPLAY_CACHE_MAX {
+        try_evict_display_cache(parent);
     }
 }
 
@@ -116,7 +126,7 @@ fn compute_display_cache_size(cache_dir: &Path) -> u64 {
             .extension()
             .map(|e| e.to_os_string())
             .unwrap_or_default();
-        if ext == "jpg" || ext == "mp4" || ext == "webm" || ext == "png" || ext == "vtt" {
+        if ext == "jpg" || ext == "mp4" || ext == "webm" || ext == "png" || ext == "vtt" || ext == "json" {
             total += entry.metadata().map(|m| m.len()).unwrap_or(0);
         }
     }
@@ -136,7 +146,7 @@ fn try_evict_display_cache(cache_dir: &Path) {
     for entry in entries.flatten() {
         let p = entry.path();
         let ext = p.extension().map(|e| e.to_os_string()).unwrap_or_default();
-        if ext == "jpg" || ext == "mp4" || ext == "webm" || ext == "png" || ext == "vtt" {
+        if ext == "jpg" || ext == "mp4" || ext == "webm" || ext == "png" || ext == "vtt" || ext == "json" {
             if let Ok(meta) = entry.metadata() {
                 total += meta.len();
                 if !pinned.contains(&p) {

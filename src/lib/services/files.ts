@@ -223,12 +223,17 @@ export async function findSubtitleSidecars(
   const mediaStem = fileName.slice(0, lastDot).toLowerCase();
   const entries = await readDir(folder);
   const sep = detectSep(folder);
+  const names = new Set(
+    entries
+      .filter((entry) => !entry.isDirectory && entry.name)
+      .map((entry) => entry.name!.toLowerCase()),
+  );
   return entries
     .flatMap((entry) => {
       const name = entry.name;
       if (!name || entry.isDirectory) return [];
       const ext = getFileExt(name);
-      if (ext !== "srt" && ext !== "vtt") return [];
+      if (!["srt", "vtt", "ass", "ssa", "sup", "idx"].includes(ext)) return [];
       const subtitleStem = name.slice(0, name.lastIndexOf("."));
       const normalizedStem = subtitleStem.toLowerCase();
       if (
@@ -237,7 +242,14 @@ export async function findSubtitleSidecars(
       ) {
         return [];
       }
-      return [{ path: `${folder}${sep}${name}`, name }];
+      if (ext === "idx" && !names.has(`${normalizedStem}.sub`)) return [];
+      return [
+        {
+          path: `${folder}${sep}${name}`,
+          name,
+          bitmap: ext === "sup" || ext === "idx",
+        },
+      ];
     })
     .sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
