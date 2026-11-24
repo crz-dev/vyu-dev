@@ -123,6 +123,8 @@
   "dialog.share.confirm.browserTitle": "Открыть в браузере",
   "dialog.share.confirm.desktopBody": "Будет создан ярлык этого файла на рабочем столе.",
   "dialog.share.confirm.desktopTitle": "Создать ярлык на рабочем столе",
+  "dialog.share.confirm.gifLimitBody": "Это видео длиннее 30 секунд. В GIF будут преобразованы только первые 30 секунд.",
+  "dialog.share.confirm.gifLimitTitle": "Ограничение длительности GIF",
   "dialog.share.confirm.lockScreenBody": "Это заменит текущий экран блокировки.",
   "dialog.share.confirm.lockScreenTitle": "Сделать экраном блокировки",
   "dialog.share.confirm.lockScreenVideoBody": "Текущий кадр видео заменит экран блокировки.",

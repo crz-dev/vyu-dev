@@ -93,6 +93,11 @@ export const CD_COLORS = [
   "var(--text-primary)",
 ];
 
+// ── Conversion limits ──
+
+// GIF exports stop after this many seconds; the backend trims at the same value.
+export const GIF_MAX_DURATION_SECONDS = 30;
+
 // ── Browser-unsupported formats ──
 
 export const BROWSER_UNSUPPORTED_IMAGE_EXTS = new Set([

@@ -120,6 +120,8 @@
   "dialog.share.confirm.browserTitle": "브라우저에서 열기",
   "dialog.share.confirm.desktopBody": "이 파일의 바로 가기를 바탕 화면에 만듭니다.",
   "dialog.share.confirm.desktopTitle": "바탕 화면 바로 가기 만들기",
+  "dialog.share.confirm.gifLimitBody": "이 동영상은 30초를 초과합니다. 처음 30초만 GIF로 변환됩니다.",
+  "dialog.share.confirm.gifLimitTitle": "GIF 길이 제한",
   "dialog.share.confirm.lockScreenBody": "현재 잠금 화면을 바꾸고 이를 잠금 화면으로 설정합니다.",
   "dialog.share.confirm.lockScreenTitle": "잠금 화면으로 설정",
   "dialog.share.confirm.lockScreenVideoBody": "현재 잠금 화면을 바꾸고 현재 동영상 프레임을 잠금 화면으로 설정합니다.",

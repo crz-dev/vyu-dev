@@ -121,6 +121,8 @@
   "dialog.share.confirm.browserTitle": "Tarayıcıda aç",
   "dialog.share.confirm.desktopBody": "Bu dosya için masaüstünde kısayol oluşturulacak.",
   "dialog.share.confirm.desktopTitle": "Masaüstü kısayolu oluştur",
+  "dialog.share.confirm.gifLimitBody": "Bu video 30 saniyeden uzun. Yalnızca ilk 30 saniye GIF'e dönüştürülecek.",
+  "dialog.share.confirm.gifLimitTitle": "GIF süre sınırı",
   "dialog.share.confirm.lockScreenBody": "Bu, kilit ekranınızı değiştirerek bunu ayarlar.",
   "dialog.share.confirm.lockScreenTitle": "Kilit ekranı olarak ayarla",
   "dialog.share.confirm.lockScreenVideoBody": "Mevcut video karesi kilit ekranınızı değiştirerek ayarlanır.",

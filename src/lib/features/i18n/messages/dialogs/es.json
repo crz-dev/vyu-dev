@@ -121,6 +121,8 @@
   "dialog.share.confirm.browserTitle": "Abrir en el navegador",
   "dialog.share.confirm.desktopBody": "Esto creará un acceso directo a este archivo en el escritorio.",
   "dialog.share.confirm.desktopTitle": "Crear acceso directo",
+  "dialog.share.confirm.gifLimitBody": "Este video dura más de 30 segundos. Solo los primeros 30 segundos se convertirán a GIF.",
+  "dialog.share.confirm.gifLimitTitle": "Límite de duración del GIF",
   "dialog.share.confirm.lockScreenBody": "Esto lo establecerá como pantalla de bloqueo, reemplazando la actual.",
   "dialog.share.confirm.lockScreenTitle": "Establecer pantalla de bloqueo",
   "dialog.share.confirm.lockScreenVideoBody": "Esto establecerá el fotograma actual como pantalla de bloqueo, reemplazando la actual.",

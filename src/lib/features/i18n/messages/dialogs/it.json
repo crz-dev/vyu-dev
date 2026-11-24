@@ -121,6 +121,8 @@
   "dialog.share.confirm.browserTitle": "Apri nel browser",
   "dialog.share.confirm.desktopBody": "Creerà un collegamento a questo file sul desktop.",
   "dialog.share.confirm.desktopTitle": "Crea collegamento sul desktop",
+  "dialog.share.confirm.gifLimitBody": "Questo video dura più di 30 secondi. Verranno convertiti in GIF solo i primi 30 secondi.",
+  "dialog.share.confirm.gifLimitTitle": "Limite di durata GIF",
   "dialog.share.confirm.lockScreenBody": "Imposterà questo elemento come schermata di blocco, sostituendo quella attuale.",
   "dialog.share.confirm.lockScreenTitle": "Imposta schermata di blocco",
   "dialog.share.confirm.lockScreenVideoBody": "Imposterà il fotogramma video corrente come schermata di blocco, sostituendo quella attuale.",

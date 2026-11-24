@@ -120,6 +120,8 @@
   "dialog.share.confirm.browserTitle": "在浏览器中打开",
   "dialog.share.confirm.desktopBody": "这将在桌面上创建此文件的快捷方式。",
   "dialog.share.confirm.desktopTitle": "创建桌面快捷方式",
+  "dialog.share.confirm.gifLimitBody": "此视频超过 30 秒。仅前 30 秒会转换为 GIF。",
+  "dialog.share.confirm.gifLimitTitle": "GIF 时长限制",
   "dialog.share.confirm.lockScreenBody": "这将把它设为锁屏，替换当前锁屏。",
   "dialog.share.confirm.lockScreenTitle": "设为锁屏",
   "dialog.share.confirm.lockScreenVideoBody": "这将把当前视频帧设为锁屏，替换当前锁屏。",

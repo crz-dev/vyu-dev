@@ -120,6 +120,8 @@
   "dialog.share.confirm.browserTitle": "ブラウザで開く",
   "dialog.share.confirm.desktopBody": "このファイルへのショートカットをデスクトップに作成します。",
   "dialog.share.confirm.desktopTitle": "デスクトップにショートカットを作成",
+  "dialog.share.confirm.gifLimitBody": "この動画は30秒を超えています。最初の30秒だけがGIFに変換されます。",
+  "dialog.share.confirm.gifLimitTitle": "GIF の長さ制限",
   "dialog.share.confirm.lockScreenBody": "現在のロック画面を置き換えて、これをロック画面に設定します。",
   "dialog.share.confirm.lockScreenTitle": "ロック画面に設定",
   "dialog.share.confirm.lockScreenVideoBody": "現在のロック画面を置き換えて、現在の動画フレームをロック画面に設定します。",

@@ -121,6 +121,8 @@
   "dialog.share.confirm.browserTitle": "Open in browser",
   "dialog.share.confirm.desktopBody": "This will create a shortcut to this file on your desktop.",
   "dialog.share.confirm.desktopTitle": "Create desktop shortcut",
+  "dialog.share.confirm.gifLimitBody": "This video is longer than 30 seconds. Only the first 30 seconds will be converted to GIF.",
+  "dialog.share.confirm.gifLimitTitle": "GIF duration limit",
   "dialog.share.confirm.lockScreenBody": "This will set this as your lock screen, replacing the current one.",
   "dialog.share.confirm.lockScreenTitle": "Set lock screen",
   "dialog.share.confirm.lockScreenVideoBody": "This will set the current video frame as your lock screen, replacing the current one.",

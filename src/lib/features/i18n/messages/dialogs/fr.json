@@ -122,6 +122,8 @@
   "dialog.share.confirm.browserTitle": "Ouvrir dans le navigateur",
   "dialog.share.confirm.desktopBody": "Cela créera un raccourci vers ce fichier sur le bureau.",
   "dialog.share.confirm.desktopTitle": "Créer un raccourci bureau",
+  "dialog.share.confirm.gifLimitBody": "Cette vidéo dure plus de 30 secondes. Seules les 30 premières secondes seront converties en GIF.",
+  "dialog.share.confirm.gifLimitTitle": "Limite de durée du GIF",
   "dialog.share.confirm.lockScreenBody": "Cela définira cet élément comme écran de verrouillage, en remplaçant l’actuel.",
   "dialog.share.confirm.lockScreenTitle": "Définir l’écran de verrouillage",
   "dialog.share.confirm.lockScreenVideoBody": "Cela définira l’image actuelle de la vidéo comme écran de verrouillage, en remplaçant l’actuel.",

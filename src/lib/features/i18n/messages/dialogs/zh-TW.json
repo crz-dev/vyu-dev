@@ -120,6 +120,8 @@
   "dialog.share.confirm.browserTitle": "在瀏覽器中開啟",
   "dialog.share.confirm.desktopBody": "這將在桌面上建立此檔案的捷徑。",
   "dialog.share.confirm.desktopTitle": "建立桌面捷徑",
+  "dialog.share.confirm.gifLimitBody": "此影片超過 30 秒。僅前 30 秒會轉換為 GIF。",
+  "dialog.share.confirm.gifLimitTitle": "GIF 時長限制",
   "dialog.share.confirm.lockScreenBody": "這將把它設為鎖定畫面，取代目前的鎖定畫面。",
   "dialog.share.confirm.lockScreenTitle": "設為鎖定畫面",
   "dialog.share.confirm.lockScreenVideoBody": "這將把目前影片影格設為鎖定畫面，取代目前的鎖定畫面。",

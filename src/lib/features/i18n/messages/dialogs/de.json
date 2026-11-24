@@ -121,6 +121,8 @@
   "dialog.share.confirm.browserTitle": "Im Browser öffnen",
   "dialog.share.confirm.desktopBody": "Dies erstellt eine Verknüpfung zu dieser Datei auf dem Desktop.",
   "dialog.share.confirm.desktopTitle": "Desktop-Verknüpfung erstellen",
+  "dialog.share.confirm.gifLimitBody": "Dieses Video ist länger als 30 Sekunden. Nur die ersten 30 Sekunden werden in ein GIF umgewandelt.",
+  "dialog.share.confirm.gifLimitTitle": "GIF-Dauerlimit",
   "dialog.share.confirm.lockScreenBody": "Dies legt dies als Sperrbildschirm fest und ersetzt den aktuellen.",
   "dialog.share.confirm.lockScreenTitle": "Sperrbildschirm festlegen",
   "dialog.share.confirm.lockScreenVideoBody": "Dies legt das aktuelle Videobild als Sperrbildschirm fest und ersetzt den aktuellen.",

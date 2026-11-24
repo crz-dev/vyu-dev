@@ -50,6 +50,7 @@
   import {
     BROWSER_UNSUPPORTED_IMAGE_EXTS,
     BROWSER_UNSUPPORTED_VIDEO_EXTS,
+    GIF_MAX_DURATION_SECONDS,
   } from "$lib/shared/constants";
   import { locale } from "$lib/features/i18n/locale.svelte";
 
@@ -373,7 +374,12 @@
       // Preserving the source timestamp is best-effort.
     }
   }
-  type ShareConfirmKind = "browser" | "wallpaper" | "lockScreen" | "desktop";
+  type ShareConfirmKind =
+    | "browser"
+    | "wallpaper"
+    | "lockScreen"
+    | "desktop"
+    | "gifLimit";
 
   let shareConverting = $state(false);
   let convertingFormat = $state<string | undefined>(undefined);
@@ -381,6 +387,7 @@
   let shareConfirm = $state<ShareConfirmKind | null>(null);
   let shareConfirmTime = $state(0);
   let shareConfirmBrowserFormat = $state<"WebP" | "WebM" | null>(null);
+  let pendingGifSave: (() => Promise<void>) | null = null;
   const shareConfirmTitle = $derived(
     shareConfirm === "browser"
       ? t("dialogs.dialog.share.confirm.browserTitle")
@@ -390,7 +397,9 @@
           ? t("dialogs.dialog.share.confirm.lockScreenTitle")
           : shareConfirm === "desktop"
             ? t("dialogs.dialog.share.confirm.desktopTitle")
-            : "",
+            : shareConfirm === "gifLimit"
+              ? t("dialogs.dialog.share.confirm.gifLimitTitle")
+              : "",
   );
   const shareConfirmBody = $derived(
     shareConfirm === "browser"
@@ -411,7 +420,9 @@
             )
           : shareConfirm === "desktop"
             ? t("dialogs.dialog.share.confirm.desktopBody")
-            : "",
+            : shareConfirm === "gifLimit"
+              ? t("dialogs.dialog.share.confirm.gifLimitBody")
+              : "",
   );
   let contextMenuElement = $state<HTMLDivElement | null>(null);
 
@@ -436,6 +447,7 @@
       hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
       shareConfirm = null;
       shareConfirmBrowserFormat = null;
+      pendingGifSave = null;
       shareConverting = false;
       convertingFormat = undefined;
       convertProgress = 0;
@@ -621,6 +633,22 @@
     requestShareConfirm("browser");
   }
 
+  function videoDurationSeconds(): number {
+    const duration = getMediaEl()?.duration;
+    return typeof duration === "number" && Number.isFinite(duration)
+      ? duration
+      : 0;
+  }
+
+  function videoExceedsGifLimit(): boolean {
+    return isVideo && videoDurationSeconds() > GIF_MAX_DURATION_SECONDS;
+  }
+
+  function dismissShareConfirm() {
+    shareConfirm = null;
+    pendingGifSave = null;
+  }
+
   function requestShareConfirm(kind: ShareConfirmKind) {
     hideFloatingTooltip("share-dest-tooltip");
     hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
@@ -632,7 +660,11 @@
     const kind = shareConfirm;
     if (!kind) return;
     shareConfirm = null;
-    if (kind === "browser") {
+    if (kind === "gifLimit") {
+      const pending = pendingGifSave;
+      pendingGifSave = null;
+      if (pending) await pending();
+    } else if (kind === "browser") {
       await openInBrowserDirect();
     } else if (kind === "wallpaper") {
       await setShareWallpaper();
@@ -723,8 +755,15 @@
     revealDir: string;
     format: string;
     outputPath?: string;
+    skipGifLimitWarning?: boolean;
   }) {
-    const { outputDir, revealDir, format, outputPath } = opts;
+    const { outputDir, revealDir, format, outputPath, skipGifLimitWarning } =
+      opts;
+    if (!skipGifLimitWarning && format === "gif" && videoExceedsGifLimit()) {
+      pendingGifSave = () => runSaveAs({ ...opts, skipGifLimitWarning: true });
+      requestShareConfirm("gifLimit");
+      return;
+    }
     const modifiedMs = await sourceModifiedMs();
     shareConverting = true;
     let success = false;
@@ -3638,7 +3677,7 @@
       out:fade={{ duration: overlayFadeMs }}
       role="presentation"
       onmousedown={(e) => {
-        if (e.target === e.currentTarget) shareConfirm = null;
+        if (e.target === e.currentTarget) dismissShareConfirm();
       }}
     >
       <div
@@ -3672,7 +3711,7 @@
           </div>
           <button
             class="edit-confirm-header-close"
-            onclick={() => (shareConfirm = null)}
+            onclick={dismissShareConfirm}
             aria-label={t("common.close")}
           >
             <svg
@@ -3690,7 +3729,7 @@
         </div>
         <div class="edit-confirm-body-box">{shareConfirmBody}</div>
         <div class="edit-confirm-actions edit-confirm-actions-horizontal">
-          <button class="delete-cancel" onclick={() => (shareConfirm = null)}
+          <button class="delete-cancel" onclick={dismissShareConfirm}
             >{t("common.cancel")}</button
           >
           <button class="edit-confirm-btn-primary" onclick={runShareConfirm}

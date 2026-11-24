@@ -121,6 +121,8 @@
   "dialog.share.confirm.browserTitle": "Abrir no navegador",
   "dialog.share.confirm.desktopBody": "Isso criará um atalho para este arquivo na área de trabalho.",
   "dialog.share.confirm.desktopTitle": "Criar atalho na área de trabalho",
+  "dialog.share.confirm.gifLimitBody": "Este vídeo tem mais de 30 segundos. Apenas os primeiros 30 segundos serão convertidos em GIF.",
+  "dialog.share.confirm.gifLimitTitle": "Limite de duração do GIF",
   "dialog.share.confirm.lockScreenBody": "Isso definirá isto como tela de bloqueio, substituindo a atual.",
   "dialog.share.confirm.lockScreenTitle": "Definir tela de bloqueio",
   "dialog.share.confirm.lockScreenVideoBody": "Isso definirá o quadro atual do vídeo como tela de bloqueio, substituindo a atual.",

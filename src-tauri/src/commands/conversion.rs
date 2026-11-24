@@ -202,9 +202,12 @@ fn build_convert_args(
         "-hide_banner".into(),
         "-loglevel".into(),
         "error".into(),
-        "-i".into(),
-        input.to_string_lossy().to_string(),
     ];
+    if ext == "gif" {
+        // Limit decoding so palettegen does not buffer frames past the GIF cap.
+        args.extend(["-t".into(), "30".into()]);
+    }
+    args.extend(["-i".into(), input.to_string_lossy().to_string()]);
     let bitrate = format!("{audio_bitrate}k");
     let (_, crf) = preset_values(preset);
 
@@ -241,9 +244,10 @@ fn build_convert_args(
             ]);
         }
         "gif" => {
+            // GIF exports are capped at 30 seconds, 15 FPS, and 720p (no upscaling).
             args.extend([
                 "-vf".into(),
-                "fps=30,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into(),
+                "fps=15,scale=w='min(1280,iw)':h='min(720,ih)':force_original_aspect_ratio=decrease:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=bayer".into(),
                 "-loop".into(),
                 "0".into(),
             ]);
@@ -926,5 +930,29 @@ pub async fn open_in_browser(path: String) -> Result<(), String> {
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     {
         return Err("Opening in browser is not supported on this platform.".into());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_convert_args;
+    use std::path::Path;
+
+    #[test]
+    fn gif_conversion_is_capped_at_30s_15fps_720p() {
+        let args = build_convert_args(
+            Path::new("input.mp4"),
+            Path::new("output.gif"),
+            "gif",
+            "Balanced",
+            192,
+            false,
+            "libx264",
+        );
+        let joined = args.join(" ");
+        assert!(joined.contains("-t 30"));
+        assert!(joined.contains("fps=15"));
+        assert!(joined.contains("min(1280,iw)"));
+        assert!(joined.contains("min(720,ih)"));
     }
 }
