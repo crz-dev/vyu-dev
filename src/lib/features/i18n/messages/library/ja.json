@@ -12,7 +12,7 @@
   "context.removeCollection": "コレクションを削除",
   "context.removeFromQueue": "キューから削除",
   "context.rename": "名前を変更",
-  "context.showInExplorer": "エクスプローラーで表示",
+  "context.showInExplorer": "フォルダーで表示",
   "context.unfavorite": "お気に入りから外す",
   "context.unpin": "ピン留めを解除",
   "dialog.addCollection": "コレクションを追加",

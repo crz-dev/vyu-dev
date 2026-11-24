@@ -1555,7 +1555,9 @@
     box-shadow 0.16s ease;
 }
 .share-delete-toggle:hover {
-  color: var(--text-secondary);
+  color: var(--red-soft);
+  background: var(--red-bg-faint);
+  border-color: var(--red-border);
   transform: translateY(-1px);
 }
 .share-delete-toggle:active {

@@ -3568,7 +3568,7 @@
                 "share-dest-tooltip",
                 e.currentTarget.getBoundingClientRect(),
                 path
-                  ? `${t("dialogs.dialog.share.tooltip.outputFolder")} — ${path}`
+                  ? t("dialogs.dialog.share.tooltip.savedTo", { path })
                   : t("dialogs.dialog.share.tooltip.outputFolder"),
                 "above",
               );

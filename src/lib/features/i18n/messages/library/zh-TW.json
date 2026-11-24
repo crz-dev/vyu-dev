@@ -12,7 +12,7 @@
   "context.removeCollection": "移除收藏集",
   "context.removeFromQueue": "從佇列中移除",
   "context.rename": "重新命名",
-  "context.showInExplorer": "在檔案總管中顯示",
+  "context.showInExplorer": "在資料夾中顯示",
   "context.unfavorite": "取消我的最愛",
   "context.unpin": "取消釘選",
   "dialog.addCollection": "新增收藏集",
