@@ -127,7 +127,6 @@
   "subtitles.font": "Fonte",
   "subtitles.fontSystem": "Sistema",
   "subtitles.heading": "Legendas",
-  "subtitles.highContrast": "Alto contraste",
   "subtitles.image": "Imagem",
   "subtitles.loadError": "Não foi possível carregar as legendas: {error}",
   "subtitles.nearby": "Arquivos próximos",
@@ -159,7 +158,6 @@
   "subtitles.timing": "Sincronia",
   "subtitles.timingAria": "Sincronia das legendas",
   "subtitles.unavailable": "Legendas de imagem indisponíveis",
-  "subtitles.yellow": "Amarelo",
   "timer.elapsed": "Decorrido",
   "timer.remaining": "Restante",
   "track.next": "Faixa seguinte",
@@ -213,5 +211,9 @@
   "waveform.seek": "Navegar no áudio",
   "waveform.timestampAria": "marcador em {time}",
   "waveform.timestampTitledAria": "marcador {title} em {time}",
-  "subtitles.preview": "Prévia das legendas"
+  "subtitles.preview": "Prévia das legendas",
+  "subtitles.colorSwatch": "Cor {index}",
+  "subtitles.customColor": "Cor personalizada {index}",
+  "subtitles.modeDefault": "Padrão",
+  "subtitles.modeCustom": "Personalizado"
 }

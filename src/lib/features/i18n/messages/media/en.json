@@ -127,7 +127,6 @@
   "subtitles.font": "Font",
   "subtitles.fontSystem": "System",
   "subtitles.heading": "Subtitles",
-  "subtitles.highContrast": "High contrast",
   "subtitles.image": "Image",
   "subtitles.loadError": "Could not load subtitles: {error}",
   "subtitles.nearby": "Nearby files",
@@ -159,7 +158,6 @@
   "subtitles.timing": "Timing",
   "subtitles.timingAria": "Subtitle timing",
   "subtitles.unavailable": "Image subtitles unavailable",
-  "subtitles.yellow": "Yellow",
   "timer.elapsed": "Elapsed",
   "timer.remaining": "Remaining",
   "track.next": "Next track",
@@ -213,5 +211,9 @@
   "waveform.seek": "Seek audio",
   "waveform.timestampAria": "timestamp {time}",
   "waveform.timestampTitledAria": "timestamp {title} at {time}",
-  "subtitles.preview": "Subtitle preview"
+  "subtitles.preview": "Subtitle preview",
+  "subtitles.colorSwatch": "Color {index}",
+  "subtitles.customColor": "Custom color {index}",
+  "subtitles.modeDefault": "Default",
+  "subtitles.modeCustom": "Custom"
 }

@@ -106,7 +106,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - The up-next queue stores absolute paths and is restored from `vyu-queue` on launch; every mutation rewrites the stored list.
 - `.m3u`/`.m3u8`/`.pls` files open into the queue: relative entries resolve against the playlist folder, unsupported and remote entries are ignored, and opening replaces Up Next. Saved playlists contain absolute paths and reuse `write_file_atomic`.
 - Global marker clears update the database and the in-memory timestamp/clip stores.
-- Subtitle appearance is a global `vyu-subtitle-style` setting; the dragged subtitle offset is per-file metadata, not localStorage.
+- Subtitle appearance and saved custom text colors are global `vyu-subtitle-style`/`vyu-subtitle-custom-colors` settings; the dragged subtitle offset is per-file metadata, not localStorage.
 - Window state is not written while PiP is active; mini geometry must not replace normal bounds.
 - `--safe-mode` forces GPU acceleration on for recovery from a bad disabled-GPU startup.
 - Keybind conflicts are scoped to viewer/library/PDF. Escape, Backspace, and plain Delete are reserved (close/clear binding).

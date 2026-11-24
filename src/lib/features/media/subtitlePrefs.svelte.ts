@@ -1,4 +1,9 @@
-import { loadSubtitleStyle, saveSubtitleStyle } from "$lib/services/storage";
+import {
+  loadSubtitleCustomColors,
+  loadSubtitleStyle,
+  saveSubtitleCustomColors,
+  saveSubtitleStyle,
+} from "$lib/services/storage";
 import type {
   SubtitleBackground,
   SubtitleOutline,
@@ -48,6 +53,7 @@ const PRESET_VALUES: Record<
 
 function createSubtitlePrefs() {
   let style = $state<SubtitleStyleSettings>(loadSubtitleStyle());
+  let customColors = $state<string[]>(loadSubtitleCustomColors());
 
   function update(next: SubtitleStyleSettings) {
     style = next;
@@ -59,6 +65,14 @@ function createSubtitlePrefs() {
       ...style,
       ...PRESET_VALUES[preset],
       preset,
+    });
+  }
+
+  function setUseFileStyles(enabled: boolean) {
+    update({
+      ...style,
+      useFileStyles: enabled,
+      preset: enabled ? "fileStyles" : "custom",
     });
   }
 
@@ -82,6 +96,22 @@ function createSubtitlePrefs() {
     update({ ...style, preset: "custom", useFileStyles: false, background });
   }
 
+  function setCustomColor(index: number, color: string) {
+    if (index < 0 || index >= customColors.length) return;
+    const next = [...customColors];
+    next[index] = color;
+    customColors = next;
+    saveSubtitleCustomColors(next);
+    if (color) {
+      update({
+        ...style,
+        preset: "custom",
+        useFileStyles: false,
+        textColor: color,
+      });
+    }
+  }
+
   function enableCustom() {
     update({ ...style, preset: "custom", useFileStyles: false });
   }
@@ -90,12 +120,17 @@ function createSubtitlePrefs() {
     get settings() {
       return style;
     },
+    get customColors() {
+      return customColors;
+    },
     setPreset,
+    setUseFileStyles,
     setSize,
     setFontFamily,
     setTextColor,
     setOutline,
     setBackground,
+    setCustomColor,
     enableCustom,
   };
 }

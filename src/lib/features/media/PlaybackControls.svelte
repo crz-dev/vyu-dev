@@ -250,7 +250,8 @@
 
   function handleWindowMouseDown(e: MouseEvent) {
     if (!(e.target instanceof Element)) return;
-    if (e.target.closest(".track-control-anchor")) return;
+    if (e.target.closest(".track-control-anchor, .subtitle-select-menu"))
+      return;
     closeTrackMenus();
   }
 
@@ -1043,11 +1044,13 @@
             error={tracks.subtitleError || tracks.trackError}
             delayMs={tracks.subtitleDelayMs}
             subtitleStyle={tracks.subtitleStyle}
+            customColors={tracks.subtitleCustomColors}
             onSelect={tracks.selectSubtitle}
             {onLoadSubtitle}
             onAdjustDelay={tracks.adjustSubtitleDelay}
             onSetSize={tracks.setSubtitleSize}
-            onSetPreset={tracks.setSubtitlePreset}
+            onSetFileStyles={tracks.setSubtitleUseFileStyles}
+            onSetCustomColor={tracks.setSubtitleCustomColor}
             onSetFont={tracks.setSubtitleFont}
             onSetColor={tracks.setSubtitleColor}
             onSetOutline={tracks.setSubtitleOutline}
@@ -1726,11 +1729,13 @@
           error={tracks.subtitleError || tracks.trackError}
           delayMs={tracks.subtitleDelayMs}
           subtitleStyle={tracks.subtitleStyle}
+          customColors={tracks.subtitleCustomColors}
           onSelect={tracks.selectSubtitle}
           {onLoadSubtitle}
           onAdjustDelay={tracks.adjustSubtitleDelay}
           onSetSize={tracks.setSubtitleSize}
-          onSetPreset={tracks.setSubtitlePreset}
+          onSetFileStyles={tracks.setSubtitleUseFileStyles}
+          onSetCustomColor={tracks.setSubtitleCustomColor}
           onSetFont={tracks.setSubtitleFont}
           onSetColor={tracks.setSubtitleColor}
           onSetOutline={tracks.setSubtitleOutline}

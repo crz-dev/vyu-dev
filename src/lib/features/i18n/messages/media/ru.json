@@ -135,7 +135,6 @@
   "subtitles.font": "Шрифт",
   "subtitles.fontSystem": "Системный",
   "subtitles.heading": "Субтитры",
-  "subtitles.highContrast": "Высокая контрастность",
   "subtitles.image": "Изображение",
   "subtitles.loadError": "Не удалось загрузить субтитры: {error}",
   "subtitles.nearby": "Файлы рядом",
@@ -167,7 +166,6 @@
   "subtitles.timing": "Синхронизация",
   "subtitles.timingAria": "Синхронизация субтитров",
   "subtitles.unavailable": "Графические субтитры недоступны",
-  "subtitles.yellow": "Жёлтый",
   "timer.elapsed": "Прошло",
   "timer.remaining": "Осталось",
   "track.next": "Следующая дорожка",
@@ -223,5 +221,9 @@
   "waveform.seek": "Перемотка аудио",
   "waveform.timestampAria": "метка времени {time}",
   "waveform.timestampTitledAria": "метка времени {title} на {time}",
-  "subtitles.preview": "Предпросмотр субтитров"
+  "subtitles.preview": "Предпросмотр субтитров",
+  "subtitles.colorSwatch": "Цвет {index}",
+  "subtitles.customColor": "Пользовательский цвет {index}",
+  "subtitles.modeDefault": "По умолчанию",
+  "subtitles.modeCustom": "Пользовательский"
 }

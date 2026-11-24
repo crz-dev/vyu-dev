@@ -124,7 +124,6 @@
   "subtitles.font": "字体",
   "subtitles.fontSystem": "系统",
   "subtitles.heading": "字幕",
-  "subtitles.highContrast": "高对比度",
   "subtitles.image": "图像",
   "subtitles.loadError": "无法加载字幕：{error}",
   "subtitles.nearby": "附近文件",
@@ -156,7 +155,6 @@
   "subtitles.timing": "时间同步",
   "subtitles.timingAria": "字幕时间同步",
   "subtitles.unavailable": "图像字幕不可用",
-  "subtitles.yellow": "黄色",
   "timer.elapsed": "已用时间",
   "timer.remaining": "剩余时间",
   "track.next": "下一曲",
@@ -209,5 +207,9 @@
   "waveform.seek": "跳转音频",
   "waveform.timestampAria": "{time} 的时间戳",
   "waveform.timestampTitledAria": "{time} 的时间戳 {title}",
-  "subtitles.preview": "字幕预览"
+  "subtitles.preview": "字幕预览",
+  "subtitles.colorSwatch": "颜色 {index}",
+  "subtitles.customColor": "自定义颜色 {index}",
+  "subtitles.modeDefault": "默认",
+  "subtitles.modeCustom": "自定义"
 }

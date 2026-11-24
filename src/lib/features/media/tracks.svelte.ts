@@ -524,6 +524,14 @@ export function createTrackSelection(
     subtitlePrefs.setPreset(preset);
   }
 
+  function setSubtitleUseFileStyles(enabled: boolean) {
+    subtitlePrefs.setUseFileStyles(enabled);
+  }
+
+  function setSubtitleCustomColor(index: number, color: string) {
+    subtitlePrefs.setCustomColor(index, color);
+  }
+
   function setSubtitleSize(size: SubtitleSize) {
     subtitlePrefs.setSize(size);
   }
@@ -581,6 +589,9 @@ export function createTrackSelection(
     get subtitleStyle(): SubtitleStyleSettings {
       return subtitlePrefs.settings;
     },
+    get subtitleCustomColors() {
+      return subtitlePrefs.customColors;
+    },
     get loadingTracks() {
       return loadingTracks;
     },
@@ -607,6 +618,8 @@ export function createTrackSelection(
     setSubtitleOffset,
     resetSubtitlePosition,
     setSubtitlePreset,
+    setSubtitleUseFileStyles,
+    setSubtitleCustomColor,
     setSubtitleSize,
     setSubtitleFont,
     setSubtitleColor,

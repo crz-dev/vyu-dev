@@ -127,7 +127,6 @@
   "subtitles.font": "Yazı tipi",
   "subtitles.fontSystem": "Sistem",
   "subtitles.heading": "Altyazılar",
-  "subtitles.highContrast": "Yüksek kontrast",
   "subtitles.image": "Görüntü",
   "subtitles.loadError": "Altyazılar yüklenemedi: {error}",
   "subtitles.nearby": "Yakındaki dosyalar",
@@ -159,7 +158,6 @@
   "subtitles.timing": "Zamanlama",
   "subtitles.timingAria": "Altyazı zamanlaması",
   "subtitles.unavailable": "Görsel altyazıları kullanılamıyor",
-  "subtitles.yellow": "Sarı",
   "timer.elapsed": "Geçen süre",
   "timer.remaining": "Kalan",
   "track.next": "Sonraki parça",
@@ -213,5 +211,9 @@
   "waveform.seek": "Seste ilerle",
   "waveform.timestampAria": "zaman damgası {time}",
   "waveform.timestampTitledAria": "{time} konumunda {title} zaman damgası",
-  "subtitles.preview": "Altyazı önizlemesi"
+  "subtitles.preview": "Altyazı önizlemesi",
+  "subtitles.colorSwatch": "Renk {index}",
+  "subtitles.customColor": "Özel renk {index}",
+  "subtitles.modeDefault": "Varsayılan",
+  "subtitles.modeCustom": "Özel"
 }

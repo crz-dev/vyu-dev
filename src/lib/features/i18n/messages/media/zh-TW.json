@@ -124,7 +124,6 @@
   "subtitles.font": "字型",
   "subtitles.fontSystem": "系統",
   "subtitles.heading": "字幕",
-  "subtitles.highContrast": "高對比",
   "subtitles.image": "圖像",
   "subtitles.loadError": "無法載入字幕：{error}",
   "subtitles.nearby": "鄰近檔案",
@@ -156,7 +155,6 @@
   "subtitles.timing": "時間調整",
   "subtitles.timingAria": "字幕時間調整",
   "subtitles.unavailable": "不支援圖片字幕",
-  "subtitles.yellow": "黃色",
   "timer.elapsed": "已播放時間",
   "timer.remaining": "剩餘時間",
   "track.next": "下一首",
@@ -209,5 +207,9 @@
   "waveform.seek": "跳轉音訊",
   "waveform.timestampAria": "時間戳記 {time}",
   "waveform.timestampTitledAria": "時間戳記「{title}」：{time}",
-  "subtitles.preview": "字幕預覽"
+  "subtitles.preview": "字幕預覽",
+  "subtitles.colorSwatch": "顏色 {index}",
+  "subtitles.customColor": "自訂顏色 {index}",
+  "subtitles.modeDefault": "預設",
+  "subtitles.modeCustom": "自訂"
 }

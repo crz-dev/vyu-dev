@@ -127,7 +127,6 @@
   "subtitles.font": "Carattere",
   "subtitles.fontSystem": "Sistema",
   "subtitles.heading": "Sottotitoli",
-  "subtitles.highContrast": "Contrasto elevato",
   "subtitles.image": "Immagine",
   "subtitles.loadError": "Impossibile caricare i sottotitoli: {error}",
   "subtitles.nearby": "File nelle vicinanze",
@@ -159,7 +158,6 @@
   "subtitles.timing": "Sincronizzazione",
   "subtitles.timingAria": "Sincronizzazione sottotitoli",
   "subtitles.unavailable": "Sottotitoli immagine non disponibili",
-  "subtitles.yellow": "Giallo",
   "timer.elapsed": "Trascorso",
   "timer.remaining": "Rimanente",
   "track.next": "Traccia successiva",
@@ -213,5 +211,9 @@
   "waveform.seek": "Scorri audio",
   "waveform.timestampAria": "timestamp {time}",
   "waveform.timestampTitledAria": "timestamp {title} a {time}",
-  "subtitles.preview": "Anteprima sottotitoli"
+  "subtitles.preview": "Anteprima sottotitoli",
+  "subtitles.colorSwatch": "Colore {index}",
+  "subtitles.customColor": "Colore personalizzato {index}",
+  "subtitles.modeDefault": "Predefinito",
+  "subtitles.modeCustom": "Personalizzato"
 }

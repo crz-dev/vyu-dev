@@ -722,6 +722,31 @@ export function saveSubtitleStyle(style: SubtitleStyleSettings): void {
   localStorage.setItem("vyu-subtitle-style", JSON.stringify(style));
 }
 
+const SUBTITLE_CUSTOM_COLOR_SLOTS = 1;
+
+export function loadSubtitleCustomColors(): string[] {
+  const empty = Array<string>(SUBTITLE_CUSTOM_COLOR_SLOTS).fill("");
+  try {
+    const raw = localStorage.getItem("vyu-subtitle-custom-colors");
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return empty.map((_, i) =>
+        typeof parsed[i] === "string" && /^#[0-9a-f]{6}$/i.test(parsed[i])
+          ? parsed[i]
+          : "",
+      );
+    }
+  } catch (e) {
+    console.error("Failed to load subtitle custom colors:", e);
+  }
+  return empty;
+}
+
+export function saveSubtitleCustomColors(colors: string[]): void {
+  localStorage.setItem("vyu-subtitle-custom-colors", JSON.stringify(colors));
+}
+
 export function loadAutoplay(): boolean {
   return localStorage.getItem("vyu-autoplay") !== "false";
 }

@@ -1,13 +1,13 @@
 <script lang="ts">
   import Marquee from "$lib/components/Marquee.svelte";
-  import { slide } from "svelte/transition";
+  import { fly } from "svelte/transition";
   import { TS_DROP_ANIM_DELAYS_MS } from "$lib/features/menus/dropAnimations";
   import { menuOut } from "$lib/features/menus/menuTransition";
+  import SubtitleSelect from "$lib/features/media/SubtitleSelect.svelte";
   import type {
     MediaTrack,
     SubtitleBackground,
     SubtitleOutline,
-    SubtitlePreset,
     SubtitleSidecar,
     SubtitleSize,
     SubtitleStyleSettings,
@@ -27,11 +27,13 @@
     error,
     delayMs,
     subtitleStyle,
+    customColors,
     onSelect,
     onLoadSubtitle,
     onAdjustDelay,
     onSetSize,
-    onSetPreset,
+    onSetFileStyles,
+    onSetCustomColor,
     onSetFont,
     onSetColor,
     onSetOutline,
@@ -48,11 +50,13 @@
     error: string;
     delayMs: number;
     subtitleStyle: SubtitleStyleSettings;
+    customColors: string[];
     onSelect: (id: string) => Promise<void>;
     onLoadSubtitle: () => Promise<void>;
     onAdjustDelay: (deltaMs: number) => void;
     onSetSize: (size: SubtitleSize) => void;
-    onSetPreset: (preset: SubtitlePreset) => void;
+    onSetFileStyles: (enabled: boolean) => void;
+    onSetCustomColor: (index: number, color: string) => void;
     onSetFont: (font: string) => void;
     onSetColor: (color: string) => void;
     onSetOutline: (outline: SubtitleOutline) => void;
@@ -62,33 +66,69 @@
 
   let settingsPanel = $state<"timing" | "text" | "nearby" | null>(null);
   let pendingId = $state<string | null>(null);
+  let panelMeasureEl = $state<HTMLDivElement | null>(null);
+  let panelHeight = $state(0);
+  let panelObserver: ResizeObserver | null = null;
 
   const SIZE_STEPS: SubtitleSize[] = ["small", "default", "large"];
   const FONTS = [
     "",
     "Segoe UI",
-    "Arial",
     "Calibri",
-    "Verdana",
-    "Tahoma",
     "Georgia",
     "Times New Roman",
     "Consolas",
   ];
-  const PRESETS: Array<{
-    id: SubtitlePreset;
-    key: string;
-  }> = [
-    { id: "default", key: "media.subtitles.sizeDefault" },
-    { id: "highContrast", key: "media.subtitles.highContrast" },
-    { id: "yellow", key: "media.subtitles.yellow" },
+  const COLOR_OPTIONS = [
+    "#000000",
+    "#ffffff",
+    "#f87171",
+    "#ffe44d",
+    "#4ade80",
+    "#3b82f6",
   ];
+
+  const fontOptions = $derived(
+    FONTS.map((font) => ({ value: font, label: fontLabel(font) })),
+  );
+  const outlineOptions = $derived([
+    { value: "none", label: t("common.none") },
+    { value: "thin", label: t("media.subtitles.outlineThin") },
+    { value: "thick", label: t("media.subtitles.outlineThick") },
+  ]);
+  const backgroundOptions = $derived([
+    { value: "none", label: t("common.none") },
+    { value: "soft", label: t("media.subtitles.backgroundSoft") },
+    { value: "solid", label: t("media.subtitles.backgroundSolid") },
+  ]);
 
   $effect(() => {
     if (!open) {
       settingsPanel = null;
       pendingId = null;
     }
+  });
+
+  $effect(() => {
+    const el = panelMeasureEl;
+    panelObserver?.disconnect();
+    if (!el) return;
+    let frame = 0;
+    panelObserver = new ResizeObserver(() => {
+      if (!settingsPanel) return;
+      panelHeight = el.offsetHeight;
+    });
+    panelObserver.observe(el);
+    if (settingsPanel) {
+      frame = requestAnimationFrame(() => {
+        panelHeight = el.offsetHeight;
+      });
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      panelObserver?.disconnect();
+      panelObserver = null;
+    };
   });
 
   function togglePanel(panel: "timing" | "text" | "nearby") {
@@ -101,7 +141,11 @@
   }
 
   function toggleFileStyles() {
-    onSetPreset(subtitleStyle.useFileStyles ? "custom" : "fileStyles");
+    onSetFileStyles(!subtitleStyle.useFileStyles);
+  }
+
+  function fontLabel(font: string): string {
+    return font || t("media.subtitles.fontSystem");
   }
 
   function previewStyle(): string {
@@ -389,8 +433,8 @@
         type="button"
         class="track-menu-icon-btn tooltip-ctrl"
         class:active={settingsPanel === "text"}
-        class:accent={subtitleStyle.size !== "default" ||
-          subtitleStyle.preset !== "fileStyles"}
+        class:accent={!subtitleStyle.useFileStyles ||
+          subtitleStyle.size !== "default"}
         data-tooltip={t("media.subtitles.textStyle")}
         aria-label={t("media.subtitles.textStyleAria")}
         aria-expanded={settingsPanel === "text"}
@@ -445,268 +489,298 @@
       </button>
     </div>
 
-    {#if settingsPanel}
-      <div class="track-menu-subpanel" transition:slide={{ duration: 180 }}>
-        {#if settingsPanel === "timing"}
-          <div class="track-menu-setting">
-            <div class="track-menu-setting-head">
-              <span class="track-menu-setting-label"
-                >{t("media.subtitles.timing")}</span
-              >
-              <button
-                type="button"
-                class="track-menu-reset"
-                disabled={selectedId === "off" || delayMs === 0 || loading}
-                onclick={() => onAdjustDelay(-delayMs)}
-                >{t("media.subtitles.reset")}</button
-              >
-            </div>
-            <div class="track-menu-card">
-              <div class="track-menu-stepper">
-                <button
-                  type="button"
-                  class="track-menu-small-button"
-                  aria-label={t("media.subtitles.delayEarlier")}
-                  disabled={selectedId === "off" || loading}
-                  onclick={() => onAdjustDelay(-250)}>−0.25</button
-                >
-                <span class="track-menu-delay">{delayLabel()}</span>
-                <button
-                  type="button"
-                  class="track-menu-small-button"
-                  aria-label={t("media.subtitles.delayLater")}
-                  disabled={selectedId === "off" || loading}
-                  onclick={() => onAdjustDelay(250)}>+0.25</button
-                >
-              </div>
-            </div>
-          </div>
-        {:else if settingsPanel === "text"}
-          <div class="track-menu-setting">
-            <div class="track-menu-setting-head subtitle-style-head">
-              <span class="track-menu-setting-label"
-                >{t("media.subtitles.textStyle")}</span
-              >
-              <button
-                type="button"
-                class="track-menu-reset"
-                aria-label={t("media.subtitles.resetPosition")}
-                title={t("media.subtitles.resetPosition")}
-                onclick={onResetPosition}>{t("media.subtitles.reset")}</button
-              >
-            </div>
-
-            <div class="track-menu-field subtitle-size-row">
-              <span>{t("media.subtitles.size")}</span>
-              <div class="track-menu-stepper">
-                <button
-                  type="button"
-                  class="track-menu-small-button"
-                  aria-label={t("media.subtitles.sizeDecrease")}
-                  disabled={subtitleStyle.size === "small"}
-                  onclick={() => stepSize(-1)}>−</button
-                >
-                <span class="track-menu-delay">{sizeLabel()}</span>
-                <button
-                  type="button"
-                  class="track-menu-small-button"
-                  aria-label={t("media.subtitles.sizeIncrease")}
-                  disabled={subtitleStyle.size === "large"}
-                  onclick={() => stepSize(1)}>+</button
-                >
-              </div>
-            </div>
-
-            <div class="track-menu-field subtitle-style-toggle">
-              <span>{t("media.subtitles.fileStyles")}</span>
-              <button
-                type="button"
-                class="subtitle-toggle"
-                role="switch"
-                aria-checked={subtitleStyle.useFileStyles}
-                aria-label={t("media.subtitles.fileStyles")}
-                onclick={toggleFileStyles}
-              >
-                <span
-                  class="toggle-track"
-                  class:on={subtitleStyle.useFileStyles}
-                  ><span class="toggle-thumb"></span></span
-                >
-              </button>
-            </div>
-
-            {#if !subtitleStyle.useFileStyles}
-              <div
-                class="track-menu-presets"
-                role="group"
-                aria-label={t("media.subtitles.textStyle")}
-              >
-                {#each PRESETS as preset (preset.id)}
-                  <button
-                    type="button"
-                    class="track-menu-small-button preset"
-                    class:active={subtitleStyle.preset === preset.id}
-                    aria-pressed={subtitleStyle.preset === preset.id}
-                    title={t(preset.key)}
-                    onclick={() => onSetPreset(preset.id)}
-                    >{t(preset.key)}</button
-                  >
-                {/each}
-              </div>
-
-              <div
-                class="subtitle-style-preview"
-                style={previewStyle()}
-                aria-hidden="true"
-              >
-                {t("media.subtitles.preview")}
-              </div>
-
-              <label class="track-menu-field">
-                <span>{t("media.subtitles.font")}</span>
-                <select
-                  class="track-menu-select"
-                  value={subtitleStyle.fontFamily}
-                  onchange={(event) =>
-                    onSetFont((event.currentTarget as HTMLSelectElement).value)}
-                >
-                  {#each FONTS as font (font)}
-                    <option value={font}
-                      >{font || t("media.subtitles.fontSystem")}</option
+    <div
+      class="subtitle-panel-shell"
+      style:height={settingsPanel ? `${panelHeight}px` : "0px"}
+    >
+      <div class="track-menu-subpanel" bind:this={panelMeasureEl}>
+        {#if settingsPanel}
+          {#key settingsPanel}
+            <div
+              class="subtitle-panel-view"
+              in:fly={{ y: 4, duration: 160, opacity: 0 }}
+            >
+              {#if settingsPanel === "timing"}
+                <div class="track-menu-setting">
+                  <div class="track-menu-setting-head">
+                    <span class="track-menu-setting-label"
+                      >{t("media.subtitles.timing")}</span
                     >
-                  {/each}
-                </select>
-              </label>
-              <label class="track-menu-field">
-                <span>{t("media.subtitles.textColor")}</span>
-                <input
-                  class="track-menu-color"
-                  type="color"
-                  value={subtitleStyle.textColor}
-                  oninput={(event) =>
-                    onSetColor((event.currentTarget as HTMLInputElement).value)}
-                />
-              </label>
-              <label class="track-menu-field">
-                <span>{t("media.subtitles.outline")}</span>
-                <select
-                  class="track-menu-select"
-                  value={subtitleStyle.outline}
-                  onchange={(event) =>
-                    onSetOutline(
-                      (event.currentTarget as HTMLSelectElement)
-                        .value as SubtitleOutline,
-                    )}
-                >
-                  <option value="none">{t("common.none")}</option>
-                  <option value="thin"
-                    >{t("media.subtitles.outlineThin")}</option
-                  >
-                  <option value="thick"
-                    >{t("media.subtitles.outlineThick")}</option
-                  >
-                </select>
-              </label>
-              <label class="track-menu-field">
-                <span>{t("media.subtitles.background")}</span>
-                <select
-                  class="track-menu-select"
-                  value={subtitleStyle.background}
-                  onchange={(event) =>
-                    onSetBackground(
-                      (event.currentTarget as HTMLSelectElement)
-                        .value as SubtitleBackground,
-                    )}
-                >
-                  <option value="none">{t("common.none")}</option>
-                  <option value="soft"
-                    >{t("media.subtitles.backgroundSoft")}</option
-                  >
-                  <option value="solid"
-                    >{t("media.subtitles.backgroundSolid")}</option
-                  >
-                </select>
-              </label>
-            {/if}
-          </div>
-        {:else}
-          <div class="track-menu-setting">
-            <div class="track-menu-setting-head">
-              <span class="track-menu-setting-label"
-                >{t("media.subtitles.nearby")}</span
-              >
-            </div>
-            <div class="track-menu-card">
-              {#if sidecars.length === 0}
-                <div class="track-menu-subpanel-empty">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="m6 6 12 12M18 6 6 18"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                  <span>{t("media.subtitles.noneNearby")}</span>
-                </div>
-              {:else}
-                <div class="track-menu-subpanel-list">
-                  {#each sidecars as sidecar (sidecar.path)}
                     <button
                       type="button"
-                      class="track-menu-option"
-                      class:selected={selectedId === `sidecar:${sidecar.path}`}
-                      class:loading={pendingId === `sidecar:${sidecar.path}`}
-                      role="menuitemradio"
-                      aria-checked={selectedId === `sidecar:${sidecar.path}`}
-                      aria-busy={pendingId === `sidecar:${sidecar.path}`}
-                      disabled={loading}
-                      onclick={() => void select(`sidecar:${sidecar.path}`)}
+                      class="track-menu-reset"
+                      disabled={selectedId === "off" ||
+                        delayMs === 0 ||
+                        loading}
+                      onclick={() => onAdjustDelay(-delayMs)}
+                      >{t("media.subtitles.reset")}</button
                     >
-                      <span class="track-menu-check" aria-hidden="true">
-                        {#if selectedId === `sidecar:${sidecar.path}`}
-                          <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 16 16"
-                            fill="none"
+                  </div>
+                  <div class="track-menu-card">
+                    <div class="track-menu-stepper subtitle-size-stepper">
+                      <button
+                        type="button"
+                        class="track-menu-small-button"
+                        aria-label={t("media.subtitles.delayEarlier")}
+                        disabled={selectedId === "off" || loading}
+                        onclick={() => onAdjustDelay(-250)}>−0.25</button
+                      >
+                      <span class="track-menu-delay">{delayLabel()}</span>
+                      <button
+                        type="button"
+                        class="track-menu-small-button"
+                        aria-label={t("media.subtitles.delayLater")}
+                        disabled={selectedId === "off" || loading}
+                        onclick={() => onAdjustDelay(250)}>+0.25</button
+                      >
+                    </div>
+                  </div>
+                </div>
+              {:else if settingsPanel === "text"}
+                <div class="track-menu-setting subtitle-style-setting">
+                  <div class="track-menu-setting-head subtitle-style-head">
+                    <span class="track-menu-setting-label"
+                      >{t("media.subtitles.textStyle")}</span
+                    >
+                    <button
+                      type="button"
+                      class="track-menu-reset"
+                      aria-label={t("media.subtitles.resetPosition")}
+                      title={t("media.subtitles.resetPosition")}
+                      onclick={onResetPosition}
+                      >{t("media.subtitles.reset")}</button
+                    >
+                  </div>
+
+                  <div
+                    class="pill-group subtitle-mode-switch"
+                    role="group"
+                    aria-label={t("media.subtitles.fileStyles")}
+                  >
+                    <button
+                      type="button"
+                      class="pill-btn"
+                      class:active={subtitleStyle.useFileStyles}
+                      aria-pressed={subtitleStyle.useFileStyles}
+                      onclick={() => onSetFileStyles(true)}
+                      >{t("media.subtitles.modeDefault")}</button
+                    >
+                    <button
+                      type="button"
+                      class="pill-btn"
+                      class:active={!subtitleStyle.useFileStyles}
+                      aria-pressed={!subtitleStyle.useFileStyles}
+                      onclick={() => onSetFileStyles(false)}
+                      >{t("media.subtitles.modeCustom")}</button
+                    >
+                  </div>
+
+                  {#if !subtitleStyle.useFileStyles}
+                    <div class="subtitle-pair-row">
+                      <div class="subtitle-field">
+                        <span class="subtitle-field-label"
+                          >{t("media.subtitles.size")}</span
+                        >
+                        <div class="track-menu-stepper subtitle-size-stepper">
+                          <button
+                            type="button"
+                            class="track-menu-small-button"
+                            aria-label={t("media.subtitles.sizeDecrease")}
+                            disabled={subtitleStyle.size === "small"}
+                            onclick={() => stepSize(-1)}>−</button
                           >
-                            <path
-                              d="m3 8 3.2 3.2L13 4.8"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            />
-                          </svg>
-                        {/if}
-                      </span>
-                      <span class="track-menu-option-copy">
-                        <Marquee
-                          text={sidecar.name}
-                          scrollOnHover
-                          class="track-menu-marquee"
+                          <span class="track-menu-delay">{sizeLabel()}</span>
+                          <button
+                            type="button"
+                            class="track-menu-small-button"
+                            aria-label={t("media.subtitles.sizeIncrease")}
+                            disabled={subtitleStyle.size === "large"}
+                            onclick={() => stepSize(1)}>+</button
+                          >
+                        </div>
+                      </div>
+
+                      <div class="subtitle-field">
+                        <span class="subtitle-field-label"
+                          >{t("media.subtitles.font")}</span
+                        >
+                        <SubtitleSelect
+                          value={subtitleStyle.fontFamily}
+                          options={fontOptions}
+                          ariaLabel={t("media.subtitles.font")}
+                          menuMinWidth={150}
+                          onchange={onSetFont}
                         />
-                        {#if sidecar.bitmap}
-                          <span class="track-menu-option-detail"
-                            >{t("media.subtitles.image")}</span
+                      </div>
+                    </div>
+
+                    <div class="subtitle-field">
+                      <span class="subtitle-field-label"
+                        >{t("media.subtitles.textColor")}</span
+                      >
+                      <div class="subtitle-color-row">
+                        {#each COLOR_OPTIONS as color, i (color)}
+                          <button
+                            type="button"
+                            class="subtitle-color-swatch"
+                            class:active={subtitleStyle.textColor === color}
+                            style="background:{color}"
+                            aria-label={t("media.subtitles.colorSwatch", {
+                              index: i + 1,
+                            })}
+                            aria-pressed={subtitleStyle.textColor === color}
+                            onclick={() => onSetColor(color)}
+                          ></button>
+                        {/each}
+                        {#each customColors as color, i (i)}
+                          <label
+                            class="subtitle-color-swatch subtitle-color-custom"
+                            class:empty={!color}
+                            class:active={subtitleStyle.textColor === color &&
+                              color !== ""}
+                            style={color ? `background:${color}` : ""}
+                            aria-label={t("media.subtitles.customColor", {
+                              index: i + 1,
+                            })}
+                            oncontextmenu={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              onSetCustomColor(i, "");
+                            }}
                           >
-                        {/if}
-                      </span>
-                    </button>
-                  {/each}
+                            <input
+                              class="subtitle-color-input"
+                              type="color"
+                              value={color || "#ffffff"}
+                              oninput={(event) =>
+                                onSetCustomColor(i, event.currentTarget.value)}
+                            />
+                          </label>
+                        {/each}
+                      </div>
+                    </div>
+
+                    <div class="subtitle-split-row">
+                      <div class="subtitle-field">
+                        <span class="subtitle-field-label"
+                          >{t("media.subtitles.outline")}</span
+                        >
+                        <SubtitleSelect
+                          value={subtitleStyle.outline}
+                          options={outlineOptions}
+                          ariaLabel={t("media.subtitles.outline")}
+                          onchange={(next) =>
+                            onSetOutline(next as SubtitleOutline)}
+                        />
+                      </div>
+                      <div class="subtitle-field">
+                        <span class="subtitle-field-label"
+                          >{t("media.subtitles.background")}</span
+                        >
+                        <SubtitleSelect
+                          value={subtitleStyle.background}
+                          options={backgroundOptions}
+                          ariaLabel={t("media.subtitles.background")}
+                          onchange={(next) =>
+                            onSetBackground(next as SubtitleBackground)}
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      class="subtitle-style-preview"
+                      style={previewStyle()}
+                      aria-hidden="true"
+                    >
+                      {t("media.subtitles.preview")}
+                    </div>
+                  {/if}
+                </div>
+              {:else}
+                <div class="track-menu-setting">
+                  <div class="track-menu-setting-head">
+                    <span class="track-menu-setting-label"
+                      >{t("media.subtitles.nearby")}</span
+                    >
+                  </div>
+                  <div class="track-menu-card">
+                    {#if sidecars.length === 0}
+                      <div class="track-menu-subpanel-empty">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="m6 6 12 12M18 6 6 18"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                        <span>{t("media.subtitles.noneNearby")}</span>
+                      </div>
+                    {:else}
+                      <div class="track-menu-subpanel-list">
+                        {#each sidecars as sidecar (sidecar.path)}
+                          <button
+                            type="button"
+                            class="track-menu-option"
+                            class:selected={selectedId ===
+                              `sidecar:${sidecar.path}`}
+                            class:loading={pendingId ===
+                              `sidecar:${sidecar.path}`}
+                            role="menuitemradio"
+                            aria-checked={selectedId ===
+                              `sidecar:${sidecar.path}`}
+                            aria-busy={pendingId === `sidecar:${sidecar.path}`}
+                            disabled={loading}
+                            onclick={() =>
+                              void select(`sidecar:${sidecar.path}`)}
+                          >
+                            <span class="track-menu-check" aria-hidden="true">
+                              {#if selectedId === `sidecar:${sidecar.path}`}
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                >
+                                  <path
+                                    d="m3 8 3.2 3.2L13 4.8"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                  />
+                                </svg>
+                              {/if}
+                            </span>
+                            <span class="track-menu-option-copy">
+                              <Marquee
+                                text={sidecar.name}
+                                scrollOnHover
+                                class="track-menu-marquee"
+                              />
+                              {#if sidecar.bitmap}
+                                <span class="track-menu-option-detail"
+                                  >{t("media.subtitles.image")}</span
+                                >
+                              {/if}
+                            </span>
+                          </button>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
                 </div>
               {/if}
             </div>
-          </div>
+          {/key}
         {/if}
       </div>
-    {/if}
+    </div>
   </div>
 {/if}

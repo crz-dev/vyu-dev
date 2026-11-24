@@ -124,7 +124,6 @@
   "subtitles.font": "フォント",
   "subtitles.fontSystem": "システム",
   "subtitles.heading": "字幕",
-  "subtitles.highContrast": "ハイコントラスト",
   "subtitles.image": "画像",
   "subtitles.loadError": "字幕を読み込めませんでした: {error}",
   "subtitles.nearby": "近くのファイル",
@@ -156,7 +155,6 @@
   "subtitles.timing": "タイミング",
   "subtitles.timingAria": "字幕のタイミング",
   "subtitles.unavailable": "画像字幕は利用できません",
-  "subtitles.yellow": "黄色",
   "timer.elapsed": "経過",
   "timer.remaining": "残り",
   "track.next": "次のトラック",
@@ -209,5 +207,9 @@
   "waveform.seek": "音声をシーク",
   "waveform.timestampAria": "{time} のタイムスタンプ",
   "waveform.timestampTitledAria": "{time} のタイムスタンプ {title}",
-  "subtitles.preview": "字幕プレビュー"
+  "subtitles.preview": "字幕プレビュー",
+  "subtitles.colorSwatch": "色 {index}",
+  "subtitles.customColor": "カスタムカラー {index}",
+  "subtitles.modeDefault": "標準",
+  "subtitles.modeCustom": "カスタム"
 }
