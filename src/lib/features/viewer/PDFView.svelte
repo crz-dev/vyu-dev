@@ -1051,43 +1051,80 @@
       transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}
     >
       <div class="pdf-page-panel-header">
-        <div class="pdf-page-panel-tabs">
-          <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span
-          >
+        <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span>
+        <div class="pdf-page-panel-head-actions">
           {#if outline.length > 0}
             <button
-              class="pdf-page-panel-tab"
+              class="pdf-panel-head-btn tooltip-below-start"
               class:active={panelTab === "outline"}
               aria-pressed={panelTab === "outline"}
+              data-tooltip={t("shell.viewer.pdf.outline")}
+              aria-label={t("shell.viewer.pdf.outline")}
               onclick={() =>
                 setPanelTab(panelTab === "outline" ? "pages" : "outline")}
             >
-              {t("shell.viewer.pdf.outline")}
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M4 6h16M8 11h12M12 16h8"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                />
+              </svg>
             </button>
           {/if}
+          <button
+            class="pdf-page-panel-close"
+            onclick={() => togglePagePanel()}
+            aria-label={t("shell.viewer.pdf.closeIndex")}
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M1 1l8 8M9 1l-8 8"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
         </div>
+      </div>
+      <div class="pdf-panel-pager">
         <button
-          class="pdf-page-panel-close"
-          onclick={() => togglePagePanel()}
-          aria-label={t("shell.viewer.pdf.closeIndex")}
+          class="pdf-pager-btn tooltip-above"
+          data-tooltip={t("shell.viewer.pdf.previousPage")}
+          aria-label={t("shell.viewer.pdf.previousPage")}
+          disabled={currentPage <= 1}
+          onclick={prevPage}
         >
           <svg
-            width="10"
-            height="10"
-            viewBox="0 0 10 10"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
             fill="none"
             aria-hidden="true"
           >
             <path
-              d="M1 1l8 8M9 1l-8 8"
+              d="M15 18l-6-6 6-6"
               stroke="currentColor"
-              stroke-width="1.2"
+              stroke-width="2"
               stroke-linecap="round"
+              stroke-linejoin="round"
             />
           </svg>
         </button>
-      </div>
-      <div class="pdf-index-page">
         {#if panelPageEditing}
           <input
             bind:this={panelPageInputEl}
@@ -1102,7 +1139,7 @@
           <span class="pdf-page-total">/ {pageCount}</span>
         {:else}
           <button
-            class="pdf-index-page-btn tooltip-below"
+            class="pdf-pager-page tooltip-above"
             data-tooltip={t("shell.viewer.pdf.goToPage")}
             aria-label={t("shell.viewer.pdf.pageOf", {
               current: currentPage,
@@ -1113,137 +1150,221 @@
             {currentPage} / {pageCount}
           </button>
         {/if}
+        <button
+          class="pdf-pager-btn tooltip-above"
+          data-tooltip={t("shell.viewer.pdf.nextPage")}
+          aria-label={t("shell.viewer.pdf.nextPage")}
+          disabled={currentPage >= pageCount}
+          onclick={nextPage}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M9 18l6-6-6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
       </div>
       <div class="pdf-panel-actions">
-        <button
-          class="pdf-panel-action tooltip-below-start"
-          data-tooltip={tooltipLabel(
-            `${t("shell.viewer.pdf.rotate")} 90°`,
-            "pdf-rotate",
-          )}
-          aria-label={t("shell.viewer.pdf.rotate")}
-          onclick={rotate}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
+        <div class="pdf-panel-tool-group">
+          <button
+            class="pdf-panel-action tooltip-below-start"
+            data-tooltip={tooltipLabel(
+              `${t("shell.viewer.pdf.rotate")} 90°`,
+              "pdf-rotate",
+            )}
+            aria-label={t("shell.viewer.pdf.rotate")}
+            onclick={rotate}
           >
-            <path
-              d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below-start"
-          class:active={autoFit && fitWidth}
-          aria-pressed={autoFit && fitWidth}
-          data-tooltip={tooltipLabel(
-            t("shell.viewer.pdf.fitWidth"),
-            "pdf-fit-width",
-          )}
-          aria-label={t("shell.viewer.pdf.fitWidth")}
-          onclick={toggleFitWidthMode}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect
-              x="3"
-              y="5"
-              width="18"
+            <svg
+              width="14"
               height="14"
-              rx="1.5"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <path
-              d="M7 12h10M9 9.5 6.5 12 9 14.5M15 9.5 17.5 12 15 14.5"
-              stroke="currentColor"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below-start"
-          class:active={dualPage}
-          aria-pressed={dualPage}
-          data-tooltip={tooltipLabel(
-            t("shell.viewer.pdf.dualPage"),
-            "pdf-dual-page",
-          )}
-          aria-label={t("shell.viewer.pdf.dualPage")}
-          onclick={toggleDualPage}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="pdf-panel-action tooltip-below-start"
+            class:active={autoFit && fitWidth}
+            aria-pressed={autoFit && fitWidth}
+            data-tooltip={tooltipLabel(
+              t("shell.viewer.pdf.fitWidth"),
+              "pdf-fit-width",
+            )}
+            aria-label={t("shell.viewer.pdf.fitWidth")}
+            onclick={toggleFitWidthMode}
           >
-            <rect
-              x="3"
-              y="4"
-              width="8"
-              height="16"
-              rx="1.2"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <rect
-              x="13"
-              y="4"
-              width="8"
-              height="16"
-              rx="1.2"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below-start"
-          class:active={nightMode}
-          aria-pressed={nightMode}
-          data-tooltip={tooltipLabel(
-            t("shell.viewer.pdf.nightMode"),
-            "pdf-night",
-          )}
-          aria-label={t("shell.viewer.pdf.nightMode")}
-          onclick={toggleNightMode}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="3"
+                y="5"
+                width="18"
+                height="14"
+                rx="1.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path
+                d="M7 12h10M9 9.5 6.5 12 9 14.5M15 9.5 17.5 12 15 14.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="pdf-panel-action tooltip-below-start"
+            class:active={dualPage}
+            aria-pressed={dualPage}
+            data-tooltip={tooltipLabel(
+              t("shell.viewer.pdf.dualPage"),
+              "pdf-dual-page",
+            )}
+            aria-label={t("shell.viewer.pdf.dualPage")}
+            onclick={toggleDualPage}
           >
-            <path
-              d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="3"
+                y="4"
+                width="8"
+                height="16"
+                rx="1.2"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <rect
+                x="13"
+                y="4"
+                width="8"
+                height="16"
+                rx="1.2"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
+          <button
+            class="pdf-panel-action tooltip-below-start"
+            class:active={nightMode}
+            aria-pressed={nightMode}
+            data-tooltip={tooltipLabel(
+              t("shell.viewer.pdf.nightMode"),
+              "pdf-night",
+            )}
+            aria-label={t("shell.viewer.pdf.nightMode")}
+            onclick={toggleNightMode}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <span class="pdf-panel-action-sep"></span>
+        <div class="pdf-panel-tool-group">
+          <button
+            class="pdf-panel-action tooltip-below-start"
+            data-tooltip={t("shell.viewer.pdf.sign")}
+            aria-label={t("shell.viewer.pdf.sign")}
+            onclick={openSignature}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
               stroke-width="1.6"
               stroke-linecap="round"
               stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+              aria-hidden="true"
+            >
+              <path d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z" />
+              <path d="m13 8 3 3" />
+            </svg>
+          </button>
+          <button
+            class="pdf-panel-action danger tooltip-below-start"
+            class:active={redactActive}
+            aria-pressed={redactActive}
+            data-tooltip={t("shell.viewer.pdf.redact")}
+            aria-label={t("shell.viewer.pdf.redact")}
+            onclick={startRedact}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="4"
+                y="6"
+                width="16"
+                height="4"
+                rx="1"
+                fill="currentColor"
+                stroke="none"
+              />
+              <rect
+                x="4"
+                y="14"
+                width="16"
+                height="4"
+                rx="1"
+                fill="currentColor"
+                stroke="none"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       {#if panelTab === "pages"}
-        <div class="pdf-page-panel-list">
+        <div class="pdf-page-panel-list pdf-page-panel-grid">
           {#each pages as page, i}
             <button
               class="pdf-page-panel-item"
@@ -1287,46 +1408,6 @@
           {/if}
         </div>
       {/if}
-      <div class="pdf-panel-document">
-        <button class="pdf-panel-doc-btn" onclick={openSignature}>
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z" />
-            <path d="m13 8 3 3" />
-          </svg>
-          <span>{t("shell.viewer.pdf.sign")}</span>
-        </button>
-        <button
-          class="pdf-panel-doc-btn danger"
-          class:active={redactActive}
-          onclick={startRedact}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="4" y="4" width="16" height="16" rx="1.5" />
-            <path d="M4 20 20 4" />
-          </svg>
-          <span>{t("shell.viewer.pdf.redact")}</span>
-        </button>
-      </div>
     </div>
   {/if}
 
