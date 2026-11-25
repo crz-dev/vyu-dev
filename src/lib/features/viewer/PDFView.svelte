@@ -9,7 +9,6 @@
     type PdfPasswordPrompt as PdfPasswordPromptState,
     type PdfRedactionRect,
   } from "./pdf.svelte";
-  import PdfViewMenu from "./PdfViewMenu.svelte";
   import PdfPasswordPrompt from "./PdfPasswordPrompt.svelte";
   import PdfRedactOverlay from "./PdfRedactOverlay.svelte";
   import PdfSignaturePad from "./PdfSignaturePad.svelte";
@@ -26,6 +25,11 @@
   import { locale } from "$lib/features/i18n/locale.svelte";
 
   const t = locale.t;
+
+  function tooltipLabel(label: string, keybindId: string): string {
+    const key = keybindStore.label(keybindId);
+    return key ? `${label} (${key})` : label;
+  }
 
   let {
     pdfContainerEl = $bindable(null),
@@ -56,7 +60,6 @@
     toggleDualPage,
     toggleNightMode,
     setPanelTab,
-    toggleOutline,
     findOpen,
     findQuery,
     findResults,
@@ -73,7 +76,6 @@
     isFullscreen,
     fsControlsVisible,
     resetFsTimer,
-    encrypted,
     passwordPrompt,
     formDirty,
     redactActive,
@@ -85,10 +87,8 @@
     addRedaction,
     removeRedaction,
     clearRedactions,
-    startRedaction,
     cancelRedaction,
     setRedactionConfirmOpen,
-    openSignaturePad,
     closeSignaturePad,
     onSaveForms,
     onDiscardForms,
@@ -122,7 +122,6 @@
     toggleDualPage: () => void;
     toggleNightMode: () => void;
     setPanelTab: (tab: "pages" | "outline") => void;
-    toggleOutline: () => void;
     findOpen: boolean;
     findQuery: string;
     findResults: number;
@@ -139,7 +138,6 @@
     isFullscreen: boolean;
     fsControlsVisible: boolean;
     resetFsTimer: () => void;
-    encrypted: boolean;
     passwordPrompt: PdfPasswordPromptState;
     formDirty: boolean;
     redactActive: boolean;
@@ -154,10 +152,8 @@
     ) => void;
     removeRedaction: (id: number) => void;
     clearRedactions: () => void;
-    startRedaction: () => void;
     cancelRedaction: () => void;
     setRedactionConfirmOpen: (open: boolean) => void;
-    openSignaturePad: () => void;
     closeSignaturePad: () => void;
     onSaveForms: () => Promise<void>;
     onDiscardForms: () => void;
@@ -188,6 +184,9 @@
   let pageEditing = $state(false);
   let pageInputValue = $state("");
   let pageInputEl: HTMLInputElement | null = $state(null);
+  let panelPageEditing = $state(false);
+  let panelPageValue = $state("");
+  let panelPageInputEl: HTMLInputElement | null = $state(null);
 
   let pendingSignature = $state<DrawPoint[][] | null>(null);
   let signaturePointer = $state<{
@@ -285,6 +284,10 @@
     }
   });
 
+  $effect(() => {
+    if (!showPagePanel) panelPageEditing = false;
+  });
+
   // Sync markup page when current page changes
   $effect(() => {
     if (currentPage > 0 && pageCount > 0) {
@@ -351,17 +354,37 @@
     }
   }
 
-  function openSignature() {
-    if (encrypted) {
-      showToast({
-        message: t("shell.viewer.pdf.passwordRequired"),
-        color: "red",
-      });
+  function beginPanelPageEdit() {
+    panelPageValue = String(currentPage);
+    panelPageEditing = true;
+    void tick().then(() => {
+      panelPageInputEl?.focus();
+      panelPageInputEl?.select();
+    });
+  }
+
+  function commitPanelPageEdit() {
+    if (!panelPageEditing) return;
+    panelPageEditing = false;
+    const parsed = Number.parseInt(panelPageValue, 10);
+    if (Number.isFinite(parsed)) goToPage(parsed);
+  }
+
+  function cancelPanelPageEdit() {
+    panelPageEditing = false;
+  }
+
+  function handlePanelPageKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitPanelPageEdit();
       return;
     }
-    if (redactActive) cancelRedactMode();
-    markup.deactivateTools();
-    openSignaturePad();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelPanelPageEdit();
+    }
   }
 
   function acceptSignature(paths: DrawPoint[][]) {
@@ -446,24 +469,6 @@
   function discardFormChanges() {
     if (formBusy) return;
     onDiscardForms();
-  }
-
-  function startRedact() {
-    if (encrypted) {
-      showToast({
-        message: t("shell.viewer.pdf.passwordRequired"),
-        color: "red",
-      });
-      return;
-    }
-    if (redactActive) {
-      cancelRedactMode();
-      return;
-    }
-    pendingSignature = null;
-    redactDrag = null;
-    markup.deactivateTools();
-    startRedaction();
   }
 
   function cancelRedactMode() {
@@ -741,6 +746,12 @@
       toggleFitWidthMode();
       return;
     }
+    if (keybindStore.matches("pdf-dual-page", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDualPage();
+      return;
+    }
     if (keybindStore.matches("pdf-rotate", e)) {
       e.preventDefault();
       e.stopPropagation();
@@ -931,28 +942,31 @@
 
   {#if !loading && !error && pageCount > 0}
     <div class="pdf-view-controls">
-      {#if pageEditing}
-        <input
-          bind:this={pageInputEl}
-          class="pdf-page-chip-input"
-          bind:value={pageInputValue}
-          inputmode="numeric"
-          aria-label={t("shell.viewer.pdf.goToPage")}
-          onkeydown={handlePageInputKeydown}
-          onblur={commitPageEdit}
-        />
-      {:else}
-        <button
-          class="pdf-page-chip-btn tooltip-below"
-          data-tooltip={t("shell.viewer.pdf.goToPage")}
-          onclick={beginPageEdit}
-          aria-label={t("shell.viewer.pdf.pageOf", {
-            current: currentPage,
-            total: pageCount,
-          })}
-        >
-          {currentPage} / {pageCount}
-        </button>
+      {#if isFullscreen}
+        {#if pageEditing}
+          <input
+            bind:this={pageInputEl}
+            class="pdf-page-chip-input"
+            style="width: calc({Math.max(1, pageInputValue.length)}ch + 16px)"
+            bind:value={pageInputValue}
+            inputmode="numeric"
+            aria-label={t("shell.viewer.pdf.goToPage")}
+            onkeydown={handlePageInputKeydown}
+            onblur={commitPageEdit}
+          />
+        {:else}
+          <button
+            class="pdf-page-chip-btn tooltip-below"
+            data-tooltip={t("shell.viewer.pdf.goToPage")}
+            onclick={beginPageEdit}
+            aria-label={t("shell.viewer.pdf.pageOf", {
+              current: currentPage,
+              total: pageCount,
+            })}
+          >
+            {currentPage} / {pageCount}
+          </button>
+        {/if}
       {/if}
       {#if formDirty && !redactActive}
         <div class="pdf-form-actions">
@@ -991,19 +1005,6 @@
           </button>
         </div>
       {/if}
-      <PdfViewMenu
-        {fitWidth}
-        {autoFit}
-        {dualPage}
-        {nightMode}
-        onOutline={toggleOutline}
-        onToggleFitWidth={toggleFitWidthMode}
-        {rotate}
-        {toggleDualPage}
-        {toggleNightMode}
-        onSign={openSignature}
-        onRedact={startRedact}
-      />
     </div>
   {/if}
 
@@ -1013,23 +1014,16 @@
       transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}
     >
       <div class="pdf-page-panel-header">
-        <div class="pdf-page-panel-tabs" role="tablist">
-          <button
-            class="pdf-page-panel-tab"
-            class:active={panelTab === "pages"}
-            role="tab"
-            aria-selected={panelTab === "pages"}
-            onclick={() => setPanelTab("pages")}
+        <div class="pdf-page-panel-tabs">
+          <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span
           >
-            {t("shell.viewer.pdf.pages")}
-          </button>
           {#if outline.length > 0}
             <button
               class="pdf-page-panel-tab"
               class:active={panelTab === "outline"}
-              role="tab"
-              aria-selected={panelTab === "outline"}
-              onclick={() => setPanelTab("outline")}
+              aria-pressed={panelTab === "outline"}
+              onclick={() =>
+                setPanelTab(panelTab === "outline" ? "pages" : "outline")}
             >
               {t("shell.viewer.pdf.outline")}
             </button>
@@ -1052,6 +1046,161 @@
               stroke="currentColor"
               stroke-width="1.2"
               stroke-linecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="pdf-index-page">
+        {#if panelPageEditing}
+          <input
+            bind:this={panelPageInputEl}
+            class="pdf-page-chip-input"
+            style="width: calc({Math.max(1, panelPageValue.length)}ch + 16px)"
+            bind:value={panelPageValue}
+            inputmode="numeric"
+            aria-label={t("shell.viewer.pdf.goToPage")}
+            onkeydown={handlePanelPageKeydown}
+            onblur={commitPanelPageEdit}
+          />
+          <span class="pdf-page-total">/ {pageCount}</span>
+        {:else}
+          <button
+            class="pdf-index-page-btn tooltip-below"
+            data-tooltip={t("shell.viewer.pdf.goToPage")}
+            aria-label={t("shell.viewer.pdf.pageOf", {
+              current: currentPage,
+              total: pageCount,
+            })}
+            onclick={beginPanelPageEdit}
+          >
+            {currentPage} / {pageCount}
+          </button>
+        {/if}
+      </div>
+      <div class="pdf-panel-actions">
+        <button
+          class="pdf-panel-action tooltip-below-start"
+          data-tooltip={tooltipLabel(
+            `${t("shell.viewer.pdf.rotate")} 90°`,
+            "pdf-rotate",
+          )}
+          aria-label={t("shell.viewer.pdf.rotate")}
+          onclick={rotate}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below-start"
+          class:active={autoFit && fitWidth}
+          aria-pressed={autoFit && fitWidth}
+          data-tooltip={tooltipLabel(
+            t("shell.viewer.pdf.fitWidth"),
+            "pdf-fit-width",
+          )}
+          aria-label={t("shell.viewer.pdf.fitWidth")}
+          onclick={toggleFitWidthMode}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect
+              x="3"
+              y="5"
+              width="18"
+              height="14"
+              rx="1.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="M7 12h10M9 9.5 6.5 12 9 14.5M15 9.5 17.5 12 15 14.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below-start"
+          class:active={dualPage}
+          aria-pressed={dualPage}
+          data-tooltip={tooltipLabel(
+            t("shell.viewer.pdf.dualPage"),
+            "pdf-dual-page",
+          )}
+          aria-label={t("shell.viewer.pdf.dualPage")}
+          onclick={toggleDualPage}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect
+              x="3"
+              y="4"
+              width="8"
+              height="16"
+              rx="1.2"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <rect
+              x="13"
+              y="4"
+              width="8"
+              height="16"
+              rx="1.2"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below-start"
+          class:active={nightMode}
+          aria-pressed={nightMode}
+          data-tooltip={tooltipLabel(
+            t("shell.viewer.pdf.nightMode"),
+            "pdf-night",
+          )}
+          aria-label={t("shell.viewer.pdf.nightMode")}
+          onclick={toggleNightMode}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             />
           </svg>
         </button>

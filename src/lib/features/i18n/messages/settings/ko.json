@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "파일 열기",
   "keybinds.actions.openSleepTimer.description": "수면 타이머 메뉴 열기",
   "keybinds.actions.openSleepTimer.label": "수면 타이머 열기",
+  "keybinds.actions.pdfDualPage.description": "두 페이지 보기를 전환합니다",
+  "keybinds.actions.pdfDualPage.label": "두 페이지 보기",
   "keybinds.actions.pdfFind.description": "PDF 검색을 열거나 닫습니다",
   "keybinds.actions.pdfFind.label": "문서에서 찾기",
   "keybinds.actions.pdfFitWidth.description": "PDF 페이지 너비를 뷰어에 맞춥니다",

@@ -1061,10 +1061,6 @@ export function createPdf() {
     state.panelTab = tab;
   }
 
-  function toggleOutline() {
-    togglePagePanel("outline");
-  }
-
   async function getPageThumbnail(pageNum: number): Promise<string> {
     const cached = pageThumbnailCache.get(pageNum);
     if (cached) return cached;
@@ -1633,7 +1629,6 @@ export function createPdf() {
     rotate,
     toggleDualPage,
     toggleNightMode,
-    toggleOutline,
     setPanelTab,
     openLink,
     submitPassword,

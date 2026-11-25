@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "打开文件",
   "keybinds.actions.openSleepTimer.description": "打开睡眠定时器菜单",
   "keybinds.actions.openSleepTimer.label": "打开睡眠定时器",
+  "keybinds.actions.pdfDualPage.description": "切换双页视图",
+  "keybinds.actions.pdfDualPage.label": "双页视图",
   "keybinds.actions.pdfFind.description": "打开或关闭 PDF 搜索",
   "keybinds.actions.pdfFind.label": "在文档中查找",
   "keybinds.actions.pdfFitWidth.description": "让 PDF 页面宽度适合查看器",

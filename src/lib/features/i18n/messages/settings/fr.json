@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "Ouvrir un fichier",
   "keybinds.actions.openSleepTimer.description": "Ouvrir le menu du minuteur de sommeil",
   "keybinds.actions.openSleepTimer.label": "Ouvrir le minuteur de sommeil",
+  "keybinds.actions.pdfDualPage.description": "Basculer l'affichage en double page",
+  "keybinds.actions.pdfDualPage.label": "Vue double page",
   "keybinds.actions.pdfFind.description": "Ouvre ou ferme la recherche PDF",
   "keybinds.actions.pdfFind.label": "Rechercher dans le document",
   "keybinds.actions.pdfFitWidth.description": "Ajuster la largeur de page du PDF à la fenêtre",

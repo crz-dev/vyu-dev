@@ -447,6 +447,16 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     behavior: "tap",
   },
   {
+    id: "pdf-dual-page",
+    label: "settings.keybinds.actions.pdfDualPage.label",
+    description: "settings.keybinds.actions.pdfDualPage.description",
+    category: "pdf",
+    context: "pdf",
+    defaultBinding: key("b"),
+    allowRepeat: false,
+    behavior: "tap",
+  },
+  {
     id: "pdf-rotate",
     label: "settings.keybinds.actions.pdfRotate.label",
     description: "settings.keybinds.actions.pdfRotate.description",

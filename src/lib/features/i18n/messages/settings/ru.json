@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "Открыть файл",
   "keybinds.actions.openSleepTimer.description": "Открыть меню таймера сна",
   "keybinds.actions.openSleepTimer.label": "Открыть таймер сна",
+  "keybinds.actions.pdfDualPage.description": "Переключить режим двух страниц",
+  "keybinds.actions.pdfDualPage.label": "Две страницы",
   "keybinds.actions.pdfFind.description": "Открыть или закрыть поиск по PDF",
   "keybinds.actions.pdfFind.label": "Найти в документе",
   "keybinds.actions.pdfFitWidth.description": "Подогнать ширину страницы PDF по окну",

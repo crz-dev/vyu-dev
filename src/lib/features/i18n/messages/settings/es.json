@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "Abrir archivo",
   "keybinds.actions.openSleepTimer.description": "Abrir el menú del temporizador de suspensión",
   "keybinds.actions.openSleepTimer.label": "Abrir temporizador de suspensión",
+  "keybinds.actions.pdfDualPage.description": "Alternar la vista de dos páginas",
+  "keybinds.actions.pdfDualPage.label": "Vista de dos páginas",
   "keybinds.actions.pdfFind.description": "Abre o cierra la búsqueda en PDF",
   "keybinds.actions.pdfFind.label": "Buscar en el documento",
   "keybinds.actions.pdfFitWidth.description": "Ajustar el ancho de la página del PDF al visor",

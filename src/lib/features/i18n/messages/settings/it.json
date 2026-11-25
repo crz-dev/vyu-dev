@@ -424,6 +424,8 @@
   "keybinds.actions.openFile.label": "Apri file",
   "keybinds.actions.openSleepTimer.description": "Apri il menu del timer di spegnimento",
   "keybinds.actions.openSleepTimer.label": "Apri timer di spegnimento",
+  "keybinds.actions.pdfDualPage.description": "Attiva o disattiva la vista a due pagine",
+  "keybinds.actions.pdfDualPage.label": "Vista a due pagine",
   "keybinds.actions.pdfFind.description": "Apri o chiudi la ricerca PDF",
   "keybinds.actions.pdfFind.label": "Cerca nel documento",
   "keybinds.actions.pdfFitWidth.description": "Adatta la larghezza della pagina PDF al visualizzatore",

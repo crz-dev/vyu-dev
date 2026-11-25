@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "ファイルを開く",
   "keybinds.actions.openSleepTimer.description": "スリープタイマーメニューを開く",
   "keybinds.actions.openSleepTimer.label": "スリープタイマーを開く",
+  "keybinds.actions.pdfDualPage.description": "見開き表示を切り替える",
+  "keybinds.actions.pdfDualPage.label": "見開き表示",
   "keybinds.actions.pdfFind.description": "PDF 検索を開閉します",
   "keybinds.actions.pdfFind.label": "文書内を検索",
   "keybinds.actions.pdfFitWidth.description": "PDF ページの幅をビューアーに合わせる",

@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "Abrir arquivo",
   "keybinds.actions.openSleepTimer.description": "Abrir o menu do temporizador de sono",
   "keybinds.actions.openSleepTimer.label": "Abrir temporizador de sono",
+  "keybinds.actions.pdfDualPage.description": "Alternar a vista de duas páginas",
+  "keybinds.actions.pdfDualPage.label": "Vista de duas páginas",
   "keybinds.actions.pdfFind.description": "Abre ou fecha a busca em PDF",
   "keybinds.actions.pdfFind.label": "Localizar no documento",
   "keybinds.actions.pdfFitWidth.description": "Ajustar a largura da página do PDF ao visualizador",

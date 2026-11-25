@@ -428,6 +428,8 @@
   "keybinds.actions.openFile.label": "Datei öffnen",
   "keybinds.actions.openSleepTimer.description": "Das Sleep-Timer-Menü öffnen",
   "keybinds.actions.openSleepTimer.label": "Sleep-Timer öffnen",
+  "keybinds.actions.pdfDualPage.description": "Zweiseitige Seitenansicht umschalten",
+  "keybinds.actions.pdfDualPage.label": "Zweiseitige Ansicht",
   "keybinds.actions.pdfFind.description": "PDF-Suche öffnen oder schließen",
   "keybinds.actions.pdfFind.label": "Im Dokument suchen",
   "keybinds.actions.pdfFitWidth.description": "PDF-Seitenbreite an den Betrachter anpassen",

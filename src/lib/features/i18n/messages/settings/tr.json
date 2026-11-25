@@ -424,6 +424,8 @@
   "keybinds.actions.openFile.label": "Dosya aç",
   "keybinds.actions.openSleepTimer.description": "Uyku zamanlayıcısı menüsünü aç",
   "keybinds.actions.openSleepTimer.label": "Uyku zamanlayıcısını aç",
+  "keybinds.actions.pdfDualPage.description": "İki sayfa görünümünü aç/kapat",
+  "keybinds.actions.pdfDualPage.label": "İki sayfa görünümü",
   "keybinds.actions.pdfFind.description": "PDF aramasını aç veya kapat",
   "keybinds.actions.pdfFind.label": "Belgede bul",
   "keybinds.actions.pdfFitWidth.description": "PDF sayfa genişliğini görüntüleyiciye sığdır",

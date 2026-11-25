@@ -426,6 +426,8 @@
   "keybinds.actions.nextFile.label": "Next file",
   "keybinds.actions.openFile.description": "Open the file picker",
   "keybinds.actions.openFile.label": "Open file",
+  "keybinds.actions.pdfDualPage.description": "Toggle two-page PDF view",
+  "keybinds.actions.pdfDualPage.label": "Two-page view",
   "keybinds.actions.pdfFind.description": "Open or close PDF search",
   "keybinds.actions.pdfFind.label": "Find in document",
   "keybinds.actions.pdfFitWidth.description": "Fit the PDF page width to the viewer",
