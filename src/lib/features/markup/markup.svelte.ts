@@ -47,6 +47,7 @@ export interface FreehandStroke {
   color: string;
   thickness: number;
   opacity: number;
+  groupId?: string;
 }
 
 // DrawStroke alias
@@ -131,6 +132,34 @@ export type MarkupStroke =
   | PlacedLine
   | HighlightStroke
   | PlacedText;
+
+export interface SignatureBounds {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+}
+
+export function getSignatureBounds(paths: DrawPoint[][]): SignatureBounds {
+  let minX = 1;
+  let minY = 1;
+  let maxX = 0;
+  let maxY = 0;
+  for (const path of paths) {
+    for (const point of path) {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    }
+  }
+  return {
+    minX,
+    minY,
+    width: Math.max(0.001, maxX - minX),
+    height: Math.max(0.001, maxY - minY),
+  };
+}
 
 function createMarkupStore() {
   let drawActive = $state(false);
@@ -268,6 +297,7 @@ function createMarkupStore() {
   let strokesHidden = $state(false);
 
   let shapesPickerActive = $state(false);
+  let signatureGroupCounter = 0;
 
   function setActiveTool(tool: MarkupTool) {
     activeTool = activeTool === tool ? "freehand" : tool;
@@ -361,6 +391,15 @@ function createMarkupStore() {
 
   function toggleDraw() {
     drawActive = !drawActive;
+  }
+
+  function deactivateTools() {
+    drawActive = false;
+    highlightActive = false;
+    textActive = false;
+    selectActive = false;
+    removeActive = false;
+    shapesPickerActive = false;
   }
 
   function setDrawColor(color: string) {
@@ -706,6 +745,65 @@ function createMarkupStore() {
     strokes = [...strokes, stroke];
   }
 
+  function insertSignature(
+    paths: DrawPoint[][],
+    center?: { x: number; y: number },
+    pageSize?: { width: number; height: number },
+  ) {
+    if (paths.length === 0 || currentPage < 1) return;
+    const bounds = getSignatureBounds(paths);
+    const sigW = bounds.width;
+    const sigH = bounds.height;
+
+    const pageW =
+      pageSize && pageSize.width > 0
+        ? pageSize.width
+        : displayWidth > 0
+          ? displayWidth
+          : 600;
+    const pageH =
+      pageSize && pageSize.height > 0
+        ? pageSize.height
+        : displayHeight > 0
+          ? displayHeight
+          : 800;
+    let targetWidth = 0.3;
+    let targetHeight = (targetWidth * pageW * (sigH / sigW)) / pageH;
+    if (targetHeight > 0.2) {
+      targetWidth *= 0.2 / targetHeight;
+      targetHeight = 0.2;
+    }
+    const cx = center?.x ?? 0.65;
+    const cy = center?.y ?? 0.82;
+    const left = Math.max(
+      0.02,
+      Math.min(1 - targetWidth - 0.02, cx - targetWidth / 2),
+    );
+    const top = Math.max(
+      0.02,
+      Math.min(1 - targetHeight - 0.02, cy - targetHeight / 2),
+    );
+
+    const groupId = `signature-${Date.now()}-${++signatureGroupCounter}`;
+    const signatureStrokes: FreehandStroke[] = paths
+      .filter((path) => path.length >= 2)
+      .map((path) => ({
+        type: "freehand",
+        points: path.map((point) => ({
+          x: left + ((point.x - bounds.minX) / sigW) * targetWidth,
+          y: top + ((point.y - bounds.minY) / sigH) * targetHeight,
+        })),
+        color: "#111111",
+        thickness: 2,
+        opacity: 1,
+        groupId,
+      }));
+    if (signatureStrokes.length === 0) return;
+    strokes = [...strokes, ...signatureStrokes];
+    selectedIndex = null;
+    selectedIndices = [];
+  }
+
   function undoLastStroke() {
     if (strokes.length === 0) {
       showToast({
@@ -714,14 +812,25 @@ function createMarkupStore() {
       });
       return;
     }
-    const removedIndex = strokes.length - 1;
-    strokes = strokes.slice(0, -1);
-    selectedIndices = selectedIndices
-      .filter((i) => i !== removedIndex)
-      .map((i) => (i > removedIndex ? i - 1 : i));
+    const last = strokes[strokes.length - 1];
+    const groupId = last.type === "freehand" ? last.groupId : undefined;
+    let removeCount = 1;
+    if (groupId) {
+      while (
+        removeCount < strokes.length &&
+        strokes[strokes.length - 1 - removeCount].type === "freehand" &&
+        (strokes[strokes.length - 1 - removeCount] as FreehandStroke)
+          .groupId === groupId
+      ) {
+        removeCount++;
+      }
+    }
+    const firstRemoved = strokes.length - removeCount;
+    strokes = strokes.slice(0, -removeCount);
+    selectedIndices = selectedIndices.filter((i) => i < firstRemoved);
     if (
       selectedIndex !== null &&
-      (selectedIndex === removedIndex || selectedIndex >= strokes.length)
+      (selectedIndex >= strokes.length || selectedIndex >= firstRemoved)
     ) {
       selectedIndex = null;
     }
@@ -1572,6 +1681,7 @@ function createMarkupStore() {
     undoLastStroke,
     deleteSelectedShape,
     clearAllStrokes,
+    insertSignature,
     findStrokeAt,
     deleteStrokeAt,
     moveStrokeBy,
@@ -1581,6 +1691,7 @@ function createMarkupStore() {
     switchFile,
     cleanup,
     setActiveTool,
+    deactivateTools,
     setFillShapes,
     setPathMode,
     selectShape,

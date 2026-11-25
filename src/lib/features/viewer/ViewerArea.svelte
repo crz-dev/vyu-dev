@@ -119,6 +119,9 @@
     onSortChange,
     onAudioLoad,
     pdf,
+    onSavePdfForms,
+    onDiscardPdfForms,
+    onApplyPdfRedaction,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -217,6 +220,12 @@
     onSortChange: (m: SortMode, d: boolean) => void;
     onAudioLoad: () => void;
     pdf: PdfStore;
+    onSavePdfForms: () => Promise<void>;
+    onDiscardPdfForms: () => void;
+    onApplyPdfRedaction: (
+      clearMetadata: boolean,
+      keepBackup: boolean,
+    ) => Promise<void>;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -725,6 +734,26 @@
         isFullscreen={viewer.state.isFullscreen}
         fsControlsVisible={viewer.state.fsControlsVisible}
         resetFsTimer={viewer.resetFsTimer}
+        encrypted={pdf.state.encrypted}
+        passwordPrompt={pdf.state.passwordPrompt}
+        formDirty={pdf.state.formDirty}
+        redactActive={pdf.state.redactActive}
+        redactions={pdf.state.redactions}
+        redactionConfirmOpen={pdf.state.redactionConfirmOpen}
+        signatureOpen={pdf.state.signatureOpen}
+        submitPassword={pdf.submitPassword}
+        cancelPassword={pdf.cancelPassword}
+        addRedaction={pdf.addRedaction}
+        removeRedaction={pdf.removeRedaction}
+        clearRedactions={pdf.clearRedactions}
+        startRedaction={pdf.startRedaction}
+        cancelRedaction={pdf.cancelRedaction}
+        setRedactionConfirmOpen={pdf.setRedactionConfirmOpen}
+        openSignaturePad={pdf.openSignaturePad}
+        closeSignaturePad={pdf.closeSignaturePad}
+        onSaveForms={onSavePdfForms}
+        onDiscardForms={onDiscardPdfForms}
+        onApplyRedaction={onApplyPdfRedaction}
       />
     {:else if fileSrc && isAudio}
       <AudioPlayer

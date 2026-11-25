@@ -153,11 +153,35 @@ export interface PdfPage {
   pageNum: number;
   canvasRef: HTMLCanvasElement | null;
   textLayerRef: HTMLDivElement | null;
+  annotationsRef: HTMLDivElement | null;
   rendered: boolean;
   width: number;
   height: number;
   pageHeight: number;
   links: PdfLink[];
+}
+
+export interface PdfPasswordPrompt {
+  visible: boolean;
+  incorrect: boolean;
+}
+
+export interface PdfRedactionRect {
+  id: number;
+  pageNum: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface PdfRedactionPageImage {
+  pageNum: number;
+  dataBase64: string;
+  width: number;
+  height: number;
+  widthPt: number;
+  heightPt: number;
 }
 
 export interface FindHighlight {
@@ -174,6 +198,13 @@ export interface PdfState {
   rotation: number;
   dualPage: boolean;
   nightMode: boolean;
+  encrypted: boolean;
+  passwordPrompt: PdfPasswordPrompt;
+  formDirty: boolean;
+  redactActive: boolean;
+  redactions: PdfRedactionRect[];
+  redactionConfirmOpen: boolean;
+  signatureOpen: boolean;
   pageCount: number;
   currentPage: number;
   loading: boolean;
@@ -225,6 +256,13 @@ export function createPdf() {
     rotation: 0,
     dualPage: false,
     nightMode: loadPdfNightMode(),
+    encrypted: false,
+    passwordPrompt: { visible: false, incorrect: false },
+    formDirty: false,
+    redactActive: false,
+    redactions: [],
+    redactionConfirmOpen: false,
+    signatureOpen: false,
     pageCount: 0,
     currentPage: 1,
     loading: false,
@@ -244,18 +282,23 @@ export function createPdf() {
 
   let pdfDoc: PDFDocumentProxy | null = null;
   let pdfjsLib: PdfJsModule | null = null;
+  let loadingTaskRef: PDFDocumentLoadingTask | null = null;
+  let passwordCallback: ((password: string) => void) | null = null;
   let observer: IntersectionObserver | null = null;
   let renderTimers: Map<number, ReturnType<typeof setTimeout>> = new Map();
   let textContentCache: Map<number, PdfTextContent> = new Map();
   let textLayerTasks: Map<number, TextLayerTask> = new Map();
   let textLayerVersions: Map<number, number> = new Map();
+  let annotationLayerVersions: Map<number, number> = new Map();
   let pageProxies: Map<number, PDFPageProxy> = new Map();
   let annotationCache: Map<number, unknown[]> = new Map();
+  let redactionId = 0;
   let pdfContainerEl: HTMLElement | null = null;
   let scrollHandler: ((e: Event) => void) | null = null;
   let currentFilePath = "";
   let disposed = false;
   let loadGen = 0;
+  let sourceNonce = 0;
 
   function setContainer(el: HTMLElement | null) {
     pdfContainerEl = el;
@@ -298,6 +341,116 @@ export function createPdf() {
     page?.textLayerRef?.replaceChildren();
   }
 
+  function clearAnnotationLayer(pageNum: number): void {
+    annotationLayerVersions.set(
+      pageNum,
+      (annotationLayerVersions.get(pageNum) ?? 0) + 1,
+    );
+    const page = state.pages.find((item) => item.pageNum === pageNum);
+    page?.annotationsRef?.replaceChildren();
+  }
+
+  async function getPageAnnotations(
+    pdfPage: PDFPageProxy,
+    pageNum: number,
+  ): Promise<unknown[] | null> {
+    const cached = annotationCache.get(pageNum);
+    if (cached) return cached;
+    if (!pdfDoc || disposed) return null;
+    const documentRef = pdfDoc;
+    try {
+      const annotations = (await pdfPage.getAnnotations({
+        intent: "display",
+      })) as unknown[];
+      if (disposed || pdfDoc !== documentRef) return null;
+      annotationCache.set(pageNum, annotations);
+      return annotations;
+    } catch {
+      return null;
+    }
+  }
+
+  async function renderAnnotationLayer(
+    pdfPage: PDFPageProxy,
+    page: PdfPage,
+  ): Promise<void> {
+    const container = page.annotationsRef;
+    const lib = pdfjsLib;
+    const documentRef = pdfDoc;
+    if (!container || !lib || !documentRef || disposed) return;
+
+    clearAnnotationLayer(page.pageNum);
+    const version = annotationLayerVersions.get(page.pageNum) ?? 0;
+    const annotations = await getPageAnnotations(pdfPage, page.pageNum);
+    if (
+      !annotations ||
+      disposed ||
+      pdfDoc !== documentRef ||
+      annotationLayerVersions.get(page.pageNum) !== version ||
+      page.annotationsRef !== container
+    ) {
+      return;
+    }
+
+    const visible = annotations.filter((item) => {
+      const annotation = item as { subtype?: string; noHTML?: boolean };
+      return annotation.subtype !== "Link" && !annotation.noHTML;
+    });
+    if (visible.length === 0) return;
+
+    container.style.setProperty("--scale-factor", String(state.scale));
+    const viewport = pdfPage.getViewport({
+      scale: state.scale,
+      rotation: state.rotation,
+    });
+
+    try {
+      const layer = new lib.AnnotationLayer({
+        div: container,
+        accessibilityManager: undefined,
+        annotationCanvasMap: undefined,
+        annotationEditorUIManager: undefined,
+        page: pdfPage,
+        viewport: viewport.clone({ dontFlip: true }),
+        structTreeLayer: undefined,
+      });
+      await layer.render({
+        viewport,
+        div: container,
+        annotations: visible,
+        page: pdfPage,
+        linkService: {
+          addLinkAttributes() {},
+          getDestinationHash: () => "",
+          getAnchorUrl: () => "",
+          setHash() {},
+          executeNamedAction() {},
+          executeAction() {},
+          goToDestination() {},
+        } as never,
+        annotationStorage: documentRef.annotationStorage,
+        renderForms: true,
+      });
+      if (state.encrypted) {
+        container.classList.add("readonly");
+        for (const field of container.querySelectorAll<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >("input, textarea, select")) {
+          field.disabled = true;
+        }
+      } else {
+        container.classList.remove("readonly");
+      }
+    } catch (err) {
+      if (annotationLayerVersions.get(page.pageNum) === version && !disposed) {
+        console.error(
+          `Failed to render PDF annotation layer ${page.pageNum}:`,
+          err,
+        );
+      }
+    }
+  }
+
   function applyScale(value: number, autoFit: boolean) {
     const newScale = autoFit ? value : clampScale(value);
     // Manual zoom leaves any fit mode; the menu should stop showing Fit width.
@@ -310,6 +463,7 @@ export function createPdf() {
 
     for (const page of state.pages) {
       clearTextLayer(page.pageNum);
+      clearAnnotationLayer(page.pageNum);
       page.rendered = false;
       page.links = [];
     }
@@ -399,6 +553,7 @@ export function createPdf() {
       await pdfPage.render({ canvasContext: ctx, viewport }).promise;
       page.rendered = true;
       void renderTextLayer(pdfPage, page);
+      void renderAnnotationLayer(pdfPage, page);
       void loadPageLinks(pdfPage, page, viewport);
       updateCurrentPage();
       if (page.pageNum === 1 && currentFilePath) {
@@ -500,15 +655,9 @@ export function createPdf() {
     if (!documentRef || disposed) return;
 
     try {
-      let annotations = annotationCache.get(page.pageNum);
-      if (annotations === undefined) {
-        annotations = (await pdfPage.getAnnotations({
-          intent: "display",
-        })) as unknown[];
-        if (disposed || pdfDoc !== documentRef) return;
-        annotationCache.set(page.pageNum, annotations);
-      }
+      const annotations = await getPageAnnotations(pdfPage, page.pageNum);
       if (
+        !annotations ||
         disposed ||
         pdfDoc !== documentRef ||
         state.scale !== scale ||
@@ -686,12 +835,27 @@ export function createPdf() {
       // Must be a truthy non-empty string — PDF.js 4.x checks for falsy
       loadedPdfjsLib.GlobalWorkerOptions.workerSrc = ".";
 
-      const url = convertFileSrc(path);
+      const url = `${convertFileSrc(path)}?v=${++sourceNonce}`;
       const loadingTask = loadedPdfjsLib.getDocument({
         url,
         enableXfa: true,
         disableAutoFetch: false,
       });
+      loadingTaskRef = loadingTask;
+      loadingTask.onPassword = (
+        updatePassword: (password: string) => void,
+        reason: number,
+      ) => {
+        if (gen !== loadGen || disposed) return;
+        clearTimeout(timeoutId);
+        passwordCallback = updatePassword;
+        state.encrypted = true;
+        state.passwordPrompt = {
+          visible: true,
+          incorrect:
+            reason === loadedPdfjsLib.PasswordResponses.INCORRECT_PASSWORD,
+        };
+      };
       const pdfDocument = await loadingTask.promise;
       if (gen !== loadGen) {
         clearTimeout(timeoutId);
@@ -699,6 +863,17 @@ export function createPdf() {
         return;
       }
       pdfDoc = pdfDocument;
+      loadingTaskRef = null;
+      passwordCallback = null;
+      state.passwordPrompt = { visible: false, incorrect: false };
+
+      const storage = pdfDocument.annotationStorage;
+      storage.onSetModified = () => {
+        if (!disposed) state.formDirty = true;
+      };
+      storage.onResetModified = () => {
+        if (!disposed) state.formDirty = false;
+      };
 
       const numPages = pdfDocument.numPages;
       state.pageCount = numPages;
@@ -714,6 +889,7 @@ export function createPdf() {
           pageNum: i,
           canvasRef: null,
           textLayerRef: null,
+          annotationsRef: null,
           rendered: false,
           width: 0,
           height: 0,
@@ -805,6 +981,17 @@ export function createPdf() {
     for (const task of textLayerTasks.values()) task.cancel();
     textLayerTasks.clear();
     textLayerVersions.clear();
+    annotationLayerVersions.clear();
+    passwordCallback = null;
+    state.passwordPrompt = { visible: false, incorrect: false };
+    if (loadingTaskRef) {
+      try {
+        void loadingTaskRef.destroy();
+      } catch {
+        // ignore
+      }
+      loadingTaskRef = null;
+    }
     if (observer) {
       observer.disconnect();
       observer = null;
@@ -815,6 +1002,8 @@ export function createPdf() {
     }
     if (pdfDoc) {
       try {
+        pdfDoc.annotationStorage.onSetModified = null;
+        pdfDoc.annotationStorage.onResetModified = null;
         pdfDoc.destroy();
       } catch {
         // ignore
@@ -832,6 +1021,12 @@ export function createPdf() {
     state.fitWidth = false;
     state.rotation = 0;
     state.dualPage = false;
+    state.encrypted = false;
+    state.formDirty = false;
+    state.redactActive = false;
+    state.redactions = [];
+    state.redactionConfirmOpen = false;
+    state.signatureOpen = false;
     state.findOpen = false;
     state.findQuery = "";
     state.findResults = 0;
@@ -975,6 +1170,7 @@ export function createPdf() {
   function clearRenderLayers() {
     for (const page of state.pages) {
       clearTextLayer(page.pageNum);
+      clearAnnotationLayer(page.pageNum);
       page.rendered = false;
       page.links = [];
     }
@@ -1087,6 +1283,195 @@ export function createPdf() {
     } catch {
       // Broken destinations should not break the viewer.
     }
+  }
+
+  function submitPassword(password: string) {
+    const callback = passwordCallback;
+    if (!callback) return;
+    passwordCallback = null;
+    state.passwordPrompt = { visible: false, incorrect: false };
+    callback(password);
+  }
+
+  function cancelPassword() {
+    passwordCallback = null;
+    state.passwordPrompt = { visible: false, incorrect: false };
+    state.loading = false;
+    state.error = locale.t("shell.viewer.pdf.passwordRequired");
+    const task = loadingTaskRef;
+    loadingTaskRef = null;
+    loadGen++;
+    disposed = true;
+    if (task) void task.destroy().catch(() => {});
+  }
+
+  async function serializePdfBytes(): Promise<Uint8Array | null> {
+    const doc = pdfDoc;
+    if (!doc || disposed) return null;
+    return doc.saveDocument();
+  }
+
+  function markFormsSaved() {
+    if (pdfDoc) {
+      try {
+        pdfDoc.annotationStorage.resetModified();
+      } catch {
+        // ignore
+      }
+    }
+    state.formDirty = false;
+  }
+
+  function refreshAnnotationLayers() {
+    if (!pdfDoc) return;
+    for (const page of state.pages) {
+      const proxy = pageProxies.get(page.pageNum);
+      if (!proxy || !page.rendered) continue;
+      clearAnnotationLayer(page.pageNum);
+      void renderAnnotationLayer(proxy, page);
+    }
+  }
+
+  function discardFormChanges() {
+    const doc = pdfDoc;
+    if (!doc || disposed) return;
+    const all = doc.annotationStorage.getAll();
+    if (all) {
+      for (const key of Object.keys(all)) {
+        doc.annotationStorage.remove(key);
+      }
+    }
+    doc.annotationStorage.resetModified();
+    state.formDirty = false;
+    refreshAnnotationLayers();
+  }
+
+  function startRedaction() {
+    if (state.encrypted) return;
+    state.redactActive = true;
+    state.redactions = [];
+    state.redactionConfirmOpen = false;
+    state.showPagePanel = false;
+  }
+
+  function cancelRedaction() {
+    state.redactActive = false;
+    state.redactions = [];
+    state.redactionConfirmOpen = false;
+  }
+
+  function requestRedactionConfirm() {
+    if (state.redactions.length > 0) state.redactionConfirmOpen = true;
+  }
+
+  function setRedactionConfirmOpen(open: boolean) {
+    state.redactionConfirmOpen = open;
+  }
+
+  function undoRedaction() {
+    state.redactions = state.redactions.slice(0, -1);
+    if (state.redactions.length === 0) state.redactionConfirmOpen = false;
+  }
+
+  function openSignaturePad() {
+    if (state.encrypted) return;
+    state.redactionConfirmOpen = false;
+    state.redactActive = false;
+    state.redactions = [];
+    state.signatureOpen = true;
+  }
+
+  function closeSignaturePad() {
+    state.signatureOpen = false;
+  }
+
+  function addRedaction(
+    pageNum: number,
+    rect: { x: number; y: number; width: number; height: number },
+  ) {
+    if (rect.width <= 0.002 || rect.height <= 0.002) return;
+    const x = Math.max(0, Math.min(1, rect.x));
+    const y = Math.max(0, Math.min(1, rect.y));
+    state.redactions.push({
+      id: ++redactionId,
+      pageNum,
+      x,
+      y,
+      width: Math.min(1 - x, Math.abs(rect.width)),
+      height: Math.min(1 - y, Math.abs(rect.height)),
+    });
+  }
+
+  function removeRedaction(id: number) {
+    state.redactions = state.redactions.filter((item) => item.id !== id);
+  }
+
+  function clearRedactions() {
+    state.redactions = [];
+  }
+
+  async function renderRedactionPages(): Promise<PdfRedactionPageImage[]> {
+    const doc = pdfDoc;
+    if (!doc || disposed) return [];
+    const byPage = new Map<number, PdfRedactionRect[]>();
+    for (const rect of state.redactions) {
+      const existing = byPage.get(rect.pageNum);
+      if (existing) existing.push(rect);
+      else byPage.set(rect.pageNum, [rect]);
+    }
+
+    const MAX_PIXELS = 16_000_000;
+    const images: PdfRedactionPageImage[] = [];
+    for (const [pageNum, rects] of byPage) {
+      if (disposed || pdfDoc !== doc) return [];
+      const pdfPage = pageProxies.get(pageNum);
+      if (!pdfPage) continue;
+      const pointViewport = pdfPage.getViewport({
+        scale: 1,
+        rotation: state.rotation,
+      });
+      const targetScale = Math.min(
+        300 / 72,
+        Math.sqrt(
+          MAX_PIXELS / Math.max(1, pointViewport.width * pointViewport.height),
+        ),
+      );
+      const viewport = pdfPage.getViewport({
+        scale: Math.max(1, targetScale),
+        rotation: state.rotation,
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.floor(viewport.width));
+      canvas.height = Math.max(1, Math.floor(viewport.height));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+      await pdfPage.render({
+        canvasContext: ctx,
+        viewport,
+        annotationMode: pdfjsLib?.AnnotationMode.ENABLE_STORAGE,
+      }).promise;
+      if (disposed || pdfDoc !== doc) return [];
+      ctx.fillStyle = "#000";
+      for (const rect of rects) {
+        ctx.fillRect(
+          rect.x * canvas.width,
+          rect.y * canvas.height,
+          rect.width * canvas.width,
+          rect.height * canvas.height,
+        );
+      }
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const comma = dataUrl.indexOf(",");
+      images.push({
+        pageNum,
+        dataBase64: comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl,
+        width: canvas.width,
+        height: canvas.height,
+        widthPt: pointViewport.width,
+        heightPt: pointViewport.height,
+      });
+    }
+    return images;
   }
 
   let findItemsCache: Map<
@@ -1251,6 +1636,22 @@ export function createPdf() {
     toggleOutline,
     setPanelTab,
     openLink,
+    submitPassword,
+    cancelPassword,
+    serializePdfBytes,
+    markFormsSaved,
+    discardFormChanges,
+    startRedaction,
+    cancelRedaction,
+    requestRedactionConfirm,
+    setRedactionConfirmOpen,
+    undoRedaction,
+    openSignaturePad,
+    closeSignaturePad,
+    addRedaction,
+    removeRedaction,
+    clearRedactions,
+    renderRedactionPages,
     toggleFind,
     findText,
     findNext,

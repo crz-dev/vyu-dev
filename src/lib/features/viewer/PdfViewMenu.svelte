@@ -16,6 +16,8 @@
     rotate,
     toggleDualPage,
     toggleNightMode,
+    onSign,
+    onRedact,
   }: {
     fitWidth: boolean;
     autoFit: boolean;
@@ -26,6 +28,8 @@
     rotate: () => void;
     toggleDualPage: () => void;
     toggleNightMode: () => void;
+    onSign: () => void;
+    onRedact: () => void;
   } = $props();
 
   let open = $state(false);
@@ -93,6 +97,12 @@
       class="pdf-view-menu"
       transition:fly={{ y: -6, duration: transitionMs, opacity: 0.08 }}
     >
+      <div class="pdf-view-menu-header">
+        <span class="pdf-view-menu-title"
+          >{t("shell.viewer.pdf.viewOptions")}</span
+        >
+      </div>
+      <div class="pdf-view-menu-sep"></div>
       <button class="pdf-view-menu-item" onclick={() => run(onOutline)}>
         <svg
           width="14"
@@ -284,6 +294,57 @@
         {:else if shortcut("pdf-night")}
           <span class="pdf-view-menu-key">{shortcut("pdf-night")}</span>
         {/if}
+      </button>
+      <div class="pdf-view-menu-sep"></div>
+      <button class="pdf-view-menu-item" onclick={() => run(onSign)}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="m13 8 3 3"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+        <span class="pdf-view-menu-label">{t("shell.viewer.pdf.sign")}</span>
+      </button>
+      <button class="pdf-view-menu-item danger" onclick={() => run(onRedact)}>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <rect
+            x="4"
+            y="4"
+            width="16"
+            height="16"
+            rx="1.5"
+            stroke="currentColor"
+            stroke-width="1.5"
+          />
+          <path
+            d="M4 20 20 4"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+          />
+        </svg>
+        <span class="pdf-view-menu-label">{t("shell.viewer.pdf.redact")}</span>
       </button>
     </div>
   {/if}

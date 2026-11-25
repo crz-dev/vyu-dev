@@ -3265,6 +3265,13 @@ main.subtitle-menu-open .subtitle-overlay {
   flex-direction: row;
   gap: 4px;
 }
+.edit-menu-pdf-hint {
+  padding: 1px 8px 5px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
 .edit-menu-divider {
   width: 0.5px;
   background: linear-gradient(
@@ -3337,6 +3344,10 @@ main.subtitle-menu-open .subtitle-overlay {
 }
 .edit-menu-btn.red:hover {
   background: var(--red-bg-active);
+}
+.edit-menu-btn.red.active {
+  background: var(--red-bg-strong);
+  border-color: var(--red-border-strong);
 }
 .edit-menu-btn.blue {
   background: var(--blue-bg-default);

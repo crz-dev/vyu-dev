@@ -149,6 +149,13 @@
     onMarkupApply,
     onMarkupExport,
     markupMenuHasEdits,
+    onPdfSign,
+    onPdfRedact,
+    onPdfUndoRedaction,
+    onPdfResetRedaction,
+    onPdfRequestRedactApply,
+    markupRedactActive,
+    markupRedactionCount,
     closeEditMenu,
     markupMenuVisible,
     closeMarkupMenu,
@@ -352,6 +359,13 @@
     onMarkupApply: () => void;
     onMarkupExport: () => void;
     markupMenuHasEdits: boolean;
+    onPdfSign: () => void;
+    onPdfRedact: () => void;
+    onPdfUndoRedaction: () => void;
+    onPdfResetRedaction: () => void;
+    onPdfRequestRedactApply: () => void;
+    markupRedactActive: boolean;
+    markupRedactionCount: number;
     closeEditMenu: () => void;
     markupMenuVisible: boolean;
     closeMarkupMenu: () => void;
@@ -1081,6 +1095,14 @@
     {onReset}
     onApply={onMarkupApply}
     onExport={onMarkupExport}
+    {isPdf}
+    redactActive={markupRedactActive}
+    redactionCount={markupRedactionCount}
+    onSign={onPdfSign}
+    onRedact={onPdfRedact}
+    onUndoRedaction={onPdfUndoRedaction}
+    onResetRedaction={onPdfResetRedaction}
+    onRequestRedactionApply={onPdfRequestRedactApply}
   />
 
   <EffectsMenu

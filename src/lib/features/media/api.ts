@@ -112,6 +112,30 @@ export async function invokeWriteFileAtomic(
   return invoke("write_file_atomic", { path, dataBase64 });
 }
 
+export async function invokeWritePdfAtomic(
+  path: string,
+  dataBase64: string,
+): Promise<void> {
+  return invoke("write_pdf_atomic", { path, dataBase64 });
+}
+
+export interface RedactPdfPageImage {
+  pageNum: number;
+  dataBase64: string;
+  width: number;
+  height: number;
+  widthPt: number;
+  heightPt: number;
+}
+
+export async function invokeRedactPdf(request: {
+  filePath: string;
+  clearMetadata: boolean;
+  pages: RedactPdfPageImage[];
+}): Promise<void> {
+  return invoke("redact_pdf", { request });
+}
+
 export async function invokeWriteTempFile(
   dataBase64: string,
   ext: string,

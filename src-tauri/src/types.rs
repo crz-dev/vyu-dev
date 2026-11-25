@@ -381,6 +381,25 @@ pub struct ApplyMarkupRequest {
     pub pages: Vec<PdfPageAnnotations>,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RedactedPageImage {
+    pub page_num: u32,
+    pub data_base64: String,
+    pub width: u32,
+    pub height: u32,
+    pub width_pt: f64,
+    pub height_pt: f64,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RedactPdfRequest {
+    pub file_path: String,
+    pub clear_metadata: bool,
+    pub pages: Vec<RedactedPageImage>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

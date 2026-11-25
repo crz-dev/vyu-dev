@@ -84,6 +84,7 @@
   import TransparencyConfirmDialog from "$lib/features/dialogs/TransparencyConfirmDialog.svelte";
   import { setupInit } from "$lib/services/init";
   import { createPdf } from "$lib/features/viewer/pdf.svelte";
+  import { createPdfActions } from "$lib/features/viewer/pdfActions";
   import { corruption } from "$lib/features/media/corruption.svelte";
   import { sort } from "$lib/features/navigation/sort.svelte";
   import {
@@ -859,6 +860,13 @@
     media,
   } = navigation;
 
+  const pdfActions = createPdfActions({
+    getFilePath: () => filePath,
+    getPdf: () => pdf,
+    loadFile,
+    folderWatcher,
+  });
+
   function handleVideoLoad() {
     onVideoLoad();
     if (videoEl) {
@@ -900,7 +908,11 @@
 
   $effect(() => {
     try {
+      // `fileSrc` carries a cache-busting nonce, so reloading the same path
+      // after a form or redaction write re-opens the PDF document too.
+      const src = fileSrc;
       if (filePath && isPdf && pdfContainerEl) {
+        if (!src) return;
         pdf.loadFile(filePath);
         pdf.setContainer(pdfContainerEl);
       } else {
@@ -1297,12 +1309,49 @@
     return _markupActions;
   }
   async function handleMarkupApply(keepBackup?: boolean) {
+    if (isPdf && pdf.state.encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
     const a = await ensureMarkupActions();
     return a.handleMarkupApply(keepBackup);
   }
   async function handleMarkupExport(canvasDataUrl?: string) {
     const a = await ensureMarkupActions();
     return a.handleMarkupExport(canvasDataUrl);
+  }
+
+  function handlePdfSign() {
+    if (!isPdf) return;
+    if (pdf.state.encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
+    markup.deactivateTools();
+    pdf.openSignaturePad();
+  }
+
+  function handlePdfRedact() {
+    if (!isPdf) return;
+    if (pdf.state.redactActive) {
+      pdf.cancelRedaction();
+      return;
+    }
+    if (pdf.state.encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
+    markup.deactivateTools();
+    pdf.startRedaction();
   }
   const deleteActions = createDeleteActions({
     getFilePath: () => filePath,
@@ -1466,7 +1515,14 @@
     closeEditMenu,
     closeMarkupMenu,
     closeEffectsMenu,
-    markupMenuHasEdits: markup.hasUnapplied,
+    markupMenuHasEdits: markup.hasUnapplied || pdf.state.redactions.length > 0,
+    onPdfSign: handlePdfSign,
+    onPdfRedact: handlePdfRedact,
+    onPdfUndoRedaction: pdf.undoRedaction,
+    onPdfResetRedaction: pdf.clearRedactions,
+    onPdfRequestRedactApply: pdf.requestRedactionConfirm,
+    markupRedactActive: pdf.state.redactActive,
+    markupRedactionCount: pdf.state.redactions.length,
     openConvertedFile,
     showValue,
     muted,
@@ -2054,6 +2110,9 @@
       {rawDurationSecs}
       {onSortChange}
       {pdf}
+      onSavePdfForms={pdfActions.saveForms}
+      onDiscardPdfForms={pdfActions.discardForms}
+      onApplyPdfRedaction={pdfActions.applyRedaction}
       {fileDimensions}
       {fileSize}
       {fileInfoLoading}

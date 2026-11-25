@@ -6,12 +6,21 @@
     type PdfLink,
     type PdfOutlineEntry,
     type PdfPage,
+    type PdfPasswordPrompt as PdfPasswordPromptState,
+    type PdfRedactionRect,
   } from "./pdf.svelte";
   import PdfViewMenu from "./PdfViewMenu.svelte";
+  import PdfPasswordPrompt from "./PdfPasswordPrompt.svelte";
+  import PdfRedactOverlay from "./PdfRedactOverlay.svelte";
+  import PdfSignaturePad from "./PdfSignaturePad.svelte";
   import { copyTextToClipboard } from "$lib/services/clipboard";
   import { showToast } from "$lib/components/toast.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
-  import { markup } from "$lib/features/markup/markup.svelte";
+  import {
+    markup,
+    getSignatureBounds,
+    type DrawPoint,
+  } from "$lib/features/markup/markup.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
   import { menuStore } from "$lib/features/menus/menuVisibility.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -64,6 +73,26 @@
     isFullscreen,
     fsControlsVisible,
     resetFsTimer,
+    encrypted,
+    passwordPrompt,
+    formDirty,
+    redactActive,
+    redactions,
+    redactionConfirmOpen,
+    signatureOpen,
+    submitPassword,
+    cancelPassword,
+    addRedaction,
+    removeRedaction,
+    clearRedactions,
+    startRedaction,
+    cancelRedaction,
+    setRedactionConfirmOpen,
+    openSignaturePad,
+    closeSignaturePad,
+    onSaveForms,
+    onDiscardForms,
+    onApplyRedaction,
   }: {
     pdfContainerEl: HTMLElement | null;
     loading: boolean;
@@ -110,6 +139,32 @@
     isFullscreen: boolean;
     fsControlsVisible: boolean;
     resetFsTimer: () => void;
+    encrypted: boolean;
+    passwordPrompt: PdfPasswordPromptState;
+    formDirty: boolean;
+    redactActive: boolean;
+    redactions: PdfRedactionRect[];
+    redactionConfirmOpen: boolean;
+    signatureOpen: boolean;
+    submitPassword: (password: string) => void;
+    cancelPassword: () => void;
+    addRedaction: (
+      pageNum: number,
+      rect: { x: number; y: number; width: number; height: number },
+    ) => void;
+    removeRedaction: (id: number) => void;
+    clearRedactions: () => void;
+    startRedaction: () => void;
+    cancelRedaction: () => void;
+    setRedactionConfirmOpen: (open: boolean) => void;
+    openSignaturePad: () => void;
+    closeSignaturePad: () => void;
+    onSaveForms: () => Promise<void>;
+    onDiscardForms: () => void;
+    onApplyRedaction: (
+      clearMetadata: boolean,
+      keepBackup: boolean,
+    ) => Promise<void>;
   } = $props();
 
   let findInputEl: HTMLInputElement | null = $state(null);
@@ -134,6 +189,26 @@
   let pageInputValue = $state("");
   let pageInputEl: HTMLInputElement | null = $state(null);
 
+  let pendingSignature = $state<DrawPoint[][] | null>(null);
+  let signaturePointer = $state<{
+    pageNum: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  let signatureDragging = false;
+  let formBusy = $state(false);
+  let redactionBusy = $state(false);
+  let redactDrag = $state<{
+    pageNum: number;
+    left: DOMRect;
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+  } | null>(null);
+
   let currentPageWrapper = $derived(
     currentPage > 0 && currentPage <= pageWrapperRefs.length
       ? pageWrapperRefs[currentPage - 1]
@@ -151,6 +226,63 @@
       if (outline[i].pageNum <= currentPage) index = i;
     }
     return index;
+  });
+
+  let signaturePreview = $derived.by(() => {
+    const paths = pendingSignature;
+    if (!paths) return null;
+    const bounds = getSignatureBounds(paths);
+    const pathsD = paths
+      .filter((path) => path.length >= 2)
+      .map((path) =>
+        path
+          .map((point, i) => {
+            const x = ((point.x - bounds.minX) / bounds.width).toFixed(4);
+            const y = ((point.y - bounds.minY) / bounds.height).toFixed(4);
+            return `${i === 0 ? "M" : "L"}${x} ${y}`;
+          })
+          .join(" "),
+      );
+    return { bounds, pathsD };
+  });
+
+  let signaturePreviewBox = $derived.by(() => {
+    const preview = signaturePreview;
+    const pointer = signaturePointer;
+    if (!preview || !pointer) return null;
+    const ratio =
+      (pointer.width / pointer.height) *
+      (preview.bounds.height / preview.bounds.width);
+    let width = 0.3;
+    let height = width * ratio;
+    if (height > 0.2) {
+      width *= 0.2 / height;
+      height = 0.2;
+    }
+    const left = Math.max(
+      0.02,
+      Math.min(1 - width - 0.02, pointer.x - width / 2),
+    );
+    const top = Math.max(
+      0.02,
+      Math.min(1 - height - 0.02, pointer.y - height / 2),
+    );
+    return {
+      pageNum: pointer.pageNum,
+      left,
+      top,
+      width,
+      height,
+    };
+  });
+
+  // Starting redaction cancels any pending signature placement.
+  $effect(() => {
+    if (redactActive) {
+      pendingSignature = null;
+      signaturePointer = null;
+      signatureDragging = false;
+    }
   });
 
   // Sync markup page when current page changes
@@ -217,6 +349,190 @@
       e.stopPropagation();
       cancelPageEdit();
     }
+  }
+
+  function openSignature() {
+    if (encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
+    if (redactActive) cancelRedactMode();
+    markup.deactivateTools();
+    openSignaturePad();
+  }
+
+  function acceptSignature(paths: DrawPoint[][]) {
+    closeSignaturePad();
+    markup.deactivateTools();
+    pendingSignature = paths;
+    const wrapper = currentPage > 0 ? pageWrapperRefs[currentPage - 1] : null;
+    const rect = wrapper?.getBoundingClientRect();
+    signaturePointer = rect
+      ? {
+          pageNum: currentPage,
+          x: 0.65,
+          y: 0.82,
+          width: rect.width,
+          height: rect.height,
+        }
+      : null;
+  }
+
+  function cancelSignaturePlacement() {
+    pendingSignature = null;
+    signaturePointer = null;
+    signatureDragging = false;
+  }
+
+  function updateSignaturePointer(e: PointerEvent, pageNum: number) {
+    if (!pendingSignature) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    signaturePointer = {
+      pageNum,
+      x: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
+      width: rect.width,
+      height: rect.height,
+    };
+  }
+
+  function beginSignatureDrag(e: PointerEvent, pageNum: number) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    signatureDragging = true;
+    updateSignaturePointer(e, pageNum);
+  }
+
+  function moveSignatureDrag(e: PointerEvent, pageNum: number) {
+    if (!signatureDragging) return;
+    updateSignaturePointer(e, pageNum);
+  }
+
+  function finishSignatureDrag(e: PointerEvent, pageNum: number) {
+    if (!signatureDragging) return;
+    signatureDragging = false;
+    updateSignaturePointer(e, pageNum);
+    const paths = pendingSignature;
+    const pointer = signaturePointer;
+    if (!paths || !pointer || pointer.pageNum !== pageNum) return;
+    pendingSignature = null;
+    signaturePointer = null;
+    selectPage(pageNum);
+    void tick().then(() => {
+      markup.switchPage(pageNum);
+      markup.insertSignature(
+        paths,
+        { x: pointer.x, y: pointer.y },
+        { width: pointer.width, height: pointer.height },
+      );
+    });
+  }
+
+  async function saveFormChanges() {
+    if (formBusy) return;
+    formBusy = true;
+    try {
+      await onSaveForms();
+    } finally {
+      formBusy = false;
+    }
+  }
+
+  function discardFormChanges() {
+    if (formBusy) return;
+    onDiscardForms();
+  }
+
+  function startRedact() {
+    if (encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
+    if (redactActive) {
+      cancelRedactMode();
+      return;
+    }
+    pendingSignature = null;
+    redactDrag = null;
+    markup.deactivateTools();
+    startRedaction();
+  }
+
+  function cancelRedactMode() {
+    redactDrag = null;
+    cancelRedaction();
+  }
+
+  function beginRedactDrag(e: PointerEvent, pageNum: number) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+    const rect = el.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    redactDrag = {
+      pageNum,
+      left: rect,
+      startX: x,
+      startY: y,
+      currentX: x,
+      currentY: y,
+    };
+  }
+
+  function moveRedactDrag(e: PointerEvent) {
+    if (!redactDrag) return;
+    const rect = redactDrag.left;
+    redactDrag = {
+      ...redactDrag,
+      currentX: Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),
+      currentY: Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)),
+    };
+  }
+
+  function endRedactDrag() {
+    const drag = redactDrag;
+    redactDrag = null;
+    if (!drag) return;
+    addRedaction(drag.pageNum, {
+      x: Math.min(drag.startX, drag.currentX),
+      y: Math.min(drag.startY, drag.currentY),
+      width: Math.abs(drag.currentX - drag.startX),
+      height: Math.abs(drag.currentY - drag.startY),
+    });
+  }
+
+  async function applyRedactions(clearMetadata: boolean, keepBackup: boolean) {
+    if (redactionBusy) return;
+    redactionBusy = true;
+    try {
+      await onApplyRedaction(clearMetadata, keepBackup);
+    } finally {
+      redactionBusy = false;
+    }
+  }
+
+  function redactionPreview(pageNum: number) {
+    if (!redactDrag || redactDrag.pageNum !== pageNum) return null;
+    return {
+      x: Math.min(redactDrag.startX, redactDrag.currentX),
+      y: Math.min(redactDrag.startY, redactDrag.currentY),
+      width: Math.abs(redactDrag.currentX - redactDrag.startX),
+      height: Math.abs(redactDrag.currentY - redactDrag.startY),
+    };
+  }
+
+  function pageRedactions(pageNum: number): PdfRedactionRect[] {
+    return redactions.filter((rect) => rect.pageNum === pageNum);
   }
 
   function handlePdfWheel(e: WheelEvent) {
@@ -399,6 +715,13 @@
       return;
     if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
     if (menuStore.isAnyOpen) return;
+    if (
+      signatureOpen ||
+      pendingSignature ||
+      passwordPrompt.visible ||
+      redactActive
+    )
+      return;
 
     if (keybindStore.matches("pdf-previous-page", e)) {
       e.preventDefault();
@@ -465,12 +788,52 @@
   class:dual-page={dualPage}
   class:fit-width={fitWidth && autoFit}
   class:chrome-idle={isFullscreen && !fsControlsVisible}
+  class:redacting={redactActive}
+  class:sig-placing={!!pendingSignature}
   bind:this={pdfContainerEl}
   role="presentation"
   onwheel={handlePdfWheel}
   onscroll={isFullscreen ? resetFsTimer : undefined}
   onclick={isFullscreen ? resetFsTimer : undefined}
 >
+  <PdfPasswordPrompt
+    open={passwordPrompt.visible}
+    incorrect={passwordPrompt.incorrect}
+    onSubmit={submitPassword}
+    onCancel={cancelPassword}
+  />
+  <PdfSignaturePad
+    open={signatureOpen}
+    onApply={acceptSignature}
+    onCancel={closeSignaturePad}
+  />
+  {#if pendingSignature}
+    <div
+      class="pdf-sign-hint"
+      transition:fly={{ y: 10, duration: 160, opacity: 0.08 }}
+    >
+      <span>{t("shell.viewer.pdf.signPlaceHint")}</span>
+      <button
+        type="button"
+        class="pdf-redact-btn"
+        onclick={cancelSignaturePlacement}
+      >
+        {t("common.cancel")}
+      </button>
+    </div>
+  {/if}
+  {#if redactActive}
+    <PdfRedactOverlay
+      count={redactions.length}
+      busy={redactionBusy}
+      confirmOpen={redactionConfirmOpen}
+      hideBar={menuStore.markupMenuVisible}
+      onApply={applyRedactions}
+      onCancel={cancelRedactMode}
+      onClear={clearRedactions}
+      onConfirmOpenChange={setRedactionConfirmOpen}
+    />
+  {/if}
   {#if findOpen}
     <div
       class="pdf-find-bar"
@@ -591,6 +954,43 @@
           {currentPage} / {pageCount}
         </button>
       {/if}
+      {#if formDirty && !redactActive}
+        <div class="pdf-form-actions">
+          <button
+            class="pdf-form-btn primary tooltip-below"
+            data-tooltip={t("shell.viewer.pdf.formSave")}
+            aria-label={t("shell.viewer.pdf.formSave")}
+            onclick={saveFormChanges}
+            disabled={formBusy}
+          >
+            <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+              <path
+                d="m2 5 2 2 4-4"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            class="pdf-form-btn tooltip-below"
+            data-tooltip={t("shell.viewer.pdf.formDiscard")}
+            aria-label={t("shell.viewer.pdf.formDiscard")}
+            onclick={discardFormChanges}
+            disabled={formBusy}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path
+                d="M1 1l8 8M9 1l-8 8"
+                stroke="currentColor"
+                stroke-width="1.2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      {/if}
       <PdfViewMenu
         {fitWidth}
         {autoFit}
@@ -601,6 +1001,8 @@
         {rotate}
         {toggleDualPage}
         {toggleNightMode}
+        onSign={openSignature}
+        onRedact={startRedact}
       />
     </div>
   {/if}
@@ -767,11 +1169,79 @@
           aria-hidden="true"
           onclick={() => selectPage(pageNum)}
         ></div>
+        <div bind:this={page.annotationsRef} class="pdf-annotation-layer"></div>
         {#if pageNum === currentPage}
           <DrawOverlay
             containerEl={currentPageWrapper}
             mediaEl={currentPageCanvas}
           />
+        {/if}
+        {#if redactActive}
+          {@const preview = redactionPreview(pageNum)}
+          <div
+            class="pdf-redact-capture"
+            role="presentation"
+            onpointerdown={(e) => beginRedactDrag(e, pageNum)}
+            onpointermove={moveRedactDrag}
+            onpointerup={endRedactDrag}
+            onpointercancel={endRedactDrag}
+          ></div>
+          {#each pageRedactions(pageNum) as rect (rect.id)}
+            <button
+              class="pdf-redact-rect"
+              style="left: {rect.x * 100}%; top: {rect.y *
+                100}%; width: {rect.width * 100}%; height: {rect.height *
+                100}%;"
+              onclick={(e) => {
+                e.stopPropagation();
+                removeRedaction(rect.id);
+              }}
+              aria-label={t("shell.viewer.pdf.redactRemove")}
+            ></button>
+          {/each}
+          {#if preview}
+            <div
+              class="pdf-redact-preview"
+              style="left: {preview.x * 100}%; top: {preview.y *
+                100}%; width: {preview.width * 100}%; height: {preview.height *
+                100}%;"
+            ></div>
+          {/if}
+        {/if}
+        {#if pendingSignature && signaturePreview}
+          <div
+            class="pdf-sign-placement"
+            role="presentation"
+            onpointermove={(e) => updateSignaturePointer(e, pageNum)}
+            onpointerdown={(e) => beginSignatureDrag(e, pageNum)}
+            onpointerup={(e) => finishSignatureDrag(e, pageNum)}
+            onpointercancel={() => (signatureDragging = false)}
+          >
+            {#if signaturePreviewBox && signaturePreviewBox.pageNum === pageNum}
+              <svg
+                class="pdf-sign-preview"
+                style="left: {signaturePreviewBox.left *
+                  100}%; top: {signaturePreviewBox.top *
+                  100}%; width: {signaturePreviewBox.width *
+                  100}%; height: {signaturePreviewBox.height * 100}%;"
+                viewBox="0 0 1 1"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                {#each signaturePreview.pathsD as d}
+                  <path
+                    {d}
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    vector-effect="non-scaling-stroke"
+                  />
+                {/each}
+              </svg>
+            {/if}
+          </div>
         {/if}
       </div>
       {#if !dualPage && i < pages.length - 1}

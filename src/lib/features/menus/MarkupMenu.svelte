@@ -20,6 +20,14 @@
     onExport,
     peerMenuOpen = false,
     styleOverride = "",
+    isPdf = false,
+    redactActive = false,
+    redactionCount = 0,
+    onSign,
+    onRedact,
+    onUndoRedaction,
+    onResetRedaction,
+    onRequestRedactionApply,
   }: {
     visible: boolean;
     onClose: () => void;
@@ -30,6 +38,14 @@
     onExport: () => void;
     peerMenuOpen?: boolean;
     styleOverride?: string;
+    isPdf?: boolean;
+    redactActive?: boolean;
+    redactionCount?: number;
+    onSign?: () => void;
+    onRedact?: () => void;
+    onUndoRedaction?: () => void;
+    onResetRedaction?: () => void;
+    onRequestRedactionApply?: () => void;
   } = $props();
 
   let eraserRowOpen = $state(false);
@@ -520,8 +536,12 @@
     markup.setDrawOpacity(val);
   }
 
-  const canUndo = $derived(markup.strokes.length > 0);
-  const hasEdits = $derived(markup.hasUnapplied);
+  const canUndo = $derived(
+    redactActive ? redactionCount > 0 : markup.strokes.length > 0,
+  );
+  const hasEdits = $derived(
+    redactActive ? redactionCount > 0 : markup.hasUnapplied,
+  );
 </script>
 
 {#if visible}
@@ -548,11 +568,15 @@
               resetConfirmTimeout = null;
             }
             resetConfirming = false;
-            markup.clearAllStrokes();
-            showToast({
-              message: t("menus.markup.markupsReset"),
-              color: "red",
-            });
+            if (redactActive) {
+              onResetRedaction?.();
+            } else {
+              markup.clearAllStrokes();
+              showToast({
+                message: t("menus.markup.markupsReset"),
+                color: "red",
+              });
+            }
           } else {
             resetConfirming = true;
             resetConfirmTimeout = setTimeout(() => {
@@ -608,7 +632,8 @@
         class="edit-action-btn blue tooltip-ctrl"
         class:inactive={!canUndo}
         disabled={!canUndo}
-        onclick={() => markup.undoLastStroke()}
+        onclick={() =>
+          redactActive ? onUndoRedaction?.() : markup.undoLastStroke()}
         data-tooltip={t("menus.common.undo")}
         aria-label={t("menus.common.undo")}
       >
@@ -836,6 +861,53 @@
             <span>{t("menus.markup.text")}</span>
           </button>
         </div>
+
+        {#if isPdf}
+          <div class="edit-menu-separator"></div>
+          <div class="edit-menu-row">
+            <button class="edit-menu-btn blue" onclick={() => onSign?.()}>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z" />
+                <path d="m13 8 3 3" />
+              </svg>
+              <span>{t("shell.viewer.pdf.sign")}</span>
+            </button>
+            <button
+              class="edit-menu-btn red"
+              class:active={redactActive}
+              onclick={() => onRedact?.()}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="4" y="4" width="16" height="16" rx="1.5" />
+                <path d="M4 20 20 4" />
+              </svg>
+              <span>{t("shell.viewer.pdf.redact")}</span>
+            </button>
+          </div>
+          {#if redactActive}
+            <div class="edit-menu-pdf-hint">
+              {t("shell.viewer.pdf.redactHint")}
+            </div>
+          {/if}
+        {/if}
 
         {#if eraserRowOpen}
           <div class="edit-menu-separator"></div>
@@ -2327,7 +2399,7 @@
     >
       <button
         class="edit-action-btn yellow tooltip-ctrl"
-        disabled={!hasEdits}
+        disabled={!hasEdits || redactActive}
         onclick={onExport}
         data-tooltip={t("menus.common.export")}
         aria-label={t("menus.common.export")}
@@ -2351,7 +2423,7 @@
       <button
         class="edit-action-btn green tooltip-ctrl"
         disabled={!hasEdits}
-        onclick={onApply}
+        onclick={() => (redactActive ? onRequestRedactionApply?.() : onApply())}
         data-tooltip={t("menus.common.apply")}
         aria-label={t("menus.common.apply")}
       >

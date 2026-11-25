@@ -290,21 +290,57 @@ fn write_file_atomic_sync(path: String, data_base64: String) -> Result<(), Strin
     let bytes = base64::engine::general_purpose::STANDARD
         .decode(data_base64.as_bytes())
         .map_err(|e| format!("Failed to decode output data: {e}"))?;
+    write_bytes_atomic(&target, &bytes)
+}
+
+fn write_bytes_atomic(target: &Path, bytes: &[u8]) -> Result<(), String> {
+    let parent = target
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .ok_or_else(|| "Output path has no parent directory".to_string())?;
+    if !parent.is_dir() {
+        return Err("Output directory does not exist".into());
+    }
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    let temp = parent.join(format!(".vyu-write-{}-{nanos}.tmp", hash_path_xxh3(&path)));
+    let temp = parent.join(format!(
+        ".vyu-write-{}-{nanos}.tmp",
+        hash_path_xxh3(target.to_string_lossy().as_ref())
+    ));
 
-    fs::write(&temp, &bytes).map_err(|e| {
+    fs::write(&temp, bytes).map_err(|e| {
         let _ = fs::remove_file(&temp);
         format!("Failed to write output: {e}")
     })?;
-    if let Err(e) = fs::rename(&temp, &target) {
+    if let Err(e) = fs::rename(&temp, target) {
         let _ = fs::remove_file(&temp);
         return Err(format!("Failed to replace output: {e}"));
     }
     Ok(())
+}
+
+/// Write PDF bytes back to an existing PDF file, replacing it atomically.
+#[tauri::command]
+pub async fn write_pdf_atomic(path: String, data_base64: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let target = PathBuf::from(&path);
+        let is_pdf = target
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("pdf"))
+            .unwrap_or(false);
+        if !is_pdf || !target.is_file() {
+            return Err("Not an existing PDF file".into());
+        }
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(data_base64.as_bytes())
+            .map_err(|e| format!("Failed to decode PDF data: {e}"))?;
+        write_bytes_atomic(&target, &bytes)
+    })
+    .await
+    .map_err(|e| format!("Thread join error: {e}"))?
 }
 
 /// Write pasted clipboard bytes to a unique file inside the app temp directory.

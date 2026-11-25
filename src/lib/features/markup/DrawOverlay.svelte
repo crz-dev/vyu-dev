@@ -23,6 +23,16 @@
   let resizeObs: ResizeObserver | null = $state(null);
   let isPointerDown = $state(false);
 
+  // Existing strokes must stay visible without blocking the page underneath.
+  // Only capture pointers while a markup tool or selection mode is active.
+  let overlayInteractive = $derived(
+    markup.drawActive ||
+      markup.highlightActive ||
+      markup.textActive ||
+      markup.selectActive ||
+      markup.removeActive,
+  );
+
   let lineStart = $state<{ x: number; y: number } | null>(null);
   let previewEnd = $state<{ x: number; y: number } | null>(null);
 
@@ -2294,7 +2304,9 @@
     bind:this={canvasEl}
     class="draw-overlay"
     tabindex="-1"
-    style="position: absolute; left: {overlayRect.left}px; top: {overlayRect.top}px; width: {overlayRect.width}px; height: {overlayRect.height}px; cursor: {markup.cursorStyle}; z-index: 999; overflow: hidden;"
+    style="position: absolute; left: {overlayRect.left}px; top: {overlayRect.top}px; width: {overlayRect.width}px; height: {overlayRect.height}px; cursor: {markup.cursorStyle}; pointer-events: {overlayInteractive
+      ? 'auto'
+      : 'none'}; z-index: 8; overflow: hidden;"
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}

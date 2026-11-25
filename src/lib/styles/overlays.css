@@ -1171,8 +1171,11 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 204px;
-  padding: 4px;
+  min-width: 200px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   background: color-mix(
     in srgb,
     var(--bg-secondary) var(--menu-opacity),
@@ -1180,36 +1183,48 @@
   );
   backdrop-filter: blur(var(--menu-blur)) saturate(130%);
   border: 0.5px solid var(--bg-border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border-radius: 9px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
   z-index: 16;
+}
+.pdf-view-menu-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+}
+.pdf-view-menu-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-family);
 }
 .pdf-view-menu-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 9px;
+  padding: 6px 10px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 11.5px;
+  font-size: 12px;
   font-family: var(--font-family);
   text-align: left;
   cursor: pointer;
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background 0.13s,
+    color 0.13s;
 }
 .pdf-view-menu-item svg {
   flex-shrink: 0;
 }
 .pdf-view-menu-item:hover {
-  background: var(--bg-elevated);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 .pdf-view-menu-item.active {
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 .pdf-view-menu-item:focus-visible {
@@ -1224,16 +1239,22 @@
 .pdf-view-menu-key {
   flex-shrink: 0;
   font-size: 10px;
-  color: var(--text-muted);
+  color: var(--text-hint);
 }
 .pdf-view-menu-check {
   flex-shrink: 0;
   color: var(--text-primary);
 }
 .pdf-view-menu-sep {
-  height: 0.5px;
-  background: var(--bg-border);
-  margin: 4px 6px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--bg-border) 16%,
+    var(--bg-border) 84%,
+    transparent
+  );
+  margin: 2px 4px;
 }
 
 /* ── PDF sidebar tabs and outline ──────────────────────── */
@@ -1368,6 +1389,591 @@
 .pdf-viewer.chrome-idle .pdf-view-controls:has(.pdf-view-menu) {
   opacity: 1;
   pointer-events: auto;
+}
+
+/* ── PDF annotation layer (forms and applied markup) ───── */
+.pdf-annotation-layer {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 2;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+.pdf-annotation-layer section {
+  position: absolute;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  pointer-events: auto;
+}
+.pdf-annotation-layer
+  :is(
+    input[type="text"],
+    input[type="number"],
+    input:not([type]),
+    textarea,
+    select
+  ) {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 1px 2px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: rgba(59, 130, 246, 0.08);
+  color: #111111;
+  font-family: var(--font-family);
+  font-size: calc(9px * var(--scale-factor));
+  outline: none;
+}
+.pdf-annotation-layer textarea {
+  resize: none;
+}
+.pdf-annotation-layer
+  :is(
+    input[type="text"],
+    input[type="number"],
+    input:not([type]),
+    textarea,
+    select
+  ):hover {
+  border-color: rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.55);
+}
+.pdf-annotation-layer
+  :is(
+    input[type="text"],
+    input[type="number"],
+    input:not([type]),
+    textarea,
+    select
+  ):focus {
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.9);
+}
+.pdf-annotation-layer select option {
+  background: #ffffff;
+  color: #111111;
+}
+.pdf-annotation-layer .buttonWidgetAnnotation.checkBox input,
+.pdf-annotation-layer .buttonWidgetAnnotation.radioButton input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.08);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 72% 72%;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.pdf-annotation-layer .buttonWidgetAnnotation.radioButton input {
+  border-radius: 50%;
+}
+.pdf-annotation-layer .buttonWidgetAnnotation.checkBox input:hover,
+.pdf-annotation-layer .buttonWidgetAnnotation.radioButton input:hover {
+  border-color: #2f6fed;
+  background-color: rgba(47, 111, 237, 0.12);
+}
+.pdf-annotation-layer .buttonWidgetAnnotation.checkBox input:checked {
+  border-color: #2f6fed;
+  background-color: #2f6fed;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.4l3.2 3.1L13 4.5' fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 76% 76%;
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.22);
+}
+.pdf-annotation-layer .buttonWidgetAnnotation.radioButton input:checked {
+  border-color: #2f6fed;
+  background-color: #2f6fed;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    #ffffff 0 32%,
+    transparent 34%
+  );
+  background-size: 100% 100%;
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.22);
+}
+.pdf-annotation-layer .buttonWidgetAnnotation.checkBox input:focus-visible,
+.pdf-annotation-layer .buttonWidgetAnnotation.radioButton input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.55);
+}
+.pdf-annotation-layer section svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+.pdf-annotation-layer .annotationContent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.pdf-annotation-layer section canvas.annotationContent {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pdf-annotation-layer :is(input:disabled, textarea:disabled, select:disabled) {
+  opacity: 0.85;
+  cursor: default;
+}
+.pdf-viewer.night
+  .pdf-annotation-layer
+  :is(
+    input[type="text"],
+    input[type="number"],
+    input:not([type]),
+    textarea,
+    select
+  ) {
+  color: #eeeeee;
+  background: rgba(120, 170, 255, 0.12);
+}
+.pdf-viewer.night
+  .pdf-annotation-layer
+  :is(
+    input[type="text"],
+    input[type="number"],
+    input:not([type]),
+    textarea,
+    select
+  ):hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.35);
+}
+.pdf-viewer.night
+  .pdf-annotation-layer
+  :is(
+    input[type="text"],
+    input[type="number"],
+    input:not([type]),
+    textarea,
+    select
+  ):focus {
+  background: rgba(0, 0, 0, 0.6);
+}
+.pdf-viewer.night .pdf-annotation-layer select option {
+  background: #1a1a1a;
+  color: #eeeeee;
+}
+.pdf-viewer.night .pdf-annotation-layer .buttonWidgetAnnotation.checkBox input,
+.pdf-viewer.night
+  .pdf-annotation-layer
+  .buttonWidgetAnnotation.radioButton
+  input {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── PDF form dirty actions ───────────────────────────── */
+.pdf-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pdf-form-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.pdf-form-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.pdf-form-btn:active {
+  transform: scale(0.94);
+}
+.pdf-form-btn.primary {
+  color: var(--green-soft);
+}
+.pdf-form-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+/* ── PDF password prompt and signature pad ────────────── */
+.pdf-password-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px) saturate(85%);
+}
+.pdf-password-card,
+.pdf-signature-card {
+  width: 320px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  border: 0.5px solid var(--bg-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+}
+.pdf-signature-card {
+  width: 452px;
+}
+.pdf-dialog-header {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.pdf-password-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+.pdf-password-icon.danger {
+  background: var(--red-bg-subtle);
+  color: var(--red);
+}
+.pdf-password-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pdf-dialog-close {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.pdf-dialog-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+.pdf-dialog-close:active {
+  transform: scale(0.94);
+}
+.pdf-dialog-close:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+  outline: none;
+}
+.pdf-password-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+.pdf-password-hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
+.pdf-password-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font-family);
+  outline: none;
+}
+.pdf-password-input:focus {
+  border-color: var(--text-secondary);
+}
+.pdf-password-input.invalid {
+  border-color: var(--red);
+}
+.pdf-password-error {
+  font-size: 11px;
+  color: var(--red);
+  font-family: var(--font-family);
+}
+.pdf-password-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.pdf-password-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    color 0.16s,
+    transform 0.16s ease;
+}
+.pdf-password-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+.pdf-password-btn:active {
+  transform: scale(0.97);
+}
+.pdf-password-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pdf-password-btn.primary {
+  color: var(--blue-light);
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+}
+.pdf-password-btn.primary:hover {
+  color: var(--blue-light);
+  background: var(--blue-bg-hover);
+  border-color: var(--blue-border-strong);
+}
+.pdf-password-btn.danger {
+  color: var(--red);
+  background: var(--red-bg);
+  border-color: var(--red-border);
+}
+.pdf-password-btn.danger:hover {
+  color: var(--red);
+  background: var(--red-bg-hover);
+  border-color: var(--red-border-strong);
+}
+.pdf-signature-canvas {
+  display: block;
+  width: 420px;
+  max-width: 100%;
+  height: 150px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: #ffffff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+/* ── PDF redaction ────────────────────────────────────── */
+.pdf-redact-capture {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  cursor: crosshair;
+  touch-action: none;
+}
+.pdf-redact-rect {
+  position: absolute;
+  z-index: 5;
+  padding: 0;
+  border: 1px solid var(--red);
+  border-radius: 1px;
+  background: rgba(0, 0, 0, 0.68);
+  cursor: pointer;
+}
+.pdf-redact-preview {
+  position: absolute;
+  z-index: 5;
+  border: 1px dashed var(--red);
+  background: rgba(220, 50, 50, 0.16);
+  pointer-events: none;
+}
+.pdf-sign-placement {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  cursor: move;
+  touch-action: none;
+}
+.pdf-sign-preview {
+  position: absolute;
+  color: #111111;
+  pointer-events: none;
+  overflow: visible;
+}
+.pdf-viewer.night .pdf-sign-preview {
+  color: #eeeeee;
+}
+.pdf-redact-bar,
+.pdf-sign-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  z-index: 30;
+  font-family: var(--font-family);
+}
+.pdf-redact-hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.pdf-redact-count {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.pdf-redact-btn {
+  padding: 4px 8px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 5px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.pdf-redact-btn:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.pdf-redact-btn:active {
+  transform: scale(0.96);
+}
+.pdf-redact-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pdf-redact-btn.danger {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 35%, transparent);
+}
+.pdf-redact-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px) saturate(85%);
+}
+.pdf-redact-confirm {
+  width: 360px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  border: 0.5px solid var(--bg-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+}
+.pdf-redact-confirm-body {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+}
+.pdf-redact-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+.pdf-redact-check input {
+  accent-color: var(--blue-light);
+}
+.pdf-viewer.fullscreen .pdf-redact-bar,
+.pdf-viewer.fullscreen .pdf-sign-hint {
+  bottom: 48px;
+}
+.pdf-view-menu-item.danger {
+  color: var(--red);
+}
+.pdf-view-menu-item.danger:hover {
+  background: var(--red-bg-faint);
+  color: var(--red);
 }
 
 .props-dialog {
