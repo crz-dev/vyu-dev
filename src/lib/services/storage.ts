@@ -625,6 +625,14 @@ export function saveFileTransition(transition: FileTransition): void {
   localStorage.setItem("vyu-file-transition", transition);
 }
 
+export function loadPdfNightMode(): boolean {
+  return localStorage.getItem("vyu-pdf-night") === "true";
+}
+
+export function savePdfNightMode(enabled: boolean): void {
+  localStorage.setItem("vyu-pdf-night", enabled ? "true" : "false");
+}
+
 // ── Playback ──
 export type ResumeMode = "off" | "ask" | "always";
 

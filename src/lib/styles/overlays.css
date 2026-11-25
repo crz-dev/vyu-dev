@@ -889,10 +889,17 @@
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
+.pdf-viewer.fit-width .pdf-page-label {
+  right: 8px;
+  top: 8px;
+  translate: none;
+  margin-right: 0;
+}
 .pdf-canvas {
   display: block;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
   height: auto;
+  transition: filter 0.2s ease;
 }
 .pdf-page-panel {
   position: fixed;
@@ -1045,6 +1052,303 @@
   font-family: var(--font-family);
   padding: 24px;
   text-align: center;
+}
+
+/* ── PDF view controls ─────────────────────────────────── */
+.pdf-view-controls {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 12;
+}
+.pdf-viewer.fullscreen .pdf-view-controls {
+  top: 46px;
+}
+.pdf-page-chip-btn {
+  height: 26px;
+  padding: 0 9px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: text;
+  transition:
+    color 0.2s,
+    background 0.15s ease;
+}
+.pdf-page-chip-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+.pdf-page-chip-btn:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+  outline: none;
+}
+.pdf-page-chip-input {
+  width: 62px;
+  height: 26px;
+  padding: 0 6px;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-align: center;
+  outline: none;
+}
+.pdf-page-chip-input:focus {
+  border-color: var(--text-secondary);
+}
+
+/* ── PDF view menu ─────────────────────────────────────── */
+.pdf-view-menu-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.pdf-view-toggle {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.pdf-view-toggle:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.pdf-view-toggle:active {
+  transform: scale(0.94);
+}
+.pdf-view-toggle.menu-active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.pdf-view-toggle:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+  outline: none;
+}
+.pdf-view-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 204px;
+  padding: 4px;
+  background: color-mix(
+    in srgb,
+    var(--bg-secondary) var(--menu-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--menu-blur)) saturate(130%);
+  border: 0.5px solid var(--bg-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 16;
+}
+.pdf-view-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-family: var(--font-family);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pdf-view-menu-item svg {
+  flex-shrink: 0;
+}
+.pdf-view-menu-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.pdf-view-menu-item.active {
+  color: var(--text-primary);
+}
+.pdf-view-menu-item:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+  outline: none;
+}
+.pdf-view-menu-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+.pdf-view-menu-key {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.pdf-view-menu-check {
+  flex-shrink: 0;
+  color: var(--text-primary);
+}
+.pdf-view-menu-sep {
+  height: 0.5px;
+  background: var(--bg-border);
+  margin: 4px 6px;
+}
+
+/* ── PDF sidebar tabs and outline ──────────────────────── */
+.pdf-page-panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.pdf-page-panel-tab {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pdf-page-panel-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+.pdf-page-panel-tab.active {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+.pdf-page-panel-tab:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+  outline: none;
+}
+.pdf-page-panel-empty {
+  padding: 16px 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-family);
+  text-align: center;
+}
+.pdf-outline-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pdf-outline-item:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.pdf-outline-item.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+.pdf-outline-item:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-muted);
+  outline: none;
+}
+.pdf-outline-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdf-outline-page {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── PDF spreads, links, night and presentation ────────── */
+.pdf-spread {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.pdf-link-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.pdf-link {
+  position: absolute;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease;
+}
+.pdf-link:hover {
+  background: rgba(120, 170, 255, 0.16);
+}
+.pdf-link:focus-visible {
+  outline: 1px solid var(--text-muted);
+}
+.pdf-viewer.night .pdf-canvas {
+  filter: invert(0.92) hue-rotate(180deg) contrast(0.92) brightness(0.98);
+}
+.pdf-viewer.night .pdf-highlight-rect {
+  background: rgba(90, 170, 255, 0.35);
+}
+.pdf-viewer.presentation .pdf-page-wrapper {
+  cursor: default;
 }
 
 .props-dialog {

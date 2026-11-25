@@ -1,6 +1,14 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { fly } from "svelte/transition";
-  import type { FindHighlight } from "./pdf.svelte";
+  import {
+    groupPdfRows,
+    type FindHighlight,
+    type PdfLink,
+    type PdfOutlineEntry,
+    type PdfPage,
+  } from "./pdf.svelte";
+  import PdfViewMenu from "./PdfViewMenu.svelte";
   import { copyTextToClipboard } from "$lib/services/clipboard";
   import { showToast } from "$lib/components/toast.svelte";
   import DrawOverlay from "$lib/features/markup/DrawOverlay.svelte";
@@ -25,7 +33,26 @@
     prevPage,
     nextPage,
     scrollToPage,
-    centerPage,
+    goToPage,
+    selectPage,
+    openLink,
+    fitWidth,
+    autoFit,
+    rotation,
+    dualPage,
+    nightMode,
+    presentation,
+    outline,
+    panelTab,
+    rotate,
+    fitToWidth,
+    fitToPage,
+    toggleDualPage,
+    toggleNightMode,
+    setPresentation,
+    setPanelTab,
+    toggleOutline,
+    toggleFullscreen,
     findOpen,
     findQuery,
     findResults,
@@ -45,10 +72,7 @@
     pdfContainerEl: HTMLElement | null;
     loading: boolean;
     error: string;
-    pages: {
-      canvasRef: HTMLCanvasElement | null;
-      textLayerRef: HTMLDivElement | null;
-    }[];
+    pages: PdfPage[];
     scale: number;
     fitScale: number;
     zoomLocked: boolean;
@@ -58,7 +82,26 @@
     prevPage: () => void;
     nextPage: () => void;
     scrollToPage: (page: number) => void;
-    centerPage: (page: number) => void;
+    goToPage: (page: number) => void;
+    selectPage: (page: number) => void;
+    openLink: (link: PdfLink) => void;
+    fitWidth: boolean;
+    autoFit: boolean;
+    rotation: number;
+    dualPage: boolean;
+    nightMode: boolean;
+    presentation: boolean;
+    outline: PdfOutlineEntry[];
+    panelTab: "pages" | "outline";
+    rotate: () => void;
+    fitToWidth: (containerWidth: number, containerHeight: number) => void;
+    fitToPage: (containerWidth: number, containerHeight: number) => void;
+    toggleDualPage: () => void;
+    toggleNightMode: () => void;
+    setPresentation: (on: boolean) => void;
+    setPanelTab: (tab: "pages" | "outline") => void;
+    toggleOutline: () => void;
+    toggleFullscreen: () => void;
     findOpen: boolean;
     findQuery: string;
     findResults: number;
@@ -69,7 +112,7 @@
     findNext: () => void;
     findPrev: () => void;
     showPagePanel: boolean;
-    togglePagePanel: () => void;
+    togglePagePanel: (tab?: "pages" | "outline") => void;
     getPageThumbnail: (page: number) => Promise<string>;
     preloadAllThumbnails: () => Promise<void>;
     isFullscreen: boolean;
@@ -94,6 +137,12 @@
     currentTarget: HTMLElement;
   } | null = null;
 
+  let pageEditing = $state(false);
+  let pageInputValue = $state("");
+  let pageInputEl: HTMLInputElement | null = $state(null);
+
+  const rows = $derived(groupPdfRows(pages, dualPage && !presentation));
+
   let currentPageWrapper = $derived(
     currentPage > 0 && currentPage <= pageWrapperRefs.length
       ? pageWrapperRefs[currentPage - 1]
@@ -105,6 +154,14 @@
       : null,
   );
 
+  let activeOutlineIndex = $derived.by(() => {
+    let index = -1;
+    for (let i = 0; i < outline.length; i++) {
+      if (outline[i].pageNum <= currentPage) index = i;
+    }
+    return index;
+  });
+
   // Sync markup page when current page changes
   $effect(() => {
     if (currentPage > 0 && pageCount > 0) {
@@ -112,8 +169,86 @@
     }
   });
 
+  // Leaving fullscreen by other means ends presentation mode.
+  $effect(() => {
+    if (presentation && !isFullscreen) setPresentation(false);
+  });
+
   function focusFindInput(node: HTMLInputElement) {
     node.focus();
+  }
+
+  function containerSize() {
+    return {
+      width: pdfContainerEl?.clientWidth ?? 0,
+      height: pdfContainerEl?.clientHeight ?? 0,
+    };
+  }
+
+  function applyFitWidth() {
+    const { width, height } = containerSize();
+    fitToWidth(width, height);
+  }
+
+  function applyFitPage() {
+    const { width, height } = containerSize();
+    fitToPage(width, height);
+  }
+
+  function togglePresentation() {
+    if (presentation) {
+      setPresentation(false);
+      if (isFullscreen) toggleFullscreen();
+      return;
+    }
+    setPresentation(true);
+    if (!isFullscreen) toggleFullscreen();
+  }
+
+  function beginPageEdit() {
+    pageInputValue = String(currentPage);
+    pageEditing = true;
+    void tick().then(() => {
+      pageInputEl?.focus();
+      pageInputEl?.select();
+    });
+  }
+
+  function commitPageEdit() {
+    if (!pageEditing) return;
+    pageEditing = false;
+    const parsed = Number.parseInt(pageInputValue, 10);
+    if (Number.isFinite(parsed)) goToPage(parsed);
+  }
+
+  function cancelPageEdit() {
+    pageEditing = false;
+  }
+
+  function handlePageInputKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitPageEdit();
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelPageEdit();
+    }
+  }
+
+  function handlePageActivate(e: MouseEvent, pageNum: number) {
+    if (presentation) {
+      const rect = pdfContainerEl?.getBoundingClientRect();
+      if (rect && e.clientX < rect.left + rect.width * 0.35) {
+        prevPage();
+      } else {
+        nextPage();
+      }
+      return;
+    }
+    selectPage(pageNum);
   }
 
   function handlePdfWheel(e: WheelEvent) {
@@ -296,6 +431,33 @@
       return;
     if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
     if (menuStore.isAnyOpen) return;
+
+    if (presentation) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePresentation();
+        return;
+      }
+      if (
+        e.key === "ArrowRight" ||
+        e.key === "ArrowDown" ||
+        e.key === "PageDown" ||
+        e.key === " "
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        nextPage();
+        return;
+      }
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        prevPage();
+        return;
+      }
+    }
+
     if (keybindStore.matches("pdf-previous-page", e)) {
       e.preventDefault();
       e.stopPropagation();
@@ -306,6 +468,31 @@
       e.preventDefault();
       e.stopPropagation();
       nextPage();
+      return;
+    }
+    if (keybindStore.matches("pdf-fit-width", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (fitWidth) applyFitPage();
+      else applyFitWidth();
+      return;
+    }
+    if (keybindStore.matches("pdf-rotate", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      rotate();
+      return;
+    }
+    if (keybindStore.matches("pdf-night", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleNightMode();
+      return;
+    }
+    if (keybindStore.matches("pdf-presentation", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePresentation();
     }
   }
 
@@ -317,7 +504,7 @@
   let pageThumbUrls: Record<number, string> = $state({});
 
   $effect(() => {
-    if (!showPagePanel) {
+    if (!showPagePanel || panelTab !== "pages") {
       pageThumbUrls = {};
       return;
     }
@@ -339,6 +526,10 @@
 <div
   class="pdf-viewer"
   class:fullscreen={isFullscreen}
+  class:night={nightMode}
+  class:presentation
+  class:dual-page={dualPage && !presentation}
+  class:fit-width={fitWidth && autoFit}
   bind:this={pdfContainerEl}
   role="presentation"
   onwheel={handlePdfWheel}
@@ -440,16 +631,79 @@
     </div>
   {/if}
 
+  {#if !presentation && !loading && !error && pageCount > 0}
+    <div class="pdf-view-controls">
+      {#if pageEditing}
+        <input
+          bind:this={pageInputEl}
+          class="pdf-page-chip-input"
+          bind:value={pageInputValue}
+          inputmode="numeric"
+          aria-label={t("shell.viewer.pdf.goToPage")}
+          onkeydown={handlePageInputKeydown}
+          onblur={commitPageEdit}
+        />
+      {:else}
+        <button
+          class="pdf-page-chip-btn tooltip-below"
+          data-tooltip={t("shell.viewer.pdf.goToPage")}
+          onclick={beginPageEdit}
+          aria-label={t("shell.viewer.pdf.pageOf", {
+            current: currentPage,
+            total: pageCount,
+          })}
+        >
+          {currentPage} / {pageCount}
+        </button>
+      {/if}
+      <PdfViewMenu
+        {fitWidth}
+        {autoFit}
+        {rotation}
+        {dualPage}
+        {nightMode}
+        onOutline={toggleOutline}
+        onFitPage={applyFitPage}
+        onFitWidth={applyFitWidth}
+        {rotate}
+        {toggleDualPage}
+        {toggleNightMode}
+        onPresentation={togglePresentation}
+      />
+    </div>
+  {/if}
+
   {#if showPagePanel}
     <div
       class="pdf-page-panel"
       transition:fly={{ x: -20, duration: 180, opacity: 0.08 }}
     >
       <div class="pdf-page-panel-header">
-        <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span>
+        <div class="pdf-page-panel-tabs" role="tablist">
+          <button
+            class="pdf-page-panel-tab"
+            class:active={panelTab === "pages"}
+            role="tab"
+            aria-selected={panelTab === "pages"}
+            onclick={() => setPanelTab("pages")}
+          >
+            {t("shell.viewer.pdf.pages")}
+          </button>
+          {#if outline.length > 0}
+            <button
+              class="pdf-page-panel-tab"
+              class:active={panelTab === "outline"}
+              role="tab"
+              aria-selected={panelTab === "outline"}
+              onclick={() => setPanelTab("outline")}
+            >
+              {t("shell.viewer.pdf.outline")}
+            </button>
+          {/if}
+        </div>
         <button
           class="pdf-page-panel-close"
-          onclick={togglePagePanel}
+          onclick={() => togglePagePanel()}
           aria-label={t("shell.viewer.pdf.closeIndex")}
         >
           <svg
@@ -468,28 +722,51 @@
           </svg>
         </button>
       </div>
-      <div class="pdf-page-panel-list">
-        {#each pages as page, i}
-          <button
-            class="pdf-page-panel-item"
-            class:active={currentPage === i + 1}
-            onclick={() => {
-              scrollToPage(i + 1);
-            }}
-          >
-            {#if pageThumbUrls[i + 1]}
-              <img
-                src={pageThumbUrls[i + 1]}
-                alt=""
-                class="pdf-page-panel-thumb"
-              />
-            {:else}
-              <div class="pdf-page-panel-placeholder"></div>
-            {/if}
-            <span class="pdf-page-panel-num">{i + 1}</span>
-          </button>
-        {/each}
-      </div>
+      {#if panelTab === "pages"}
+        <div class="pdf-page-panel-list">
+          {#each pages as page, i}
+            <button
+              class="pdf-page-panel-item"
+              class:active={currentPage === i + 1}
+              onclick={() => {
+                scrollToPage(i + 1);
+              }}
+            >
+              {#if pageThumbUrls[i + 1]}
+                <img
+                  src={pageThumbUrls[i + 1]}
+                  alt=""
+                  class="pdf-page-panel-thumb"
+                />
+              {:else}
+                <div class="pdf-page-panel-placeholder"></div>
+              {/if}
+              <span class="pdf-page-panel-num">{i + 1}</span>
+            </button>
+          {/each}
+        </div>
+      {:else}
+        <div class="pdf-page-panel-list">
+          {#if outline.length === 0}
+            <div class="pdf-page-panel-empty">
+              {t("shell.viewer.pdf.noOutline")}
+            </div>
+          {:else}
+            {#each outline as entry, i (i)}
+              <button
+                class="pdf-outline-item"
+                class:active={activeOutlineIndex === i}
+                style="padding-left: {8 + entry.depth * 12}px;"
+                onclick={() => scrollToPage(entry.pageNum)}
+                title={entry.title}
+              >
+                <span class="pdf-outline-title">{entry.title}</span>
+                <span class="pdf-outline-page">{entry.pageNum}</span>
+              </button>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -501,50 +778,76 @@
   {:else if error}
     <div class="pdf-error">{error}</div>
   {:else}
-    {#each pages as page, i}
-      <div class="pdf-page-wrapper" bind:this={pageWrapperRefs[i]}>
-        <canvas
-          bind:this={page.canvasRef}
-          class="pdf-canvas"
-          onclick={() => centerPage(i + 1)}
-        ></canvas>
-        <button
-          class="pdf-page-label tooltip-ctrl"
-          onclick={togglePagePanel}
-          data-tooltip={showPagePanel
-            ? t("shell.viewer.pdf.closeIndex")
-            : t("shell.viewer.pdf.openIndex")}
-          aria-label={showPagePanel
-            ? t("shell.viewer.pdf.closeIndex")
-            : t("shell.viewer.pdf.openIndex")}>{i + 1}</button
-        >
-        {#if findQuery && findResults > 0}
-          {@const hl = getHighlightsForPage(i + 1)}
-          {#if hl}
-            <div class="pdf-highlight-overlay">
-              {#each hl.rects as rect}
-                <div
-                  class="pdf-highlight-rect"
-                  style="left: {rect.left}px; top: {rect.top}px; width: {rect.width}px; height: {rect.height}px;"
-                ></div>
-              {/each}
-            </div>
-          {/if}
-        {/if}
-        <div
-          bind:this={page.textLayerRef}
-          class="pdf-text-layer"
-          aria-hidden="true"
-          onclick={() => centerPage(i + 1)}
-        ></div>
-        {#if i + 1 === currentPage}
-          <DrawOverlay
-            containerEl={currentPageWrapper}
-            mediaEl={currentPageCanvas}
-          />
-        {/if}
+    {#each rows as row, rowIndex (row[0]?.pageNum ?? rowIndex)}
+      <div class="pdf-spread" class:dual={row.length > 1}>
+        {#each row as page (page.pageNum)}
+          {@const pageNum = page.pageNum}
+          <div
+            class="pdf-page-wrapper"
+            bind:this={pageWrapperRefs[pageNum - 1]}
+          >
+            <canvas
+              bind:this={page.canvasRef}
+              class="pdf-canvas"
+              onclick={(e) => handlePageActivate(e, pageNum)}
+            ></canvas>
+            {#if !presentation}
+              <button
+                class="pdf-page-label tooltip-ctrl"
+                onclick={() => togglePagePanel("pages")}
+                data-tooltip={showPagePanel && panelTab === "pages"
+                  ? t("shell.viewer.pdf.closeIndex")
+                  : t("shell.viewer.pdf.openIndex")}
+                aria-label={showPagePanel && panelTab === "pages"
+                  ? t("shell.viewer.pdf.closeIndex")
+                  : t("shell.viewer.pdf.openIndex")}>{pageNum}</button
+              >
+            {/if}
+            {#if findQuery && findResults > 0}
+              {@const hl = getHighlightsForPage(pageNum)}
+              {#if hl}
+                <div class="pdf-highlight-overlay">
+                  {#each hl.rects as rect}
+                    <div
+                      class="pdf-highlight-rect"
+                      style="left: {rect.left}px; top: {rect.top}px; width: {rect.width}px; height: {rect.height}px;"
+                    ></div>
+                  {/each}
+                </div>
+              {/if}
+            {/if}
+            {#if page.links.length > 0}
+              <div class="pdf-link-layer">
+                {#each page.links as link, linkIndex (linkIndex)}
+                  <button
+                    class="pdf-link"
+                    tabindex="-1"
+                    style="left: {link.left}px; top: {link.top}px; width: {link.width}px; height: {link.height}px;"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      openLink(link);
+                    }}
+                    aria-label={t("shell.viewer.pdf.internalLink")}
+                  ></button>
+                {/each}
+              </div>
+            {/if}
+            <div
+              bind:this={page.textLayerRef}
+              class="pdf-text-layer"
+              aria-hidden="true"
+              onclick={(e) => handlePageActivate(e, pageNum)}
+            ></div>
+            {#if pageNum === currentPage}
+              <DrawOverlay
+                containerEl={currentPageWrapper}
+                mediaEl={currentPageCanvas}
+              />
+            {/if}
+          </div>
+        {/each}
       </div>
-      {#if i < pages.length - 1}
+      {#if rowIndex < rows.length - 1 && !presentation}
         <div class="pdf-page-separator"></div>
       {/if}
     {/each}

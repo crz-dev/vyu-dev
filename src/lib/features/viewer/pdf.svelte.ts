@@ -6,12 +6,14 @@ import {
 } from "$lib/services/thumbnailCache.svelte";
 import { invokeStoreThumbnail } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
+import { loadPdfNightMode, savePdfNightMode } from "$lib/services/storage";
 import { DOCUMENT_EXTS } from "$lib/shared/constants";
 import { locale } from "$lib/features/i18n/locale.svelte";
 import type {
   PDFDocumentLoadingTask,
   PDFDocumentProxy,
   PDFPageProxy,
+  RefProxy,
 } from "pdfjs-dist/types/src/display/api";
 
 // Standalone PDF page 1 thumbnail generator.
@@ -133,6 +135,20 @@ export function isPdfPath(path: string): boolean {
 // Let the shared thumbnail service route PDFs here instead of the backend.
 registerDocumentThumbnailRenderer(generatePdfThumbnail);
 
+export interface PdfLink {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  dest: string | unknown[] | null;
+}
+
+export interface PdfOutlineEntry {
+  title: string;
+  pageNum: number;
+  depth: number;
+}
+
 export interface PdfPage {
   pageNum: number;
   canvasRef: HTMLCanvasElement | null;
@@ -141,6 +157,7 @@ export interface PdfPage {
   width: number;
   height: number;
   pageHeight: number;
+  links: PdfLink[];
 }
 
 export interface FindHighlight {
@@ -153,6 +170,11 @@ export interface PdfState {
   scale: number;
   fitScale: number;
   autoFit: boolean;
+  fitWidth: boolean;
+  rotation: number;
+  dualPage: boolean;
+  nightMode: boolean;
+  presentation: boolean;
   pageCount: number;
   currentPage: number;
   loading: boolean;
@@ -164,18 +186,33 @@ export interface PdfState {
   findMatchPages: number[];
   findHighlights: FindHighlight[];
   showPagePanel: boolean;
+  panelTab: "pages" | "outline";
+  outline: PdfOutlineEntry[];
   pdfVersion: string;
   pdfPageSize: string;
 }
 
 const RENDER_DEBOUNCE_MS = 60;
 const LOAD_TIMEOUT_MS = 45_000;
+// Vertical gap between page rows; keep in sync with .pdf-page-separator margin.
+const PAGE_SEP = 25;
+// Horizontal gap between the two pages of a spread.
+const PAGE_GAP = 12;
 type PdfJsModule = typeof import("pdfjs-dist/build/pdf.mjs");
 type PdfTextContent = Awaited<ReturnType<PDFPageProxy["getTextContent"]>>;
 type TextLayerTask = {
   cancel: () => void;
   render: () => Promise<void>;
 };
+
+export function groupPdfRows(pages: PdfPage[], dual: boolean): PdfPage[][] {
+  if (!dual) return pages.map((page) => [page]);
+  const rows: PdfPage[][] = [];
+  for (let i = 0; i < pages.length; i += 2) {
+    rows.push(pages.slice(i, i + 2));
+  }
+  return rows;
+}
 
 export type PdfStore = ReturnType<typeof createPdf>;
 
@@ -185,6 +222,11 @@ export function createPdf() {
     scale: 1.0,
     fitScale: 1.0,
     autoFit: true,
+    fitWidth: false,
+    rotation: 0,
+    dualPage: false,
+    nightMode: loadPdfNightMode(),
+    presentation: false,
     pageCount: 0,
     currentPage: 1,
     loading: false,
@@ -196,6 +238,8 @@ export function createPdf() {
     findMatchPages: [],
     findHighlights: [],
     showPagePanel: false,
+    panelTab: "pages",
+    outline: [],
     pdfVersion: "",
     pdfPageSize: "",
   });
@@ -207,11 +251,14 @@ export function createPdf() {
   let textContentCache: Map<number, PdfTextContent> = new Map();
   let textLayerTasks: Map<number, TextLayerTask> = new Map();
   let textLayerVersions: Map<number, number> = new Map();
+  let pageProxies: Map<number, PDFPageProxy> = new Map();
+  let annotationCache: Map<number, unknown[]> = new Map();
   let pdfContainerEl: HTMLElement | null = null;
   let scrollHandler: ((e: Event) => void) | null = null;
   let currentFilePath = "";
   let disposed = false;
   let loadGen = 0;
+  let fitWidthBeforePresentation = false;
 
   function setContainer(el: HTMLElement | null) {
     pdfContainerEl = el;
@@ -219,6 +266,26 @@ export function createPdf() {
 
   function clampScale(value: number): number {
     return Math.max(0.25, Math.min(5, value));
+  }
+
+  function isDualLayout(): boolean {
+    return state.dualPage && !state.presentation;
+  }
+
+  function layoutRows(): { pages: PdfPage[]; width: number; height: number }[] {
+    return groupPdfRows(state.pages, isDualLayout()).map((pages) => {
+      let width = 0;
+      let height = 0;
+      for (const page of pages) {
+        width += page.width + (width > 0 ? PAGE_GAP : 0);
+        height = Math.max(height, page.height);
+      }
+      return { pages, width, height };
+    });
+  }
+
+  function rowGap(): number {
+    return state.presentation ? 0 : PAGE_SEP;
   }
 
   function updateCanvasStyles() {
@@ -240,6 +307,8 @@ export function createPdf() {
 
   function applyScale(value: number, autoFit: boolean) {
     const newScale = autoFit ? value : clampScale(value);
+    // Manual zoom leaves any fit mode; the menu should stop showing Fit width.
+    if (!autoFit) state.fitWidth = false;
     if (state.scale === newScale && state.autoFit === autoFit) return;
 
     state.scale = newScale;
@@ -249,6 +318,7 @@ export function createPdf() {
     for (const page of state.pages) {
       clearTextLayer(page.pageNum);
       page.rendered = false;
+      page.links = [];
     }
     if (observer && pdfContainerEl) {
       for (const page of state.pages) {
@@ -269,21 +339,29 @@ export function createPdf() {
 
     let maxWidth = 0;
     let maxHeight = 0;
-    for (const page of state.pages) {
-      maxWidth = Math.max(maxWidth, page.width);
-      maxHeight = Math.max(maxHeight, page.height);
+    for (const row of layoutRows()) {
+      maxWidth = Math.max(maxWidth, row.width);
+      maxHeight = Math.max(maxHeight, row.height);
     }
     if (maxWidth <= 0 || maxHeight <= 0) return;
 
-    const fitScale = Math.min(
-      10,
-      containerWidth / maxWidth,
-      containerHeight / maxHeight,
-    );
+    const widthScale = containerWidth / maxWidth;
+    const fitScale = state.fitWidth
+      ? Math.min(10, widthScale)
+      : Math.min(10, widthScale, containerHeight / maxHeight);
     if (!Number.isFinite(fitScale) || fitScale <= 0) return;
 
     state.fitScale = fitScale;
     applyScale(fitScale, true);
+  }
+
+  function setFitWidth(
+    enabled: boolean,
+    containerWidth: number,
+    containerHeight: number,
+  ) {
+    state.fitWidth = enabled;
+    fitToScreen(containerWidth, containerHeight);
   }
 
   function resetScale() {
@@ -309,7 +387,10 @@ export function createPdf() {
     if (!canvas || !pdfPage) return;
     if (page.rendered) return;
 
-    const viewport = pdfPage.getViewport({ scale: state.scale });
+    const viewport = pdfPage.getViewport({
+      scale: state.scale,
+      rotation: state.rotation,
+    });
 
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.floor(viewport.width * dpr);
@@ -325,6 +406,7 @@ export function createPdf() {
       await pdfPage.render({ canvasContext: ctx, viewport }).promise;
       page.rendered = true;
       void renderTextLayer(pdfPage, page);
+      void loadPageLinks(pdfPage, page, viewport);
       updateCurrentPage();
       if (page.pageNum === 1 && currentFilePath) {
         try {
@@ -390,7 +472,10 @@ export function createPdf() {
     }
 
     container.style.setProperty("--scale-factor", String(state.scale));
-    const viewport = pdfPage.getViewport({ scale: state.scale });
+    const viewport = pdfPage.getViewport({
+      scale: state.scale,
+      rotation: state.rotation,
+    });
     const task = new lib.TextLayer({
       textContentSource: textContent,
       container,
@@ -411,19 +496,119 @@ export function createPdf() {
     }
   }
 
+  async function loadPageLinks(
+    pdfPage: PDFPageProxy,
+    page: PdfPage,
+    viewport: ReturnType<PDFPageProxy["getViewport"]>,
+  ): Promise<void> {
+    const documentRef = pdfDoc;
+    const scale = state.scale;
+    const rotation = state.rotation;
+    if (!documentRef || disposed) return;
+
+    try {
+      let annotations = annotationCache.get(page.pageNum);
+      if (annotations === undefined) {
+        annotations = (await pdfPage.getAnnotations({
+          intent: "display",
+        })) as unknown[];
+        if (disposed || pdfDoc !== documentRef) return;
+        annotationCache.set(page.pageNum, annotations);
+      }
+      if (
+        disposed ||
+        pdfDoc !== documentRef ||
+        state.scale !== scale ||
+        state.rotation !== rotation
+      ) {
+        return;
+      }
+
+      const links: PdfLink[] = [];
+      for (const item of annotations) {
+        const annotation = item as {
+          subtype?: string;
+          rect?: number[];
+          dest?: string | unknown[] | null;
+        };
+        if (annotation.subtype !== "Link" || !annotation.dest) continue;
+        const rect = annotation.rect;
+        if (!Array.isArray(rect) || rect.length < 4) continue;
+        const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
+        const left = Math.min(x1, x2);
+        const top = Math.min(y1, y2);
+        const width = Math.abs(x2 - x1);
+        const height = Math.abs(y2 - y1);
+        if (width <= 0 || height <= 0) continue;
+        links.push({ left, top, width, height, dest: annotation.dest });
+      }
+      page.links = links;
+    } catch {
+      // Link annotations are optional; keep the page readable without them.
+    }
+  }
+
+  async function resolveDestPage(
+    doc: PDFDocumentProxy,
+    dest: string | unknown[] | null,
+  ): Promise<number | null> {
+    if (!dest) return null;
+    const resolved =
+      typeof dest === "string" ? await doc.getDestination(dest) : dest;
+    if (!Array.isArray(resolved) || resolved.length === 0) return null;
+    const ref = resolved[0];
+    if (typeof ref === "number") return ref + 1;
+    if (ref && typeof ref === "object") {
+      const refProxy = ref as RefProxy;
+      if (typeof refProxy.num === "number") {
+        try {
+          return (await doc.getPageIndex(refProxy)) + 1;
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
   function updateCurrentPage() {
     if (!pdfContainerEl || state.pages.length === 0) return;
     const containerRect = pdfContainerEl.getBoundingClientRect();
     const containerTop = containerRect.top;
-    let closest = state.currentPage;
-    let closestDist = Infinity;
+    const containerCenterX = containerRect.left + containerRect.width / 2;
+
+    let minTopDistance = Infinity;
+    const rects = new Map<number, DOMRect>();
     for (const page of state.pages) {
       if (!page.canvasRef) continue;
       const rect = page.canvasRef.getBoundingClientRect();
-      const dist = Math.abs(rect.top - containerTop);
+      rects.set(page.pageNum, rect);
+      minTopDistance = Math.min(
+        minTopDistance,
+        Math.abs(rect.top - containerTop),
+      );
+    }
+    if (!Number.isFinite(minTopDistance)) return;
+
+    // Stay on the manually selected page when it shares the visible row.
+    const currentRect = rects.get(state.currentPage);
+    if (
+      currentRect &&
+      Math.abs(currentRect.top - containerTop) <= minTopDistance + 1
+    ) {
+      return;
+    }
+
+    let closest = state.currentPage;
+    let closestDist = Infinity;
+    for (const [pageNum, rect] of rects) {
+      const vertical = Math.abs(rect.top - containerTop);
+      if (vertical > minTopDistance + 1) continue;
+      // Horizontal center breaks ties between the two pages of a spread.
+      const dist = Math.abs(rect.left + rect.width / 2 - containerCenterX);
       if (dist < closestDist) {
         closestDist = dist;
-        closest = page.pageNum;
+        closest = pageNum;
       }
     }
     state.currentPage = closest;
@@ -540,6 +725,7 @@ export function createPdf() {
           width: 0,
           height: 0,
           pageHeight: 0,
+          links: [],
         });
       }
       state.pages = pages;
@@ -557,11 +743,16 @@ export function createPdf() {
       );
       if (gen !== loadGen) return;
 
+      pageProxies.clear();
       for (let i = 0; i < numPages; i++) {
         const result = pageResults[i];
         if (result.status === "fulfilled") {
           const pdfPage = result.value;
-          const vp = pdfPage.getViewport({ scale: 1 });
+          pageProxies.set(i + 1, pdfPage);
+          const vp = pdfPage.getViewport({
+            scale: 1,
+            rotation: state.rotation,
+          });
           state.pages[i].pageHeight = vp.height;
           state.pages[i].width = vp.width;
           state.pages[i].height = vp.height;
@@ -591,6 +782,8 @@ export function createPdf() {
         /* ignore */
       }
       if (gen !== loadGen) return;
+
+      void loadOutline(pdfDocument, gen);
 
       setupObserver();
 
@@ -643,6 +836,10 @@ export function createPdf() {
     state.scale = 1.0;
     state.fitScale = 1.0;
     state.autoFit = true;
+    state.fitWidth = false;
+    state.rotation = 0;
+    state.dualPage = false;
+    state.presentation = false;
     state.findOpen = false;
     state.findQuery = "";
     state.findResults = 0;
@@ -650,19 +847,35 @@ export function createPdf() {
     state.findMatchPages = [];
     state.findHighlights = [];
     findItemsCache.clear();
-    findPageHeights.clear();
     state.showPagePanel = false;
+    state.panelTab = "pages";
+    state.outline = [];
     state.pdfVersion = "";
     state.pdfPageSize = "";
     pageThumbnailCache.clear();
     textContentCache.clear();
+    annotationCache.clear();
+    pageProxies.clear();
   }
 
   let pageThumbnailCache: Map<number, string> = new Map();
 
-  function togglePagePanel() {
-    state.showPagePanel = !state.showPagePanel;
-    if (!state.showPagePanel) pageThumbnailCache.clear();
+  function togglePagePanel(tab?: "pages" | "outline") {
+    if (state.showPagePanel && (!tab || state.panelTab === tab)) {
+      state.showPagePanel = false;
+      pageThumbnailCache.clear();
+      return;
+    }
+    state.showPagePanel = true;
+    state.panelTab = tab ?? "pages";
+  }
+
+  function setPanelTab(tab: "pages" | "outline") {
+    state.panelTab = tab;
+  }
+
+  function toggleOutline() {
+    togglePagePanel("outline");
   }
 
   async function getPageThumbnail(pageNum: number): Promise<string> {
@@ -699,49 +912,215 @@ export function createPdf() {
 
   function scrollToPage(pageNum: number) {
     if (!pdfContainerEl) return;
-    const SEP = 25;
     const FALLBACK = 800;
+    const gap = rowGap();
     let top = 0;
-    for (const p of state.pages) {
-      if (p.pageNum >= pageNum) break;
-      top += (p.height > 0 ? p.height * state.scale : FALLBACK) + SEP;
+    for (const row of layoutRows()) {
+      if (row.pages.some((page) => page.pageNum >= pageNum)) break;
+      top += (row.height > 0 ? row.height * state.scale : FALLBACK) + gap;
     }
     pdfContainerEl.scrollTo({ top, behavior: "smooth" });
   }
 
   function centerPage(pageNum: number) {
     if (!pdfContainerEl) return;
-    const SEP = 25;
     const FALLBACK = 800;
+    const gap = rowGap();
     let pageTop = 0;
     let pageH = 0;
-    for (const p of state.pages) {
-      if (p.pageNum === pageNum) {
-        pageH = p.height > 0 ? p.height * state.scale : FALLBACK;
+    for (const row of layoutRows()) {
+      if (row.pages.some((page) => page.pageNum === pageNum)) {
+        pageH = row.height > 0 ? row.height * state.scale : FALLBACK;
         break;
       }
-      pageTop += (p.height > 0 ? p.height * state.scale : FALLBACK) + SEP;
+      pageTop += (row.height > 0 ? row.height * state.scale : FALLBACK) + gap;
     }
     const viewH = pdfContainerEl.clientHeight;
     const top = pageTop - (viewH - pageH) / 2;
     pdfContainerEl.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }
 
+  function stepPage(delta: number) {
+    const rows = layoutRows();
+    if (rows.length === 0) return;
+    const index = rows.findIndex((row) =>
+      row.pages.some((page) => page.pageNum === state.currentPage),
+    );
+    const target = Math.max(
+      0,
+      Math.min(rows.length - 1, (index < 0 ? 0 : index) + delta),
+    );
+    centerPage(rows[target].pages[0].pageNum);
+  }
+
   function prevPage() {
-    const next = Math.max(1, state.currentPage - 1);
-    centerPage(next);
+    stepPage(-1);
   }
 
   function nextPage() {
-    const next = Math.min(state.pageCount, state.currentPage + 1);
-    centerPage(next);
+    stepPage(1);
+  }
+
+  function goToPage(pageNum: number) {
+    const target = Math.round(pageNum);
+    if (!Number.isFinite(target)) return;
+    centerPage(Math.max(1, Math.min(state.pageCount, target)));
+  }
+
+  function selectPage(pageNum: number) {
+    if (pageNum < 1 || pageNum > state.pageCount) return;
+    state.currentPage = pageNum;
+    centerPage(pageNum);
+  }
+
+  function fitToWidth(containerWidth: number, containerHeight: number) {
+    setFitWidth(true, containerWidth, containerHeight);
+  }
+
+  function fitToPage(containerWidth: number, containerHeight: number) {
+    setFitWidth(false, containerWidth, containerHeight);
+  }
+
+  function clearRenderLayers() {
+    for (const page of state.pages) {
+      clearTextLayer(page.pageNum);
+      page.rendered = false;
+      page.links = [];
+    }
+    updateCanvasStyles();
+    if (observer && pdfContainerEl) {
+      for (const page of state.pages) {
+        if (page.canvasRef) observer.observe(page.canvasRef);
+      }
+    }
+  }
+
+  function rotate() {
+    if (state.pages.length === 0) return;
+    state.rotation = (state.rotation + 90) % 360;
+
+    for (const [pageNum, proxy] of pageProxies) {
+      const page = state.pages.find((item) => item.pageNum === pageNum);
+      if (!page) continue;
+      try {
+        const viewport = proxy.getViewport({
+          scale: 1,
+          rotation: state.rotation,
+        });
+        page.width = viewport.width;
+        page.height = viewport.height;
+        page.pageHeight = viewport.height;
+      } catch {
+        // Keep the previous dimensions if the page cannot report a viewport.
+      }
+    }
+
+    findItemsCache.clear();
+    clearRenderLayers();
+    if (state.autoFit && pdfContainerEl) {
+      fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
+    }
+    if (state.findQuery) {
+      findText(state.findQuery);
+    }
+    centerPageAfterLayout(state.currentPage);
+  }
+
+  function centerPageAfterLayout(pageNum: number) {
+    if (typeof requestAnimationFrame !== "function") {
+      centerPage(pageNum);
+      return;
+    }
+    requestAnimationFrame(() => centerPage(pageNum));
+  }
+
+  function toggleDualPage() {
+    if (state.presentation) return;
+    state.dualPage = !state.dualPage;
+    if (state.autoFit && pdfContainerEl) {
+      fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
+    }
+    centerPageAfterLayout(state.currentPage);
+  }
+
+  function toggleNightMode() {
+    state.nightMode = !state.nightMode;
+    savePdfNightMode(state.nightMode);
+  }
+
+  function setPresentation(on: boolean) {
+    if (state.presentation === on) return;
+    if (on) {
+      fitWidthBeforePresentation = state.fitWidth;
+      state.fitWidth = false;
+      state.showPagePanel = false;
+      pageThumbnailCache.clear();
+      state.presentation = true;
+    } else {
+      state.presentation = false;
+      state.fitWidth = fitWidthBeforePresentation;
+    }
+    if (pdfContainerEl) {
+      fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
+      if (on) centerPageAfterLayout(state.currentPage);
+    }
+  }
+
+  async function loadOutline(doc: PDFDocumentProxy, gen: number) {
+    try {
+      const raw = await doc.getOutline();
+      if (!raw || raw.length === 0) {
+        if (gen === loadGen && !disposed) state.outline = [];
+        return;
+      }
+
+      const entries: PdfOutlineEntry[] = [];
+      const walk = async (items: unknown[], depth: number) => {
+        for (const item of items) {
+          const node = item as {
+            title?: string;
+            dest?: string | unknown[] | null;
+            items?: unknown[];
+          };
+          if (gen !== loadGen || disposed) return;
+          const pageNum = await resolveDestPage(doc, node.dest ?? null);
+          const title = String(node.title ?? "").trim();
+          if (pageNum && title) {
+            entries.push({ title, pageNum, depth });
+          }
+          if (Array.isArray(node.items) && node.items.length > 0) {
+            await walk(node.items, depth + 1);
+          }
+        }
+      };
+      await walk(raw, 0);
+
+      if (gen !== loadGen || disposed) return;
+      state.outline = entries.filter(
+        (entry) => entry.pageNum >= 1 && entry.pageNum <= state.pageCount,
+      );
+    } catch {
+      if (gen === loadGen && !disposed) state.outline = [];
+    }
+  }
+
+  async function openLink(link: PdfLink) {
+    const doc = pdfDoc;
+    if (!doc || disposed || !link.dest) return;
+    try {
+      const page = await resolveDestPage(doc, link.dest);
+      if (page && !disposed && pdfDoc === doc) {
+        scrollToPage(page);
+      }
+    } catch {
+      // Broken destinations should not break the viewer.
+    }
   }
 
   let findItemsCache: Map<
     number,
     { str: string; x: number; y: number; w: number; h: number }[]
   > = new Map();
-  let findPageHeights: Map<number, number> = new Map();
 
   function toggleFind() {
     state.findOpen = !state.findOpen;
@@ -752,7 +1131,6 @@ export function createPdf() {
       state.findMatchPages = [];
       state.findHighlights = [];
       findItemsCache.clear();
-      findPageHeights.clear();
     }
   }
 
@@ -768,17 +1146,16 @@ export function createPdf() {
     state.findMatchPages = [];
     state.findHighlights = [];
     const lowerQuery = query.toLowerCase();
-    const scale = state.scale;
 
     for (let i = 1; i <= state.pageCount; i++) {
       try {
+        const page = await pdfDoc.getPage(i);
+        const vp = page.getViewport({
+          scale: state.scale,
+          rotation: state.rotation,
+        });
         let items = findItemsCache.get(i);
-        let pageH = findPageHeights.get(i);
-        if (items === undefined || pageH === undefined) {
-          const page = await pdfDoc.getPage(i);
-          const vp = page.getViewport({ scale: 1 });
-          pageH = vp.height;
-          findPageHeights.set(i, pageH);
+        if (items === undefined) {
           const content = await getTextContent(i, page);
           if (!content) continue;
           items = [];
@@ -815,11 +1192,23 @@ export function createPdf() {
             pageCount++;
             const ratio = idx / item.str.length;
             const matchW = (lowerQuery.length / item.str.length) * item.w;
+            const startX = item.x + ratio * item.w;
+            const endX = startX + matchW;
+            // Convert through the page viewport so highlights follow the
+            // current rotation instead of assuming an upright page.
+            const [vx1, vy1] = vp.convertToViewportPoint(
+              startX,
+              item.y + item.h * 0.75,
+            );
+            const [vx2, vy2] = vp.convertToViewportPoint(
+              endX,
+              item.y - item.h * 0.25,
+            );
             pageRects.push({
-              left: (item.x + ratio * item.w) * scale,
-              top: (pageH - item.y - item.h * 0.75) * scale,
-              width: matchW * scale,
-              height: item.h * 1.15 * scale,
+              left: Math.min(vx1, vx2),
+              top: Math.min(vy1, vy2),
+              width: Math.max(2, Math.abs(vx2 - vx1)),
+              height: Math.max(2, Math.abs(vy2 - vy1)),
             });
             idx += lowerQuery.length;
           }
@@ -874,12 +1263,23 @@ export function createPdf() {
     cleanup,
     setScale,
     fitToScreen,
+    fitToWidth,
+    fitToPage,
     resetScale,
     clampScale,
     scrollToPage,
     centerPage,
     prevPage,
     nextPage,
+    goToPage,
+    selectPage,
+    rotate,
+    toggleDualPage,
+    toggleNightMode,
+    setPresentation,
+    toggleOutline,
+    setPanelTab,
+    openLink,
     toggleFind,
     findText,
     findNext,

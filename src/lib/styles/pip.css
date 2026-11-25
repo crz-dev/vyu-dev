@@ -47,6 +47,7 @@ main.pip-expanding .audio-customize-card,
 main.pip-expanding .audio-swap-container,
 main.pip-expanding .cd-color-picker,
 main.pip-expanding .pdf-find-bar,
+main.pip-expanding .pdf-view-controls,
 main.pip-expanding .pdf-page-panel,
 main.pip-expanding .pdf-page-label {
   opacity: 0 !important;
@@ -125,6 +126,7 @@ main.pip:not(.pip-entering) .cd-color-picker {
 }
 
 main.pip:not(.pip-entering) .pdf-find-bar,
+main.pip:not(.pip-entering) .pdf-view-controls,
 main.pip:not(.pip-entering) .pdf-page-panel,
 main.pip:not(.pip-entering) .pdf-page-label {
   display: none;
