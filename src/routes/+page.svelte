@@ -1324,35 +1324,6 @@
     return a.handleMarkupExport(canvasDataUrl);
   }
 
-  function handlePdfSign() {
-    if (!isPdf) return;
-    if (pdf.state.encrypted) {
-      showToast({
-        message: t("shell.viewer.pdf.passwordRequired"),
-        color: "red",
-      });
-      return;
-    }
-    markup.deactivateTools();
-    pdf.openSignaturePad();
-  }
-
-  function handlePdfRedact() {
-    if (!isPdf) return;
-    if (pdf.state.redactActive) {
-      pdf.cancelRedaction();
-      return;
-    }
-    if (pdf.state.encrypted) {
-      showToast({
-        message: t("shell.viewer.pdf.passwordRequired"),
-        color: "red",
-      });
-      return;
-    }
-    markup.deactivateTools();
-    pdf.startRedaction();
-  }
   const deleteActions = createDeleteActions({
     getFilePath: () => filePath,
     getFileList: () => fileList,
@@ -1516,8 +1487,6 @@
     closeMarkupMenu,
     closeEffectsMenu,
     markupMenuHasEdits: markup.hasUnapplied || pdf.state.redactions.length > 0,
-    onPdfSign: handlePdfSign,
-    onPdfRedact: handlePdfRedact,
     onPdfUndoRedaction: pdf.undoRedaction,
     onPdfResetRedaction: pdf.clearRedactions,
     onPdfRequestRedactApply: pdf.requestRedactionConfirm,

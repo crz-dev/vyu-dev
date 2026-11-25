@@ -76,6 +76,7 @@
     isFullscreen,
     fsControlsVisible,
     resetFsTimer,
+    encrypted,
     passwordPrompt,
     formDirty,
     redactActive,
@@ -87,8 +88,10 @@
     addRedaction,
     removeRedaction,
     clearRedactions,
+    startRedaction,
     cancelRedaction,
     setRedactionConfirmOpen,
+    openSignaturePad,
     closeSignaturePad,
     onSaveForms,
     onDiscardForms,
@@ -138,6 +141,7 @@
     isFullscreen: boolean;
     fsControlsVisible: boolean;
     resetFsTimer: () => void;
+    encrypted: boolean;
     passwordPrompt: PdfPasswordPromptState;
     formDirty: boolean;
     redactActive: boolean;
@@ -152,8 +156,10 @@
     ) => void;
     removeRedaction: (id: number) => void;
     clearRedactions: () => void;
+    startRedaction: () => void;
     cancelRedaction: () => void;
     setRedactionConfirmOpen: (open: boolean) => void;
+    openSignaturePad: () => void;
     closeSignaturePad: () => void;
     onSaveForms: () => Promise<void>;
     onDiscardForms: () => void;
@@ -387,6 +393,19 @@
     }
   }
 
+  function openSignature() {
+    if (encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
+    if (redactActive) cancelRedactMode();
+    markup.deactivateTools();
+    openSignaturePad();
+  }
+
   function acceptSignature(paths: DrawPoint[][]) {
     closeSignaturePad();
     markup.deactivateTools();
@@ -469,6 +488,24 @@
   function discardFormChanges() {
     if (formBusy) return;
     onDiscardForms();
+  }
+
+  function startRedact() {
+    if (encrypted) {
+      showToast({
+        message: t("shell.viewer.pdf.passwordRequired"),
+        color: "red",
+      });
+      return;
+    }
+    if (redactActive) {
+      cancelRedactMode();
+      return;
+    }
+    pendingSignature = null;
+    redactDrag = null;
+    markup.deactivateTools();
+    startRedaction();
   }
 
   function cancelRedactMode() {
@@ -1250,6 +1287,46 @@
           {/if}
         </div>
       {/if}
+      <div class="pdf-panel-document">
+        <button class="pdf-panel-doc-btn" onclick={openSignature}>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z" />
+            <path d="m13 8 3 3" />
+          </svg>
+          <span>{t("shell.viewer.pdf.sign")}</span>
+        </button>
+        <button
+          class="pdf-panel-doc-btn danger"
+          class:active={redactActive}
+          onclick={startRedact}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="4" y="4" width="16" height="16" rx="1.5" />
+            <path d="M4 20 20 4" />
+          </svg>
+          <span>{t("shell.viewer.pdf.redact")}</span>
+        </button>
+      </div>
     </div>
   {/if}
 

@@ -733,6 +733,7 @@
         isFullscreen={viewer.state.isFullscreen}
         fsControlsVisible={viewer.state.fsControlsVisible}
         resetFsTimer={viewer.resetFsTimer}
+        encrypted={pdf.state.encrypted}
         passwordPrompt={pdf.state.passwordPrompt}
         formDirty={pdf.state.formDirty}
         redactActive={pdf.state.redactActive}
@@ -744,8 +745,10 @@
         addRedaction={pdf.addRedaction}
         removeRedaction={pdf.removeRedaction}
         clearRedactions={pdf.clearRedactions}
+        startRedaction={pdf.startRedaction}
         cancelRedaction={pdf.cancelRedaction}
         setRedactionConfirmOpen={pdf.setRedactionConfirmOpen}
+        openSignaturePad={pdf.openSignaturePad}
         closeSignaturePad={pdf.closeSignaturePad}
         onSaveForms={onSavePdfForms}
         onDiscardForms={onDiscardPdfForms}

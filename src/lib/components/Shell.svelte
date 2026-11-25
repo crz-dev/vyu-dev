@@ -149,8 +149,6 @@
     onMarkupApply,
     onMarkupExport,
     markupMenuHasEdits,
-    onPdfSign,
-    onPdfRedact,
     onPdfUndoRedaction,
     onPdfResetRedaction,
     onPdfRequestRedactApply,
@@ -359,8 +357,6 @@
     onMarkupApply: () => void;
     onMarkupExport: () => void;
     markupMenuHasEdits: boolean;
-    onPdfSign: () => void;
-    onPdfRedact: () => void;
     onPdfUndoRedaction: () => void;
     onPdfResetRedaction: () => void;
     onPdfRequestRedactApply: () => void;
@@ -1095,11 +1091,8 @@
     {onReset}
     onApply={onMarkupApply}
     onExport={onMarkupExport}
-    {isPdf}
     redactActive={markupRedactActive}
     redactionCount={markupRedactionCount}
-    onSign={onPdfSign}
-    onRedact={onPdfRedact}
     onUndoRedaction={onPdfUndoRedaction}
     onResetRedaction={onPdfResetRedaction}
     onRequestRedactionApply={onPdfRequestRedactApply}
