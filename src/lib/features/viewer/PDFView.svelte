@@ -2,7 +2,6 @@
   import { tick } from "svelte";
   import { fly } from "svelte/transition";
   import {
-    groupPdfRows,
     type FindHighlight,
     type PdfLink,
     type PdfOutlineEntry,
@@ -38,10 +37,8 @@
     openLink,
     fitWidth,
     autoFit,
-    rotation,
     dualPage,
     nightMode,
-    presentation,
     outline,
     panelTab,
     rotate,
@@ -49,10 +46,8 @@
     fitToPage,
     toggleDualPage,
     toggleNightMode,
-    setPresentation,
     setPanelTab,
     toggleOutline,
-    toggleFullscreen,
     findOpen,
     findQuery,
     findResults,
@@ -67,6 +62,7 @@
     getPageThumbnail,
     preloadAllThumbnails,
     isFullscreen,
+    fsControlsVisible,
     resetFsTimer,
   }: {
     pdfContainerEl: HTMLElement | null;
@@ -87,10 +83,8 @@
     openLink: (link: PdfLink) => void;
     fitWidth: boolean;
     autoFit: boolean;
-    rotation: number;
     dualPage: boolean;
     nightMode: boolean;
-    presentation: boolean;
     outline: PdfOutlineEntry[];
     panelTab: "pages" | "outline";
     rotate: () => void;
@@ -98,10 +92,8 @@
     fitToPage: (containerWidth: number, containerHeight: number) => void;
     toggleDualPage: () => void;
     toggleNightMode: () => void;
-    setPresentation: (on: boolean) => void;
     setPanelTab: (tab: "pages" | "outline") => void;
     toggleOutline: () => void;
-    toggleFullscreen: () => void;
     findOpen: boolean;
     findQuery: string;
     findResults: number;
@@ -116,6 +108,7 @@
     getPageThumbnail: (page: number) => Promise<string>;
     preloadAllThumbnails: () => Promise<void>;
     isFullscreen: boolean;
+    fsControlsVisible: boolean;
     resetFsTimer: () => void;
   } = $props();
 
@@ -140,8 +133,6 @@
   let pageEditing = $state(false);
   let pageInputValue = $state("");
   let pageInputEl: HTMLInputElement | null = $state(null);
-
-  const rows = $derived(groupPdfRows(pages, dualPage && !presentation));
 
   let currentPageWrapper = $derived(
     currentPage > 0 && currentPage <= pageWrapperRefs.length
@@ -169,11 +160,6 @@
     }
   });
 
-  // Leaving fullscreen by other means ends presentation mode.
-  $effect(() => {
-    if (presentation && !isFullscreen) setPresentation(false);
-  });
-
   function focusFindInput(node: HTMLInputElement) {
     node.focus();
   }
@@ -195,14 +181,9 @@
     fitToPage(width, height);
   }
 
-  function togglePresentation() {
-    if (presentation) {
-      setPresentation(false);
-      if (isFullscreen) toggleFullscreen();
-      return;
-    }
-    setPresentation(true);
-    if (!isFullscreen) toggleFullscreen();
+  function toggleFitWidthMode() {
+    if (fitWidth && autoFit) applyFitPage();
+    else applyFitWidth();
   }
 
   function beginPageEdit() {
@@ -236,19 +217,6 @@
       e.stopPropagation();
       cancelPageEdit();
     }
-  }
-
-  function handlePageActivate(e: MouseEvent, pageNum: number) {
-    if (presentation) {
-      const rect = pdfContainerEl?.getBoundingClientRect();
-      if (rect && e.clientX < rect.left + rect.width * 0.35) {
-        prevPage();
-      } else {
-        nextPage();
-      }
-      return;
-    }
-    selectPage(pageNum);
   }
 
   function handlePdfWheel(e: WheelEvent) {
@@ -432,32 +400,6 @@
     if (keybindStore.isRecording || keybindStore.cheatSheetOpen) return;
     if (menuStore.isAnyOpen) return;
 
-    if (presentation) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        togglePresentation();
-        return;
-      }
-      if (
-        e.key === "ArrowRight" ||
-        e.key === "ArrowDown" ||
-        e.key === "PageDown" ||
-        e.key === " "
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
-        nextPage();
-        return;
-      }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") {
-        e.preventDefault();
-        e.stopPropagation();
-        prevPage();
-        return;
-      }
-    }
-
     if (keybindStore.matches("pdf-previous-page", e)) {
       e.preventDefault();
       e.stopPropagation();
@@ -473,8 +415,7 @@
     if (keybindStore.matches("pdf-fit-width", e)) {
       e.preventDefault();
       e.stopPropagation();
-      if (fitWidth) applyFitPage();
-      else applyFitWidth();
+      toggleFitWidthMode();
       return;
     }
     if (keybindStore.matches("pdf-rotate", e)) {
@@ -487,12 +428,6 @@
       e.preventDefault();
       e.stopPropagation();
       toggleNightMode();
-      return;
-    }
-    if (keybindStore.matches("pdf-presentation", e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      togglePresentation();
     }
   }
 
@@ -527,9 +462,9 @@
   class="pdf-viewer"
   class:fullscreen={isFullscreen}
   class:night={nightMode}
-  class:presentation
-  class:dual-page={dualPage && !presentation}
+  class:dual-page={dualPage}
   class:fit-width={fitWidth && autoFit}
+  class:chrome-idle={isFullscreen && !fsControlsVisible}
   bind:this={pdfContainerEl}
   role="presentation"
   onwheel={handlePdfWheel}
@@ -631,7 +566,7 @@
     </div>
   {/if}
 
-  {#if !presentation && !loading && !error && pageCount > 0}
+  {#if !loading && !error && pageCount > 0}
     <div class="pdf-view-controls">
       {#if pageEditing}
         <input
@@ -659,16 +594,13 @@
       <PdfViewMenu
         {fitWidth}
         {autoFit}
-        {rotation}
         {dualPage}
         {nightMode}
         onOutline={toggleOutline}
-        onFitPage={applyFitPage}
-        onFitWidth={applyFitWidth}
+        onToggleFitWidth={toggleFitWidthMode}
         {rotate}
         {toggleDualPage}
         {toggleNightMode}
-        onPresentation={togglePresentation}
       />
     </div>
   {/if}
@@ -778,76 +710,71 @@
   {:else if error}
     <div class="pdf-error">{error}</div>
   {:else}
-    {#each rows as row, rowIndex (row[0]?.pageNum ?? rowIndex)}
-      <div class="pdf-spread" class:dual={row.length > 1}>
-        {#each row as page (page.pageNum)}
-          {@const pageNum = page.pageNum}
-          <div
-            class="pdf-page-wrapper"
-            bind:this={pageWrapperRefs[pageNum - 1]}
-          >
-            <canvas
-              bind:this={page.canvasRef}
-              class="pdf-canvas"
-              onclick={(e) => handlePageActivate(e, pageNum)}
-            ></canvas>
-            {#if !presentation}
+    {#each pages as page, i (page.pageNum)}
+      {@const pageNum = page.pageNum}
+      <div
+        class="pdf-page-wrapper"
+        class:right-page={dualPage && pageNum % 2 === 0}
+        bind:this={pageWrapperRefs[pageNum - 1]}
+      >
+        <canvas
+          bind:this={page.canvasRef}
+          class="pdf-canvas"
+          onclick={() => selectPage(pageNum)}
+        ></canvas>
+        <button
+          class="pdf-page-label tooltip-ctrl"
+          onclick={() => togglePagePanel("pages")}
+          data-tooltip={showPagePanel && panelTab === "pages"
+            ? t("shell.viewer.pdf.closeIndex")
+            : t("shell.viewer.pdf.openIndex")}
+          aria-label={showPagePanel && panelTab === "pages"
+            ? t("shell.viewer.pdf.closeIndex")
+            : t("shell.viewer.pdf.openIndex")}>{pageNum}</button
+        >
+        {#if findQuery && findResults > 0}
+          {@const hl = getHighlightsForPage(pageNum)}
+          {#if hl}
+            <div class="pdf-highlight-overlay">
+              {#each hl.rects as rect}
+                <div
+                  class="pdf-highlight-rect"
+                  style="left: {rect.left}px; top: {rect.top}px; width: {rect.width}px; height: {rect.height}px;"
+                ></div>
+              {/each}
+            </div>
+          {/if}
+        {/if}
+        {#if page.links.length > 0}
+          <div class="pdf-link-layer">
+            {#each page.links as link, linkIndex (linkIndex)}
               <button
-                class="pdf-page-label tooltip-ctrl"
-                onclick={() => togglePagePanel("pages")}
-                data-tooltip={showPagePanel && panelTab === "pages"
-                  ? t("shell.viewer.pdf.closeIndex")
-                  : t("shell.viewer.pdf.openIndex")}
-                aria-label={showPagePanel && panelTab === "pages"
-                  ? t("shell.viewer.pdf.closeIndex")
-                  : t("shell.viewer.pdf.openIndex")}>{pageNum}</button
-              >
-            {/if}
-            {#if findQuery && findResults > 0}
-              {@const hl = getHighlightsForPage(pageNum)}
-              {#if hl}
-                <div class="pdf-highlight-overlay">
-                  {#each hl.rects as rect}
-                    <div
-                      class="pdf-highlight-rect"
-                      style="left: {rect.left}px; top: {rect.top}px; width: {rect.width}px; height: {rect.height}px;"
-                    ></div>
-                  {/each}
-                </div>
-              {/if}
-            {/if}
-            {#if page.links.length > 0}
-              <div class="pdf-link-layer">
-                {#each page.links as link, linkIndex (linkIndex)}
-                  <button
-                    class="pdf-link"
-                    tabindex="-1"
-                    style="left: {link.left}px; top: {link.top}px; width: {link.width}px; height: {link.height}px;"
-                    onclick={(e) => {
-                      e.stopPropagation();
-                      openLink(link);
-                    }}
-                    aria-label={t("shell.viewer.pdf.internalLink")}
-                  ></button>
-                {/each}
-              </div>
-            {/if}
-            <div
-              bind:this={page.textLayerRef}
-              class="pdf-text-layer"
-              aria-hidden="true"
-              onclick={(e) => handlePageActivate(e, pageNum)}
-            ></div>
-            {#if pageNum === currentPage}
-              <DrawOverlay
-                containerEl={currentPageWrapper}
-                mediaEl={currentPageCanvas}
-              />
-            {/if}
+                class="pdf-link"
+                tabindex="-1"
+                style="left: {link.left}px; top: {link.top}px; width: {link.width}px; height: {link.height}px;"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  openLink(link);
+                }}
+                aria-label={t("shell.viewer.pdf.internalLink")}
+              ></button>
+            {/each}
           </div>
-        {/each}
+        {/if}
+        <div
+          bind:this={page.textLayerRef}
+          class="pdf-text-layer"
+          aria-hidden="true"
+          onclick={() => selectPage(pageNum)}
+        ></div>
+        {#if pageNum === currentPage}
+          <DrawOverlay
+            containerEl={currentPageWrapper}
+            mediaEl={currentPageCanvas}
+          />
+        {/if}
       </div>
-      {#if rowIndex < rows.length - 1 && !presentation}
+      {#if !dualPage && i < pages.length - 1}
         <div class="pdf-page-separator"></div>
       {/if}
     {/each}

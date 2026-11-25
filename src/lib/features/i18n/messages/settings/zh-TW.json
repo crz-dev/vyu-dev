@@ -430,8 +430,6 @@
   "keybinds.actions.pdfNightMode.label": "夜間閱讀",
   "keybinds.actions.pdfNextPage.description": "捲動至下一個 PDF 頁面",
   "keybinds.actions.pdfNextPage.label": "下一頁",
-  "keybinds.actions.pdfPresentation.description": "全螢幕逐頁簡報 PDF",
-  "keybinds.actions.pdfPresentation.label": "簡報模式",
   "keybinds.actions.pdfPreviousPage.description": "捲動至上一個 PDF 頁面",
   "keybinds.actions.pdfPreviousPage.label": "上一頁",
   "keybinds.actions.pdfRotate.description": "將 PDF 檢視旋轉 90 度",

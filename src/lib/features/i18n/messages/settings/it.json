@@ -432,8 +432,6 @@
   "keybinds.actions.pdfNightMode.label": "Lettura notturna",
   "keybinds.actions.pdfNextPage.description": "Scorri alla pagina PDF successiva",
   "keybinds.actions.pdfNextPage.label": "Pagina successiva",
-  "keybinds.actions.pdfPresentation.description": "Presenta il PDF a schermo intero una pagina alla volta",
-  "keybinds.actions.pdfPresentation.label": "Modalità presentazione",
   "keybinds.actions.pdfPreviousPage.description": "Scorri alla pagina PDF precedente",
   "keybinds.actions.pdfPreviousPage.label": "Pagina precedente",
   "keybinds.actions.pdfRotate.description": "Ruota la vista del PDF di 90 gradi",

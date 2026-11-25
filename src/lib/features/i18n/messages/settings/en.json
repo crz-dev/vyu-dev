@@ -434,8 +434,6 @@
   "keybinds.actions.pdfNightMode.label": "Night reading",
   "keybinds.actions.pdfNextPage.description": "Scroll to the next PDF page",
   "keybinds.actions.pdfNextPage.label": "Next page",
-  "keybinds.actions.pdfPresentation.description": "Present the PDF full screen one page at a time",
-  "keybinds.actions.pdfPresentation.label": "Presentation mode",
   "keybinds.actions.pdfPreviousPage.description": "Scroll to the previous PDF page",
   "keybinds.actions.pdfPreviousPage.label": "Previous page",
   "keybinds.actions.pdfRotate.description": "Rotate the PDF view by 90 degrees",

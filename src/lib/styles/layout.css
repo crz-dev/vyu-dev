@@ -814,6 +814,13 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   align-items: center;
   justify-content: space-between;
 }
+.fs-pdf-chrome {
+  transition: opacity 0.25s ease;
+}
+.fs-pdf-chrome.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 .fs-filename {
   font-size: 12px;
   color: var(--text-muted);

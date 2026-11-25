@@ -21,7 +21,6 @@
     isAudio: boolean;
     isPdf: boolean;
     showPagePanel: boolean;
-    presentation: boolean;
     fileName: string;
     handleViewerScroll: (e: WheelEvent) => void;
     drawActive: boolean;
@@ -61,7 +60,6 @@
     isAudio,
     isPdf,
     showPagePanel,
-    presentation,
     fileName,
     handleViewerScroll,
     drawActive,
@@ -96,10 +94,11 @@
 </script>
 
 {#if isFullscreen}
-  {#if isPdf && !presentation}
+  {#if isPdf}
     <!-- PDF fullscreen: floating UI only, no blocking overlay -->
     <div
-      class="fs-topbar"
+      class="fs-topbar fs-pdf-chrome"
+      class:hidden={!fsControlsVisible}
       style="position: fixed; top: 0; left: 0; right: 0; z-index: 200;"
     >
       <span class="fs-filename"
@@ -172,7 +171,11 @@
       </div>
     </div>
     {#if !showPagePanel}
-      <div class="fs-nav-left" style="position: fixed; z-index: 200;">
+      <div
+        class="fs-nav-left fs-pdf-chrome"
+        class:hidden={!fsControlsVisible}
+        style="position: fixed; z-index: 200;"
+      >
         <button
           class="fs-nav-btn tooltip-ctrl tooltip-right"
           data-tooltip="Previous file"
@@ -198,7 +201,11 @@
         </button>
       </div>
     {/if}
-    <div class="fs-nav-right" style="position: fixed; z-index: 200;">
+    <div
+      class="fs-nav-right fs-pdf-chrome"
+      class:hidden={!fsControlsVisible}
+      style="position: fixed; z-index: 200;"
+    >
       <button
         class="fs-nav-btn tooltip-ctrl tooltip-left"
         data-tooltip="Next file"
@@ -265,8 +272,6 @@
         {currentIndex + 1} / {fileListLength}
       </button>
     {/if}
-  {:else if isPdf}
-    <!-- PDF presentation: the page fills the screen, chrome stays hidden -->
   {:else}
     <!-- Normal fullscreen: blocking overlay -->
     <div

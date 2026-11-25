@@ -436,8 +436,6 @@
   "keybinds.actions.pdfNightMode.label": "야간 읽기",
   "keybinds.actions.pdfNextPage.description": "다음 PDF 페이지로 스크롤합니다",
   "keybinds.actions.pdfNextPage.label": "다음 페이지",
-  "keybinds.actions.pdfPresentation.description": "PDF를 전체 화면에서 한 페이지씩 표시합니다",
-  "keybinds.actions.pdfPresentation.label": "프레젠테이션 모드",
   "keybinds.actions.pdfPreviousPage.description": "이전 PDF 페이지로 스크롤합니다",
   "keybinds.actions.pdfPreviousPage.label": "이전 페이지",
   "keybinds.actions.pdfRotate.description": "PDF 보기를 90도 회전합니다",

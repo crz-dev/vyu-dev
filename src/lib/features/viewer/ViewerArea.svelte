@@ -698,10 +698,8 @@
         openLink={pdf.openLink}
         fitWidth={pdf.state.fitWidth}
         autoFit={pdf.state.autoFit}
-        rotation={pdf.state.rotation}
         dualPage={pdf.state.dualPage}
         nightMode={pdf.state.nightMode}
-        presentation={pdf.state.presentation}
         outline={pdf.state.outline}
         panelTab={pdf.state.panelTab}
         rotate={pdf.rotate}
@@ -709,10 +707,8 @@
         fitToPage={pdf.fitToPage}
         toggleDualPage={pdf.toggleDualPage}
         toggleNightMode={pdf.toggleNightMode}
-        setPresentation={pdf.setPresentation}
         setPanelTab={pdf.setPanelTab}
         toggleOutline={pdf.toggleOutline}
-        {toggleFullscreen}
         findOpen={pdf.state.findOpen}
         findQuery={pdf.state.findQuery}
         findResults={pdf.state.findResults}
@@ -727,6 +723,7 @@
         getPageThumbnail={pdf.getPageThumbnail}
         preloadAllThumbnails={pdf.preloadAllThumbnails}
         isFullscreen={viewer.state.isFullscreen}
+        fsControlsVisible={viewer.state.fsControlsVisible}
         resetFsTimer={viewer.resetFsTimer}
       />
     {:else if fileSrc && isAudio}
@@ -926,7 +923,6 @@
   {isAudio}
   {isPdf}
   showPagePanel={pdf.state.showPagePanel}
-  presentation={pdf.state.presentation}
   {fileName}
   {handleViewerScroll}
   drawActive={markup.drawActive}

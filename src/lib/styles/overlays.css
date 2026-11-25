@@ -889,11 +889,19 @@
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
+.pdf-page-wrapper.right-page .pdf-page-label {
+  right: auto;
+  left: 100%;
+  margin-right: 0;
+  margin-left: 8px;
+}
 .pdf-viewer.fit-width .pdf-page-label {
   right: 8px;
+  left: auto;
   top: 8px;
   translate: none;
   margin-right: 0;
+  margin-left: 0;
 }
 .pdf-canvas {
   display: block;
@@ -1311,13 +1319,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── PDF spreads, links, night and presentation ────────── */
-.pdf-spread {
-  display: flex;
-  align-items: flex-start;
+/* ── PDF spreads, links, night and fullscreen ──────────── */
+.pdf-viewer.dual-page {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
   justify-content: center;
-  gap: 12px;
-  flex-shrink: 0;
+  justify-items: center;
+  align-content: start;
+  align-items: start;
+  column-gap: 12px;
+  row-gap: 25px;
 }
 .pdf-link-layer {
   position: absolute;
@@ -1347,8 +1358,16 @@
 .pdf-viewer.night .pdf-highlight-rect {
   background: rgba(90, 170, 255, 0.35);
 }
-.pdf-viewer.presentation .pdf-page-wrapper {
-  cursor: default;
+.pdf-view-controls {
+  transition: opacity 0.25s ease;
+}
+.pdf-viewer.chrome-idle .pdf-view-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+.pdf-viewer.chrome-idle .pdf-view-controls:has(.pdf-view-menu) {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .props-dialog {

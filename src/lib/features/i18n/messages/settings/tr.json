@@ -432,8 +432,6 @@
   "keybinds.actions.pdfNightMode.label": "Gece okuma",
   "keybinds.actions.pdfNextPage.description": "Sonraki PDF sayfasına kaydır",
   "keybinds.actions.pdfNextPage.label": "Sonraki sayfa",
-  "keybinds.actions.pdfPresentation.description": "PDF'i tam ekranda tek tek sayfa göster",
-  "keybinds.actions.pdfPresentation.label": "Sunum modu",
   "keybinds.actions.pdfPreviousPage.description": "Önceki PDF sayfasına kaydır",
   "keybinds.actions.pdfPreviousPage.label": "Önceki sayfa",
   "keybinds.actions.pdfRotate.description": "PDF görünümünü 90 derece döndür",

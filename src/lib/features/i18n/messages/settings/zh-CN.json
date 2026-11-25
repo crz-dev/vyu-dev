@@ -436,8 +436,6 @@
   "keybinds.actions.pdfNightMode.label": "夜间阅读",
   "keybinds.actions.pdfNextPage.description": "滚动到下一页 PDF",
   "keybinds.actions.pdfNextPage.label": "下一页",
-  "keybinds.actions.pdfPresentation.description": "全屏逐页演示 PDF",
-  "keybinds.actions.pdfPresentation.label": "演示模式",
   "keybinds.actions.pdfPreviousPage.description": "滚动到上一页 PDF",
   "keybinds.actions.pdfPreviousPage.label": "上一页",
   "keybinds.actions.pdfRotate.description": "将 PDF 视图旋转 90 度",

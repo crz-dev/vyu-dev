@@ -436,8 +436,6 @@
   "keybinds.actions.pdfNightMode.label": "Ночное чтение",
   "keybinds.actions.pdfNextPage.description": "Перейти к следующей странице PDF",
   "keybinds.actions.pdfNextPage.label": "Следующая страница",
-  "keybinds.actions.pdfPresentation.description": "Показывать PDF на весь экран по одной странице",
-  "keybinds.actions.pdfPresentation.label": "Режим презентации",
   "keybinds.actions.pdfPreviousPage.description": "Перейти к предыдущей странице PDF",
   "keybinds.actions.pdfPreviousPage.label": "Предыдущая страница",
   "keybinds.actions.pdfRotate.description": "Повернуть вид PDF на 90 градусов",

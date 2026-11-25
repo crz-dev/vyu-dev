@@ -436,8 +436,6 @@
   "keybinds.actions.pdfNightMode.label": "Lecture nocturne",
   "keybinds.actions.pdfNextPage.description": "Fait défiler jusqu’à la page PDF suivante",
   "keybinds.actions.pdfNextPage.label": "Page suivante",
-  "keybinds.actions.pdfPresentation.description": "Présenter le PDF en plein écran, page par page",
-  "keybinds.actions.pdfPresentation.label": "Mode présentation",
   "keybinds.actions.pdfPreviousPage.description": "Fait défiler jusqu’à la page PDF précédente",
   "keybinds.actions.pdfPreviousPage.label": "Page précédente",
   "keybinds.actions.pdfRotate.description": "Pivoter la vue du PDF de 90 degrés",

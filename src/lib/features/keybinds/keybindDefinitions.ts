@@ -466,16 +466,6 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     allowRepeat: false,
     behavior: "tap",
   },
-  {
-    id: "pdf-presentation",
-    label: "settings.keybinds.actions.pdfPresentation.label",
-    description: "settings.keybinds.actions.pdfPresentation.description",
-    category: "pdf",
-    context: "pdf",
-    defaultBinding: key("f", { shift: true }),
-    allowRepeat: false,
-    behavior: "tap",
-  },
 ];
 
 export const KEYBIND_ACTIONS_BY_ID = new Map(

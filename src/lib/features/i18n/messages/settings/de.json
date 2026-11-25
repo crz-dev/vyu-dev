@@ -436,8 +436,6 @@
   "keybinds.actions.pdfNightMode.label": "Nachtlesemodus",
   "keybinds.actions.pdfNextPage.description": "Zur nächsten PDF-Seite scrollen",
   "keybinds.actions.pdfNextPage.label": "Nächste Seite",
-  "keybinds.actions.pdfPresentation.description": "PDF bildschirmfüllend Seite für Seite präsentieren",
-  "keybinds.actions.pdfPresentation.label": "Präsentationsmodus",
   "keybinds.actions.pdfPreviousPage.description": "Zur vorherigen PDF-Seite scrollen",
   "keybinds.actions.pdfPreviousPage.label": "Vorherige Seite",
   "keybinds.actions.pdfRotate.description": "PDF-Ansicht um 90 Grad drehen",

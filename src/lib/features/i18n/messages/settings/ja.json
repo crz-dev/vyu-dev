@@ -436,8 +436,6 @@
   "keybinds.actions.pdfNightMode.label": "ナイト読書",
   "keybinds.actions.pdfNextPage.description": "次の PDF ページへスクロールします",
   "keybinds.actions.pdfNextPage.label": "次のページ",
-  "keybinds.actions.pdfPresentation.description": "PDF を全画面で 1 ページずつ表示する",
-  "keybinds.actions.pdfPresentation.label": "プレゼンテーション",
   "keybinds.actions.pdfPreviousPage.description": "前の PDF ページへスクロールします",
   "keybinds.actions.pdfPreviousPage.label": "前のページ",
   "keybinds.actions.pdfRotate.description": "PDF 表示を 90 度回転する",

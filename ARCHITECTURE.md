@@ -101,7 +101,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 ## Playback, viewer, and window
 
 - `pdfjs-dist` is dynamically imported only when a PDF opens.
-- PDF view state lives in `features/viewer/pdf.svelte.ts`: pages render through layout rows so single, dual, and presentation views share one scroll/current-page model. Outline entries and internal link rectangles come from the PDF.js document, not the DOM. Night reading is a canvas filter and persists under `vyu-pdf-night`.
+- PDF view state lives in `features/viewer/pdf.svelte.ts`: pages render through layout rows so single and dual page views share one scroll/current-page model. Outline entries and internal link rectangles come from the PDF.js document, not the DOM. Night reading is a canvas filter and persists under `vyu-pdf-night`.
 - HLS uses lazy `hls.js` with workers disabled; WebView2 has no native HLS, and the CSP has no `worker-src blob:`.
 - Remote `http(s)` media plays in-stream and is not persisted: no recents, resume, markers, clips, or track inspection.
 - The up-next queue stores absolute paths and is restored from `vyu-queue` on launch; every mutation rewrites the stored list.

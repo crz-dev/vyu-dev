@@ -174,7 +174,6 @@ export interface PdfState {
   rotation: number;
   dualPage: boolean;
   nightMode: boolean;
-  presentation: boolean;
   pageCount: number;
   currentPage: number;
   loading: boolean;
@@ -226,7 +225,6 @@ export function createPdf() {
     rotation: 0,
     dualPage: false,
     nightMode: loadPdfNightMode(),
-    presentation: false,
     pageCount: 0,
     currentPage: 1,
     loading: false,
@@ -258,7 +256,6 @@ export function createPdf() {
   let currentFilePath = "";
   let disposed = false;
   let loadGen = 0;
-  let fitWidthBeforePresentation = false;
 
   function setContainer(el: HTMLElement | null) {
     pdfContainerEl = el;
@@ -269,7 +266,7 @@ export function createPdf() {
   }
 
   function isDualLayout(): boolean {
-    return state.dualPage && !state.presentation;
+    return state.dualPage;
   }
 
   function layoutRows(): { pages: PdfPage[]; width: number; height: number }[] {
@@ -282,10 +279,6 @@ export function createPdf() {
       }
       return { pages, width, height };
     });
-  }
-
-  function rowGap(): number {
-    return state.presentation ? 0 : PAGE_SEP;
   }
 
   function updateCanvasStyles() {
@@ -839,7 +832,6 @@ export function createPdf() {
     state.fitWidth = false;
     state.rotation = 0;
     state.dualPage = false;
-    state.presentation = false;
     state.findOpen = false;
     state.findQuery = "";
     state.findResults = 0;
@@ -913,11 +905,10 @@ export function createPdf() {
   function scrollToPage(pageNum: number) {
     if (!pdfContainerEl) return;
     const FALLBACK = 800;
-    const gap = rowGap();
     let top = 0;
     for (const row of layoutRows()) {
       if (row.pages.some((page) => page.pageNum >= pageNum)) break;
-      top += (row.height > 0 ? row.height * state.scale : FALLBACK) + gap;
+      top += (row.height > 0 ? row.height * state.scale : FALLBACK) + PAGE_SEP;
     }
     pdfContainerEl.scrollTo({ top, behavior: "smooth" });
   }
@@ -925,7 +916,6 @@ export function createPdf() {
   function centerPage(pageNum: number) {
     if (!pdfContainerEl) return;
     const FALLBACK = 800;
-    const gap = rowGap();
     let pageTop = 0;
     let pageH = 0;
     for (const row of layoutRows()) {
@@ -933,7 +923,8 @@ export function createPdf() {
         pageH = row.height > 0 ? row.height * state.scale : FALLBACK;
         break;
       }
-      pageTop += (row.height > 0 ? row.height * state.scale : FALLBACK) + gap;
+      pageTop +=
+        (row.height > 0 ? row.height * state.scale : FALLBACK) + PAGE_SEP;
     }
     const viewH = pdfContainerEl.clientHeight;
     const top = pageTop - (viewH - pageH) / 2;
@@ -1035,7 +1026,6 @@ export function createPdf() {
   }
 
   function toggleDualPage() {
-    if (state.presentation) return;
     state.dualPage = !state.dualPage;
     if (state.autoFit && pdfContainerEl) {
       fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
@@ -1046,24 +1036,6 @@ export function createPdf() {
   function toggleNightMode() {
     state.nightMode = !state.nightMode;
     savePdfNightMode(state.nightMode);
-  }
-
-  function setPresentation(on: boolean) {
-    if (state.presentation === on) return;
-    if (on) {
-      fitWidthBeforePresentation = state.fitWidth;
-      state.fitWidth = false;
-      state.showPagePanel = false;
-      pageThumbnailCache.clear();
-      state.presentation = true;
-    } else {
-      state.presentation = false;
-      state.fitWidth = fitWidthBeforePresentation;
-    }
-    if (pdfContainerEl) {
-      fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
-      if (on) centerPageAfterLayout(state.currentPage);
-    }
   }
 
   async function loadOutline(doc: PDFDocumentProxy, gen: number) {
@@ -1276,7 +1248,6 @@ export function createPdf() {
     rotate,
     toggleDualPage,
     toggleNightMode,
-    setPresentation,
     toggleOutline,
     setPanelTab,
     openLink,
