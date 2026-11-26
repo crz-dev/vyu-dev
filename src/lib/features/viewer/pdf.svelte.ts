@@ -189,6 +189,15 @@ export interface FindHighlight {
   rects: { left: number; top: number; width: number; height: number }[];
 }
 
+export interface PdfDocumentMetadata {
+  title: string;
+  author: string;
+  subject: string;
+  keywords: string;
+  creator: string;
+  producer: string;
+}
+
 export interface PdfState {
   pages: PdfPage[];
   scale: number;
@@ -220,6 +229,8 @@ export interface PdfState {
   outline: PdfOutlineEntry[];
   pdfVersion: string;
   pdfPageSize: string;
+  metadata: PdfDocumentMetadata;
+  resumePage: number | null;
 }
 
 const RENDER_DEBOUNCE_MS = 60;
@@ -278,6 +289,15 @@ export function createPdf() {
     outline: [],
     pdfVersion: "",
     pdfPageSize: "",
+    metadata: {
+      title: "",
+      author: "",
+      subject: "",
+      keywords: "",
+      creator: "",
+      producer: "",
+    },
+    resumePage: null,
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
@@ -595,6 +615,16 @@ export function createPdf() {
     } catch {
       return null;
     }
+  }
+
+  async function getPageText(pageNum: number): Promise<string> {
+    const content = await getTextContent(pageNum);
+    if (!content) return "";
+    return content.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   async function renderTextLayer(
@@ -947,6 +977,18 @@ export function createPdf() {
         if (info?.PDFFormatVersion) {
           state.pdfVersion = String(info.PDFFormatVersion);
         }
+        const readString = (key: string): string => {
+          const value = info?.[key];
+          return typeof value === "string" ? value.trim() : "";
+        };
+        state.metadata = {
+          title: readString("Title"),
+          author: readString("Author"),
+          subject: readString("Subject"),
+          keywords: readString("Keywords"),
+          creator: readString("Creator"),
+          producer: readString("Producer"),
+        };
       } catch {
         /* ignore */
       }
@@ -1039,6 +1081,15 @@ export function createPdf() {
     state.outline = [];
     state.pdfVersion = "";
     state.pdfPageSize = "";
+    state.metadata = {
+      title: "",
+      author: "",
+      subject: "",
+      keywords: "",
+      creator: "",
+      producer: "",
+    };
+    state.resumePage = null;
     pageThumbnailCache.clear();
     textContentCache.clear();
     annotationCache.clear();
@@ -1651,6 +1702,7 @@ export function createPdf() {
     findText,
     findNext,
     findPrev,
+    getPageText,
     togglePagePanel,
     getPageThumbnail,
     preloadAllThumbnails,

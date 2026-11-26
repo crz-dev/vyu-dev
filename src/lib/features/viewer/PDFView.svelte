@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import { fly } from "svelte/transition";
   import {
     type FindHighlight,
@@ -42,6 +42,8 @@
     setScale,
     currentPage,
     pageCount,
+    resumePage,
+    getPageText,
     prevPage,
     nextPage,
     scrollToPage,
@@ -107,6 +109,8 @@
     setScale: (s: number) => void;
     currentPage: number;
     pageCount: number;
+    resumePage: number | null;
+    getPageText: (pageNum: number) => Promise<string>;
     prevPage: () => void;
     nextPage: () => void;
     scrollToPage: (page: number) => void;
@@ -193,6 +197,8 @@
   let panelPageEditing = $state(false);
   let panelPageValue = $state("");
   let panelPageInputEl: HTMLInputElement | null = $state(null);
+  let readAloudActive = $state(false);
+  let readAloudPage = $state(0);
 
   let pendingSignature = $state<DrawPoint[][] | null>(null);
   let signaturePointer = $state<{
@@ -392,6 +398,79 @@
       cancelPanelPageEdit();
     }
   }
+
+  function stopReadAloud() {
+    readAloudActive = false;
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  async function speakFromPage(page: number) {
+    if (!readAloudActive || readAloudPage !== page) return;
+    const text = await getPageText(page);
+    if (!readAloudActive || readAloudPage !== page) return;
+    if (!text) {
+      const next = page + 1;
+      if (next > pageCount) {
+        readAloudActive = false;
+        return;
+      }
+      readAloudPage = next;
+      goToPage(next);
+      void speakFromPage(next);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => {
+      if (readAloudPage !== page || !readAloudActive) return;
+      const next = page + 1;
+      if (next > pageCount) {
+        readAloudActive = false;
+        return;
+      }
+      readAloudPage = next;
+      goToPage(next);
+      void speakFromPage(next);
+    };
+    utterance.onerror = () => {
+      if (readAloudPage === page) readAloudActive = false;
+    };
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function toggleReadAloud() {
+    if (readAloudActive) {
+      stopReadAloud();
+      return;
+    }
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      showToast({
+        message: t("shell.viewer.pdf.readAloudUnavailable"),
+        color: "red",
+      });
+      return;
+    }
+    const page = currentPage;
+    const text = await getPageText(page);
+    if (!text) {
+      showToast({
+        message: t("shell.viewer.pdf.noTextToRead"),
+        color: "grey",
+      });
+      return;
+    }
+    stopReadAloud();
+    readAloudPage = page;
+    readAloudActive = true;
+    void speakFromPage(page);
+  }
+
+  $effect(() => {
+    if (loading || error) stopReadAloud();
+  });
+
+  onDestroy(stopReadAloud);
 
   function openSignature() {
     if (encrypted) {
@@ -1053,6 +1132,34 @@
       <div class="pdf-page-panel-header">
         <span class="pdf-page-panel-title">{t("shell.viewer.pdf.index")}</span>
         <div class="pdf-page-panel-head-actions">
+          <button
+            class="pdf-panel-head-btn tooltip-below-start"
+            class:active={readAloudActive}
+            aria-pressed={readAloudActive}
+            data-tooltip={readAloudActive
+              ? t("shell.viewer.pdf.stopReading")
+              : t("shell.viewer.pdf.readAloud")}
+            aria-label={readAloudActive
+              ? t("shell.viewer.pdf.stopReading")
+              : t("shell.viewer.pdf.readAloud")}
+            onclick={toggleReadAloud}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+              <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+            </svg>
+          </button>
           {#if outline.length > 0}
             <button
               class="pdf-panel-head-btn tooltip-below-start"
@@ -1381,6 +1488,29 @@
                 />
               {:else}
                 <div class="pdf-page-panel-placeholder"></div>
+              {/if}
+              {#if resumePage === i + 1}
+                <span
+                  class="pdf-page-resume"
+                  title={t("shell.viewer.pdf.resumePoint")}
+                  aria-label={t("shell.viewer.pdf.resumePoint")}
+                >
+                  <svg
+                    width="9"
+                    height="9"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"
+                      stroke="currentColor"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
               {/if}
               <span class="pdf-page-panel-num">{i + 1}</span>
             </button>

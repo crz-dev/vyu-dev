@@ -41,6 +41,7 @@
   } from "$lib/shared/types";
   import type { ClipDeleteConfirmState } from "$lib/features/media/clips.svelte";
   import type { PipPhase } from "$lib/features/viewer/pip.svelte";
+  import type { PdfDocumentMetadata } from "$lib/features/viewer/pdf.svelte";
   import type {
     MarkerTooltip,
     MarkerEditMenu,
@@ -64,10 +65,12 @@
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
+    pdfMetadata,
     pdfScale,
     pdfFitScale,
     pdfAutoFit,
     pdfSetScale,
+    pdfCurrentPage,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -150,6 +153,7 @@
     onMarkupExport,
     markupMenuHasEdits,
     onPdfUndoRedaction,
+    onPdfSaveAs,
     onPdfResetRedaction,
     onPdfRequestRedactApply,
     markupRedactActive,
@@ -269,10 +273,12 @@
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
+    pdfMetadata: PdfDocumentMetadata;
     pdfScale: number;
     pdfFitScale: number;
     pdfAutoFit: boolean;
     pdfSetScale: (scale: number) => void;
+    pdfCurrentPage: number;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -358,6 +364,7 @@
     onMarkupExport: () => void;
     markupMenuHasEdits: boolean;
     onPdfUndoRedaction: () => void;
+    onPdfSaveAs: (format: "pdf" | "png" | "txt") => Promise<void>;
     onPdfResetRedaction: () => void;
     onPdfRequestRedactApply: () => void;
     markupRedactActive: boolean;
@@ -915,6 +922,8 @@
     {pdfFitScale}
     {pdfAutoFit}
     {pdfSetScale}
+    {pdfCurrentPage}
+    {pdfPageCount}
     {durationDisplay}
     {audioBitrateDisplay}
     {clipCount}
@@ -981,6 +990,8 @@
     {pdfPageCount}
     {pdfVersion}
     {pdfPageSize}
+    {pdfMetadata}
+    {onPdfSaveAs}
     {timestamps}
     {clipBoundaries}
     {resumePoint}

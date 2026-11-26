@@ -11,6 +11,7 @@
     "fs:allow-exists",
     "fs:allow-read-dir",
     "fs:allow-stat",
+    "fs:allow-write-text-file",
     "core:window:allow-start-dragging",
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",

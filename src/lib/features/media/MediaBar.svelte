@@ -138,6 +138,8 @@
     pdfFitScale = 1,
     pdfAutoFit = false,
     pdfSetScale,
+    pdfCurrentPage = 1,
+    pdfPageCount = 0,
     adjustZoom,
     durationDisplay,
     audioBitrateDisplay,
@@ -205,6 +207,8 @@
     pdfFitScale?: number;
     pdfAutoFit?: boolean;
     pdfSetScale: (scale: number) => void;
+    pdfCurrentPage?: number;
+    pdfPageCount?: number;
     adjustZoom: (delta: number) => void;
     durationDisplay: string;
     audioBitrateDisplay: string;
@@ -597,6 +601,13 @@
         >
           {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
             {durationDisplay} · {audioBitrateDisplay} · {fileSize}
+          {:else if isPdf && pdfPageCount > 0}
+            {t("shell.viewer.pdf.pageOf", {
+              current: pdfCurrentPage,
+              total: pdfPageCount,
+            })}
+            {#if fileSize}
+              · {fileSize}{/if}
           {:else if fileDimensions && fileSize}
             {fileDimensions} · {fileSize}
           {:else if !fileInfoLoading && fileName !== t("media.player.noFileOpen")}

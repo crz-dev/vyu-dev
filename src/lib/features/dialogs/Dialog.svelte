@@ -7,6 +7,7 @@
     MediaProperties,
     VideoMarker,
   } from "$lib/shared/types";
+  import type { PdfDocumentMetadata } from "$lib/features/viewer/pdf.svelte";
   import {
     invokePrintFile,
     invokeSendBluetooth,
@@ -64,6 +65,8 @@
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
+    pdfMetadata,
+    onPdfSaveAs,
     timestamps,
     clipBoundaries,
     resumePoint,
@@ -140,6 +143,8 @@
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
+    pdfMetadata: PdfDocumentMetadata;
+    onPdfSaveAs: (format: "pdf" | "png" | "txt") => Promise<void>;
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
     resumePoint: number | null;
@@ -209,6 +214,35 @@
   } = $props();
 
   const t = locale.t;
+
+  const pdfMetaRows = $derived(
+    [
+      {
+        label: t("dialogs.dialog.properties.docTitle"),
+        value: pdfMetadata.title,
+      },
+      {
+        label: t("dialogs.dialog.properties.docAuthor"),
+        value: pdfMetadata.author,
+      },
+      {
+        label: t("dialogs.dialog.properties.docSubject"),
+        value: pdfMetadata.subject,
+      },
+      {
+        label: t("dialogs.dialog.properties.docKeywords"),
+        value: pdfMetadata.keywords,
+      },
+      {
+        label: t("dialogs.dialog.properties.docCreator"),
+        value: pdfMetadata.creator,
+      },
+      {
+        label: t("dialogs.dialog.properties.docProducer"),
+        value: pdfMetadata.producer,
+      },
+    ].filter((row) => row.value.trim().length > 0),
+  );
   const tp = locale.tp;
 
   let overlayFadeMs = $derived(appearance.reducedMotion ? 0 : 120);
@@ -382,6 +416,7 @@
     | "gifLimit";
 
   let shareConverting = $state(false);
+  let pdfSaving = $state(false);
   let convertingFormat = $state<string | undefined>(undefined);
   let convertProgress = $state<number>(0);
   let shareConfirm = $state<ShareConfirmKind | null>(null);
@@ -845,6 +880,17 @@
     }
     await finalizeSave(success, resultPath, revealDir, modifiedMs);
     closeShare();
+  }
+
+  async function handlePdfShareSaveAs(format: "pdf" | "png" | "txt") {
+    if (pdfSaving) return;
+    pdfSaving = true;
+    try {
+      await onPdfSaveAs(format);
+    } finally {
+      pdfSaving = false;
+      closeShare();
+    }
   }
 
   async function handleSaveAs(format: string) {
@@ -2214,6 +2260,40 @@
           <span class="props-v">{fileTypeValue()}</span>
         </div>
         {#if isPdf}
+          {#each pdfMetaRows as row}
+            <div
+              class="props-row"
+              onclick={() => copyPropValue(row.value)}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  copyPropValue(row.value);
+                }
+              }}
+              role="button"
+              tabindex="0"
+            >
+              <span class="props-k">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+                  />
+                  <line x1="7" y1="7" x2="7.01" y2="7" />
+                </svg>
+                {row.label}
+              </span>
+              <span class="props-v">{row.value}</span>
+            </div>
+          {/each}
           <div
             class="props-row"
             onclick={() => copyPropValue(String(pdfPageCount))}
@@ -3395,162 +3475,175 @@
           </div>
         </div>
 
-        {#if !isPdf}
-          <div class="share-section">
-            <p class="share-section-label">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
-                  points="7 10 12 15 17 10"
-                /><line x1="12" y1="15" x2="12" y2="3" /></svg
+        <div class="share-section">
+          <p class="share-section-label">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline
+                points="7 10 12 15 17 10"
+              /><line x1="12" y1="15" x2="12" y2="3" /></svg
+            >
+            {t("dialogs.dialog.share.saveAs")}
+          </p>
+          {#if isPdf}
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("PDF")}
+                onclick={() => handlePdfShareSaveAs("pdf")}
+                disabled={pdfSaving}>PDF</button
               >
-              {t("dialogs.dialog.share.saveAs")}
-            </p>
-            {#if isVideo}
-              <div class="share-grid share-grid-3">
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("MP4")}
-                  onclick={() => handleSaveAs("mp4")}
-                  disabled={shareConverting}>MP4</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("MKV")}
-                  onclick={() => handleSaveAs("mkv")}
-                  disabled={shareConverting}>MKV</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("WebM")}
-                  onclick={() => handleSaveAs("webm")}
-                  disabled={shareConverting}>WebM</button
-                >
-              </div>
-              <div class="share-grid share-grid-3">
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("MP3")}
-                  onclick={() => handleSaveAs("mp3")}
-                  disabled={shareConverting}>MP3</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("GIF")}
-                  onclick={() => handleSaveAs("gif")}
-                  disabled={shareConverting}>GIF</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={t(
-                    "dialogs.dialog.share.tooltip.chooseFormat",
-                  )}
-                  onclick={handleSaveAsOther}
-                  disabled={shareConverting}
-                  >{t("dialogs.dialog.share.otherFormat")}</button
-                >
-              </div>
-            {:else if isAudio}
-              <div class="share-grid share-grid-3">
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("MP3")}
-                  onclick={() => handleSaveAs("mp3")}
-                  disabled={shareConverting}>MP3</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("WAV")}
-                  onclick={() => handleSaveAs("wav")}
-                  disabled={shareConverting}>WAV</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("FLAC")}
-                  onclick={() => handleSaveAs("flac")}
-                  disabled={shareConverting}>FLAC</button
-                >
-              </div>
-              <div class="share-grid share-grid-3">
-                <button
-                  class="share-btn-wide"
-                  class:converting={convertingFormat === "mp4"}
-                  style:--progress="{convertProgress}%"
-                  data-share-tip={saveAsTip("MP4")}
-                  onclick={() => handleSaveAs("mp4")}
-                  disabled={shareConverting && convertingFormat !== "mp4"}
-                  >MP4</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("Opus")}
-                  onclick={() => handleSaveAs("opus")}
-                  disabled={shareConverting}>Opus</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={t(
-                    "dialogs.dialog.share.tooltip.chooseFormat",
-                  )}
-                  onclick={handleSaveAsOther}
-                  disabled={shareConverting}
-                  >{t("dialogs.dialog.share.otherFormat")}</button
-                >
-              </div>
-            {:else}
-              <div class="share-grid share-grid-3">
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("JPG")}
-                  onclick={() => handleSaveAs("jpg")}
-                  disabled={shareConverting}>JPG</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("PNG")}
-                  onclick={() => handleSaveAs("png")}
-                  disabled={shareConverting}>PNG</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("WebP")}
-                  onclick={() => handleSaveAs("webp")}
-                  disabled={shareConverting}>WebP</button
-                >
-              </div>
-              <div class="share-grid share-grid-3">
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("PSD")}
-                  onclick={() => handleSaveAs("psd")}
-                  disabled={shareConverting}>PSD</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={saveAsTip("PDF")}
-                  onclick={() => handleSaveAs("pdf")}
-                  disabled={shareConverting}>PDF</button
-                >
-                <button
-                  class="share-btn-wide"
-                  data-share-tip={t(
-                    "dialogs.dialog.share.tooltip.chooseFormat",
-                  )}
-                  onclick={handleSaveAsOther}
-                  disabled={shareConverting}
-                  >{t("dialogs.dialog.share.otherFormat")}</button
-                >
-              </div>
-            {/if}
-          </div>
-        {/if}
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("PNG")}
+                onclick={() => handlePdfShareSaveAs("png")}
+                disabled={pdfSaving}>PNG</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("TXT")}
+                onclick={() => handlePdfShareSaveAs("txt")}
+                disabled={pdfSaving}>TXT</button
+              >
+            </div>
+          {:else if isVideo}
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("MP4")}
+                onclick={() => handleSaveAs("mp4")}
+                disabled={shareConverting}>MP4</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("MKV")}
+                onclick={() => handleSaveAs("mkv")}
+                disabled={shareConverting}>MKV</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("WebM")}
+                onclick={() => handleSaveAs("webm")}
+                disabled={shareConverting}>WebM</button
+              >
+            </div>
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("MP3")}
+                onclick={() => handleSaveAs("mp3")}
+                disabled={shareConverting}>MP3</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("GIF")}
+                onclick={() => handleSaveAs("gif")}
+                disabled={shareConverting}>GIF</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={t("dialogs.dialog.share.tooltip.chooseFormat")}
+                onclick={handleSaveAsOther}
+                disabled={shareConverting}
+                >{t("dialogs.dialog.share.otherFormat")}</button
+              >
+            </div>
+          {:else if isAudio}
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("MP3")}
+                onclick={() => handleSaveAs("mp3")}
+                disabled={shareConverting}>MP3</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("WAV")}
+                onclick={() => handleSaveAs("wav")}
+                disabled={shareConverting}>WAV</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("FLAC")}
+                onclick={() => handleSaveAs("flac")}
+                disabled={shareConverting}>FLAC</button
+              >
+            </div>
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                class:converting={convertingFormat === "mp4"}
+                style:--progress="{convertProgress}%"
+                data-share-tip={saveAsTip("MP4")}
+                onclick={() => handleSaveAs("mp4")}
+                disabled={shareConverting && convertingFormat !== "mp4"}
+                >MP4</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("Opus")}
+                onclick={() => handleSaveAs("opus")}
+                disabled={shareConverting}>Opus</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={t("dialogs.dialog.share.tooltip.chooseFormat")}
+                onclick={handleSaveAsOther}
+                disabled={shareConverting}
+                >{t("dialogs.dialog.share.otherFormat")}</button
+              >
+            </div>
+          {:else}
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("JPG")}
+                onclick={() => handleSaveAs("jpg")}
+                disabled={shareConverting}>JPG</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("PNG")}
+                onclick={() => handleSaveAs("png")}
+                disabled={shareConverting}>PNG</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("WebP")}
+                onclick={() => handleSaveAs("webp")}
+                disabled={shareConverting}>WebP</button
+              >
+            </div>
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("PSD")}
+                onclick={() => handleSaveAs("psd")}
+                disabled={shareConverting}>PSD</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("PDF")}
+                onclick={() => handleSaveAs("pdf")}
+                disabled={shareConverting}>PDF</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={t("dialogs.dialog.share.tooltip.chooseFormat")}
+                onclick={handleSaveAsOther}
+                disabled={shareConverting}
+                >{t("dialogs.dialog.share.otherFormat")}</button
+              >
+            </div>
+          {/if}
+        </div>
       </div>
 
       {#if !isPdf}

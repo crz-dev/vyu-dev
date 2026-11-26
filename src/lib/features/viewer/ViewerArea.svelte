@@ -698,6 +698,8 @@
         zoomLocked={viewer.state.zoomLocked}
         currentPage={pdf.state.currentPage}
         pageCount={pdf.state.pageCount}
+        resumePage={pdf.state.resumePage}
+        getPageText={pdf.getPageText}
         setScale={pdf.setScale}
         prevPage={pdf.prevPage}
         nextPage={pdf.nextPage}

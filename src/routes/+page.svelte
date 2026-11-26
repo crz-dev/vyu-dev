@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { open } from "@tauri-apps/plugin-dialog";
+  import { open, save } from "@tauri-apps/plugin-dialog";
+  import { writeTextFile } from "@tauri-apps/plugin-fs";
   import {
     createPlaybackUI,
     formatTime,
@@ -44,12 +45,17 @@
     savePlaybackSpeed,
     migrateFilePathStorage,
     migrateFolderPathStorage,
+    loadResumePoint as lsLoadResumePoint,
+    saveResumePoint as lsSaveResumePoint,
+    deleteResumePoint as lsDeleteResumePoint,
   } from "$lib/services/storage";
   import { loadMediaProperties } from "$lib/features/media/ffmpeg";
   import { installSliderAnimations } from "$lib/services/sliderAnimation";
   import {
     invokeOpenDirectory,
     invokeCleanupTempFolder,
+    invokeCopyFile,
+    renderMarkupOnCanvas,
   } from "$lib/features/media/api";
   import {
     showFilenameTooltip,
@@ -124,6 +130,9 @@
   import {
     migrateFilePath as dbMigrateFilePath,
     migrateFolderPaths as dbMigrateFolderPaths,
+    loadResumePoint as dbLoadResumePoint,
+    saveResumePoint as dbSaveResumePoint,
+    deleteResumePoint as dbDeleteResumePoint,
   } from "$lib/services/database";
   import {
     buildTimelineProps,
@@ -927,8 +936,85 @@
     if (prevPdfLoading && !pdf.state.loading && pdf.state.pageCount > 0) {
       markup.initPages(pdf.state.pageCount);
       media.finishLoading(setMediaState);
+      void applyPdfResume();
     }
     prevPdfLoading = pdf.state.loading;
+  });
+
+  function clearPdfResume(path = filePath) {
+    if (!path) return;
+    void dbDeleteResumePoint(path);
+    lsDeleteResumePoint(path);
+    if (filePath === path) pdf.state.resumePage = null;
+  }
+
+  async function applyPdfResume() {
+    const path = filePath;
+    if (!path || !isPdf) return;
+    if (playbackPrefs.resumeMode === "off") {
+      pdf.state.resumePage = null;
+      return;
+    }
+    const [dbPage, lsPage] = await Promise.all([
+      dbLoadResumePoint(path),
+      Promise.resolve(lsLoadResumePoint(path)),
+    ]);
+    const page = dbPage ?? lsPage;
+    if (filePath !== path) return;
+    if (
+      page === null ||
+      !Number.isFinite(page) ||
+      page <= 1 ||
+      page > pdf.state.pageCount
+    ) {
+      pdf.state.resumePage = null;
+      return;
+    }
+    const target = Math.round(page);
+    pdf.state.resumePage = target;
+    pdf.goToPage(target);
+    showToast({
+      message: t("shell.viewer.pdf.resumed", { page: target }),
+      color: "grey",
+      duration: 4500,
+      actions: [
+        {
+          label: t("shell.files.startOver"),
+          variant: "default",
+          onClick: () => {
+            if (filePath !== path) return;
+            clearPdfResume(path);
+            pdf.goToPage(1);
+          },
+        },
+      ],
+    });
+  }
+
+  let pdfResumeTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    const path = filePath;
+    const page = pdf.state.currentPage;
+    if (!isPdf || !path || pdf.state.pageCount <= 0 || pdf.state.loading)
+      return;
+    if (playbackPrefs.resumeMode === "off") {
+      pdf.state.resumePage = null;
+      return;
+    }
+    if (page <= 1) return;
+    if (pdfResumeTimer) clearTimeout(pdfResumeTimer);
+    pdfResumeTimer = setTimeout(() => {
+      pdfResumeTimer = null;
+      if (!isPdf || filePath !== path) return;
+      void dbSaveResumePoint(path, page);
+      lsSaveResumePoint(path, page);
+    }, 800);
+    return () => {
+      if (pdfResumeTimer) {
+        clearTimeout(pdfResumeTimer);
+        pdfResumeTimer = null;
+      }
+    };
   });
 
   // Page dimensions are set after state.loading = false (in pdf.svelte.ts loadFile),
@@ -1324,6 +1410,59 @@
     return a.handleMarkupExport(canvasDataUrl);
   }
 
+  async function handlePdfSaveAs(format: "pdf" | "png" | "txt") {
+    if (!isPdf || !filePath) return;
+    const stem = fileName.replace(/\.[^.]+$/, "");
+    const page = pdf.state.currentPage;
+    const defaults = {
+      pdf: `${stem}_copy.pdf`,
+      png: `${stem}_p${page}.png`,
+      txt: `${stem}.txt`,
+    } as const;
+    const filterNames = {
+      pdf: "PDF",
+      png: "PNG",
+      txt: "TXT",
+    } as const;
+    try {
+      const outputPath = await save({
+        defaultPath: defaults[format],
+        filters: [{ name: filterNames[format], extensions: [format] }],
+      });
+      if (!outputPath) return;
+      if (format === "pdf") {
+        await invokeCopyFile(filePath, outputPath);
+      } else if (format === "png") {
+        const canvas = pdf.state.pages[page - 1]?.canvasRef;
+        if (!canvas) throw new Error("PDF page is not rendered");
+        await renderMarkupOnCanvas(
+          canvas,
+          markup.strokes,
+          outputPath,
+          markup.displayWidth,
+          markup.displayHeight,
+        );
+      } else {
+        const parts: string[] = [];
+        for (let i = 1; i <= pdf.state.pageCount; i++) {
+          const text = await pdf.getPageText(i);
+          if (text) parts.push(text);
+        }
+        await writeTextFile(outputPath, parts.join("\n\n"));
+      }
+      showToast({
+        message: t("editing.markup.toast.exported"),
+        color: "green",
+      });
+    } catch (err) {
+      console.error("Failed to save PDF:", err);
+      showToast({
+        message: t("editing.markup.toast.exportFailed"),
+        color: "red",
+      });
+    }
+  }
+
   const deleteActions = createDeleteActions({
     getFilePath: () => filePath,
     getFileList: () => fileList,
@@ -1454,10 +1593,12 @@
     pdfPageCount: pdf.state.pageCount,
     pdfVersion: pdf.state.pdfVersion,
     pdfPageSize: pdf.state.pdfPageSize,
+    pdfMetadata: pdf.state.metadata,
     pdfScale: pdf.state.scale,
     pdfFitScale: pdf.state.fitScale,
     pdfAutoFit: pdf.state.autoFit,
     pdfSetScale: pdf.setScale,
+    pdfCurrentPage: pdf.state.currentPage,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -1488,6 +1629,7 @@
     closeEffectsMenu,
     markupMenuHasEdits: markup.hasUnapplied || pdf.state.redactions.length > 0,
     onPdfUndoRedaction: pdf.undoRedaction,
+    onPdfSaveAs: handlePdfSaveAs,
     onPdfResetRedaction: pdf.clearRedactions,
     onPdfRequestRedactApply: pdf.requestRedactionConfirm,
     markupRedactActive: pdf.state.redactActive,
