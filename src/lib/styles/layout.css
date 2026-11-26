@@ -272,15 +272,19 @@ main {
 }
 .nav-shift {
   position: relative;
-  z-index: 21;
+  /* Below the fixed index panel (z-index 20) so the button slides behind it
+     instead of over it while the panel opens or closes. */
+  z-index: 19;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.22s ease;
+  /* Matches the index panel's fly transition (180ms, cubicOut). */
+  transition: transform 180ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 .nav-shift.index-open {
-  /* Clear the 48px sidebar + 200px index panel, plus an 8px gap. */
-  transform: translateX(252px);
+  /* Panel is 200px from the viewport edge; the unshifted button starts 6px in
+     (48px sidebar centering a 36px button). Add an 8px gap. */
+  transform: translateX(202px);
 }
 .nav-btn svg {
   display: block;
@@ -966,7 +970,8 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
 }
 .fs-nav-left {
   left: 16px;
-  transition: left 0.22s ease;
+  /* Matches the index panel's fly transition (180ms, cubicOut). */
+  transition: left 180ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 .fs-nav-left.index-open {
   left: 208px;

@@ -535,6 +535,15 @@
     if (!target) return;
 
     fileTransitionAnimation?.cancel();
+
+    // The fixed index panel is a child of .pdf-viewer. A transform on the
+    // viewer becomes the panel's containing block (displacing it), and an
+    // opacity animation creates a stacking context that would paint the nav
+    // button over the panel. Skip the transition while the panel is open.
+    if (pdf.state.showPagePanel && target.classList.contains("pdf-viewer")) {
+      return;
+    }
+
     const slideFrom = pendingTransitionDirection < 0 ? "-24px" : "24px";
     fileTransitionAnimation = target.animate(
       transition === "fade"
