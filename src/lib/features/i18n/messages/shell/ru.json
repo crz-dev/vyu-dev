@@ -122,6 +122,8 @@
   "viewer.pdf.singlePage": "Одна страница",
   "viewer.pdf.editBookmark": "Изменить закладку",
   "viewer.pdf.bookmarkTitle": "Название закладки",
+  "viewer.pdf.autoScroll": "Автопрокрутка",
+  "viewer.pdf.autoScrollSpeed": "Скорость прокрутки",
   "viewer.pdf.passwordHint": "Этот PDF защищён. Введите пароль, чтобы открыть его.",
   "viewer.pdf.passwordIncorrect": "Неверный пароль. Попробуйте снова.",
   "viewer.pdf.passwordPlaceholder": "Пароль",

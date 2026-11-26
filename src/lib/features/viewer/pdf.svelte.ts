@@ -1150,9 +1150,10 @@ export function createPdf() {
 
   function scrollToPage(pageNum: number) {
     if (!pdfContainerEl) return;
+    const target = Math.max(1, Math.min(state.pageCount, pageNum));
+    state.currentPage = target;
     if (state.singlePage) {
-      state.currentPage = Math.max(1, Math.min(state.pageCount, pageNum));
-      centerPage(state.currentPage);
+      centerPage(target);
       return;
     }
     const FALLBACK = 800;
@@ -1202,6 +1203,7 @@ export function createPdf() {
       0,
       Math.min(rows.length - 1, (index < 0 ? 0 : index) + delta),
     );
+    state.currentPage = rows[target].pages[0].pageNum;
     centerPage(rows[target].pages[0].pageNum);
   }
 
@@ -1217,7 +1219,7 @@ export function createPdf() {
     const target = Math.round(pageNum);
     if (!Number.isFinite(target)) return;
     const clamped = Math.max(1, Math.min(state.pageCount, target));
-    if (state.singlePage) state.currentPage = clamped;
+    state.currentPage = clamped;
     centerPage(clamped);
   }
 
@@ -1649,13 +1651,13 @@ export function createPdf() {
   }
 
   async function findText(query: string) {
+    state.findQuery = query;
     if (!query || !pdfDoc || disposed) {
       state.findResults = 0;
       state.findMatchPages = [];
       state.findHighlights = [];
       return;
     }
-    state.findQuery = query;
     state.findResults = 0;
     state.findMatchPages = [];
     state.findHighlights = [];

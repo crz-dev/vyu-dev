@@ -118,6 +118,8 @@
   "viewer.pdf.singlePage": "Single page",
   "viewer.pdf.editBookmark": "Edit bookmark",
   "viewer.pdf.bookmarkTitle": "Bookmark title",
+  "viewer.pdf.autoScroll": "Auto-scroll",
+  "viewer.pdf.autoScrollSpeed": "Auto-scroll speed",
   "viewer.pdf.passwordHint": "This PDF is protected. Enter its password to open it.",
   "viewer.pdf.passwordIncorrect": "Incorrect password. Try again.",
   "viewer.pdf.passwordPlaceholder": "Password",

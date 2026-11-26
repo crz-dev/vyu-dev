@@ -116,6 +116,8 @@
   "viewer.pdf.singlePage": "單頁",
   "viewer.pdf.editBookmark": "編輯書籤",
   "viewer.pdf.bookmarkTitle": "書籤標題",
+  "viewer.pdf.autoScroll": "自動捲動",
+  "viewer.pdf.autoScrollSpeed": "捲動速度",
   "viewer.pdf.passwordHint": "此 PDF 受保護。輸入密碼以開啟。",
   "viewer.pdf.passwordIncorrect": "密碼錯誤，請重試。",
   "viewer.pdf.passwordPlaceholder": "密碼",

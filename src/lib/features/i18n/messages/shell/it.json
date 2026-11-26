@@ -118,6 +118,8 @@
   "viewer.pdf.singlePage": "Pagina singola",
   "viewer.pdf.editBookmark": "Modifica segnalibro",
   "viewer.pdf.bookmarkTitle": "Titolo segnalibro",
+  "viewer.pdf.autoScroll": "Scorrimento automatico",
+  "viewer.pdf.autoScrollSpeed": "Velocità di scorrimento",
   "viewer.pdf.passwordHint": "Questo PDF è protetto. Inserisci la password per aprirlo.",
   "viewer.pdf.passwordIncorrect": "Password errata. Riprova.",
   "viewer.pdf.passwordPlaceholder": "Password",

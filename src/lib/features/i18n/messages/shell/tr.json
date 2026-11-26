@@ -118,6 +118,8 @@
   "viewer.pdf.singlePage": "Tek sayfa",
   "viewer.pdf.editBookmark": "İşareti düzenle",
   "viewer.pdf.bookmarkTitle": "İşaret başlığı",
+  "viewer.pdf.autoScroll": "Otomatik kaydırma",
+  "viewer.pdf.autoScrollSpeed": "Kaydırma hızı",
   "viewer.pdf.passwordHint": "Bu PDF korumalı. Açmak için parolasını girin.",
   "viewer.pdf.passwordIncorrect": "Parola yanlış. Tekrar deneyin.",
   "viewer.pdf.passwordPlaceholder": "Parola",

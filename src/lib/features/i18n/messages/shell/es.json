@@ -118,6 +118,8 @@
   "viewer.pdf.singlePage": "Página única",
   "viewer.pdf.editBookmark": "Editar marcador",
   "viewer.pdf.bookmarkTitle": "Título del marcador",
+  "viewer.pdf.autoScroll": "Desplazamiento automático",
+  "viewer.pdf.autoScrollSpeed": "Velocidad de desplazamiento",
   "viewer.pdf.passwordHint": "Este PDF está protegido. Introduce la contraseña para abrirlo.",
   "viewer.pdf.passwordIncorrect": "Contraseña incorrecta. Inténtalo de nuevo.",
   "viewer.pdf.passwordPlaceholder": "Contraseña",

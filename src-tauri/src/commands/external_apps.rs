@@ -112,19 +112,29 @@ pub fn print_file(path: String) -> Result<(), String> {
     }
     #[cfg(target_os = "windows")]
     {
+        use windows::Win32::System::Com::{
+            CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED,
+        };
+
+        let com_initialized = unsafe {
+            CoInitializeEx(None, COINIT_APARTMENTTHREADED).is_ok()
+        };
         let wide_path = windows::core::HSTRING::from(&path);
-        unsafe {
-            let hinst = windows::Win32::UI::Shell::ShellExecuteW(
+        let result = unsafe {
+            windows::Win32::UI::Shell::ShellExecuteW(
                 None,
                 windows::core::w!("print"),
                 &wide_path,
                 None,
                 None,
                 windows::Win32::UI::WindowsAndMessaging::SW_SHOWDEFAULT,
-            );
-            if hinst.is_invalid() {
-                return Err("Failed to open print dialog".into());
-            }
+            )
+        };
+        if com_initialized {
+            unsafe { CoUninitialize() };
+        }
+        if result.0 as isize <= 32 {
+            return Err("No print handler is registered for this file type".into());
         }
     }
     #[cfg(not(target_os = "windows"))]

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, tick } from "svelte";
-  import { fly } from "svelte/transition";
+  import { fly, slide } from "svelte/transition";
   import {
     type FindHighlight,
     type PdfBookmark,
@@ -12,6 +12,7 @@
     PDF_BOOKMARK_COLORS,
   } from "./pdf.svelte";
   import PdfPasswordPrompt from "./PdfPasswordPrompt.svelte";
+  import PdfSearchMenu from "./PdfSearchMenu.svelte";
   import PdfRedactOverlay from "./PdfRedactOverlay.svelte";
   import PdfSignaturePad from "./PdfSignaturePad.svelte";
   import { copyTextToClipboard } from "$lib/services/clipboard";
@@ -224,6 +225,20 @@
   let rulerViewerTop = $state(0);
   let rulerViewerBottom = $state(0);
   const READING_RULER_HEIGHT = 96;
+  const AUTO_SCROLL_MIN = 10;
+  const AUTO_SCROLL_MAX = 140;
+  let autoScrollOpen = $state(false);
+  let autoScrollPlaying = $state(false);
+  let autoScrollSpeed = $state(40);
+  let autoScrollRaf = 0;
+  let autoScrollLast = 0;
+  let speedDragging = false;
+  let speedTrackEl: HTMLDivElement | null = $state(null);
+  const autoScrollPct = $derived(
+    ((autoScrollSpeed - AUTO_SCROLL_MIN) /
+      (AUTO_SCROLL_MAX - AUTO_SCROLL_MIN)) *
+      100,
+  );
   let editingBookmarkPage = $state<number | null>(null);
   let bookmarkTitleDraft = $state("");
 
@@ -231,17 +246,9 @@
     return bookmarks.find((bookmark) => bookmark.page === pageNum) ?? null;
   }
 
-  function bookmarkTextColor(color: string): string {
-    const hex = color.replace("#", "");
-    if (hex.length !== 6) return "#17181a";
-    const r = Number.parseInt(hex.slice(0, 2), 16) / 255;
-    const g = Number.parseInt(hex.slice(2, 4), 16) / 255;
-    const b = Number.parseInt(hex.slice(4, 6), 16) / 255;
-    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return luminance > 0.6 ? "#17181a" : "#ffffff";
-  }
-
   function openBookmarkEditor(pageNum: number) {
+    autoScrollOpen = false;
+    stopAutoScroll();
     let bookmark = bookmarkForPage(pageNum);
     if (!bookmark) bookmark = onAddBookmark(pageNum);
     if (!bookmark) return;
@@ -259,19 +266,34 @@
   }
 
   function handleBookmarkAction() {
-    if (editingBookmarkPage === currentPage) {
+    const existing = bookmarkForPage(currentPage);
+    if (!existing) {
+      onAddBookmark(currentPage);
+      return;
+    }
+    toggleBookmarkEditor(currentPage);
+  }
+
+  function toggleBookmarkEditor(pageNum: number) {
+    if (editingBookmarkPage === pageNum) {
       editingBookmarkPage = null;
       return;
     }
-    openBookmarkEditor(currentPage);
+    openBookmarkEditor(pageNum);
   }
 
   function handleThumbnailContext(e: MouseEvent, pageNum: number) {
     e.preventDefault();
     e.stopPropagation();
-    const existing = bookmarkForPage(pageNum);
-    if (existing) openBookmarkEditor(pageNum);
-    else onAddBookmark(pageNum);
+    if (!bookmarkForPage(pageNum)) onAddBookmark(pageNum);
+  }
+
+  function handlePageLabelContext(e: MouseEvent, pageNum: number) {
+    if (!bookmarkForPage(pageNum)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onRemoveBookmark(pageNum);
+    if (editingBookmarkPage === pageNum) editingBookmarkPage = null;
   }
 
   let pendingSignature = $state<DrawPoint[][] | null>(null);
@@ -380,10 +402,6 @@
       markup.switchPage(currentPage);
     }
   });
-
-  function focusFindInput(node: HTMLInputElement) {
-    node.focus();
-  }
 
   function containerSize() {
     return {
@@ -495,6 +513,70 @@
     if (readingRuler) positionReadingRuler(e.clientY);
   }
 
+  function stopAutoScroll() {
+    autoScrollPlaying = false;
+    autoScrollLast = 0;
+    if (pdfContainerEl) pdfContainerEl.style.scrollBehavior = "";
+    if (autoScrollRaf) {
+      cancelAnimationFrame(autoScrollRaf);
+      autoScrollRaf = 0;
+    }
+  }
+
+  function autoScrollTick(timestamp: number) {
+    autoScrollRaf = 0;
+    if (!autoScrollPlaying) return;
+    const el = pdfContainerEl;
+    if (!el) {
+      stopAutoScroll();
+      return;
+    }
+    if (!autoScrollLast) autoScrollLast = timestamp;
+    const dt = Math.min(64, timestamp - autoScrollLast);
+    autoScrollLast = timestamp;
+    el.scrollTop += (autoScrollSpeed * dt) / 1000;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+    if (atBottom) {
+      if (singlePage && currentPage < pageCount) {
+        nextPage();
+      } else {
+        stopAutoScroll();
+        return;
+      }
+    }
+    autoScrollRaf = requestAnimationFrame(autoScrollTick);
+  }
+
+  function setAutoScrollPlaying(value: boolean) {
+    if (value === autoScrollPlaying) return;
+    if (!value) {
+      stopAutoScroll();
+      return;
+    }
+    autoScrollPlaying = true;
+    autoScrollLast = 0;
+    if (pdfContainerEl) pdfContainerEl.style.scrollBehavior = "auto";
+    autoScrollRaf = requestAnimationFrame(autoScrollTick);
+  }
+
+  function toggleAutoScrollMenu() {
+    autoScrollOpen = !autoScrollOpen;
+    if (autoScrollOpen) {
+      editingBookmarkPage = null;
+    } else {
+      stopAutoScroll();
+    }
+  }
+
+  function updateAutoScrollSpeed(e: PointerEvent) {
+    const el = speedTrackEl;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    autoScrollSpeed =
+      AUTO_SCROLL_MIN + pct * (AUTO_SCROLL_MAX - AUTO_SCROLL_MIN);
+  }
+
   async function speakFromPage(page: number) {
     if (!readAloudActive || readAloudPage !== page) return;
     const text = await getPageText(page);
@@ -552,14 +634,21 @@
     stopReadAloud();
     readAloudPage = page;
     readAloudActive = true;
+    goToPage(page);
     void speakFromPage(page);
   }
 
   $effect(() => {
-    if (loading || error) stopReadAloud();
+    if (loading || error) {
+      stopReadAloud();
+      stopAutoScroll();
+    }
   });
 
-  onDestroy(stopReadAloud);
+  onDestroy(() => {
+    stopReadAloud();
+    stopAutoScroll();
+  });
 
   function openSignature() {
     if (encrypted) {
@@ -1090,100 +1179,16 @@
       onConfirmOpenChange={setRedactionConfirmOpen}
     />
   {/if}
-  {#if findOpen}
-    <div
-      class="pdf-find-bar"
-      transition:fly={{ y: -20, duration: 180, opacity: 0.08 }}
-    >
-      <input
-        type="text"
-        placeholder={t("shell.viewer.pdf.findPlaceholder")}
-        value={findQuery}
-        oninput={(e) => findText((e.target as HTMLInputElement).value)}
-        onkeydown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (e.shiftKey) findPrev();
-            else findNext();
-          }
-          if (e.key === "Escape") toggleFind();
-        }}
-        class="pdf-find-input"
-        use:focusFindInput
-      />
-      {#if findQuery}
-        <span class="pdf-find-count"
-          >{findResults > 0
-            ? `${findCurrentIdx}/${findResults}`
-            : t("shell.viewer.pdf.noResults")}</span
-        >
-      {/if}
-      <button
-        class="pdf-find-btn"
-        onclick={findPrev}
-        disabled={findResults === 0}
-        aria-label={t("shell.viewer.pdf.previousMatch")}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M18 15l-6-6-6 6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      <button
-        class="pdf-find-btn"
-        onclick={findNext}
-        disabled={findResults === 0}
-        aria-label={t("shell.viewer.pdf.nextMatch")}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M6 9l6 6 6-6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      <button
-        class="pdf-find-close"
-        onclick={toggleFind}
-        aria-label={t("shell.viewer.pdf.closeFind")}
-      >
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M1 1l8 8M9 1l-8 8"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-    </div>
-  {/if}
+  <PdfSearchMenu
+    visible={findOpen}
+    query={findQuery}
+    results={findResults}
+    current={findCurrentIdx}
+    onSearch={findText}
+    onNext={findNext}
+    onPrev={findPrev}
+    onClose={toggleFind}
+  />
 
   {#if !loading && !error && pageCount > 0}
     <div class="pdf-view-controls">
@@ -1312,14 +1317,11 @@
       <div class="pdf-panel-actions">
         <button
           class="pdf-panel-action tooltip-below-start"
-          class:active={findOpen}
-          aria-pressed={findOpen}
-          data-tooltip={tooltipLabel(
-            t("dialogs.dialog.menu.search"),
-            "pdf-find",
-          )}
-          aria-label={t("dialogs.dialog.menu.search")}
-          onclick={toggleFind}
+          class:active={autoScrollOpen || autoScrollPlaying}
+          aria-pressed={autoScrollOpen}
+          data-tooltip={t("shell.viewer.pdf.autoScroll")}
+          aria-label={t("shell.viewer.pdf.autoScroll")}
+          onclick={toggleAutoScrollMenu}
         >
           <svg
             width="14"
@@ -1328,21 +1330,21 @@
             fill="none"
             aria-hidden="true"
           >
-            <circle
-              cx="11"
-              cy="11"
-              r="8"
+            <rect
+              x="5"
+              y="3"
+              width="14"
+              height="18"
+              rx="2"
               stroke="currentColor"
-              stroke-width="2"
+              stroke-width="1.6"
             />
-            <line
-              x1="21"
-              y1="21"
-              x2="16.65"
-              y2="16.65"
+            <path
+              d="M12 8v8M9 13l3 3 3-3"
               stroke="currentColor"
-              stroke-width="2"
+              stroke-width="1.6"
               stroke-linecap="round"
+              stroke-linejoin="round"
             />
           </svg>
         </button>
@@ -1391,8 +1393,17 @@
             fill="none"
             aria-hidden="true"
           >
+            <rect
+              x="3"
+              y="8"
+              width="16"
+              height="10"
+              rx="1.5"
+              stroke="currentColor"
+              stroke-width="1.6"
+            />
             <path
-              d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
+              d="M15 4h5v5M20 4l-6 6"
               stroke="currentColor"
               stroke-width="1.6"
               stroke-linecap="round"
@@ -1449,21 +1460,14 @@
             height="14"
             viewBox="0 0 24 24"
             fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path
-              d="M4 20l4.5-1 9-9a2.1 2.1 0 0 0-3-3l-9 9L4 20Z"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="m13 8 3 3"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
           </svg>
         </button>
         <button
@@ -1479,32 +1483,140 @@
             height="14"
             viewBox="0 0 24 24"
             fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
             aria-hidden="true"
           >
-            <rect
-              x="4"
-              y="6"
-              width="16"
-              height="4"
-              rx="1"
-              fill="currentColor"
-              stroke="none"
+            <path d="M3 3l18 18" />
+            <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+            <path
+              d="M9.9 4.2A9.1 9.1 0 0 1 12 4c7 0 10 8 10 8a18.5 18.5 0 0 1-2.2 3.2"
             />
-            <rect
-              x="4"
-              y="14"
-              width="16"
-              height="4"
-              rx="1"
-              fill="currentColor"
-              stroke="none"
+            <path
+              d="M6.6 6.6A18.2 18.2 0 0 0 2 12s3 8 10 8a9.7 9.7 0 0 0 4.4-1"
             />
           </svg>
         </button>
       </div>
+      {#if autoScrollOpen}
+        <div class="pdf-autoscroll-menu" transition:slide={{ duration: 160 }}>
+          <div class="pdf-autoscroll-head">
+            <span class="pdf-autoscroll-title"
+              >{t("shell.viewer.pdf.autoScroll")}</span
+            >
+            <span class="pdf-autoscroll-speed"
+              >{Math.round(autoScrollSpeed)}</span
+            >
+          </div>
+          <div class="pdf-autoscroll-slider-row">
+            <button
+              class="pdf-autoscroll-step"
+              onclick={() =>
+                (autoScrollSpeed = Math.max(
+                  AUTO_SCROLL_MIN,
+                  autoScrollSpeed - 5,
+                ))}>−</button
+            >
+            <div
+              class="color-slider-track"
+              bind:this={speedTrackEl}
+              role="slider"
+              tabindex="0"
+              aria-label={t("shell.viewer.pdf.autoScrollSpeed")}
+              aria-valuemin={AUTO_SCROLL_MIN}
+              aria-valuemax={AUTO_SCROLL_MAX}
+              aria-valuenow={Math.round(autoScrollSpeed)}
+              onpointerdown={(e) => {
+                e.preventDefault();
+                speedDragging = true;
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                updateAutoScrollSpeed(e);
+              }}
+              onpointermove={(e) => {
+                if (speedDragging) updateAutoScrollSpeed(e);
+              }}
+              onpointerup={(e) => {
+                speedDragging = false;
+                (e.currentTarget as HTMLElement).releasePointerCapture(
+                  e.pointerId,
+                );
+              }}
+              onpointercancel={() => (speedDragging = false)}
+              onkeydown={(e) => {
+                if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                  e.preventDefault();
+                  const delta = e.key === "ArrowLeft" ? -5 : 5;
+                  autoScrollSpeed = Math.max(
+                    AUTO_SCROLL_MIN,
+                    Math.min(AUTO_SCROLL_MAX, autoScrollSpeed + delta),
+                  );
+                }
+              }}
+            >
+              <div
+                class="color-slider-fill"
+                style:width="{autoScrollPct}%"
+              ></div>
+              <div
+                class="color-slider-scrubber"
+                style:left="{autoScrollPct}%"
+              ></div>
+            </div>
+            <button
+              class="pdf-autoscroll-step"
+              onclick={() =>
+                (autoScrollSpeed = Math.min(
+                  AUTO_SCROLL_MAX,
+                  autoScrollSpeed + 5,
+                ))}>+</button
+            >
+          </div>
+          <button
+            class="pdf-autoscroll-primary"
+            class:playing={autoScrollPlaying}
+            aria-label={autoScrollPlaying
+              ? t("media.playback.pause")
+              : t("media.playback.play")}
+            onclick={() => setAutoScrollPlaying(!autoScrollPlaying)}
+          >
+            {#if autoScrollPlaying}
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 12 12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <rect
+                  x="2.5"
+                  y="2.5"
+                  width="7"
+                  height="7"
+                  rx="1"
+                  fill="currentColor"
+                />
+              </svg>
+              <span>{t("media.playback.pause")}</span>
+            {:else}
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 12 12"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path d="M3 2.2v7.6L9.5 6 3 2.2Z" fill="currentColor" />
+              </svg>
+              <span>{t("media.playback.play")}</span>
+            {/if}
+          </button>
+        </div>
+      {/if}
       {#if editingBookmarkPage !== null}
         {@const editingBookmark = bookmarkForPage(editingBookmarkPage)}
-        <div class="pdf-bookmark-editor">
+        <div class="pdf-bookmark-editor" transition:slide={{ duration: 160 }}>
           <div class="pdf-bookmark-editor-head">
             <input
               class="pdf-bookmark-title-input"
@@ -1576,15 +1688,28 @@
               role="button"
               tabindex="0"
               onclick={() => {
-                editingBookmarkPage = null;
+                if (
+                  editingBookmarkPage !== null &&
+                  editingBookmarkPage !== i + 1
+                ) {
+                  editingBookmarkPage = null;
+                }
                 scrollToPage(i + 1);
               }}
               onkeydown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  editingBookmarkPage = null;
+                  if (
+                    editingBookmarkPage !== null &&
+                    editingBookmarkPage !== i + 1
+                  ) {
+                    editingBookmarkPage = null;
+                  }
                   scrollToPage(i + 1);
                 }
+              }}
+              ondblclick={() => {
+                if (bookmarkForPage(i + 1)) toggleBookmarkEditor(i + 1);
               }}
               oncontextmenu={(e) => handleThumbnailContext(e, i + 1)}
             >
@@ -1621,20 +1746,22 @@
                 </span>
               {/if}
               {#if bookmark}
-                <span
+                <button
                   class="pdf-page-panel-num bookmarked"
                   style:background={bookmark.color}
-                  style:color={bookmarkTextColor(bookmark.color)}>{i + 1}</span
+                  title={bookmark.title
+                    ? `${bookmark.title} (${i + 1})`
+                    : String(i + 1)}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    toggleBookmarkEditor(i + 1);
+                  }}
+                  ondblclick={(e) => e.stopPropagation()}
                 >
+                  {bookmark.title ? `${bookmark.title} (${i + 1})` : i + 1}
+                </button>
               {:else}
                 <span class="pdf-page-panel-num">{i + 1}</span>
-              {/if}
-              {#if bookmark?.title}
-                <span
-                  class="pdf-page-bookmark-title"
-                  style:color={bookmark.color}
-                  title={bookmark.title}>{bookmark.title}</span
-                >
               {/if}
             </div>
           {/each}
@@ -1780,8 +1907,8 @@
           onclick={toggleNightMode}
         >
           <svg
-            width="14"
-            height="14"
+            width="15"
+            height="15"
             viewBox="0 0 24 24"
             fill="none"
             aria-hidden="true"
@@ -1895,8 +2022,9 @@
           class="pdf-page-label tooltip-ctrl"
           class:bookmarked={!!bookmark}
           style:background={bookmark?.color}
-          style:color={bookmark ? bookmarkTextColor(bookmark.color) : undefined}
+          style:color={bookmark ? "#17181a" : undefined}
           onclick={() => togglePagePanel("pages")}
+          oncontextmenu={(e) => handlePageLabelContext(e, pageNum)}
           data-tooltip={showPagePanel && panelTab === "pages"
             ? t("shell.viewer.pdf.closeIndex")
             : t("shell.viewer.pdf.openIndex")}
