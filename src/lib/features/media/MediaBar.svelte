@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { fly, scale } from "svelte/transition";
   import QueueMenu from "$lib/features/menus/QueueMenu.svelte";
   import SelectMenu from "$lib/features/menus/SelectMenu.svelte";
@@ -140,6 +141,7 @@
     pdfSetScale,
     pdfCurrentPage = 1,
     pdfPageCount = 0,
+    pdfGoToPage = () => {},
     adjustZoom,
     durationDisplay,
     audioBitrateDisplay,
@@ -209,6 +211,7 @@
     pdfSetScale: (scale: number) => void;
     pdfCurrentPage?: number;
     pdfPageCount?: number;
+    pdfGoToPage?: (page: number) => void;
     adjustZoom: (delta: number) => void;
     durationDisplay: string;
     audioBitrateDisplay: string;
@@ -291,6 +294,9 @@
   let zoomTooltipVisible = $state(true);
   let zoomRepeatDelay: ReturnType<typeof setTimeout> | null = null;
   let zoomRepeatInterval: ReturnType<typeof setInterval> | null = null;
+  let infoPageEditing = $state(false);
+  let infoPageValue = $state("");
+  let infoPageInputEl: HTMLInputElement | null = $state(null);
   let volumeMenuVisible = $state(false);
   let volumeTooltipVisible = $state(true);
   let volumeRepeatDelay: ReturnType<typeof setTimeout> | null = null;
@@ -370,6 +376,35 @@
     if (e.detail === 0) adjustZoomBy(delta);
   }
 
+  function beginInfoPageEdit() {
+    infoPageValue = String(pdfCurrentPage);
+    infoPageEditing = true;
+    void tick().then(() => {
+      infoPageInputEl?.focus();
+      infoPageInputEl?.select();
+    });
+  }
+
+  function commitInfoPageEdit() {
+    if (!infoPageEditing) return;
+    infoPageEditing = false;
+    const parsed = Number.parseInt(infoPageValue, 10);
+    if (Number.isFinite(parsed)) pdfGoToPage(parsed);
+  }
+
+  function handleInfoPageKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitInfoPageEdit();
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      infoPageEditing = false;
+    }
+  }
+
   function stopVolumeRepeat() {
     if (volumeRepeatDelay) clearTimeout(volumeRepeatDelay);
     if (volumeRepeatInterval) clearInterval(volumeRepeatInterval);
@@ -404,6 +439,7 @@
   $effect(() => {
     if (!fileSrc) zoomMenuVisible = false;
     if (!fileSrc || !isAudio) volumeMenuVisible = false;
+    if (!fileSrc || !isPdf) infoPageEditing = false;
     return () => {
       stopZoomRepeat();
       stopVolumeRepeat();
@@ -590,30 +626,70 @@
       {/if}
     {:else if !accessibility.hideMediaDetails}
       {#if fileSrc}
-        <button
-          class="file-info file-info-button tooltip-above"
-          data-tooltip={isAudio
-            ? t("media.bar.audioDetails")
-            : t("media.bar.mediaDetails")}
-          onclick={onOpenProperties}
-          aria-label={t("media.bar.openPropertiesAria")}
-          aria-haspopup="dialog"
-        >
-          {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
-            {durationDisplay} · {audioBitrateDisplay} · {fileSize}
-          {:else if isPdf && pdfPageCount > 0}
-            {t("shell.viewer.pdf.pageOf", {
-              current: pdfCurrentPage,
-              total: pdfPageCount,
-            })}
-            {#if fileSize}
-              · {fileSize}{/if}
-          {:else if fileDimensions && fileSize}
-            {fileDimensions} · {fileSize}
-          {:else if !fileInfoLoading && fileName !== t("media.player.noFileOpen")}
-            {fileName}
-          {/if}
-        </button>
+        {#if isPdf && pdfPageCount > 0}
+          <div class="file-info file-info-pdf">
+            {#if infoPageEditing}
+              <input
+                bind:this={infoPageInputEl}
+                class="pdf-info-input"
+                style="width: calc({Math.max(
+                  1,
+                  infoPageValue.length,
+                )}ch + 18px)"
+                bind:value={infoPageValue}
+                inputmode="numeric"
+                aria-label={t("shell.viewer.pdf.goToPage")}
+                onkeydown={handleInfoPageKeydown}
+                onblur={commitInfoPageEdit}
+              />
+              <span class="pdf-info-total">/ {pdfPageCount}</span>
+            {:else}
+              <button
+                class="pdf-info-segment pdf-info-page tooltip-above"
+                data-tooltip={t("shell.viewer.pdf.goToPage")}
+                aria-label={t("shell.viewer.pdf.pageOf", {
+                  current: pdfCurrentPage,
+                  total: pdfPageCount,
+                })}
+                onclick={beginInfoPageEdit}
+              >
+                {t("shell.viewer.pdf.pageOf", {
+                  current: pdfCurrentPage,
+                  total: pdfPageCount,
+                })}
+              </button>
+            {/if}
+            <span class="pdf-info-divider"></span>
+            <button
+              class="pdf-info-segment pdf-info-size tooltip-above"
+              data-tooltip={t("dialogs.dialog.properties.title")}
+              aria-label={t("media.bar.openPropertiesAria")}
+              onclick={onOpenProperties}
+            >
+              {fileSize || "—"}
+            </button>
+          </div>
+        {:else}
+          <button
+            class="file-info file-info-button tooltip-above"
+            data-tooltip={isAudio
+              ? t("media.bar.audioDetails")
+              : isPdf
+                ? t("dialogs.dialog.properties.title")
+                : t("media.bar.mediaDetails")}
+            onclick={onOpenProperties}
+            aria-label={t("media.bar.openPropertiesAria")}
+            aria-haspopup="dialog"
+          >
+            {#if isAudio && durationDisplay && audioBitrateDisplay && fileSize}
+              {durationDisplay} · {audioBitrateDisplay} · {fileSize}
+            {:else if fileDimensions && fileSize}
+              {fileDimensions} · {fileSize}
+            {:else if !fileInfoLoading && fileName !== t("media.player.noFileOpen")}
+              {fileName}
+            {/if}
+          </button>
+        {/if}
       {:else}
         <span class="file-info">{t("media.bar.noFileOpen")}</span>
       {/if}

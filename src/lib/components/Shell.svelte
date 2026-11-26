@@ -41,7 +41,6 @@
   } from "$lib/shared/types";
   import type { ClipDeleteConfirmState } from "$lib/features/media/clips.svelte";
   import type { PipPhase } from "$lib/features/viewer/pip.svelte";
-  import type { PdfDocumentMetadata } from "$lib/features/viewer/pdf.svelte";
   import type {
     MarkerTooltip,
     MarkerEditMenu,
@@ -65,12 +64,13 @@
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
-    pdfMetadata,
+    pdfDocumentInfo,
     pdfScale,
     pdfFitScale,
     pdfAutoFit,
     pdfSetScale,
     pdfCurrentPage,
+    pdfGoToPage,
     fileDimensions,
     fileSize,
     fileInfoLoading,
@@ -273,12 +273,13 @@
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
-    pdfMetadata: PdfDocumentMetadata;
+    pdfDocumentInfo: string;
     pdfScale: number;
     pdfFitScale: number;
     pdfAutoFit: boolean;
     pdfSetScale: (scale: number) => void;
     pdfCurrentPage: number;
+    pdfGoToPage: (page: number) => void;
     fileDimensions: string;
     fileSize: string;
     fileInfoLoading: boolean;
@@ -924,6 +925,7 @@
     {pdfSetScale}
     {pdfCurrentPage}
     {pdfPageCount}
+    {pdfGoToPage}
     {durationDisplay}
     {audioBitrateDisplay}
     {clipCount}
@@ -990,7 +992,7 @@
     {pdfPageCount}
     {pdfVersion}
     {pdfPageSize}
-    {pdfMetadata}
+    {pdfDocumentInfo}
     {onPdfSaveAs}
     {timestamps}
     {clipBoundaries}

@@ -10,6 +10,7 @@ pub struct FileMetadata {
     pub subtitle_data: Option<String>,
     pub cd_color: Option<i32>,
     pub last_viewed: Option<i64>,
+    pub pdf_bookmark: Option<i32>,
     pub updated_at: i64,
 }
 

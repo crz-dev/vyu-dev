@@ -7,6 +7,11 @@ import {
 import { invokeStoreThumbnail } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import { loadPdfNightMode, savePdfNightMode } from "$lib/services/storage";
+import {
+  deletePdfBookmark,
+  loadPdfBookmark,
+  savePdfBookmark,
+} from "$lib/services/database";
 import { DOCUMENT_EXTS } from "$lib/shared/constants";
 import { locale } from "$lib/features/i18n/locale.svelte";
 import type {
@@ -189,15 +194,6 @@ export interface FindHighlight {
   rects: { left: number; top: number; width: number; height: number }[];
 }
 
-export interface PdfDocumentMetadata {
-  title: string;
-  author: string;
-  subject: string;
-  keywords: string;
-  creator: string;
-  producer: string;
-}
-
 export interface PdfState {
   pages: PdfPage[];
   scale: number;
@@ -206,6 +202,7 @@ export interface PdfState {
   fitWidth: boolean;
   rotation: number;
   dualPage: boolean;
+  singlePage: boolean;
   nightMode: boolean;
   encrypted: boolean;
   passwordPrompt: PdfPasswordPrompt;
@@ -229,8 +226,9 @@ export interface PdfState {
   outline: PdfOutlineEntry[];
   pdfVersion: string;
   pdfPageSize: string;
-  metadata: PdfDocumentMetadata;
+  documentInfo: string;
   resumePage: number | null;
+  bookmarkPage: number | null;
 }
 
 const RENDER_DEBOUNCE_MS = 60;
@@ -266,6 +264,7 @@ export function createPdf() {
     fitWidth: false,
     rotation: 0,
     dualPage: false,
+    singlePage: false,
     nightMode: loadPdfNightMode(),
     encrypted: false,
     passwordPrompt: { visible: false, incorrect: false },
@@ -289,15 +288,9 @@ export function createPdf() {
     outline: [],
     pdfVersion: "",
     pdfPageSize: "",
-    metadata: {
-      title: "",
-      author: "",
-      subject: "",
-      keywords: "",
-      creator: "",
-      producer: "",
-    },
+    documentInfo: "",
     resumePage: null,
+    bookmarkPage: null,
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
@@ -981,17 +974,21 @@ export function createPdf() {
           const value = info?.[key];
           return typeof value === "string" ? value.trim() : "";
         };
-        state.metadata = {
-          title: readString("Title"),
-          author: readString("Author"),
-          subject: readString("Subject"),
-          keywords: readString("Keywords"),
-          creator: readString("Creator"),
-          producer: readString("Producer"),
-        };
+        const meaningful = (value: string) =>
+          value && !/^\(?(anonymous|unspecified|unknown)\)?$/i.test(value);
+        const documentParts = [
+          readString("Title"),
+          readString("Author"),
+          readString("Producer"),
+          readString("Creator"),
+        ].filter(meaningful);
+        state.documentInfo = documentParts.slice(0, 2).join(" · ");
       } catch {
         /* ignore */
       }
+      void loadPdfBookmark(path).then((bookmark) => {
+        if (gen === loadGen && !disposed) state.bookmarkPage = bookmark;
+      });
       if (gen !== loadGen) return;
 
       void loadOutline(pdfDocument, gen);
@@ -1081,15 +1078,9 @@ export function createPdf() {
     state.outline = [];
     state.pdfVersion = "";
     state.pdfPageSize = "";
-    state.metadata = {
-      title: "",
-      author: "",
-      subject: "",
-      keywords: "",
-      creator: "",
-      producer: "",
-    };
+    state.documentInfo = "";
     state.resumePage = null;
+    state.bookmarkPage = null;
     pageThumbnailCache.clear();
     textContentCache.clear();
     annotationCache.clear();
@@ -1146,6 +1137,11 @@ export function createPdf() {
 
   function scrollToPage(pageNum: number) {
     if (!pdfContainerEl) return;
+    if (state.singlePage) {
+      state.currentPage = Math.max(1, Math.min(state.pageCount, pageNum));
+      centerPage(state.currentPage);
+      return;
+    }
     const FALLBACK = 800;
     let top = 0;
     for (const row of layoutRows()) {
@@ -1157,6 +1153,10 @@ export function createPdf() {
 
   function centerPage(pageNum: number) {
     if (!pdfContainerEl) return;
+    if (state.singlePage) {
+      pdfContainerEl.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     const FALLBACK = 800;
     let pageTop = 0;
     let pageH = 0;
@@ -1174,6 +1174,12 @@ export function createPdf() {
   }
 
   function stepPage(delta: number) {
+    if (state.singlePage) {
+      selectPage(
+        Math.max(1, Math.min(state.pageCount, state.currentPage + delta)),
+      );
+      return;
+    }
     const rows = layoutRows();
     if (rows.length === 0) return;
     const index = rows.findIndex((row) =>
@@ -1197,7 +1203,9 @@ export function createPdf() {
   function goToPage(pageNum: number) {
     const target = Math.round(pageNum);
     if (!Number.isFinite(target)) return;
-    centerPage(Math.max(1, Math.min(state.pageCount, target)));
+    const clamped = Math.max(1, Math.min(state.pageCount, target));
+    if (state.singlePage) state.currentPage = clamped;
+    centerPage(clamped);
   }
 
   function selectPage(pageNum: number) {
@@ -1270,10 +1278,39 @@ export function createPdf() {
 
   function toggleDualPage() {
     state.dualPage = !state.dualPage;
+    if (state.dualPage) state.singlePage = false;
     if (state.autoFit && pdfContainerEl) {
       fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
     }
     centerPageAfterLayout(state.currentPage);
+  }
+
+  function toggleSinglePage() {
+    state.singlePage = !state.singlePage;
+    if (state.singlePage) state.dualPage = false;
+    if (state.autoFit && pdfContainerEl) {
+      fitToScreen(pdfContainerEl.clientWidth, pdfContainerEl.clientHeight);
+    }
+    centerPageAfterLayout(state.currentPage);
+  }
+
+  function toggleBookmark() {
+    toggleBookmarkAt(state.currentPage);
+  }
+
+  function toggleBookmarkAt(pageNum: number) {
+    if (!currentFilePath) return;
+    const target = Math.round(pageNum);
+    if (!Number.isFinite(target) || target < 1 || target > state.pageCount) {
+      return;
+    }
+    if (state.bookmarkPage === target) {
+      state.bookmarkPage = null;
+      void deletePdfBookmark(currentFilePath);
+      return;
+    }
+    state.bookmarkPage = target;
+    void savePdfBookmark(currentFilePath, target);
   }
 
   function toggleNightMode() {
@@ -1679,6 +1716,9 @@ export function createPdf() {
     selectPage,
     rotate,
     toggleDualPage,
+    toggleSinglePage,
+    toggleBookmark,
+    toggleBookmarkAt,
     toggleNightMode,
     setPanelTab,
     openLink,

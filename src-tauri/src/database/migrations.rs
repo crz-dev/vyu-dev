@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const SCHEMA_VERSION: i32 = 2;
+const SCHEMA_VERSION: i32 = 3;
 
 pub fn run(conn: &mut Connection) -> Result<(), String> {
     // The _migrations table must exist before version check. Creation is outside the migration transaction.
@@ -68,6 +68,27 @@ pub fn run(conn: &mut Connection) -> Result<(), String> {
             if !has_column {
                 tx.execute_batch("ALTER TABLE file_metadata ADD COLUMN subtitle_data TEXT;")
                     .map_err(|e| format!("Migration v2 failed: {e}"))?;
+            }
+        }
+
+        if current < 3 {
+            let has_column = {
+                let mut stmt = tx
+                    .prepare("PRAGMA table_info(file_metadata)")
+                    .map_err(|e| format!("Migration v3 inspection failed: {e}"))?;
+                let columns = stmt
+                    .query_map([], |row| row.get::<_, String>(1))
+                    .map_err(|e| format!("Migration v3 inspection failed: {e}"))?;
+                let found = columns
+                    .filter_map(Result::ok)
+                    .any(|column| column == "pdf_bookmark");
+                found
+            };
+            if !has_column {
+                tx.execute_batch(
+                    "ALTER TABLE file_metadata ADD COLUMN pdf_bookmark INTEGER;",
+                )
+                .map_err(|e| format!("Migration v3 failed: {e}"))?;
             }
         }
 

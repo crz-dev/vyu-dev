@@ -11,6 +11,7 @@ export interface FileMetadata {
   subtitle_data: string | null;
   cd_color: number | null;
   last_viewed: number | null;
+  pdf_bookmark: number | null;
   updated_at: number;
 }
 
@@ -148,6 +149,7 @@ async function saveMeta(
     subtitle_data: string | null;
     cd_color: number | null;
     last_viewed: number | null;
+    pdf_bookmark: number | null;
   }>,
 ): Promise<void> {
   if (!path) return;
@@ -165,6 +167,8 @@ async function saveMeta(
         "subtitle_data" in fields ? (fields.subtitle_data ?? null) : null,
       cdColor: "cd_color" in fields ? (fields.cd_color ?? null) : null,
       lastViewed: "last_viewed" in fields ? (fields.last_viewed ?? null) : null,
+      pdfBookmark:
+        "pdf_bookmark" in fields ? (fields.pdf_bookmark ?? null) : null,
     });
   } catch (e) {
     console.error("Failed to save file metadata:", e);
@@ -284,6 +288,33 @@ export async function saveResumePoint(
 
 export async function deleteResumePoint(filePath: string): Promise<void> {
   await clearField(filePath, "last_position");
+}
+
+// PDF page bookmark
+
+export async function loadPdfBookmark(
+  filePath: string,
+): Promise<number | null> {
+  if (!filePath) return null;
+  try {
+    const meta = await getFileMetadata(filePath);
+    const value = meta?.pdf_bookmark;
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function savePdfBookmark(
+  filePath: string,
+  page: number,
+): Promise<void> {
+  if (!filePath) return;
+  await saveMeta(filePath, { pdf_bookmark: Math.round(page) });
+}
+
+export async function deletePdfBookmark(filePath: string): Promise<void> {
+  await clearField(filePath, "pdf_bookmark");
 }
 
 // Subtitle position (percentage offset from the default block position)

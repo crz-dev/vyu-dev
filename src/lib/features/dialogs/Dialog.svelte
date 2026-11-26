@@ -7,7 +7,6 @@
     MediaProperties,
     VideoMarker,
   } from "$lib/shared/types";
-  import type { PdfDocumentMetadata } from "$lib/features/viewer/pdf.svelte";
   import {
     invokePrintFile,
     invokeSendBluetooth,
@@ -65,7 +64,7 @@
     pdfPageCount,
     pdfVersion,
     pdfPageSize,
-    pdfMetadata,
+    pdfDocumentInfo,
     onPdfSaveAs,
     timestamps,
     clipBoundaries,
@@ -143,7 +142,7 @@
     pdfPageCount: number;
     pdfVersion: string;
     pdfPageSize: string;
-    pdfMetadata: PdfDocumentMetadata;
+    pdfDocumentInfo: string;
     onPdfSaveAs: (format: "pdf" | "png" | "txt") => Promise<void>;
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
@@ -214,35 +213,6 @@
   } = $props();
 
   const t = locale.t;
-
-  const pdfMetaRows = $derived(
-    [
-      {
-        label: t("dialogs.dialog.properties.docTitle"),
-        value: pdfMetadata.title,
-      },
-      {
-        label: t("dialogs.dialog.properties.docAuthor"),
-        value: pdfMetadata.author,
-      },
-      {
-        label: t("dialogs.dialog.properties.docSubject"),
-        value: pdfMetadata.subject,
-      },
-      {
-        label: t("dialogs.dialog.properties.docKeywords"),
-        value: pdfMetadata.keywords,
-      },
-      {
-        label: t("dialogs.dialog.properties.docCreator"),
-        value: pdfMetadata.creator,
-      },
-      {
-        label: t("dialogs.dialog.properties.docProducer"),
-        value: pdfMetadata.producer,
-      },
-    ].filter((row) => row.value.trim().length > 0),
-  );
   const tp = locale.tp;
 
   let overlayFadeMs = $derived(appearance.reducedMotion ? 0 : 120);
@@ -2260,40 +2230,38 @@
           <span class="props-v">{fileTypeValue()}</span>
         </div>
         {#if isPdf}
-          {#each pdfMetaRows as row}
-            <div
-              class="props-row"
-              onclick={() => copyPropValue(row.value)}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  copyPropValue(row.value);
-                }
-              }}
-              role="button"
-              tabindex="0"
-            >
-              <span class="props-k">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path
-                    d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
-                  />
-                  <line x1="7" y1="7" x2="7.01" y2="7" />
-                </svg>
-                {row.label}
-              </span>
-              <span class="props-v">{row.value}</span>
-            </div>
-          {/each}
+          <div
+            class="props-row"
+            onclick={() => {
+              if (pdfDocumentInfo) copyPropValue(pdfDocumentInfo);
+            }}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (pdfDocumentInfo) copyPropValue(pdfDocumentInfo);
+              }
+            }}
+            role="button"
+            tabindex="0"
+          >
+            <span class="props-k">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"
+                /></svg
+              >
+              {t("dialogs.dialog.properties.document")}
+            </span>
+            <span class="props-v">{pdfDocumentInfo || "—"}</span>
+          </div>
           <div
             class="props-row"
             onclick={() => copyPropValue(String(pdfPageCount))}

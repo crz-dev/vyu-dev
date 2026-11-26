@@ -690,6 +690,7 @@
     {:else if fileSrc && isPdf}
       <PDFView
         bind:pdfContainerEl
+        {filePath}
         loading={pdf.state.loading}
         error={pdf.state.error}
         pages={pdf.state.pages}
@@ -710,7 +711,12 @@
         fitWidth={pdf.state.fitWidth}
         autoFit={pdf.state.autoFit}
         dualPage={pdf.state.dualPage}
+        singlePage={pdf.state.singlePage}
         nightMode={pdf.state.nightMode}
+        bookmarkPage={pdf.state.bookmarkPage}
+        onToggleBookmark={pdf.toggleBookmark}
+        onToggleBookmarkAt={pdf.toggleBookmarkAt}
+        toggleSinglePage={pdf.toggleSinglePage}
         outline={pdf.state.outline}
         panelTab={pdf.state.panelTab}
         rotate={pdf.rotate}
