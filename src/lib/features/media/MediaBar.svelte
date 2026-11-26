@@ -141,6 +141,7 @@
     pdfSetScale,
     pdfCurrentPage = 1,
     pdfPageCount = 0,
+    pdfPageSize = "",
     pdfGoToPage = () => {},
     adjustZoom,
     durationDisplay,
@@ -211,6 +212,7 @@
     pdfSetScale: (scale: number) => void;
     pdfCurrentPage?: number;
     pdfPageCount?: number;
+    pdfPageSize?: string;
     pdfGoToPage?: (page: number) => void;
     adjustZoom: (delta: number) => void;
     durationDisplay: string;
@@ -662,11 +664,14 @@
             <span class="pdf-info-divider"></span>
             <button
               class="pdf-info-segment pdf-info-size tooltip-above"
-              data-tooltip={t("dialogs.dialog.properties.title")}
-              aria-label={t("media.bar.openPropertiesAria")}
+              data-tooltip={pdfPageSize
+                ? `${t("dialogs.dialog.properties.pageSize")} · ${t("media.bar.fileSize")}`
+                : t("media.bar.fileSize")}
+              aria-label={t("media.bar.fileSize")}
               onclick={onOpenProperties}
             >
-              {fileSize || "—"}
+              {#if pdfPageSize}{pdfPageSize} ·
+              {/if}{fileSize || "—"}
             </button>
           </div>
         {:else}

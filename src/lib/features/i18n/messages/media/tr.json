@@ -27,6 +27,7 @@
   "bar.labels": "Etiketler",
   "bar.labelsAria": "adları aç/kapat",
   "bar.mediaDetails": "Çözünürlük · Dosya boyutu",
+  "bar.fileSize": "Dosya boyutu",
   "bar.mergeSegments": "Bölümleri birleştir",
   "bar.muted": "Sessiz",
   "bar.noFileOpen": "açık dosya yok",

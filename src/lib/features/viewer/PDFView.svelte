@@ -49,6 +49,7 @@
     pageCount,
     resumePage,
     getPageText,
+    getPrintPages,
     prevPage,
     nextPage,
     scrollToPage,
@@ -78,10 +79,14 @@
     findResults,
     findCurrentIdx,
     findHighlights,
+    findMatchCase,
+    findWholeWord,
+    findRegex,
     toggleFind,
     findText,
     findNext,
     findPrev,
+    setFindOption,
     showPagePanel,
     togglePagePanel,
     getPageThumbnail,
@@ -123,6 +128,7 @@
     pageCount: number;
     resumePage: number | null;
     getPageText: (pageNum: number) => Promise<string>;
+    getPrintPages: () => Promise<string[]>;
     prevPage: () => void;
     nextPage: () => void;
     scrollToPage: (page: number) => void;
@@ -155,10 +161,14 @@
     findResults: number;
     findCurrentIdx: number;
     findHighlights: FindHighlight[];
+    findMatchCase: boolean;
+    findWholeWord: boolean;
+    findRegex: boolean;
     toggleFind: () => void;
     findText: (q: string) => void;
     findNext: () => void;
     findPrev: () => void;
+    setFindOption: (option: "case" | "word" | "regex") => void;
     showPagePanel: boolean;
     togglePagePanel: (tab?: "pages" | "outline") => void;
     getPageThumbnail: (page: number) => Promise<string>;
@@ -213,9 +223,6 @@
     currentTarget: HTMLElement;
   } | null = null;
 
-  let pageEditing = $state(false);
-  let pageInputValue = $state("");
-  let pageInputEl: HTMLInputElement | null = $state(null);
   let readAloudActive = $state(false);
   let readAloudPage = $state(0);
   let readingRuler = $state(false);
@@ -224,14 +231,18 @@
   let rulerWidth = $state(0);
   let rulerViewerTop = $state(0);
   let rulerViewerBottom = $state(0);
-  const READING_RULER_HEIGHT = 96;
+  let rulerHeight = $state(80);
+  let rulerAnchorY = $state(0);
+  const READING_RULER_MIN = 48;
+  const READING_RULER_MAX = 240;
+  const READING_RULER_STEP = 16;
   const AUTO_SCROLL_MIN = 10;
-  const AUTO_SCROLL_MAX = 140;
+  const AUTO_SCROLL_MAX = 150;
   let autoScrollOpen = $state(false);
   let autoScrollPlaying = $state(false);
   let autoScrollSpeed = $state(40);
-  let autoScrollRaf = 0;
-  let autoScrollLast = 0;
+  let autoScrollTimer: ReturnType<typeof setInterval> | null = null;
+  let autoScrollPos = 0;
   let speedDragging = false;
   let speedTrackEl: HTMLDivElement | null = $state(null);
   const autoScrollPct = $derived(
@@ -247,8 +258,6 @@
   }
 
   function openBookmarkEditor(pageNum: number) {
-    autoScrollOpen = false;
-    stopAutoScroll();
     let bookmark = bookmarkForPage(pageNum);
     if (!bookmark) bookmark = onAddBookmark(pageNum);
     if (!bookmark) return;
@@ -269,6 +278,7 @@
     const existing = bookmarkForPage(currentPage);
     if (!existing) {
       onAddBookmark(currentPage);
+      openBookmarkEditor(currentPage);
       return;
     }
     toggleBookmarkEditor(currentPage);
@@ -285,7 +295,13 @@
   function handleThumbnailContext(e: MouseEvent, pageNum: number) {
     e.preventDefault();
     e.stopPropagation();
-    if (!bookmarkForPage(pageNum)) onAddBookmark(pageNum);
+    if (bookmarkForPage(pageNum)) {
+      onRemoveBookmark(pageNum);
+      if (editingBookmarkPage === pageNum) editingBookmarkPage = null;
+    } else {
+      onAddBookmark(pageNum);
+      openBookmarkEditor(pageNum);
+    }
   }
 
   function handlePageLabelContext(e: MouseEvent, pageNum: number) {
@@ -425,39 +441,6 @@
     else applyFitWidth();
   }
 
-  function beginPageEdit() {
-    pageInputValue = String(currentPage);
-    pageEditing = true;
-    void tick().then(() => {
-      pageInputEl?.focus();
-      pageInputEl?.select();
-    });
-  }
-
-  function commitPageEdit() {
-    if (!pageEditing) return;
-    pageEditing = false;
-    const parsed = Number.parseInt(pageInputValue, 10);
-    if (Number.isFinite(parsed)) goToPage(parsed);
-  }
-
-  function cancelPageEdit() {
-    pageEditing = false;
-  }
-
-  function handlePageInputKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      commitPageEdit();
-      return;
-    }
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      cancelPageEdit();
-    }
-  }
-
   function stopReadAloud() {
     readAloudActive = false;
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -465,9 +448,57 @@
     }
   }
 
+  async function printPageImages(images: string[]): Promise<void> {
+    if (images.length === 0) throw new Error("No pages to print");
+    const frame = document.createElement("iframe");
+    frame.style.cssText =
+      "position:fixed;left:-10000px;top:0;width:800px;height:600px;border:0;opacity:0;pointer-events:none;";
+    document.body.appendChild(frame);
+    const doc = frame.contentDocument;
+    if (!doc) {
+      frame.remove();
+      throw new Error("Could not create print view");
+    }
+    doc.open();
+    doc.write(`<!doctype html><html><head><style>
+      @page { margin: 10mm; }
+      html, body { margin: 0; padding: 0; background: #fff; }
+      img { display: block; width: 100%; page-break-after: always; break-after: page; }
+      img:last-child { page-break-after: auto; break-after: auto; }
+    </style></head><body>${images
+      .map((src) => `<img src="${src}" alt="" />`)
+      .join("")}</body></html>`);
+    doc.close();
+    const imageEls = Array.from(doc.images);
+    await Promise.all(
+      imageEls.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) resolve();
+            else {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            }
+          }),
+      ),
+    );
+    frame.contentWindow?.focus();
+    frame.contentWindow?.print();
+    setTimeout(() => frame.remove(), 60_000);
+  }
+
   async function printDocument() {
     if (!filePath) return;
     try {
+      const images = await getPrintPages();
+      if (images.length > 0) {
+        await printPageImages(images);
+        showToast({
+          message: t("dialogs.dialog.toast.printOpened"),
+          color: "green",
+        });
+        return;
+      }
       await invokePrintFile(filePath);
       showToast({
         message: t("dialogs.dialog.toast.printOpened"),
@@ -487,15 +518,23 @@
     const el = pdfContainerEl;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const height = READING_RULER_HEIGHT;
+    rulerAnchorY = clientY;
     rulerTop = Math.min(
-      rect.bottom - height - 4,
-      Math.max(rect.top + 4, clientY - height / 2),
+      rect.bottom - rulerHeight - 4,
+      Math.max(rect.top + 4, clientY - rulerHeight / 2),
     );
     rulerLeft = rect.left;
     rulerWidth = rect.width;
     rulerViewerTop = rect.top;
     rulerViewerBottom = rect.bottom;
+  }
+
+  function setRulerHeight(next: number) {
+    rulerHeight = Math.max(
+      READING_RULER_MIN,
+      Math.min(READING_RULER_MAX, next),
+    );
+    if (readingRuler) positionReadingRuler(rulerAnchorY);
   }
 
   function toggleReadingRuler() {
@@ -515,36 +554,32 @@
 
   function stopAutoScroll() {
     autoScrollPlaying = false;
-    autoScrollLast = 0;
     if (pdfContainerEl) pdfContainerEl.style.scrollBehavior = "";
-    if (autoScrollRaf) {
-      cancelAnimationFrame(autoScrollRaf);
-      autoScrollRaf = 0;
+    autoScrollPos = 0;
+    if (autoScrollTimer) {
+      clearInterval(autoScrollTimer);
+      autoScrollTimer = null;
     }
   }
 
-  function autoScrollTick(timestamp: number) {
-    autoScrollRaf = 0;
+  function autoScrollStep() {
     if (!autoScrollPlaying) return;
     const el = pdfContainerEl;
     if (!el) {
       stopAutoScroll();
       return;
     }
-    if (!autoScrollLast) autoScrollLast = timestamp;
-    const dt = Math.min(64, timestamp - autoScrollLast);
-    autoScrollLast = timestamp;
-    el.scrollTop += (autoScrollSpeed * dt) / 1000;
+    autoScrollPos += (autoScrollSpeed * 30) / 1000;
+    el.scrollTop = autoScrollPos;
     const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
     if (atBottom) {
       if (singlePage && currentPage < pageCount) {
         nextPage();
+        autoScrollPos = 0;
       } else {
         stopAutoScroll();
-        return;
       }
     }
-    autoScrollRaf = requestAnimationFrame(autoScrollTick);
   }
 
   function setAutoScrollPlaying(value: boolean) {
@@ -554,18 +589,14 @@
       return;
     }
     autoScrollPlaying = true;
-    autoScrollLast = 0;
+    autoScrollPos = pdfContainerEl?.scrollTop ?? 0;
     if (pdfContainerEl) pdfContainerEl.style.scrollBehavior = "auto";
-    autoScrollRaf = requestAnimationFrame(autoScrollTick);
+    autoScrollTimer = setInterval(autoScrollStep, 30);
   }
 
   function toggleAutoScrollMenu() {
     autoScrollOpen = !autoScrollOpen;
-    if (autoScrollOpen) {
-      editingBookmarkPage = null;
-    } else {
-      stopAutoScroll();
-    }
+    if (!autoScrollOpen) stopAutoScroll();
   }
 
   function updateAutoScrollSpeed(e: PointerEvent) {
@@ -610,6 +641,33 @@
     window.speechSynthesis.speak(utterance);
   }
 
+  function currentVisiblePage(): number {
+    const el = pdfContainerEl;
+    if (!el) return currentPage;
+    const rect = el.getBoundingClientRect();
+    const centerY = rect.top + rect.height / 2;
+    let bestPage = currentPage;
+    let bestDistance = Infinity;
+    for (const page of pages) {
+      const canvas = page.canvasRef;
+      if (!canvas) continue;
+      const pageRect = canvas.getBoundingClientRect();
+      if (pageRect.width <= 0 || pageRect.height <= 0) continue;
+      if (pageRect.top <= centerY && pageRect.bottom >= centerY) {
+        return page.pageNum;
+      }
+      const distance = Math.min(
+        Math.abs(pageRect.top - centerY),
+        Math.abs(pageRect.bottom - centerY),
+      );
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestPage = page.pageNum;
+      }
+    }
+    return bestPage;
+  }
+
   async function toggleReadAloud() {
     if (readAloudActive) {
       stopReadAloud();
@@ -622,7 +680,7 @@
       });
       return;
     }
-    const page = currentPage;
+    const page = currentVisiblePage();
     const text = await getPageText(page);
     if (!text) {
       showToast({
@@ -635,7 +693,11 @@
     readAloudPage = page;
     readAloudActive = true;
     goToPage(page);
-    void speakFromPage(page);
+    setTimeout(() => {
+      if (readAloudActive && readAloudPage === page) {
+        void speakFromPage(page);
+      }
+    }, 60);
   }
 
   $effect(() => {
@@ -648,6 +710,12 @@
   onDestroy(() => {
     stopReadAloud();
     stopAutoScroll();
+  });
+
+  $effect(() => {
+    const handler = () => void printDocument();
+    window.addEventListener("vyu-print-pdf", handler);
+    return () => window.removeEventListener("vyu-print-pdf", handler);
   });
 
   function openSignature() {
@@ -1064,10 +1132,40 @@
       toggleDualPage();
       return;
     }
-    if (keybindStore.matches("pdf-rotate", e)) {
+    if (keybindStore.matches("pdf-read-aloud", e)) {
       e.preventDefault();
       e.stopPropagation();
-      rotate();
+      void toggleReadAloud();
+      return;
+    }
+    if (keybindStore.matches("pdf-single-page", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSinglePage();
+      return;
+    }
+    if (keybindStore.matches("pdf-reading-ruler", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleReadingRuler();
+      return;
+    }
+    if (keybindStore.matches("pdf-auto-scroll", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleAutoScrollMenu();
+      return;
+    }
+    if (keybindStore.matches("pdf-ruler-increase", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      setRulerHeight(rulerHeight + READING_RULER_STEP);
+      return;
+    }
+    if (keybindStore.matches("pdf-ruler-decrease", e)) {
+      e.preventDefault();
+      e.stopPropagation();
+      setRulerHeight(rulerHeight - READING_RULER_STEP);
       return;
     }
     if (keybindStore.matches("pdf-night", e)) {
@@ -1085,10 +1183,13 @@
   let pageThumbUrls: Record<number, string> = $state({});
 
   $effect(() => {
-    if (!showPagePanel || panelTab !== "pages") {
+    // Re-run when the document changes even if its page count matches.
+    const currentPath = filePath;
+    if (!showPagePanel || panelTab !== "pages" || !currentPath) {
       pageThumbUrls = {};
       return;
     }
+    pageThumbUrls = {};
     let cancelled = false;
     (async () => {
       for (let i = 1; i <= pageCount && !cancelled; i++) {
@@ -1115,9 +1216,11 @@
   class:sig-placing={!!pendingSignature}
   bind:this={pdfContainerEl}
   role="presentation"
-  onwheel={handlePdfWheel}
+  onwheel={(e) => {
+    handlePdfWheel(e);
+    if (isFullscreen) resetFsTimer();
+  }}
   onpointermove={handleReadingRulerMove}
-  onscroll={isFullscreen ? resetFsTimer : undefined}
   onclick={isFullscreen ? resetFsTimer : undefined}
 >
   <PdfPasswordPrompt
@@ -1141,13 +1244,21 @@
       aria-hidden="true"
     ></div>
     <div
+      class="pdf-ruler-band"
+      style:top="{rulerTop}px"
+      style:left="{rulerLeft}px"
+      style:width="{rulerWidth}px"
+      style:height="{rulerHeight}px"
+      aria-hidden="true"
+    ></div>
+    <div
       class="pdf-ruler-shade"
-      style:top="{rulerTop + READING_RULER_HEIGHT}px"
+      style:top="{rulerTop + rulerHeight}px"
       style:left="{rulerLeft}px"
       style:width="{rulerWidth}px"
       style:height="{Math.max(
         0,
-        rulerViewerBottom - (rulerTop + READING_RULER_HEIGHT),
+        rulerViewerBottom - (rulerTop + rulerHeight),
       )}px"
       aria-hidden="true"
     ></div>
@@ -1184,40 +1295,18 @@
     query={findQuery}
     results={findResults}
     current={findCurrentIdx}
+    matchCase={findMatchCase}
+    wholeWord={findWholeWord}
+    regex={findRegex}
     onSearch={findText}
     onNext={findNext}
     onPrev={findPrev}
     onClose={toggleFind}
+    onToggleOption={setFindOption}
   />
 
   {#if !loading && !error && pageCount > 0}
     <div class="pdf-view-controls">
-      {#if isFullscreen}
-        {#if pageEditing}
-          <input
-            bind:this={pageInputEl}
-            class="pdf-page-chip-input"
-            style="width: calc({Math.max(1, pageInputValue.length)}ch + 16px)"
-            bind:value={pageInputValue}
-            inputmode="numeric"
-            aria-label={t("shell.viewer.pdf.goToPage")}
-            onkeydown={handlePageInputKeydown}
-            onblur={commitPageEdit}
-          />
-        {:else}
-          <button
-            class="pdf-page-chip-btn tooltip-below"
-            data-tooltip={t("shell.viewer.pdf.goToPage")}
-            onclick={beginPageEdit}
-            aria-label={t("shell.viewer.pdf.pageOf", {
-              current: currentPage,
-              total: pageCount,
-            })}
-          >
-            {currentPage} / {pageCount}
-          </button>
-        {/if}
-      {/if}
       {#if formDirty && !redactActive}
         <div class="pdf-form-actions">
           <button
@@ -1316,102 +1405,6 @@
       </div>
       <div class="pdf-panel-actions">
         <button
-          class="pdf-panel-action tooltip-below-start"
-          class:active={autoScrollOpen || autoScrollPlaying}
-          aria-pressed={autoScrollOpen}
-          data-tooltip={t("shell.viewer.pdf.autoScroll")}
-          aria-label={t("shell.viewer.pdf.autoScroll")}
-          onclick={toggleAutoScrollMenu}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect
-              x="5"
-              y="3"
-              width="14"
-              height="18"
-              rx="2"
-              stroke="currentColor"
-              stroke-width="1.6"
-            />
-            <path
-              d="M12 8v8M9 13l3 3 3-3"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below-start"
-          class:active={!!bookmarkForPage(currentPage)}
-          aria-pressed={!!bookmarkForPage(currentPage)}
-          style:color={bookmarkForPage(currentPage)?.color}
-          data-tooltip={bookmarkForPage(currentPage)
-            ? t("shell.viewer.pdf.editBookmark")
-            : t("shell.viewer.pdf.bookmarkPage")}
-          aria-label={bookmarkForPage(currentPage)
-            ? t("shell.viewer.pdf.editBookmark")
-            : t("shell.viewer.pdf.bookmarkPage")}
-          onclick={handleBookmarkAction}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 3h12v18l-6-4-6 4V3z"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below"
-          data-tooltip={tooltipLabel(
-            `${t("shell.viewer.pdf.rotate")} 90°`,
-            "pdf-rotate",
-          )}
-          aria-label={t("shell.viewer.pdf.rotate")}
-          onclick={rotate}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect
-              x="3"
-              y="8"
-              width="16"
-              height="10"
-              rx="1.5"
-              stroke="currentColor"
-              stroke-width="1.6"
-            />
-            <path
-              d="M15 4h5v5M20 4l-6 6"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
           class="pdf-panel-action tooltip-below"
           data-tooltip={t("dialogs.dialog.share.printer")}
           aria-label={t("dialogs.dialog.share.printer")}
@@ -1451,9 +1444,40 @@
         </button>
         <button
           class="pdf-panel-action tooltip-below"
-          data-tooltip={t("shell.viewer.pdf.sign")}
-          aria-label={t("shell.viewer.pdf.sign")}
-          onclick={openSignature}
+          data-tooltip={nightMode
+            ? t("shell.viewer.pdf.dayMode")
+            : t("shell.viewer.pdf.nightMode")}
+          aria-label={nightMode
+            ? t("shell.viewer.pdf.dayMode")
+            : t("shell.viewer.pdf.nightMode")}
+          onclick={toggleNightMode}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            {#if nightMode}
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"
+              />
+            {:else}
+              <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z" />
+            {/if}
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below"
+          data-tooltip={`${t("shell.viewer.pdf.rotate")} 90°`}
+          aria-label={t("shell.viewer.pdf.rotate")}
+          onclick={rotate}
         >
           <svg
             width="14"
@@ -1466,8 +1490,7 @@
             stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+            <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" />
           </svg>
         </button>
         <button
@@ -1499,121 +1522,58 @@
             />
           </svg>
         </button>
-      </div>
-      {#if autoScrollOpen}
-        <div class="pdf-autoscroll-menu" transition:slide={{ duration: 160 }}>
-          <div class="pdf-autoscroll-head">
-            <span class="pdf-autoscroll-title"
-              >{t("shell.viewer.pdf.autoScroll")}</span
-            >
-            <span class="pdf-autoscroll-speed"
-              >{Math.round(autoScrollSpeed)}</span
-            >
-          </div>
-          <div class="pdf-autoscroll-slider-row">
-            <button
-              class="pdf-autoscroll-step"
-              onclick={() =>
-                (autoScrollSpeed = Math.max(
-                  AUTO_SCROLL_MIN,
-                  autoScrollSpeed - 5,
-                ))}>−</button
-            >
-            <div
-              class="color-slider-track"
-              bind:this={speedTrackEl}
-              role="slider"
-              tabindex="0"
-              aria-label={t("shell.viewer.pdf.autoScrollSpeed")}
-              aria-valuemin={AUTO_SCROLL_MIN}
-              aria-valuemax={AUTO_SCROLL_MAX}
-              aria-valuenow={Math.round(autoScrollSpeed)}
-              onpointerdown={(e) => {
-                e.preventDefault();
-                speedDragging = true;
-                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                updateAutoScrollSpeed(e);
-              }}
-              onpointermove={(e) => {
-                if (speedDragging) updateAutoScrollSpeed(e);
-              }}
-              onpointerup={(e) => {
-                speedDragging = false;
-                (e.currentTarget as HTMLElement).releasePointerCapture(
-                  e.pointerId,
-                );
-              }}
-              onpointercancel={() => (speedDragging = false)}
-              onkeydown={(e) => {
-                if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-                  e.preventDefault();
-                  const delta = e.key === "ArrowLeft" ? -5 : 5;
-                  autoScrollSpeed = Math.max(
-                    AUTO_SCROLL_MIN,
-                    Math.min(AUTO_SCROLL_MAX, autoScrollSpeed + delta),
-                  );
-                }
-              }}
-            >
-              <div
-                class="color-slider-fill"
-                style:width="{autoScrollPct}%"
-              ></div>
-              <div
-                class="color-slider-scrubber"
-                style:left="{autoScrollPct}%"
-              ></div>
-            </div>
-            <button
-              class="pdf-autoscroll-step"
-              onclick={() =>
-                (autoScrollSpeed = Math.min(
-                  AUTO_SCROLL_MAX,
-                  autoScrollSpeed + 5,
-                ))}>+</button
-            >
-          </div>
-          <button
-            class="pdf-autoscroll-primary"
-            class:playing={autoScrollPlaying}
-            aria-label={autoScrollPlaying
-              ? t("media.playback.pause")
-              : t("media.playback.play")}
-            onclick={() => setAutoScrollPlaying(!autoScrollPlaying)}
+        <button
+          class="pdf-panel-action tooltip-below"
+          data-tooltip={t("shell.viewer.pdf.sign")}
+          aria-label={t("shell.viewer.pdf.sign")}
+          onclick={openSignature}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            {#if autoScrollPlaying}
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 12 12"
-                fill="none"
-                aria-hidden="true"
-              >
-                <rect
-                  x="2.5"
-                  y="2.5"
-                  width="7"
-                  height="7"
-                  rx="1"
-                  fill="currentColor"
-                />
-              </svg>
-              <span>{t("media.playback.pause")}</span>
-            {:else}
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 12 12"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path d="M3 2.2v7.6L9.5 6 3 2.2Z" fill="currentColor" />
-              </svg>
-              <span>{t("media.playback.play")}</span>
-            {/if}
-          </button>
-        </div>
-      {/if}
+            <path d="M12 2l7 8-7 12-7-12 7-8Z" />
+            <path d="M12 2v20" />
+            <circle cx="12" cy="10" r="1.5" />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below"
+          class:active={!!bookmarkForPage(currentPage)}
+          aria-pressed={!!bookmarkForPage(currentPage)}
+          style:color={bookmarkForPage(currentPage)?.color}
+          data-tooltip={bookmarkForPage(currentPage)
+            ? t("shell.viewer.pdf.editBookmark")
+            : t("shell.viewer.pdf.bookmarkPage")}
+          aria-label={bookmarkForPage(currentPage)
+            ? t("shell.viewer.pdf.editBookmark")
+            : t("shell.viewer.pdf.bookmarkPage")}
+          onclick={handleBookmarkAction}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M6 3h12v18l-6-4-6 4V3z"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
       {#if editingBookmarkPage !== null}
         {@const editingBookmark = bookmarkForPage(editingBookmarkPage)}
         <div class="pdf-bookmark-editor" transition:slide={{ duration: 160 }}>
@@ -1788,9 +1748,166 @@
           {/if}
         </div>
       {/if}
+      {#if autoScrollOpen}
+        <div class="pdf-autoscroll-menu" transition:slide={{ duration: 160 }}>
+          <div class="pdf-autoscroll-head">
+            <span class="pdf-autoscroll-title"
+              >{t("shell.viewer.pdf.autoScroll")}</span
+            >
+            <div class="pdf-autoscroll-head-actions">
+              <span class="pdf-autoscroll-speed"
+                >{Math.round(autoScrollSpeed)} px/s</span
+              >
+              <button
+                class="pdf-autoscroll-play"
+                class:playing={autoScrollPlaying}
+                aria-label={autoScrollPlaying
+                  ? t("media.playback.pause")
+                  : t("media.playback.play")}
+                onclick={() => setAutoScrollPlaying(!autoScrollPlaying)}
+              >
+                {#if autoScrollPlaying}
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="2.5"
+                      y="2.5"
+                      width="7"
+                      height="7"
+                      rx="1"
+                      fill="currentColor"
+                    />
+                  </svg>
+                {:else}
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path d="M3 2.2v7.6L9.5 6 3 2.2Z" fill="currentColor" />
+                  </svg>
+                {/if}
+              </button>
+            </div>
+          </div>
+          <div class="pdf-autoscroll-slider-row">
+            <button
+              class="pdf-autoscroll-step"
+              onclick={() =>
+                (autoScrollSpeed = Math.max(
+                  AUTO_SCROLL_MIN,
+                  autoScrollSpeed - 5,
+                ))}>−</button
+            >
+            <div
+              class="color-slider-track pdf-autoscroll-track"
+              bind:this={speedTrackEl}
+              role="slider"
+              tabindex="0"
+              aria-label={t("shell.viewer.pdf.autoScrollSpeed")}
+              aria-valuemin={AUTO_SCROLL_MIN}
+              aria-valuemax={AUTO_SCROLL_MAX}
+              aria-valuenow={Math.round(autoScrollSpeed)}
+              onpointerdown={(e) => {
+                e.preventDefault();
+                speedDragging = true;
+                (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                updateAutoScrollSpeed(e);
+              }}
+              onpointermove={(e) => {
+                if (speedDragging) updateAutoScrollSpeed(e);
+              }}
+              onpointerup={(e) => {
+                speedDragging = false;
+                (e.currentTarget as HTMLElement).releasePointerCapture(
+                  e.pointerId,
+                );
+              }}
+              onpointercancel={() => (speedDragging = false)}
+              onkeydown={(e) => {
+                if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                  e.preventDefault();
+                  const delta = e.key === "ArrowLeft" ? -5 : 5;
+                  autoScrollSpeed = Math.max(
+                    AUTO_SCROLL_MIN,
+                    Math.min(AUTO_SCROLL_MAX, autoScrollSpeed + delta),
+                  );
+                }
+              }}
+            >
+              <div
+                class="color-slider-fill"
+                style:width="{autoScrollPct}%"
+              ></div>
+              <div
+                class="color-slider-scrubber"
+                style:left="{autoScrollPct}%"
+              ></div>
+            </div>
+            <button
+              class="pdf-autoscroll-step"
+              onclick={() =>
+                (autoScrollSpeed = Math.min(
+                  AUTO_SCROLL_MAX,
+                  autoScrollSpeed + 5,
+                ))}>+</button
+            >
+          </div>
+        </div>
+      {/if}
       <div class="pdf-panel-footer">
         <button
           class="pdf-panel-action tooltip-above-shift-right"
+          class:active={readAloudActive}
+          aria-pressed={readAloudActive}
+          data-tooltip={tooltipLabel(
+            readAloudActive
+              ? t("shell.viewer.pdf.stopReading")
+              : t("shell.viewer.pdf.readAloud"),
+            "pdf-read-aloud",
+          )}
+          aria-label={readAloudActive
+            ? t("shell.viewer.pdf.stopReading")
+            : t("shell.viewer.pdf.readAloud")}
+          onclick={toggleReadAloud}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M11 5 6 9H2v6h4l5 4V5Z"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M15.5 8.5a5 5 0 0 1 0 7"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+            <path
+              d="M18.5 5.5a9 9 0 0 1 0 13"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-above"
           class:active={autoFit && fitWidth}
           aria-pressed={autoFit && fitWidth}
           data-tooltip={tooltipLabel(
@@ -1826,7 +1943,7 @@
           </svg>
         </button>
         <button
-          class="pdf-panel-action tooltip-above-shift-right"
+          class="pdf-panel-action tooltip-above"
           class:active={dualPage}
           aria-pressed={dualPage}
           data-tooltip={tooltipLabel(
@@ -1867,7 +1984,10 @@
           class="pdf-panel-action tooltip-above"
           class:active={singlePage}
           aria-pressed={singlePage}
-          data-tooltip={t("shell.viewer.pdf.singlePage")}
+          data-tooltip={tooltipLabel(
+            t("shell.viewer.pdf.singlePage"),
+            "pdf-single-page",
+          )}
           aria-label={t("shell.viewer.pdf.singlePage")}
           onclick={toggleSinglePage}
         >
@@ -1897,36 +2017,12 @@
         </button>
         <button
           class="pdf-panel-action tooltip-above"
-          class:active={nightMode}
-          aria-pressed={nightMode}
-          data-tooltip={tooltipLabel(
-            t("shell.viewer.pdf.nightMode"),
-            "pdf-night",
-          )}
-          aria-label={t("shell.viewer.pdf.nightMode")}
-          onclick={toggleNightMode}
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-above"
           class:active={readingRuler}
           aria-pressed={readingRuler}
-          data-tooltip={t("shell.viewer.pdf.readingRuler")}
+          data-tooltip={tooltipLabel(
+            t("shell.viewer.pdf.readingRuler"),
+            "pdf-reading-ruler",
+          )}
           aria-label={t("shell.viewer.pdf.readingRuler")}
           onclick={toggleReadingRuler}
         >
@@ -1954,15 +2050,14 @@
         </button>
         <button
           class="pdf-panel-action tooltip-above"
-          class:active={readAloudActive}
-          aria-pressed={readAloudActive}
-          data-tooltip={readAloudActive
-            ? t("shell.viewer.pdf.stopReading")
-            : t("shell.viewer.pdf.readAloud")}
-          aria-label={readAloudActive
-            ? t("shell.viewer.pdf.stopReading")
-            : t("shell.viewer.pdf.readAloud")}
-          onclick={toggleReadAloud}
+          class:active={autoScrollOpen || autoScrollPlaying}
+          aria-pressed={autoScrollOpen}
+          data-tooltip={tooltipLabel(
+            t("shell.viewer.pdf.autoScroll"),
+            "pdf-auto-scroll",
+          )}
+          aria-label={t("shell.viewer.pdf.autoScroll")}
+          onclick={toggleAutoScrollMenu}
         >
           <svg
             width="14"
@@ -1971,24 +2066,21 @@
             fill="none"
             aria-hidden="true"
           >
-            <path
-              d="M11 5 6 9H2v6h4l5 4V5Z"
+            <rect
+              x="5"
+              y="3"
+              width="14"
+              height="18"
+              rx="2"
               stroke="currentColor"
-              stroke-width="1.8"
+              stroke-width="1.6"
+            />
+            <path
+              d="M12 8v8M9 13l3 3 3-3"
+              stroke="currentColor"
+              stroke-width="1.6"
               stroke-linecap="round"
               stroke-linejoin="round"
-            />
-            <path
-              d="M15.5 8.5a5 5 0 0 1 0 7"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-            <path
-              d="M18.5 5.5a9 9 0 0 1 0 13"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
             />
           </svg>
         </button>

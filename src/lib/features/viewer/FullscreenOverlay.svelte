@@ -1,5 +1,6 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { tick } from "svelte";
   import Marquee from "$lib/components/Marquee.svelte";
   import Controls from "$lib/components/Controls.svelte";
   import SortMenu from "$lib/features/navigation/SortMenu.svelte";
@@ -21,6 +22,9 @@
     isAudio: boolean;
     isPdf: boolean;
     showPagePanel: boolean;
+    pdfCurrentPage: number;
+    pdfPageCount: number;
+    pdfGoToPage: (page: number) => void;
     fileName: string;
     handleViewerScroll: (e: WheelEvent) => void;
     drawActive: boolean;
@@ -60,6 +64,9 @@
     isAudio,
     isPdf,
     showPagePanel,
+    pdfCurrentPage,
+    pdfPageCount,
+    pdfGoToPage,
     fileName,
     handleViewerScroll,
     drawActive,
@@ -91,6 +98,47 @@
     onSortChange,
     sortClose,
   }: FullscreenOverlayProps = $props();
+
+  let pageEditing = $state(false);
+  let pageInputValue = $state("");
+  let pageInputEl: HTMLInputElement | null = $state(null);
+
+  function beginPageEdit() {
+    pageInputValue = String(pdfCurrentPage);
+    pageEditing = true;
+    void tick().then(() => {
+      pageInputEl?.focus();
+      pageInputEl?.select();
+    });
+  }
+
+  function commitPageEdit() {
+    if (!pageEditing) return;
+    pageEditing = false;
+    const parsed = Number.parseInt(pageInputValue, 10);
+    if (Number.isFinite(parsed)) pdfGoToPage(parsed);
+  }
+
+  function cancelPageEdit() {
+    pageEditing = false;
+  }
+
+  function handlePageInputKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitPageEdit();
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelPageEdit();
+    }
+  }
+
+  $effect(() => {
+    if (!isFullscreen || !isPdf) pageEditing = false;
+  });
 </script>
 
 {#if isFullscreen}
@@ -170,37 +218,36 @@
         </button>
       </div>
     </div>
-    {#if !showPagePanel}
-      <div
-        class="fs-nav-left fs-pdf-chrome"
-        class:hidden={!fsControlsVisible}
-        style="position: fixed; z-index: 200;"
+    <div
+      class="fs-nav-left fs-pdf-chrome"
+      class:hidden={!fsControlsVisible && !showPagePanel}
+      class:index-open={showPagePanel}
+      style="position: fixed; z-index: 200;"
+    >
+      <button
+        class="fs-nav-btn tooltip-ctrl tooltip-right"
+        data-tooltip="Previous file"
+        transition:fly={{ x: -24, duration: 220 }}
+        onclick={() => navigate(-1)}
+        aria-label="previous file"
       >
-        <button
-          class="fs-nav-btn tooltip-ctrl tooltip-right"
-          data-tooltip="Previous file"
-          transition:fly={{ x: -24, duration: 220 }}
-          onclick={() => navigate(-1)}
-          aria-label="previous file"
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-    {/if}
+          <path
+            d="M15 18l-6-6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
     <div
       class="fs-nav-right fs-pdf-chrome"
       class:hidden={!fsControlsVisible}
@@ -256,22 +303,6 @@
         </div>
       </div>
     </div>
-    {#if fileListLength > 0}
-      <button
-        bind:this={fsPillEl}
-        class="fs-file-count-pill tooltip-above"
-        class:slideshow-active={slideshowActive}
-        class:menu-active={sortMenuVisible}
-        data-tooltip={t("shell.viewer.filePosition")}
-        onclick={toggleThumbnailBar}
-        oncontextmenu={handleFsPillContext}
-        style="position: fixed; z-index: 200; transition: opacity 0.25s ease; {fsControlsVisible
-          ? ''
-          : 'opacity: 0; pointer-events: none;'}"
-      >
-        {currentIndex + 1} / {fileListLength}
-      </button>
-    {/if}
   {:else}
     <!-- Normal fullscreen: blocking overlay -->
     <div
@@ -434,19 +465,6 @@
           </div>
         </div>
       {/if}
-      {#if fileListLength > 0}
-        <button
-          bind:this={fsPillEl}
-          class="fs-file-count-pill tooltip-above"
-          class:slideshow-active={slideshowActive}
-          class:menu-active={sortMenuVisible}
-          data-tooltip={t("shell.viewer.filePosition")}
-          onclick={toggleThumbnailBar}
-          oncontextmenu={handleFsPillContext}
-        >
-          {currentIndex + 1} / {fileListLength}
-        </button>
-      {/if}
       <SortMenu
         visible={sortMenuVisible}
         onClose={sortClose}
@@ -457,5 +475,51 @@
         {onSortChange}
       />
     </div>
+  {/if}
+  <div
+    class="fs-page-top"
+    class:visible={isPdf && pdfPageCount > 0 && fsControlsVisible}
+    class:hidden={!fsControlsVisible}
+  >
+    {#if isPdf && pdfPageCount > 0}
+      {#if pageEditing}
+        <input
+          bind:this={pageInputEl}
+          class="fs-page-jump-input"
+          style="width: calc({Math.max(1, pageInputValue.length)}ch + 16px)"
+          bind:value={pageInputValue}
+          inputmode="numeric"
+          aria-label={t("shell.viewer.pdf.goToPage")}
+          onkeydown={handlePageInputKeydown}
+          onblur={commitPageEdit}
+        />
+      {:else}
+        <button
+          class="fs-page-jump tooltip-below"
+          data-tooltip={t("shell.viewer.pdf.goToPage")}
+          aria-label={t("shell.viewer.pdf.pageOf", {
+            current: pdfCurrentPage,
+            total: pdfPageCount,
+          })}
+          onclick={beginPageEdit}
+        >
+          {pdfCurrentPage} / {pdfPageCount}
+        </button>
+      {/if}
+    {/if}
+  </div>
+  {#if fileListLength > 0}
+    <button
+      bind:this={fsPillEl}
+      class="fs-file-count-pill tooltip-above"
+      class:slideshow-active={slideshowActive}
+      class:menu-active={sortMenuVisible}
+      class:hidden={!fsControlsVisible}
+      data-tooltip={t("shell.viewer.filePosition")}
+      onclick={toggleThumbnailBar}
+      oncontextmenu={handleFsPillContext}
+    >
+      {currentIndex + 1} / {fileListLength}
+    </button>
   {/if}
 {/if}

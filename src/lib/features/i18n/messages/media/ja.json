@@ -26,6 +26,7 @@
   "bar.labels": "ラベル",
   "bar.labelsAria": "名前を切り替え",
   "bar.mediaDetails": "解像度 · ファイルサイズ",
+  "bar.fileSize": "ファイルサイズ",
   "bar.mergeSegments": "セグメントを結合",
   "bar.muted": "ミュート",
   "bar.noFileOpen": "ファイルが開かれていません",

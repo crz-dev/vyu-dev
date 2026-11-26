@@ -26,6 +26,7 @@
   "bar.labels": "标签",
   "bar.labelsAria": "切换名称",
   "bar.mediaDetails": "分辨率 · 文件大小",
+  "bar.fileSize": "文件大小",
   "bar.mergeSegments": "合并片段",
   "bar.muted": "已静音",
   "bar.noFileOpen": "未打开文件",

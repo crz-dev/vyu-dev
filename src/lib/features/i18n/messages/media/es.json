@@ -27,6 +27,7 @@
   "bar.labels": "Etiquetas",
   "bar.labelsAria": "alternar nombres",
   "bar.mediaDetails": "Resolución · Tamaño",
+  "bar.fileSize": "Tamaño del archivo",
   "bar.mergeSegments": "Unir segmentos",
   "bar.muted": "Silenciado",
   "bar.noFileOpen": "ningún archivo abierto",

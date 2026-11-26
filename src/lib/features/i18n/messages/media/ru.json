@@ -31,6 +31,7 @@
   "bar.labels": "Подписи",
   "bar.labelsAria": "переключить названия",
   "bar.mediaDetails": "Разрешение · Размер",
+  "bar.fileSize": "Размер файла",
   "bar.mergeSegments": "Объединить фрагменты",
   "bar.muted": "Без звука",
   "bar.noFileOpen": "файл не открыт",

@@ -585,29 +585,34 @@
     role="presentation"
   >
     {#if fileSrc}
-      <button
-        class="nav-btn tooltip-ctrl tooltip-right"
-        data-tooltip="Previous file"
-        transition:fly={{ x: -24, duration: 220 }}
-        onclick={() => navigate(-1)}
-        aria-label="previous file"
+      <div
+        class="nav-shift"
+        class:index-open={isPdf && pdf.state.showPagePanel}
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
+        <button
+          class="nav-btn tooltip-ctrl tooltip-right"
+          data-tooltip="Previous file"
+          transition:fly={{ x: -24, duration: 220 }}
+          onclick={() => navigate(-1)}
+          aria-label="previous file"
         >
-          <path
-            d="M15 18l-6-6 6-6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
     {/if}
   </div>
   <div
@@ -701,6 +706,7 @@
         pageCount={pdf.state.pageCount}
         resumePage={pdf.state.resumePage}
         getPageText={pdf.getPageText}
+        getPrintPages={pdf.renderPagesForPrint}
         setScale={pdf.setScale}
         prevPage={pdf.prevPage}
         nextPage={pdf.nextPage}
@@ -731,10 +737,14 @@
         findResults={pdf.state.findResults}
         findCurrentIdx={pdf.state.findCurrentIdx}
         findHighlights={pdf.state.findHighlights}
+        findMatchCase={pdf.state.findMatchCase}
+        findWholeWord={pdf.state.findWholeWord}
+        findRegex={pdf.state.findRegex}
         toggleFind={pdf.toggleFind}
         findText={pdf.findText}
         findNext={pdf.findNext}
         findPrev={pdf.findPrev}
+        setFindOption={pdf.setFindOption}
         showPagePanel={pdf.state.showPagePanel}
         togglePagePanel={pdf.togglePagePanel}
         getPageThumbnail={pdf.getPageThumbnail}
@@ -960,6 +970,9 @@
   {isAudio}
   {isPdf}
   showPagePanel={pdf.state.showPagePanel}
+  pdfCurrentPage={pdf.state.currentPage}
+  pdfPageCount={pdf.state.pageCount}
+  pdfGoToPage={pdf.goToPage}
   {fileName}
   {handleViewerScroll}
   drawActive={markup.drawActive}

@@ -27,6 +27,7 @@
   "bar.labels": "Rótulos",
   "bar.labelsAria": "alternar nomes",
   "bar.mediaDetails": "Resolução · Tamanho",
+  "bar.fileSize": "Tamanho do arquivo",
   "bar.mergeSegments": "Mesclar segmentos",
   "bar.muted": "Mudo",
   "bar.noFileOpen": "nenhum arquivo aberto",

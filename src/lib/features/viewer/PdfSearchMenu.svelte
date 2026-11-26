@@ -10,19 +10,27 @@
     query,
     results,
     current,
+    matchCase,
+    wholeWord,
+    regex,
     onSearch,
     onNext,
     onPrev,
     onClose,
+    onToggleOption,
   }: {
     visible: boolean;
     query: string;
     results: number;
     current: number;
+    matchCase: boolean;
+    wholeWord: boolean;
+    regex: boolean;
     onSearch: (value: string) => void;
     onNext: () => void;
     onPrev: () => void;
     onClose: () => void;
+    onToggleOption: (option: "case" | "word" | "regex") => void;
   } = $props();
 
   let inputEl: HTMLInputElement | null = $state(null);
@@ -186,28 +194,105 @@
               : t("shell.viewer.pdf.noResults")}
           </span>
         {/if}
-      </div>
-      <div class="edit-menu-row">
         <button
-          class="edit-menu-btn blue"
+          class="pdf-search-icon-btn"
+          title={t("shell.viewer.pdf.previousMatch")}
+          data-tooltip={t("shell.viewer.pdf.previousMatch")}
+          aria-label={t("shell.viewer.pdf.previousMatch")}
           disabled={results === 0}
           onclick={onPrev}
         >
-          <span>{t("shell.viewer.pdf.previousMatch")}</span>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m6 15 6-6 6 6" />
+          </svg>
         </button>
         <button
-          class="edit-menu-btn green"
+          class="pdf-search-icon-btn"
+          title={t("shell.viewer.pdf.nextMatch")}
+          data-tooltip={t("shell.viewer.pdf.nextMatch")}
+          aria-label={t("shell.viewer.pdf.nextMatch")}
           disabled={results === 0}
           onclick={onNext}
         >
-          <span>{t("shell.viewer.pdf.nextMatch")}</span>
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
         </button>
         <button
-          class="edit-menu-btn red"
+          class="pdf-search-icon-btn"
+          title={t("shell.viewer.pdf.redactClear")}
+          data-tooltip={t("shell.viewer.pdf.redactClear")}
+          aria-label={t("shell.viewer.pdf.redactClear")}
           disabled={!query}
           onclick={() => onSearch("")}
         >
-          <span>{t("shell.viewer.pdf.redactClear")}</span>
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="edit-menu-row pdf-search-sub-row">
+        <button
+          class="edit-menu-btn sub"
+          class:green={matchCase}
+          aria-pressed={matchCase}
+          title={t("shell.viewer.pdf.matchCase")}
+          data-tooltip={t("shell.viewer.pdf.matchCase")}
+          aria-label={t("shell.viewer.pdf.matchCase")}
+          onclick={() => onToggleOption("case")}
+        >
+          <span class="pdf-search-opt-glyph">Aa</span>
+        </button>
+        <button
+          class="edit-menu-btn sub"
+          class:green={wholeWord}
+          aria-pressed={wholeWord}
+          title={t("shell.viewer.pdf.wholeWord")}
+          data-tooltip={t("shell.viewer.pdf.wholeWord")}
+          aria-label={t("shell.viewer.pdf.wholeWord")}
+          onclick={() => onToggleOption("word")}
+        >
+          <span class="pdf-search-opt-glyph">ab</span>
+        </button>
+        <button
+          class="edit-menu-btn sub"
+          class:green={regex}
+          aria-pressed={regex}
+          title={t("shell.viewer.pdf.regex")}
+          data-tooltip={t("shell.viewer.pdf.regex")}
+          aria-label={t("shell.viewer.pdf.regex")}
+          onclick={() => onToggleOption("regex")}
+        >
+          <span class="pdf-search-opt-glyph">.*</span>
         </button>
       </div>
     </div>

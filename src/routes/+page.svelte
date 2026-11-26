@@ -1410,29 +1410,45 @@
     return a.handleMarkupExport(canvasDataUrl);
   }
 
-  async function handlePdfSaveAs(format: "pdf" | "png" | "txt") {
+  async function handlePdfSaveAs(
+    format: "pdf" | "png" | "jpg" | "webp" | "txt",
+    outputPathOverride?: string,
+  ) {
     if (!isPdf || !filePath) return;
     const stem = fileName.replace(/\.[^.]+$/, "");
     const page = pdf.state.currentPage;
     const defaults = {
       pdf: `${stem}_copy.pdf`,
       png: `${stem}_p${page}.png`,
+      jpg: `${stem}_p${page}.jpg`,
+      webp: `${stem}_p${page}.webp`,
       txt: `${stem}.txt`,
     } as const;
     const filterNames = {
       pdf: "PDF",
       png: "PNG",
+      jpg: "JPG",
+      webp: "WebP",
       txt: "TXT",
     } as const;
     try {
-      const outputPath = await save({
-        defaultPath: defaults[format],
-        filters: [{ name: filterNames[format], extensions: [format] }],
-      });
+      const outputPath =
+        outputPathOverride ??
+        (await save({
+          defaultPath: defaults[format],
+          filters: [{ name: filterNames[format], extensions: [format] }],
+        }));
       if (!outputPath) return;
       if (format === "pdf") {
         await invokeCopyFile(filePath, outputPath);
-      } else if (format === "png") {
+      } else if (format === "txt") {
+        const parts: string[] = [];
+        for (let i = 1; i <= pdf.state.pageCount; i++) {
+          const text = await pdf.getPageText(i);
+          if (text) parts.push(text);
+        }
+        await writeTextFile(outputPath, parts.join("\n\n"));
+      } else {
         const canvas = pdf.state.pages[page - 1]?.canvasRef;
         if (!canvas) throw new Error("PDF page is not rendered");
         await renderMarkupOnCanvas(
@@ -1442,13 +1458,6 @@
           markup.displayWidth,
           markup.displayHeight,
         );
-      } else {
-        const parts: string[] = [];
-        for (let i = 1; i <= pdf.state.pageCount; i++) {
-          const text = await pdf.getPageText(i);
-          if (text) parts.push(text);
-        }
-        await writeTextFile(outputPath, parts.join("\n\n"));
       }
       showToast({
         message: t("editing.markup.toast.exported"),

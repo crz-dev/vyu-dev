@@ -365,7 +365,10 @@
     onMarkupExport: () => void;
     markupMenuHasEdits: boolean;
     onPdfUndoRedaction: () => void;
-    onPdfSaveAs: (format: "pdf" | "png" | "txt") => Promise<void>;
+    onPdfSaveAs: (
+      format: "pdf" | "png" | "jpg" | "webp" | "txt",
+      outputPath?: string,
+    ) => Promise<void>;
     onPdfResetRedaction: () => void;
     onPdfRequestRedactApply: () => void;
     markupRedactActive: boolean;
@@ -925,6 +928,7 @@
     {pdfSetScale}
     {pdfCurrentPage}
     {pdfPageCount}
+    {pdfPageSize}
     {pdfGoToPage}
     {durationDisplay}
     {audioBitrateDisplay}
@@ -990,6 +994,7 @@
     {isRemote}
     {getMediaEl}
     {pdfPageCount}
+    {pdfCurrentPage}
     {pdfVersion}
     {pdfPageSize}
     {pdfDocumentInfo}

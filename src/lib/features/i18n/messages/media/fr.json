@@ -27,6 +27,7 @@
   "bar.labels": "Libellés",
   "bar.labelsAria": "afficher ou masquer les noms",
   "bar.mediaDetails": "Résolution · Taille",
+  "bar.fileSize": "Taille du fichier",
   "bar.mergeSegments": "Fusionner les segments",
   "bar.muted": "Muet",
   "bar.noFileOpen": "aucun fichier ouvert",

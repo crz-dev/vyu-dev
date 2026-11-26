@@ -62,6 +62,7 @@
     isRemote,
     getMediaEl,
     pdfPageCount,
+    pdfCurrentPage,
     pdfVersion,
     pdfPageSize,
     pdfDocumentInfo,
@@ -140,10 +141,14 @@
     isRemote: boolean;
     getMediaEl: () => HTMLMediaElement | null;
     pdfPageCount: number;
+    pdfCurrentPage: number;
     pdfVersion: string;
     pdfPageSize: string;
     pdfDocumentInfo: string;
-    onPdfSaveAs: (format: "pdf" | "png" | "txt") => Promise<void>;
+    onPdfSaveAs: (
+      format: "pdf" | "png" | "jpg" | "webp" | "txt",
+      outputPath?: string,
+    ) => Promise<void>;
     timestamps: VideoMarker[];
     clipBoundaries: ClipBoundary[];
     resumePoint: number | null;
@@ -852,11 +857,60 @@
     closeShare();
   }
 
-  async function handlePdfShareSaveAs(format: "pdf" | "png" | "txt") {
+  type PdfSaveFormat = "pdf" | "png" | "jpg" | "webp" | "txt";
+
+  function pdfShareFileName(format: PdfSaveFormat): string {
+    const stem = fileName.replace(/\.[^.]+$/, "");
+    if (format === "pdf") return `${stem}_copy.pdf`;
+    if (format === "txt") return `${stem}.txt`;
+    return `${stem}_p${pdfCurrentPage || 1}.${format}`;
+  }
+
+  async function handlePdfShareSaveAs(format: PdfSaveFormat) {
     if (pdfSaving) return;
     pdfSaving = true;
     try {
-      await onPdfSaveAs(format);
+      const outputDir = conversionPrefs.outputDir;
+      const outputPath = outputDir
+        ? joinPath(outputDir, pdfShareFileName(format))
+        : undefined;
+      await onPdfSaveAs(format, outputPath);
+    } finally {
+      pdfSaving = false;
+      closeShare();
+    }
+  }
+
+  async function handlePdfSaveAsOther() {
+    if (pdfSaving) return;
+    const { save } = await import("@tauri-apps/plugin-dialog");
+    const f = (name: string, ext: string) => ({ name, extensions: [ext] });
+    const stem = fileName.replace(/\.[^.]+$/, "");
+    const defaultDir = conversionOutputDir();
+    const outputPath = await save({
+      defaultPath: defaultDir
+        ? joinPath(defaultDir, `${stem}_export`)
+        : `${stem}_export`,
+      filters: [
+        f("PDF", "pdf"),
+        f("PNG", "png"),
+        f("JPG", "jpg"),
+        f("WebP", "webp"),
+        f("TXT", "txt"),
+      ],
+    });
+    if (!outputPath) return;
+    const ext = getFileExt(outputPath);
+    if (!["pdf", "png", "jpg", "webp", "txt"].includes(ext)) {
+      showToast({
+        message: t("dialogs.dialog.toast.noFormat"),
+        color: "yellow",
+      });
+      return;
+    }
+    pdfSaving = true;
+    try {
+      await onPdfSaveAs(ext as PdfSaveFormat, outputPath);
     } finally {
       pdfSaving = false;
       closeShare();
@@ -2981,11 +3035,17 @@
               <button
                 class="share-btn"
                 data-share-tip={t("dialogs.dialog.share.tooltip.printer")}
-                onclick={() =>
+                onclick={() => {
+                  if (isPdf) {
+                    window.dispatchEvent(new Event("vyu-print-pdf"));
+                    closeShare();
+                    return;
+                  }
                   shareAction(
                     () => invokePrintFile(filePath),
                     t("dialogs.dialog.toast.printOpened"),
-                  )}
+                  );
+                }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   ><polyline
@@ -3481,6 +3541,27 @@
                 disabled={pdfSaving}>TXT</button
               >
             </div>
+            <div class="share-grid share-grid-3">
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("JPG")}
+                onclick={() => handlePdfShareSaveAs("jpg")}
+                disabled={pdfSaving}>JPG</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={saveAsTip("WebP")}
+                onclick={() => handlePdfShareSaveAs("webp")}
+                disabled={pdfSaving}>WebP</button
+              >
+              <button
+                class="share-btn-wide"
+                data-share-tip={t("dialogs.dialog.share.tooltip.chooseFormat")}
+                onclick={handlePdfSaveAsOther}
+                disabled={pdfSaving}
+                >{t("dialogs.dialog.share.otherFormat")}</button
+              >
+            </div>
           {:else if isVideo}
             <div class="share-grid share-grid-3">
               <button
@@ -3614,31 +3695,66 @@
         </div>
       </div>
 
-      {#if !isPdf}
-        <div class="share-dest-bar">
+      <div class="share-dest-bar">
+        <button
+          class="share-dest-btn"
+          class:is-set={!!conversionPrefs.outputDir}
+          aria-label={conversionPrefs.outputDir ||
+            t("dialogs.dialog.share.outputFolder")}
+          onclick={pickShareOutputDir}
+          onmouseenter={(e) => {
+            const path = conversionPrefs.outputDir;
+            hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+            showFloatingTooltip(
+              "share-dest-tooltip",
+              e.currentTarget.getBoundingClientRect(),
+              path
+                ? t("dialogs.dialog.share.tooltip.savedTo", { path })
+                : t("dialogs.dialog.share.tooltip.outputFolder"),
+              "above",
+            );
+          }}
+          onmouseleave={() => hideFloatingTooltip("share-dest-tooltip")}
+          oncontextmenu={(e) => {
+            e.preventDefault();
+            hideFloatingTooltip("share-dest-tooltip");
+            if (conversionPrefs.outputDir) conversionPrefs.setOutputDir("");
+          }}
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path
+              d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+            /><polyline points="17 21 17 13 7 13 7 21" /><polyline
+              points="7 3 7 8 15 8"
+            /></svg
+          >
+          <span class="share-dest-name">
+            {conversionPrefs.outputDir
+              ? shortFolderPath(conversionPrefs.outputDir)
+              : t("dialogs.dialog.share.outputFolder")}
+          </span>
+        </button>
+        <span
+          class="share-dest-clear-slot"
+          class:is-open={!!conversionPrefs.outputDir}
+        >
           <button
-            class="share-dest-btn"
-            class:is-set={!!conversionPrefs.outputDir}
-            aria-label={conversionPrefs.outputDir ||
-              t("dialogs.dialog.share.outputFolder")}
-            onclick={pickShareOutputDir}
-            onmouseenter={(e) => {
-              const path = conversionPrefs.outputDir;
-              hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
-              showFloatingTooltip(
-                "share-dest-tooltip",
-                e.currentTarget.getBoundingClientRect(),
-                path
-                  ? t("dialogs.dialog.share.tooltip.savedTo", { path })
-                  : t("dialogs.dialog.share.tooltip.outputFolder"),
-                "above",
-              );
-            }}
-            onmouseleave={() => hideFloatingTooltip("share-dest-tooltip")}
-            oncontextmenu={(e) => {
-              e.preventDefault();
+            class="share-dest-btn share-dest-clear"
+            data-share-tip={t("dialogs.dialog.share.clearOutputFolder")}
+            aria-label={t("dialogs.dialog.share.clearOutputFolder")}
+            tabindex={conversionPrefs.outputDir ? 0 : -1}
+            onclick={() => {
               hideFloatingTooltip("share-dest-tooltip");
-              if (conversionPrefs.outputDir) conversionPrefs.setOutputDir("");
+              hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
+              conversionPrefs.setOutputDir("");
             }}
           >
             <svg
@@ -3650,48 +3766,13 @@
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              ><path
-                d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-              /><polyline points="17 21 17 13 7 13 7 21" /><polyline
-                points="7 3 7 8 15 8"
-              /></svg
             >
-            <span class="share-dest-name">
-              {conversionPrefs.outputDir
-                ? shortFolderPath(conversionPrefs.outputDir)
-                : t("dialogs.dialog.share.outputFolder")}
-            </span>
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
           </button>
-          <span
-            class="share-dest-clear-slot"
-            class:is-open={!!conversionPrefs.outputDir}
-          >
-            <button
-              class="share-dest-btn share-dest-clear"
-              data-share-tip={t("dialogs.dialog.share.clearOutputFolder")}
-              aria-label={t("dialogs.dialog.share.clearOutputFolder")}
-              tabindex={conversionPrefs.outputDir ? 0 : -1}
-              onclick={() => {
-                hideFloatingTooltip("share-dest-tooltip");
-                hideFloatingTooltip(SHARE_ACTION_TOOLTIP_ID);
-                conversionPrefs.setOutputDir("");
-              }}
-            >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
-          </span>
+        </span>
+        {#if !isPdf}
           <button
             class="share-delete-toggle"
             class:is-on={shareDeleteOriginal}
@@ -3719,8 +3800,8 @@
               <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
             </svg>
           </button>
-        </div>
-      {/if}
+        {/if}
+      </div>
     </div>
   </div>
   <div

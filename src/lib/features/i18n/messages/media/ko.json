@@ -26,6 +26,7 @@
   "bar.labels": "라벨",
   "bar.labelsAria": "이름 전환",
   "bar.mediaDetails": "해상도 · 파일 크기",
+  "bar.fileSize": "파일 크기",
   "bar.mergeSegments": "구간 병합",
   "bar.muted": "음소거됨",
   "bar.noFileOpen": "열린 파일 없음",

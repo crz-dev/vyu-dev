@@ -232,6 +232,9 @@ export interface PdfState {
   findCurrentIdx: number;
   findMatchPages: number[];
   findHighlights: FindHighlight[];
+  findMatchCase: boolean;
+  findWholeWord: boolean;
+  findRegex: boolean;
   showPagePanel: boolean;
   panelTab: "pages" | "outline";
   outline: PdfOutlineEntry[];
@@ -294,6 +297,9 @@ export function createPdf() {
     findCurrentIdx: 0,
     findMatchPages: [],
     findHighlights: [],
+    findMatchCase: false,
+    findWholeWord: false,
+    findRegex: false,
     showPagePanel: false,
     panelTab: "pages",
     outline: [],
@@ -550,6 +556,29 @@ export function createPdf() {
     }, RENDER_DEBOUNCE_MS);
 
     renderTimers.set(pageNum, timer);
+  }
+
+  async function renderPagesForPrint(scale = 1.4): Promise<string[]> {
+    if (!pdfDoc || disposed) return [];
+    const images: string[] = [];
+    for (let i = 1; i <= state.pageCount; i++) {
+      if (disposed) break;
+      const proxy = pageProxies.get(i);
+      if (!proxy) continue;
+      const viewport = proxy.getViewport({ scale, rotation: state.rotation });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+      try {
+        await proxy.render({ canvasContext: ctx, viewport }).promise;
+        images.push(canvas.toDataURL("image/jpeg", 0.92));
+      } catch {
+        // Skip pages that fail to render.
+      }
+    }
+    return images;
   }
 
   async function renderPage(pdfPage: PDFPageProxy, page: PdfPage) {
@@ -1085,8 +1114,10 @@ export function createPdf() {
     state.findCurrentIdx = 0;
     state.findMatchPages = [];
     state.findHighlights = [];
+    state.findMatchCase = false;
+    state.findWholeWord = false;
+    state.findRegex = false;
     findItemsCache.clear();
-    state.showPagePanel = false;
     state.panelTab = "pages";
     state.outline = [];
     state.pdfVersion = "";
@@ -1661,7 +1692,22 @@ export function createPdf() {
     state.findResults = 0;
     state.findMatchPages = [];
     state.findHighlights = [];
-    const lowerQuery = query.toLowerCase();
+    let regex: RegExp | null = null;
+    if (state.findRegex) {
+      try {
+        regex = new RegExp(query, state.findMatchCase ? "g" : "gi");
+      } catch {
+        state.findCurrentIdx = 0;
+        return;
+      }
+    }
+    const needle = state.findMatchCase ? query : query.toLowerCase();
+    const isWholeWord = (text: string, index: number, length: number) => {
+      if (!state.findWholeWord) return true;
+      const before = index > 0 ? text[index - 1] : "";
+      const after = index + length < text.length ? text[index + length] : "";
+      return !/\w/.test(before) && !/\w/.test(after);
+    };
 
     for (let i = 1; i <= state.pageCount; i++) {
       try {
@@ -1702,12 +1748,53 @@ export function createPdf() {
         }[] = [];
         let pageCount = 0;
         for (const item of items) {
-          const lower = item.str.toLowerCase();
+          if (regex) {
+            regex.lastIndex = 0;
+            let match: RegExpExecArray | null;
+            while ((match = regex.exec(item.str)) !== null) {
+              const idx = match.index;
+              const matchLength = match[0].length;
+              if (matchLength === 0) {
+                regex.lastIndex += 1;
+                continue;
+              }
+              if (!isWholeWord(item.str, idx, matchLength)) continue;
+              pageCount++;
+              const ratio = idx / item.str.length;
+              const matchW = (matchLength / item.str.length) * item.w;
+              const startX = item.x + ratio * item.w;
+              const endX = startX + matchW;
+              // Convert through the page viewport so highlights follow the
+              // current rotation instead of assuming an upright page.
+              const [vx1, vy1] = vp.convertToViewportPoint(
+                startX,
+                item.y + item.h * 0.75,
+              );
+              const [vx2, vy2] = vp.convertToViewportPoint(
+                endX,
+                item.y - item.h * 0.25,
+              );
+              pageRects.push({
+                left: Math.min(vx1, vx2),
+                top: Math.min(vy1, vy2),
+                width: Math.max(2, Math.abs(vx2 - vx1)),
+                height: Math.max(2, Math.abs(vy2 - vy1)),
+              });
+            }
+            continue;
+          }
+          const haystack = state.findMatchCase
+            ? item.str
+            : item.str.toLowerCase();
           let idx = 0;
-          while ((idx = lower.indexOf(lowerQuery, idx)) !== -1) {
+          while ((idx = haystack.indexOf(needle, idx)) !== -1) {
+            if (!isWholeWord(item.str, idx, needle.length)) {
+              idx += 1;
+              continue;
+            }
             pageCount++;
             const ratio = idx / item.str.length;
-            const matchW = (lowerQuery.length / item.str.length) * item.w;
+            const matchW = (needle.length / item.str.length) * item.w;
             const startX = item.x + ratio * item.w;
             const endX = startX + matchW;
             // Convert through the page viewport so highlights follow the
@@ -1726,7 +1813,7 @@ export function createPdf() {
               width: Math.max(2, Math.abs(vx2 - vx1)),
               height: Math.max(2, Math.abs(vy2 - vy1)),
             });
-            idx += lowerQuery.length;
+            idx += needle.length;
           }
         }
         if (pageCount > 0) {
@@ -1768,6 +1855,17 @@ export function createPdf() {
       matchPageIdx > 0 ? matchPageIdx - 1 : state.findMatchPages.length - 1;
     state.findCurrentIdx = Math.max(state.findCurrentIdx - 1, 1);
     scrollToPage(state.findMatchPages[targetIdx]);
+  }
+
+  function setFindOption(option: "case" | "word" | "regex") {
+    if (option === "case") {
+      state.findMatchCase = !state.findMatchCase;
+    } else if (option === "word") {
+      state.findWholeWord = !state.findWholeWord;
+    } else {
+      state.findRegex = !state.findRegex;
+    }
+    if (state.findQuery) void findText(state.findQuery);
   }
 
   return {
@@ -1819,7 +1917,9 @@ export function createPdf() {
     findText,
     findNext,
     findPrev,
+    setFindOption,
     getPageText,
+    renderPagesForPrint,
     togglePagePanel,
     getPageThumbnail,
     preloadAllThumbnails,

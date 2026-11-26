@@ -27,6 +27,7 @@
   "bar.labels": "Labels",
   "bar.labelsAria": "toggle names",
   "bar.mediaDetails": "Resolution · File size",
+  "bar.fileSize": "File size",
   "bar.mergeSegments": "Merge Segments",
   "bar.queue": "Queue",
   "bar.queueAria": "Open queue",

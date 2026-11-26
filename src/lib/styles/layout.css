@@ -252,6 +252,8 @@ main {
   flex-shrink: 0;
 }
 .nav-btn {
+  position: relative;
+  z-index: 21;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -267,6 +269,18 @@ main {
     background 0.2s,
     border-color 0.2s,
     transform 0.15s ease;
+}
+.nav-shift {
+  position: relative;
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.22s ease;
+}
+.nav-shift.index-open {
+  /* Clear the 48px sidebar + 200px index panel, plus an 8px gap. */
+  transform: translateX(252px);
 }
 .nav-btn svg {
   display: block;
@@ -952,6 +966,10 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
 }
 .fs-nav-left {
   left: 16px;
+  transition: left 0.22s ease;
+}
+.fs-nav-left.index-open {
+  left: 208px;
 }
 .fs-nav-right {
   right: 16px;
@@ -998,7 +1016,7 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 101;
+  z-index: 220;
   background: rgba(0, 0, 0, 0.6);
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
@@ -1010,7 +1028,12 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
   transition:
     color 0.2s,
     background 0.2s,
+    opacity 0.25s ease,
     transform 0.15s ease;
+}
+.fs-file-count-pill.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .fs-file-count-pill:hover {
@@ -1026,6 +1049,57 @@ main.fullscreen.thumbnail-bar-open .fs-file-count-pill {
 .fs-file-count-pill.slideshow-active {
   color: var(--blue-light);
   border-color: var(--blue-border-subtle);
+}
+.fs-page-top {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translate(-50%, -6px);
+  z-index: 220;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.fs-page-top.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.fs-page-top.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.fs-page-jump {
+  height: 26px;
+  padding: 0 9px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+.fs-page-jump:hover {
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.75);
+}
+.fs-page-jump-input {
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
 }
 
 .border-sweep {

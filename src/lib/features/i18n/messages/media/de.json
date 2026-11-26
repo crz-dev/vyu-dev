@@ -27,6 +27,7 @@
   "bar.labels": "Beschriftungen",
   "bar.labelsAria": "Namen umschalten",
   "bar.mediaDetails": "Auflösung · Dateigröße",
+  "bar.fileSize": "Dateigröße",
   "bar.mergeSegments": "Segmente zusammenführen",
   "bar.muted": "Stumm",
   "bar.noFileOpen": "keine Datei geöffnet",
