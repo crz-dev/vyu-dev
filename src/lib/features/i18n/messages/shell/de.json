@@ -116,6 +116,8 @@
   "viewer.pdf.readingRuler": "Leselineal",
   "viewer.pdf.removeBookmark": "Lesezeichen entfernen",
   "viewer.pdf.singlePage": "Einzelne Seite",
+  "viewer.pdf.editBookmark": "Lesezeichen bearbeiten",
+  "viewer.pdf.bookmarkTitle": "Lesezeichen-Titel",
   "viewer.pdf.passwordHint": "Dieses PDF ist geschützt. Gib das Passwort ein, um es zu öffnen.",
   "viewer.pdf.passwordIncorrect": "Falsches Passwort. Versuche es erneut.",
   "viewer.pdf.passwordPlaceholder": "Passwort",

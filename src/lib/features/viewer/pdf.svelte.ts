@@ -8,10 +8,11 @@ import { invokeStoreThumbnail } from "$lib/features/media/api";
 import { getFileExt } from "$lib/services/files";
 import { loadPdfNightMode, savePdfNightMode } from "$lib/services/storage";
 import {
-  deletePdfBookmark,
-  loadPdfBookmark,
-  savePdfBookmark,
+  deletePdfBookmarks,
+  loadPdfBookmarks,
+  savePdfBookmarks,
 } from "$lib/services/database";
+import { DRAW_COLORS } from "$lib/features/markup/markup.svelte";
 import { DOCUMENT_EXTS } from "$lib/shared/constants";
 import { locale } from "$lib/features/i18n/locale.svelte";
 import type {
@@ -194,6 +195,16 @@ export interface FindHighlight {
   rects: { left: number; top: number; width: number; height: number }[];
 }
 
+export interface PdfBookmark {
+  page: number;
+  color: string;
+  title: string;
+}
+
+export const PDF_BOOKMARK_COLORS = DRAW_COLORS.filter(
+  (color) => !["#000000", "#888888", "#ffffff"].includes(color),
+);
+
 export interface PdfState {
   pages: PdfPage[];
   scale: number;
@@ -228,7 +239,7 @@ export interface PdfState {
   pdfPageSize: string;
   documentInfo: string;
   resumePage: number | null;
-  bookmarkPage: number | null;
+  bookmarks: PdfBookmark[];
 }
 
 const RENDER_DEBOUNCE_MS = 60;
@@ -290,7 +301,7 @@ export function createPdf() {
     pdfPageSize: "",
     documentInfo: "",
     resumePage: null,
-    bookmarkPage: null,
+    bookmarks: [],
   });
 
   let pdfDoc: PDFDocumentProxy | null = null;
@@ -738,6 +749,7 @@ export function createPdf() {
 
   function updateCurrentPage() {
     if (!pdfContainerEl || state.pages.length === 0) return;
+    if (state.singlePage) return;
     const containerRect = pdfContainerEl.getBoundingClientRect();
     const containerTop = containerRect.top;
     const containerCenterX = containerRect.left + containerRect.width / 2;
@@ -986,8 +998,9 @@ export function createPdf() {
       } catch {
         /* ignore */
       }
-      void loadPdfBookmark(path).then((bookmark) => {
-        if (gen === loadGen && !disposed) state.bookmarkPage = bookmark;
+      void loadPdfBookmarks(path).then((raw) => {
+        if (gen !== loadGen || disposed) return;
+        state.bookmarks = parseBookmarks(raw);
       });
       if (gen !== loadGen) return;
 
@@ -1080,7 +1093,7 @@ export function createPdf() {
     state.pdfPageSize = "";
     state.documentInfo = "";
     state.resumePage = null;
-    state.bookmarkPage = null;
+    state.bookmarks = [];
     pageThumbnailCache.clear();
     textContentCache.clear();
     annotationCache.clear();
@@ -1294,23 +1307,83 @@ export function createPdf() {
     centerPageAfterLayout(state.currentPage);
   }
 
-  function toggleBookmark() {
-    toggleBookmarkAt(state.currentPage);
+  function parseBookmarks(raw: string | null): PdfBookmark[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return [];
+      const allowed = new Set(PDF_BOOKMARK_COLORS);
+      const pageCount = state.pageCount;
+      return parsed
+        .map((entry) => {
+          if (!entry || typeof entry !== "object") return null;
+          const record = entry as Record<string, unknown>;
+          const page = Number(record.page);
+          if (!Number.isFinite(page) || page < 1) return null;
+          if (pageCount > 0 && page > pageCount) return null;
+          const color =
+            typeof record.color === "string" && allowed.has(record.color)
+              ? record.color
+              : PDF_BOOKMARK_COLORS[0];
+          const title =
+            typeof record.title === "string" ? record.title.trim() : "";
+          return { page: Math.round(page), color, title };
+        })
+        .filter((entry): entry is PdfBookmark => entry !== null);
+    } catch {
+      return [];
+    }
   }
 
-  function toggleBookmarkAt(pageNum: number) {
+  function bookmarkForPage(pageNum: number): PdfBookmark | null {
+    return (
+      state.bookmarks.find((bookmark) => bookmark.page === pageNum) ?? null
+    );
+  }
+
+  function persistBookmarks() {
     if (!currentFilePath) return;
+    if (state.bookmarks.length === 0) {
+      void deletePdfBookmarks(currentFilePath);
+      return;
+    }
+    void savePdfBookmarks(currentFilePath, JSON.stringify(state.bookmarks));
+  }
+
+  function addBookmark(pageNum = state.currentPage): PdfBookmark | null {
     const target = Math.round(pageNum);
     if (!Number.isFinite(target) || target < 1 || target > state.pageCount) {
-      return;
+      return null;
     }
-    if (state.bookmarkPage === target) {
-      state.bookmarkPage = null;
-      void deletePdfBookmark(currentFilePath);
-      return;
-    }
-    state.bookmarkPage = target;
-    void savePdfBookmark(currentFilePath, target);
+    const existing = bookmarkForPage(target);
+    if (existing) return existing;
+    const usedColors = new Set(
+      state.bookmarks.map((bookmark) => bookmark.color),
+    );
+    const color =
+      PDF_BOOKMARK_COLORS.find((candidate) => !usedColors.has(candidate)) ??
+      PDF_BOOKMARK_COLORS[state.bookmarks.length % PDF_BOOKMARK_COLORS.length];
+    const bookmark: PdfBookmark = { page: target, color, title: "" };
+    state.bookmarks = [...state.bookmarks, bookmark];
+    persistBookmarks();
+    return bookmark;
+  }
+
+  function updateBookmark(
+    pageNum: number,
+    patch: Partial<Pick<PdfBookmark, "color" | "title">>,
+  ) {
+    state.bookmarks = state.bookmarks.map((bookmark) =>
+      bookmark.page === pageNum ? { ...bookmark, ...patch } : bookmark,
+    );
+    persistBookmarks();
+  }
+
+  function removeBookmark(pageNum: number) {
+    state.bookmarks = state.bookmarks.filter(
+      (bookmark) => bookmark.page !== pageNum,
+    );
+    persistBookmarks();
   }
 
   function toggleNightMode() {
@@ -1717,8 +1790,10 @@ export function createPdf() {
     rotate,
     toggleDualPage,
     toggleSinglePage,
-    toggleBookmark,
-    toggleBookmarkAt,
+    bookmarkForPage,
+    addBookmark,
+    updateBookmark,
+    removeBookmark,
     toggleNightMode,
     setPanelTab,
     openLink,

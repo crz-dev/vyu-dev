@@ -116,6 +116,8 @@
   "viewer.pdf.readingRuler": "읽기 안내선",
   "viewer.pdf.removeBookmark": "북마크 제거",
   "viewer.pdf.singlePage": "한 페이지",
+  "viewer.pdf.editBookmark": "북마크 편집",
+  "viewer.pdf.bookmarkTitle": "북마크 제목",
   "viewer.pdf.passwordHint": "이 PDF는 보호되어 있습니다. 열려면 비밀번호를 입력하세요.",
   "viewer.pdf.passwordIncorrect": "비밀번호가 올바르지 않습니다. 다시 시도하세요.",
   "viewer.pdf.passwordPlaceholder": "비밀번호",

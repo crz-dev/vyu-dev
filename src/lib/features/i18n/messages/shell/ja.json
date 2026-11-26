@@ -116,6 +116,8 @@
   "viewer.pdf.readingRuler": "読書ルーラー",
   "viewer.pdf.removeBookmark": "ブックマークを削除",
   "viewer.pdf.singlePage": "単一ページ",
+  "viewer.pdf.editBookmark": "ブックマークを編集",
+  "viewer.pdf.bookmarkTitle": "ブックマーク名",
   "viewer.pdf.passwordHint": "この PDF は保護されています。開くにはパスワードを入力してください。",
   "viewer.pdf.passwordIncorrect": "パスワードが違います。もう一度お試しください。",
   "viewer.pdf.passwordPlaceholder": "パスワード",

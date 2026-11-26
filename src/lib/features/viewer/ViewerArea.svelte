@@ -713,9 +713,10 @@
         dualPage={pdf.state.dualPage}
         singlePage={pdf.state.singlePage}
         nightMode={pdf.state.nightMode}
-        bookmarkPage={pdf.state.bookmarkPage}
-        onToggleBookmark={pdf.toggleBookmark}
-        onToggleBookmarkAt={pdf.toggleBookmarkAt}
+        bookmarks={pdf.state.bookmarks}
+        onAddBookmark={pdf.addBookmark}
+        onUpdateBookmark={pdf.updateBookmark}
+        onRemoveBookmark={pdf.removeBookmark}
         toggleSinglePage={pdf.toggleSinglePage}
         outline={pdf.state.outline}
         panelTab={pdf.state.panelTab}

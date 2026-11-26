@@ -116,6 +116,8 @@
   "viewer.pdf.readingRuler": "Règle de lecture",
   "viewer.pdf.removeBookmark": "Retirer le favori",
   "viewer.pdf.singlePage": "Page unique",
+  "viewer.pdf.editBookmark": "Modifier le favori",
+  "viewer.pdf.bookmarkTitle": "Titre du favori",
   "viewer.pdf.passwordHint": "Ce PDF est protégé. Saisissez son mot de passe pour l'ouvrir.",
   "viewer.pdf.passwordIncorrect": "Mot de passe incorrect. Réessayez.",
   "viewer.pdf.passwordPlaceholder": "Mot de passe",

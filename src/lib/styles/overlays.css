@@ -856,16 +856,11 @@
 .pdf-viewer::-webkit-scrollbar {
   display: none;
 }
-.pdf-reading-ruler {
+.pdf-ruler-shade {
   position: fixed;
-  height: 96px;
   pointer-events: none;
   z-index: 11;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--blue-light) 9%, transparent);
-  border-top: 0.5px solid color-mix(in srgb, var(--blue-light) 35%, transparent);
-  border-bottom: 0.5px solid
-    color-mix(in srgb, var(--blue-light) 35%, transparent);
+  background: rgba(0, 0, 0, 0.52);
 }
 .pdf-page-wrapper.hidden-page {
   display: none;
@@ -903,6 +898,15 @@
   background: var(--bg-elevated);
   color: var(--text-primary);
 }
+.pdf-page-label.bookmarked {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-color: transparent;
+}
+.pdf-page-label.bookmarked:hover {
+  filter: brightness(1.08);
+}
 .pdf-page-wrapper.right-page .pdf-page-label {
   right: auto;
   left: 100%;
@@ -910,8 +914,8 @@
   margin-left: 8px;
 }
 .pdf-viewer.fit-width .pdf-page-label {
-  right: 8px;
-  left: auto;
+  left: 8px;
+  right: auto;
   top: 8px;
   translate: none;
   margin-right: 0;
@@ -1104,20 +1108,26 @@ main.fullscreen .pdf-page-panel {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   pointer-events: none;
 }
-.pdf-page-bookmark {
-  position: absolute;
-  top: 7px;
-  left: 7px;
-  width: 15px;
-  height: 15px;
-  display: flex;
+.pdf-page-panel-num.bookmarked {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--yellow);
-  color: var(--bg-primary);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
-  pointer-events: none;
+  border-radius: 9px;
+  font-weight: 600;
+}
+.pdf-page-bookmark-title {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 9.5px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  line-height: 1.2;
 }
 .pdf-page-separator {
   width: 80%;
@@ -1235,6 +1245,83 @@ main.fullscreen .pdf-page-panel {
   flex-shrink: 0;
   position: relative;
   z-index: 3;
+}
+.pdf-bookmark-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--bg-border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+}
+.pdf-bookmark-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pdf-bookmark-title-input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border: 0.5px solid var(--bg-border);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-family);
+  outline: none;
+}
+.pdf-bookmark-title-input:focus {
+  border-color: var(--text-secondary);
+}
+.pdf-bookmark-title-input::placeholder {
+  color: var(--text-hint);
+}
+.pdf-bookmark-remove {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--red);
+  cursor: pointer;
+}
+.pdf-bookmark-remove:hover {
+  background: var(--red-bg-faint);
+}
+.pdf-bookmark-colors {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+.pdf-bookmark-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease;
+}
+.pdf-bookmark-swatch:hover {
+  transform: scale(1.12);
+}
+.pdf-bookmark-swatch.active {
+  border-color: var(--text-primary);
+}
+[data-theme="light"] .pdf-bookmark-title-input {
+  background: rgba(0, 0, 0, 0.05);
 }
 .pdf-panel-action {
   width: 24px;

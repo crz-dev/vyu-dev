@@ -116,6 +116,8 @@
   "viewer.pdf.readingRuler": "Righello di lettura",
   "viewer.pdf.removeBookmark": "Rimuovi segnalibro",
   "viewer.pdf.singlePage": "Pagina singola",
+  "viewer.pdf.editBookmark": "Modifica segnalibro",
+  "viewer.pdf.bookmarkTitle": "Titolo segnalibro",
   "viewer.pdf.passwordHint": "Questo PDF è protetto. Inserisci la password per aprirlo.",
   "viewer.pdf.passwordIncorrect": "Password errata. Riprova.",
   "viewer.pdf.passwordPlaceholder": "Password",

@@ -3,11 +3,13 @@
   import { fly } from "svelte/transition";
   import {
     type FindHighlight,
+    type PdfBookmark,
     type PdfLink,
     type PdfOutlineEntry,
     type PdfPage,
     type PdfPasswordPrompt as PdfPasswordPromptState,
     type PdfRedactionRect,
+    PDF_BOOKMARK_COLORS,
   } from "./pdf.svelte";
   import PdfPasswordPrompt from "./PdfPasswordPrompt.svelte";
   import PdfRedactOverlay from "./PdfRedactOverlay.svelte";
@@ -57,9 +59,10 @@
     dualPage,
     singlePage,
     nightMode,
-    bookmarkPage,
-    onToggleBookmark,
-    onToggleBookmarkAt,
+    bookmarks,
+    onAddBookmark,
+    onUpdateBookmark,
+    onRemoveBookmark,
     toggleSinglePage,
     outline,
     panelTab,
@@ -130,9 +133,13 @@
     dualPage: boolean;
     singlePage: boolean;
     nightMode: boolean;
-    bookmarkPage: number | null;
-    onToggleBookmark: () => void;
-    onToggleBookmarkAt: (pageNum: number) => void;
+    bookmarks: PdfBookmark[];
+    onAddBookmark: (page: number) => PdfBookmark | null;
+    onUpdateBookmark: (
+      page: number,
+      patch: Partial<Pick<PdfBookmark, "color" | "title">>,
+    ) => void;
+    onRemoveBookmark: (page: number) => void;
     toggleSinglePage: () => void;
     outline: PdfOutlineEntry[];
     panelTab: "pages" | "outline";
@@ -197,6 +204,7 @@
 
   let pageWrapperRefs: (HTMLElement | null)[] = $state([]);
   let wheelRafId = 0;
+  let lastSinglePageWheel = 0;
   let pendingWheel: {
     clientX: number;
     clientY: number;
@@ -213,6 +221,58 @@
   let rulerTop = $state(0);
   let rulerLeft = $state(0);
   let rulerWidth = $state(0);
+  let rulerViewerTop = $state(0);
+  let rulerViewerBottom = $state(0);
+  const READING_RULER_HEIGHT = 96;
+  let editingBookmarkPage = $state<number | null>(null);
+  let bookmarkTitleDraft = $state("");
+
+  function bookmarkForPage(pageNum: number): PdfBookmark | null {
+    return bookmarks.find((bookmark) => bookmark.page === pageNum) ?? null;
+  }
+
+  function bookmarkTextColor(color: string): string {
+    const hex = color.replace("#", "");
+    if (hex.length !== 6) return "#17181a";
+    const r = Number.parseInt(hex.slice(0, 2), 16) / 255;
+    const g = Number.parseInt(hex.slice(2, 4), 16) / 255;
+    const b = Number.parseInt(hex.slice(4, 6), 16) / 255;
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luminance > 0.6 ? "#17181a" : "#ffffff";
+  }
+
+  function openBookmarkEditor(pageNum: number) {
+    let bookmark = bookmarkForPage(pageNum);
+    if (!bookmark) bookmark = onAddBookmark(pageNum);
+    if (!bookmark) return;
+    bookmarkTitleDraft = bookmark.title;
+    editingBookmarkPage = pageNum;
+  }
+
+  function updateBookmarkTitle(value: string) {
+    bookmarkTitleDraft = value;
+  }
+
+  function commitBookmarkTitle() {
+    if (editingBookmarkPage === null) return;
+    onUpdateBookmark(editingBookmarkPage, { title: bookmarkTitleDraft });
+  }
+
+  function handleBookmarkAction() {
+    if (editingBookmarkPage === currentPage) {
+      editingBookmarkPage = null;
+      return;
+    }
+    openBookmarkEditor(currentPage);
+  }
+
+  function handleThumbnailContext(e: MouseEvent, pageNum: number) {
+    e.preventDefault();
+    e.stopPropagation();
+    const existing = bookmarkForPage(pageNum);
+    if (existing) openBookmarkEditor(pageNum);
+    else onAddBookmark(pageNum);
+  }
 
   let pendingSignature = $state<DrawPoint[][] | null>(null);
   let signaturePointer = $state<{
@@ -310,6 +370,10 @@
     }
   });
 
+  $effect(() => {
+    if (!showPagePanel) editingBookmarkPage = null;
+  });
+
   // Sync markup page when current page changes
   $effect(() => {
     if (currentPage > 0 && pageCount > 0) {
@@ -405,13 +469,15 @@
     const el = pdfContainerEl;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const height = 96;
+    const height = READING_RULER_HEIGHT;
     rulerTop = Math.min(
       rect.bottom - height - 4,
       Math.max(rect.top + 4, clientY - height / 2),
     );
     rulerLeft = rect.left;
     rulerWidth = rect.width;
+    rulerViewerTop = rect.top;
+    rulerViewerBottom = rect.bottom;
   }
 
   function toggleReadingRuler() {
@@ -680,6 +746,24 @@
   }
 
   function handlePdfWheel(e: WheelEvent) {
+    if (singlePage && !e.ctrlKey) {
+      const el = pdfContainerEl;
+      if (!el || Math.abs(e.deltaY) < 4) return;
+      const atTop = el.scrollTop <= 1;
+      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+      const goingDown = e.deltaY > 0;
+      if ((goingDown && !atBottom) || (!goingDown && !atTop)) return;
+      const now = Date.now();
+      if (now - lastSinglePageWheel < 220) {
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      lastSinglePageWheel = now;
+      if (goingDown) nextPage();
+      else prevPage();
+      return;
+    }
     if (!e.ctrlKey) return;
 
     e.preventDefault();
@@ -960,10 +1044,22 @@
   />
   {#if readingRuler}
     <div
-      class="pdf-reading-ruler"
-      style:top="{rulerTop}px"
+      class="pdf-ruler-shade"
+      style:top="{rulerViewerTop}px"
       style:left="{rulerLeft}px"
       style:width="{rulerWidth}px"
+      style:height="{Math.max(0, rulerTop - rulerViewerTop)}px"
+      aria-hidden="true"
+    ></div>
+    <div
+      class="pdf-ruler-shade"
+      style:top="{rulerTop + READING_RULER_HEIGHT}px"
+      style:left="{rulerLeft}px"
+      style:width="{rulerWidth}px"
+      style:height="{Math.max(
+        0,
+        rulerViewerBottom - (rulerTop + READING_RULER_HEIGHT),
+      )}px"
       aria-hidden="true"
     ></div>
   {/if}
@@ -1167,7 +1263,7 @@
         <div class="pdf-page-panel-head-actions">
           {#if outline.length > 0}
             <button
-              class="pdf-panel-head-btn tooltip-below-start"
+              class="pdf-panel-head-btn tooltip-below"
               class:active={panelTab === "outline"}
               aria-pressed={panelTab === "outline"}
               data-tooltip={t("shell.viewer.pdf.outline")}
@@ -1252,6 +1348,60 @@
         </button>
         <button
           class="pdf-panel-action tooltip-below-start"
+          class:active={!!bookmarkForPage(currentPage)}
+          aria-pressed={!!bookmarkForPage(currentPage)}
+          style:color={bookmarkForPage(currentPage)?.color}
+          data-tooltip={bookmarkForPage(currentPage)
+            ? t("shell.viewer.pdf.editBookmark")
+            : t("shell.viewer.pdf.bookmarkPage")}
+          aria-label={bookmarkForPage(currentPage)
+            ? t("shell.viewer.pdf.editBookmark")
+            : t("shell.viewer.pdf.bookmarkPage")}
+          onclick={handleBookmarkAction}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M6 3h12v18l-6-4-6 4V3z"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below"
+          data-tooltip={tooltipLabel(
+            `${t("shell.viewer.pdf.rotate")} 90°`,
+            "pdf-rotate",
+          )}
+          aria-label={t("shell.viewer.pdf.rotate")}
+          onclick={rotate}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-below"
           data-tooltip={t("dialogs.dialog.share.printer")}
           aria-label={t("dialogs.dialog.share.printer")}
           onclick={printDocument}
@@ -1289,60 +1439,7 @@
           </svg>
         </button>
         <button
-          class="pdf-panel-action tooltip-below-start"
-          class:active={bookmarkPage === currentPage}
-          aria-pressed={bookmarkPage === currentPage}
-          data-tooltip={bookmarkPage === currentPage
-            ? t("shell.viewer.pdf.removeBookmark")
-            : t("shell.viewer.pdf.bookmarkPage")}
-          aria-label={bookmarkPage === currentPage
-            ? t("shell.viewer.pdf.removeBookmark")
-            : t("shell.viewer.pdf.bookmarkPage")}
-          onclick={onToggleBookmark}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M6 3h12v18l-6-4-6 4V3z"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below-start"
-          data-tooltip={tooltipLabel(
-            `${t("shell.viewer.pdf.rotate")} 90°`,
-            "pdf-rotate",
-          )}
-          aria-label={t("shell.viewer.pdf.rotate")}
-          onclick={rotate}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-        <button
-          class="pdf-panel-action tooltip-below-start"
+          class="pdf-panel-action tooltip-below"
           data-tooltip={t("shell.viewer.pdf.sign")}
           aria-label={t("shell.viewer.pdf.sign")}
           onclick={openSignature}
@@ -1370,7 +1467,7 @@
           </svg>
         </button>
         <button
-          class="pdf-panel-action danger tooltip-below-start"
+          class="pdf-panel-action danger tooltip-below"
           class:active={redactActive}
           aria-pressed={redactActive}
           data-tooltip={t("shell.viewer.pdf.redact")}
@@ -1405,20 +1502,91 @@
           </svg>
         </button>
       </div>
+      {#if editingBookmarkPage !== null}
+        {@const editingBookmark = bookmarkForPage(editingBookmarkPage)}
+        <div class="pdf-bookmark-editor">
+          <div class="pdf-bookmark-editor-head">
+            <input
+              class="pdf-bookmark-title-input"
+              placeholder={t("shell.viewer.pdf.bookmarkTitle")}
+              aria-label={t("shell.viewer.pdf.bookmarkTitle")}
+              value={bookmarkTitleDraft}
+              oninput={(e) => updateBookmarkTitle(e.currentTarget.value)}
+              onblur={commitBookmarkTitle}
+              onkeydown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitBookmarkTitle();
+                }
+              }}
+            />
+            <button
+              class="pdf-bookmark-remove"
+              aria-label={t("shell.viewer.pdf.removeBookmark")}
+              title={t("shell.viewer.pdf.removeBookmark")}
+              onclick={() => {
+                if (editingBookmarkPage !== null) {
+                  onRemoveBookmark(editingBookmarkPage);
+                  editingBookmarkPage = null;
+                }
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18" />
+                <path d="M8 6V4h8v2" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6M14 11v6" />
+              </svg>
+            </button>
+          </div>
+          <div class="pdf-bookmark-colors">
+            {#each PDF_BOOKMARK_COLORS as color}
+              <button
+                class="pdf-bookmark-swatch"
+                class:active={editingBookmark?.color === color}
+                style:background={color}
+                aria-label={color}
+                onclick={() => {
+                  if (editingBookmarkPage !== null) {
+                    onUpdateBookmark(editingBookmarkPage, { color });
+                  }
+                }}
+              ></button>
+            {/each}
+          </div>
+        </div>
+      {/if}
       {#if panelTab === "pages"}
         <div class="pdf-page-panel-list pdf-page-panel-grid">
           {#each pages as page, i}
-            <button
+            {@const bookmark = bookmarkForPage(i + 1)}
+            <div
               class="pdf-page-panel-item"
               class:active={currentPage === i + 1}
+              role="button"
+              tabindex="0"
               onclick={() => {
+                editingBookmarkPage = null;
                 scrollToPage(i + 1);
               }}
-              oncontextmenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onToggleBookmarkAt(i + 1);
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  editingBookmarkPage = null;
+                  scrollToPage(i + 1);
+                }
               }}
+              oncontextmenu={(e) => handleThumbnailContext(e, i + 1)}
             >
               {#if pageThumbUrls[i + 1]}
                 <img
@@ -1452,31 +1620,23 @@
                   </svg>
                 </span>
               {/if}
-              {#if bookmarkPage === i + 1}
+              {#if bookmark}
                 <span
-                  class="pdf-page-bookmark"
-                  title={t("shell.viewer.pdf.bookmarkPage")}
-                  aria-label={t("shell.viewer.pdf.bookmarkPage")}
+                  class="pdf-page-panel-num bookmarked"
+                  style:background={bookmark.color}
+                  style:color={bookmarkTextColor(bookmark.color)}>{i + 1}</span
                 >
-                  <svg
-                    width="9"
-                    height="9"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M6 3h12v18l-6-4-6 4V3z"
-                      fill="currentColor"
-                      stroke="currentColor"
-                      stroke-width="1.4"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
+              {:else}
+                <span class="pdf-page-panel-num">{i + 1}</span>
               {/if}
-              <span class="pdf-page-panel-num">{i + 1}</span>
-            </button>
+              {#if bookmark?.title}
+                <span
+                  class="pdf-page-bookmark-title"
+                  style:color={bookmark.color}
+                  title={bookmark.title}>{bookmark.title}</span
+                >
+              {/if}
+            </div>
           {/each}
         </div>
       {:else}
@@ -1577,7 +1737,7 @@
           </svg>
         </button>
         <button
-          class="pdf-panel-action tooltip-above-shift-right"
+          class="pdf-panel-action tooltip-above"
           class:active={singlePage}
           aria-pressed={singlePage}
           data-tooltip={t("shell.viewer.pdf.singlePage")}
@@ -1609,7 +1769,7 @@
           </svg>
         </button>
         <button
-          class="pdf-panel-action tooltip-above-shift-right"
+          class="pdf-panel-action tooltip-above"
           class:active={nightMode}
           aria-pressed={nightMode}
           data-tooltip={tooltipLabel(
@@ -1636,7 +1796,37 @@
           </svg>
         </button>
         <button
-          class="pdf-panel-action tooltip-above-shift-right"
+          class="pdf-panel-action tooltip-above"
+          class:active={readingRuler}
+          aria-pressed={readingRuler}
+          data-tooltip={t("shell.viewer.pdf.readingRuler")}
+          aria-label={t("shell.viewer.pdf.readingRuler")}
+          onclick={toggleReadingRuler}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M7 12h10"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+        <button
+          class="pdf-panel-action tooltip-above"
           class:active={readAloudActive}
           aria-pressed={readAloudActive}
           data-tooltip={readAloudActive
@@ -1675,39 +1865,6 @@
             />
           </svg>
         </button>
-        <button
-          class="pdf-panel-action tooltip-above-shift-right"
-          class:active={readingRuler}
-          aria-pressed={readingRuler}
-          data-tooltip={t("shell.viewer.pdf.readingRuler")}
-          aria-label={t("shell.viewer.pdf.readingRuler")}
-          onclick={toggleReadingRuler}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect
-              x="3"
-              y="9"
-              width="18"
-              height="6"
-              rx="1"
-              fill="currentColor"
-              stroke="none"
-              opacity="0.45"
-            />
-            <path
-              d="M3 5h18M3 19h18"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
       </div>
     </div>
   {/if}
@@ -1722,6 +1879,7 @@
   {:else}
     {#each pages as page, i (page.pageNum)}
       {@const pageNum = page.pageNum}
+      {@const bookmark = bookmarkForPage(pageNum)}
       <div
         class="pdf-page-wrapper"
         class:right-page={dualPage && pageNum % 2 === 0}
@@ -1735,13 +1893,19 @@
         ></canvas>
         <button
           class="pdf-page-label tooltip-ctrl"
+          class:bookmarked={!!bookmark}
+          style:background={bookmark?.color}
+          style:color={bookmark ? bookmarkTextColor(bookmark.color) : undefined}
           onclick={() => togglePagePanel("pages")}
           data-tooltip={showPagePanel && panelTab === "pages"
             ? t("shell.viewer.pdf.closeIndex")
             : t("shell.viewer.pdf.openIndex")}
           aria-label={showPagePanel && panelTab === "pages"
             ? t("shell.viewer.pdf.closeIndex")
-            : t("shell.viewer.pdf.openIndex")}>{pageNum}</button
+            : t("shell.viewer.pdf.openIndex")}
+          >{bookmark?.title
+            ? `${bookmark.title} (${pageNum})`
+            : pageNum}</button
         >
         {#if findQuery && findResults > 0}
           {@const hl = getHighlightsForPage(pageNum)}
@@ -1853,7 +2017,7 @@
           </div>
         {/if}
       </div>
-      {#if !dualPage && i < pages.length - 1}
+      {#if !dualPage && !singlePage && i < pages.length - 1}
         <div class="pdf-page-separator"></div>
       {/if}
     {/each}

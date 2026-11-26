@@ -11,7 +11,7 @@ export interface FileMetadata {
   subtitle_data: string | null;
   cd_color: number | null;
   last_viewed: number | null;
-  pdf_bookmark: number | null;
+  pdf_bookmarks: string | null;
   updated_at: number;
 }
 
@@ -149,7 +149,7 @@ async function saveMeta(
     subtitle_data: string | null;
     cd_color: number | null;
     last_viewed: number | null;
-    pdf_bookmark: number | null;
+    pdf_bookmarks: string | null;
   }>,
 ): Promise<void> {
   if (!path) return;
@@ -167,8 +167,8 @@ async function saveMeta(
         "subtitle_data" in fields ? (fields.subtitle_data ?? null) : null,
       cdColor: "cd_color" in fields ? (fields.cd_color ?? null) : null,
       lastViewed: "last_viewed" in fields ? (fields.last_viewed ?? null) : null,
-      pdfBookmark:
-        "pdf_bookmark" in fields ? (fields.pdf_bookmark ?? null) : null,
+      pdfBookmarks:
+        "pdf_bookmarks" in fields ? (fields.pdf_bookmarks ?? null) : null,
     });
   } catch (e) {
     console.error("Failed to save file metadata:", e);
@@ -290,31 +290,30 @@ export async function deleteResumePoint(filePath: string): Promise<void> {
   await clearField(filePath, "last_position");
 }
 
-// PDF page bookmark
+// PDF page bookmarks
 
-export async function loadPdfBookmark(
+export async function loadPdfBookmarks(
   filePath: string,
-): Promise<number | null> {
+): Promise<string | null> {
   if (!filePath) return null;
   try {
     const meta = await getFileMetadata(filePath);
-    const value = meta?.pdf_bookmark;
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
+    return meta?.pdf_bookmarks ?? null;
   } catch {
     return null;
   }
 }
 
-export async function savePdfBookmark(
+export async function savePdfBookmarks(
   filePath: string,
-  page: number,
+  data: string,
 ): Promise<void> {
   if (!filePath) return;
-  await saveMeta(filePath, { pdf_bookmark: Math.round(page) });
+  await saveMeta(filePath, { pdf_bookmarks: data });
 }
 
-export async function deletePdfBookmark(filePath: string): Promise<void> {
-  await clearField(filePath, "pdf_bookmark");
+export async function deletePdfBookmarks(filePath: string): Promise<void> {
+  await clearField(filePath, "pdf_bookmarks");
 }
 
 // Subtitle position (percentage offset from the default block position)

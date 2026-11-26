@@ -116,6 +116,8 @@
   "viewer.pdf.readingRuler": "Régua de leitura",
   "viewer.pdf.removeBookmark": "Remover marcador",
   "viewer.pdf.singlePage": "Página única",
+  "viewer.pdf.editBookmark": "Editar marcador",
+  "viewer.pdf.bookmarkTitle": "Título do marcador",
   "viewer.pdf.passwordHint": "Este PDF está protegido. Digite a senha para abri-lo.",
   "viewer.pdf.passwordIncorrect": "Senha incorreta. Tente novamente.",
   "viewer.pdf.passwordPlaceholder": "Senha",
