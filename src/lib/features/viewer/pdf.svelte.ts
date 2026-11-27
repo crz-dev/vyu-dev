@@ -1117,6 +1117,8 @@ export function createPdf() {
     state.findMatchCase = false;
     state.findWholeWord = false;
     state.findRegex = false;
+    findRunId++;
+    findMatchRects = [];
     findItemsCache.clear();
     state.panelTab = "pages";
     state.outline = [];
@@ -1673,40 +1675,216 @@ export function createPdf() {
     return images;
   }
 
-  let findItemsCache: Map<
-    number,
-    { str: string; x: number; y: number; w: number; h: number }[]
-  > = new Map();
+  interface FindTextItem {
+    str: string;
+    fontFamily: string;
+    vertical: boolean;
+    rtl: boolean;
+    x: number;
+    y: number;
+    ux: number;
+    uy: number;
+    vx: number;
+    vy: number;
+    advance: number;
+    fontSize: number;
+    ascent: number;
+    descent: number;
+  }
+
+  let findItemsCache: Map<number, FindTextItem[]> = new Map();
+  let findMatchRects: {
+    pageNum: number;
+    left: number;
+    top: number;
+    height: number;
+  }[] = [];
+  let findRunId = 0;
+  let findMeasureCtx: CanvasRenderingContext2D | null = null;
+
+  function measureFindTextWidth(
+    text: string,
+    fontFamily: string,
+    fontSize: number,
+  ): number {
+    if (!text || fontSize <= 0) return 0;
+    findMeasureCtx ??= document.createElement("canvas").getContext("2d");
+    if (!findMeasureCtx) return 0;
+    // Match the font the PDF.js text layer uses for its scaleX correction so
+    // the highlight lands on the same glyphs the user sees and selects.
+    findMeasureCtx.font = `${fontSize}px ${fontFamily || "sans-serif"}`;
+    return findMeasureCtx.measureText(text).width;
+  }
+
+  function clampFindMetric(
+    value: number | undefined,
+    min: number,
+    max: number,
+    fallback: number,
+  ): number {
+    return typeof value === "number" && Number.isFinite(value)
+      ? Math.max(min, Math.min(max, value))
+      : fallback;
+  }
+
+  function findRectForRange(
+    item: FindTextItem,
+    index: number,
+    length: number,
+    viewport: ReturnType<PDFPageProxy["getViewport"]>,
+  ): { left: number; top: number; width: number; height: number } {
+    const textLength = item.str.length;
+    let startRatio = textLength > 0 ? index / textLength : 0;
+    let endRatio = textLength > 0 ? (index + length) / textLength : 0;
+
+    // Character counts ignore kerning and ligatures, which is what made the
+    // old highlight drift away from the word. Measure real advances instead.
+    if (!item.vertical) {
+      const fullWidth = measureFindTextWidth(
+        item.str,
+        item.fontFamily,
+        item.fontSize,
+      );
+      if (fullWidth > 0) {
+        startRatio =
+          measureFindTextWidth(
+            item.str.slice(0, index),
+            item.fontFamily,
+            item.fontSize,
+          ) / fullWidth;
+        endRatio =
+          measureFindTextWidth(
+            item.str.slice(0, index + length),
+            item.fontFamily,
+            item.fontSize,
+          ) / fullWidth;
+      }
+    }
+    startRatio = Math.max(0, Math.min(1, startRatio));
+    endRatio = Math.max(startRatio, Math.min(1, endRatio));
+    if (item.rtl) {
+      // PDF.js returns RTL text in logical order, while the text layer lays it
+      // out from the right; mirror the range so it matches the visible glyphs.
+      const rtlStart = 1 - endRatio;
+      const rtlEnd = 1 - startRatio;
+      startRatio = rtlStart;
+      endRatio = rtlEnd;
+    }
+
+    // Advance along the item's own baseline and build the box from all four
+    // corners so rotated text keeps its highlight aligned too.
+    const start = item.advance * startRatio;
+    const end = item.advance * endRatio;
+    const startX = item.x + item.ux * start;
+    const startY = item.y + item.uy * start;
+    const endX = item.x + item.ux * end;
+    const endY = item.y + item.uy * end;
+    const above = item.fontSize * item.ascent;
+    const below = item.fontSize * item.descent;
+    const [x1, y1] = viewport.convertToViewportPoint(
+      startX + item.vx * above,
+      startY + item.vy * above,
+    );
+    const [x2, y2] = viewport.convertToViewportPoint(
+      endX + item.vx * above,
+      endY + item.vy * above,
+    );
+    const [x3, y3] = viewport.convertToViewportPoint(
+      endX - item.vx * below,
+      endY - item.vy * below,
+    );
+    const [x4, y4] = viewport.convertToViewportPoint(
+      startX - item.vx * below,
+      startY - item.vy * below,
+    );
+    const left = Math.min(x1, x2, x3, x4);
+    const top = Math.min(y1, y2, y3, y4);
+    return {
+      left,
+      top,
+      width: Math.max(2, Math.max(x1, x2, x3, x4) - left),
+      height: Math.max(2, Math.max(y1, y2, y3, y4) - top),
+    };
+  }
+
+  function scrollToFindMatch(match: {
+    pageNum: number;
+    left: number;
+    top: number;
+    height: number;
+  }) {
+    if (!pdfContainerEl) return;
+    const pageChanged = state.currentPage !== match.pageNum;
+    state.currentPage = match.pageNum;
+    if (state.singlePage) {
+      if (!pageChanged) {
+        const viewTop = pdfContainerEl.scrollTop;
+        const viewBottom = viewTop + pdfContainerEl.clientHeight;
+        if (
+          match.top >= viewTop + 16 &&
+          match.top + match.height <= viewBottom - 16
+        ) {
+          return;
+        }
+      }
+      // Only the active page is laid out, so its top is the scroll origin.
+      const target =
+        match.top + match.height / 2 - pdfContainerEl.clientHeight / 2;
+      requestAnimationFrame(() => {
+        pdfContainerEl?.scrollTo({
+          top: Math.max(0, target),
+          behavior: "smooth",
+        });
+      });
+      return;
+    }
+    const FALLBACK = 800;
+    let pageTop = 0;
+    for (const row of layoutRows()) {
+      if (row.pages.some((page) => page.pageNum === match.pageNum)) break;
+      pageTop +=
+        (row.height > 0 ? row.height * state.scale : FALLBACK) + PAGE_SEP;
+    }
+    const matchTop = pageTop + match.top;
+    const matchBottom = matchTop + match.height;
+    const viewTop = pdfContainerEl.scrollTop;
+    const viewBottom = viewTop + pdfContainerEl.clientHeight;
+    // Leave an already visible match where it is; only reveal off-screen ones.
+    if (matchTop >= viewTop + 16 && matchBottom <= viewBottom - 16) return;
+    const top = matchTop + match.height / 2 - pdfContainerEl.clientHeight / 2;
+    pdfContainerEl.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
 
   function toggleFind() {
     state.findOpen = !state.findOpen;
     if (!state.findOpen) {
+      findRunId++;
       state.findQuery = "";
       state.findResults = 0;
       state.findCurrentIdx = 0;
       state.findMatchPages = [];
       state.findHighlights = [];
+      findMatchRects = [];
       findItemsCache.clear();
     }
   }
 
   async function findText(query: string) {
+    const runId = ++findRunId;
+    const doc = pdfDoc;
     state.findQuery = query;
-    if (!query || !pdfDoc || disposed) {
-      state.findResults = 0;
-      state.findMatchPages = [];
-      state.findHighlights = [];
-      return;
-    }
     state.findResults = 0;
+    state.findCurrentIdx = 0;
     state.findMatchPages = [];
     state.findHighlights = [];
+    findMatchRects = [];
+    if (!query || !doc || disposed) return;
+
     let regex: RegExp | null = null;
     if (state.findRegex) {
       try {
         regex = new RegExp(query, state.findMatchCase ? "g" : "gi");
       } catch {
-        state.findCurrentIdx = 0;
         return;
       }
     }
@@ -1715,12 +1893,16 @@ export function createPdf() {
       if (!state.findWholeWord) return true;
       const before = index > 0 ? text[index - 1] : "";
       const after = index + length < text.length ? text[index + length] : "";
-      return !/\w/.test(before) && !/\w/.test(after);
+      return (
+        !/[\p{L}\p{N}\p{M}_]/u.test(before) &&
+        !/[\p{L}\p{N}\p{M}_]/u.test(after)
+      );
     };
 
     for (let i = 1; i <= state.pageCount; i++) {
       try {
-        const page = await pdfDoc.getPage(i);
+        const page = await doc.getPage(i);
+        if (runId !== findRunId || disposed || pdfDoc !== doc) return;
         const vp = page.getViewport({
           scale: state.scale,
           rotation: state.rotation,
@@ -1728,67 +1910,83 @@ export function createPdf() {
         let items = findItemsCache.get(i);
         if (items === undefined) {
           const content = await getTextContent(i, page);
+          if (runId !== findRunId || disposed || pdfDoc !== doc) return;
           if (!content) continue;
           items = [];
-          for (const item of content.items) {
-            if ("str" in item) {
-              const t = item as {
-                str: string;
-                transform: number[];
-                width: number;
-                height: number;
-              };
-              items.push({
-                str: t.str,
-                x: t.transform[4],
-                y: t.transform[5],
-                w: t.width,
-                h: t.height || 12,
-              });
-            }
+          for (const contentItem of content.items) {
+            if (!("str" in contentItem)) continue;
+            const style = content.styles[contentItem.fontName];
+            const transform = contentItem.transform;
+            const vertical = !!style?.vertical;
+            const advanceX = vertical ? transform[2] : transform[0];
+            const advanceY = vertical ? transform[3] : transform[1];
+            const upX = vertical ? transform[0] : transform[2];
+            const upY = vertical ? transform[1] : transform[3];
+            const advanceLength = Math.hypot(advanceX, advanceY);
+            const upLength = Math.hypot(upX, upY);
+            const styleDescent = style?.descent;
+            items.push({
+              str: contentItem.str,
+              fontFamily: style?.fontFamily ?? "sans-serif",
+              vertical,
+              rtl: contentItem.dir === "rtl",
+              x: transform[4],
+              y: transform[5],
+              ux: advanceLength > 0 ? advanceX / advanceLength : 1,
+              uy: advanceLength > 0 ? advanceY / advanceLength : 0,
+              vx: upLength > 0 ? upX / upLength : 0,
+              vy: upLength > 0 ? upY / upLength : 1,
+              advance: vertical ? contentItem.height : contentItem.width,
+              fontSize:
+                (vertical ? contentItem.width : contentItem.height) || 12,
+              ascent: clampFindMetric(style?.ascent, 0.82, 1.2, 0.82),
+              descent: clampFindMetric(
+                styleDescent === undefined ? undefined : -styleDescent,
+                0.22,
+                0.4,
+                0.22,
+              ),
+            });
           }
           findItemsCache.set(i, items);
         }
-        const pageRects: {
+
+        const pageRects: FindHighlight["rects"] = [];
+        const pageMatches: {
+          pageNum: number;
           left: number;
           top: number;
-          width: number;
           height: number;
         }[] = [];
         let pageCount = 0;
+        const addMatchRect = (
+          item: FindTextItem,
+          index: number,
+          length: number,
+        ) => {
+          const rect = findRectForRange(item, index, length, vp);
+          pageRects.push(rect);
+          pageMatches.push({
+            pageNum: i,
+            left: rect.left,
+            top: rect.top,
+            height: rect.height,
+          });
+          pageCount++;
+        };
+
         for (const item of items) {
           if (regex) {
             regex.lastIndex = 0;
             let match: RegExpExecArray | null;
             while ((match = regex.exec(item.str)) !== null) {
-              const idx = match.index;
               const matchLength = match[0].length;
               if (matchLength === 0) {
                 regex.lastIndex += 1;
                 continue;
               }
-              if (!isWholeWord(item.str, idx, matchLength)) continue;
-              pageCount++;
-              const ratio = idx / item.str.length;
-              const matchW = (matchLength / item.str.length) * item.w;
-              const startX = item.x + ratio * item.w;
-              const endX = startX + matchW;
-              // Convert through the page viewport so highlights follow the
-              // current rotation instead of assuming an upright page.
-              const [vx1, vy1] = vp.convertToViewportPoint(
-                startX,
-                item.y + item.h * 0.75,
-              );
-              const [vx2, vy2] = vp.convertToViewportPoint(
-                endX,
-                item.y - item.h * 0.25,
-              );
-              pageRects.push({
-                left: Math.min(vx1, vx2),
-                top: Math.min(vy1, vy2),
-                width: Math.max(2, Math.abs(vx2 - vx1)),
-                height: Math.max(2, Math.abs(vy2 - vy1)),
-              });
+              if (!isWholeWord(item.str, match.index, matchLength)) continue;
+              addMatchRect(item, match.index, matchLength);
             }
             continue;
           }
@@ -1801,31 +1999,25 @@ export function createPdf() {
               idx += 1;
               continue;
             }
-            pageCount++;
-            const ratio = idx / item.str.length;
-            const matchW = (needle.length / item.str.length) * item.w;
-            const startX = item.x + ratio * item.w;
-            const endX = startX + matchW;
-            // Convert through the page viewport so highlights follow the
-            // current rotation instead of assuming an upright page.
-            const [vx1, vy1] = vp.convertToViewportPoint(
-              startX,
-              item.y + item.h * 0.75,
-            );
-            const [vx2, vy2] = vp.convertToViewportPoint(
-              endX,
-              item.y - item.h * 0.25,
-            );
-            pageRects.push({
-              left: Math.min(vx1, vx2),
-              top: Math.min(vy1, vy2),
-              width: Math.max(2, Math.abs(vx2 - vx1)),
-              height: Math.max(2, Math.abs(vy2 - vy1)),
-            });
+            addMatchRect(item, idx, needle.length);
             idx += needle.length;
           }
         }
+
         if (pageCount > 0) {
+          // Content-stream order is not always visual order; walk matches
+          // top-to-bottom, left-to-right so Next/Prev never jump backwards.
+          pageMatches.sort((a, b) => {
+            const aCenter = a.top + a.height / 2;
+            const bCenter = b.top + b.height / 2;
+            const tolerance = Math.min(a.height, b.height) * 0.75;
+            if (Math.abs(aCenter - bCenter) > tolerance) {
+              return aCenter - bCenter;
+            }
+            return a.left - b.left;
+          });
+          if (state.findCurrentIdx === 0) state.findCurrentIdx = 1;
+          findMatchRects.push(...pageMatches);
           state.findMatchPages.push(i);
           state.findResults += pageCount;
           state.findHighlights.push({ pageNum: i, rects: pageRects });
@@ -1834,36 +2026,30 @@ export function createPdf() {
         // skip failed pages
       }
     }
-    state.findCurrentIdx = state.findResults > 0 ? 1 : 0;
-    if (state.findMatchPages.length > 0) {
-      scrollToPage(state.findMatchPages[0]);
+
+    // A newer query (or a page render/rotation change) may have started while
+    // this scan was awaiting pages; never touch results it already cleared.
+    if (runId !== findRunId || disposed || pdfDoc !== doc) return;
+    if (state.findCurrentIdx === 1 && findMatchRects.length > 0) {
+      scrollToFindMatch(findMatchRects[0]);
     }
   }
 
   async function findNext() {
-    if (state.findResults === 0 || state.findMatchPages.length === 0) return;
-    const idx = state.findCurrentIdx;
-    const matchPageIdx = state.findMatchPages.findIndex(
-      (p) => p >= state.currentPage,
-    );
-    const targetIdx = matchPageIdx >= 0 ? matchPageIdx : 0;
-    const targetPageIdx = (targetIdx + 1) % state.findMatchPages.length;
-    state.findCurrentIdx = Math.min(
-      state.findCurrentIdx + 1,
-      state.findResults,
-    );
-    scrollToPage(state.findMatchPages[targetPageIdx]);
+    const total = findMatchRects.length;
+    if (total === 0) return;
+    const nextIndex = state.findCurrentIdx >= total ? 0 : state.findCurrentIdx;
+    state.findCurrentIdx = nextIndex + 1;
+    scrollToFindMatch(findMatchRects[nextIndex]);
   }
 
   async function findPrev() {
-    if (state.findResults === 0 || state.findMatchPages.length === 0) return;
-    const matchPageIdx = state.findMatchPages.findIndex(
-      (p) => p >= state.currentPage,
-    );
-    const targetIdx =
-      matchPageIdx > 0 ? matchPageIdx - 1 : state.findMatchPages.length - 1;
-    state.findCurrentIdx = Math.max(state.findCurrentIdx - 1, 1);
-    scrollToPage(state.findMatchPages[targetIdx]);
+    const total = findMatchRects.length;
+    if (total === 0) return;
+    const prevIndex =
+      state.findCurrentIdx <= 1 ? total - 1 : state.findCurrentIdx - 2;
+    state.findCurrentIdx = prevIndex + 1;
+    scrollToFindMatch(findMatchRects[prevIndex]);
   }
 
   function setFindOption(option: "case" | "word" | "regex") {

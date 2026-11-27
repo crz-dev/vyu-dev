@@ -1079,6 +1079,7 @@ main.fullscreen .pdf-page-panel {
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;
+  font-family: var(--font-family);
 }
 .edit-menu.pdf-search-menu {
   width: min(330px, calc(100vw - 30px));
@@ -1160,9 +1161,6 @@ main.fullscreen .pdf-page-panel {
 .pdf-search-menu .edit-menu-btn:disabled {
   opacity: 0.45;
   cursor: default;
-}
-.pdf-search-menu .edit-menu-btn {
-  overflow: hidden;
 }
 .pdf-search-menu .edit-menu-btn > span {
   overflow: hidden;

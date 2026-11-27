@@ -195,8 +195,7 @@
           </span>
         {/if}
         <button
-          class="pdf-search-icon-btn"
-          title={t("shell.viewer.pdf.previousMatch")}
+          class="pdf-search-icon-btn tooltip-below"
           data-tooltip={t("shell.viewer.pdf.previousMatch")}
           aria-label={t("shell.viewer.pdf.previousMatch")}
           disabled={results === 0}
@@ -217,8 +216,7 @@
           </svg>
         </button>
         <button
-          class="pdf-search-icon-btn"
-          title={t("shell.viewer.pdf.nextMatch")}
+          class="pdf-search-icon-btn tooltip-below"
           data-tooltip={t("shell.viewer.pdf.nextMatch")}
           aria-label={t("shell.viewer.pdf.nextMatch")}
           disabled={results === 0}
@@ -239,8 +237,7 @@
           </svg>
         </button>
         <button
-          class="pdf-search-icon-btn"
-          title={t("shell.viewer.pdf.redactClear")}
+          class="pdf-search-icon-btn tooltip-below"
           data-tooltip={t("shell.viewer.pdf.redactClear")}
           aria-label={t("shell.viewer.pdf.redactClear")}
           disabled={!query}
@@ -262,10 +259,9 @@
       </div>
       <div class="edit-menu-row pdf-search-sub-row">
         <button
-          class="edit-menu-btn sub"
+          class="edit-menu-btn sub tooltip-below"
           class:green={matchCase}
           aria-pressed={matchCase}
-          title={t("shell.viewer.pdf.matchCase")}
           data-tooltip={t("shell.viewer.pdf.matchCase")}
           aria-label={t("shell.viewer.pdf.matchCase")}
           onclick={() => onToggleOption("case")}
@@ -273,10 +269,9 @@
           <span class="pdf-search-opt-glyph">Aa</span>
         </button>
         <button
-          class="edit-menu-btn sub"
+          class="edit-menu-btn sub tooltip-below"
           class:green={wholeWord}
           aria-pressed={wholeWord}
-          title={t("shell.viewer.pdf.wholeWord")}
           data-tooltip={t("shell.viewer.pdf.wholeWord")}
           aria-label={t("shell.viewer.pdf.wholeWord")}
           onclick={() => onToggleOption("word")}
@@ -284,10 +279,9 @@
           <span class="pdf-search-opt-glyph">ab</span>
         </button>
         <button
-          class="edit-menu-btn sub"
+          class="edit-menu-btn sub tooltip-below"
           class:green={regex}
           aria-pressed={regex}
-          title={t("shell.viewer.pdf.regex")}
           data-tooltip={t("shell.viewer.pdf.regex")}
           aria-label={t("shell.viewer.pdf.regex")}
           onclick={() => onToggleOption("regex")}
