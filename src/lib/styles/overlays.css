@@ -1082,7 +1082,7 @@ main.fullscreen .pdf-page-panel {
   top: 46px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 40;
+  z-index: 1100;
   font-family: var(--font-family);
 }
 .edit-menu.pdf-search-menu {

@@ -41,6 +41,15 @@
   let top = $state(0);
 
   $effect(() => {
+    if (!visible) {
+      moved = false;
+      pinned = false;
+      left = 0;
+      top = 0;
+    }
+  });
+
+  $effect(() => {
     if (!visible) return;
     void tick().then(() => {
       inputEl?.focus();
