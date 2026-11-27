@@ -991,6 +991,74 @@ export function saveProcessCoverArtMode(mode: CoverArtMode): void {
   localStorage.setItem("vyu-process-cover-art", mode);
 }
 
+// ── Saved PDF signatures ──
+export interface SavedSignature {
+  id: string;
+  createdAt: number;
+  paths: { x: number; y: number }[][];
+  thumb: string;
+}
+
+const SAVED_SIGNATURES_KEY = "vyu-pdf-signatures";
+const MAX_SAVED_SIGNATURES = 8;
+
+function isSavedSignaturePath(
+  value: unknown,
+): value is { x: number; y: number }[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((point) => {
+      if (!point || typeof point !== "object") return false;
+      const p = point as Record<string, unknown>;
+      return (
+        typeof p.x === "number" &&
+        Number.isFinite(p.x) &&
+        typeof p.y === "number" &&
+        Number.isFinite(p.y)
+      );
+    })
+  );
+}
+
+function isSavedSignature(value: unknown): value is SavedSignature {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.createdAt === "number" &&
+    typeof v.thumb === "string" &&
+    v.thumb.startsWith("data:image/png") &&
+    Array.isArray(v.paths) &&
+    v.paths.length > 0 &&
+    v.paths.every(isSavedSignaturePath)
+  );
+}
+
+export function loadSavedSignatures(): SavedSignature[] {
+  const raw = localStorage.getItem(SAVED_SIGNATURES_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isSavedSignature).slice(0, MAX_SAVED_SIGNATURES);
+  } catch (e) {
+    console.error("Failed to load saved signatures:", e);
+    return [];
+  }
+}
+
+export function saveSavedSignatures(signatures: SavedSignature[]): void {
+  try {
+    localStorage.setItem(
+      SAVED_SIGNATURES_KEY,
+      JSON.stringify(signatures.slice(0, MAX_SAVED_SIGNATURES)),
+    );
+  } catch (e) {
+    console.error("Failed to save signatures:", e);
+  }
+}
+
 // ── Markup custom colors ──
 export function loadMarkupCustomColors(): string[] {
   try {

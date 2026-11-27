@@ -42,34 +42,94 @@
     class="pdf-redact-bar"
     transition:fly={{ y: 10, duration: 160, opacity: 0.08 }}
   >
-    <span class="pdf-redact-hint">{t("shell.viewer.pdf.redactHint")}</span>
-    <span class="pdf-redact-count">{count}</span>
-    <button
-      type="button"
-      class="pdf-redact-btn"
-      onclick={onClear}
-      disabled={count === 0 || busy}
-    >
-      {t("shell.viewer.pdf.redactClear")}
-    </button>
-    <button
-      type="button"
-      class="pdf-redact-btn"
-      onclick={onCancel}
-      disabled={busy}
-    >
-      {t("common.cancel")}
-    </button>
-    <button
-      type="button"
-      class="pdf-redact-btn danger"
-      onclick={() => onConfirmOpenChange(true)}
-      disabled={count === 0 || busy}
-    >
-      {busy
-        ? t("shell.viewer.pdf.redactWorking")
-        : t("shell.viewer.pdf.redactApply")}
-    </button>
+    <div class="pdf-redact-info">
+      <svg
+        class="pdf-redact-icon"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <rect
+          x="4"
+          y="4"
+          width="16"
+          height="16"
+          rx="1.5"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+        <path
+          d="M4 20 20 4"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </svg>
+      <span class="pdf-redact-hint">{t("shell.viewer.pdf.redactHint")}</span>
+      <span class="pdf-redact-count">{count}</span>
+    </div>
+    <div class="pdf-redact-actions">
+      <button
+        type="button"
+        class="pdf-redact-btn"
+        onclick={onClear}
+        disabled={count === 0 || busy}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M5 19h14M8 15l7-7a2.1 2.1 0 0 1 3 3l-7 7H8v-3Z"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {t("shell.viewer.pdf.redactClear")}
+      </button>
+      <button
+        type="button"
+        class="pdf-redact-btn"
+        onclick={onCancel}
+        disabled={busy}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M18 6L6 18M6 6l12 12"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        {t("common.cancel")}
+      </button>
+      <button
+        type="button"
+        class="pdf-redact-btn danger"
+        onclick={() => onConfirmOpenChange(true)}
+        disabled={count === 0 || busy}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 3l7.5 3v5.2c0 4.4-3 8.1-7.5 9.8-4.5-1.7-7.5-5.4-7.5-9.8V6L12 3Z"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          />
+          <path
+            d="m8.5 12 2.3 2.3 4.7-4.8"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        {busy
+          ? t("shell.viewer.pdf.redactWorking")
+          : t("shell.viewer.pdf.redactApply")}
+      </button>
+    </div>
   </div>
 {/if}
 
