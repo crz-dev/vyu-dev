@@ -1541,7 +1541,6 @@ export function createPdf() {
     state.redactActive = true;
     state.redactions = [];
     state.redactionConfirmOpen = false;
-    state.showPagePanel = false;
   }
 
   function cancelRedaction() {
@@ -1594,6 +1593,16 @@ export function createPdf() {
 
   function removeRedaction(id: number) {
     state.redactions = state.redactions.filter((item) => item.id !== id);
+  }
+
+  function moveRedaction(id: number, x: number, y: number) {
+    const rect = state.redactions.find((item) => item.id === id);
+    if (!rect) return;
+    const nextX = Math.max(0, Math.min(1 - rect.width, x));
+    const nextY = Math.max(0, Math.min(1 - rect.height, y));
+    state.redactions = state.redactions.map((item) =>
+      item.id === id ? { ...item, x: nextX, y: nextY } : item,
+    );
   }
 
   function clearRedactions() {
@@ -1911,6 +1920,7 @@ export function createPdf() {
     closeSignaturePad,
     addRedaction,
     removeRedaction,
+    moveRedaction,
     clearRedactions,
     renderRedactionPages,
     toggleFind,

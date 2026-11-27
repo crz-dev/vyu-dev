@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "クリア",
   "viewer.pdf.redactConfirmBackup": "元のファイルのバックアップを保持する",
   "viewer.pdf.redactConfirmBody": "墨消ししたページは画像に変換されます。テキスト、リンク、注釈、フォームフィールドは復元できません。",
-  "viewer.pdf.redactConfirmMetadata": "メタデータ、目次、添付ファイルも削除",
+  "viewer.pdf.redactConfirmMetadata": "メタデータ、目次、添付ファイルを削除",
   "viewer.pdf.redactConfirmTitle": "墨消しを適用しますか？",
   "viewer.pdf.redactDone": "墨消しを適用しました",
   "viewer.pdf.redactFailed": "墨消しを適用できませんでした",

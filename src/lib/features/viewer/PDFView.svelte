@@ -105,6 +105,7 @@
     cancelPassword,
     addRedaction,
     removeRedaction,
+    moveRedaction,
     clearRedactions,
     startRedaction,
     cancelRedaction,
@@ -190,6 +191,7 @@
       rect: { x: number; y: number; width: number; height: number },
     ) => void;
     removeRedaction: (id: number) => void;
+    moveRedaction: (id: number, x: number, y: number) => void;
     clearRedactions: () => void;
     startRedaction: () => void;
     cancelRedaction: () => void;
@@ -331,6 +333,15 @@
     currentX: number;
     currentY: number;
   } | null>(null);
+  let redactionMove: {
+    id: number;
+    wrapper: HTMLElement;
+    startClientX: number;
+    startClientY: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null = null;
 
   let currentPageWrapper = $derived(
     currentPage > 0 && currentPage <= pageWrapperRefs.length
@@ -829,12 +840,14 @@
     }
     pendingSignature = null;
     redactDrag = null;
+    redactionMove = null;
     markup.deactivateTools();
     startRedaction();
   }
 
   function cancelRedactMode() {
     redactDrag = null;
+    redactionMove = null;
     cancelRedaction();
   }
 
@@ -876,6 +889,62 @@
       width: Math.abs(drag.currentX - drag.startX),
       height: Math.abs(drag.currentY - drag.startY),
     });
+  }
+
+  function beginRedactMove(e: PointerEvent, id: number) {
+    if (e.button !== 0) return;
+    const el = e.currentTarget as HTMLElement;
+    const wrapper = el.closest(".pdf-page-wrapper") as HTMLElement | null;
+    const rect = redactions.find((item) => item.id === id);
+    if (!wrapper || !rect) return;
+    e.preventDefault();
+    e.stopPropagation();
+    el.setPointerCapture(e.pointerId);
+    redactionMove = {
+      id,
+      wrapper,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startX: rect.x,
+      startY: rect.y,
+      moved: false,
+    };
+  }
+
+  function moveRedactRect(e: PointerEvent) {
+    const move = redactionMove;
+    if (!move) return;
+    const pageRect = move.wrapper.getBoundingClientRect();
+    if (pageRect.width <= 0 || pageRect.height <= 0) return;
+    const dx = e.clientX - move.startClientX;
+    const dy = e.clientY - move.startClientY;
+    if (!move.moved && Math.hypot(dx, dy) > 3) move.moved = true;
+    moveRedaction(
+      move.id,
+      move.startX + dx / pageRect.width,
+      move.startY + dy / pageRect.height,
+    );
+  }
+
+  function endRedactMove(e: PointerEvent) {
+    const move = redactionMove;
+    if (!move) return;
+    redactionMove = null;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+    if (!move.moved) removeRedaction(move.id);
+  }
+
+  function cancelRedactMove(e: PointerEvent) {
+    redactionMove = null;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
   }
 
   async function applyRedactions(clearMetadata: boolean, keepBackup: boolean) {
@@ -1286,18 +1355,18 @@
       </button>
     </div>
   {/if}
-  {#if redactActive}
-    <PdfRedactOverlay
-      count={redactions.length}
-      busy={redactionBusy}
-      confirmOpen={redactionConfirmOpen}
-      hideBar={menuStore.markupMenuVisible}
-      onApply={applyRedactions}
-      onCancel={cancelRedactMode}
-      onClear={clearRedactions}
-      onConfirmOpenChange={setRedactionConfirmOpen}
-    />
-  {/if}
+  <PdfRedactOverlay
+    active={redactActive}
+    count={redactions.length}
+    busy={redactionBusy}
+    confirmOpen={redactionConfirmOpen}
+    hideBar={menuStore.markupMenuVisible}
+    indexOpen={showPagePanel}
+    onApply={applyRedactions}
+    onCancel={cancelRedactMode}
+    onClear={clearRedactions}
+    onConfirmOpenChange={setRedactionConfirmOpen}
+  />
   <PdfSearchMenu
     visible={findOpen}
     query={findQuery}
@@ -2193,9 +2262,16 @@
               style="left: {rect.x * 100}%; top: {rect.y *
                 100}%; width: {rect.width * 100}%; height: {rect.height *
                 100}%;"
-              onclick={(e) => {
-                e.stopPropagation();
-                removeRedaction(rect.id);
+              onpointerdown={(e) => beginRedactMove(e, rect.id)}
+              onpointermove={moveRedactRect}
+              onpointerup={endRedactMove}
+              onpointercancel={cancelRedactMove}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  removeRedaction(rect.id);
+                }
               }}
               aria-label={t("shell.viewer.pdf.redactRemove")}
             ></button>

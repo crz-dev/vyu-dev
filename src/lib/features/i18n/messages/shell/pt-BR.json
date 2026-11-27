@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Limpar",
   "viewer.pdf.redactConfirmBackup": "Manter um backup do original",
   "viewer.pdf.redactConfirmBody": "As páginas tarjadas são achatadas em imagens. Texto, links, anotações e campos de formulário não podem ser recuperados.",
-  "viewer.pdf.redactConfirmMetadata": "Remover também metadados, sumário e anexos",
+  "viewer.pdf.redactConfirmMetadata": "Remover metadados, sumário e anexos",
   "viewer.pdf.redactConfirmTitle": "Aplicar tarjas?",
   "viewer.pdf.redactDone": "Tarjas aplicadas",
   "viewer.pdf.redactFailed": "Não foi possível aplicar as tarjas",

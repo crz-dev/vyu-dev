@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Leeren",
   "viewer.pdf.redactConfirmBackup": "Sicherungskopie des Originals aufbewahren",
   "viewer.pdf.redactConfirmBody": "Redigierte Seiten werden als Bilder abgeflacht. Text, Links, Anmerkungen und Formularfelder können nicht wiederhergestellt werden.",
-  "viewer.pdf.redactConfirmMetadata": "Auch Metadaten, Gliederung und Anhänge entfernen",
+  "viewer.pdf.redactConfirmMetadata": "Metadaten, Gliederung und Anhänge entfernen",
   "viewer.pdf.redactConfirmTitle": "Redigierungen anwenden?",
   "viewer.pdf.redactDone": "Redigierungen angewendet",
   "viewer.pdf.redactFailed": "Redigierungen konnten nicht angewendet werden",

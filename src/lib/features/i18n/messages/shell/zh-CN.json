@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "清除",
   "viewer.pdf.redactConfirmBackup": "保留原文件的恢复备份",
   "viewer.pdf.redactConfirmBody": "涂黑的页面将转换为图像。文本、链接、批注和表单字段无法恢复。",
-  "viewer.pdf.redactConfirmMetadata": "同时移除元数据、书签和附件",
+  "viewer.pdf.redactConfirmMetadata": "移除元数据、书签和附件",
   "viewer.pdf.redactConfirmTitle": "应用涂黑？",
   "viewer.pdf.redactDone": "涂黑已应用",
   "viewer.pdf.redactFailed": "无法应用涂黑",

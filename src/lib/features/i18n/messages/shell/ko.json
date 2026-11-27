@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "지우기",
   "viewer.pdf.redactConfirmBackup": "원본의 복구 백업 유지",
   "viewer.pdf.redactConfirmBody": "교정된 페이지는 이미지로 병합됩니다. 텍스트, 링크, 주석, 양식 필드는 복구할 수 없습니다.",
-  "viewer.pdf.redactConfirmMetadata": "메타데이터, 목차, 첨부 파일도 제거",
+  "viewer.pdf.redactConfirmMetadata": "메타데이터, 목차, 첨부 파일 제거",
   "viewer.pdf.redactConfirmTitle": "교정을 적용할까요?",
   "viewer.pdf.redactDone": "교정을 적용했습니다",
   "viewer.pdf.redactFailed": "교정을 적용하지 못했습니다",

@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Cancella",
   "viewer.pdf.redactConfirmBackup": "Conserva un backup dell'originale",
   "viewer.pdf.redactConfirmBody": "Le pagine oscurate vengono appiattite in immagini. Testo, link, annotazioni e campi modulo non possono essere recuperati.",
-  "viewer.pdf.redactConfirmMetadata": "Rimuovi anche metadati, indice e allegati",
+  "viewer.pdf.redactConfirmMetadata": "Rimuovi metadati, indice e allegati",
   "viewer.pdf.redactConfirmTitle": "Applicare gli oscuramenti?",
   "viewer.pdf.redactDone": "Oscuramenti applicati",
   "viewer.pdf.redactFailed": "Impossibile applicare gli oscuramenti",

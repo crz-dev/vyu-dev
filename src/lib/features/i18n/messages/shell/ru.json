@@ -141,7 +141,7 @@
   "viewer.pdf.redactClear": "Очистить",
   "viewer.pdf.redactConfirmBackup": "Сохранить резервную копию оригинала",
   "viewer.pdf.redactConfirmBody": "Отредактированные страницы преобразуются в изображения. Текст, ссылки, аннотации и поля форм нельзя восстановить.",
-  "viewer.pdf.redactConfirmMetadata": "Также удалить метаданные, оглавление и вложения",
+  "viewer.pdf.redactConfirmMetadata": "Удалить метаданные, оглавление и вложения",
   "viewer.pdf.redactConfirmTitle": "Применить редактирование?",
   "viewer.pdf.redactDone": "Редактирование применено",
   "viewer.pdf.redactFailed": "Не удалось применить редактирование",

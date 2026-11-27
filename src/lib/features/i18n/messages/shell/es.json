@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Borrar",
   "viewer.pdf.redactConfirmBackup": "Conservar una copia de seguridad del original",
   "viewer.pdf.redactConfirmBody": "Las páginas redactadas se convierten en imágenes planas. El texto, los enlaces, las anotaciones y los campos del formulario no se podrán recuperar.",
-  "viewer.pdf.redactConfirmMetadata": "Eliminar también metadatos, esquema y adjuntos",
+  "viewer.pdf.redactConfirmMetadata": "Eliminar metadatos, esquema y adjuntos",
   "viewer.pdf.redactConfirmTitle": "¿Aplicar redacciones?",
   "viewer.pdf.redactDone": "Redacciones aplicadas",
   "viewer.pdf.redactFailed": "No se pudieron aplicar las redacciones",

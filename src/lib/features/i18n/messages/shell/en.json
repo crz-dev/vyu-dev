@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Clear",
   "viewer.pdf.redactConfirmBackup": "Keep a recovery backup of the original",
   "viewer.pdf.redactConfirmBody": "Redacted pages are flattened to images. Text, links, annotations, and form fields cannot be recovered.",
-  "viewer.pdf.redactConfirmMetadata": "Also remove metadata, outlines, and attachments",
+  "viewer.pdf.redactConfirmMetadata": "Remove metadata, outlines, and attachments",
   "viewer.pdf.redactConfirmTitle": "Apply redactions?",
   "viewer.pdf.redactDone": "Redactions applied",
   "viewer.pdf.redactFailed": "Could not apply redactions",

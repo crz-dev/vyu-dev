@@ -135,7 +135,7 @@
   "viewer.pdf.redactClear": "清除",
   "viewer.pdf.redactConfirmBackup": "保留原始檔案的復原備份",
   "viewer.pdf.redactConfirmBody": "塗黑的頁面會轉換為影像。文字、連結、註解和表單欄位無法復原。",
-  "viewer.pdf.redactConfirmMetadata": "同時移除中繼資料、大綱和附件",
+  "viewer.pdf.redactConfirmMetadata": "移除中繼資料、大綱和附件",
   "viewer.pdf.redactConfirmTitle": "套用塗黑？",
   "viewer.pdf.redactDone": "塗黑已套用",
   "viewer.pdf.redactFailed": "無法套用塗黑",

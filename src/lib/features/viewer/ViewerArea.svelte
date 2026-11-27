@@ -772,6 +772,7 @@
         cancelPassword={pdf.cancelPassword}
         addRedaction={pdf.addRedaction}
         removeRedaction={pdf.removeRedaction}
+        moveRedaction={pdf.moveRedaction}
         clearRedactions={pdf.clearRedactions}
         startRedaction={pdf.startRedaction}
         cancelRedaction={pdf.cancelRedaction}

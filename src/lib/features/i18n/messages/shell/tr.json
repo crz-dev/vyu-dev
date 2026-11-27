@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Temizle",
   "viewer.pdf.redactConfirmBackup": "Orijinalin yedek kopyasını sakla",
   "viewer.pdf.redactConfirmBody": "Redakte edilen sayfalar görsele dönüştürülür. Metin, bağlantılar, açıklamalar ve form alanları geri alınamaz.",
-  "viewer.pdf.redactConfirmMetadata": "Meta verileri, ana hattı ve ekleri de kaldır",
+  "viewer.pdf.redactConfirmMetadata": "Meta verileri, ana hattı ve ekleri kaldır",
   "viewer.pdf.redactConfirmTitle": "Redaksiyonlar uygulansın mı?",
   "viewer.pdf.redactDone": "Redaksiyonlar uygulandı",
   "viewer.pdf.redactFailed": "Redaksiyonlar uygulanamadı",

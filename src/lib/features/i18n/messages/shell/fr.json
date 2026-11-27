@@ -137,7 +137,7 @@
   "viewer.pdf.redactClear": "Effacer",
   "viewer.pdf.redactConfirmBackup": "Conserver une sauvegarde de l'original",
   "viewer.pdf.redactConfirmBody": "Les pages caviardées sont aplaties en images. Le texte, les liens, les annotations et les champs de formulaire ne peuvent pas être récupérés.",
-  "viewer.pdf.redactConfirmMetadata": "Supprimer aussi les métadonnées, le plan et les pièces jointes",
+  "viewer.pdf.redactConfirmMetadata": "Supprimer les métadonnées, le plan et les pièces jointes",
   "viewer.pdf.redactConfirmTitle": "Appliquer les caviardages ?",
   "viewer.pdf.redactDone": "Caviardages appliqués",
   "viewer.pdf.redactFailed": "Impossible d'appliquer les caviardages",
