@@ -3,15 +3,38 @@ import { accessibility } from "$lib/features/menus/accessibility.svelte";
 type CueKind = "play" | "pause" | "navigate" | "seek";
 
 let ctx: AudioContext | null = null;
+let sinkId = "";
 
 function ensureContext(): AudioContext | null {
   try {
-    if (!ctx) ctx = new AudioContext();
+    if (!ctx) {
+      const supportsSink =
+        typeof AudioContext !== "undefined" &&
+        "setSinkId" in AudioContext.prototype;
+      if (sinkId && supportsSink) {
+        try {
+          ctx = new AudioContext({ sinkId } as AudioContextOptions);
+        } catch {
+          ctx = new AudioContext();
+        }
+      } else {
+        ctx = new AudioContext();
+      }
+    }
     if (ctx.state === "suspended") void ctx.resume();
     return ctx;
   } catch {
     return null;
   }
+}
+
+export function setAudioCueSink(deviceId: string): void {
+  sinkId = deviceId;
+  const context = ctx as
+    | (AudioContext & { setSinkId?: (id: string) => Promise<void> })
+    | null;
+  if (!context?.setSinkId) return;
+  void context.setSinkId(deviceId).catch(() => {});
 }
 
 export function playAudioCue(kind: CueKind): void {

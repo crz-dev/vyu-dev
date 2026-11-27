@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
 
 use crate::commands::display::{
@@ -8,9 +9,12 @@ use crate::commands::display::{
     unpin_display_cache_file,
 };
 use crate::commands::subtitles::{self, ass, bitmap, vtt};
-use crate::types::{MediaTrack, MediaTrackCatalog, SubtitleDocument};
+use crate::database::connection::DbConnection;
+use crate::database::loudness as loudness_cache;
+use crate::types::{AudioLoudnessInfo, MediaTrack, MediaTrackCatalog, SubtitleDocument};
 use crate::util::{ffmpeg_command, ffprobe_command, hash_path_xxh3};
 use serde_json::Value;
+use tauri::{AppHandle, Manager};
 
 static TEMP_NONCE: AtomicU64 = AtomicU64::new(0);
 
@@ -808,10 +812,285 @@ pub async fn get_media_chapters(path: String) -> Result<Vec<MediaChapter>, Strin
     .map_err(|e| format!("Chapter inspection task failed: {e}"))?
 }
 
+static LOUDNESS_SCAN_LOCK: Mutex<()> = Mutex::new(());
+
+fn probe_loudness(path: &str) -> Result<Value, String> {
+    if !Path::new(path).is_file() {
+        return Err("Media file does not exist".into());
+    }
+
+    let output = ffprobe_command()
+        .args([
+            "-v",
+            "error",
+            "-show_format",
+            "-show_streams",
+            "-of",
+            "json",
+            path,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to run ffprobe: {e}"))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+
+    serde_json::from_slice(&output.stdout).map_err(|e| format!("Invalid ffprobe output: {e}"))
+}
+
+fn normalize_tag_key(key: &str) -> String {
+    key.chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .map(|c| c.to_ascii_lowercase())
+        .collect()
+}
+
+fn read_tag(probe: &Value, name: &str) -> Option<String> {
+    let wanted = normalize_tag_key(name);
+    let mut containers: Vec<&Value> = Vec::new();
+
+    if let Some(tags) = probe.get("format").and_then(|format| format.get("tags")) {
+        containers.push(tags);
+    }
+    if let Some(streams) = probe.get("streams").and_then(Value::as_array) {
+        if let Some(stream) = streams
+            .iter()
+            .find(|stream| stream.get("codec_type").and_then(Value::as_str) == Some("audio"))
+        {
+            if let Some(tags) = stream.get("tags") {
+                containers.push(tags);
+            }
+        }
+    }
+
+    for tags in containers {
+        if let Some(object) = tags.as_object() {
+            for (key, value) in object {
+                if normalize_tag_key(key) == wanted {
+                    if let Some(text) = value.as_str() {
+                        let text = text.trim();
+                        if !text.is_empty() {
+                            return Some(text.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn parse_db_number(value: &str) -> Option<f64> {
+    value
+        .split_whitespace()
+        .next()
+        .and_then(|number| number.trim_end_matches("dB").parse::<f64>().ok())
+        .filter(|number| number.is_finite())
+}
+
+fn loudness_from_tags(probe: &Value) -> Option<AudioLoudnessInfo> {
+    let gain_db = read_tag(probe, "REPLAYGAIN_TRACK_GAIN").and_then(|value| parse_db_number(&value))?;
+    let peak = read_tag(probe, "REPLAYGAIN_TRACK_PEAK")
+        .and_then(|value| parse_db_number(&value))
+        .filter(|value| *value > 0.0);
+    Some(AudioLoudnessInfo {
+        gain_db,
+        peak,
+        source: "tag".into(),
+    })
+}
+
+fn extract_json_object(text: &str) -> Option<&str> {
+    let start = text.rfind('{')?;
+    let end = text[start..].find('}')? + start;
+    Some(&text[start..=end])
+}
+
+fn json_number(value: Option<&Value>) -> Option<f64> {
+    match value {
+        Some(Value::String(text)) => text.trim().parse::<f64>().ok(),
+        Some(Value::Number(number)) => number.as_f64(),
+        _ => None,
+    }
+}
+
+fn measure_loudness(path: &str) -> Result<(f64, Option<f64>), String> {
+    let output = ffmpeg_command()
+        .args([
+            "-nostdin",
+            "-hide_banner",
+            "-i",
+            path,
+            "-map",
+            "0:a:0",
+            "-vn",
+            "-af",
+            "loudnorm=I=-18:TP=-1.5:LRA=11:print_format=json",
+            "-f",
+            "null",
+            "-",
+        ])
+        .output()
+        .map_err(|e| format!("Failed to run loudness analysis: {e}"))?;
+
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).trim().to_string());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let json = extract_json_object(&stderr)
+        .ok_or_else(|| "Loudness analysis produced no measurements".to_string())?;
+    let value: Value =
+        serde_json::from_str(json).map_err(|e| format!("Invalid loudness output: {e}"))?;
+
+    let integrated_lufs = json_number(value.get("input_i"))
+        .ok_or_else(|| "Loudness analysis returned no integrated loudness".to_string())?;
+    if !integrated_lufs.is_finite() || integrated_lufs <= -70.0 {
+        return Err("Audio is too quiet to measure".into());
+    }
+
+    let peak_db = json_number(value.get("input_tp")).filter(|value| value.is_finite());
+    Ok((integrated_lufs, peak_db))
+}
+
+fn loudness_from_measurement(integrated_lufs: f64, peak_db: Option<f64>) -> AudioLoudnessInfo {
+    AudioLoudnessInfo {
+        gain_db: -18.0 - integrated_lufs,
+        peak: peak_db.map(|db| 10f64.powf(db / 20.0)),
+        source: "scan".into(),
+    }
+}
+
+#[tauri::command]
+pub async fn get_audio_loudness(
+    app: AppHandle,
+    path: String,
+    allow_scan: bool,
+) -> Result<Option<AudioLoudnessInfo>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if !Path::new(&path).is_file() {
+            return Err("Media file does not exist".into());
+        }
+
+        let probe = probe_loudness(&path)?;
+        if let Some(info) = loudness_from_tags(&probe) {
+            return Ok(Some(info));
+        }
+        if !allow_scan {
+            return Ok(None);
+        }
+
+        let (file_size, file_modified) = loudness_cache::file_stamp(&path)?;
+        let read_cache = || -> Result<Option<loudness_cache::CachedLoudness>, String> {
+            let db = app.state::<DbConnection>();
+            let conn = db
+                .0
+                .lock()
+                .map_err(|e| format!("Failed to lock database: {e}"))?;
+            loudness_cache::get(&conn, &path, file_size, file_modified)
+        };
+
+        if let Some(cached) = read_cache()? {
+            return Ok(Some(loudness_from_measurement(
+                cached.integrated_lufs,
+                cached.peak_db,
+            )));
+        }
+
+        // Serialize measurements so a queued run does not compete with the
+        // current track or spawn several FFmpeg processes at once.
+        let _guard = LOUDNESS_SCAN_LOCK
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+
+        if let Some(cached) = read_cache()? {
+            return Ok(Some(loudness_from_measurement(
+                cached.integrated_lufs,
+                cached.peak_db,
+            )));
+        }
+
+        let (integrated_lufs, peak_db) = measure_loudness(&path)?;
+        {
+            let db = app.state::<DbConnection>();
+            let conn = db
+                .0
+                .lock()
+                .map_err(|e| format!("Failed to lock database: {e}"))?;
+            loudness_cache::save(
+                &conn,
+                &path,
+                file_size,
+                file_modified,
+                integrated_lufs,
+                peak_db,
+            )?;
+        }
+
+        Ok(Some(loudness_from_measurement(integrated_lufs, peak_db)))
+    })
+    .await
+    .map_err(|e| format!("Loudness analysis task failed: {e}"))?
+}
+
 #[cfg(test)]
 mod tests {
-    use super::catalog_from_probe;
+    use super::{catalog_from_probe, extract_json_object, loudness_from_tags, parse_db_number};
     use crate::commands::subtitles;
+
+    #[test]
+    fn parses_replaygain_tags_from_the_container() {
+        let probe = serde_json::json!({
+            "format": {
+                "tags": {
+                    "REPLAYGAIN_TRACK_GAIN": "-7.23 dB",
+                    "REPLAYGAIN_TRACK_PEAK": "0.981"
+                }
+            }
+        });
+
+        let info = loudness_from_tags(&probe).expect("gain tag");
+        assert_eq!(info.gain_db, -7.23);
+        assert_eq!(info.peak, Some(0.981));
+        assert_eq!(info.source, "tag");
+    }
+
+    #[test]
+    fn falls_back_to_audio_stream_tags() {
+        let probe = serde_json::json!({
+            "streams": [
+                {"codec_type": "video"},
+                {
+                    "codec_type": "audio",
+                    "tags": {"replaygain_track_gain": "4.5 dB"}
+                }
+            ]
+        });
+
+        let info = loudness_from_tags(&probe).expect("stream gain tag");
+        assert_eq!(info.gain_db, 4.5);
+        assert_eq!(info.peak, None);
+    }
+
+    #[test]
+    fn ignores_missing_or_invalid_gain_tags() {
+        assert!(loudness_from_tags(&serde_json::json!({})).is_none());
+        let probe = serde_json::json!({
+            "format": {"tags": {"REPLAYGAIN_TRACK_GAIN": "loud"}}
+        });
+        assert!(loudness_from_tags(&probe).is_none());
+        assert_eq!(parse_db_number("-3.5 dB"), Some(-3.5));
+        assert_eq!(parse_db_number("-inf"), None);
+    }
+
+    #[test]
+    fn extracts_the_loudnorm_measurement_block() {
+        let stderr = "frame= 10 fps=0.0\n{\n  \"input_i\" : \"-16.42\",\n  \"input_tp\" : \"-1.02\"\n}\n";
+        let json = extract_json_object(stderr).expect("json block");
+        let value: serde_json::Value = serde_json::from_str(json).unwrap();
+        assert_eq!(value.get("input_i").and_then(|v| v.as_str()), Some("-16.42"));
+    }
 
     #[test]
     fn parses_audio_and_text_subtitle_metadata() {

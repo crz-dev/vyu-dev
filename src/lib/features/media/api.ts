@@ -5,6 +5,7 @@ import type {
   ClipJobResult,
   BatchStatItem,
   MediaTrackCatalog,
+  AudioLoudnessInfo,
   SubtitleDocument,
 } from "$lib/shared/types";
 import { getFileExt } from "$lib/services/files";
@@ -232,6 +233,13 @@ export async function invokeGetMediaChapters(
   path: string,
 ): Promise<import("$lib/shared/types").MediaChapter[]> {
   return invoke("get_media_chapters", { path });
+}
+
+export async function invokeGetAudioLoudness(
+  path: string,
+  allowScan: boolean,
+): Promise<AudioLoudnessInfo | null> {
+  return invoke("get_audio_loudness", { path, allowScan });
 }
 
 export async function invokePrepareAudioTrack(

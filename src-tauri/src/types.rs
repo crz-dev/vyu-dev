@@ -42,6 +42,16 @@ pub struct MediaTrackCatalog {
     pub subtitles: Vec<MediaTrack>,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioLoudnessInfo {
+    /// Gain in dB to apply for a -18 LUFS reference.
+    pub gain_db: f64,
+    /// Linear true-peak amplitude (1.0 = full scale), when known.
+    pub peak: Option<f64>,
+    pub source: String,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SubtitleTextRun {

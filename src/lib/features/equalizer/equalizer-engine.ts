@@ -31,7 +31,18 @@ class EqualizerEngine {
   private boostGain: GainNode | null = null;
   private boostSource: AudioNode | null = null;
   private boostEnabled = false;
+  private replayGainNode: GainNode | null = null;
+  private replayGain = 1;
+  private delayNode: DelayNode | null = null;
+  private audioDelay = 0;
+  private gateNode: GainNode | null = null;
+  private gateOpen = true;
+  private sinkId = "";
   private connectedElement: HTMLMediaElement | null = null;
+  private listenerElement: HTMLMediaElement | null = null;
+  private handleElementPause = () => this.setGate(false);
+  private handleElementPlay = () => this.setGate(true);
+  private handleElementEnded = () => this.setGate(false);
   private bandValues: number[] = new Array(NUM_BANDS).fill(0);
   private outputGainDb = 0;
   private bypassed = true;
@@ -76,6 +87,66 @@ class EqualizerEngine {
     }
   }
 
+  setReplayGain(gain: number): void {
+    this.replayGain = Math.min(4, Math.max(0.05, gain));
+    if (this.replayGainNode && this.ctx) {
+      this.replayGainNode.gain.setTargetAtTime(
+        this.replayGain,
+        this.ctx.currentTime,
+        0.03,
+      );
+    }
+  }
+
+  setAudioDelay(seconds: number): void {
+    this.audioDelay = Math.min(5, Math.max(0, seconds));
+    if (this.delayNode && this.ctx) {
+      this.delayNode.delayTime.setTargetAtTime(
+        this.audioDelay,
+        this.ctx.currentTime,
+        0.05,
+      );
+    }
+  }
+
+  async setSinkId(deviceId: string): Promise<void> {
+    this.sinkId = deviceId;
+    const ctx = this.ctx as
+      | (AudioContext & { setSinkId?: (id: string) => Promise<void> })
+      | null;
+    if (!ctx?.setSinkId) return;
+    await ctx.setSinkId(deviceId);
+  }
+
+  private setGate(open: boolean): void {
+    this.gateOpen = open;
+    if (this.gateNode && this.ctx) {
+      this.gateNode.gain.setTargetAtTime(
+        open ? 1 : 0,
+        this.ctx.currentTime,
+        0.01,
+      );
+    }
+  }
+
+  private bindElementEvents(el: HTMLMediaElement): void {
+    this.unbindElementEvents();
+    this.listenerElement = el;
+    el.addEventListener("pause", this.handleElementPause);
+    el.addEventListener("playing", this.handleElementPlay);
+    el.addEventListener("ended", this.handleElementEnded);
+    this.setGate(!el.paused);
+  }
+
+  private unbindElementEvents(): void {
+    if (!this.listenerElement) return;
+    this.listenerElement.removeEventListener("pause", this.handleElementPause);
+    this.listenerElement.removeEventListener("playing", this.handleElementPlay);
+    this.listenerElement.removeEventListener("ended", this.handleElementEnded);
+    this.listenerElement = null;
+    this.gateOpen = true;
+  }
+
   setEffectsOutput(node: AudioNode): void {
     this.effectsOutput = node;
     this.teardownStage();
@@ -90,7 +161,21 @@ class EqualizerEngine {
 
   private ensureContext(): AudioContext {
     if (!this.ctx) {
-      this.ctx = new AudioContext();
+      const supportsSink =
+        typeof AudioContext !== "undefined" &&
+        "setSinkId" in AudioContext.prototype;
+      if (this.sinkId && supportsSink) {
+        try {
+          this.ctx = new AudioContext({
+            sinkId: this.sinkId,
+          } as AudioContextOptions);
+        } catch {
+          this.ctx = new AudioContext();
+          this.sinkId = "";
+        }
+      } else {
+        this.ctx = new AudioContext();
+      }
     }
     if (this.ctx.state === "suspended") {
       this.ctx.resume();
@@ -159,6 +244,7 @@ class EqualizerEngine {
       this.applyStage();
 
       this.connectedElement = el;
+      this.bindElementEvents(el);
       return true;
     } catch {
       this.cleanup();
@@ -181,6 +267,7 @@ class EqualizerEngine {
       }
     }
     this.connectedElement = null;
+    this.unbindElementEvents();
 
     // Snapshot nodes for deferred cleanup; null fields so new graph builds immediately
     if (this.stageAnimFrame !== null) {
@@ -207,6 +294,9 @@ class EqualizerEngine {
       ...(this.outputGain ? [this.outputGain] : []),
       ...(this.analyser ? [this.analyser] : []),
       ...(this.boostGain ? [this.boostGain] : []),
+      ...(this.replayGainNode ? [this.replayGainNode] : []),
+      ...(this.delayNode ? [this.delayNode] : []),
+      ...(this.gateNode ? [this.gateNode] : []),
       ...this.stageNodes,
       ...this.a11yNodes,
     ];
@@ -215,6 +305,9 @@ class EqualizerEngine {
     this.analyser = null;
     this.boostGain = null;
     this.boostSource = null;
+    this.replayGainNode = null;
+    this.delayNode = null;
+    this.gateNode = null;
     this.stageNodes = [];
     this.stageMode = null;
     this.a11yNodes = [];
@@ -282,6 +375,30 @@ class EqualizerEngine {
       this.boostGain = null;
     }
     this.boostSource = null;
+    if (this.replayGainNode) {
+      try {
+        this.replayGainNode.disconnect();
+      } catch {
+        /* disconnected */
+      }
+      this.replayGainNode = null;
+    }
+    if (this.delayNode) {
+      try {
+        this.delayNode.disconnect();
+      } catch {
+        /* disconnected */
+      }
+      this.delayNode = null;
+    }
+    if (this.gateNode) {
+      try {
+        this.gateNode.disconnect();
+      } catch {
+        /* disconnected */
+      }
+      this.gateNode = null;
+    }
   }
 
   setBand(index: number, gainDb: number): void {
@@ -549,6 +666,46 @@ class EqualizerEngine {
     return this.boostGain;
   }
 
+  private ensureReplayGain(input: AudioNode): AudioNode {
+    if (!this.ctx) return input;
+    if (!this.replayGainNode) {
+      this.replayGainNode = this.ctx.createGain();
+      this.replayGainNode.gain.value = this.replayGain;
+    }
+    try {
+      this.replayGainNode.disconnect();
+    } catch {
+      /* not connected */
+    }
+    input.connect(this.replayGainNode);
+    return this.replayGainNode;
+  }
+
+  private ensureGate(input: AudioNode): AudioNode {
+    if (!this.ctx) return input;
+    if (!this.delayNode) {
+      this.delayNode = this.ctx.createDelay(5);
+      this.delayNode.delayTime.value = this.audioDelay;
+    }
+    if (!this.gateNode) {
+      this.gateNode = this.ctx.createGain();
+      this.gateNode.gain.value = this.gateOpen ? 1 : 0;
+    }
+    try {
+      this.delayNode.disconnect();
+    } catch {
+      /* not connected */
+    }
+    try {
+      this.gateNode.disconnect();
+    } catch {
+      /* not connected */
+    }
+    input.connect(this.delayNode);
+    this.delayNode.connect(this.gateNode);
+    return this.gateNode;
+  }
+
   private applyStage(): void {
     if (!this.analyser || !this.ctx) return;
 
@@ -570,7 +727,8 @@ class EqualizerEngine {
 
     const source = this.effectsOutput ?? this.analyser;
     const boosted = this.ensureBoost(source);
-    const output = this.buildAccessibilityChain(boosted);
+    const leveled = this.ensureReplayGain(boosted);
+    const output = this.ensureGate(this.buildAccessibilityChain(leveled));
     const mode = this.stageMode;
     if (!mode || mode === "stereo") {
       output.connect(this.ctx.destination);
@@ -707,6 +865,7 @@ class EqualizerEngine {
     }
     this.sourceElement = null;
     this.connectedElement = null;
+    this.unbindElementEvents();
 
     // Snapshot nodes for deferred cleanup (same pattern as disconnect)
     this.orphanedNodes = [
@@ -714,6 +873,9 @@ class EqualizerEngine {
       ...(this.outputGain ? [this.outputGain] : []),
       ...(this.analyser ? [this.analyser] : []),
       ...(this.boostGain ? [this.boostGain] : []),
+      ...(this.replayGainNode ? [this.replayGainNode] : []),
+      ...(this.delayNode ? [this.delayNode] : []),
+      ...(this.gateNode ? [this.gateNode] : []),
       ...this.stageNodes,
       ...this.a11yNodes,
     ];
@@ -722,6 +884,9 @@ class EqualizerEngine {
     this.analyser = null;
     this.boostGain = null;
     this.boostSource = null;
+    this.replayGainNode = null;
+    this.delayNode = null;
+    this.gateNode = null;
     this.stageNodes = [];
     this.stageMode = null;
     this.a11yNodes = [];

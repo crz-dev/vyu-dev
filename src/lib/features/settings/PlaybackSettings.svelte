@@ -2,6 +2,8 @@
   import SettingsGroup from "$lib/components/SettingsGroup.svelte";
   import SettingsRow from "$lib/components/SettingsRow.svelte";
   import { playbackPrefs } from "$lib/features/media/playbackPrefs.svelte";
+  import { audioOutput } from "$lib/features/media/audioOutput.svelte";
+  import OutputDeviceSelect from "$lib/features/media/OutputDeviceSelect.svelte";
   import { loopModeStore } from "$lib/features/media/loopMode.svelte";
   import { sleepTimer } from "$lib/features/media/sleepTimer.svelte";
   import { locale } from "$lib/features/i18n/locale.svelte";
@@ -33,6 +35,7 @@
   let volumePreview = $state(playbackPrefs.defaultVolume);
   let seekPreview = $state(playbackPrefs.seekStep);
   let relativeSeekPreview = $state(playbackPrefs.relativeSeekStep);
+  let delayPreview = $state(playbackPrefs.audioDelayMs);
 
   $effect(() => {
     thresholdPreview = playbackPrefs.resumeThreshold;
@@ -50,8 +53,51 @@
     relativeSeekPreview = playbackPrefs.relativeSeekStep;
   });
   $effect(() => {
+    delayPreview = playbackPrefs.audioDelayMs;
+  });
+  $effect(() => {
     sleepMinutesPreview = sleepTimer.minutes;
   });
+
+  function outputDeviceHint(): string {
+    if (audioOutput.error === "unavailable") {
+      return t("settings.playback.outputDevice.unavailable");
+    }
+    if (audioOutput.error === "permission") {
+      return t("settings.playback.outputDevice.permissionDenied");
+    }
+    if (audioOutput.savedDeviceMissing) {
+      return t("settings.playback.outputDevice.missing");
+    }
+    if (audioOutput.restricted) {
+      return t("settings.playback.outputDevice.restricted");
+    }
+    return t("settings.playback.outputDevice.hint");
+  }
+
+  function replayGainHint(): string {
+    const mode = playbackPrefs.replayGainMode;
+    if (mode === "tags") return t("settings.playback.replayGain.hint.tags");
+    if (mode === "normalize") {
+      return t("settings.playback.replayGain.hint.normalize");
+    }
+    return t("settings.playback.replayGain.hint.off");
+  }
+
+  const outputOptions = $derived([
+    {
+      value: "",
+      label: t("settings.playback.outputDevice.default"),
+    },
+    ...audioOutput.devices.map((device, index) => ({
+      value: device.deviceId,
+      label:
+        device.label ||
+        t("settings.playback.outputDevice.unnamed", {
+          count: index + 1,
+        }),
+    })),
+  ]);
 
   function formatResumeThreshold(seconds: number): string {
     if (seconds <= 0) return t("settings.playback.threshold.any");
@@ -138,6 +184,95 @@
           />
           <span class="settings-slider-value" style="min-width: 54px"
             >{formatResumeThreshold(thresholdPreview)}</span
+          >
+        </div>
+      {/snippet}
+    </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup label={t("settings.playback.group.audioOutput")} icon="volume">
+    <SettingsRow
+      label={t("settings.playback.outputDevice.label")}
+      hint={outputDeviceHint()}
+    >
+      {#snippet control()}
+        <div class="settings-control-inline settings-control-stack">
+          {#if audioOutput.supported}
+            <OutputDeviceSelect
+              options={outputOptions}
+              value={audioOutput.selectedDeviceId}
+              ariaLabel={t("settings.playback.outputDevice.aria")}
+              onSelect={(deviceId) => audioOutput.setDevice(deviceId)}
+            />
+            {#if audioOutput.restricted}
+              <button
+                class="settings-action-btn"
+                disabled={audioOutput.loading}
+                onclick={() => void audioOutput.loadAllDevices()}
+              >
+                {audioOutput.loading
+                  ? t("settings.playback.outputDevice.loading")
+                  : t("settings.playback.outputDevice.loadAll")}
+              </button>
+            {/if}
+          {:else}
+            <span class="settings-hint"
+              >{t("settings.playback.outputDevice.unsupported")}</span
+            >
+          {/if}
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label={t("settings.playback.replayGain.label")}
+      hint={replayGainHint()}
+    >
+      {#snippet control()}
+        <div class="pill-group pill-group-3">
+          <button
+            class="pill-btn"
+            class:active={playbackPrefs.replayGainMode === "off"}
+            onclick={() => playbackPrefs.setReplayGainMode("off")}
+            >{t("settings.playback.replayGain.off")}</button
+          >
+          <button
+            class="pill-btn"
+            class:active={playbackPrefs.replayGainMode === "tags"}
+            onclick={() => playbackPrefs.setReplayGainMode("tags")}
+            >{t("settings.playback.replayGain.tags")}</button
+          >
+          <button
+            class="pill-btn"
+            class:active={playbackPrefs.replayGainMode === "normalize"}
+            onclick={() => playbackPrefs.setReplayGainMode("normalize")}
+            >{t("settings.playback.replayGain.normalize")}</button
+          >
+        </div>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label={t("settings.playback.audioDelay.label")}
+      hint={t("settings.playback.audioDelay.hint")}
+    >
+      {#snippet control()}
+        <div class="settings-slider-control">
+          <input
+            type="range"
+            min="0"
+            max="2000"
+            step="5"
+            aria-label={t("settings.playback.audioDelay.aria")}
+            value={delayPreview}
+            oninput={(e) => (delayPreview = Number(e.currentTarget.value))}
+            onchange={(e) =>
+              playbackPrefs.setAudioDelayMs(Number(e.currentTarget.value))}
+          />
+          <span class="settings-slider-value" style="min-width: 64px"
+            >{t("settings.playback.audioDelay.value", {
+              count: delayPreview,
+            })}</span
           >
         </div>
       {/snippet}

@@ -1,4 +1,5 @@
 import {
+  loadAudioDelayMs,
   loadAutoplay,
   loadDefaultSpeed,
   loadDefaultVolume,
@@ -7,10 +8,12 @@ import {
   loadRememberVolume,
   loadRelativeSeek,
   loadRelativeSeekStep,
+  loadReplayGainMode,
   loadResumeMode,
   loadResumeThreshold,
   loadSeekStep,
   loadVolumeBoost,
+  saveAudioDelayMs,
   saveAutoplay,
   saveDefaultSpeed,
   saveDefaultVolume,
@@ -19,14 +22,16 @@ import {
   saveRememberVolume,
   saveRelativeSeek,
   saveRelativeSeekStep,
+  saveReplayGainMode,
   saveResumeMode,
   saveResumeThreshold,
   saveSeekStep,
   saveVolumeBoost,
+  type ReplayGainMode,
   type ResumeMode,
 } from "$lib/services/storage";
 
-export type { ResumeMode };
+export type { ReplayGainMode, ResumeMode };
 
 const SPEED_MIN = 0.1;
 const SPEED_MAX = 3;
@@ -55,6 +60,8 @@ function createPlaybackPrefs() {
   let relativeSeek = $state(loadRelativeSeek());
   let relativeSeekStep = $state(loadRelativeSeekStep());
   let keepAudio = $state(loadKeepAudio());
+  let replayGainMode = $state<ReplayGainMode>(loadReplayGainMode());
+  let audioDelayMs = $state(loadAudioDelayMs());
 
   function setResumeMode(mode: ResumeMode) {
     resumeMode = mode;
@@ -116,6 +123,16 @@ function createPlaybackPrefs() {
     saveKeepAudio(enabled);
   }
 
+  function setReplayGainMode(mode: ReplayGainMode) {
+    replayGainMode = mode;
+    saveReplayGainMode(mode);
+  }
+
+  function setAudioDelayMs(ms: number) {
+    audioDelayMs = Math.min(2000, Math.max(0, Math.round(ms / 5) * 5));
+    saveAudioDelayMs(audioDelayMs);
+  }
+
   return {
     get resumeMode() {
       return resumeMode;
@@ -153,6 +170,12 @@ function createPlaybackPrefs() {
     get keepAudio() {
       return keepAudio;
     },
+    get replayGainMode() {
+      return replayGainMode;
+    },
+    get audioDelayMs() {
+      return audioDelayMs;
+    },
     setResumeMode,
     setResumeThreshold,
     setAutoplay,
@@ -165,6 +188,8 @@ function createPlaybackPrefs() {
     setRelativeSeek,
     setRelativeSeekStep,
     setKeepAudio,
+    setReplayGainMode,
+    setAudioDelayMs,
   };
 }
 

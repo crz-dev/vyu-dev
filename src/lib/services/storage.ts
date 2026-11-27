@@ -851,6 +851,62 @@ export function saveKeepAudio(enabled: boolean): void {
   localStorage.setItem("vyu-keep-audio", enabled ? "true" : "false");
 }
 
+export type ReplayGainMode = "off" | "tags" | "normalize";
+
+const REPLAYGAIN_MODES: readonly ReplayGainMode[] = [
+  "off",
+  "tags",
+  "normalize",
+];
+
+export function loadReplayGainMode(): ReplayGainMode {
+  const value = localStorage.getItem("vyu-replaygain-mode");
+  return REPLAYGAIN_MODES.includes(value as ReplayGainMode)
+    ? (value as ReplayGainMode)
+    : "off";
+}
+
+export function saveReplayGainMode(mode: ReplayGainMode): void {
+  localStorage.setItem("vyu-replaygain-mode", mode);
+}
+
+export function loadAudioDelayMs(): number {
+  const raw = localStorage.getItem("vyu-audio-delay-ms");
+  if (raw === null) return 0;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(2000, Math.max(0, Math.round(value / 5) * 5));
+}
+
+export function saveAudioDelayMs(ms: number): void {
+  localStorage.setItem("vyu-audio-delay-ms", String(ms));
+}
+
+// Device-level setting: the chosen output endpoint is shared across profiles.
+export function loadAudioOutputDevice(): string {
+  return localStorage.getItem("vyu-system-audio-output") ?? "";
+}
+
+export function saveAudioOutputDevice(deviceId: string): void {
+  if (deviceId) {
+    localStorage.setItem("vyu-system-audio-output", deviceId);
+  } else {
+    localStorage.removeItem("vyu-system-audio-output");
+  }
+}
+
+export function loadAudioDevicesGranted(): boolean {
+  return localStorage.getItem("vyu-system-audio-devices-granted") === "true";
+}
+
+export function saveAudioDevicesGranted(granted: boolean): void {
+  if (granted) {
+    localStorage.setItem("vyu-system-audio-devices-granted", "true");
+  } else {
+    localStorage.removeItem("vyu-system-audio-devices-granted");
+  }
+}
+
 export function loadCdColor(filePath: string): number {
   if (!filePath) return -1;
   const raw = localStorage.getItem(`vyu-cd-color-${filePath}`);
@@ -1961,6 +2017,8 @@ const PROFILE_SHARED_KEYS = new Set([
   "vyu-system-keep-awake",
   "vyu-system-check-updates-on-launch",
   "vyu-system-battery-saver-thumbnails",
+  "vyu-system-audio-output",
+  "vyu-system-audio-devices-granted",
   "vyu-system-vlc-path",
   "vyu-system-spotify-path",
   "vyu-system-paint-path",

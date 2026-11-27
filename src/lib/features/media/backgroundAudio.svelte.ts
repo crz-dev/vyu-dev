@@ -29,10 +29,19 @@ function createBackgroundAudio() {
   let rate = $state(1);
   let loop = $state(false);
   let boost = $state(false);
+  let sinkId = "";
 
   let element: HTMLAudioElement | null = null;
   let saveInterval: ReturnType<typeof setInterval> | null = null;
   let pendingSeek: { path: string; time: number } | null = null;
+
+  function applySink() {
+    if (!element || !("setSinkId" in HTMLMediaElement.prototype)) return;
+    const target = element as HTMLAudioElement & {
+      setSinkId?: (deviceId: string) => Promise<void>;
+    };
+    void target.setSinkId?.(sinkId).catch(() => {});
+  }
 
   function applyProps() {
     if (!element) return;
@@ -53,6 +62,7 @@ function createBackgroundAudio() {
     element = el;
     if (!el) return;
     applyProps();
+    applySink();
     if (active && src) {
       if (el.src !== src) el.src = src;
       if (playing) {
@@ -187,6 +197,11 @@ function createBackgroundAudio() {
     if (element) applyProps();
   }
 
+  function setSink(deviceId: string) {
+    sinkId = deviceId;
+    applySink();
+  }
+
   function handleEnded() {
     if (loop && element) {
       element.currentTime = 0;
@@ -234,6 +249,7 @@ function createBackgroundAudio() {
     setVolume,
     setMuted,
     setBoost,
+    setSink,
     seek,
     refreshVolume,
     setPlaying,

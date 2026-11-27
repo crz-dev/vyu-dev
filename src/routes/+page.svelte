@@ -38,7 +38,7 @@
     VOLUME_STEP,
     type LoopMode,
   } from "$lib/shared/constants";
-  import type { MediaProperties } from "$lib/shared/types";
+  import type { AudioLoudnessInfo, MediaProperties } from "$lib/shared/types";
   import {
     saveLoopMode,
     saveVolume,
@@ -57,6 +57,7 @@
     invokeOpenDirectory,
     invokeCleanupTempFolder,
     invokeCopyFile,
+    invokeGetAudioLoudness,
     renderMarkupOnCanvas,
   } from "$lib/features/media/api";
   import {
@@ -126,8 +127,12 @@
   } from "$lib/features/editing/editActions.svelte";
   import { eqStore } from "$lib/features/equalizer/equalizer-store.svelte";
   import { eqEngine } from "$lib/features/equalizer/equalizer-engine";
+  import { audioOutput } from "$lib/features/media/audioOutput.svelte";
   import { accessibility } from "$lib/features/menus/accessibility.svelte";
-  import { playAudioCue } from "$lib/features/accessibility/audioCues";
+  import {
+    playAudioCue,
+    setAudioCueSink,
+  } from "$lib/features/accessibility/audioCues";
   import { resetAccessibilitySettings } from "$lib/features/accessibility/accessibilityTransfer";
   import { effectsStore } from "$lib/features/effects/effects-store.svelte";
   import { fxEngine } from "$lib/features/effects/effects-engine";
@@ -145,6 +150,11 @@
   } from "$lib/shared/pageProps";
 
   const t = locale.t;
+
+  // Prime the audio graph with the saved endpoint and delay before the first
+  // media element creates the AudioContext.
+  eqEngine.setAudioDelay(playbackPrefs.audioDelayMs / 1000);
+  void eqEngine.setSinkId(audioOutput.effectiveDeviceId).catch(() => {});
 
   let filePath = $state("");
   let fileSrc = $state("");
@@ -1971,6 +1981,71 @@
     const boost = playbackPrefs.volumeBoost;
     eqEngine.setVolumeBoost(boost);
     untrack(() => backgroundAudio.setBoost(boost));
+  });
+
+  $effect(() => {
+    eqEngine.setAudioDelay(playbackPrefs.audioDelayMs / 1000);
+  });
+
+  $effect(() => {
+    const deviceId = audioOutput.effectiveDeviceId;
+    const audio = audioEl;
+    const background = bgAudioEl;
+    const remote = isRemote;
+    const connected = eqEngine.getConnectedElement();
+
+    void eqEngine.setSinkId(deviceId).catch(() => {});
+    setAudioCueSink(deviceId);
+    backgroundAudio.setSink(deviceId);
+    // Local media follows the AudioContext sink; only elements that stay
+    // outside Web Audio need their own sink.
+    audioOutput.applyToElement(background, connected);
+    if (remote) audioOutput.applyToElement(audio, connected);
+  });
+
+  function replayGainLinear(info: AudioLoudnessInfo): number {
+    let gain = Math.pow(10, info.gainDb / 20);
+    if (info.peak && info.peak > 0) {
+      // Leave roughly 1 dB of headroom above the true peak.
+      gain = Math.min(gain, 1 / (info.peak * 1.122));
+    }
+    return Math.min(4, Math.max(0.05, gain));
+  }
+
+  let loudnessRequest = 0;
+  $effect(() => {
+    const path = filePath;
+    const mode = playbackPrefs.replayGainMode;
+    const audio = isAudio;
+    const remote = isRemote;
+    const generation = ++loudnessRequest;
+
+    eqEngine.setReplayGain(1);
+
+    if (!path || remote || !audio || mode === "off") return;
+
+    let cancelled = false;
+    const timer = setTimeout(
+      () => {
+        if (cancelled || generation !== loudnessRequest) return;
+        void invokeGetAudioLoudness(path, mode === "normalize")
+          .then((info) => {
+            if (cancelled || generation !== loudnessRequest || !info) return;
+            eqEngine.setReplayGain(replayGainLinear(info));
+          })
+          .catch((error) => {
+            if (!cancelled) {
+              console.warn("[playback] loudness analysis failed:", error);
+            }
+          });
+      },
+      mode === "normalize" ? 1500 : 400,
+    );
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   });
 
   $effect(() => {

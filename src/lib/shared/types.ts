@@ -66,6 +66,14 @@ export interface MediaTrackCatalog {
   subtitles: MediaTrack[];
 }
 
+export interface AudioLoudnessInfo {
+  /** Gain in dB to apply for a -18 LUFS reference. */
+  gainDb: number;
+  /** Linear true-peak amplitude (1.0 = full scale), when known. */
+  peak: number | null;
+  source: "tag" | "scan";
+}
+
 export interface SubtitleSidecar {
   path: string;
   name: string;

@@ -87,6 +87,7 @@ pub fn run() {
             get_media_properties,
             get_media_tracks,
             get_media_chapters,
+            get_audio_loudness,
             prepare_audio_track,
             release_audio_track,
             prepare_subtitle_track,

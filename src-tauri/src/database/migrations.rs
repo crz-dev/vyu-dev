@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-const SCHEMA_VERSION: i32 = 4;
+const SCHEMA_VERSION: i32 = 5;
 
 pub fn run(conn: &mut Connection) -> Result<(), String> {
     // The _migrations table must exist before version check. Creation is outside the migration transaction.
@@ -117,6 +117,20 @@ pub fn run(conn: &mut Connection) -> Result<(), String> {
             }
         }
 
+        if current < 5 {
+            tx.execute_batch(
+                "CREATE TABLE IF NOT EXISTS audio_loudness (
+                    path TEXT PRIMARY KEY,
+                    file_size INTEGER NOT NULL,
+                    file_modified INTEGER NOT NULL,
+                    integrated_lufs REAL NOT NULL,
+                    peak_db REAL,
+                    updated_at INTEGER NOT NULL
+                );",
+            )
+            .map_err(|e| format!("Migration v5 failed: {e}"))?;
+        }
+
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -161,7 +175,17 @@ mod tests {
         let version: i32 = conn
             .query_row("SELECT MAX(version) FROM _migrations", [], |row| row.get(0))
             .unwrap();
-        assert_eq!(version, 4);
+        assert_eq!(version, 5);
+
+        let loudness_table: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master
+                 WHERE type = 'table' AND name = 'audio_loudness'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(loudness_table, 1);
 
         // Running again is a no-op.
         run(&mut conn).unwrap();

@@ -68,7 +68,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 **SQLite — primary per-file store.** `src-tauri/src/database/` + `services/database.ts`.
 
 - Database lives under the app data directory. WAL mode, a single connection, and versioned migrations in the database module.
-- Stores per-file metadata: resume positions, timestamps, clips, EQ, CD color, subtitle position, and last viewed.
+- Stores per-file metadata: resume positions, timestamps, clips, EQ, CD color, subtitle position, and last viewed. Measured loudness is cached per file in `audio_loudness` and invalidated by size and modification time.
 - Migrations are additive; never edit an applied migration in place.
 
 **localStorage — app settings and fallback.** `services/storage.ts`.
@@ -104,6 +104,9 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - `pdfjs-dist` is dynamically imported only when a PDF opens.
 - PDF view state lives in `features/viewer/pdf.svelte.ts`: pages render through layout rows so single and dual page views share one scroll/current-page model. Outline entries, internal link rectangles, and AcroForm widgets come from the PDF.js document, not the DOM. Form values are saved with `saveDocument` through `write_pdf_atomic`; encrypted PDFs stay read-only for writes. Redaction replaces affected pages with flattened images and prunes their streams, annotations, and form widgets while leaving forms on untouched pages. Night reading is a canvas filter and persists under `vyu-pdf-night`. PDF reading position reuses the per-file resume slot to store a page number, restores it with a toast, and marks that page in the Index. Page bookmarks use the per-file `pdf_bookmarks` JSON column, storing page, color, and title. Read aloud uses WebView2 speech synthesis on extracted page text.
 - HLS uses lazy `hls.js` with workers disabled; WebView2 has no native HLS, and the CSP has no `worker-src blob:`.
+- Output device selection lives in `features/media/audioOutput.svelte.ts`. Local media routed through Web Audio follows the `AudioContext` sink; remote and background elements use `HTMLMediaElement.setSinkId`. The chosen endpoint is a shared device setting (`vyu-system-audio-output`), not profile-scoped. Chromium exposes only the default output until one microphone grant is given, so the full list is loaded explicitly from Settings and no prompt runs at launch.
+- ReplayGain and loudness normalization run inside the equalizer graph. `commands/tracks.rs` reads `REPLAYGAIN_TRACK_*` tags and, when normalized, measures untagged audio once with FFmpeg and caches the result in SQLite. Gain is peak-clamped and applies to local audio only; video, remote, and background audio are unchanged. Audio delay is a positive-only `DelayNode` (0–2000 ms) because WebView2 cannot delay video rendering.
+- Gapless playback is not implemented. File switches intentionally clear `fileSrc`, unmount the media element, and release the audio graph in `features/media/media.svelte.ts`; true gapless needs a second preloaded element and an in-place track advance.
 - Remote `http(s)` media plays in-stream and is not persisted: no recents, resume, markers, clips, or track inspection.
 - The up-next queue stores absolute paths and is restored from `vyu-queue` on launch; every mutation rewrites the stored list.
 - `.m3u`/`.m3u8`/`.pls` files open into the queue: relative entries resolve against the playlist folder, unsupported and remote entries are ignored, and opening replaces Up Next. Saved playlists contain absolute paths and reuse `write_file_atomic`.

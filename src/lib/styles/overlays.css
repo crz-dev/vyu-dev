@@ -4294,6 +4294,16 @@ main.fullscreen .pdf-page-panel {
   min-width: 0;
 }
 
+.settings-control-stack {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+
+.settings-control-stack .settings-action-btn {
+  max-width: 100%;
+}
+
 .settings-control-inline .settings-action-btn.blue {
   max-width: 220px;
   overflow: hidden;
@@ -6679,6 +6689,12 @@ main.fullscreen .pdf-page-panel {
 
 .language-option.selected {
   color: var(--text-primary);
+}
+
+.audio-device-select .language-menu {
+  width: max-content;
+  min-width: 100%;
+  max-width: min(380px, calc(100vw - 80px));
 }
 
 .language-option.non-latin {
