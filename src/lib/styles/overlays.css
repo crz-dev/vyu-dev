@@ -644,6 +644,10 @@
   border-radius: 1px;
   pointer-events: none;
 }
+.pdf-highlight-rect.current {
+  background: rgba(255, 150, 0, 0.55);
+  z-index: 1;
+}
 
 .pdf-selection-pill {
   position: fixed;
@@ -1082,7 +1086,7 @@ main.fullscreen .pdf-page-panel {
   font-family: var(--font-family);
 }
 .edit-menu.pdf-search-menu {
-  width: min(330px, calc(100vw - 30px));
+  width: min(398px, calc(100vw - 30px));
 }
 .pdf-search-menu.pinned {
   box-shadow:
@@ -1517,6 +1521,9 @@ main.fullscreen .pdf-page-panel {
 }
 .pdf-viewer.night .pdf-highlight-rect {
   background: rgba(90, 170, 255, 0.35);
+}
+.pdf-viewer.night .pdf-highlight-rect.current {
+  background: rgba(255, 170, 60, 0.55);
 }
 .pdf-view-controls {
   transition: opacity 0.25s ease;

@@ -2211,6 +2211,7 @@
               {#each hl.rects as rect}
                 <div
                   class="pdf-highlight-rect"
+                  class:current={rect.index === findCurrentIdx - 1}
                   style="left: {rect.left}px; top: {rect.top}px; width: {rect.width}px; height: {rect.height}px;"
                 ></div>
               {/each}

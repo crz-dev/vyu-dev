@@ -192,7 +192,13 @@ export interface PdfRedactionPageImage {
 
 export interface FindHighlight {
   pageNum: number;
-  rects: { left: number; top: number; width: number; height: number }[];
+  rects: {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    index: number;
+  }[];
 }
 
 export interface PdfBookmark {
@@ -1814,45 +1820,50 @@ export function createPdf() {
     height: number;
   }) {
     if (!pdfContainerEl) return;
-    const pageChanged = state.currentPage !== match.pageNum;
     state.currentPage = match.pageNum;
-    if (state.singlePage) {
-      if (!pageChanged) {
-        const viewTop = pdfContainerEl.scrollTop;
-        const viewBottom = viewTop + pdfContainerEl.clientHeight;
-        if (
-          match.top >= viewTop + 16 &&
-          match.top + match.height <= viewBottom - 16
-        ) {
-          return;
+    const centerMatch = () => {
+      if (!pdfContainerEl) return;
+      const container = pdfContainerEl;
+      const viewH = container.clientHeight;
+      let pageTop = 0;
+      let pageHeight = 0;
+      if (state.singlePage) {
+        const page = state.pages.find((item) => item.pageNum === match.pageNum);
+        pageHeight = (page?.height ?? 0) * state.scale;
+      } else {
+        const FALLBACK = 800;
+        for (const row of layoutRows()) {
+          if (row.pages.some((page) => page.pageNum === match.pageNum)) {
+            pageHeight = row.height > 0 ? row.height * state.scale : FALLBACK;
+            break;
+          }
+          pageTop +=
+            (row.height > 0 ? row.height * state.scale : FALLBACK) + PAGE_SEP;
         }
       }
-      // Only the active page is laid out, so its top is the scroll origin.
-      const target =
-        match.top + match.height / 2 - pdfContainerEl.clientHeight / 2;
-      requestAnimationFrame(() => {
-        pdfContainerEl?.scrollTo({
-          top: Math.max(0, target),
-          behavior: "smooth",
-        });
+      // Keep search navigation on a single page: clamp the viewport to the
+      // target page's bounds so it never lands between two pages.
+      let top = pageTop + match.top + match.height / 2 - viewH / 2;
+      const pageEnd = pageTop + pageHeight;
+      if (pageHeight > 0) {
+        if (pageHeight > viewH) {
+          top = Math.max(pageTop, Math.min(pageEnd - viewH, top));
+        } else {
+          // Page fits: center it the same way a page click does.
+          top = pageTop - (viewH - pageHeight) / 2;
+        }
+      }
+      container.scrollTo({
+        top: Math.max(0, top),
+        behavior: "instant",
       });
-      return;
+    };
+    if (state.singlePage) {
+      // The active page is swapped in after state updates.
+      requestAnimationFrame(centerMatch);
+    } else {
+      centerMatch();
     }
-    const FALLBACK = 800;
-    let pageTop = 0;
-    for (const row of layoutRows()) {
-      if (row.pages.some((page) => page.pageNum === match.pageNum)) break;
-      pageTop +=
-        (row.height > 0 ? row.height * state.scale : FALLBACK) + PAGE_SEP;
-    }
-    const matchTop = pageTop + match.top;
-    const matchBottom = matchTop + match.height;
-    const viewTop = pdfContainerEl.scrollTop;
-    const viewBottom = viewTop + pdfContainerEl.clientHeight;
-    // Leave an already visible match where it is; only reveal off-screen ones.
-    if (matchTop >= viewTop + 16 && matchBottom <= viewBottom - 16) return;
-    const top = matchTop + match.height / 2 - pdfContainerEl.clientHeight / 2;
-    pdfContainerEl.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   }
 
   function toggleFind() {
@@ -1872,6 +1883,9 @@ export function createPdf() {
   async function findText(query: string) {
     const runId = ++findRunId;
     const doc = pdfDoc;
+    const previousQuery = state.findQuery;
+    const previousIndex = state.findCurrentIdx;
+    const keepCurrent = previousQuery === query && previousIndex > 0;
     state.findQuery = query;
     state.findResults = 0;
     state.findCurrentIdx = 0;
@@ -1951,28 +1965,16 @@ export function createPdf() {
           findItemsCache.set(i, items);
         }
 
-        const pageRects: FindHighlight["rects"] = [];
-        const pageMatches: {
-          pageNum: number;
-          left: number;
-          top: number;
-          height: number;
-        }[] = [];
-        let pageCount = 0;
+        const pageMatches: FindHighlight["rects"] = [];
         const addMatchRect = (
           item: FindTextItem,
           index: number,
           length: number,
         ) => {
-          const rect = findRectForRange(item, index, length, vp);
-          pageRects.push(rect);
           pageMatches.push({
-            pageNum: i,
-            left: rect.left,
-            top: rect.top,
-            height: rect.height,
+            ...findRectForRange(item, index, length, vp),
+            index: 0,
           });
-          pageCount++;
         };
 
         for (const item of items) {
@@ -2004,7 +2006,7 @@ export function createPdf() {
           }
         }
 
-        if (pageCount > 0) {
+        if (pageMatches.length > 0) {
           // Content-stream order is not always visual order; walk matches
           // top-to-bottom, left-to-right so Next/Prev never jump backwards.
           pageMatches.sort((a, b) => {
@@ -2016,11 +2018,22 @@ export function createPdf() {
             }
             return a.left - b.left;
           });
+          const startIndex = state.findResults;
+          pageMatches.forEach((rect, offset) => {
+            rect.index = startIndex + offset;
+          });
           if (state.findCurrentIdx === 0) state.findCurrentIdx = 1;
-          findMatchRects.push(...pageMatches);
+          findMatchRects.push(
+            ...pageMatches.map((rect) => ({
+              pageNum: i,
+              left: rect.left,
+              top: rect.top,
+              height: rect.height,
+            })),
+          );
           state.findMatchPages.push(i);
-          state.findResults += pageCount;
-          state.findHighlights.push({ pageNum: i, rects: pageRects });
+          state.findResults += pageMatches.length;
+          state.findHighlights.push({ pageNum: i, rects: pageMatches });
         }
       } catch {
         // skip failed pages
@@ -2030,9 +2043,16 @@ export function createPdf() {
     // A newer query (or a page render/rotation change) may have started while
     // this scan was awaiting pages; never touch results it already cleared.
     if (runId !== findRunId || disposed || pdfDoc !== doc) return;
-    if (state.findCurrentIdx === 1 && findMatchRects.length > 0) {
-      scrollToFindMatch(findMatchRects[0]);
+    if (findMatchRects.length === 0) return;
+    if (keepCurrent && state.findCurrentIdx <= 1) {
+      state.findCurrentIdx = previousIndex;
     }
+    const index = Math.max(
+      1,
+      Math.min(state.findCurrentIdx, findMatchRects.length),
+    );
+    state.findCurrentIdx = index;
+    scrollToFindMatch(findMatchRects[index - 1]);
   }
 
   async function findNext() {
