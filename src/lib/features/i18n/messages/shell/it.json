@@ -169,5 +169,11 @@
   "viewer.pip.progress": "Posizione di riproduzione",
   "viewer.pip.restoreWindow": "Ripristina finestra",
   "viewer.pip.snapCorner": "Angolo successivo",
-  "viewer.subtitles": "Sottotitoli"
+  "viewer.subtitles": "Sottotitoli",
+  "tray.show": "Mostra Vyu",
+  "tray.hide": "Nascondi Vyu",
+  "tray.playPause": "Riproduci / Pausa",
+  "tray.next": "Successivo",
+  "tray.previous": "Precedente",
+  "tray.quit": "Esci"
 }

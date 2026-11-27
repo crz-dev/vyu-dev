@@ -1,4 +1,4 @@
-export type KeybindContext = "global" | "viewer" | "library" | "pdf";
+export type KeybindContext = "global" | "viewer" | "library" | "pdf" | "system";
 
 export type KeybindCategory =
   | "app"
@@ -7,7 +7,8 @@ export type KeybindCategory =
   | "editing"
   | "library"
   | "pdf"
-  | "slideshow";
+  | "slideshow"
+  | "system";
 
 export type KeybindBehavior = "tap" | "hold";
 

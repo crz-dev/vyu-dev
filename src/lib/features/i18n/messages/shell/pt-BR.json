@@ -169,5 +169,11 @@
   "viewer.pip.progress": "Posição de reprodução",
   "viewer.pip.restoreWindow": "Restaurar janela",
   "viewer.pip.snapCorner": "Próximo canto",
-  "viewer.subtitles": "Legendas"
+  "viewer.subtitles": "Legendas",
+  "tray.show": "Mostrar Vyu",
+  "tray.hide": "Ocultar Vyu",
+  "tray.playPause": "Reproduzir / Pausar",
+  "tray.next": "Próximo",
+  "tray.previous": "Anterior",
+  "tray.quit": "Sair"
 }

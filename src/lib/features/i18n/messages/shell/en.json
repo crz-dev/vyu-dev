@@ -169,5 +169,11 @@
   "viewer.pip.progress": "Playback position",
   "viewer.pip.restoreWindow": "Restore window",
   "viewer.pip.snapCorner": "Next corner",
-  "viewer.subtitles": "Subtitles"
+  "viewer.subtitles": "Subtitles",
+  "tray.show": "Show Vyu",
+  "tray.hide": "Hide Vyu",
+  "tray.playPause": "Play / Pause",
+  "tray.next": "Next",
+  "tray.previous": "Previous",
+  "tray.quit": "Quit"
 }

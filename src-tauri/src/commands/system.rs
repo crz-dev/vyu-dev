@@ -8,6 +8,7 @@ use crate::state::system::{
     save_config, SystemConfig, SystemState, DEFAULT_CACHE_LIMIT_MB, MAX_CACHE_LIMIT_MB,
     MIN_CACHE_LIMIT_MB,
 };
+use crate::state::tray::TrayMenuLabels;
 use crate::state::window::{PipActive, WindowAnimation};
 
 const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -403,6 +404,36 @@ pub fn set_clear_cache_on_exit(state: State<'_, SystemState>, enabled: bool) -> 
 }
 
 #[tauri::command]
+pub fn set_show_tray_icon(
+    app: AppHandle,
+    state: State<'_, SystemState>,
+    enabled: bool,
+) -> Result<(), String> {
+    let config = update_config(&state, |config| config.show_tray_icon = enabled)?;
+    crate::state::tray::apply(&app, &config);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_close_to_tray(
+    app: AppHandle,
+    state: State<'_, SystemState>,
+    enabled: bool,
+) -> Result<(), String> {
+    if enabled && !lock_config(&state)?.show_tray_icon {
+        return Err("Enable the tray icon before closing to the tray.".into());
+    }
+    let config = update_config(&state, |config| config.close_to_tray = enabled)?;
+    crate::state::tray::apply(&app, &config);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_tray_menu(app: AppHandle, labels: TrayMenuLabels) {
+    crate::state::tray::set_menu(&app, labels);
+}
+
+#[tauri::command]
 pub fn set_thumbnail_cache_limit(
     app: AppHandle,
     state: State<'_, SystemState>,
@@ -750,7 +781,10 @@ pub fn restart_app_mode(app: AppHandle, safe_mode: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn reset_system_integrations(state: State<'_, SystemState>) -> Result<(), String> {
+pub fn reset_system_integrations(
+    app: AppHandle,
+    state: State<'_, SystemState>,
+) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let _ = delete_reg_value(RUN_KEY, "Vyu");
@@ -761,8 +795,9 @@ pub fn reset_system_integrations(state: State<'_, SystemState>) -> Result<(), St
     let defaults = SystemConfig::default();
     save_config(&state.config_dir, &defaults)?;
     if let Ok(mut config) = state.config.lock() {
-        *config = defaults;
+        *config = defaults.clone();
     }
+    crate::state::tray::apply(&app, &defaults);
     crate::commands::thumbnail::set_cache_limit_bytes(DEFAULT_CACHE_LIMIT_MB * 1024 * 1024);
     state.keep_awake.store(0, Ordering::Relaxed);
     Ok(())

@@ -25,6 +25,8 @@
   } from "$lib/features/media/playbackHelpers";
   import { timerStore } from "$lib/features/media/timer.svelte";
   import { createPlaybackBridge } from "$lib/features/media/playbackBridge";
+  import { createMediaSession } from "$lib/features/media/mediaSession.svelte";
+  import { trayPrefs } from "$lib/features/system/tray.svelte";
   import { createPlaybackPoller } from "$lib/features/media/playbackPoller.svelte";
   import {
     markerStore,
@@ -97,7 +99,9 @@
     minimizeWindow,
     maximizeWindow,
     closeWindow,
+    toggleWindowVisibility,
   } from "$lib/features/menus/windowControls";
+  import { globalShortcuts } from "$lib/features/keybinds/globalShortcuts.svelte";
   import { createFileOpenActions } from "$lib/features/file-actions/fileOpen";
   import { createNavigation } from "$lib/features/file-actions/navigation.svelte";
   import { createPanDrag } from "$lib/features/viewer/panDrag";
@@ -885,7 +889,10 @@
     trackSelection.restorePlaybackAfterSourceLoad(videoEl);
   }
 
-  queue.configure((path, opts) => loadFile(path, false, opts));
+  queue.configure(
+    (path, opts) => loadFile(path, false, opts),
+    () => filePath,
+  );
 
   slideshow.bind(
     () => filePath,
@@ -903,6 +910,129 @@
     setCurrentIndex: (v) => (currentIndex = v),
     media,
     setMediaState,
+  });
+  const mediaTransport = {
+    play: () => {
+      if (backgroundAudio.active) {
+        if (!backgroundAudio.playing) backgroundAudio.toggle();
+        return;
+      }
+      const el = getMediaEl();
+      if (el?.paused) togglePlay();
+    },
+    pause: () => {
+      if (backgroundAudio.active) {
+        if (backgroundAudio.playing) backgroundAudio.toggle();
+        return;
+      }
+      const el = getMediaEl();
+      if (el && !el.paused) togglePlay();
+    },
+    toggle: () => {
+      if (backgroundAudio.active) {
+        backgroundAudio.toggle();
+        return;
+      }
+      if (getMediaEl()) togglePlay();
+    },
+    next: () => {
+      void navigate(1);
+    },
+    previous: () => {
+      if (queue.canGoPrevious) {
+        void queue.playPrevious({ preservePlayback: slideshow.active });
+      } else {
+        void navigate(-1);
+      }
+    },
+    seek: (seconds: number) => {
+      if (backgroundAudio.active) {
+        backgroundAudio.seek(seconds);
+        return;
+      }
+      const el = getMediaEl();
+      if (!el || !Number.isFinite(seconds)) return;
+      const max = Number.isFinite(el.duration) ? el.duration : seconds;
+      el.currentTime = Math.max(0, Math.min(seconds, max));
+    },
+  };
+  const mediaSession = createMediaSession({
+    getSnapshot: () => {
+      const background = backgroundAudio.active;
+      const mediaEl = background ? null : getMediaEl();
+      const hasMedia = background || isVideo || isAudio;
+      return {
+        hasMedia,
+        path: background ? backgroundAudio.path : filePath,
+        title: background ? backgroundAudio.name : fileName,
+        mediaType: background || !isVideo ? "audio" : "video",
+        playing: background
+          ? backgroundAudio.playing
+          : mediaEl
+            ? !mediaEl.paused
+            : playing,
+        position: background
+          ? backgroundAudio.currentTime
+          : (mediaEl?.currentTime ?? rawCurrentSecs),
+        duration: background
+          ? Number.isFinite(bgAudioEl?.duration ?? NaN)
+            ? (bgAudioEl?.duration ?? 0)
+            : 0
+          : mediaEl && Number.isFinite(mediaEl.duration)
+            ? mediaEl.duration
+            : rawDurationSecs,
+        playbackRate: background
+          ? (bgAudioEl?.playbackRate ?? 1)
+          : (mediaEl?.playbackRate ?? 1),
+        canNext:
+          !isRemote && (queue.length > 0 || currentIndex < fileList.length - 1),
+        canPrevious: !isRemote && (queue.canGoPrevious || currentIndex > 0),
+      };
+    },
+    ...mediaTransport,
+  });
+  globalShortcuts.configure({
+    "global-play-pause": mediaTransport.toggle,
+    "global-next": mediaTransport.next,
+    "global-previous": mediaTransport.previous,
+    "global-toggle-window": () => {
+      void toggleWindowVisibility();
+    },
+  });
+  $effect(() => {
+    mediaSession.start();
+    return () => mediaSession.stop();
+  });
+  $effect(() => {
+    globalShortcuts.start();
+    return () => globalShortcuts.stop();
+  });
+  $effect(() => {
+    void keybindStore.bindings;
+    void locale.current;
+    void globalShortcuts.sync();
+  });
+  $effect(() => {
+    // Status and track identity changes should reach the OS immediately;
+    // the bridge throttles position updates internally.
+    void filePath;
+    void fileName;
+    void isVideo;
+    void isAudio;
+    void isRemote;
+    void playing;
+    void backgroundAudio.active;
+    void backgroundAudio.playing;
+    void backgroundAudio.path;
+    void queue.length;
+    void queue.canGoPrevious;
+    void currentIndex;
+    void fileList.length;
+    mediaSession.notify();
+  });
+  $effect(() => {
+    void locale.current;
+    void trayPrefs.syncMenuLabels();
   });
   // A pending queue is an explicit "play next" request. Stop native looping
   // while items remain so the ended event can advance the queue.

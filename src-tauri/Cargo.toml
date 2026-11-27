@@ -13,8 +13,9 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }
 tauri-plugin-opener = "2"
+tauri-plugin-global-shortcut = "2"
 tauri-plugin-fs = { version = "2", features = ["watch"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -30,11 +31,12 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 jpeg-decoder = "0.3"
 arboard = "3"
 rusqlite = { version = "0.31", features = ["bundled"] }
-windows-collections = "0.2"
-windows = { version = "0.61", features = [
+windows-collections = "0.3"
+windows = { version = "0.62", features = [
     "ApplicationModel_DataTransfer",
     "Foundation",
     "Foundation_Collections",
+    "Media",
     "Storage",
     "Storage_Streams",
     "Win32_Foundation",

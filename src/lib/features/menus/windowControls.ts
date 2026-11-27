@@ -11,3 +11,19 @@ export async function maximizeWindow() {
 export async function closeWindow() {
   await getCurrentWindow().close();
 }
+
+export async function toggleWindowVisibility() {
+  const window = getCurrentWindow();
+  if (await window.isMinimized()) {
+    await window.unminimize();
+    await window.show();
+    await window.setFocus();
+    return;
+  }
+  if (await window.isVisible()) {
+    await window.hide();
+    return;
+  }
+  await window.show();
+  await window.setFocus();
+}

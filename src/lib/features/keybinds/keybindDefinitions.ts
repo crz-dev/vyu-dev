@@ -81,6 +81,48 @@ export const KEYBIND_ACTIONS: readonly KeybindAction[] = [
     behavior: "tap",
   },
 
+  // OS-global (registered with Windows, works while Vyu is in the background)
+  {
+    id: "global-play-pause",
+    label: "settings.keybinds.actions.globalPlayPause.label",
+    description: "settings.keybinds.actions.globalPlayPause.description",
+    category: "system",
+    context: "system",
+    defaultBinding: null,
+    allowRepeat: false,
+    behavior: "tap",
+  },
+  {
+    id: "global-next",
+    label: "settings.keybinds.actions.globalNext.label",
+    description: "settings.keybinds.actions.globalNext.description",
+    category: "system",
+    context: "system",
+    defaultBinding: null,
+    allowRepeat: false,
+    behavior: "tap",
+  },
+  {
+    id: "global-previous",
+    label: "settings.keybinds.actions.globalPrevious.label",
+    description: "settings.keybinds.actions.globalPrevious.description",
+    category: "system",
+    context: "system",
+    defaultBinding: null,
+    allowRepeat: false,
+    behavior: "tap",
+  },
+  {
+    id: "global-toggle-window",
+    label: "settings.keybinds.actions.globalToggleWindow.label",
+    description: "settings.keybinds.actions.globalToggleWindow.description",
+    category: "system",
+    context: "system",
+    defaultBinding: null,
+    allowRepeat: false,
+    behavior: "tap",
+  },
+
   // Viewer
   {
     id: "play-pause",
@@ -540,6 +582,7 @@ export const KEYBIND_CATEGORY_ORDER: readonly KeybindCategory[] = [
   "file",
   "editing",
   "slideshow",
+  "system",
 ];
 
 export const KEYBIND_CATEGORY_LABELS: Record<KeybindCategory, string> = {
@@ -550,6 +593,7 @@ export const KEYBIND_CATEGORY_LABELS: Record<KeybindCategory, string> = {
   library: "settings.keybinds.category.library",
   pdf: "settings.keybinds.category.pdf",
   slideshow: "settings.keybinds.category.queue",
+  system: "settings.keybinds.category.system",
 };
 
 export const KEYBIND_CATEGORY_ICONS: Record<KeybindCategory, string> = {
@@ -560,6 +604,7 @@ export const KEYBIND_CATEGORY_ICONS: Record<KeybindCategory, string> = {
   library: "book",
   pdf: "file",
   slideshow: "slideshow",
+  system: "window",
 };
 
 export const KEYBIND_CONTEXT_LABELS: Record<KeybindContext, string> = {
@@ -567,6 +612,7 @@ export const KEYBIND_CONTEXT_LABELS: Record<KeybindContext, string> = {
   viewer: "settings.keybinds.context.viewer",
   library: "settings.keybinds.context.library",
   pdf: "settings.keybinds.context.pdf",
+  system: "settings.keybinds.context.system",
 };
 
 export function defaultBindings(): Record<string, KeybindBinding | null> {

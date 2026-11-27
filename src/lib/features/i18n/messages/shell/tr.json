@@ -169,5 +169,11 @@
   "viewer.pip.progress": "Oynatma konumu",
   "viewer.pip.restoreWindow": "Pencereyi geri yükle",
   "viewer.pip.snapCorner": "Sonraki köşe",
-  "viewer.subtitles": "Altyazılar"
+  "viewer.subtitles": "Altyazılar",
+  "tray.show": "Vyu'yu göster",
+  "tray.hide": "Vyu'yu gizle",
+  "tray.playPause": "Oynat / Duraklat",
+  "tray.next": "Sonraki",
+  "tray.previous": "Önceki",
+  "tray.quit": "Çık"
 }

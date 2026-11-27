@@ -169,5 +169,11 @@
   "viewer.pip.progress": "再生位置",
   "viewer.pip.restoreWindow": "ウィンドウを復元",
   "viewer.pip.snapCorner": "次の隅",
-  "viewer.subtitles": "字幕"
+  "viewer.subtitles": "字幕",
+  "tray.show": "Vyu を表示",
+  "tray.hide": "Vyu を隠す",
+  "tray.playPause": "再生 / 一時停止",
+  "tray.next": "次へ",
+  "tray.previous": "前へ",
+  "tray.quit": "終了"
 }

@@ -174,6 +174,14 @@ function createBackgroundAudio() {
     if (element) element.muted = value;
   }
 
+  function seek(seconds: number) {
+    if (!element || !active) return;
+    const duration = Number.isFinite(element.duration)
+      ? element.duration
+      : Number.POSITIVE_INFINITY;
+    element.currentTime = Math.max(0, Math.min(seconds, duration));
+  }
+
   function setBoost(enabled: boolean) {
     boost = enabled;
     if (element) applyProps();
@@ -226,6 +234,7 @@ function createBackgroundAudio() {
     setVolume,
     setMuted,
     setBoost,
+    seek,
     refreshVolume,
     setPlaying,
     handleEnded,

@@ -8,6 +8,7 @@
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import { powerStatus } from "$lib/features/system/powerStatus.svelte";
   import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+  import { trayPrefs } from "$lib/features/system/tray.svelte";
   import {
     invokeCheckForUpdates,
     invokeClearAllCaches,
@@ -42,6 +43,8 @@
     thumbnailCacheLimitMb: 500,
     launchMinimized: false,
     clearCacheOnExit: false,
+    showTrayIcon: true,
+    closeToTray: false,
   });
   let startupConfig = $state<{
     hardwareAcceleration: boolean;
@@ -179,6 +182,22 @@
     try {
       await invokeSetExplorerContextMenu(enabled);
       contextMenu = enabled;
+    } catch (e) {
+      showToast({ message: String(e), color: "red" });
+    }
+  }
+
+  async function handleShowTrayIcon(enabled: boolean) {
+    try {
+      await trayPrefs.setShowTrayIcon(enabled);
+    } catch (e) {
+      showToast({ message: String(e), color: "red" });
+    }
+  }
+
+  async function handleCloseToTray(enabled: boolean) {
+    try {
+      await trayPrefs.setCloseToTray(enabled);
     } catch (e) {
       showToast({ message: String(e), color: "red" });
     }
@@ -466,6 +485,48 @@
             onchange={(e) => handleContextMenu(e.currentTarget.checked)}
           />
           <span class="toggle-track" class:on={contextMenu}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+  </SettingsGroup>
+
+  <SettingsGroup label={t("settings.system.group.tray")} icon="window">
+    <SettingsRow
+      label={t("settings.system.tray.showIcon.label")}
+      hint={t("settings.system.tray.showIcon.hint")}
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={trayPrefs.showTrayIcon}
+            disabled={!trayPrefs.loaded}
+            onchange={(e) => handleShowTrayIcon(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={trayPrefs.showTrayIcon}
+            ><span class="toggle-thumb"></span></span
+          >
+        </label>
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      label={t("settings.system.tray.closeToTray.label")}
+      hint={trayPrefs.showTrayIcon
+        ? t("settings.system.tray.closeToTray.hint")
+        : t("settings.system.tray.closeToTray.disabledHint")}
+    >
+      {#snippet control()}
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            checked={trayPrefs.closeToTray}
+            disabled={!trayPrefs.loaded || !trayPrefs.showTrayIcon}
+            onchange={(e) => handleCloseToTray(e.currentTarget.checked)}
+          />
+          <span class="toggle-track" class:on={trayPrefs.closeToTray}
             ><span class="toggle-thumb"></span></span
           >
         </label>

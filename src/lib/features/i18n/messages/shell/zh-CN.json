@@ -169,5 +169,11 @@
   "viewer.pip.progress": "播放位置",
   "viewer.pip.restoreWindow": "恢复窗口",
   "viewer.pip.snapCorner": "下一个角落",
-  "viewer.subtitles": "字幕"
+  "viewer.subtitles": "字幕",
+  "tray.show": "显示 Vyu",
+  "tray.hide": "隐藏 Vyu",
+  "tray.playPause": "播放 / 暂停",
+  "tray.next": "下一个",
+  "tray.previous": "上一个",
+  "tray.quit": "退出"
 }

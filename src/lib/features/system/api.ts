@@ -6,6 +6,17 @@ export interface SystemConfig {
   thumbnailCacheLimitMb: number;
   launchMinimized: boolean;
   clearCacheOnExit: boolean;
+  showTrayIcon: boolean;
+  closeToTray: boolean;
+}
+
+export interface TrayMenuLabels {
+  show: string;
+  hide: string;
+  playPause: string;
+  next: string;
+  previous: string;
+  quit: string;
 }
 
 export interface RuntimeInfo {
@@ -110,6 +121,18 @@ export function invokeSetLaunchMinimized(enabled: boolean): Promise<void> {
 
 export function invokeSetClearCacheOnExit(enabled: boolean): Promise<void> {
   return invoke("set_clear_cache_on_exit", { enabled });
+}
+
+export function invokeSetShowTrayIcon(enabled: boolean): Promise<void> {
+  return invoke("set_show_tray_icon", { enabled });
+}
+
+export function invokeSetCloseToTray(enabled: boolean): Promise<void> {
+  return invoke("set_close_to_tray", { enabled });
+}
+
+export function invokeUpdateTrayMenu(labels: TrayMenuLabels): Promise<void> {
+  return invoke("update_tray_menu", { labels });
 }
 
 export function invokeSetThumbnailCacheLimit(

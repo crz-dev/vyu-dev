@@ -13,9 +13,12 @@ import type {
 import {
   bindingFromEvent,
   conflictsFor,
+  bindingToAccelerator,
   eventMatchesBinding,
   formatBinding,
+  hasGlobalModifier,
   isReservedEvent,
+  isValidGlobalBinding,
   sameBinding,
   sanitizeBindings,
 } from "$lib/features/keybinds/keybindUtils";
@@ -28,6 +31,7 @@ export type RecordResult =
   | "cancelled"
   | "conflict"
   | "reserved"
+  | "invalid"
   | "ignored";
 
 function createKeybindStore() {
@@ -102,7 +106,9 @@ function createKeybindStore() {
       }
     }
 
-    const binding = bindingFromEvent(e);
+    const binding = bindingFromEvent(e, {
+      global: action.context === "system",
+    });
     if (!binding) {
       if (!isReservedEvent(e)) {
         // Modifier-only or dead keys: keep waiting for a real key.
@@ -110,6 +116,17 @@ function createKeybindStore() {
       }
       recordingError = locale.t("settings.keybinds.error.reserved");
       return "reserved";
+    }
+
+    if (action.context === "system") {
+      if (!hasGlobalModifier(binding)) {
+        recordingError = locale.t("settings.keybinds.error.globalModifier");
+        return "invalid";
+      }
+      if (!bindingToAccelerator(binding)) {
+        recordingError = locale.t("settings.keybinds.error.globalInvalid");
+        return "invalid";
+      }
     }
 
     const conflict = conflictsFor(action, binding, KEYBIND_ACTIONS, bindings);

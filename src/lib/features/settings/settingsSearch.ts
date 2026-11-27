@@ -88,6 +88,29 @@ const SETTINGS_SEARCH_ALIASES: Record<string, string[]> = {
     "alpha channel",
   ],
   "auto-hide cursor": ["mouse", "pointer", "cursor", "fullscreen", "idle"],
+  "show tray icon": [
+    "tray",
+    "notification area",
+    "system tray",
+    "icon",
+    "minimize",
+  ],
+  "close to tray": [
+    "tray",
+    "minimize",
+    "background",
+    "close",
+    "window",
+    "notification area",
+  ],
+  "global hotkeys": [
+    "media keys",
+    "shortcut",
+    "hotkey",
+    "global",
+    "background",
+    "system",
+  ],
 
   "resume playback": [
     "continue",

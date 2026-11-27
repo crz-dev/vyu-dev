@@ -167,5 +167,11 @@
   "viewer.pip.progress": "播放位置",
   "viewer.pip.restoreWindow": "還原視窗",
   "viewer.pip.snapCorner": "下一個角落",
-  "viewer.subtitles": "字幕"
+  "viewer.subtitles": "字幕",
+  "tray.show": "顯示 Vyu",
+  "tray.hide": "隱藏 Vyu",
+  "tray.playPause": "播放 / 暫停",
+  "tray.next": "下一個",
+  "tray.previous": "上一個",
+  "tray.quit": "結束"
 }

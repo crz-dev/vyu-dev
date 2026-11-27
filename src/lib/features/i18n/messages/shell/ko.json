@@ -169,5 +169,11 @@
   "viewer.pip.progress": "재생 위치",
   "viewer.pip.restoreWindow": "창 복원",
   "viewer.pip.snapCorner": "다음 모서리",
-  "viewer.subtitles": "자막"
+  "viewer.subtitles": "자막",
+  "tray.show": "Vyu 표시",
+  "tray.hide": "Vyu 숨기기",
+  "tray.playPause": "재생 / 일시정지",
+  "tray.next": "다음",
+  "tray.previous": "이전",
+  "tray.quit": "종료"
 }

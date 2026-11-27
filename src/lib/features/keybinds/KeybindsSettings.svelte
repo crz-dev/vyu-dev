@@ -9,6 +9,7 @@
     KEYBIND_CONTEXT_LABELS,
   } from "$lib/features/keybinds/keybindDefinitions";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
+  import { globalShortcuts } from "$lib/features/keybinds/globalShortcuts.svelte";
   import {
     formatBinding,
     formatKey,
@@ -22,7 +23,7 @@
 
   const t = locale.t;
 
-  type ContextFilter = "all" | "viewer" | "library" | "pdf";
+  type ContextFilter = "all" | "viewer" | "library" | "pdf" | "system";
 
   let search = $state("");
   let contextFilter = $state<ContextFilter>("all");
@@ -36,12 +37,11 @@
   let actionScrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const contextActions = $derived.by(() =>
-    KEYBIND_ACTIONS.filter(
-      (action) =>
-        contextFilter === "all" ||
-        action.context === "global" ||
-        action.context === contextFilter,
-    ),
+    KEYBIND_ACTIONS.filter((action) => {
+      if (contextFilter === "all") return true;
+      if (contextFilter === "system") return action.context === "system";
+      return action.context === "global" || action.context === contextFilter;
+    }),
   );
 
   const filtersActive = $derived(
@@ -187,6 +187,7 @@
     { id: "viewer", labelKey: "settings.keybinds.filter.viewer" },
     { id: "library", labelKey: "settings.keybinds.filter.library" },
     { id: "pdf", labelKey: "settings.keybinds.filter.pdf" },
+    { id: "system", labelKey: "settings.keybinds.filter.system" },
   ];
 </script>
 
@@ -215,7 +216,7 @@
     {t("settings.keybinds.overview")}
   </p>
   <KeyboardOverview
-    actions={contextActions}
+    actions={contextActions.filter((action) => action.context !== "system")}
     {selectedKey}
     onSelectKey={toggleSelectedKey}
   />
@@ -329,6 +330,7 @@
             {@const recording = keybindStore.recordingActionId === action.id}
             {@const label = keybindStore.label(action.id)}
             {@const custom = keybindStore.isCustom(action.id)}
+            {@const globalError = globalShortcuts.errors[action.id]}
             <div
               class="settings-row keybind-row"
               class:keybind-row-highlight={highlightedActionId === action.id}
@@ -346,6 +348,8 @@
                     <span class="keybind-conflict"
                       >{keybindStore.recordingError}</span
                     >
+                  {:else if globalError}
+                    <span class="keybind-conflict">{globalError}</span>
                   {/if}
                 </div>
               </div>

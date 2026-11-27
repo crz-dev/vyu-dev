@@ -5,6 +5,7 @@ import { exists } from "@tauri-apps/plugin-fs";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { powerStatus } from "$lib/features/system/powerStatus.svelte";
 import { systemPrefs } from "$lib/features/system/systemPrefs.svelte";
+import { trayPrefs } from "$lib/features/system/tray.svelte";
 import {
   invokeCheckForUpdates,
   invokeRecoverPipWindow,
@@ -72,6 +73,7 @@ export function setupInit(s: InitState) {
     );
     s.clips.loadPrefs();
     powerStatus.start();
+    void trayPrefs.load();
     // A webview reload during PiP leaves the window at mini geometry; restore
     // the bounds saved when PiP started before the app settles.
     invokeRecoverPipWindow().catch((e) => {
@@ -215,34 +217,61 @@ export function setupInit(s: InitState) {
     window.addEventListener("paste", handlePaste);
 
     let unlistenClose: () => void = () => {};
+    let unlistenQuit: () => void = () => {};
     let closing = false;
+    let quitting = false;
+
+    async function shutdown(): Promise<boolean> {
+      if (closing) return true;
+      if (systemPrefs.confirmCloseWhileEditing && s.hasOpenEdits()) {
+        const quit = await confirm(locale.t("shell.app.closeWhileEditing"), {
+          title: locale.t("shell.app.closeTitle"),
+          kind: "warning",
+        });
+        if (!quit) return false;
+      }
+      closing = true;
+      try {
+        await s.cleanupBeforeClose();
+        await getCurrentWindow().destroy();
+        return true;
+      } catch (e) {
+        closing = false;
+        console.error("Failed to close cleanly:", e);
+        return false;
+      }
+    }
+
     getCurrentWindow()
       .onCloseRequested(async (event) => {
         // The runtime vetoes every close request while this listener exists,
         // so the window only goes away once we destroy it explicitly.
         event.preventDefault();
         if (closing) return;
-        if (systemPrefs.confirmCloseWhileEditing && s.hasOpenEdits()) {
-          const quit = await confirm(locale.t("shell.app.closeWhileEditing"), {
-            title: locale.t("shell.app.closeTitle"),
-            kind: "warning",
-          });
-          if (!quit) return;
+        if (trayPrefs.closeToTray && !quitting) {
+          await getCurrentWindow().hide();
+          return;
         }
-        closing = true;
-        try {
-          await s.cleanupBeforeClose();
-          await getCurrentWindow().destroy();
-        } catch (e) {
-          closing = false;
-          console.error("Failed to close cleanly:", e);
-        }
+        await shutdown();
       })
       .then((fn) => {
         unlistenClose = fn;
       })
       .catch((e) => {
         console.error("Failed to register close listener:", e);
+      });
+
+    listen("system:quit-requested", () => {
+      quitting = true;
+      void shutdown().then((closed) => {
+        if (!closed) quitting = false;
+      });
+    })
+      .then((fn) => {
+        unlistenQuit = fn;
+      })
+      .catch((e) => {
+        console.error("Failed to register tray quit listener:", e);
       });
 
     return () => {
@@ -257,6 +286,7 @@ export function setupInit(s: InitState) {
       unlistenOpenFile();
       unlistenFocus();
       unlistenClose();
+      unlistenQuit();
       powerStatus.stop();
     };
   });

@@ -449,6 +449,37 @@ export async function invokeExtractCoverArt(
   return invoke("extract_cover_art", { path });
 }
 
+// ── Windows media session ──
+
+export interface MediaSessionUpdate {
+  sessionId: number;
+  generation: number;
+  title: string;
+  artist: string;
+  album: string;
+  mediaType: "audio" | "video";
+  playing: boolean;
+  position: number;
+  duration: number;
+  playbackRate: number;
+  canNext: boolean;
+  canPrevious: boolean;
+  thumbnailPath: string | null;
+}
+
+export function invokeUpdateMediaSession(
+  update: MediaSessionUpdate,
+): Promise<void> {
+  return invoke("update_media_session", { update });
+}
+
+export function invokeClearMediaSession(
+  sessionId: number,
+  generation: number,
+): Promise<void> {
+  return invoke("clear_media_session", { sessionId, generation });
+}
+
 // ── Editing ──
 
 export async function exportEditedImage(

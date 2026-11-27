@@ -173,5 +173,11 @@
   "viewer.pip.progress": "Позиция воспроизведения",
   "viewer.pip.restoreWindow": "Восстановить окно",
   "viewer.pip.snapCorner": "Следующий угол",
-  "viewer.subtitles": "Субтитры"
+  "viewer.subtitles": "Субтитры",
+  "tray.show": "Показать Vyu",
+  "tray.hide": "Скрыть Vyu",
+  "tray.playPause": "Воспроизведение / Пауза",
+  "tray.next": "Следующий",
+  "tray.previous": "Предыдущий",
+  "tray.quit": "Выход"
 }

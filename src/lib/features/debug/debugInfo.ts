@@ -33,6 +33,8 @@ const EMPTY_SYSTEM: SystemConfig = {
   thumbnailCacheLimitMb: 500,
   launchMinimized: false,
   clearCacheOnExit: false,
+  showTrayIcon: true,
+  closeToTray: false,
 };
 
 const EMPTY_FFMPEG: FfmpegInfo = {

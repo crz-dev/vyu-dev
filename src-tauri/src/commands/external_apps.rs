@@ -205,7 +205,7 @@ fn show_windows_share(
                 .SetTitle(&windows::core::HSTRING::from(share_title.clone()))?;
             let wide_path = windows::core::HSTRING::from(share_path.clone());
             let file_result = (|| -> windows::core::Result<()> {
-                let file = StorageFile::GetFileFromPathAsync(&wide_path)?.get()?;
+                let file = StorageFile::GetFileFromPathAsync(&wide_path)?.join()?;
                 let items: IIterable<IStorageItem> =
                     vec![Some(file.cast::<IStorageItem>()?)].into();
                 data.SetStorageItems(&items, true)?;

@@ -19,6 +19,8 @@ pub struct SystemConfig {
     pub thumbnail_cache_limit_mb: u64,
     pub launch_minimized: bool,
     pub clear_cache_on_exit: bool,
+    pub show_tray_icon: bool,
+    pub close_to_tray: bool,
 }
 
 impl Default for SystemConfig {
@@ -29,6 +31,8 @@ impl Default for SystemConfig {
             thumbnail_cache_limit_mb: DEFAULT_CACHE_LIMIT_MB,
             launch_minimized: false,
             clear_cache_on_exit: false,
+            show_tray_icon: true,
+            close_to_tray: false,
         }
     }
 }
@@ -38,6 +42,9 @@ impl SystemConfig {
         self.thumbnail_cache_limit_mb = self
             .thumbnail_cache_limit_mb
             .clamp(MIN_CACHE_LIMIT_MB, MAX_CACHE_LIMIT_MB);
+        if !self.show_tray_icon {
+            self.close_to_tray = false;
+        }
         self
     }
 }
@@ -154,5 +161,23 @@ mod tests {
         }
         .sanitized();
         assert_eq!(config.thumbnail_cache_limit_mb, MAX_CACHE_LIMIT_MB);
+    }
+
+    #[test]
+    fn close_to_tray_requires_tray_icon() {
+        let config = SystemConfig {
+            show_tray_icon: false,
+            close_to_tray: true,
+            ..SystemConfig::default()
+        }
+        .sanitized();
+        assert!(!config.close_to_tray);
+    }
+
+    #[test]
+    fn tray_defaults_are_visible_and_close_still_quits() {
+        let config = SystemConfig::default();
+        assert!(config.show_tray_icon);
+        assert!(!config.close_to_tray);
     }
 }

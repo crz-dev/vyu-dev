@@ -80,7 +80,10 @@ export function isBinding(value: unknown): value is KeybindBinding {
   );
 }
 
-export function bindingFromEvent(e: KeyboardEvent): KeybindBinding | null {
+export function bindingFromEvent(
+  e: KeyboardEvent,
+  options: { global?: boolean } = {},
+): KeybindBinding | null {
   if (MODIFIER_KEYS.has(e.key)) return null;
   if (e.key === "Dead" || e.key === "Unidentified") return null;
 
@@ -100,6 +103,34 @@ export function bindingFromEvent(e: KeyboardEvent): KeybindBinding | null {
     shift,
     meta: e.metaKey,
   };
+
+  if (options.global) {
+    // OS-global shortcuts keep the in-app DevTools and window-manager
+    // combinations reserved, but allow modified keys such as Ctrl+Alt+Shift+J.
+    if (binding.key === "Escape" || binding.key === "Backspace") return null;
+    if (
+      binding.key === "Delete" &&
+      !binding.ctrl &&
+      !binding.alt &&
+      !binding.shift &&
+      !binding.meta
+    ) {
+      return null;
+    }
+    if (binding.alt && (binding.key === "F4" || binding.key === "Tab")) {
+      return null;
+    }
+    if (binding.ctrl && binding.alt && binding.key === "Delete") return null;
+    if (
+      binding.ctrl &&
+      binding.shift &&
+      !binding.alt &&
+      ["i", "j"].includes(binding.key)
+    ) {
+      return null;
+    }
+    return binding;
+  }
 
   return isReservedBinding(binding) ? null : binding;
 }
@@ -176,10 +207,75 @@ export function eventMatchesBinding(
 }
 
 export function scopesFor(action: KeybindAction): KeybindContext[] {
-  if (action.context === "global") {
-    return ["global", "viewer", "library", "pdf"];
+  if (action.context === "system") {
+    return ["system", "global", "viewer", "library", "pdf"];
   }
-  return [action.context, "global"];
+  if (action.context === "global") {
+    return ["global", "viewer", "library", "pdf", "system"];
+  }
+  return [action.context, "global", "system"];
+}
+
+const ACCELERATOR_KEYS: Record<string, string> = {
+  " ": "Space",
+  Escape: "Escape",
+  Enter: "Enter",
+  Backspace: "Backspace",
+  Delete: "Delete",
+  Tab: "Tab",
+  Home: "Home",
+  End: "End",
+  PageUp: "PageUp",
+  PageDown: "PageDown",
+  Insert: "Insert",
+  ArrowUp: "ArrowUp",
+  ArrowDown: "ArrowDown",
+  ArrowLeft: "ArrowLeft",
+  ArrowRight: "ArrowRight",
+  ",": "Comma",
+  ".": "Period",
+  "/": "Slash",
+  ";": "Semicolon",
+  "'": "Quote",
+  "[": "BracketLeft",
+  "]": "BracketRight",
+  "\\": "Backslash",
+  "-": "Minus",
+  "=": "Equal",
+  "`": "Backquote",
+  MediaPlayPause: "MediaPlayPause",
+  MediaPlay: "MediaPlay",
+  MediaPause: "MediaPause",
+  MediaStop: "MediaStop",
+  MediaTrackNext: "MediaTrackNext",
+  MediaTrackPrevious: "MediaTrackPrevious",
+};
+
+function acceleratorKey(key: string): string | null {
+  if (/^[a-z]$/i.test(key)) return key.toUpperCase();
+  if (/^[0-9]$/.test(key)) return key;
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(key)) return key;
+  return ACCELERATOR_KEYS[key] ?? null;
+}
+
+export function bindingToAccelerator(binding: KeybindBinding): string | null {
+  const key = acceleratorKey(binding.key);
+  if (!key) return null;
+  const parts: string[] = [];
+  if (binding.ctrl) parts.push("Ctrl");
+  if (binding.alt) parts.push("Alt");
+  if (binding.shift) parts.push("Shift");
+  if (binding.meta) parts.push("Super");
+  parts.push(key);
+  return parts.join("+");
+}
+
+export function hasGlobalModifier(binding: KeybindBinding): boolean {
+  return binding.ctrl || binding.alt || binding.shift || binding.meta;
+}
+
+export function isValidGlobalBinding(binding: KeybindBinding): boolean {
+  return hasGlobalModifier(binding) && bindingToAccelerator(binding) !== null;
 }
 
 export function conflictsFor(
@@ -221,7 +317,11 @@ export function sanitizeBindings(
         candidate = null;
       } else if (isBinding(value)) {
         const normalized = normalizeBinding(value);
-        if (!isReservedBinding(normalized)) candidate = normalized;
+        if (action.context === "system") {
+          if (isValidGlobalBinding(normalized)) candidate = normalized;
+        } else if (!isReservedBinding(normalized)) {
+          candidate = normalized;
+        }
       }
     }
 

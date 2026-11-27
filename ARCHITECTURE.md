@@ -41,6 +41,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - **Settings UI:** `features/dialogs/SettingsDialog.svelte`, `features/settings/*`, plus the store owned by the setting.
 - **Menus, context actions, window controls:** `components/Shell.svelte`, `features/menus/*`, `features/actions/*`.
 - **System, OS integration, diagnostics, danger:** `features/{system,debug,danger}/*`, `commands/{system,database}.rs`.
+- **Windows media integration, tray, global hotkeys:** `commands/media_session.rs` (SMTC), `state/tray.rs` (tray lifecycle and localized menu), `features/media/mediaSession.svelte.ts` (playback bridge), `features/keybinds/globalShortcuts.svelte.ts` (OS shortcut registration), `features/system/tray.svelte.ts` (tray prefs and labels).
 - **Persistence:** `services/storage.ts`, `services/database.ts`, `src-tauri/src/database/*`.
 - **Thumbnails, display cache, cover art:** `commands/{thumbnail,display}.rs`, `services/thumbnailCache.svelte.ts`.
 - **i18n:** `features/i18n/*`, `features/i18n/messages/<namespace>/<locale>.json`.
@@ -53,7 +54,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 
 ### Rust command map
 
-`file_ops` (stat, delete/trash, rename/copy, atomic writes, temp cleanup), `editing`/`clips`/`conversion` (FFmpeg output), `thumbnail`/`display` (caches and prepared media), `tracks` (audio, subtitles, chapters), `external_apps` (sidecar, share, open-in, properties), `system` (config, registry, window/PiP, updates, uninstall/restart), `database` (metadata, stats, vacuum, reset), `collections`, `clipboard`, `annotations` (PDF markup), `pdf_redaction` (page flattening), and `integrity` (repair).
+`file_ops` (stat, delete/trash, rename/copy, atomic writes, temp cleanup), `editing`/`clips`/`conversion` (FFmpeg output), `thumbnail`/`display` (caches and prepared media), `tracks` (audio, subtitles, chapters), `external_apps` (sidecar, share, open-in, properties), `system` (config, registry, window/PiP, tray settings, updates, uninstall/restart), `media_session` (SMTC), `database` (metadata, stats, vacuum, reset), `collections`, `clipboard`, `annotations` (PDF markup), `pdf_redaction` (page flattening), and `integrity` (repair).
 
 ## Ownership and layering
 
@@ -83,7 +84,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 
 - Edit backups live under the app data directory (opt-in via File Backups).
 - Window state is stored in the app config directory.
-- System config (`system.json` in the app config directory) holds GPU, single instance, launch, and cache settings. It is read before the webview exists.
+- System config (`system.json` in the app config directory) holds GPU, single instance, launch, cache, and tray settings. It is read before the webview exists. `closeToTray` requires `showTrayIcon`; sanitization enforces that pairing.
 - Thumbnail, display, and cover-art caches live under the app cache directory. Thumbnail and display caches are bounded; the thumbnail limit is configurable.
 - Temp files live under the system temp directory.
 - Launch at login (installed builds only) and the Explorer context menu are registry-backed.
@@ -108,6 +109,9 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - `.m3u`/`.m3u8`/`.pls` files open into the queue: relative entries resolve against the playlist folder, unsupported and remote entries are ignored, and opening replaces Up Next. Saved playlists contain absolute paths and reuse `write_file_atomic`.
 - Global marker clears update the database and the in-memory timestamp/clip stores.
 - Subtitle appearance and saved custom text colors are global `vyu-subtitle-style`/`vyu-subtitle-custom-colors` settings; the dragged subtitle offset is per-file metadata, not localStorage.
+- SMTC is the single path for Windows media keys and the Windows 11 taskbar/quick-settings media flyout. Do not also register media keys with `RegisterHotKey` or the global-shortcut plugin. The session runs on a dedicated MTA thread, ignores stale generation updates, and follows background audio when the library is open.
+- The tray menu is native; labels are pushed from the frontend so no user-facing English is hardcoded. Close-to-tray lives in the frontend close handler because the existing confirm/cleanup/`destroy()` flow is there; tray Quit emits `system:quit-requested` through that same path.
+- Global hotkeys are user-bound in the `system` keybind context, registered through `tauri-plugin-global-shortcut`, and require a modifier. They share the same transport dispatcher as SMTC and the tray.
 - Window state is not written while PiP is active; mini geometry must not replace normal bounds.
 - `--safe-mode` forces GPU acceleration on for recovery from a bad disabled-GPU startup.
 - Keybind conflicts are scoped to viewer/library/PDF. Escape, Backspace, and plain Delete are reserved (close/clear binding).

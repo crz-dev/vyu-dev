@@ -75,6 +75,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             delete_file,
             trash_file,
@@ -158,6 +159,11 @@ pub fn run() {
             delete_collection_folder,
             get_initial_file,
             get_system_config,
+            set_show_tray_icon,
+            set_close_to_tray,
+            update_tray_menu,
+            update_media_session,
+            clear_media_session,
             set_pip_active,
             set_pip_background,
             recover_pip_window,
@@ -206,6 +212,16 @@ pub fn run() {
             let keep_awake = system_state.keep_awake.clone();
             app.manage(system_state);
             state::system::start_keep_awake_monitor(keep_awake);
+
+            app.manage(state::tray::TrayState::default());
+            let tray_config = app
+                .state::<state::system::SystemState>()
+                .config
+                .lock()
+                .map(|config| config.clone())
+                .unwrap_or_default();
+            state::tray::apply(app.handle(), &tray_config);
+            commands::media_session::init(app.handle());
 
             if let Err(e) = database::connection::init(app.handle()) {
                 eprintln!("Database initialization failed: {e}");

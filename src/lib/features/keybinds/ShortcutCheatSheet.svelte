@@ -14,7 +14,11 @@
 
   const t = locale.t;
 
-  const tabs = KEYBIND_CATEGORY_ORDER.map((category) => ({
+  const tabs = KEYBIND_CATEGORY_ORDER.filter((category) =>
+    KEYBIND_ACTIONS.some(
+      (action) => action.category === category && action.context !== "system",
+    ),
+  ).map((category) => ({
     category,
     label: KEYBIND_CATEGORY_LABELS[category],
     icon: KEYBIND_CATEGORY_ICONS[category],
@@ -29,6 +33,7 @@
     KEYBIND_ACTIONS.filter(
       (action) =>
         action.category === keybindStore.cheatSheetCategory &&
+        action.context !== "system" &&
         keybindStore.bindingFor(action.id) !== null,
     ),
   );

@@ -169,5 +169,11 @@
   "viewer.pip.progress": "Wiedergabeposition",
   "viewer.pip.restoreWindow": "Fenster wiederherstellen",
   "viewer.pip.snapCorner": "Nächste Ecke",
-  "viewer.subtitles": "Untertitel"
+  "viewer.subtitles": "Untertitel",
+  "tray.show": "Vyu anzeigen",
+  "tray.hide": "Vyu ausblenden",
+  "tray.playPause": "Wiedergabe / Pause",
+  "tray.next": "Weiter",
+  "tray.previous": "Zurück",
+  "tray.quit": "Beenden"
 }
