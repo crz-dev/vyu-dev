@@ -8,6 +8,7 @@
       <div
         class="toast toast-{toast.color}"
         class:toast-exiting={toast.exiting}
+        class:toast-exiting-up={toast.exitingUp}
         class:toast-has-progress={toast.progress !== null}
         style="--toast-duration: {toast.duration}ms"
       >
