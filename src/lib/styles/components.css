@@ -54,6 +54,11 @@ main.subtitle-menu-open .fs-controls {
 .video-controls.editor-open {
   opacity: 1;
 }
+.video-controls:has([data-jump-input]),
+.fs-overlay:has([data-jump-input]) {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 .video-controls.editor-open .progress-playhead {
   opacity: 1;
 }
@@ -489,6 +494,30 @@ main.subtitle-menu-open .fs-controls {
 .time-display:focus-visible {
   box-shadow: 0 0 0 1px var(--text-muted);
 }
+.time-display-input {
+  width: 108px;
+  box-sizing: border-box;
+  color: var(--text-primary);
+  text-align: center;
+  cursor: text;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid var(--bg-border);
+  outline: none;
+}
+.time-display-input:focus {
+  border-color: var(--text-primary);
+}
+.time-display-input:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-primary);
+}
+.time-display-input.invalid {
+  color: var(--red-soft);
+  background: var(--red-bg);
+  border-color: var(--red-border-strong);
+}
+.time-display-input::placeholder {
+  color: var(--text-muted);
+}
 
 .volume-control {
   position: relative;
@@ -896,6 +925,30 @@ main.subtitle-menu-open .fs-controls {
 }
 .fs-time:focus-visible {
   box-shadow: 0 0 0 1px var(--text-muted);
+}
+.fs-time-input {
+  width: 124px;
+  box-sizing: border-box;
+  color: var(--text-primary);
+  text-align: center;
+  cursor: text;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid var(--bg-border);
+  outline: none;
+}
+.fs-time-input:focus {
+  border-color: var(--text-primary);
+}
+.fs-time-input:focus-visible {
+  box-shadow: 0 0 0 1px var(--text-primary);
+}
+.fs-time-input.invalid {
+  color: var(--red-soft);
+  background: var(--red-bg);
+  border-color: var(--red-border-strong);
+}
+.fs-time-input::placeholder {
+  color: var(--text-muted);
 }
 .fs-right {
   margin-left: auto;

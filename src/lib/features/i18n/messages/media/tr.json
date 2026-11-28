@@ -59,6 +59,10 @@
   "cd.colorN": "Renk {n}",
   "cd.playedPercent": "%{percent} oynatıldı",
   "cd.seekAria": "Oynatma ilerlemesi olan plak kaydı - ilerletmek için sürükleyin",
+  "chapters.heading": "Bölümler",
+  "chapters.next": "Sonraki bölüm",
+  "chapters.previous": "Önceki bölüm",
+  "chapters.untitled": "Bölüm {index}",
   "clips.jobLabel_one": "{count} bölüm kırpılıyor…",
   "clips.jobLabel_other": "{count} bölüm kırpılıyor…",
   "clips.noSegments": "Tanımlanmış klip bölümü yok. Önce klip işaretleri ekleyin.",
@@ -86,11 +90,12 @@
   "markers.clipStart": "Klip başlangıcı",
   "markers.confirmDelete": "Silmeyi onayla",
   "markers.delete": "İşaretleri sil",
-  "markers.heading": "İşaretler",
   "markers.loopEnd": "Döngü sonu",
   "markers.loopStart": "Döngü başlangıcı",
   "playback.audioTrack": "Ses parçası",
   "playback.exitFullscreen": "tam ekrandan çık",
+  "playback.jumpAria": "Zamana git",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "İşaret menüsü",
   "playback.markerMenuAria": "işaret menüsü",
   "playback.mute": "Sessize al",
@@ -230,5 +235,6 @@
   "subtitles.delayBy": "Altyazıları {seconds} saniye geciktir",
   "subtitles.advanceBy": "Altyazıları {seconds} saniye öne al",
   "subtitles.rescan": "Yeniden tara",
-  "subtitles.resetStyle": "Özel stili sıfırla"
+  "subtitles.resetStyle": "Özel stili sıfırla",
+  "markers.heading": "İşaretler"
 }

@@ -13,7 +13,7 @@ export async function copyImageToClipboard(filePath: string): Promise<void> {
 
 export async function copyFrameToClipboard(
   videoEl: HTMLVideoElement,
-): Promise<void> {
+): Promise<Blob> {
   if (
     videoEl.readyState < 2 ||
     videoEl.videoWidth <= 0 ||
@@ -39,6 +39,7 @@ export async function copyFrameToClipboard(
     throw new Error(locale.t("shell.clipboard.imageUnavailable"));
   }
   await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+  return blob;
 }
 
 export async function copyPathToClipboard(filePath: string): Promise<void> {

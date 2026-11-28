@@ -218,6 +218,12 @@
 .toast.toast-has-progress {
   overflow: hidden;
 }
+.toast.toast-icon-actions {
+  overflow: visible;
+}
+.toast.toast-icon-actions .toast-progress {
+  border-radius: 0 0 8px 8px;
+}
 .toast.toast-exiting {
   animation: uiToastPopOut 200ms ease-out forwards;
 }

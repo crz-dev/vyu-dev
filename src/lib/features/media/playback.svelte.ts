@@ -649,3 +649,34 @@ export function formatTime(seconds: number): string {
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+
+export function parseTimeInput(value: string): number | null {
+  const trimmed = value.trim().replace(/,/g, ".");
+  if (!trimmed) return null;
+
+  const parts = trimmed.split(":");
+  if (parts.length === 0 || parts.length > 3) return null;
+
+  const numbers: number[] = [];
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim();
+    const isLast = i === parts.length - 1;
+    const pattern = isLast ? /^\d+(?:\.\d+)?$/ : /^\d+$/;
+    if (!pattern.test(part)) return null;
+    const parsed = Number(part);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    numbers.push(parsed);
+  }
+
+  if (numbers.length === 1) return numbers[0];
+
+  if (numbers.length === 2) {
+    const [minutes, seconds] = numbers;
+    if (seconds >= 60) return null;
+    return minutes * 60 + seconds;
+  }
+
+  const [hours, minutes, seconds] = numbers;
+  if (minutes >= 60 || seconds >= 60) return null;
+  return hours * 3600 + minutes * 60 + seconds;
+}

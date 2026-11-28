@@ -59,6 +59,10 @@
   "cd.colorN": "Farbe {n}",
   "cd.playedPercent": "{percent} % abgespielt",
   "cd.seekAria": "Vinylplatte mit Wiedergabefortschritt – zum Spulen ziehen",
+  "chapters.heading": "Kapitel",
+  "chapters.next": "Nächstes Kapitel",
+  "chapters.previous": "Vorheriges Kapitel",
+  "chapters.untitled": "Kapitel {index}",
   "clips.jobLabel_one": "{count} Segment wird geclippt…",
   "clips.jobLabel_other": "{count} Segmente werden geclippt…",
   "clips.noSegments": "Keine Clip-Segmente definiert. Füge zuerst Clip-Markierungen hinzu.",
@@ -86,11 +90,12 @@
   "markers.clipStart": "Clip-Start",
   "markers.confirmDelete": "Löschen bestätigen",
   "markers.delete": "Markierungen löschen",
-  "markers.heading": "Markierungen",
   "markers.loopEnd": "Loop-Ende",
   "markers.loopStart": "Loop-Start",
   "playback.audioTrack": "Audiospur",
   "playback.exitFullscreen": "Vollbild beenden",
+  "playback.jumpAria": "Zu Zeitpunkt springen",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "Markierungsmenü",
   "playback.markerMenuAria": "Markierungsmenü",
   "playback.mute": "Stummschalten",
@@ -230,5 +235,6 @@
   "subtitles.delayBy": "Untertitel um {seconds} Sekunden verzögern",
   "subtitles.advanceBy": "Untertitel um {seconds} Sekunden vorziehen",
   "subtitles.rescan": "Neu suchen",
-  "subtitles.resetStyle": "Benutzerdefinierten Stil zurücksetzen"
+  "subtitles.resetStyle": "Benutzerdefinierten Stil zurücksetzen",
+  "markers.heading": "Markierungen"
 }

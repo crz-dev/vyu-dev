@@ -106,6 +106,19 @@ async function saveCanvasToFile(
   await invokeWriteFileAtomic(outputPath, arrayBufferToBase64(arrayBuffer));
 }
 
+export async function writeBlobToFileAtomic(
+  path: string,
+  blob: Blob,
+): Promise<void> {
+  const buffer = await blob.arrayBuffer();
+  await invokeWriteFileAtomic(path, arrayBufferToBase64(buffer));
+}
+
+export async function writeFrameBlobToTemp(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  return invokeWriteTempFile(arrayBufferToBase64(buffer), "png");
+}
+
 export async function invokeWriteFileAtomic(
   path: string,
   dataBase64: string,

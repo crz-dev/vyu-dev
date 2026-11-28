@@ -21,6 +21,7 @@ import { loadMediaProperties } from "$lib/features/media/ffmpeg";
 export interface ContextActionDeps {
   filePath: () => string;
   videoEl: () => HTMLVideoElement | null;
+  openFrameInViewer: (path: string) => Promise<void>;
   togglePdfFindBar: () => void;
   pdfRightClickedCanvas: () => HTMLCanvasElement | null;
   closeContextMenu: () => void;
@@ -57,7 +58,9 @@ export function createContextActionFns(deps: ContextActionDeps) {
   async function ctxCopyFrameFn() {
     await ctxCopyFrame({
       videoEl: deps.videoEl(),
+      filePath: deps.filePath(),
       closeContextMenu: deps.closeContextMenu,
+      openInViewer: deps.openFrameInViewer,
     });
   }
   async function ctxCopyPathFn() {

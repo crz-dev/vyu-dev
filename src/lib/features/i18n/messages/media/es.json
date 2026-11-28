@@ -59,6 +59,10 @@
   "cd.colorN": "Color {n}",
   "cd.playedPercent": "{percent}% reproducido",
   "cd.seekAria": "Disco de vinilo con progreso de reproducción: arrastra para buscar",
+  "chapters.heading": "Capítulos",
+  "chapters.next": "Capítulo siguiente",
+  "chapters.previous": "Capítulo anterior",
+  "chapters.untitled": "Capítulo {index}",
   "clips.jobLabel_one": "Recortando {count} segmento…",
   "clips.jobLabel_other": "Recortando {count} segmentos…",
   "clips.noSegments": "No hay segmentos de clip definidos. Añade primero marcadores de clip.",
@@ -86,11 +90,12 @@
   "markers.clipStart": "Inicio de clip",
   "markers.confirmDelete": "Confirmar eliminación",
   "markers.delete": "Eliminar marcas",
-  "markers.heading": "Marcas",
   "markers.loopEnd": "Fin de bucle",
   "markers.loopStart": "Inicio de bucle",
   "playback.audioTrack": "Pista de audio",
   "playback.exitFullscreen": "salir de pantalla completa",
+  "playback.jumpAria": "Ir a un tiempo",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "Menú de marcas",
   "playback.markerMenuAria": "menú de marcas",
   "playback.mute": "Silenciar",
@@ -230,5 +235,6 @@
   "subtitles.delayBy": "Retrasar los subtítulos {seconds} segundos",
   "subtitles.advanceBy": "Adelantar los subtítulos {seconds} segundos",
   "subtitles.rescan": "Buscar de nuevo",
-  "subtitles.resetStyle": "Restablecer estilo personalizado"
+  "subtitles.resetStyle": "Restablecer estilo personalizado",
+  "markers.heading": "Marcas"
 }

@@ -36,7 +36,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - **Editing, markup, export:** `features/editing/*`, `features/markup/*`, `commands/{editing,annotations}.rs`.
 - **Share, convert, save-as:** `features/dialogs/Dialog.svelte`, `features/media/conversionPrefs.svelte.ts`, `commands/{conversion,external_apps}.rs`.
 - **Repair and integrity:** `features/media/corruption.svelte.ts`, `commands/integrity.rs`.
-- **Clips, markers, timeline:** `features/media/clips.svelte.ts`, `features/markers/*`, `components/TimelineMarkers.svelte`, `features/media/timelinePreview.ts`, `commands/clips.rs`.
+- **Clips, markers, timeline, chapters:** `features/media/clips.svelte.ts`, `features/markers/*`, `components/TimelineMarkers.svelte`, `features/media/timelinePreview.ts`, `commands/clips.rs`; embedded chapters come from `commands/tracks.rs` and are read-only.
 - **Audio effects, EQ, visualizers, CD color:** `features/{effects,equalizer,visualizer}/*`, `features/media/cdColor.ts`.
 - **Settings UI:** `features/dialogs/SettingsDialog.svelte`, `features/settings/*`, plus the store owned by the setting.
 - **Menus, context actions, window controls:** `components/Shell.svelte`, `features/menus/*`, `features/actions/*`.
@@ -111,6 +111,7 @@ Frontend paths are relative to `src/lib/`; Rust paths are relative to `src-tauri
 - The up-next queue stores absolute paths and is restored from `vyu-queue` on launch; every mutation rewrites the stored list.
 - `.m3u`/`.m3u8`/`.pls` files open into the queue: relative entries resolve against the playlist folder, unsupported and remote entries are ignored, and opening replaces Up Next. Saved playlists contain absolute paths and reuse `write_file_atomic`.
 - Global marker clears update the database and the in-memory timestamp/clip stores.
+- Chapter navigation reads the per-file `get_media_chapters` result; chapter position is not persisted. Frame copy reuses one canvas snapshot; its toast can write that PNG through `write_file_atomic` or open a temp copy in the viewer.
 - Subtitle appearance and saved custom text colors are global `vyu-subtitle-style`/`vyu-subtitle-custom-colors` settings; the dragged subtitle offset is per-file metadata, not localStorage.
 - SMTC is the single path for Windows media keys and the Windows 11 taskbar/quick-settings media flyout. Do not also register media keys with `RegisterHotKey` or the global-shortcut plugin. The session runs on a dedicated MTA thread, ignores stale generation updates, and follows background audio when the library is open.
 - The tray menu is native; labels are pushed from the frontend so no user-facing English is hardcoded. Close-to-tray lives in the frontend close handler because the existing confirm/cleanup/`destroy()` flow is there; tray Quit emits `system:quit-requested` through that same path.

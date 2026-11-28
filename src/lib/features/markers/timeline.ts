@@ -1,4 +1,51 @@
-import type { VideoMarker } from "$lib/shared/types";
+import type { MediaChapter, VideoMarker } from "$lib/shared/types";
+
+const CHAPTER_EPSILON = 0.05;
+
+function clampTime(time: number, duration: number): number {
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return Math.max(0, Number.isFinite(time) ? time : 0);
+  }
+  return Math.max(0, Math.min(time, duration));
+}
+
+export function chapterIndexAt(
+  time: number,
+  chapters: MediaChapter[],
+  duration: number,
+): number {
+  if (chapters.length === 0) return -1;
+  const target = clampTime(time, duration);
+  let index = -1;
+  for (let i = 0; i < chapters.length; i++) {
+    if (chapters[i].start <= target + CHAPTER_EPSILON) index = i;
+    else break;
+  }
+  return index;
+}
+
+export function chapterSeekTarget(
+  time: number,
+  chapters: MediaChapter[],
+  duration: number,
+  direction: -1 | 1,
+): number | null {
+  if (chapters.length === 0) return null;
+  const target = clampTime(time, duration);
+
+  if (direction > 0) {
+    for (const chapter of chapters) {
+      if (chapter.start > target + CHAPTER_EPSILON) {
+        return clampTime(chapter.start, duration);
+      }
+    }
+    return null;
+  }
+
+  const index = chapterIndexAt(target, chapters, duration);
+  if (index <= 0) return 0;
+  return clampTime(chapters[index - 1].start, duration);
+}
 
 export function createTimeline() {
   function addTimestamp(

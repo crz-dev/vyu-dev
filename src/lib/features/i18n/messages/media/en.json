@@ -59,6 +59,10 @@
   "cd.colorN": "Color {n}",
   "cd.playedPercent": "{percent}% played",
   "cd.seekAria": "Vinyl record with playback progress - drag to scrub",
+  "chapters.heading": "Chapters",
+  "chapters.next": "Next chapter",
+  "chapters.previous": "Previous chapter",
+  "chapters.untitled": "Chapter {index}",
   "clips.jobLabel_one": "Clipping {count} segment…",
   "clips.jobLabel_other": "Clipping {count} segments…",
   "clips.noSegments": "No clip segments defined. Add clip markers first.",
@@ -86,11 +90,12 @@
   "markers.clipStart": "Clip start",
   "markers.confirmDelete": "Confirm Delete",
   "markers.delete": "Delete Markers",
-  "markers.heading": "Markers",
   "markers.loopEnd": "Loop end",
   "markers.loopStart": "Loop start",
   "playback.audioTrack": "Audio track",
   "playback.exitFullscreen": "exit fullscreen",
+  "playback.jumpAria": "Jump to time",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "Marker menu",
   "playback.markerMenuAria": "markers menu",
   "playback.mute": "Mute",
@@ -230,5 +235,6 @@
   "subtitles.delayBy": "Delay subtitles by {seconds} seconds",
   "subtitles.advanceBy": "Advance subtitles by {seconds} seconds",
   "subtitles.rescan": "Rescan",
-  "subtitles.resetStyle": "Reset custom style"
+  "subtitles.resetStyle": "Reset custom style",
+  "markers.heading": "Markers"
 }

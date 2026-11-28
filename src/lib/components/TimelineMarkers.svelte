@@ -5,6 +5,8 @@
     MediaChapter,
     VideoMarker,
   } from "$lib/shared/types";
+  import { tick } from "svelte";
+  import { fade, fly } from "svelte/transition";
   import { locale } from "$lib/features/i18n/locale.svelte";
   import { appearance } from "$lib/features/theme/appearance.svelte";
   import {
@@ -131,7 +133,9 @@
   );
   const hoveredChapterIndex = $derived.by(() => {
     if (!showPreview || !hasChapters) return -1;
-    const time = (previewPct / 100) * durationSecs;
+    // Nudge by a tiny amount so a chapter start computed from a percentage
+    // still resolves to that chapter after the round trip.
+    const time = (previewPct / 100) * durationSecs + 0.02;
     const last = chapters.length - 1;
     return chapters.findIndex(
       (c, i) =>
@@ -143,8 +147,13 @@
   let previewLoading = $state(false);
   let previewImageAspect = $state(0);
   let previewTimeSecs = $state(0);
+  let tooltipLeftPct = $state(0);
   let barWidth = $state(0);
   let barEl = $state<HTMLDivElement | null>(null);
+  let previewEl = $state<HTMLDivElement | null>(null);
+  let chapterListEl = $state<HTMLDivElement | null>(null);
+  let chapterListOpen = $state(false);
+  let previewHideTimer: ReturnType<typeof setTimeout> | null = null;
   let isScrubbing = $state(false);
   let previewBucket = -1;
   let previewLoadingBucket = -1;
@@ -207,8 +216,25 @@
     }
   }
 
+  function clearPreviewHideTimer() {
+    if (previewHideTimer !== null) {
+      clearTimeout(previewHideTimer);
+      previewHideTimer = null;
+    }
+  }
+
+  function scheduleHidePreview() {
+    if (isScrubbing || previewHideTimer !== null) return;
+    previewHideTimer = setTimeout(() => {
+      previewHideTimer = null;
+      hidePreview();
+    }, 140);
+  }
+
   function hidePreview() {
+    clearPreviewHideTimer();
     showPreview = false;
+    chapterListOpen = false;
     previewLoading = false;
     clearPreviewTimer();
     cancelPendingTimelinePreviews();
@@ -271,8 +297,11 @@
       return;
     }
 
+    clearPreviewHideTimer();
     showPreview = true;
+    chapterListOpen = false;
     previewPct = Math.max(0, Math.min(100, pct));
+    tooltipLeftPct = previewPct;
     previewTimeSecs = Math.max(
       0,
       Math.min((previewPct / 100) * durationSecs, durationSecs - 0.05),
@@ -352,6 +381,7 @@
 
   function handleBarMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
+    clearPreviewHideTimer();
     isScrubbing = true;
     const rect = barEl?.getBoundingClientRect();
     if (rect && rect.width > 0) {
@@ -392,9 +422,74 @@
     return (
       clientX >= rect.left &&
       clientX <= rect.right &&
-      clientY >= rect.top - 14 &&
+      clientY >= rect.top - 24 &&
       clientY <= rect.bottom + 4
     );
+  }
+
+  function isWithinPreviewRect(
+    rect: DOMRect,
+    clientX: number,
+    clientY: number,
+  ) {
+    const margin = 4;
+    return (
+      clientX >= rect.left - margin &&
+      clientX <= rect.right + margin &&
+      clientY >= rect.top - margin &&
+      clientY <= rect.bottom + margin
+    );
+  }
+
+  function selectPreviewChapter(index: number) {
+    const chapter = chapters[index];
+    if (!chapter || !(durationSecs > 0)) return;
+    clearPreviewHideTimer();
+    seekToTimestamp(chapter.start);
+    previewPct = Math.max(
+      0,
+      Math.min(100, (chapter.start / durationSecs) * 100),
+    );
+    previewTimeSecs = Math.max(0, Math.min(chapter.start, durationSecs - 0.05));
+    const bucket = previewBucketForPct(previewPct, durationSecs);
+    if (bucket !== previewBucket) {
+      previewBucket = bucket;
+      ensurePreviewFrame();
+    }
+    if (chapterListOpen) scrollCurrentChapterIntoView();
+  }
+
+  function previousPreviewChapter() {
+    if (hoveredChapterIndex > 0) {
+      selectPreviewChapter(hoveredChapterIndex - 1);
+    }
+  }
+
+  function nextPreviewChapter() {
+    if (hoveredChapterIndex >= 0 && hoveredChapterIndex < chapters.length - 1) {
+      selectPreviewChapter(hoveredChapterIndex + 1);
+    }
+  }
+
+  function scrollCurrentChapterIntoView() {
+    void tick().then(() => {
+      const list = chapterListEl;
+      const current = list?.querySelector<HTMLElement>(
+        ".chapter-preview-item.current",
+      );
+      current?.scrollIntoView({ block: "nearest" });
+    });
+  }
+
+  function toggleChapterList() {
+    chapterListOpen = !chapterListOpen;
+    clearPreviewHideTimer();
+    if (chapterListOpen) scrollCurrentChapterIntoView();
+  }
+
+  function selectChapterFromList(index: number) {
+    selectPreviewChapter(index);
+    chapterListOpen = false;
   }
 
   $effect(() => {
@@ -406,10 +501,17 @@
       pointerKnown = true;
       const rect = barEl?.getBoundingClientRect();
       if (!rect || rect.width <= 0) return;
-      if (isWithinBarRect(rect, e.clientX, e.clientY)) {
+      const overBar = isWithinBarRect(rect, e.clientX, e.clientY);
+      const previewRect = previewEl?.getBoundingClientRect();
+      const overPreview =
+        !!previewRect && isWithinPreviewRect(previewRect, e.clientX, e.clientY);
+      if (overPreview) {
+        clearPreviewHideTimer();
+      } else if (overBar) {
+        clearPreviewHideTimer();
         if (durationSecs > 0) updateHoverPosition(e.clientX);
       } else if (showPreview && !isScrubbing) {
-        hidePreview();
+        scheduleHidePreview();
       }
     }
 
@@ -461,6 +563,7 @@
       if (previewRaf !== null) cancelAnimationFrame(previewRaf);
       stopProgressAnimation();
       clearPreviewTimer();
+      clearPreviewHideTimer();
       cancelPendingTimelinePreviews();
     };
   });
@@ -525,19 +628,57 @@
   {#if showPreview && !tsEditMenuVisible}
     {@const hoveredChapter =
       hoveredChapterIndex >= 0 ? chapters[hoveredChapterIndex] : null}
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="ts-tooltip white scrubber-tooltip timeline-preview"
+      bind:this={previewEl}
       style="left: {hoveredChapter
-        ? Math.min(92, Math.max(8, previewPct))
+        ? Math.min(92, Math.max(8, tooltipLeftPct))
         : previewLeftPct}%; top: -12px;"
-      aria-hidden="true"
+      role="group"
+      aria-label={hoveredChapter ? t("media.chapters.heading") : undefined}
+      onmousedown={(e) => e.stopPropagation()}
+      onmousemove={(e) => e.stopPropagation()}
+      onmouseenter={clearPreviewHideTimer}
     >
-      {#if previewSrc}
+      {#if chapterListOpen}
+        <div
+          class="chapter-preview-list"
+          bind:this={chapterListEl}
+          style="width: {previewBox.width}px; height: {previewBox.height}px"
+          role="group"
+          aria-label={t("media.chapters.heading")}
+          in:fly={{ y: 6, duration: 160, opacity: 0 }}
+          onwheel={(e) => e.stopPropagation()}
+        >
+          {#each chapters as chapter, index (chapter.start)}
+            {@const chapterTitle =
+              chapter.title.trim() ||
+              t("media.chapters.untitled", { index: index + 1 })}
+            <button
+              type="button"
+              class="chapter-preview-item"
+              class:current={index === hoveredChapterIndex}
+              onclick={(e) => {
+                e.stopPropagation();
+                selectChapterFromList(index);
+              }}
+              title={chapterTitle}
+            >
+              <span class="chapter-preview-item-title">{chapterTitle}</span>
+              <span class="chapter-preview-item-time"
+                >{formatTime(chapter.start)}</span
+              >
+            </button>
+          {/each}
+        </div>
+      {:else if previewSrc}
         <img
           class="timeline-preview-img"
           style="width: {previewBox.width}px; height: {previewBox.height}px"
           src={previewSrc}
           alt=""
+          in:fade={{ duration: 120 }}
           onload={(e) => {
             const img = e.currentTarget as HTMLImageElement;
             if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -550,10 +691,68 @@
           class="timeline-preview-img"
           class:timeline-preview-loading={previewLoading}
           style="width: {previewBox.width}px; height: {previewBox.height}px"
+          in:fade={{ duration: 120 }}
         ></div>
       {/if}
       {#if hoveredChapter}
-        <span class="chapter-tooltip-title">{hoveredChapter.title}</span>
+        {@const chapterTitle =
+          hoveredChapter.title.trim() ||
+          t("media.chapters.untitled", { index: hoveredChapterIndex + 1 })}
+        <div class="chapter-tooltip-nav">
+          <button
+            type="button"
+            class="chapter-tooltip-nav-btn"
+            onclick={(e) => {
+              e.stopPropagation();
+              previousPreviewChapter();
+            }}
+            disabled={hoveredChapterIndex <= 0}
+            aria-label={t("media.chapters.previous")}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M15 6l-6 6 6 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="chapter-tooltip-picker"
+            aria-expanded={chapterListOpen}
+            onclick={(e) => {
+              e.stopPropagation();
+              toggleChapterList();
+            }}
+          >
+            <span class="chapter-tooltip-title" title={chapterTitle}
+              >{chapterTitle}</span
+            >
+          </button>
+          <button
+            type="button"
+            class="chapter-tooltip-nav-btn"
+            onclick={(e) => {
+              e.stopPropagation();
+              nextPreviewChapter();
+            }}
+            disabled={hoveredChapterIndex >= chapters.length - 1}
+            aria-label={t("media.chapters.next")}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       {/if}
       <span class="timeline-preview-time"
         >{hoveredChapter
@@ -799,6 +998,165 @@
     backdrop-filter: blur(var(--menu-blur)) saturate(130%);
     border: 0.5px solid color-mix(in srgb, var(--text-primary) 20%, transparent);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    pointer-events: auto;
+  }
+
+  .chapter-tooltip-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chapter-tooltip-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 0.5px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition:
+      background 0.13s,
+      color 0.13s;
+  }
+
+  .chapter-tooltip-nav-btn:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  }
+
+  .chapter-tooltip-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .chapter-tooltip-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 1px 4px;
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: 11px;
+    font-weight: 600;
+    transition:
+      background 0.13s,
+      color 0.13s;
+  }
+
+  .chapter-tooltip-picker:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  }
+
+  .chapter-tooltip-picker:focus-visible {
+    outline: 1px solid var(--blue-light);
+    outline-offset: 1px;
+  }
+
+  .chapter-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1px;
+    box-sizing: border-box;
+    border-radius: 4px;
+  }
+
+  .chapter-preview-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chapter-preview-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chapter-preview-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.22);
+    border: 1px solid transparent;
+    border-radius: 99px;
+    background-clip: padding-box;
+  }
+
+  .chapter-preview-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  :global([data-theme="light"]) .chapter-preview-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  :global([data-theme="light"])
+    .chapter-preview-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .chapter-preview-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    min-height: 22px;
+    padding: 2px 5px;
+    color: var(--text-secondary);
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: 10px;
+    box-sizing: border-box;
+    transition:
+      background 0.13s,
+      color 0.13s;
+  }
+
+  .chapter-preview-item:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  }
+
+  .chapter-preview-item.current {
+    color: var(--blue-light);
+    background: var(--blue-bg);
+  }
+
+  .chapter-preview-item-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chapter-preview-item-time {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chapter-preview-item.current .chapter-preview-item-time {
+    color: inherit;
+    opacity: 0.7;
   }
 
   .timeline-preview-img {
@@ -890,11 +1248,15 @@
   }
 
   .chapter-tooltip-title {
-    padding: 0 4px;
+    flex: 1;
+    min-width: 0;
+    padding: 0 2px;
     font-size: 11px;
     font-weight: 600;
     text-align: center;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--text-muted);
   }
 </style>

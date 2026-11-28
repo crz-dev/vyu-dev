@@ -1,11 +1,88 @@
-import { invokeShowInExplorer } from "$lib/features/media/api";
+import { save } from "@tauri-apps/plugin-dialog";
+import {
+  invokeShowInExplorer,
+  writeBlobToFileAtomic,
+  writeFrameBlobToTemp,
+} from "$lib/features/media/api";
 import {
   copyImageToClipboard,
   copyFrameToClipboard,
   copyPathToClipboard,
 } from "$lib/services/clipboard";
-import { showToast } from "$lib/components/toast.svelte";
+import { getFileName, getParentFolder, joinPath } from "$lib/services/files";
+import { dismissToast, showToast } from "$lib/components/toast.svelte";
 import { locale } from "$lib/features/i18n/locale.svelte";
+
+const DOWNLOAD_ICON =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
+const OPEN_VIEWER_ICON =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>';
+
+function frameFileName(filePath: string, seconds: number): string {
+  const name =
+    filePath && !filePath.includes("://") ? getFileName(filePath) : "";
+  const stem = name.replace(/\.[^.]+$/, "").trim() || "frame";
+  const total = Math.max(0, Math.floor(seconds || 0));
+  const minutes = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${stem} - frame ${minutes}-${secs.toString().padStart(2, "0")}.png`;
+}
+
+async function downloadFrame(
+  blob: Blob,
+  filePath: string,
+  seconds: number,
+  toastId: number,
+) {
+  try {
+    const isLocal = !!filePath && !filePath.includes("://");
+    const defaultName = frameFileName(filePath, seconds);
+    const chosen = await save({
+      defaultPath: isLocal
+        ? joinPath(getParentFolder(filePath), defaultName)
+        : defaultName,
+      filters: [
+        { name: locale.t("editing.filter.image"), extensions: ["png"] },
+      ],
+    });
+    if (!chosen) return;
+    const outputPath = chosen.toLowerCase().endsWith(".png")
+      ? chosen
+      : `${chosen.replace(/\.[^.\\/]+$/, "")}.png`;
+    await writeBlobToFileAtomic(outputPath, blob);
+    dismissToast(toastId);
+    showToast({
+      message: locale.t("shell.actions.savedFrame"),
+      color: "green",
+    });
+  } catch (err) {
+    console.error("Failed to save current frame:", err);
+    const message =
+      err instanceof Error
+        ? err.message
+        : locale.t("shell.actions.saveFrameFailed");
+    showToast({ message, color: "red" });
+  }
+}
+
+async function openFrameInViewer(
+  blob: Blob,
+  openInViewer: (path: string) => Promise<void>,
+  toastId: number,
+) {
+  try {
+    const path = await writeFrameBlobToTemp(blob);
+    await openInViewer(path);
+    dismissToast(toastId);
+  } catch (err) {
+    console.error("Failed to open current frame:", err);
+    const message =
+      err instanceof Error
+        ? err.message
+        : locale.t("shell.actions.frameOpenFailed");
+    showToast({ message, color: "red" });
+  }
+}
 
 export async function ctxCopyPdfPage(opts: {
   canvas: HTMLCanvasElement | null;
@@ -60,15 +137,38 @@ export async function ctxCopyImage(opts: {
 
 export async function ctxCopyFrame(opts: {
   videoEl: HTMLVideoElement | null;
+  filePath: string;
   closeContextMenu: () => void;
+  openInViewer: (path: string) => Promise<void>;
 }) {
   opts.closeContextMenu();
-  if (!opts.videoEl) return;
+  const videoEl = opts.videoEl;
+  if (!videoEl) return;
   try {
-    await copyFrameToClipboard(opts.videoEl);
-    showToast({
+    const seconds = videoEl.currentTime;
+    const blob = await copyFrameToClipboard(videoEl);
+    const toastId = showToast({
       message: locale.t("shell.actions.copiedFrame"),
       color: "yellow",
+      duration: 10000,
+      actions: [
+        {
+          tooltip: locale.t("shell.actions.downloadFrame"),
+          icon: DOWNLOAD_ICON,
+          variant: "accent",
+          onClick: () => {
+            void downloadFrame(blob, opts.filePath, seconds, toastId);
+          },
+        },
+        {
+          tooltip: locale.t("shell.actions.openFrameInViewer"),
+          icon: OPEN_VIEWER_ICON,
+          variant: "default",
+          onClick: () => {
+            void openFrameInViewer(blob, opts.openInViewer, toastId);
+          },
+        },
+      ],
     });
   } catch (err) {
     console.error("Failed to copy current frame to clipboard:", err);

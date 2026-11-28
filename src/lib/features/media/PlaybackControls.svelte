@@ -1,10 +1,14 @@
 <script lang="ts">
   import { fly } from "svelte/transition";
+  import { tick } from "svelte";
   import LoopDropdown from "$lib/features/media/LoopDropdown.svelte";
   import MarkerDropdown from "$lib/features/media/MarkerDropdown.svelte";
   import AudioTrackMenu from "$lib/features/media/AudioTrackMenu.svelte";
   import SubtitleMenu from "$lib/features/media/SubtitleMenu.svelte";
-  import { nearestSpeedStepIndex } from "$lib/features/media/playback.svelte";
+  import {
+    nearestSpeedStepIndex,
+    parseTimeInput,
+  } from "$lib/features/media/playback.svelte";
   import type { LoopMode } from "$lib/shared/constants";
   import type { TrackSelectionStore } from "$lib/features/media/tracks.svelte";
   import { keybindStore } from "$lib/features/keybinds/keybindStore.svelte";
@@ -55,6 +59,12 @@
     hasLoopEnd,
     hasAnyMarkers,
     deleteAllMarkers,
+    durationSecs,
+    seekToTime,
+    jumpOpen,
+    jumpRequest,
+    fullscreenActive,
+    onJumpClose,
     toggleTimer,
     currentTimeDisplay,
     durationDisplay,
@@ -116,6 +126,12 @@
     hasLoopEnd: boolean;
     hasAnyMarkers: boolean;
     deleteAllMarkers: () => void;
+    durationSecs: number;
+    seekToTime: (seconds: number) => void;
+    jumpOpen: boolean;
+    jumpRequest: number;
+    fullscreenActive: boolean;
+    onJumpClose: () => void;
     toggleTimer: () => void;
     currentTimeDisplay: () => string;
     durationDisplay: string;
@@ -164,10 +180,127 @@
   let rowEl = $state<HTMLDivElement | null>(null);
   let primaryGroupEl = $state<HTMLDivElement | null>(null);
   let toolsGroupEl = $state<HTMLDivElement | null>(null);
-  let timerEl = $state<HTMLButtonElement | null>(null);
+  let timeDisplayEl = $state<HTMLElement | null>(null);
+  let fsTimeDisplayEl = $state<HTMLElement | null>(null);
+  let timeDisplayWidth = $state(0);
+  let fsTimeDisplayWidth = $state(0);
   let playButtonEl = $state<HTMLButtonElement | null>(null);
   let compact = $state(false);
   let measureRaf = 0;
+  let jumpValue = $state("");
+  let jumpInvalid = $state(false);
+  let jumpInputEl = $state<HTMLInputElement | null>(null);
+  let fsJumpInputEl = $state<HTMLInputElement | null>(null);
+  const jumpInputActive = $derived(jumpOpen && fullscreen === fullscreenActive);
+
+  $effect(() => {
+    const el = timeDisplayEl;
+    if (!el) return;
+    timeDisplayWidth = el.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      timeDisplayWidth = el.offsetWidth;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    const el = fsTimeDisplayEl;
+    if (!el) return;
+    fsTimeDisplayWidth = el.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      fsTimeDisplayWidth = el.offsetWidth;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    if (!jumpInputActive) return;
+    void jumpRequest;
+    jumpValue = "";
+    jumpInvalid = false;
+    void tick().then(() => {
+      (fullscreen ? fsJumpInputEl : jumpInputEl)?.focus();
+    });
+  });
+
+  $effect(() => {
+    if (!jumpInputActive) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Element | null;
+      if (target?.closest?.("[data-jump-input]")) return;
+      onJumpClose();
+    }
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () =>
+      document.removeEventListener("pointerdown", onPointerDown, true);
+  });
+
+  $effect(() => {
+    if (!jumpInputActive) return;
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as Element | null;
+      if (target?.closest?.("[data-jump-input]")) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const input = fullscreen ? fsJumpInputEl : jumpInputEl;
+      if (!input) return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        commitJump();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onJumpClose();
+        return;
+      }
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        e.stopPropagation();
+        jumpValue = jumpValue.slice(0, -1);
+        jumpInvalid = false;
+        input.focus();
+        return;
+      }
+      if (e.key.length === 1 && /[\d:.,]/.test(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        jumpValue += e.key;
+        jumpInvalid = false;
+        input.focus();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  });
+
+  function commitJump() {
+    const parsed = parseTimeInput(jumpValue);
+    if (parsed === null) {
+      jumpInvalid = true;
+      jumpInputEl?.select();
+      return;
+    }
+    const clamped =
+      durationSecs > 0 ? Math.min(parsed, durationSecs) : Math.max(0, parsed);
+    seekToTime(Math.max(0, clamped));
+    onJumpClose();
+  }
+
+  function handleJumpKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      commitJump();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      onJumpClose();
+    }
+  }
 
   // Switch to the stacked layout only when the single line provably cannot fit,
   // and back only with slack, so small width changes cannot flip it repeatedly.
@@ -179,7 +312,8 @@
 
     // The timer and play button are taken out of flow in compact mode, so add
     // them (and the gaps they lose) back when estimating the single-line width.
-    const timer = timerEl?.offsetWidth ?? 0;
+    const timer =
+      (jumpInputActive ? jumpInputEl : timeDisplayEl)?.offsetWidth ?? 0;
     const play = playButtonEl?.offsetWidth ?? 0;
     const needed =
       (primaryGroupEl?.offsetWidth ?? 0) +
@@ -1123,15 +1257,35 @@
           {deleteAllMarkers}
         />
       </div>
-      <button
-        class="time-display tooltip-ctrl"
-        bind:this={timerEl}
-        data-tooltip={timerTooltip}
-        onclick={toggleTimer}
-        aria-label={t("media.playback.toggleTimerAria")}
-      >
-        {currentTimeDisplay()} / {durationDisplay}
-      </button>
+      {#if jumpInputActive}
+        <input
+          bind:this={jumpInputEl}
+          bind:value={jumpValue}
+          class="time-display time-display-input"
+          class:invalid={jumpInvalid}
+          data-jump-input
+          style="width: {timeDisplayWidth > 0 ? timeDisplayWidth : 108}px"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder={t("media.playback.jumpPlaceholder")}
+          aria-label={t("media.playback.jumpAria")}
+          aria-invalid={jumpInvalid}
+          oninput={() => (jumpInvalid = false)}
+          onkeydown={handleJumpKeydown}
+        />
+      {:else}
+        <button
+          class="time-display tooltip-ctrl"
+          bind:this={timeDisplayEl}
+          data-tooltip={timerTooltip}
+          onclick={toggleTimer}
+          aria-label={t("media.playback.toggleTimerAria")}
+        >
+          {currentTimeDisplay()} / {durationDisplay}
+        </button>
+      {/if}
     </div>
   </div>
   {#if isGifVideo}
@@ -1814,14 +1968,35 @@
         {deleteAllMarkers}
       />
     </div>
-    <button
-      class="fs-time tooltip-ctrl"
-      data-tooltip={timerTooltip}
-      onclick={toggleTimer}
-      aria-label={t("media.playback.toggleTimerAria")}
-    >
-      {currentTimeDisplay()} / {durationDisplay}
-    </button>
+    {#if jumpInputActive}
+      <input
+        bind:this={fsJumpInputEl}
+        bind:value={jumpValue}
+        class="fs-time fs-time-input"
+        class:invalid={jumpInvalid}
+        data-jump-input
+        style="width: {fsTimeDisplayWidth > 0 ? fsTimeDisplayWidth : 124}px"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder={t("media.playback.jumpPlaceholder")}
+        aria-label={t("media.playback.jumpAria")}
+        aria-invalid={jumpInvalid}
+        oninput={() => (jumpInvalid = false)}
+        onkeydown={handleJumpKeydown}
+      />
+    {:else}
+      <button
+        class="fs-time tooltip-ctrl"
+        bind:this={fsTimeDisplayEl}
+        data-tooltip={timerTooltip}
+        onclick={toggleTimer}
+        aria-label={t("media.playback.toggleTimerAria")}
+      >
+        {currentTimeDisplay()} / {durationDisplay}
+      </button>
+    {/if}
     <div class="fs-right">
       <button
         class="fs-ctrl-btn tooltip-ctrl"

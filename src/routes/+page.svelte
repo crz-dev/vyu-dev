@@ -210,6 +210,8 @@
   let propertiesOpen = $state(false);
   let libraryPropertiesOpen = $state(false);
   let shareOpen = $state(false);
+  let jumpToTimeOpen = $state(false);
+  let jumpToTimeRequest = $state(0);
   let audioLayoutMode: "retro" | "modern" = $state(loadAudioLayoutMode());
   let cassetteFilenameOverflow = $state(false);
   let cassetteInfoRowEl = $state<HTMLElement | null>(null);
@@ -223,6 +225,10 @@
   let speedSliderMode = $state(false);
   let mediaProps = $state<MediaProperties | null>(null);
   let mediaPropsLoading = $state(false);
+
+  $effect(() => {
+    if (!isVideo && jumpToTimeOpen) jumpToTimeOpen = false;
+  });
 
   const menuActions = createMenuActions({
     closeContextMenu,
@@ -626,6 +632,8 @@
     startTimestampDrag,
     startClipMarkerDrag,
     seekToTimestamp,
+    previousChapter,
+    nextChapter,
     removeResumePoint,
     seekToResumePoint,
     showResumeTooltip,
@@ -774,6 +782,12 @@
         clearLoopMarkers();
         showToast({ message: t("shell.markers.cleared"), color: "yellow" });
       },
+      durationSecs: rawDurationSecs,
+      seekToTime: seekToTimestamp,
+      jumpOpen: jumpToTimeOpen,
+      jumpRequest: jumpToTimeRequest,
+      fullscreenActive: viewer.state.isFullscreen,
+      onJumpClose: () => (jumpToTimeOpen = false),
       toggleTimer,
       currentTimeDisplay,
       durationDisplay,
@@ -1336,6 +1350,17 @@
       "frame-forward": () => {
         if (isVideo) frameStep(1);
       },
+      "previous-chapter": () => {
+        if (isTimedMedia()) previousChapter();
+      },
+      "next-chapter": () => {
+        if (isTimedMedia()) nextChapter();
+      },
+      "jump-to-time": () => {
+        if (!isVideo) return;
+        jumpToTimeOpen = true;
+        jumpToTimeRequest += 1;
+      },
       "add-marker": () => {
         if (isTimedMedia()) addTimestamp();
       },
@@ -1640,6 +1665,7 @@
   } = createContextActionFns({
     filePath: () => filePath,
     videoEl: () => videoEl,
+    openFrameInViewer: (path) => loadFile(path),
     togglePdfFindBar: () => pdf.toggleFind(),
     pdfRightClickedCanvas: () => pdfRightClickedCanvas,
     closeContextMenu,

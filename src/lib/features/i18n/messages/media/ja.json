@@ -58,6 +58,10 @@
   "cd.colorN": "色 {n}",
   "cd.playedPercent": "{percent}% 再生済み",
   "cd.seekAria": "再生位置付きレコード - ドラッグしてシーク",
+  "chapters.heading": "チャプター",
+  "chapters.next": "次のチャプター",
+  "chapters.previous": "前のチャプター",
+  "chapters.untitled": "チャプター {index}",
   "clips.jobLabel_other": "{count} 個のセグメントをクリップ中…",
   "clips.noSegments": "クリップセグメントがありません。先にクリップマーカーを追加してください。",
   "clips.saved_other": "{count} 個のクリップを保存しました",
@@ -83,11 +87,12 @@
   "markers.clipStart": "クリップ開始",
   "markers.confirmDelete": "削除を確認",
   "markers.delete": "マーカーを削除",
-  "markers.heading": "マーカー",
   "markers.loopEnd": "ループ終了",
   "markers.loopStart": "ループ開始",
   "playback.audioTrack": "音声トラック",
   "playback.exitFullscreen": "全画面表示を終了",
+  "playback.jumpAria": "時間へ移動",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "マーカーメニュー",
   "playback.markerMenuAria": "マーカーメニュー",
   "playback.mute": "ミュート",
@@ -226,5 +231,6 @@
   "subtitles.delayBy": "字幕を {seconds} 秒遅らせる",
   "subtitles.advanceBy": "字幕を {seconds} 秒早める",
   "subtitles.rescan": "再スキャン",
-  "subtitles.resetStyle": "カスタムスタイルをリセット"
+  "subtitles.resetStyle": "カスタムスタイルをリセット",
+  "markers.heading": "マーカー"
 }

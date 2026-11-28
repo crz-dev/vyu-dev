@@ -63,6 +63,10 @@
   "cd.colorN": "Цвет {n}",
   "cd.playedPercent": "Воспроизведено {percent}%",
   "cd.seekAria": "Виниловая пластинка с прогрессом воспроизведения — перетащите для перемотки",
+  "chapters.heading": "Главы",
+  "chapters.next": "Следующая глава",
+  "chapters.previous": "Предыдущая глава",
+  "chapters.untitled": "Глава {index}",
   "clips.jobLabel_few": "Нарезка фрагментов: {count}…",
   "clips.jobLabel_many": "Нарезка фрагментов: {count}…",
   "clips.jobLabel_one": "Нарезка фрагментов: {count}…",
@@ -94,11 +98,12 @@
   "markers.clipStart": "Начало фрагмента",
   "markers.confirmDelete": "Подтвердить удаление",
   "markers.delete": "Удалить маркеры",
-  "markers.heading": "Маркеры",
   "markers.loopEnd": "Конец повтора",
   "markers.loopStart": "Начало повтора",
   "playback.audioTrack": "Аудиодорожка",
   "playback.exitFullscreen": "выйти из полноэкранного режима",
+  "playback.jumpAria": "Перейти к времени",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "Меню маркеров",
   "playback.markerMenuAria": "меню маркеров",
   "playback.mute": "Выключить звук",
@@ -240,5 +245,6 @@
   "subtitles.delayBy": "Задержать субтитры на {seconds} секунд",
   "subtitles.advanceBy": "Опередить субтитры на {seconds} секунд",
   "subtitles.rescan": "Обновить",
-  "subtitles.resetStyle": "Сбросить пользовательский стиль"
+  "subtitles.resetStyle": "Сбросить пользовательский стиль",
+  "markers.heading": "Маркеры"
 }

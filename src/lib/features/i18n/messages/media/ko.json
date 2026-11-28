@@ -58,6 +58,10 @@
   "cd.colorN": "색상 {n}",
   "cd.playedPercent": "{percent}% 재생됨",
   "cd.seekAria": "재생 진행률이 있는 바이닐 레코드 - 드래그하여 탐색",
+  "chapters.heading": "챕터",
+  "chapters.next": "다음 챕터",
+  "chapters.previous": "이전 챕터",
+  "chapters.untitled": "챕터 {index}",
   "clips.jobLabel_other": "구간 {count}개 클립 생성 중…",
   "clips.noSegments": "정의된 클립 구간이 없습니다. 먼저 클립 마커를 추가하세요.",
   "clips.saved_other": "클립 {count}개 저장됨",
@@ -83,11 +87,12 @@
   "markers.clipStart": "클립 시작",
   "markers.confirmDelete": "삭제 확인",
   "markers.delete": "마커 삭제",
-  "markers.heading": "마커",
   "markers.loopEnd": "반복 끝",
   "markers.loopStart": "반복 시작",
   "playback.audioTrack": "오디오 트랙",
   "playback.exitFullscreen": "전체 화면 종료",
+  "playback.jumpAria": "시간으로 이동",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "마커 메뉴",
   "playback.markerMenuAria": "마커 메뉴",
   "playback.mute": "음소거",
@@ -226,5 +231,6 @@
   "subtitles.delayBy": "자막을 {seconds}초 지연",
   "subtitles.advanceBy": "자막을 {seconds}초 앞당김",
   "subtitles.rescan": "다시 검색",
-  "subtitles.resetStyle": "사용자 지정 스타일 초기화"
+  "subtitles.resetStyle": "사용자 지정 스타일 초기화",
+  "markers.heading": "마커"
 }

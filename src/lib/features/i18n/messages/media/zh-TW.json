@@ -58,6 +58,10 @@
   "cd.colorN": "顏色 {n}",
   "cd.playedPercent": "已播放 {percent}%",
   "cd.seekAria": "帶有播放進度的黑膠唱片 - 拖曳以跳轉",
+  "chapters.heading": "章節",
+  "chapters.next": "下一章",
+  "chapters.previous": "上一章",
+  "chapters.untitled": "第 {index} 章",
   "clips.jobLabel_other": "正在裁切 {count} 個片段…",
   "clips.noSegments": "尚未定義片段。請先新增片段標記。",
   "clips.saved_other": "已儲存 {count} 個片段",
@@ -83,11 +87,12 @@
   "markers.clipStart": "片段開始",
   "markers.confirmDelete": "確認刪除",
   "markers.delete": "刪除標記",
-  "markers.heading": "標記",
   "markers.loopEnd": "循環結束",
   "markers.loopStart": "循環開始",
   "playback.audioTrack": "音軌",
   "playback.exitFullscreen": "結束全螢幕",
+  "playback.jumpAria": "跳轉到時間",
+  "playback.jumpPlaceholder": "0:00",
   "playback.markerMenu": "標記選單",
   "playback.markerMenuAria": "標記選單",
   "playback.mute": "靜音",
@@ -226,5 +231,6 @@
   "subtitles.delayBy": "將字幕延遲 {seconds} 秒",
   "subtitles.advanceBy": "將字幕提前 {seconds} 秒",
   "subtitles.rescan": "重新掃描",
-  "subtitles.resetStyle": "重設自訂樣式"
+  "subtitles.resetStyle": "重設自訂樣式",
+  "markers.heading": "標記"
 }

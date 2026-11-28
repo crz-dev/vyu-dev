@@ -118,6 +118,12 @@ export interface PlaybackProps {
   hasLoopEnd: boolean;
   hasAnyMarkers: boolean;
   deleteAllMarkers: () => void;
+  durationSecs: number;
+  seekToTime: (seconds: number) => void;
+  jumpOpen: boolean;
+  jumpRequest: number;
+  fullscreenActive: boolean;
+  onJumpClose: () => void;
   toggleTimer: () => void;
   currentTimeDisplay: () => string;
   durationDisplay: string;

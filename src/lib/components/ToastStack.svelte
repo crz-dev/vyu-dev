@@ -10,6 +10,9 @@
         class:toast-exiting={toast.exiting}
         class:toast-exiting-up={toast.exitingUp}
         class:toast-has-progress={toast.progress !== null}
+        class:toast-icon-actions={toast.actions.some(
+          (action) => !!action.tooltip && !action.label,
+        )}
         style="--toast-duration: {toast.duration}ms"
       >
         <div class="toast-body">
@@ -24,6 +27,7 @@
                   class="toast-action-btn toast-action-{action.variant ??
                     'default'}"
                   data-tooltip={action.tooltip ?? action.label}
+                  aria-label={action.tooltip ?? action.label}
                   class:tooltip-ctrl={!!action.tooltip}
                   onclick={action.onClick}
                 >

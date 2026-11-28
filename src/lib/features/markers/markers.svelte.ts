@@ -1,4 +1,7 @@
-import { createTimeline } from "$lib/features/markers/timeline";
+import {
+  createTimeline,
+  chapterSeekTarget,
+} from "$lib/features/markers/timeline";
 import {
   writeTimestamps,
   deleteTimestamps,
@@ -697,6 +700,27 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     deps.setProgress((time / mediaEl.duration) * 100);
   }
 
+  function seekChapter(direction: -1 | 1) {
+    const mediaEl = deps.getMediaEl();
+    if (!mediaEl) return;
+    const target = chapterSeekTarget(
+      mediaEl.currentTime,
+      markerStore.chapters,
+      deps.getRawDurationSecs(),
+      direction,
+    );
+    if (target === null) return;
+    seekToTimestamp(target);
+  }
+
+  function previousChapter() {
+    seekChapter(-1);
+  }
+
+  function nextChapter() {
+    seekChapter(1);
+  }
+
   function removeResumePoint() {
     markerStore.tsTooltip = { ...markerStore.tsTooltip, visible: false };
     markerStore.resumeTooltipVisible = false;
@@ -750,6 +774,8 @@ export function createMarkerActions(deps: MarkerActionsDeps) {
     startTimestampDrag,
     startClipMarkerDrag,
     seekToTimestamp,
+    previousChapter,
+    nextChapter,
     removeResumePoint,
     seekToResumePoint,
     showResumeTooltip,
